@@ -2,8 +2,8 @@
 
 use HeimrichHannot\FlareBundle\Contao\BackendModule;
 
-$mod = &$GLOBALS['BE_MOD']['content'][BackendModule::NAME];
+$mod = &$GLOBALS['BE_MOD'][BackendModule::CATEGORY][BackendModule::NAME];
 
 $mod = [
-    'tables' => ['tl_flare_catalog', 'tl_flare_catalog_filter'],
+    'tables' => BackendModule::TABLES,
 ];

@@ -1,0 +1,5 @@
+[data-flare-suffix]::after {
+    display: inline-block;
+    content: attr(data-flare-suffix);
+    opacity: .5;
+}

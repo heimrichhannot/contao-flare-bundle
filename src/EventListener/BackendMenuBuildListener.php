@@ -27,7 +27,7 @@ readonly class BackendMenuBuildListener
 
         if (\str_contains($label = $flareNode->getLabel(), '(FLARE)'))
         {
-            $flareNode->setLabel(\str_replace('(FLARE)', '', $label));
+            $flareNode->setLabel(\trim(\str_replace('(FLARE)', '', $label)));
             $flareNode->setLinkAttribute('data-flare-suffix', 'FLARE');
         }
     }

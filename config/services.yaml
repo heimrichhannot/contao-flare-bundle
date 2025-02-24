@@ -1,8 +1,12 @@
 services:
-  HeimrichHannot\FlareBundle\:
-    resource: '../src/{Controller,EventListener}/*'
-    autowire: true
-    autoconfigure: true
+    _defaults:
+        autowire:      true
+        autoconfigure: true
+
+    HeimrichHannot\FlareBundle\:
+        resource: ../src
+        exclude:  ../src/{ContaoManager,DependencyInjection}
+
 #    bind:
 #      $projectDir: '%kernel.project_dir%'
 #      $csrfTokenName: '%contao.csrf_token_name%'

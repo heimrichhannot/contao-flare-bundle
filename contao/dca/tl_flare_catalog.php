@@ -93,5 +93,5 @@ $dca['fields'] = [
 ];
 
 $dca['palettes'] = [
-    'default' => '{title_legend},title,published',
+    'default' => '{title_legend},title;{publish_legend},published',
 ];

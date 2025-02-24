@@ -1,0 +1,34 @@
+###> Miscellaneous ###
+.idea
+Thumbs.db
+.DS_Store
+.sass-cache
+###< Miscellaneous ###
+
+###> Symfony ###
+/vendor
+/component
+composer.lock
+composer.json~
+composer.phar
+/lib
+/var
+###< Symfony ###
+
+###> Node/Yarn/Encore ###
+node_modules
+package-lock.json
+yarn.lock
+/build
+public/js/entrypoints.json
+public/js/manifest.json
+###< Node/Yarn/Encore ###
+
+###> PHPDocumentator ###
+docs/cache
+docs/build
+###< PHPDocumentator ###
+
+###> PHPUnit ###
+.phpunit.result.cache
+###< PHPUnit ###

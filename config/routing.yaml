@@ -1,0 +1,3 @@
+huh_flare:
+  resource: "@HeimrichHannotFlareBundle/src/Controller/"
+  type: annotation

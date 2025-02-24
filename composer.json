@@ -1,0 +1,51 @@
+{
+    "name": "heimrichhannot/contao-flare-bundle",
+    "type": "contao-bundle",
+    "description": "Filter, list, and read entities with this bundle for Contao Open Source CMS.",
+    "license": "LGPL-3.0-or-later",
+    "require": {
+        "php": "^8.2",
+        "contao/core-bundle": "^4.13 || ^5.0",
+        "doctrine/dbal": "^2.13 || ^3.0",
+        "heimrichhannot/contao-utils-bundle": "^3.6",
+        "psr/log": "^1.0 || ^2.0 || ^3.0",
+        "symfony/config": "^5.4 || ^6.0",
+        "symfony/event-dispatcher-contracts": "^1.0 || ^2.0 || ^3.0",
+        "symfony/filesystem": "^5.4 || ^6.0",
+        "symfony/http-foundation": "^5.4 || ^6.0",
+        "symfony/http-kernel": "^5.4 || ^6.0",
+        "symfony/string": "^5.2 || ^6.0",
+        "twig/twig": "^3.0"
+    },
+    "require-dev": {
+        "contao/test-case": "^4.0 || ^5.0",
+        "contao/manager-plugin": "^2.0",
+        "heimrichhannot/contao-test-utilities-bundle": "^0.1",
+        "phpunit/phpunit": "^8.0 || ^9.0",
+        "php-coveralls/php-coveralls": "^2.0",
+        "symfony/phpunit-bridge": "^5.4 || ^6.0",
+        "phpstan/phpstan": "^1.10",
+        "phpstan/phpstan-symfony": "^1.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "HeimrichHannot\\FlareBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "HeimrichHannot\\FlareBundle\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "preferred-install": "dist",
+        "allow-plugins": {
+            "contao-components/installer": true,
+            "contao/manager-plugin": true,
+            "php-http/discovery": false
+        }
+    },
+    "extra": {
+        "contao-manager-plugin": "HeimrichHannot\\FlareBundle\\ContaoManager\\Plugin"
+    }
+}

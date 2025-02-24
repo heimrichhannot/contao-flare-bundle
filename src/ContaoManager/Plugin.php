@@ -37,7 +37,7 @@ class Plugin implements BundlePluginInterface, ConfigPluginInterface, RoutingPlu
      */
     public function registerContainerConfiguration(LoaderInterface $loader, array $managerConfig): void
     {
-        $loader->load('@HeimrichHannotFlareBundle/config/services.yml');
+        $loader->load('@HeimrichHannotFlareBundle/config/services.yaml');
     }
 
     /**

@@ -3,13 +3,13 @@
 namespace HeimrichHannot\FlareBundle\EventListener\Contao;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
-use HeimrichHannot\FlareBundle\Manager\FlareFilterElementManager;
+use HeimrichHannot\FlareBundle\Manager\FilterElementManager;
 
 #[AsHook('parseBackendTemplate')]
 readonly class ParseBackendTemplateListener
 {
     public function __construct(
-        private FlareFilterElementManager $filterElementManager,
+        private FilterElementManager $filterElementManager,
     ) {}
 
     public function __invoke(string $buffer, string $template): string

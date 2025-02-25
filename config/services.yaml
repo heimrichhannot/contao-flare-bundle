@@ -5,7 +5,11 @@ services:
 
     HeimrichHannot\FlareBundle\:
         resource: ../src
-        exclude:  ../src/{ContaoManager,DependencyInjection}
+        exclude:  ../src/{ContaoManager,DependencyInjection,DTO,Model}
+
+    HeimrichHannot\FlareBundle\Manager\FilterElementManager:
+        arguments:
+            $filterElementServices: !tagged_iterator 'huh.flare.filter_element'
 
 #    bind:
 #      $projectDir: '%kernel.project_dir%'

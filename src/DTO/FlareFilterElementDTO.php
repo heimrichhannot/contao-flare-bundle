@@ -3,13 +3,15 @@
 namespace HeimrichHannot\FlareBundle\DTO;
 
 use HeimrichHannot\FlareBundle\Attribute\AsFlareFilterElement;
+use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
 
 readonly class FlareFilterElementDTO
 {
     public function __construct(
         private string               $alias,
         private string               $class,
-        private AsFlareFilterElement $attribute
+        private AsFlareFilterElement $attribute,
+        private object               $service
     ) {}
 
     public function getAlias(): string
@@ -17,6 +19,9 @@ readonly class FlareFilterElementDTO
         return $this->alias;
     }
 
+    /**
+     * @return class-string<AbstractFilterElement>
+     */
     public function getClass(): string
     {
         return $this->class;
@@ -25,5 +30,10 @@ readonly class FlareFilterElementDTO
     public function getAttribute(): AsFlareFilterElement
     {
         return $this->attribute;
+    }
+
+    public function getService(): object
+    {
+        return $this->service;
     }
 }

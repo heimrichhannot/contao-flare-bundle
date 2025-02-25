@@ -1,5 +1,6 @@
 <?php
 
+use Contao\DataContainer;
 use Contao\DC_Table;
 use HeimrichHannot\FlareBundle\DataContainer\CatalogContainer;
 
@@ -10,6 +11,7 @@ $dca['config'] = [
     'dataContainer' => DC_Table::class,
     'enableVersioning' => true,
     'switchToEdit' => true,
+    'markAsCopy' => 'title',
     'sql' => [
         'keys' => [
             'id' => 'primary',
@@ -19,10 +21,10 @@ $dca['config'] = [
 
 $dca['list'] = [
     'sorting' => [
-        'mode' => 2,
-        'flag' => 1,
-        'panelLayout' => 'filter,sort;search,limit',
+        'mode' => DataContainer::MODE_SORTED,
         'fields' => ['title'],
+        'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
+        'panelLayout' => 'filter;search,limit',
         'headerFields' => ['title'],
     ],
     'label' => [

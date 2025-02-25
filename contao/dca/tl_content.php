@@ -8,6 +8,7 @@ $dca['fields']['flare_catalog'] = [
     'exclude' => true,
     'inputType' => 'select',
     'foreignKey' => 'tl_flare_catalog.title',
+    'relation' => ['type' => 'hasOne', 'load' => 'lazy'],
     'eval' => [
         'mandatory' => true,
         'chosen' => true,

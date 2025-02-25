@@ -5,7 +5,7 @@ namespace HeimrichHannot\FlareBundle\Manager;
 use HeimrichHannot\FlareBundle\Attribute\AsFlareFilterElement;
 use HeimrichHannot\FlareBundle\DTO\FlareFilterElementDTO;
 
-class FlareFilterElementManager
+class FilterElementManager
 {
     /**
      * The symfony service tag for filter elements.
@@ -19,6 +19,10 @@ class FlareFilterElementManager
      * @var array<string, FlareFilterElementDTO>
      */
     private array $filterElements = [];
+
+    public function __construct(
+        private readonly iterable $filterElementServices
+    ) {}
 
     /**
      * Registers a class if it is marked with the AsFlareFilterElement attribute.
@@ -34,6 +38,8 @@ class FlareFilterElementManager
             return;
         }
 
+        $services = $this->getFilterElementServicesAsArray();
+
         foreach ($attributes as $attribute)
         {
             /** @var AsFlareFilterElement $attributeInstance */
@@ -43,10 +49,17 @@ class FlareFilterElementManager
                 throw new \InvalidArgumentException(sprintf('Another filter element with the same alias "%s" is already registered.', $attributeInstance->getAlias()));
             }
 
+            $service = $services[$className] ?? null;
+
+            if (!$service) {
+                throw new \InvalidArgumentException(sprintf('No service found for filter element "%s".', $className));
+            }
+
             $this->filterElements[$attributeInstance->getAlias()] = new FlareFilterElementDTO(
                 $attributeInstance->getAlias(),
                 $className,
-                $attributeInstance
+                $attributeInstance,
+                $service
             );
         }
     }
@@ -70,5 +83,32 @@ class FlareFilterElementManager
     public function getFilterElement(string $alias): ?FlareFilterElementDTO
     {
         return $this->filterElements[$alias] ?? null;
+    }
+
+    public function getFilterElementServices(): iterable
+    {
+        return $this->filterElementServices;
+    }
+
+    public function getFilterElementService(string $alias): ?object
+    {
+        foreach ($this->getFilterElementServices() as $filterElementService) {
+            if ($filterElementService instanceof $alias) {
+                return $filterElementService;
+            }
+        }
+
+        return null;
+    }
+
+    public function getFilterElementServicesAsArray(): array
+    {
+        $services = [];
+
+        foreach ($this->getFilterElementServices() as $filterElementService) {
+            $services[$filterElementService::class] = $filterElementService;
+        }
+
+        return $services;
     }
 }

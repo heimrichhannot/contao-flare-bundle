@@ -14,6 +14,7 @@ $dca['config'] = [
     'sql' => [
         'keys' => [
             'id' => 'primary',
+            'pid,published' => 'index'
         ],
     ],
 ];
@@ -101,17 +102,17 @@ $dca['fields'] = [
         'sql' => "varchar(32) NOT NULL default ''",
     ],
     'published' => [
-        'inputType' => 'checkbox',
-        'default' => true,
         'exclude' => true,
+        'toggle' => true,
         'filter' => true,
-        'sorting' => true,
+        'default' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
         'eval' => ['doNotCopy' => true, 'tl_class' => 'w50'],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
 ];
 
 $dca['palettes'] = [
-    '__selector__' => ['published'],
     'default' => '{title_legend},title,type;{publish_legend},published;',
 ];

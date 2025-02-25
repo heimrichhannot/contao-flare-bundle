@@ -4,7 +4,7 @@ namespace HeimrichHannot\FlareBundle\DataContainer;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
-use HeimrichHannot\FlareBundle\Manager\FlareFilterElementManager;
+use HeimrichHannot\FlareBundle\Manager\FilterElementManager;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class CatalogFilterContainer
@@ -12,8 +12,8 @@ class CatalogFilterContainer
     public const TABLE_NAME = 'tl_flare_catalog_filter';
 
     public function __construct(
-        private readonly FlareFilterElementManager $filterElementManager,
-        private readonly TranslatorInterface $translator
+        private readonly FilterElementManager $filterElementManager,
+        private readonly TranslatorInterface  $translator
     ) {}
 
     #[AsCallback(self::TABLE_NAME, 'fields.type.options')]

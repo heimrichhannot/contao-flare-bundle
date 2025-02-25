@@ -1,5 +1,6 @@
 <?php
 
+use Contao\DataContainer;
 use Contao\DC_Table;
 use HeimrichHannot\FlareBundle\DataContainer\CatalogFilterContainer;
 
@@ -19,10 +20,10 @@ $dca['config'] = [
 
 $dca['list'] = [
     'sorting' => [
-        'mode' => 4,
+        'mode' => DataContainer::MODE_PARENT,
         'flag' => 11,
-        'panelLayout' => 'filter,sort;search,limit',
-        'fields' => ['title'],
+        'panelLayout' => 'filter;sort,search,limit',
+        'fields' => ['sorting'],
         'headerFields' => ['title'],
     ],
     'label' => [
@@ -42,21 +43,25 @@ $dca['list'] = [
             'icon' => 'edit.svg',
         ],
         'copy' => [
-            'href' => 'act=copy',
+            'href' => 'act=copy&amp;mode=copy',
             'icon' => 'copy.svg',
+        ],
+        'cut' => [
+            'href' => 'act=paste&amp;mode=cut',
+            'icon' => 'cut.svg',
         ],
         'delete' => [
             'href' => 'act=delete',
             'icon' => 'delete.svg',
             'attributes' => 'onclick="if(!confirm(\'' . ($GLOBALS['TL_LANG']['MSC']['deleteConfirm'] ?? 'Confirm delete') . '\'))return false;Backend.getScrollOffset()"',
         ],
-        'show' => [
-            'href' => 'act=show',
-            'icon' => 'show.svg',
-        ],
         'toggle' => [
             'href' => 'act=toggle&amp;field=published',
             'icon' => 'visible.svg',
+        ],
+        'show' => [
+            'href' => 'act=show',
+            'icon' => 'show.svg',
         ],
     ],
 ];
@@ -70,14 +75,20 @@ $dca['fields'] = [
         'relation' => ['type' => 'belongsTo', 'load' => 'lazy'],
         'sql' => "int(10) unsigned NOT NULL default '0'",
     ],
+    'sorting' => [
+        'sorting' => true,
+        'flag' => DataContainer::SORT_ASC,
+        'sql' => "int(10) unsigned NOT NULL default 0",
+    ],
     'tstamp' => [
         'sql' => "int(10) unsigned NOT NULL default '0'",
     ],
     'title' => [
-        'inputType' => 'text',
         'exclude' => true,
         'search' => true,
         'sorting' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
+        'inputType' => 'text',
         'eval' => ['mandatory' => true, 'maxlength' => 255, 'tl_class' => 'w50'],
         'sql' => "varchar(255) NOT NULL default ''",
     ],

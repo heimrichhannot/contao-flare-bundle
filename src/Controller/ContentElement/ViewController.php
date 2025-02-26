@@ -14,10 +14,10 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-#[AsContentElement(ViewController::TYPE, category: 'includes', template: 'content_element/flare_view')]
+#[AsContentElement(ViewController::TYPE, category: 'includes', template: 'content_element/flare_listview')]
 class ViewController extends AbstractContentElementController
 {
-    public const TYPE = 'flare_view';
+    public const TYPE = 'flare_listview';
 
     public function __construct(
         private readonly ScopeMatcher         $scopeMatcher,

@@ -2,14 +2,15 @@
 
 use Contao\DataContainer;
 use Contao\DC_Table;
-use HeimrichHannot\FlareBundle\DataContainer\CatalogFilterContainer;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 
-$dca = &$GLOBALS['TL_DCA'][CatalogFilterContainer::TABLE_NAME];
+$dca = &$GLOBALS['TL_DCA'][FilterModel::getTable()];
 
 $dca['config'] = [
     'dataContainer' => DC_Table::class,
     'enableVersioning' => true,
-    'ptable' => 'tl_flare_catalog',
+    'ptable' => ListModel::getTable(),
     'switchToEdit' => true,
     'sql' => [
         'keys' => [
@@ -72,7 +73,7 @@ $dca['fields'] = [
         'sql' => "int(10) unsigned NOT NULL auto_increment",
     ],
     'pid' => [
-        'foreignKey' => 'tl_flare_catalog.title',
+        'foreignKey' => \sprintf('%s.title', ListModel::getTable()),
         'relation' => ['type' => 'belongsTo', 'load' => 'lazy'],
         'sql' => "int(10) unsigned NOT NULL default '0'",
     ],
@@ -115,4 +116,11 @@ $dca['fields'] = [
 
 $dca['palettes'] = [
     'default' => '{title_legend},title,type;{publish_legend},published;',
+    '__selector__' => ['type'],
+];
+
+$dca['subpalettes'] = [
+    'type' => [
+        'flare_published' => 'title',
+    ],
 ];

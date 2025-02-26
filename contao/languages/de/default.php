@@ -1,7 +1,7 @@
 <?php
 
-use HeimrichHannot\FlareBundle\Controller\ContentElement\CatalogElementController;
+use HeimrichHannot\FlareBundle\Controller\ContentElement\ViewController;
 
 $lang = &$GLOBALS['TL_LANG'];
 
-$lang['CTE'][CatalogElementController::TYPE] = ['FLARE Katalog', 'Zeigt einen FLARE Katalog an.'];
+$lang['CTE'][ViewController::TYPE] = ['FLARE Listenansicht', 'Zeigt eine FLARE-Liste an.'];

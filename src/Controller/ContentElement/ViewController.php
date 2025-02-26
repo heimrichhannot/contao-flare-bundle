@@ -7,21 +7,17 @@ use Contao\CoreBundle\Controller\ContentElement\AbstractContentElementController
 use Contao\CoreBundle\DependencyInjection\Attribute\AsContentElement;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Template;
-use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
-use HeimrichHannot\FlareBundle\FilterElement\LicenseElement;
-use HeimrichHannot\FlareBundle\FilterForm\FilterFormBuilder;
-use HeimrichHannot\FlareBundle\FormType\LicenseFilterType;
-use HeimrichHannot\FlareBundle\FormType\PublishedFilterType;
+use HeimrichHannot\FlareBundle\Builder\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\Manager\FilterElementManager;
-use HeimrichHannot\FlareBundle\Model\CatalogFilterModel;
-use HeimrichHannot\FlareBundle\Model\CatalogModel;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-#[AsContentElement(CatalogElementController::TYPE, category: 'includes', template: 'content_element/flare_catalog')]
-class CatalogElementController extends AbstractContentElementController
+#[AsContentElement(ViewController::TYPE, category: 'includes', template: 'content_element/flare_view')]
+class ViewController extends AbstractContentElementController
 {
-    public const TYPE = 'flare_catalog';
+    public const TYPE = 'flare_view';
 
     public function __construct(
         private readonly ScopeMatcher         $scopeMatcher,
@@ -41,18 +37,18 @@ class CatalogElementController extends AbstractContentElementController
         \dump($model);
 
         $catalog = $model->getRelated('flare_catalog') ?? null;
-        if (!$catalog instanceof CatalogModel) {
+        if (!$catalog instanceof ListModel) {
             return new Response();
         }
 
-        $filters = CatalogFilterModel::findByPid($catalog->id, published: true);
+        $filters = FilterModel::findByPid($catalog->id, published: true);
 
         $filterElements = [];
         $filterFormTypes = [];
 
         foreach ($filters as $filter)
         {
-            $filterElementDTO = $this->filterElementManager->getFilterElement($filter->type);
+            $filterElementDTO = $this->filterElementManager->getDTO($filter->type);
             if (!$filterElementDTO) {
                 continue;
             }

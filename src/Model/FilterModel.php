@@ -4,11 +4,11 @@ namespace HeimrichHannot\FlareBundle\Model;
 
 use Contao\Model;
 use Contao\Model\Collection;
-use HeimrichHannot\FlareBundle\DataContainer\CatalogFilterContainer;
+use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 
-class CatalogFilterModel extends Model
+class FilterModel extends Model
 {
-    protected static $strTable = CatalogFilterContainer::TABLE_NAME;
+    protected static $strTable = FilterContainer::TABLE_NAME;
 
     public static function findByPid(int $pid, ?bool $published = null): Collection
     {

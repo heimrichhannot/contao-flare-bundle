@@ -39,6 +39,6 @@ class HeimrichHannotFlareBundle extends Bundle
     public function build(ContainerBuilder $container): void
     {
         parent::build($container);
-        $container->addCompilerPass(new DependencyInjection\Compiler\RegisterFilterElementPass());
+        $container->addCompilerPass(new DependencyInjection\Compiler\RegisterFilterElementsPass());
     }
 }

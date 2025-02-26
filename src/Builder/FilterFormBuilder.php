@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\FilterForm;
+namespace HeimrichHannot\FlareBundle\Builder;
 
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\FormFactoryInterface;

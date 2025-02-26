@@ -15,7 +15,7 @@ readonly class ParseBackendTemplateListener
     public function __invoke(string $buffer, string $template): string
     {
         if ('be_main' === $template) {
-            $elements = $this->filterElementManager->getFilterElements();
+            $elements = $this->filterElementManager->getRegisteredFilterElements();
             \dump($elements);
         }
 

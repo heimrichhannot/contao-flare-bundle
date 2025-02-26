@@ -2,12 +2,12 @@
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
-use HeimrichHannot\FlareBundle\Attribute\AsFlareFilterElement;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Manager\FilterElementManager;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
-class RegisterFilterElementPass implements CompilerPassInterface
+class RegisterFilterElementsPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container): void
     {
@@ -33,7 +33,7 @@ class RegisterFilterElementPass implements CompilerPassInterface
 
             $reflection = new \ReflectionClass($class);
 
-            if ($reflection->getAttributes(AsFlareFilterElement::class)) {
+            if ($reflection->getAttributes(AsFilterElement::class)) {
                 $manager->addMethodCall('registerFilterElement', [$class]);
             }
         }

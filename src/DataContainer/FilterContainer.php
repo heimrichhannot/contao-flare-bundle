@@ -7,9 +7,9 @@ use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\Manager\FilterElementManager;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-class CatalogFilterContainer
+class FilterContainer
 {
-    public const TABLE_NAME = 'tl_flare_catalog_filter';
+    public const TABLE_NAME = 'tl_flare_filter';
 
     public function __construct(
         private readonly FilterElementManager $filterElementManager,
@@ -19,7 +19,7 @@ class CatalogFilterContainer
     #[AsCallback(self::TABLE_NAME, 'fields.type.options')]
     public function getTypeOptions(): array
     {
-        $filterElements = $this->filterElementManager->getFilterElements();
+        $filterElements = $this->filterElementManager->getRegisteredFilterElements();
 
         $options = [];
 

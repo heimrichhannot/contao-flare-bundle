@@ -2,12 +2,13 @@
 
 use Contao\DataContainer;
 use Contao\DC_Table;
-use HeimrichHannot\FlareBundle\DataContainer\CatalogContainer;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 
-$dca = &$GLOBALS['TL_DCA'][CatalogContainer::TABLE_NAME];
+$dca = &$GLOBALS['TL_DCA'][ListModel::getTable()];
 
 $dca['config'] = [
-    'ctable' => ['tl_flare_catalog_filter'],
+    'ctable' => [FilterModel::getTable()],
     'dataContainer' => DC_Table::class,
     'enableVersioning' => true,
     'switchToEdit' => true,
@@ -40,7 +41,7 @@ $dca['list'] = [
     ],
     'operations' => [
         'children' => [
-            'href' => 'table=tl_flare_catalog_filter',
+            'href' => 'table=' . FilterModel::getTable(),
             'icon' => 'edit.svg',
         ],
         'edit' => [

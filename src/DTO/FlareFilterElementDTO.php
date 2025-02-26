@@ -2,15 +2,15 @@
 
 namespace HeimrichHannot\FlareBundle\DTO;
 
-use HeimrichHannot\FlareBundle\Attribute\AsFlareFilterElement;
-use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Controller\FilterElement\AbstractFilterElementController;
 
 readonly class FlareFilterElementDTO
 {
     public function __construct(
         private string               $alias,
         private string               $class,
-        private AsFlareFilterElement $attribute,
+        private AsFilterElement $attribute,
         private object               $service
     ) {}
 
@@ -20,14 +20,14 @@ readonly class FlareFilterElementDTO
     }
 
     /**
-     * @return class-string<AbstractFilterElement>
+     * @return class-string<AbstractFilterElementController>
      */
     public function getClass(): string
     {
         return $this->class;
     }
 
-    public function getAttribute(): AsFlareFilterElement
+    public function getAttribute(): AsFilterElement
     {
         return $this->attribute;
     }

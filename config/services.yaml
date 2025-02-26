@@ -5,7 +5,7 @@ services:
 
     HeimrichHannot\FlareBundle\:
         resource: ../src
-        exclude:  ../src/{ContaoManager,DependencyInjection,DTO,Model}
+        exclude:  ../src/{Contao,ContaoManager,DependencyInjection,DTO,Model}
 
     HeimrichHannot\FlareBundle\Manager\FilterElementManager:
         arguments:

@@ -2,15 +2,19 @@
 
 namespace HeimrichHannot\FlareBundle\Contao;
 
-use HeimrichHannot\FlareBundle\DataContainer\CatalogContainer;
-use HeimrichHannot\FlareBundle\DataContainer\CatalogFilterContainer;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 
 class BackendModule
 {
-    public const CATEGORY = 'content';
-    public const NAME = 'flare_catalog';
-    public const TABLES = [
-        CatalogContainer::TABLE_NAME,
-        CatalogFilterContainer::TABLE_NAME
-    ];
+    public const CATEGORY = 'design';
+    public const NAME = 'flare';
+
+    public static function getTables(): array
+    {
+        return [
+            ListModel::getTable(),
+            FilterModel::getTable(),
+        ];
+    }
 }

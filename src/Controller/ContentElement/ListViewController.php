@@ -8,14 +8,15 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsContentElement;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Builder\FilterFormBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Manager\FilterElementManager;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-#[AsContentElement(ViewController::TYPE, category: 'includes', template: 'content_element/flare_listview')]
-class ViewController extends AbstractContentElementController
+#[AsContentElement(ListViewController::TYPE, category: 'includes', template: 'content_element/flare_listview')]
+class ListViewController extends AbstractContentElementController
 {
     public const TYPE = 'flare_listview';
 
@@ -36,7 +37,7 @@ class ViewController extends AbstractContentElementController
     {
         \dump($model);
 
-        $catalog = $model->getRelated('flare_catalog') ?? null;
+        $catalog = $model->getRelated(ContentContainer::FIELD_LIST) ?? null;
         if (!$catalog instanceof ListModel) {
             return new Response();
         }

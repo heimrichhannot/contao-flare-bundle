@@ -1,11 +1,12 @@
 <?php
 
-use HeimrichHannot\FlareBundle\Controller\ContentElement\ViewController;
+use HeimrichHannot\FlareBundle\Controller\ContentElement\ListViewController;
+use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 $dca = &$GLOBALS['TL_DCA']['tl_content'];
 
-$dca['fields'][ViewController::TYPE] = [
+$dca['fields'][ContentContainer::FIELD_LIST] = [
     'exclude' => true,
     'inputType' => 'select',
     'foreignKey' => \sprintf('%s.title', ListModel::getTable()),
@@ -19,8 +20,8 @@ $dca['fields'][ViewController::TYPE] = [
     'sql' => "int(10) unsigned NOT NULL default 0",
 ];
 
-$dca['palettes'][ViewController::TYPE] = '{type_legend},type,headline;'
-    . '{flare_list_legend},flare_list;'  # translate these keys
+$dca['palettes'][ListViewController::TYPE] = '{type_legend},type,headline;'
+    . \sprintf('{flare_list_legend},%s;', ContentContainer::FIELD_LIST)  # translate these keys
     . '{template_legend:hide},customTpl;'
     . '{protected_legend:hide},protected;'
     . '{expert_legend:hide},guests,cssID;'

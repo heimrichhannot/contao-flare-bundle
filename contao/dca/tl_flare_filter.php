@@ -115,12 +115,6 @@ $dca['fields'] = [
 ];
 
 $dca['palettes'] = [
-    'default' => '{title_legend},title,type;{publish_legend},published;',
     '__selector__' => ['type'],
-];
-
-$dca['subpalettes'] = [
-    'type' => [
-        'flare_published' => 'title',
-    ],
+    'default' => '{title_legend},title,type;{publish_legend},published;',
 ];

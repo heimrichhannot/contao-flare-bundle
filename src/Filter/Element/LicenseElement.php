@@ -13,11 +13,6 @@ class LicenseElement extends AbstractFilterElement
 {
     const TYPE = 'flare_license';
 
-    public function __invoke()
-    {
-        // TODO: Implement __invoke() method.
-    }
-
     public function formTypeOptions(): array
     {
         return [];

@@ -22,7 +22,10 @@ class FilterContainer
 
         foreach ($this->filterElementRegistry->all() as $alias => $filterElement)
         {
-            $options[$alias] = $filterElement->getService()->trans($alias);
+            $service = $filterElement->getService();
+            $options[$alias] = \class_implements($service, TranslatorInterface::class)
+                ? $service->trans($alias)
+                : $alias;
         }
 
         return $options;

@@ -4,6 +4,7 @@ namespace HeimrichHannot\FlareBundle\DataContainer;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ListContainer
 {
@@ -20,7 +21,10 @@ class ListContainer
 
         foreach ($this->listTypeRegistry->all() as $alias => $filterElement)
         {
-            $options[$alias] = $filterElement->getService()->trans($alias);
+            $service = $filterElement->getService();
+            $options[$alias] = \class_implements($service, TranslatorInterface::class)
+                ? $filterElement->getService()->trans($alias)
+                : $alias;
         }
 
         return $options;

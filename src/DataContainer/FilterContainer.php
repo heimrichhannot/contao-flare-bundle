@@ -4,7 +4,7 @@ namespace HeimrichHannot\FlareBundle\DataContainer;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
-use HeimrichHannot\FlareBundle\FilterElement\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class FilterContainer
@@ -13,7 +13,6 @@ class FilterContainer
 
     public function __construct(
         private readonly FilterElementRegistry $filterElementRegistry,
-        private readonly TranslatorInterface   $translator
     ) {}
 
     #[AsCallback(self::TABLE_NAME, 'fields.type.options')]
@@ -35,7 +34,7 @@ class FilterContainer
         return '';
     }
 
-/*    #[AsCallback(self::TABLE_NAME, 'list.sorting.child_record')]
+    /* #[AsCallback(self::TABLE_NAME, 'list.sorting.child_record')]
     public function listLabelLabel(array $row): string
     {
         $key = $row['published'] ? 'published' : 'unpublished';

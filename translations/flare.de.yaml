@@ -1,1 +1,4 @@
 filter_element.flare_published: "Veröffentlicht"
+
+list_type.flare_data_container: "Data-Container"
+list_type.flare_news: "Nachrichten"

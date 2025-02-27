@@ -9,7 +9,7 @@ use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Builder\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\FilterElement\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\HttpFoundation\Request;

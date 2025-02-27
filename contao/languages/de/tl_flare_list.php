@@ -7,6 +7,7 @@ $lang = &$GLOBALS['TL_LANG'][ListModel::getTable()];
 ###> title_legend ###
 $lang['title_legend'] = 'Allgemein';
 $lang['title'] = ['Titel', 'Bitte geben Sie einen Titel für diese Liste ein.'];
+$lang['type'] = ['Typ', 'Bitte wählen Sie den Typ dieser Liste.'];
 ###< title_legend ###
 
 ###> publish_legend ###

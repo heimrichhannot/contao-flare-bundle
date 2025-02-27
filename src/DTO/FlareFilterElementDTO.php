@@ -3,14 +3,14 @@
 namespace HeimrichHannot\FlareBundle\DTO;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
 
 readonly class FlareFilterElementDTO
 {
     /**
      * @param AsFilterElement $attribute
      * @param string $alias
-     * @param class-string<AbstractFilterElement> $class
+     * @param class-string<\HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement> $class
      * @param object $service
      */
     public function __construct(
@@ -26,7 +26,7 @@ readonly class FlareFilterElementDTO
     }
 
     /**
-     * @return class-string<AbstractFilterElement>
+     * @return class-string<\HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement>
      */
     public function getClass(): string
     {

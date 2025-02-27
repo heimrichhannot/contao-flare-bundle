@@ -104,5 +104,10 @@ $dca['fields'] = [
 ];
 
 $dca['palettes'] = [
+    '__selector__' => ['type'],
     'default' => '{title_legend},title,type;{publish_legend},published',
+];
+
+$dca['subpalettes'] = [
+    'type_flare_news' => ';{publish_legend},published;',
 ];

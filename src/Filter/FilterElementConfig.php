@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\FilterElement;
+namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ConfigInterface;
 
@@ -8,9 +8,6 @@ class FilterElementConfig implements ConfigInterface
 {
     public const TAG = 'huh.flare.filter_element';
 
-    /**
-     * @see \Symfony\Component\HttpKernel\Fragment\FragmentHandler::render()
-     */
     public function __construct(
         private         $service,
         private array   $attributes = [],

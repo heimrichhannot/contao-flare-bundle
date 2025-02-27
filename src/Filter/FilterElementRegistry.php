@@ -1,24 +1,24 @@
 <?php /** @noinspection PhpRedundantMethodOverrideInspection */
 
-namespace HeimrichHannot\FlareBundle\ListType;
+namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Registry\AbstractRegistry;
 
-class ListTypeRegistry extends AbstractRegistry
+class FilterElementRegistry extends AbstractRegistry
 {
     public function getConfigClass(): string
     {
-        return ListTypeConfig::class;
+        return FilterElementConfig::class;
     }
 
-    public function get(string $alias): ?ListTypeConfig
+    public function get(string $alias): ?FilterElementConfig
     {
         /** @noinspection PhpIncompatibleReturnTypeInspection */
         return parent::get($alias);
     }
 
     /**
-     * @return array<string, ListTypeConfig>
+     * @return array<string, FilterElementConfig>
      */
     public function all(): array
     {

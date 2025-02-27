@@ -1,17 +1,17 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\FilterElement;
+namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Form\Type\LicenseFilterType;
 
 #[AsFilterElement(
-    alias: License::ALIAS,
+    alias: LicenseElement::TYPE,
     formType: LicenseFilterType::class
 )]
-class License extends AbstractFilterElement
+class LicenseElement extends AbstractFilterElement
 {
-    const ALIAS = 'flare_license';
+    const TYPE = 'flare_license';
 
     public function __invoke()
     {

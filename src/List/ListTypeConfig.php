@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\ListType;
+namespace HeimrichHannot\FlareBundle\List;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ConfigInterface;
 
@@ -8,22 +8,19 @@ class ListTypeConfig implements ConfigInterface
 {
     public const TAG = 'huh.flare.list_type';
 
-    /**
-     * @see \Symfony\Component\HttpKernel\Fragment\FragmentHandler::render()
-     */
     public function __construct(
-        private $controller,
+        private       $service,
         private array $attributes = [],
     ) {}
 
-    public function getController()
+    public function getService()
     {
-        return $this->controller;
+        return $this->service;
     }
 
-    public function setController($controller): void
+    public function setService($service): void
     {
-        $this->controller = $controller;
+        $this->service = $service;
     }
 
     public function getAttributes(): array

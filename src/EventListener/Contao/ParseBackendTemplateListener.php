@@ -3,7 +3,7 @@
 namespace HeimrichHannot\FlareBundle\EventListener\Contao;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
-use HeimrichHannot\FlareBundle\FilterElement\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 
 #[AsHook('parseBackendTemplate')]
 readonly class ParseBackendTemplateListener

@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\ListType;
+namespace HeimrichHannot\FlareBundle\List\Type;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 

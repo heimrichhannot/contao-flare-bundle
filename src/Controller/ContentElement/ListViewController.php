@@ -9,7 +9,7 @@ use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Builder\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\Manager\FilterElementManager;
+use HeimrichHannot\FlareBundle\FilterElement\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,9 +21,9 @@ class ListViewController extends AbstractContentElementController
     public const TYPE = 'flare_listview';
 
     public function __construct(
-        private readonly ScopeMatcher         $scopeMatcher,
-        private readonly FilterFormBuilder    $filterFormBuilder,
-        private readonly FilterElementManager $filterElementManager,
+        private readonly ScopeMatcher          $scopeMatcher,
+        private readonly FilterFormBuilder     $filterFormBuilder,
+        private readonly FilterElementRegistry $filterElementRegistry,
     ) {}
 
     protected function getResponse(Template $template, ContentModel $model, Request $request): ?Response
@@ -49,17 +49,17 @@ class ListViewController extends AbstractContentElementController
 
         foreach ($filters as $filter)
         {
-            $filterElementDTO = $this->filterElementManager->getDTO($filter->type);
-            if (!$filterElementDTO) {
+            $filterElement = $this->filterElementRegistry->get($filter->type);
+            if (!$filterElement) {
                 continue;
             }
 
-            $attribute = $filterElementDTO->getAttribute();
-            $filterElements[] = $filterElementDTO;
-
-            if ($attribute->hasFormType()) {
-                $filterFormTypes[] = $attribute->getFormType();
+            $filterElements[] = $filterElement;
+            if ($filterElement->hasFormType()) {
+                $filterFormTypes[] = $filterElement->getFormType();
             }
+
+            \dump($filterElement);
         }
 
         $form = $this->filterFormBuilder->build($filterFormTypes);

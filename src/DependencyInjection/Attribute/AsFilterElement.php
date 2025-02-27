@@ -2,12 +2,12 @@
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Attribute;
 
+use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\Form\FormTypeInterface;
-use Symfony\Contracts\Translation\TranslatableInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[\Attribute(\Attribute::TARGET_CLASS | \Attribute::IS_REPEATABLE)]
-class AsFilterElement implements TranslatableInterface
+class AsFilterElement
 {
     public array $attributes;
 
@@ -17,11 +17,13 @@ class AsFilterElement implements TranslatableInterface
      * @param string $filterMethod
      */
     public function __construct(
-        public string $alias,
+        private string $alias,
         public ?string $formType = null,
         public ?string $filterMethod = null,
         ...$attributes
     ) {
+        $this->alias = $alias = Str::formatAlias($alias);
+
         $attributes['alias'] = $alias;
         $attributes['formType'] = $formType;
         $attributes['filterMethod'] = $filterMethod;
@@ -48,10 +50,5 @@ class AsFilterElement implements TranslatableInterface
     {
         $class = $this->getFormType();
         return $class !== null && \class_exists($class);
-    }
-
-    public function trans(TranslatorInterface $translator, ?string $locale = null): string
-    {
-        return $translator->trans($this->alias, [], 'flare', $locale);
     }
 }

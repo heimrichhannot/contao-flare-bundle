@@ -4,7 +4,7 @@ namespace HeimrichHannot\FlareBundle\DataContainer;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
-use HeimrichHannot\FlareBundle\Manager\FilterElementManager;
+use HeimrichHannot\FlareBundle\FilterElement\FilterElementRegistry;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class FilterContainer
@@ -12,22 +12,18 @@ class FilterContainer
     public const TABLE_NAME = 'tl_flare_filter';
 
     public function __construct(
-        private readonly FilterElementManager $filterElementManager,
-        private readonly TranslatorInterface  $translator
+        private readonly FilterElementRegistry $filterElementRegistry,
+        private readonly TranslatorInterface   $translator
     ) {}
 
     #[AsCallback(self::TABLE_NAME, 'fields.type.options')]
     public function getTypeOptions(): array
     {
-        $filterElements = $this->filterElementManager->getRegisteredFilterElements();
-
         $options = [];
 
-        foreach ($filterElements as $filterElement)
+        foreach ($this->filterElementRegistry->all() as $alias => $filterElement)
         {
-            $options[$filterElement->getAlias()] = $filterElement
-                ->getAttribute()
-                ->trans($this->translator);
+            $options[$alias] = $filterElement->getService()->trans($alias);
         }
 
         return $options;

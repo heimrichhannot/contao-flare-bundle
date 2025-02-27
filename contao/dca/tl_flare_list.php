@@ -84,6 +84,14 @@ $dca['fields'] = [
         'eval' => ['mandatory' => true, 'maxlength' => 255, 'tl_class' => 'w50'],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
+    'type' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => true,
+        'sorting' => true,
+        'eval' => ['mandatory' => true, 'includeBlankOption' => true, 'tl_class' => 'w50'],
+        'sql' => "varchar(32) NOT NULL default ''",
+    ],
     'published' => [
         'inputType' => 'checkbox',
         'default' => true,
@@ -96,5 +104,5 @@ $dca['fields'] = [
 ];
 
 $dca['palettes'] = [
-    'default' => '{title_legend},title;{publish_legend},published',
+    'default' => '{title_legend},title,type;{publish_legend},published',
 ];

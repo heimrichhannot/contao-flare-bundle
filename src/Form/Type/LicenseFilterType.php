@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\FormType;
+namespace HeimrichHannot\FlareBundle\Form\Type;
 
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -11,7 +11,7 @@ class LicenseFilterType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        \dump($options);
+        // \dump($options);
 
         $builder->add('license', ChoiceType::class, [
             'label' => 'License',

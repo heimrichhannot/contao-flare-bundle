@@ -4,7 +4,7 @@ namespace HeimrichHannot\FlareBundle\DependencyInjection;
 
 use Exception;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Manager\FilterElementManager;
+use HeimrichHannot\FlareBundle\FilterElement\FilterElementConfig;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -31,7 +31,7 @@ class HeimrichHannotFlareExtension extends Extension
         $container->registerAttributeForAutoconfiguration(
             AsFilterElement::class,
             static function (ChildDefinition  $definition, AsFilterElement  $attribute): void {
-                $definition->addTag(FilterElementManager::TAG_FLARE_FILTER_ELEMENT, $attribute->attributes);
+                $definition->addTag(FilterElementConfig::TAG, $attribute->attributes);
             }
         );
     }

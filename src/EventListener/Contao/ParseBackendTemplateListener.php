@@ -3,20 +3,20 @@
 namespace HeimrichHannot\FlareBundle\EventListener\Contao;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
-use HeimrichHannot\FlareBundle\Manager\FilterElementManager;
+use HeimrichHannot\FlareBundle\FilterElement\FilterElementRegistry;
 
 #[AsHook('parseBackendTemplate')]
 readonly class ParseBackendTemplateListener
 {
     public function __construct(
-        private FilterElementManager $filterElementManager,
+        private FilterElementRegistry $filterElementRegistry,
     ) {}
 
     public function __invoke(string $buffer, string $template): string
     {
         if ('be_main' === $template) {
-            $elements = $this->filterElementManager->getRegisteredFilterElements();
-            \dump($elements);
+            $elements = $this->filterElementRegistry->all();
+            \dump('parseBackendTemplate: all filter elements', $elements);
         }
 
         return $buffer;

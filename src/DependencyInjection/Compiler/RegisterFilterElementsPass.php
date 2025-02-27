@@ -2,40 +2,89 @@
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Manager\FilterElementManager;
+use HeimrichHannot\FlareBundle\FilterElement\FilterElementConfig;
+use HeimrichHannot\FlareBundle\FilterElement\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Util\Str;
+use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
+use Symfony\Component\DependencyInjection\Compiler\PriorityTaggedServiceTrait;
+use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\DependencyInjection\Reference;
 
 class RegisterFilterElementsPass implements CompilerPassInterface
 {
+    use PriorityTaggedServiceTrait;
+
     public function process(ContainerBuilder $container): void
     {
-        if (!$container->has(FilterElementManager::class)) {
+        if (!$container->has(FilterElementRegistry::class)) {
             return;
         }
 
-        $manager = $container->findDefinition(FilterElementManager::class);
-        $taggedDefinitions = $container->findTaggedServiceIds(FilterElementManager::TAG_FLARE_FILTER_ELEMENT);
+        $tag = FilterElementConfig::TAG;
+        $registry = $container->findDefinition(FilterElementRegistry::class);
 
-        foreach ($taggedDefinitions as $serviceId => $definition)
+        foreach ($this->findAndSortTaggedServices($tag, $container) as $reference)
         {
-            if (!$container->has($serviceId)) {
+            if (\str_starts_with((string) $reference, 'huh.flare.filter_element._')) {
                 continue;
             }
 
-            $definition = $container->getDefinition($serviceId);
-            $class = $definition->getClass();
+            $definition = $container->findDefinition((string) $reference);
+            $tags = $definition->getTag($tag);
+            $definition->clearTag($tag);
 
-            if (!$class || !\class_exists($class)) {
-                continue;
-            }
+            foreach ($tags as $attributes)
+            {
+                $alias = $attributes['alias'] = $this->getFilterElementAlias($definition, $attributes);
 
-            $reflection = new \ReflectionClass($class);
+                // $identifier = \sprintf('%s.%s', $tag, $alias);
+                $serviceId = 'huh.flare.filter_element._'.$alias;
 
-            if ($reflection->getAttributes(AsFilterElement::class)) {
-                $manager->addMethodCall('registerFilterElement', [$class]);
+                $childDefinition = new ChildDefinition((string) $reference);
+                $childDefinition->setPublic(true);
+
+                $config = $this->getFilterElementConfig($container, $reference, $attributes);
+
+                /** @see FilterElementRegistry::add() */
+                $registry->addMethodCall('add', [$alias, $config]);
+
+                $childDefinition->setTags($definition->getTags());
+                $container->setDefinition($serviceId, $childDefinition);
             }
         }
+    }
+
+    protected function getFilterElementConfig(
+        ContainerBuilder $container,
+        Reference        $reference,
+        array            $attributes
+    ): Reference {
+        /** @see FilterElementConfig::__construct */
+        $definition = new Definition(FilterElementConfig::class, [
+            $reference,
+            $attributes,
+            $attributes['formType'] ?? null,
+        ]);
+
+        $serviceId = 'huh.flare.filter_element._config_' . ContainerBuilder::hash($definition);
+        $container->setDefinition($serviceId, $definition);
+
+        return new Reference($serviceId);
+    }
+
+    protected function getFilterElementAlias(Definition $definition, array $attributes): string
+    {
+        if (!empty($attributes['alias'])) {
+            return (string) $attributes['alias'];
+        }
+
+        $className = $definition->getClass();
+        $className = \ltrim(\strrchr($className, '\\'), '\\');
+        $className = Str::trimSubstrings($className, suffix: ['Controller', 'FilterElement', 'Element']);
+
+        return Container::underscore($className);
     }
 }

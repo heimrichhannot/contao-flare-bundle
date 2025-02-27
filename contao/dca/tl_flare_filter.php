@@ -24,7 +24,7 @@ $dca['list'] = [
     'sorting' => [
         'mode' => DataContainer::MODE_PARENT,
         'flag' => 11,
-        'panelLayout' => 'filter;sort,search,limit',
+        'panelLayout' => 'filter;search,limit',
         'fields' => ['sorting'],
         'headerFields' => ['title'],
     ],

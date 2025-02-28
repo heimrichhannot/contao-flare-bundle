@@ -99,7 +99,12 @@ $dca['fields'] = [
         'exclude' => true,
         'filter' => true,
         'sorting' => true,
-        'eval' => ['mandatory' => true, 'includeBlankOption' => true, 'tl_class' => 'w50'],
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'submitOnChange' => true,
+            'tl_class' => 'w50',
+        ],
         'sql' => "varchar(32) NOT NULL default ''",
     ],
     'published' => [
@@ -112,9 +117,20 @@ $dca['fields'] = [
         'eval' => ['doNotCopy' => true, 'tl_class' => 'w50'],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
+    'intrinsic' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => true,
+        'default' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => ['tl_class' => 'w50'],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
 ];
 
 $dca['palettes'] = [
     '__selector__' => ['type'],
-    'default' => '{title_legend},title,type;{publish_legend},published;',
+    '__mask__' => '{title_legend},title,type,intrinsic;__insert__;{publish_legend},published;',
+    'default' => '{title_legend},title,type,intrinsic;{publish_legend},published;',
 ];

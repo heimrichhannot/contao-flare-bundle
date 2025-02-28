@@ -50,4 +50,9 @@ class FilterElementConfig implements ConfigInterface
         $class = $this->getFormType();
         return $class !== null && \class_exists($class);
     }
+
+    public function isIntrinsicRequired(): bool
+    {
+        return !$this->hasFormType();
+    }
 }

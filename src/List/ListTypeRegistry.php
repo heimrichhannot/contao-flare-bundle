@@ -11,7 +11,7 @@ class ListTypeRegistry extends AbstractRegistry
         return ListTypeConfig::class;
     }
 
-    public function get(string $alias): ?ListTypeConfig
+    public function get(?string $alias): ?ListTypeConfig
     {
         /** @noinspection PhpIncompatibleReturnTypeInspection */
         return parent::get($alias);

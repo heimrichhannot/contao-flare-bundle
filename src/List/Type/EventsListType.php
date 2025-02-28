@@ -19,4 +19,9 @@ class EventsListType extends AbstractListType implements TypePaletteInterface
     {
         return '{test_legend},test;{another_legend},another_field';
     }
+
+    public function getBaseDataContainerName(array $row, DataContainer $dc): string
+    {
+        return 'tl_calendar_events';
+    }
 }

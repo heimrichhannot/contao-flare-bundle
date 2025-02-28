@@ -106,28 +106,18 @@ $dca['fields'] = [
         'eval' => ['doNotCopy' => true, 'tl_class' => 'w50'],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
-    'test' => [
-        'inputType' => 'checkbox',
-        'default' => true,
-        'exclude' => true,
-        'filter' => true,
-        'sorting' => true,
+    'dc' => [
+        'inputType' => 'select',
         'eval' => [
-            'doNotCopy' => true,
-            'tl_class' => 'w50',
+            'chosen' => true,
             'submitOnChange' => true,
+            'includeBlankOption' => true,
+            'tl_class' => 'w50',
+            'mandatory' => true,
         ],
-        'sql' => ['type' => 'boolean', 'default' => false],
-    ],
-    'another_field' => [
-        'inputType' => 'text',
-        'default' => 'sadf',
         'exclude' => true,
-        'filter' => true,
-        'sorting' => true,
-        'eval' => ['doNotCopy' => true, 'tl_class' => 'w50'],
-        'sql' => "varchar(32) NOT NULL default ''",
-    ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ]
 ];
 
 $dca['palettes'] = [

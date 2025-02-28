@@ -2,9 +2,13 @@
 
 namespace HeimrichHannot\FlareBundle\DataContainer;
 
+use Contao\CoreBundle\Asset\ContaoContext;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
+use HeimrichHannot\UtilsBundle\Util\Utils;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class FilterContainer
@@ -13,6 +17,7 @@ class FilterContainer
 
     public function __construct(
         private readonly FilterElementRegistry $filterElementRegistry,
+        private readonly RequestStack $requestStack,
     ) {}
 
     #[AsCallback(self::TABLE_NAME, 'fields.type.options')]
@@ -29,6 +34,49 @@ class FilterContainer
         }
 
         return $options;
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.intrinsic.load')]
+    public function intrinsic_load(mixed $value, DataContainer $dc): bool
+    {
+        $value = (bool) $value;
+
+        $request = $this->requestStack->getCurrentRequest();
+        if ($request->getMethod() === 'POST' && $request->request->get('FORM_SUBMIT') === self::TABLE_NAME)
+        {
+            // do not disable intrinsic field if form is being submitted
+            // otherwise the save callback will not be called
+            return $value;
+        }
+
+        if (!$row = $dc->activeRecord?->row()) {
+            return $value;
+        }
+
+        if ($this->filterElementRegistry->get($row['type'] ?? null)?->isIntrinsicRequired())
+        {
+            $eval = &$GLOBALS['TL_DCA'][self::TABLE_NAME]['fields']['intrinsic']['eval'];
+
+            $eval['disabled'] = true;
+
+            return true;
+        }
+
+        return $value;
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.intrinsic.save')]
+    public function intrinsic_save(mixed $value, DataContainer $dc): mixed
+    {
+        if ($value || !$row = $dc->activeRecord?->row()) {
+            return $value;
+        }
+
+        if ($this->filterElementRegistry->get($row['type'] ?? null)?->isIntrinsicRequired()) {
+            return '1';
+        }
+
+        return $value;
     }
 
     #[AsCallback(self::TABLE_NAME, 'list.label.group')]

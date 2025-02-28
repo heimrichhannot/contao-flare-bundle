@@ -2,12 +2,17 @@
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
+use Contao\DataContainer;
+use HeimrichHannot\FlareBundle\Contao\TypePaletteInterface;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Form\Type\PublishedFilterType;
 
-#[AsFilterElement(PublishedElement::TYPE, PublishedFilterType::class)]
-#[AsFilterElement('flare_test')]
-class PublishedElement extends AbstractFilterElement
+#[AsFilterElement(PublishedElement::TYPE)]
+class PublishedElement extends AbstractFilterElement implements TypePaletteInterface
 {
     const TYPE = 'flare_published';
+
+    public function getPalette(string $alias, DataContainer $dc): string
+    {
+        return '';
+    }
 }

@@ -32,6 +32,8 @@ readonly class AutoTypePalettesCallback
             return;
         }
 
+        \dump('DataContainer: ' . $dc->table);
+
         foreach ($serviceConfigs as $alias => $config)
         {
             $service = $config->getService();

@@ -11,7 +11,7 @@ class FilterElementRegistry extends AbstractRegistry
         return FilterElementConfig::class;
     }
 
-    public function get(string $alias): ?FilterElementConfig
+    public function get(?string $alias): ?FilterElementConfig
     {
         /** @noinspection PhpIncompatibleReturnTypeInspection */
         return parent::get($alias);

@@ -8,6 +8,7 @@ $lang = &$GLOBALS['TL_LANG'][FilterModel::getTable()];
 $lang['title_legend'] = 'Allgemein';
 $lang['title'] = ['Titel', 'Bitte geben Sie einen Titel für diesen Listenfilter ein.'];
 $lang['type'] = ['Typ', 'Bitte wählen Sie den Typ der Liste aus.'];
+$lang['intrinsic'] = ['Intrinsisch', 'Diesen Filter immer anwenden und vor dem Benutzer verstecken.'];
 ###< title_legend ###
 
 ###> publish_legend ###

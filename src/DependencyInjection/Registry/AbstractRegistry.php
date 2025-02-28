@@ -53,8 +53,12 @@ abstract class AbstractRegistry
     /**
      * Returns a specific filter element by its alias.
      */
-    public function get(string $alias): ?ConfigInterface
+    public function get(?string $alias): ?ConfigInterface
     {
+        if ($alias === null) {
+            return null;
+        }
+
         return $this->elements[$alias] ?? null;
     }
 

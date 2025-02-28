@@ -45,7 +45,7 @@ readonly class AutoTypePalettesCallback
 
     protected function applyPalette(string $alias, TypePaletteInterface $service, DataContainer $dc): void
     {
-        if ($alias === 'default' || \str_starts_with($alias, '__')) {
+        if ($alias === 'default' || !$dc->table || \str_starts_with($alias, '__')) {
             return;
         }
 
@@ -58,18 +58,15 @@ readonly class AutoTypePalettesCallback
         $dcaPalettes = &$GLOBALS['TL_DCA'][$dc->table]['palettes'];
         $mask = $dcaPalettes['__mask__'] ?? '';
 
-        if (!\str_contains($mask, '__placeholder__')) {
+        if (!\str_contains($mask, '__insert__')) {
             return;
         }
-
-        $dcaPalettes[$alias] ??= '';
-        $reference = &$dcaPalettes[$alias];
 
         if ($palette instanceof PaletteManipulator)
         {
             $palette = $palette->applyToString('');
         }
 
-        $reference = \str_replace('__placeholder__', $palette, $mask);
+        $dcaPalettes[$alias] = \str_replace('__insert__', $palette, $mask);
     }
 }

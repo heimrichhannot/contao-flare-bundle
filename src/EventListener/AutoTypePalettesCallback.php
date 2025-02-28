@@ -36,37 +36,38 @@ readonly class AutoTypePalettesCallback
         {
             $service = $config->getService();
 
-            if ($service instanceof TypePaletteInterface)
-            {
-                $this->applyPalette($alias, $service, $dc);
+            if (!$service instanceof TypePaletteInterface) {
+                continue;
             }
+
+            $palette = $service->getPalette($alias, $dc);
+
+            if ($palette === null) {
+                continue;
+            }
+
+            if ($palette instanceof PaletteManipulator)
+            {
+                $palette = $palette->applyToString('');
+            }
+
+            $this->applyPalette($dc->table, $alias, $palette);
         }
     }
 
-    protected function applyPalette(string $alias, TypePaletteInterface $service, DataContainer $dc): void
+    protected function applyPalette(string $table, string $name, string $palette): void
     {
-        if ($alias === 'default' || !$dc->table || \str_starts_with($alias, '__')) {
+        if (!$table || $name === 'default' || \str_starts_with($name, '__')) {
             return;
         }
 
-        $palette = $service->getPalette($alias, $dc);
-
-        if ($palette === null) {
-            return;
-        }
-
-        $dcaPalettes = &$GLOBALS['TL_DCA'][$dc->table]['palettes'];
-        $mask = $dcaPalettes['__mask__'] ?? '';
+        $dcaPalettes = &$GLOBALS['TL_DCA'][$table]['palettes'];
+        $mask = $dcaPalettes['__mask__'] ?? '__insert__';
 
         if (!\str_contains($mask, '__insert__')) {
             return;
         }
 
-        if ($palette instanceof PaletteManipulator)
-        {
-            $palette = $palette->applyToString('');
-        }
-
-        $dcaPalettes[$alias] = \str_replace('__insert__', $palette, $mask);
+        $dcaPalettes[$name] = \str_replace('__insert__', $palette, $mask);
     }
 }

@@ -2,17 +2,18 @@
 
 namespace HeimrichHannot\FlareBundle\EventListener;
 
+use Contao\CoreBundle\DataContainer\PaletteManipulator;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
-use HeimrichHannot\FlareBundle\Contao\TypeSubpaletteInterface;
+use HeimrichHannot\FlareBundle\Contao\TypePaletteInterface;
 
 #[AsCallback(table: FilterContainer::TABLE_NAME, target: 'config.onload')]
 #[AsCallback(table: ListContainer::TABLE_NAME, target: 'config.onload')]
-readonly class AutoTypeSubpalettesCallback
+readonly class AutoTypePalettesCallback
 {
     public function __construct(
         private FilterElementRegistry $filterElementRegistry,
@@ -35,18 +36,40 @@ readonly class AutoTypeSubpalettesCallback
         {
             $service = $config->getService();
 
-            if (class_implements($config, TypeSubpaletteInterface::class))
+            if ($service instanceof TypePaletteInterface)
             {
-                $this->applySubpalette($alias, $service, $dc);
+                $this->applyPalette($alias, $service, $dc);
             }
         }
     }
 
-    protected function applySubpalette(string $alias, TypeSubpaletteInterface $service, DataContainer $dc): void
+    protected function applyPalette(string $alias, TypePaletteInterface $service, DataContainer $dc): void
     {
-        $GLOBALS['TL_DCA'][$dc->table]['subpalettes'][\sprintf('type_%s', $alias)] = \sprintf(
-            ';%s;',
-            \trim($service->getSubpalette($alias, $dc), ';')
-        );
+        if ($alias === 'default' || \str_starts_with($alias, '__')) {
+            return;
+        }
+
+        $palette = $service->getPalette($alias, $dc);
+
+        if ($palette === null) {
+            return;
+        }
+
+        $dcaPalettes = &$GLOBALS['TL_DCA'][$dc->table]['palettes'];
+        $mask = $dcaPalettes['__mask__'] ?? '';
+
+        if (!\str_contains($mask, '__placeholder__')) {
+            return;
+        }
+
+        $dcaPalettes[$alias] ??= '';
+        $reference = &$dcaPalettes[$alias];
+
+        if ($palette instanceof PaletteManipulator)
+        {
+            $palette = $palette->applyToString('');
+        }
+
+        $reference = \str_replace('__placeholder__', $palette, $mask);
     }
 }

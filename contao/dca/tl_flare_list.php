@@ -89,7 +89,12 @@ $dca['fields'] = [
         'exclude' => true,
         'filter' => true,
         'sorting' => true,
-        'eval' => ['mandatory' => true, 'includeBlankOption' => true, 'tl_class' => 'w50'],
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'submitOnChange' => true,
+            'tl_class' => 'w50',
+        ],
         'sql' => "varchar(32) NOT NULL default ''",
     ],
     'published' => [
@@ -101,9 +106,34 @@ $dca['fields'] = [
         'eval' => ['doNotCopy' => true, 'tl_class' => 'w50'],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
+    'test' => [
+        'inputType' => 'checkbox',
+        'default' => true,
+        'exclude' => true,
+        'filter' => true,
+        'sorting' => true,
+        'eval' => [
+            'doNotCopy' => true,
+            'tl_class' => 'w50',
+            'submitOnChange' => true,
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'another_field' => [
+        'inputType' => 'text',
+        'default' => 'sadf',
+        'exclude' => true,
+        'filter' => true,
+        'sorting' => true,
+        'eval' => ['doNotCopy' => true, 'tl_class' => 'w50'],
+        'sql' => "varchar(32) NOT NULL default ''",
+    ],
 ];
 
 $dca['palettes'] = [
     '__selector__' => ['type'],
+    '__mask__' => '{title_legend},title,type;__insert__;{publish_legend},published',
     'default' => '{title_legend},title,type;{publish_legend},published',
 ];
+
+$dca['subpalettes'] = [];

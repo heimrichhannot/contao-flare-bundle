@@ -3,6 +3,7 @@
 namespace HeimrichHannot\FlareBundle\List;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ConfigInterface;
+use HeimrichHannot\FlareBundle\List\Type\AbstractListType;
 
 class ListTypeConfig implements ConfigInterface
 {
@@ -13,7 +14,7 @@ class ListTypeConfig implements ConfigInterface
         private array $attributes = [],
     ) {}
 
-    public function getService()
+    public function getService(): AbstractListType
     {
         return $this->service;
     }

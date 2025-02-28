@@ -3,6 +3,7 @@
 namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ConfigInterface;
+use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
 
 class FilterElementConfig implements ConfigInterface
 {
@@ -14,7 +15,7 @@ class FilterElementConfig implements ConfigInterface
         private ?string $formType = null,
     ) {}
 
-    public function getService()
+    public function getService(): AbstractFilterElement
     {
         return $this->service;
     }

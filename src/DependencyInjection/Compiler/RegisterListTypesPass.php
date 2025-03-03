@@ -65,6 +65,7 @@ class RegisterListTypesPass implements CompilerPassInterface
         $definition = new Definition(ListTypeConfig::class, [
             $reference,
             $attributes,
+            $attributes['palette'] ?? null,
             $attributes['formType'] ?? null,
         ]);
 

@@ -16,11 +16,13 @@ class AsFilterElement
      */
     public function __construct(
         string $alias,
+        ?string $palette = null,
         ?string $formType = null,
         ?string $filterMethod = null,
         ...$attributes
     ) {
         $attributes['alias'] = $alias;
+        $attributes['palette'] = $palette;
         $attributes['formType'] = $formType;
         $attributes['filterMethod'] = $filterMethod;
 

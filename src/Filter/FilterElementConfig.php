@@ -12,6 +12,7 @@ class FilterElementConfig implements ConfigInterface
     public function __construct(
         private         $service,
         private array   $attributes = [],
+        private ?string $palette = null,
         private ?string $formType = null,
     ) {}
 
@@ -43,6 +44,16 @@ class FilterElementConfig implements ConfigInterface
     public function setFormType(?string $formType): void
     {
         $this->formType = $formType;
+    }
+
+    public function getPalette(): ?string
+    {
+        return $this->palette;
+    }
+
+    public function setPalette(?string $palette): void
+    {
+        $this->palette = $palette;
     }
 
     public function hasFormType(): bool

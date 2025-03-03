@@ -101,4 +101,15 @@ readonly class Str
             format: static fn ($piece) => static::alphaNum($piece)
         );
     }
+
+    /**
+     * Merges multiple palettes into one.
+     *
+     * @param string ...$palettes
+     */
+    public static function mergePalettes(...$palettes): string
+    {
+        \array_walk($palettes, static fn ($palette) => \trim((string) $palette, ';'));
+        return \implode(';', \array_filter($palettes, static fn ($palette) => (bool) $palette));
+    }
 }

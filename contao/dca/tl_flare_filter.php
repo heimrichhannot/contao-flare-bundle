@@ -4,6 +4,7 @@ use Contao\DataContainer;
 use Contao\DC_Table;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Util\Str;
 
 $dca = &$GLOBALS['TL_DCA'][FilterModel::getTable()];
 
@@ -131,6 +132,10 @@ $dca['fields'] = [
 
 $dca['palettes'] = [
     '__selector__' => ['type'],
-    '__mask__' => '{title_legend},title,type,intrinsic;__insert__;{publish_legend},published;',
-    'default' => '{title_legend},title,type,intrinsic;{publish_legend},published;',
+    '__prefix__' => '{title_legend},title,type',
+    '__suffix__' => '{publish_legend},published',
 ];
+
+$dca['palettes']['default'] = Str::mergePalettes($dca['palettes']['__prefix__'], $dca['palettes']['__suffix__']);
+
+$dca['subpalettes'] = [];

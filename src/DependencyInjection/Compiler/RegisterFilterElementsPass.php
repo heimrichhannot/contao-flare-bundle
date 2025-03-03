@@ -65,6 +65,7 @@ class RegisterFilterElementsPass implements CompilerPassInterface
         $definition = new Definition(FilterElementConfig::class, [
             $reference,
             $attributes,
+            $attributes['palette'] ?? null,
             $attributes['formType'] ?? null,
         ]);
 

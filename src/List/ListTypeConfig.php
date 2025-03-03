@@ -12,10 +12,15 @@ class ListTypeConfig implements ConfigInterface
     public function __construct(
         private         $service,
         private array   $attributes = [],
+        private ?string $dataContainer = null,
         private ?string $palette = null,
     ) {}
 
-    public function getService(): AbstractListType
+    /**
+     * @noinspection PhpDocSignatureInspection
+     * @return AbstractListType|object
+     */
+    public function getService(): object
     {
         return $this->service;
     }
@@ -33,6 +38,16 @@ class ListTypeConfig implements ConfigInterface
     public function setAttributes(array $attributes): void
     {
         $this->attributes = $attributes;
+    }
+
+    public function getDataContainer(): ?string
+    {
+        return $this->dataContainer;
+    }
+
+    public function setDataContainer(?string $dataContainer): void
+    {
+        $this->dataContainer = $dataContainer;
     }
 
     public function getPalette(): ?string

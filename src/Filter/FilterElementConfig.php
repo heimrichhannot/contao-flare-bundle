@@ -16,7 +16,11 @@ class FilterElementConfig implements ConfigInterface
         private ?string $formType = null,
     ) {}
 
-    public function getService(): AbstractFilterElement
+    /**
+     * @noinspection PhpDocSignatureInspection
+     * @return AbstractFilterElement|object
+     */
+    public function getService(): object
     {
         return $this->service;
     }

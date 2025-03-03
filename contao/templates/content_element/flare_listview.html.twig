@@ -2,6 +2,16 @@
     <pre>Ich bin ein FLARE Katalog</pre>
 
     {{ form(flare.filter_form) }}
+
+    <hr>
+
+    {% for entry in flare.entries %}
+        <div class="row">
+            <div class="col-12">
+                {{ dump(entry) }}
+            </div>
+        </div>
+    {% endfor %}
 </div>
 
 {#{{ dump() }}#}

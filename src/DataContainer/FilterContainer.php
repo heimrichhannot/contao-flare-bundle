@@ -2,12 +2,12 @@
 
 namespace HeimrichHannot\FlareBundle\DataContainer;
 
-use Contao\CoreBundle\Asset\ContaoContext;
+use Contao\Controller;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
+use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
-use HeimrichHannot\UtilsBundle\Util\Utils;
-use Psr\Log\LoggerInterface;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -15,13 +15,52 @@ class FilterContainer
 {
     public const TABLE_NAME = 'tl_flare_filter';
 
+    protected array $dcTableCache = [];
+
     public function __construct(
         private readonly FilterElementRegistry $filterElementRegistry,
         private readonly RequestStack $requestStack,
     ) {}
 
+    #[AsCallback(self::TABLE_NAME, 'fields.field_published.options')]
+    public function getFieldOptions_fieldBool(?DataContainer $dc): array
+    {
+        return $this->getFieldOptions(
+            $dc,
+            static fn(string $table, string $field, array $definition) =>
+                ($definition['inputType'] ?? null) === 'checkbox'
+        );
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.field_start.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.field_stop.options')]
+    public function getFieldOptions_fieldAny(?DataContainer $dc): array
+    {
+        return $this->getFieldOptions($dc);
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.field_start.load')]
+    public function onLoadField_field_start(mixed $value, DataContainer $dc): string
+    {
+        if ($value) {
+            return $value;
+        }
+
+        return $this->getColumnNameIfAvailable($dc, 'start') ?? '';
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.field_stop.load')]
+    public function onLoadField_field_stop(mixed $value, DataContainer $dc): string
+    {
+        if ($value) {
+            return $value;
+        }
+
+        return $this->getColumnNameIfAvailable($dc, 'stop') ?? '';
+    }
+
     #[AsCallback(self::TABLE_NAME, 'fields.type.options')]
-    public function getTypeOptions(): array
+    public function getFieldOptions_type(): array
     {
         $options = [];
 
@@ -37,7 +76,7 @@ class FilterContainer
     }
 
     #[AsCallback(self::TABLE_NAME, 'fields.intrinsic.load')]
-    public function intrinsic_load(mixed $value, DataContainer $dc): bool
+    public function onLoadField_intrinsic(mixed $value, DataContainer $dc): bool
     {
         $value = (bool) $value;
 
@@ -66,7 +105,7 @@ class FilterContainer
     }
 
     #[AsCallback(self::TABLE_NAME, 'fields.intrinsic.save')]
-    public function intrinsic_save(mixed $value, DataContainer $dc): mixed
+    public function onSaveField_intrinsic(mixed $value, DataContainer $dc): mixed
     {
         if ($value || !$row = $dc->activeRecord?->row()) {
             return $value;
@@ -85,19 +124,92 @@ class FilterContainer
         return '';
     }
 
-    /* #[AsCallback(self::TABLE_NAME, 'list.sorting.child_record')]
+    #[AsCallback(self::TABLE_NAME, 'list.sorting.child_record')]
     public function listLabelLabel(array $row): string
     {
         $key = $row['published'] ? 'published' : 'unpublished';
 
-        $cls2 = !\Contao\Config::get('doNotCollapse') ? 'h40' : '';
-        $title = \Contao\StringUtil::specialchars($row['title']);
+        $title = StringUtil::specialchars($row['title'] ?? '');
 
-        return <<<HTML
-            <div class="cte_type $key">HALLO</div>
-            <div class="limit_height $cls2">
-                <h2>$title</h2>
-            </div>
-        HTML;
-    }*/
+        if ($type = $row['type'] ?? null)
+        {
+            $filterElement = $this->filterElementRegistry->get($type);
+            $service = $filterElement?->getService();
+
+            if ($service instanceof TranslatorInterface)
+            {
+                $typeLabel = $service->trans($row['type'] ?? '');
+            }
+
+            $typeLabel = StringUtil::specialchars($typeLabel ?? $type);
+        }
+
+        $typeLabel ??= 'N/A';
+
+        $html = "<div class=\"cte_type $key\">$typeLabel</div>";
+        $html .= $title ? "<div><strong>$title</strong></div>" : '';
+
+        return $html;
+    }
+
+    protected function getListDCTableFromDataContainer(?DataContainer $dc): ?string
+    {
+        if (!$dc
+            || !($row = $dc?->activeRecord?->row())
+            || !($pid = $row['pid'] ?? null))
+        {
+            return null;
+        }
+
+        if (isset($this->dcTableCache[$pid])) {
+            return $this->dcTableCache[$pid];
+        }
+
+        if (!($list = ListModel::findByPk($pid))
+            || !($table = $list->dc))
+        {
+            return null;
+        }
+
+        return $this->dcTableCache[$pid] = $table;
+    }
+
+    protected function getColumnNameIfAvailable(DataContainer $dc, string $column): ?string
+    {
+        if (!$table = $this->getListDCTableFromDataContainer($dc)) {
+            return null;
+        }
+
+        Controller::loadDataContainer($table);
+
+        if (!isset($GLOBALS['TL_DCA'][$table]['fields'][$column])) {
+            return null;
+        }
+
+        return $table . '.' . $column;
+    }
+
+    public function getFieldOptions(?DataContainer $dc, ?callable $predicate = null): array
+    {
+        if (!$table = $this->getListDCTableFromDataContainer($dc)) {
+            return [];
+        }
+
+        Controller::loadDataContainer($table);
+
+        $options = [];
+        foreach ($GLOBALS['TL_DCA'][$table]['fields'] ?? [] as $field => $definition)
+        {
+            if ($predicate !== null && !$predicate($table, $field, $definition)) {
+                continue;
+            }
+
+            $key = $table . '.' . $field;
+            $options[$key] = $key;
+        }
+
+        \ksort($options);
+
+        return [$table => $options];
+    }
 }

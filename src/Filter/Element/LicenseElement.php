@@ -2,8 +2,11 @@
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
+use Doctrine\DBAL\Query\QueryBuilder;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Form\Type\LicenseFilterType;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 
 #[AsFilterElement(
     alias: LicenseElement::TYPE,
@@ -16,5 +19,10 @@ class LicenseElement extends AbstractFilterElement
     public function formTypeOptions(): array
     {
         return [];
+    }
+
+    public function __invoke(QueryBuilder $queryBuilder, FilterModel $filterModel, ListModel $listModel, string $table): void
+    {
+        // TODO: Implement __invoke() method.
     }
 }

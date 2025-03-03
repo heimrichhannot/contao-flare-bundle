@@ -128,14 +128,92 @@ $dca['fields'] = [
         'eval' => ['tl_class' => 'w50'],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
+    'useStart' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => true,
+        'default' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => true,
+            'tl_class' => 'w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => true],
+    ],
+    'useStop' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => true,
+        'default' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => true,
+            'tl_class' => 'w50 clr'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => true],
+    ],
+    'invertPublished' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => true,
+        'default' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => true,
+            'tl_class' => 'w50 clr'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => true],
+    ],
+    'field_published' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => true,
+        'sorting' => true,
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => false,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'field_start' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => true,
+        'sorting' => true,
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => false,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'field_stop' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => true,
+        'sorting' => true,
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => false,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
 ];
 
 $dca['palettes'] = [
-    '__selector__' => ['type'],
-    '__prefix__' => '{title_legend},title,type',
+    '__selector__' => ['type', 'useStart', 'useStop'],
+    '__prefix__' => '{title_legend},title,type,intrinsic',
     '__suffix__' => '{publish_legend},published',
 ];
 
 $dca['palettes']['default'] = Str::mergePalettes($dca['palettes']['__prefix__'], $dca['palettes']['__suffix__']);
 
-$dca['subpalettes'] = [];
+$dca['subpalettes'] = [
+    'useStart' => 'field_start',
+    'useStop' => 'field_stop',
+];

@@ -3,10 +3,14 @@
 namespace HeimrichHannot\FlareBundle\Controller\ContentElement;
 
 use Contao\ContentModel;
+use Contao\Controller;
 use Contao\CoreBundle\Controller\ContentElement\AbstractContentElementController;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsContentElement;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Template;
+use Doctrine\Common\Collections\Criteria;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Query\QueryBuilder;
 use HeimrichHannot\FlareBundle\Builder\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
@@ -21,9 +25,10 @@ class ListViewController extends AbstractContentElementController
     public const TYPE = 'flare_listview';
 
     public function __construct(
-        private readonly ScopeMatcher          $scopeMatcher,
+        private readonly Connection            $connection,
         private readonly FilterFormBuilder     $filterFormBuilder,
         private readonly FilterElementRegistry $filterElementRegistry,
+        private readonly ScopeMatcher          $scopeMatcher,
     ) {}
 
     protected function getResponse(Template $template, ContentModel $model, Request $request): ?Response
@@ -35,41 +40,76 @@ class ListViewController extends AbstractContentElementController
 
     protected function getFrontendResponse(Template $template, ContentModel $model, Request $request): ?Response
     {
-        \dump($model);
-
-        $catalog = $model->getRelated(ContentContainer::FIELD_LIST) ?? null;
-        if (!$catalog instanceof ListModel) {
+        try {
+            /** @var ?ListModel $listModel */
+            $listModel = $model->getRelated(ContentContainer::FIELD_LIST) ?? null;
+        } catch (\Exception $e) {
             return new Response();
         }
 
-        $filters = FilterModel::findByPid($catalog->id, published: true);
+        if (!$listModel instanceof ListModel
+            || !$listModel->id
+            || !$listModel->published
+            || !$table = $listModel->dc)
+        {
+            return new Response();
+        }
 
-        $filterElements = [];
+        $filterModels = FilterModel::findByPid($listModel->id, published: true);
+
+        if (!$listModel->dc || !$filterModels->count()) {
+            return new Response();
+        }
+
+        Controller::loadDataContainer($table);
+
+        $qb = (new QueryBuilder($this->connection))
+            ->select('e.*')
+            ->from($table, 'e');
+
         $filterFormTypes = [];
 
-        foreach ($filters as $filter)
+        foreach ($filterModels as $filterModel)
         {
-            $filterElement = $this->filterElementRegistry->get($filter->type);
+            $filterElement = $this->filterElementRegistry->get($filterModel->type);
             if (!$filterElement) {
                 continue;
             }
 
-            $filterElements[] = $filterElement;
+            $service = $filterElement->getService();
+            if (\method_exists($service, '__invoke'))
+            {
+                $innerQB = (new QueryBuilder($this->connection))
+                    ->select('1')
+                    ->from($table, 'e_inner')
+                    ->where('e.id = e_inner.id')
+                ;
+
+                $criteria = new Criteria();
+
+                $service->__invoke($innerQB, $filterModel, $listModel, $table);
+
+                $qb->andWhere("EXISTS ({$innerQB->getSQL()})");
+
+                $qb->setParameters(\array_merge($qb->getParameters(), $innerQB->getParameters()));
+            }
+
             if ($filterElement->hasFormType()) {
                 $filterFormTypes[] = $filterElement->getFormType();
             }
-
-            \dump($filterElement);
         }
 
-        $form = $this->filterFormBuilder->build($filterFormTypes);
+        $entries = $qb->executeQuery()->fetchAllAssociative();
 
-        \dump($filters, $filterElements, $filterFormTypes);
+        $form = $this->filterFormBuilder->build($filterFormTypes);
 
         $data = $template->getData();
         $data['flare'] = [];
         $data['flare']['filter_form'] = $form->createView();
+        $data['flare']['entries'] = $entries;
+
         $template->setData($data);
+
         return new Response($template->parse());
     }
 

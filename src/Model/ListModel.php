@@ -5,6 +5,13 @@ namespace HeimrichHannot\FlareBundle\Model;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 
+/**
+ * Class ListModel
+ *
+ * @property int $id
+ * @property bool $published
+ * @property string $dc
+ */
 class ListModel extends Model
 {
     protected static $strTable = ListContainer::TABLE_NAME;

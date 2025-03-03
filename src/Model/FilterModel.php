@@ -6,6 +6,17 @@ use Contao\Model;
 use Contao\Model\Collection;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 
+/**
+ * Class FilterModel
+ *
+ * @property int $id
+ * @property int $pid
+ * @property int $sorting
+ * @property string $tstamp
+ * @property string $type
+ * @property string $title
+ *
+ */
 class FilterModel extends Model
 {
     protected static $strTable = FilterContainer::TABLE_NAME;

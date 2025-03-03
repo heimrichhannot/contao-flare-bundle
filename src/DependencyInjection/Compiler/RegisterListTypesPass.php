@@ -65,8 +65,8 @@ class RegisterListTypesPass implements CompilerPassInterface
         $definition = new Definition(ListTypeConfig::class, [
             $reference,
             $attributes,
+            $attributes['dataContainer'] ?? null,
             $attributes['palette'] ?? null,
-            $attributes['formType'] ?? null,
         ]);
 
         $serviceId = 'huh.flare.list_type._config_' . ContainerBuilder::hash($definition);

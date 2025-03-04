@@ -3,28 +3,16 @@
 namespace HeimrichHannot\FlareBundle\Event;
 
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterElementConfig;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use Symfony\Contracts\EventDispatcher\Event;
 
 class FilterElementInvokedEvent extends Event
 {
     public function __construct(
-        private readonly FilterElementConfig $filterElementConfig,
-        private readonly FilterQueryBuilder  $queryBuilder,
-        private readonly FilterContext       $context,
-        private readonly string              $method,
+        private readonly FilterContext      $filter,
+        private readonly FilterQueryBuilder $queryBuilder,
+        private readonly string             $method,
     ) {}
-
-    public function getFilterElementConfig(): FilterElementConfig
-    {
-        return $this->filterElementConfig;
-    }
-
-    public function getFilterElement(): string
-    {
-        return $this->filterElementConfig->getService();
-    }
 
     public function getMethod(): string
     {
@@ -36,8 +24,8 @@ class FilterElementInvokedEvent extends Event
         return $this->queryBuilder;
     }
 
-    public function getContext(): FilterContext
+    public function getFilter(): FilterContext
     {
-        return $this->context;
+        return $this->filter;
     }
 }

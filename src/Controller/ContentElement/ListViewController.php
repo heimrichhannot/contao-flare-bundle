@@ -2,7 +2,6 @@
 
 namespace HeimrichHannot\FlareBundle\Controller\ContentElement;
 
-use Aura\SqlQuery\QueryFactory;
 use Contao\ContentModel;
 use Contao\Controller;
 use Contao\CoreBundle\Controller\ContentElement\AbstractContentElementController;
@@ -10,11 +9,11 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsContentElement;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Template;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Query\QueryBuilder;
 use HeimrichHannot\FlareBundle\Builder\FilterFormBuilder;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokedEvent;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -68,33 +67,25 @@ class ListViewController extends AbstractContentElementController
 
         Controller::loadDataContainer($table);
 
-        $qb = (new QueryBuilder($this->connection))
-            ->select('e.*')
-            ->from($table, 'e');
-
-        $filterFormTypes = [];
-        $filters = [];
+        $filters = new FilterContextCollection();
 
         foreach ($filterModels as $filterModel)
         {
-            $filterElement = $this->filterElementRegistry->get($filterModel->type);
-            if (!$filterElement) {
+            $filterElementAlias = $filterModel->type;
+
+            if (!$config = $this->filterElementRegistry->get($filterElementAlias)) {
                 continue;
             }
 
-            $filters[] = [$filterModel, $filterElement];
-
-            if ($filterElement->hasFormType()) {
-                $filterFormTypes[] = $filterElement->getFormType();
-            }
+            $filters->add(new FilterContext($listModel, $filterModel, $config, $filterElementAlias, $table));
         }
 
-        [$sql, $params] = $this->buildFilteredQuery($filters, $listModel, $table);
+        [$sql, $params] = $this->buildFilteredQuery($filters, $table);
         $result = $this->connection->executeQuery($sql, $params);
 
         $entries = $result->fetchAllAssociative();
 
-        $form = $this->filterFormBuilder->build($filterFormTypes);
+        $form = $this->filterFormBuilder->build($filters->collectFormTypes());
 
         $data = $template->getData();
         $data['flare'] = [];
@@ -106,19 +97,19 @@ class ListViewController extends AbstractContentElementController
         return new Response($template->parse());
     }
 
-    protected function buildFilteredQuery(array $filters, ListModel $listModel, string $table): array
+    protected function buildFilteredQuery(FilterContextCollection $filters, string $table): array
     {
         $combinedConditions = [];
         $combinedParameters = [];
 
         $alias = 'main';
 
-        foreach (\array_values($filters) as $i => $filter)
+        foreach ($filters as $i => $filter)
         {
-            [$filterModel, $filterElement] = $filter;
+            $config = $filter->getConfig();
 
-            $service = $filterElement->getService();
-            $method = $filterElement->getMethod() ?? '__invoke';
+            $service = $config->getService();
+            $method = $config->getMethod() ?? '__invoke';
 
             if (!\method_exists($service, $method))
             {
@@ -126,12 +117,11 @@ class ListViewController extends AbstractContentElementController
             }
 
             $filterQueryBuilder = new FilterQueryBuilder($this->connection->createExpressionBuilder(), $alias);
-            $filterContext = new FilterContext($filterModel, $listModel, $table);
 
-            $service->{$method}($filterQueryBuilder, $filterContext);
+            $service->{$method}($filterQueryBuilder, $filter);
 
-            $event = new FilterElementInvokedEvent($filterElement, $filterQueryBuilder, $filterContext, $method);
-            $this->eventDispatcher->dispatch($event, "huh.flare.filter_element.{$filterModel->type}.invoked");
+            $event = new FilterElementInvokedEvent($filter, $filterQueryBuilder, $method);
+            $this->eventDispatcher->dispatch($event, "huh.flare.filter_element.{$filter->getFilterAlias()}.invoked");
 
             [$sql, $params] = $filterQueryBuilder->buildQuery((string) $i);
 

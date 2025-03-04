@@ -2,8 +2,8 @@
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 
 #[AsFilterElement(

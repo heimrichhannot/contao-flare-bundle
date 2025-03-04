@@ -5,7 +5,7 @@ services:
 
     HeimrichHannot\FlareBundle\:
         resource: ../src
-        exclude:  ../src/{Contao,ContaoManager,DependencyInjection,DTO,Model}
+        exclude:  ../src/{Contao,ContaoManager,DependencyInjection,Transfer,Model}
 
 #    bind:
 #      $projectDir: '%kernel.project_dir%'

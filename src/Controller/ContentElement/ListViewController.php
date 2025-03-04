@@ -13,7 +13,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
 use HeimrichHannot\FlareBundle\Builder\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\Event\FilterQueryBuilderEvent;
+use HeimrichHannot\FlareBundle\Event\FilterElementInvokedEvent;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
@@ -130,7 +130,7 @@ class ListViewController extends AbstractContentElementController
 
             $service->{$method}($filterQueryBuilder, $filterContext);
 
-            $event = new FilterQueryBuilderEvent($filterElement, $method, $filterQueryBuilder, $filterContext);
+            $event = new FilterElementInvokedEvent($filterElement, $filterQueryBuilder, $filterContext, $method);
             $this->eventDispatcher->dispatch($event, "huh.flare.filter_element.{$filterModel->type}.invoked");
 
             [$sql, $params] = $filterQueryBuilder->buildQuery((string) $i);

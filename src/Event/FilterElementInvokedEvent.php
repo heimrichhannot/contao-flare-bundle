@@ -7,18 +7,23 @@ use HeimrichHannot\FlareBundle\Filter\FilterElementConfig;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class FilterQueryBuilderEvent extends Event
+class FilterElementInvokedEvent extends Event
 {
     public function __construct(
         private readonly FilterElementConfig $filterElementConfig,
-        private readonly string              $method,
         private readonly FilterQueryBuilder  $queryBuilder,
         private readonly FilterContext       $context,
+        private readonly string              $method,
     ) {}
 
     public function getFilterElementConfig(): FilterElementConfig
     {
         return $this->filterElementConfig;
+    }
+
+    public function getFilterElement(): string
+    {
+        return $this->filterElementConfig->getService();
     }
 
     public function getMethod(): string

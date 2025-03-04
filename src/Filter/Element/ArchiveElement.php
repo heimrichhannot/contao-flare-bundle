@@ -14,13 +14,6 @@ class ArchiveElement extends AbstractFilterElement implements PaletteContract
 {
     const TYPE = 'flare_archive';
 
-    public function __invoke(
-        QueryBuilder $queryBuilder,
-        FilterModel  $filterModel,
-        ListModel    $listModel,
-        string       $table
-    ): void {}
-
     public function getPalette(PaletteConfig $config): ?string
     {
         return '';

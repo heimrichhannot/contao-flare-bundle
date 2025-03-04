@@ -20,9 +20,4 @@ class LicenseElement extends AbstractFilterElement
     {
         return [];
     }
-
-    public function __invoke(QueryBuilder $queryBuilder, FilterModel $filterModel, ListModel $listModel, string $table): void
-    {
-        // TODO: Implement __invoke() method.
-    }
 }

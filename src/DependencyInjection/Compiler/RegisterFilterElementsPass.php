@@ -67,6 +67,7 @@ class RegisterFilterElementsPass implements CompilerPassInterface
             $attributes,
             $attributes['palette'] ?? null,
             $attributes['formType'] ?? null,
+            $attributes['method'] ?? null,
         ]);
 
         $serviceId = 'huh.flare.filter_element._config_' . ContainerBuilder::hash($definition);

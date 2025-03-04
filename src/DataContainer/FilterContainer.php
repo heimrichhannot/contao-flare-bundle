@@ -186,7 +186,7 @@ class FilterContainer
             return null;
         }
 
-        return $table . '.' . $column;
+        return $column;
     }
 
     public function getFieldOptions(?DataContainer $dc, ?callable $predicate = null): array
@@ -205,11 +205,11 @@ class FilterContainer
             }
 
             $key = $table . '.' . $field;
-            $options[$key] = $key;
+            $options[$field] = $key;
         }
 
         \ksort($options);
 
-        return [$table => $options];
+        return $options;
     }
 }

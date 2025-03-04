@@ -12,19 +12,19 @@ class AsFilterElement
     /**
      * @param string $alias
      * @param class-string<FormTypeInterface>|null $formType
-     * @param string $filterMethod
+     * @param string $method
      */
     public function __construct(
-        string $alias,
+        string  $alias,
         ?string $palette = null,
         ?string $formType = null,
-        ?string $filterMethod = null,
-        ...$attributes
+        ?string $method = null,
+                ...$attributes
     ) {
         $attributes['alias'] = $alias;
         $attributes['palette'] = $palette;
         $attributes['formType'] = $formType;
-        $attributes['filterMethod'] = $filterMethod;
+        $attributes['method'] = $method;
 
         $this->attributes = $attributes;
     }

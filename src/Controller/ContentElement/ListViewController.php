@@ -2,20 +2,24 @@
 
 namespace HeimrichHannot\FlareBundle\Controller\ContentElement;
 
+use Aura\SqlQuery\QueryFactory;
 use Contao\ContentModel;
 use Contao\Controller;
 use Contao\CoreBundle\Controller\ContentElement\AbstractContentElementController;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsContentElement;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Template;
-use Doctrine\Common\Collections\Criteria;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
 use HeimrichHannot\FlareBundle\Builder\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
+use HeimrichHannot\FlareBundle\Event\FilterQueryBuilderEvent;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -25,10 +29,11 @@ class ListViewController extends AbstractContentElementController
     public const TYPE = 'flare_listview';
 
     public function __construct(
-        private readonly Connection            $connection,
-        private readonly FilterFormBuilder     $filterFormBuilder,
-        private readonly FilterElementRegistry $filterElementRegistry,
-        private readonly ScopeMatcher          $scopeMatcher,
+        private readonly Connection               $connection,
+        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly FilterFormBuilder        $filterFormBuilder,
+        private readonly FilterElementRegistry    $filterElementRegistry,
+        private readonly ScopeMatcher             $scopeMatcher,
     ) {}
 
     protected function getResponse(Template $template, ContentModel $model, Request $request): ?Response
@@ -68,6 +73,7 @@ class ListViewController extends AbstractContentElementController
             ->from($table, 'e');
 
         $filterFormTypes = [];
+        $filters = [];
 
         foreach ($filterModels as $filterModel)
         {
@@ -76,30 +82,17 @@ class ListViewController extends AbstractContentElementController
                 continue;
             }
 
-            $service = $filterElement->getService();
-            if (\method_exists($service, '__invoke'))
-            {
-                $innerQB = (new QueryBuilder($this->connection))
-                    ->select('1')
-                    ->from($table, 'e_inner')
-                    ->where('e.id = e_inner.id')
-                ;
-
-                $criteria = new Criteria();
-
-                $service->__invoke($innerQB, $filterModel, $listModel, $table);
-
-                $qb->andWhere("EXISTS ({$innerQB->getSQL()})");
-
-                $qb->setParameters(\array_merge($qb->getParameters(), $innerQB->getParameters()));
-            }
+            $filters[] = [$filterModel, $filterElement];
 
             if ($filterElement->hasFormType()) {
                 $filterFormTypes[] = $filterElement->getFormType();
             }
         }
 
-        $entries = $qb->executeQuery()->fetchAllAssociative();
+        [$sql, $params] = $this->buildFilteredQuery($filters, $listModel, $table);
+        $result = $this->connection->executeQuery($sql, $params);
+
+        $entries = $result->fetchAllAssociative();
 
         $form = $this->filterFormBuilder->build($filterFormTypes);
 
@@ -111,6 +104,48 @@ class ListViewController extends AbstractContentElementController
         $template->setData($data);
 
         return new Response($template->parse());
+    }
+
+    protected function buildFilteredQuery(array $filters, ListModel $listModel, string $table): array
+    {
+        $combinedConditions = [];
+        $combinedParameters = [];
+
+        $alias = 'main';
+
+        foreach (\array_values($filters) as $i => $filter)
+        {
+            [$filterModel, $filterElement] = $filter;
+
+            $service = $filterElement->getService();
+            $method = $filterElement->getMethod() ?? '__invoke';
+
+            if (!\method_exists($service, $method))
+            {
+                continue;
+            }
+
+            $filterQueryBuilder = new FilterQueryBuilder($this->connection->createExpressionBuilder(), $alias);
+            $filterContext = new FilterContext($filterModel, $listModel, $table);
+
+            $service->{$method}($filterQueryBuilder, $filterContext);
+
+            $event = new FilterQueryBuilderEvent($filterElement, $method, $filterQueryBuilder, $filterContext);
+            $this->eventDispatcher->dispatch($event, "huh.flare.filter_element.{$filterModel->type}.invoked");
+
+            [$sql, $params] = $filterQueryBuilder->buildQuery((string) $i);
+
+            $combinedConditions[] = $sql;
+            $combinedParameters = \array_merge($combinedParameters, $params);
+        }
+
+        $finalSQL = "SELECT * FROM $table AS $alias";
+        if (!empty($combinedConditions))
+        {
+            $finalSQL .= ' WHERE ' . $this->connection->createExpressionBuilder()->and(...$combinedConditions);
+        }
+
+        return [$finalSQL, $combinedParameters];
     }
 
     protected function getBackendResponse(Template $template, ContentModel $model, Request $request): ?Response

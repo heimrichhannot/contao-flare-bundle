@@ -14,6 +14,7 @@ class FilterElementConfig implements ConfigInterface
         private array   $attributes = [],
         private ?string $palette = null,
         private ?string $formType = null,
+        private ?string $method = null
     ) {}
 
     /**
@@ -58,6 +59,16 @@ class FilterElementConfig implements ConfigInterface
     public function setPalette(?string $palette): void
     {
         $this->palette = $palette;
+    }
+
+    public function getMethod(): ?string
+    {
+        return $this->method;
+    }
+
+    public function setMethod(?string $method): void
+    {
+        $this->method = $method;
     }
 
     public function hasFormType(): bool

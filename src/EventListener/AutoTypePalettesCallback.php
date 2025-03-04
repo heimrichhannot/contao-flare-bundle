@@ -65,7 +65,7 @@ readonly class AutoTypePalettesCallback
             $suffix = $paletteConfig->getSuffix();
         }
 
-        if (empty($palette))
+        if (!isset($palette))
         {
             $palette = $config->getPalette();
         }

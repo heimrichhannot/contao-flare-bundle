@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 
 #[AsFilterElement(
     alias: PublishedElement::TYPE,
-    palette: '{filter_legend},useStart,useStop'
+    palette: '{filter_legend},usePublished,useStart,useStop'
 )]
 class PublishedElement extends AbstractFilterElement
 {
@@ -22,14 +22,14 @@ class PublishedElement extends AbstractFilterElement
 
         if ($filterModel->useStart ?? true)
         {
-            $startField = ($filterModel->field_start ?: "start");
+            $startField = ($filterModel->fieldStart ?: "start");
             $qb->where("($startField = \"\" OR $startField = 0 OR $startField <= :start)")
                 ->bind('start', time());
         }
 
         if ($filterModel->useStop ?? true)
         {
-            $stopField = ($filterModel->field_stop ?: "stop");
+            $stopField = ($filterModel->fieldStop ?: "stop");
             $qb->where("($stopField = \"\" OR $stopField = 0 OR $stopField >= :stop)")
                 ->bind('stop', time());
         }

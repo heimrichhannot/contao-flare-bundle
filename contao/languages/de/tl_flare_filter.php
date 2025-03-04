@@ -18,8 +18,11 @@ $lang['published'] = ['Veröffentlicht', 'Ob der Filter aktiv ist.'];
 
 ###> filter_legend ###
 $lang['filter_legend'] = 'Filter-Einstellungen';
+$lang['usePublished'] = ['Veröffentlichungsstatus beachten', 'Beachte ein Feld mit dem Veröffentlichungsstatus.'];
 $lang['useStart'] = ['Startdatum beachten', 'Das Startdatum des Elements beachten.'];
 $lang['useStop'] = ['Enddatum beachten', 'Das Enddatum des Elements beachten.'];
-$lang['field_start'] = ['Startdatum-Feld', 'Bitte wählen Sie das Feld aus, das als Startdatum verwendet werden soll.'];
-$lang['field_stop'] = ['Enddatum-Feld', 'Bitte wählen Sie das Feld aus, das als Enddatum verwendet werden soll.'];
+$lang['invertPublished'] = ['Veröffentlicht invertieren', 'Den Veröffentlichungsstatus invertieren.'];
+$lang['fieldPublished'] = ['Veröffentlicht-Feld', 'Bitte wählen Sie das Feld mit dem Veröffentlichungsstatus aus.'];
+$lang['fieldStart'] = ['Startdatum-Feld', 'Bitte wählen Sie das Feld aus, das als Startdatum verwendet werden soll.'];
+$lang['fieldStop'] = ['Enddatum-Feld', 'Bitte wählen Sie das Feld aus, das als Enddatum verwendet werden soll.'];
 ###< filter_legend ###

@@ -5,7 +5,10 @@ services:
 
     HeimrichHannot\FlareBundle\:
         resource: ../src
-        exclude:  ../src/{Contao,ContaoManager,DependencyInjection,Transfer,Model}
+        exclude:
+            - ../src/{Collection,Contao,ContaoManager,DependencyInjection,Model}
+            - ../src/Filter/{FilterContext,FilterContextCollection,FilterQueryBuilder}.php
+            - ../src/List/ListTypeConfig.php
 
 #    bind:
 #      $projectDir: '%kernel.project_dir%'

@@ -71,6 +71,10 @@ class ListViewController extends AbstractContentElementController
 
         foreach ($filterModels as $filterModel)
         {
+            if (!$filterModel->published) {
+                continue;
+            }
+
             $filterElementAlias = $filterModel->type;
 
             if (!$config = $this->filterElementRegistry->get($filterElementAlias)) {
@@ -102,7 +106,7 @@ class ListViewController extends AbstractContentElementController
         $combinedConditions = [];
         $combinedParameters = [];
 
-        $alias = 'main';
+        $as = 'main';
 
         foreach ($filters as $i => $filter)
         {
@@ -116,7 +120,7 @@ class ListViewController extends AbstractContentElementController
                 continue;
             }
 
-            $filterQueryBuilder = new FilterQueryBuilder($this->connection->createExpressionBuilder(), $alias);
+            $filterQueryBuilder = new FilterQueryBuilder($this->connection->createExpressionBuilder(), $as);
 
             $service->{$method}($filterQueryBuilder, $filter);
 
@@ -129,7 +133,7 @@ class ListViewController extends AbstractContentElementController
             $combinedParameters = \array_merge($combinedParameters, $params);
         }
 
-        $finalSQL = "SELECT * FROM $table AS $alias";
+        $finalSQL = "SELECT * FROM $table AS $as";
         if (!empty($combinedConditions))
         {
             $finalSQL .= ' WHERE ' . $this->connection->createExpressionBuilder()->and(...$combinedConditions);

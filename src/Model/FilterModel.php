@@ -15,8 +15,8 @@ use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
  * @property string $tstamp
  * @property string $type
  * @property string $title
- * @property string $field_start
- * @property string $field_stop
+ * @property string $fieldStart
+ * @property string $fieldStop
  *
  */
 class FilterModel extends Model

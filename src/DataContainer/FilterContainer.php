@@ -22,7 +22,7 @@ class FilterContainer
         private readonly RequestStack $requestStack,
     ) {}
 
-    #[AsCallback(self::TABLE_NAME, 'fields.field_published.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.options')]
     public function getFieldOptions_fieldBool(?DataContainer $dc): array
     {
         return $this->getFieldOptions(
@@ -32,31 +32,36 @@ class FilterContainer
         );
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.field_start.options')]
-    #[AsCallback(self::TABLE_NAME, 'fields.field_stop.options')]
-    public function getFieldOptions_fieldAny(?DataContainer $dc): array
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldStart.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldStop.options')]
+    public function getFieldOptions_fieldTime(?DataContainer $dc): array
     {
-        return $this->getFieldOptions($dc);
+        return $this->getFieldOptions(
+            $dc,
+            static fn(string $table, string $field, array $definition) =>
+                ($definition['inputType'] ?? null) === 'text' && ($definition['eval']['rgxp'] ?? null) === 'datim'
+        );
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.field_start.load')]
-    public function onLoadField_field_start(mixed $value, DataContainer $dc): string
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.load')]
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.save')]
+    public function onLoadField_fieldPublished(mixed $value, DataContainer $dc): string
     {
-        if ($value) {
-            return $value;
-        }
-
-        return $this->getColumnNameIfAvailable($dc, 'start') ?? '';
+        return $value ?: $this->tryGetColumnName($dc, 'published', '');
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.field_stop.load')]
-    public function onLoadField_field_stop(mixed $value, DataContainer $dc): string
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldStart.load')]
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldStart.save')]
+    public function onLoadField_fieldStart(mixed $value, DataContainer $dc): string
     {
-        if ($value) {
-            return $value;
-        }
+        return $value ?: $this->tryGetColumnName($dc, 'start', '');
+    }
 
-        return $this->getColumnNameIfAvailable($dc, 'stop') ?? '';
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldStop.load')]
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldStop.save')]
+    public function onLoadField_fieldStop(mixed $value, DataContainer $dc): string
+    {
+        return $value ?: $this->tryGetColumnName($dc, 'stop', '');
     }
 
     #[AsCallback(self::TABLE_NAME, 'fields.type.options')]
@@ -174,16 +179,16 @@ class FilterContainer
         return $this->dcTableCache[$pid] = $table;
     }
 
-    protected function getColumnNameIfAvailable(DataContainer $dc, string $column): ?string
+    protected function tryGetColumnName(DataContainer $dc, string $column, ?string $default = null): ?string
     {
         if (!$table = $this->getListDCTableFromDataContainer($dc)) {
-            return null;
+            return $default;
         }
 
         Controller::loadDataContainer($table);
 
         if (!isset($GLOBALS['TL_DCA'][$table]['fields'][$column])) {
-            return null;
+            return $default;
         }
 
         return $column;

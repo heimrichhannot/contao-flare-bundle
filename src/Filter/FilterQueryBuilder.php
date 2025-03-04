@@ -2,7 +2,6 @@
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
-use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\Expression\CompositeExpression;
 use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
 

@@ -4,10 +4,13 @@ namespace HeimrichHannot\FlareBundle\DataContainer;
 
 use Contao\Controller;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
+use Contao\CoreBundle\Framework\ContaoFramework;
+use Contao\Database;
 use Contao\DataContainer;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -18,66 +21,50 @@ class FilterContainer
     protected array $dcTableCache = [];
 
     public function __construct(
+        private readonly ContaoFramework $contaoFramework,
         private readonly FilterElementRegistry $filterElementRegistry,
         private readonly RequestStack $requestStack,
     ) {}
 
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.options')]
-    public function getFieldOptions_fieldBool(?DataContainer $dc): array
-    {
-        return $this->getFieldOptions(
-            $dc,
-            static fn(string $table, string $field, array $definition) =>
-                ($definition['inputType'] ?? null) === 'checkbox'
-        );
-    }
-
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldStart.options')]
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldStop.options')]
-    public function getFieldOptions_fieldTime(?DataContainer $dc): array
-    {
-        return $this->getFieldOptions(
-            $dc,
-            static fn(string $table, string $field, array $definition) =>
-                ($definition['inputType'] ?? null) === 'text' && ($definition['eval']['rgxp'] ?? null) === 'datim'
-        );
-    }
+    /* ============================= *
+     *  LOAD AND SAVE                *
+     * ============================= */
+    // <editor-fold desc="Load and Save">
 
     #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.load')]
     #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.save')]
     public function onLoadField_fieldPublished(mixed $value, DataContainer $dc): string
     {
-        return $value ?: $this->tryGetColumnName($dc, 'published', '');
+        $x = $value ?: DcaHelper::tryGetColumnName($dc, 'published', '');
+        return $x;
     }
 
     #[AsCallback(self::TABLE_NAME, 'fields.fieldStart.load')]
     #[AsCallback(self::TABLE_NAME, 'fields.fieldStart.save')]
     public function onLoadField_fieldStart(mixed $value, DataContainer $dc): string
     {
-        return $value ?: $this->tryGetColumnName($dc, 'start', '');
+        return $value ?: DcaHelper::tryGetColumnName($dc, 'start', '');
     }
 
     #[AsCallback(self::TABLE_NAME, 'fields.fieldStop.load')]
     #[AsCallback(self::TABLE_NAME, 'fields.fieldStop.save')]
     public function onLoadField_fieldStop(mixed $value, DataContainer $dc): string
     {
-        return $value ?: $this->tryGetColumnName($dc, 'stop', '');
+        return $value ?: DcaHelper::tryGetColumnName($dc, 'stop', '');
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.type.options')]
-    public function getFieldOptions_type(): array
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldPid.load')]
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldPid.save')]
+    public function onLoadField_fieldPid(mixed $value, DataContainer $dc): string
     {
-        $options = [];
+        return $value ?: DcaHelper::tryGetColumnName($dc, 'pid', '');
+    }
 
-        foreach ($this->filterElementRegistry->all() as $alias => $filterElement)
-        {
-            $service = $filterElement->getService();
-            $options[$alias] = \class_implements($service, TranslatorInterface::class)
-                ? $service->trans($alias)
-                : $alias;
-        }
-
-        return $options;
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldPtable.load')]
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldPtable.save')]
+    public function onLoadField_fieldPtable(mixed $value, DataContainer $dc): string
+    {
+        return $value ?: DcaHelper::tryGetColumnName($dc, 'ptable', '');
     }
 
     #[AsCallback(self::TABLE_NAME, 'fields.intrinsic.load')]
@@ -123,6 +110,107 @@ class FilterContainer
         return $value;
     }
 
+    // </editor-fold>
+
+    /* ============================= *
+     *  OPTIONS                      *
+     * ============================= */
+    // <editor-fold desc="Options">
+
+    #[AsCallback(self::TABLE_NAME, 'fields.type.options')]
+    public function getFieldOptions_type(): array
+    {
+        $options = [];
+
+        foreach ($this->filterElementRegistry->all() as $alias => $filterElement)
+        {
+            $service = $filterElement->getService();
+            $options[$alias] = \class_implements($service, TranslatorInterface::class)
+                ? $service->trans($alias)
+                : $alias;
+        }
+
+        return $options;
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.options')]
+    public function getFieldOptions_fieldBool(?DataContainer $dc): array
+    {
+        return DcaHelper::getFieldOptions(
+            $dc,
+            static fn(string $table, string $field, array $definition) =>
+                ($definition['inputType'] ?? null) === 'checkbox'
+        );
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldStart.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldStop.options')]
+    public function getFieldOptions_fieldDatim(?DataContainer $dc): array
+    {
+        return DcaHelper::getFieldOptions(
+            $dc,
+            static fn(string $table, string $field, array $definition) =>
+                ($definition['inputType'] ?? null) === 'text' && ($definition['eval']['rgxp'] ?? null) === 'datim'
+        );
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldPid.options')]
+    public function getFieldOptions_fieldPid(?DataContainer $dc): array
+    {
+        return DcaHelper::getFieldOptions(
+            $dc,
+            static function(string $table, string $field, array $definition) {
+                if (\str_contains($field, 'pid')
+                    || \is_array($definition['relation'] ?? null)
+                    || \is_string($definition['foreignKey'] ?? null)) {
+                    return true;
+                }
+
+                return DcaHelper::testSQLType($definition['sql'] ?? null, 'int');
+            }
+        );
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldPtable.options')]
+    public function getFieldOptions_fieldPtable(?DataContainer $dc): array
+    {
+        return DcaHelper::getFieldOptions(
+            $dc,
+            static function(string $table, string $field, array $definition) {
+                if (\str_contains($field, 'ptable')) {
+                    return true;
+                }
+
+                if (($definition['inputType'] ?? null) === 'text'
+                    && !DcaHelper::testSQLType($definition['sql'] ?? null, 'int')) {
+                    return true;
+                }
+
+                return DcaHelper::testSQLType($definition['sql'] ?? null, 'text');
+            }
+        );
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.tablePtable.options')]
+    public function getFieldOptions_tablePtable(?DataContainer $dc): array
+    {
+        $db = $this->contaoFramework->createInstance(Database::class);
+
+        if (!$tables = $db?->listTables()) {
+            return [];
+        }
+
+        $tables = \array_filter($tables, static fn(string $table) => $db->tableExists($table));
+        return \array_combine($tables, $tables);
+    }
+
+    // </editor-fold>
+
+    /* ============================= *
+     *  LABELS                       *
+     * ============================= */
+    // <editor-fold desc="Labels">
+
     #[AsCallback(self::TABLE_NAME, 'list.label.group')]
     public function listLabelGroup(string $group, string $mode, string $field, array $record, DataContainer $dc): string
     {
@@ -157,64 +245,5 @@ class FilterContainer
         return $html;
     }
 
-    protected function getListDCTableFromDataContainer(?DataContainer $dc): ?string
-    {
-        if (!$dc
-            || !($row = $dc?->activeRecord?->row())
-            || !($pid = $row['pid'] ?? null))
-        {
-            return null;
-        }
-
-        if (isset($this->dcTableCache[$pid])) {
-            return $this->dcTableCache[$pid];
-        }
-
-        if (!($list = ListModel::findByPk($pid))
-            || !($table = $list->dc))
-        {
-            return null;
-        }
-
-        return $this->dcTableCache[$pid] = $table;
-    }
-
-    protected function tryGetColumnName(DataContainer $dc, string $column, ?string $default = null): ?string
-    {
-        if (!$table = $this->getListDCTableFromDataContainer($dc)) {
-            return $default;
-        }
-
-        Controller::loadDataContainer($table);
-
-        if (!isset($GLOBALS['TL_DCA'][$table]['fields'][$column])) {
-            return $default;
-        }
-
-        return $column;
-    }
-
-    public function getFieldOptions(?DataContainer $dc, ?callable $predicate = null): array
-    {
-        if (!$table = $this->getListDCTableFromDataContainer($dc)) {
-            return [];
-        }
-
-        Controller::loadDataContainer($table);
-
-        $options = [];
-        foreach ($GLOBALS['TL_DCA'][$table]['fields'] ?? [] as $field => $definition)
-        {
-            if ($predicate !== null && !$predicate($table, $field, $definition)) {
-                continue;
-            }
-
-            $key = $table . '.' . $field;
-            $options[$field] = $key;
-        }
-
-        \ksort($options);
-
-        return $options;
-    }
+    // </editor-fold>
 }

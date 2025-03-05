@@ -16,9 +16,15 @@ class PublishedElement extends AbstractFilterElement
 
     public function __invoke(FilterQueryBuilder $qb, FilterContext $context): void
     {
-        $qb->where("published = 1");
-
         $filterModel = $context->getFilterModel();
+
+        if ($filterModel->usePublished ?? true)
+        {
+            $publishedField = ($filterModel->fieldPublished ?: "published");
+            $invertPublished = $filterModel->invertPublished ?? false;
+            $operator = $invertPublished ? '!=' : '=';
+            $qb->where("$publishedField $operator 1");  // "published = 1" or "published != 1"
+        }
 
         if ($filterModel->useStart ?? true)
         {

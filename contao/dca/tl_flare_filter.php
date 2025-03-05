@@ -125,7 +125,7 @@ $dca['fields'] = [
         'default' => true,
         'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
         'inputType' => 'checkbox',
-        'eval' => ['tl_class' => 'w50'],
+        'eval' => ['tl_class' => 'cbx w50'],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
     'usePublished' => [
@@ -137,7 +137,7 @@ $dca['fields'] = [
         'inputType' => 'checkbox',
         'eval' => [
             'submitOnChange' => true,
-            'tl_class' => 'w50 clr'
+            'tl_class' => 'cbx w50 clr'
         ],
         'sql' => ['type' => 'boolean', 'default' => true],
     ],
@@ -150,7 +150,7 @@ $dca['fields'] = [
         'inputType' => 'checkbox',
         'eval' => [
             'submitOnChange' => true,
-            'tl_class' => 'w50 clr'
+            'tl_class' => 'cbx w50 clr'
         ],
         'sql' => ['type' => 'boolean', 'default' => true],
     ],
@@ -163,9 +163,24 @@ $dca['fields'] = [
         'inputType' => 'checkbox',
         'eval' => [
             'submitOnChange' => true,
-            'tl_class' => 'w50 clr'
+            'tl_class' => 'cbx w50 clr'
         ],
         'sql' => ['type' => 'boolean', 'default' => true],
+    ],
+    'whichPtable' => [
+        'exclude' => true,
+        'filter' => true,
+        'default' => 'auto',
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'radio',
+        'options' => ['auto', 'dynamic', 'static'],
+        'reference' => &$GLOBALS['TL_LANG'][FilterModel::getTable()]['whichPtable_options'],
+        'eval' => [
+            'submitOnChange' => true,
+            'alwaysSave' => true,
+            'tl_class' => 'w50 clr'
+        ],
+        'sql' => "varchar(32) NOT NULL default 'auto'",
     ],
     'invertPublished' => [
         'exclude' => true,
@@ -187,6 +202,7 @@ $dca['fields'] = [
         'eval' => [
             'mandatory' => true,
             'includeBlankOption' => true,
+            'alwaysSave' => true,
             'tl_class' => 'w50',
         ],
         'sql' => "varchar(128) NOT NULL default ''",
@@ -199,6 +215,7 @@ $dca['fields'] = [
         'eval' => [
             'mandatory' => true,
             'includeBlankOption' => true,
+            'alwaysSave' => true,
             'tl_class' => 'w50',
         ],
         'sql' => "varchar(128) NOT NULL default ''",
@@ -211,14 +228,54 @@ $dca['fields'] = [
         'eval' => [
             'mandatory' => true,
             'includeBlankOption' => true,
+            'alwaysSave' => true,
             'tl_class' => 'w50',
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
+    'fieldPid' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => true,
+        'sorting' => true,
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'fieldPtable' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => true,
+        'sorting' => true,
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'tl_class' => 'w50 clr',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'tablePtable' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => true,
+        'sorting' => true,
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ]
 ];
 
 $dca['palettes'] = [
-    '__selector__' => ['type', 'usePublished', 'useStart', 'useStop'],
+    '__selector__' => ['type', 'usePublished', 'useStart', 'useStop', 'whichPtable'],
     '__prefix__' => '{title_legend},title,type,intrinsic',
     '__suffix__' => '{publish_legend},published',
 ];
@@ -229,4 +286,7 @@ $dca['subpalettes'] = [
     'usePublished' => 'fieldPublished,invertPublished',
     'useStart' => 'fieldStart',
     'useStop' => 'fieldStop',
+    'whichPtable_auto' => '',
+    'whichPtable_dynamic' => 'fieldPtable',
+    'whichPtable_static' => 'tablePtable',
 ];

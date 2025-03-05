@@ -46,7 +46,9 @@ class ArchiveElement extends AbstractFilterElement implements PaletteContract
         $ptable = $entityDca['config']['ptable'] ?? null;
 
         if (!$dynamicPtable && $ptable === null) {
-            Message::addError(\sprintf('Parent table cannot be inferred automatically on "%s"', $entityTable));
+            $msg = \sprintf('Parent table cannot be inferred automatically on "%s"', $entityTable);
+            $method = $filterModel->whichPtable === 'auto' ? 'addError' : 'addInfo';
+            Message::{$method}($msg);
         }
 
         $palette = '{filter_legend},fieldPid,whichPtable';

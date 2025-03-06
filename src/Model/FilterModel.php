@@ -28,6 +28,7 @@ use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
  * @property string $fieldPid
  * @property string $fieldPtable
  * @property string $tablePtable
+ * @property string $whitelistParents
  * @property string $groupWhitelistParents
  */
 class FilterModel extends Model
@@ -49,5 +50,17 @@ class FilterModel extends Model
         }
 
         return $result;
+    }
+
+    public function whichPtable_disableAutoOption(): void
+    {
+        $GLOBALS['TL_DCA'][FilterModel::getTable()]['fields']['whichPtable']['options'] = ['dynamic', 'static'];
+        $GLOBALS['TL_DCA'][FilterModel::getTable()]['fields']['whichPtable']['default'] = ['dynamic'];
+
+        if ($this->whichPtable === 'auto')
+        {
+            $this->whichPtable = 'dynamic';
+            $this->save();
+        }
     }
 }

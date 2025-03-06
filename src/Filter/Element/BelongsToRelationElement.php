@@ -2,15 +2,18 @@
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
+use Contao\Controller;
 use Contao\Message;
-use Controller;
+use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
+use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 
 #[AsFilterElement(alias: BelongsToRelationElement::TYPE, palette: '{filter_legend},fieldPid')]
 class BelongsToRelationElement extends AbstractFilterElement implements PaletteContract
@@ -19,7 +22,90 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
 
     public function __invoke(FilterQueryBuilder $qb, FilterContext $context): void
     {
+        $filterModel = $context->getFilterModel();
+        $listModel = $context->getListModel();
 
+        if (!$fieldPid = $filterModel->fieldPid)
+        {
+            $qb->where('1 = 0');
+            return;
+        }
+
+        $inferrer = new PtableInferrer($filterModel, $listModel);
+
+        try
+        {
+            $ptable = $inferrer->explicit();
+            $dynamicPtableField = $inferrer->tryGetDynamicPtableField();
+        }
+        catch (InferenceException)
+        {
+            $qb->where('1 = 0');
+            return;
+        }
+
+        if (\is_string($dynamicPtableField))
+        {
+            $this->filterDynamicPtableField($dynamicPtableField, $filterModel, $qb, $fieldPid);
+            return;
+        }
+
+        if (!$ptable || !$whitelistParents = StringUtil::deserialize($filterModel->whitelistParents)) {
+            $qb->where('1 = 0');
+            return;
+        }
+
+        $qb->where("`$fieldPid` IN (" . \implode(', ', $whitelistParents) . ")");
+    }
+
+    public function filterDynamicPtableField(
+        string             $dynamicPtableField,
+        FilterModel        $filterModel,
+        FilterQueryBuilder $qb,
+        string             $fieldPid
+    ): void {
+        if (!$parentGroups = StringUtil::deserialize($filterModel->groupWhitelistParents))
+        {
+            $qb->where('1 = 0');
+            return;
+        }
+
+        $ors = [];
+
+        foreach (\array_values($parentGroups) as $i => $group)
+        {
+            if (!($g_tablePtable = $group['tablePtable'] ?? null)
+                || !($g_whitelistParents = $group['whitelistParents'] ?? null)
+                || !\is_array($g_whitelistParents = StringUtil::deserialize($g_whitelistParents)))
+            {
+                continue;
+            }
+
+            $gKey_tablePtable = \sprintf(':g%s_ptable', $i);
+            $gKey_whitelistParents = \sprintf(':g%s_whitelist', $i);
+
+            $ors[] = $qb->expr()->and(
+                $qb->expr()->eq($dynamicPtableField, $gKey_tablePtable),
+                $qb->expr()->in($fieldPid, $gKey_whitelistParents)
+            );
+
+            $qb->bind($gKey_tablePtable, $g_tablePtable);
+            $qb->bind($gKey_whitelistParents, \implode(', ', $g_whitelistParents));
+        }
+
+        if (empty($ors))
+        {
+            $qb->where('1 = 0');
+            return;
+        }
+
+        if (\count($ors) === 1)
+        {
+            $qb->where($ors[0]);
+            return;
+        }
+
+        $qb->where($qb->expr()->or(...$ors));
     }
 
     public function getPalette(PaletteConfig $config): ?string
@@ -32,61 +118,42 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
             return '';
         }
 
-        if (!$entityTable = $listModel->dc) {
-            Message::addError('Please define a data container for the list model ' . $listModel->getTable());
+        if (!$listModel->dc) {
+            Message::addError('Please define a data container on the list model ' . $listModel->getTable());
             return '';
         }
 
-        Controller::loadDataContainer($entityTable);
-
-        if (!$entityDca = $GLOBALS['TL_DCA'][$entityTable] ?? null) {
-            Message::addError('Data container array not found for ' . $entityTable);
-            return null;
-        }
-
-        $dynamicPtable = $entityDca['config']['dynamicPtable'] ?? null;
-        $ptable = $entityDca['config']['ptable'] ?? null;
-        $inferredPtable = null;
-
         $palette = '{filter_legend},fieldPid,whichPtable';
 
-        if (\is_string($ptable))
+        $inferrer = new PtableInferrer($filterModel, $listModel);
+
+        try
         {
-            $inferredPtable = $ptable;
-            Message::addInfo(\sprintf('Parent table of "%s" inferred automatically as "%s"', $entityTable, $ptable));
+            $ptable = $inferrer->explicit(true);
+
+            Message::addInfo(match (true) {
+                $inferrer->isAutoInferable() => \sprintf('Parent table of "%s.%s" inferred as "%s"', $listModel->dc, $filterModel->fieldPid, $ptable),
+                $inferrer->isAutoDynamicPtable() => \sprintf('Parent table of "%s" can be inferred dynamically', $listModel->dc),
+                default => \sprintf('Parent table cannot be inferred on "%s.%s"', $listModel->dc, $filterModel->fieldPid)
+            });
         }
-        else
+        catch (InferenceException $e)
         {
-            if ($filterModel->whichPtable === 'auto')
-            {
-                $filterModel->whichPtable = 'dynamic';
-                $filterModel->save();
-            }
-
-            $GLOBALS['TL_DCA'][FilterModel::getTable()]['fields']['whichPtable']['options'] = ['dynamic', 'static'];
-            $GLOBALS['TL_DCA'][FilterModel::getTable()]['fields']['whichPtable']['default'] = ['dynamic'];
-
-            Message::addInfo($dynamicPtable
-                ? \sprintf('Parent table of "%s" is inferred dynamically', $entityTable)
-                : \sprintf('Parent table cannot be inferred automatically on "%s"', $entityTable)
-            );
+            Message::addError($e->getMessage());
         }
 
-        $inferredPtable = match ($filterModel->whichPtable) {
-            'dynamic' => null,
-            'static' => $filterModel->tablePtable ?? null,
-            default => $inferredPtable,
-        };
+        if (!$inferrer->isAutoInferable())
+        {
+            $filterModel->whichPtable_disableAutoOption();
+        }
 
         if ($filterModel->whichPtable === 'dynamic')
         {
             $palette .= ';{archive_legend},groupWhitelistParents';
         }
-        elseif ($inferredPtable)
+        elseif ($ptable ?? null)
         {
-            $options = DcaHelper::getArchiveOptions($inferredPtable);
-            $GLOBALS['TL_DCA'][FilterModel::getTable()]['fields']['whitelistParents']['options'] = $options;
-            $palette .= ';{archive_legend},whitelistParents';
+            $palette .= ',whitelistParents';
         }
 
         return $palette;

@@ -7,9 +7,11 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Database;
 use Contao\DataContainer;
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
+use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -109,6 +111,31 @@ class FilterContainer
         return $value;
     }
 
+    #[AsCallback(self::TABLE_NAME, 'config.onsubmit')]
+    public function onSubmit_whichPtable(DataContainer $dc): void
+    {
+        if (!$dc->id
+            || $dc->table !== self::TABLE_NAME
+            || !($filterModel = FilterModel::findByPk($dc->id))
+            || !($listModel = $filterModel->getRelated('pid')))
+        {
+            return;
+        }
+
+        try
+        {
+            $inferrer = new PtableInferrer($filterModel, $listModel);
+
+            $inferrer->infer();
+
+            if (!$inferrer->isAutoInferable())
+            {
+                $filterModel->whichPtable_disableAutoOption();
+            }
+        }
+        catch (InferenceException) {}
+    }
+
     // </editor-fold>
 
     /* ============================= *
@@ -206,11 +233,19 @@ class FilterContainer
     #[AsCallback(self::TABLE_NAME, 'fields.whitelistParents.options')]
     public function getFieldOptions_whitelistParents(?DataContainer $dc): array
     {
-        if (!$dc?->id || !$filterModel = FilterModel::findByPk($dc->id)) {
+        if (!$dc?->id
+            || !($filterModel = FilterModel::findByPk($dc->id))
+            || !($listModel = $filterModel->getRelated('pid')))
+        {
             return [];
         }
 
-        $ptable = $filterModel->tablePtable ?: null;
+        try {
+            $inferrer = new PtableInferrer($filterModel, $listModel);
+            $ptable = $inferrer->explicit();
+        } catch (InferenceException) {
+            $ptable = null;
+        }
 
         if (!\str_contains($dc->field, '__'))
             // this is a regular field

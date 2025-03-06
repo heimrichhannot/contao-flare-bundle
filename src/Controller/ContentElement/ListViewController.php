@@ -89,6 +89,8 @@ class ListViewController extends AbstractContentElementController
 
         $entries = $result->fetchAllAssociative();
 
+        $result->free();
+
         $form = $this->filterFormBuilder->build($filters->collectFormTypes());
 
         $data = $template->getData();

@@ -243,6 +243,7 @@ $dca['fields'] = [
         'filter' => true,
         'sorting' => true,
         'eval' => [
+            'submitOnChange' => true,
             'mandatory' => true,
             'includeBlankOption' => true,
             'alwaysSave' => true,
@@ -300,7 +301,6 @@ $dca['fields'] = [
                 'eval' => ['tl_class' => 'w50'],
             ]
         ],
-        'min' => 1,
         'order' => false,
         'sql' => ['type' => 'blob', 'notnull' => false]
     ]

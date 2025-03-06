@@ -2,14 +2,13 @@
 
 namespace HeimrichHannot\FlareBundle\DataContainer;
 
-use Contao\Controller;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Database;
 use Contao\DataContainer;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -202,6 +201,46 @@ class FilterContainer
 
         $tables = \array_filter($tables, static fn(string $table) => $db->tableExists($table));
         return \array_combine($tables, $tables);
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.whitelistParents.options')]
+    public function getFieldOptions_whitelistParents(?DataContainer $dc): array
+    {
+        if (!$dc?->id || !$filterModel = FilterModel::findByPk($dc->id)) {
+            return [];
+        }
+
+        $ptable = $filterModel->tablePtable ?: null;
+
+        if (!\str_contains($dc->field, '__'))
+            // this is a regular field
+        {
+            return DcaHelper::getArchiveOptions($ptable);
+        }
+        // else => this is a group field
+
+        if (\count($groupParts = \explode('__', $dc->field)) !== 3) {
+            return [];
+        }
+
+        [$field, $groupField, $index] = $groupParts;
+        // $sourcePtableField = \sprintf('%s__tablePtable__%s', $field, $index);
+
+        if ($field !== 'groupWhitelistParents' || $groupField !== 'whitelistParents') {
+            return [];
+        }
+
+        if (!$savedGroups = StringUtil::deserialize($filterModel->groupWhitelistParents ?? '')) {
+            return [];
+        }
+
+        if (!$group = $savedGroups[(int) $index] ?? null) {
+            return [];
+        }
+
+        $ptable = $group['tablePtable'] ?? null;
+
+        return DcaHelper::getArchiveOptions($ptable);
     }
 
     // </editor-fold>

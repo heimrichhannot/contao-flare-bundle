@@ -5,7 +5,7 @@ namespace HeimrichHannot\FlareBundle\EventListener\DataContainer;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Contao\Model;
-use Controller;
+use Contao\Controller;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
@@ -36,24 +36,52 @@ readonly class AutoTypePalettesCallback
             return;
         }
 
-        $serviceConfigs = match (Model::getClassFromTable($dc->table)) {
-            FilterModel::class => $this->filterElementRegistry->all(),
-            ListModel::class => $this->listTypeRegistry->all(),
-            default => null,
-        };
+        [$listModel, $filterModel] = $this->getModelsFromDC($dc);
 
-        if (!$serviceConfigs) {
+        if (!$listModel instanceof ListModel) {
             return;
         }
 
-        foreach ($serviceConfigs as $alias => $config)
-        {
-            $this->applyPalette($dc, $alias, $config);
+        $config = match (Model::getClassFromTable($dc->table)) {
+            FilterModel::class => $this->filterElementRegistry->get($alias = $filterModel?->type),
+            ListModel::class => $this->listTypeRegistry->get($alias = $listModel->type),
+            default => null,
+        };
+
+        if (empty($alias) || !($config instanceof ConfigInterface)) {
+            return;
         }
+
+        $this->applyPalette($dc, $alias, $config, $listModel, $filterModel);
     }
 
-    protected function applyPalette(DataContainer $dc, string $alias, ConfigInterface $config): void
+    protected function getModelsFromDC(DataContainer $dc): array
     {
+        Controller::loadDataContainer(FilterContainer::TABLE_NAME);
+        Controller::loadDataContainer(ListContainer::TABLE_NAME);
+
+        $clsModel = Model::getClassFromTable($dc->table);
+
+        switch ($clsModel) {
+            case FilterModel::class:
+                $filterModel = FilterModel::findByPk($dc->id);
+                $listModel = ListModel::findByPk($filterModel?->pid ?: null);
+                break;
+            case ListModel::class:
+                $listModel = ListModel::findByPk($dc->id);
+                break;
+        }
+
+        return [$listModel ?? null, $filterModel ?? null];
+    }
+
+    protected function applyPalette(
+        DataContainer   $dc,
+        string          $alias,
+        ConfigInterface $config,
+        ListModel       $listModel,
+        ?FilterModel    $filterModel
+    ): void {
         if (!($table = $dc->table) || $alias === 'default' || \str_starts_with($alias, '__')) {
             return;
         }
@@ -67,26 +95,13 @@ readonly class AutoTypePalettesCallback
 
         if ($service instanceof PaletteContract)
         {
-            Controller::loadDataContainer(FilterContainer::TABLE_NAME);
-            Controller::loadDataContainer(ListContainer::TABLE_NAME);
-
-            if (Model::getClassFromTable($dc->table) === ListModel::class)
-            {
-                $listModel = ListModel::findByPk($dc->id);
-            }
-            else // FilterModel
-            {
-                $filterModel = FilterModel::findByPk($dc->id);
-                $listModel = ListModel::findByPk($filterModel?->pid ?: null);
-            }
-
             $paletteConfig = new PaletteConfig(
                 alias: $alias,
                 dataContainer: $dc,
                 prefix: $prefix,
                 suffix: $suffix,
-                listModel: $listModel ?? null,
-                filterModel: $filterModel ?? null
+                listModel: $listModel,
+                filterModel: $filterModel
             );
 
             $palette = $service->getPalette($paletteConfig);

@@ -28,6 +28,7 @@ use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
  * @property string $fieldPid
  * @property string $fieldPtable
  * @property string $tablePtable
+ * @property string $groupWhitelistParents
  */
 class FilterModel extends Model
 {

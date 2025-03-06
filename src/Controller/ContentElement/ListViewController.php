@@ -149,6 +149,6 @@ class ListViewController extends AbstractContentElementController
 
     protected function getBackendResponse(Template $template, ContentModel $model, Request $request): ?Response
     {
-        return new Response('FLARE Catalog Element');
+        return new Response('FLARE ListView Element');
     }
 }

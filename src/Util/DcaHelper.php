@@ -129,8 +129,12 @@ class DcaHelper
         return $normalizeType($givenType) === $normalizeType($expectedType);
     }
 
-    public static function getArchiveOptions(string $table): array
+    public static function getArchiveOptions(?string $table): array
     {
+        if (!$table) {
+            return [];
+        }
+
         Controller::loadDataContainer($table);
 
         $modelClass = Model::getClassFromTable($table);

@@ -204,6 +204,7 @@ $dca['fields'] = [
             'mandatory' => true,
             'includeBlankOption' => true,
             'alwaysSave' => true,
+            'chosen' => true,
             'tl_class' => 'w50',
         ],
         'sql' => "varchar(128) NOT NULL default ''",
@@ -217,6 +218,7 @@ $dca['fields'] = [
             'mandatory' => true,
             'includeBlankOption' => true,
             'alwaysSave' => true,
+            'chosen' => true,
             'tl_class' => 'w50',
         ],
         'sql' => "varchar(128) NOT NULL default ''",
@@ -230,6 +232,7 @@ $dca['fields'] = [
             'mandatory' => true,
             'includeBlankOption' => true,
             'alwaysSave' => true,
+            'chosen' => true,
             'tl_class' => 'w50',
         ],
         'sql' => "varchar(128) NOT NULL default ''",
@@ -243,6 +246,7 @@ $dca['fields'] = [
             'mandatory' => true,
             'includeBlankOption' => true,
             'alwaysSave' => true,
+            'chosen' => true,
             'tl_class' => 'w50',
         ],
         'sql' => "varchar(128) NOT NULL default ''",
@@ -256,6 +260,7 @@ $dca['fields'] = [
             'mandatory' => true,
             'includeBlankOption' => true,
             'alwaysSave' => true,
+            'chosen' => true,
             'tl_class' => 'w50 clr',
         ],
         'sql' => "varchar(128) NOT NULL default ''",
@@ -270,17 +275,34 @@ $dca['fields'] = [
             'submitOnChange' => true,
             'includeBlankOption' => true,
             'alwaysSave' => true,
+            'chosen' => true,
             'tl_class' => 'w50',
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
     'whitelistParents' => [
         'inputType' => 'select',
+        'default' => null,
         'eval' => [
             'chosen' => true,
             'multiple' => true,
         ],
-        'sql' => ['type' => 'blob']
+        'sql' => ['type' => 'blob', 'notnull' => false],
+    ],
+    'groupWhitelistParents' => [
+        'inputType' => 'group',
+        'palette' => ['tablePtable', 'whitelistParents'],
+        'fields' => [
+            '&tablePtable' => [
+                'eval' => ['tl_class' => 'clr w50'],
+            ],
+            '&whitelistParents' => [
+                'eval' => ['tl_class' => 'w50'],
+            ]
+        ],
+        'min' => 1,
+        'order' => false,
+        'sql' => ['type' => 'blob', 'notnull' => false]
     ]
 ];
 

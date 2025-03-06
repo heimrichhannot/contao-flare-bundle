@@ -129,6 +129,11 @@ class ListViewController extends AbstractContentElementController
 
             [$sql, $params] = $filterQueryBuilder->buildQuery((string) $i);
 
+            if (empty($sql))
+            {
+                continue;
+            }
+
             $combinedConditions[] = $sql;
             $combinedParameters = \array_merge($combinedParameters, $params);
         }

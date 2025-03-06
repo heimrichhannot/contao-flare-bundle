@@ -12,12 +12,22 @@ use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
  * @property int $id
  * @property int $pid
  * @property int $sorting
- * @property string $tstamp
- * @property string $type
+ * @property int $tstamp
  * @property string $title
+ * @property string $type
+ * @property bool $published
+ * @property bool $intrinsic
+ * @property bool $usePublished
+ * @property bool $useStart
+ * @property bool $useStop
+ * @property bool $invertPublished
+ * @property string $whichPtable
+ * @property string $fieldPublished
  * @property string $fieldStart
  * @property string $fieldStop
- *
+ * @property string $fieldPid
+ * @property string $fieldPtable
+ * @property string $tablePtable
  */
 class FilterModel extends Model
 {

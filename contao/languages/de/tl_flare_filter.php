@@ -29,11 +29,16 @@ $lang['fieldStop'] = ['Enddatum-Feld', 'Bitte wählen Sie das Feld aus, das als 
 $lang['fieldPid'] = ['Archiv-ID-Feld', 'Bitte wählen Sie das Feld aus, das die ID der Elternentität enthält.'];
 $lang['fieldPtable'] = ['Archiv-Tabelle-Feld', 'Bitte wählen Sie das Feld aus, das den Tabellennamen der Elternentität enthält.'];
 $lang['tablePtable'] = ['Statische Archiv-Tabelle', 'Bitte wählen Sie die Tabelle aus, die die Elternentität darstellt.'];
-###< filter_legend ###
-
 $lang['whichPtable'] = ['Archiv-Tabelle ermitteln', 'Bitte wählen Sie die Tabelle aus, die die Elternentität darstellt.'];
 $lang['whichPtable_options'] = [
     'auto' => 'Elterntabelle automatisch ermitteln',
     'dynamic' => 'Spalte mit dynamischer Elterntabelle festlegen',
     'static' => 'Statische Elterntabelle festlegen',
 ];
+###< filter_legend ###
+
+###> archive_legend ###
+$lang['archive_legend'] = 'Archiv-Einstellungen';
+$lang['whitelistParents'] = ['Eltern-Whitelist', 'Bitte wählen Sie die Archive aus, die für diesen Filter zulässig sind.'];
+$lang['groupWhitelistParents'] = ['Eltern-Whitelist', 'Bitte wählen Sie die Tabellen und Archive aus, die für diesen Filter zulässig sind.'];
+###< archive_legend ###

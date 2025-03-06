@@ -1,4 +1,5 @@
 filter_element.flare_published: "Published"
+filter_element.flare_relation_belongsTo: "Relation: Belongs to"
 
-list_type.flare_data_container: "Data Container"
+list_type.flare_generic_dc: "Data Container"
 list_type.flare_news: "News"

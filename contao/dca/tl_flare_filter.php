@@ -100,6 +100,7 @@ $dca['fields'] = [
         'exclude' => true,
         'filter' => true,
         'sorting' => true,
+        'reference' => &$GLOBALS['TL_LANG']['FLARE']['FILTER'],
         'eval' => [
             'mandatory' => true,
             'includeBlankOption' => true,
@@ -167,6 +168,18 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => true],
     ],
+    'invertPublished' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => true,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'tl_class' => 'w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
     'whichPtable' => [
         'exclude' => true,
         'filter' => true,
@@ -181,18 +194,6 @@ $dca['fields'] = [
             'tl_class' => 'w50 clr'
         ],
         'sql' => "varchar(32) NOT NULL default 'auto'",
-    ],
-    'invertPublished' => [
-        'exclude' => true,
-        'toggle' => true,
-        'filter' => true,
-        'default' => false,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
-        'inputType' => 'checkbox',
-        'eval' => [
-            'tl_class' => 'w50'
-        ],
-        'sql' => ['type' => 'boolean', 'default' => false],
     ],
     'fieldPublished' => [
         'inputType' => 'select',
@@ -266,11 +267,20 @@ $dca['fields'] = [
         'sorting' => true,
         'eval' => [
             'mandatory' => true,
+            'submitOnChange' => true,
             'includeBlankOption' => true,
             'alwaysSave' => true,
             'tl_class' => 'w50',
         ],
         'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'whitelistParents' => [
+        'inputType' => 'select',
+        'eval' => [
+            'chosen' => true,
+            'multiple' => true,
+        ],
+        'sql' => ['type' => 'blob']
     ]
 ];
 

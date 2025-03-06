@@ -73,6 +73,10 @@ class FilterQueryBuilder
 
     public function buildQuery(?string $prefix): array
     {
+        if (empty($this->conditions)) {
+            return ['', []];
+        }
+
         $cond = $this->expr->and(...$this->conditions);
         $sql = (string) $cond;
 

@@ -4,6 +4,8 @@ namespace HeimrichHannot\FlareBundle\Util;
 
 use Contao\Controller;
 use Contao\DataContainer;
+use Contao\Model;
+use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 /**
@@ -125,5 +127,74 @@ class DcaHelper
         };
 
         return $normalizeType($givenType) === $normalizeType($expectedType);
+    }
+
+    public static function getArchiveOptions(string $table): array
+    {
+        Controller::loadDataContainer($table);
+
+        $modelClass = Model::getClassFromTable($table);
+        if (!\class_exists($modelClass)
+            || !\method_exists($modelClass, 'findAll')
+            || !$models = $modelClass::findAll())
+        {
+            return [];
+        }
+
+        $labelFields = match ($table) {
+            'tl_article' => ['title'],
+            'tl_content' => ['headline'],
+            'tl_files' => ['name'],
+            'tl_user' => ['username', 'lastname', 'firstname', 'email'],
+            default => [],
+        };
+
+        $fields = $GLOBALS['TL_DCA'][$table]['fields'] ?? [];
+
+        if (empty($labelFields) && $label = \array_intersect_key($fields, \array_flip(['title', 'name', 'headline']))) {
+            $labelFields = \array_keys($label);
+        }
+
+        $options = [];
+
+        foreach ($models as $model)
+        {
+            $labelParts = [];
+            foreach ($labelFields as $field)
+            {
+                if (!$value = $model->{$field}) {
+                    continue;
+                }
+
+                if (\str_starts_with($value, "a:") && \str_contains($value, '{')
+                    && ($arrValue = StringUtil::deserialize($value))
+                    && (!$value = $arrValue['value'] ?? null))
+                {
+                    continue;
+                }
+
+                $labelParts[] = $value;
+            }
+
+            $label = \implode(' / ', $labelParts);
+
+            if ($model->type)
+            {
+                Controller::loadLanguageFile($table);
+
+                $type = $GLOBALS['TL_DCA'][$table]['fields']['type']['reference'][$model->type]
+                    ?? $GLOBALS['TL_LANG'][$table][$model->type]
+                    ?? $model->type;
+
+                $type = \is_array($type) ? ($type[0] ?? $model->type) : $type;
+                $label .= " ($type)";
+            }
+
+            $label .= " [$model->id]";
+
+            $options[$model->id] = \trim($label);
+        }
+
+        return $options;
     }
 }

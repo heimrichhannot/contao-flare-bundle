@@ -7,21 +7,21 @@ abstract class AbstractRegistry
     /**
      * An associative array of aliases and their corresponding FlareFilterElementDTO instances.
      *
-     * @var array<string, ConfigInterface>
+     * @var array<string, ServiceConfigInterface>
      */
     private array $elements = [];
 
     /**
      * Returns the class name of the config class.
      *
-     * @return class-string<ConfigInterface>
+     * @return class-string<ServiceConfigInterface>
      */
     abstract public function getConfigClass(): string;
 
     /**
      * Registers a new filter element.
      */
-    public function add(string $alias, ConfigInterface $config): static
+    public function add(string $alias, ServiceConfigInterface $config): static
     {
         if (!\is_a($config, $this->getConfigClass())) {
             throw new \InvalidArgumentException('Config must be an instance of ' . $this->getConfigClass() . '.');
@@ -53,7 +53,7 @@ abstract class AbstractRegistry
     /**
      * Returns a specific filter element by its alias.
      */
-    public function get(?string $alias): ?ConfigInterface
+    public function get(?string $alias): ?ServiceConfigInterface
     {
         if ($alias === null) {
             return null;
@@ -65,7 +65,7 @@ abstract class AbstractRegistry
     /**
      * Returns all registered filter elements.
      *
-     * @return array<string, ConfigInterface>
+     * @return array<string, ServiceConfigInterface>
      */
     public function all(): array
     {

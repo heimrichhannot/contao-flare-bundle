@@ -2,16 +2,19 @@
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
-use Contao\Controller;
+use Contao\DataContainer;
 use Contao\Message;
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\Contract\Config\OptionsConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 
@@ -157,5 +160,46 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
         }
 
         return $palette;
+    }
+
+    #[AsFilterCallback(self::TYPE, 'fields.whitelistParents.options')]
+    public function getOptions_whitelistParents(FilterModel $filterModel, ListModel $listModel, DataContainer $dc): array
+    {
+        try {
+            $inferrer = new PtableInferrer($filterModel, $listModel);
+            $ptable = $inferrer->explicit();
+        } catch (InferenceException) {
+            $ptable = null;
+        }
+
+        if (!\str_contains($dc->field, '__'))
+            // this is a regular field
+        {
+            return DcaHelper::getArchiveOptions($ptable);
+        }
+        // else => this is a group field
+
+        if (\count($groupParts = \explode('__', $dc->field)) !== 3) {
+            return [];
+        }
+
+        [$field, $groupField, $index] = $groupParts;
+        // $sourcePtableField = \sprintf('%s__tablePtable__%s', $field, $index);
+
+        if ($field !== 'groupWhitelistParents' || $groupField !== 'whitelistParents') {
+            return [];
+        }
+
+        if (!$savedGroups = StringUtil::deserialize($filterModel->groupWhitelistParents ?? '')) {
+            return [];
+        }
+
+        if (!$group = $savedGroups[(int) $index] ?? null) {
+            return [];
+        }
+
+        $ptable = $group['tablePtable'] ?? null;
+
+        return DcaHelper::getArchiveOptions($ptable);
     }
 }

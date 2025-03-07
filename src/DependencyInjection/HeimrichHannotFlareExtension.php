@@ -3,9 +3,13 @@
 namespace HeimrichHannot\FlareBundle\DependencyInjection;
 
 use Exception;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFlareCallback;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Filter\FilterElementConfig;
+use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackConfig;
 use HeimrichHannot\FlareBundle\List\ListTypeConfig;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ChildDefinition;
@@ -30,18 +34,42 @@ class HeimrichHannotFlareExtension extends Extension
         $loader = new YamlFileLoader($container, new FileLocator(\dirname(__DIR__) . '/../config'));
         $loader->load('services.yaml');
 
-        $container->registerAttributeForAutoconfiguration(
-            AsFilterElement::class,
-            static function (ChildDefinition  $definition, AsFilterElement  $attribute): void {
-                $definition->addTag(FilterElementConfig::TAG, $attribute->attributes);
-            }
-        );
+        $attributesForAutoconfiguration = [
+            AsFlareCallback::class => FlareCallbackConfig::TAG,
+            AsFilterCallback::class => FlareCallbackConfig::TAG_FILTER_CALLBACK,
+            AsFilterElement::class => FilterElementConfig::TAG,
+            AsListType::class => ListTypeConfig::TAG,
+            AsListCallback::class => FlareCallbackConfig::TAG_LIST_CALLBACK,
+        ];
 
-        $container->registerAttributeForAutoconfiguration(
-            AsListType::class,
-            static function (ChildDefinition  $definition, AsListType  $attribute): void {
-                $definition->addTag(ListTypeConfig::TAG, $attribute->attributes);
-            }
-        );
+        foreach ($attributesForAutoconfiguration as $attributeClass => $tag)
+        {
+            $container->registerAttributeForAutoconfiguration(
+                $attributeClass,
+                static function (ChildDefinition $definition, object $attribute, \Reflector $reflector) use ($attributeClass, $tag): void {
+                    $tagAttributes = \property_exists($attribute, 'attributes')
+                        ? $attribute->attributes
+                        : \get_object_vars($attribute);
+
+                    if ($reflector instanceof \ReflectionMethod)
+                    {
+                        if (isset($tagAttributes['method'])) {
+                            throw new \LogicException(
+                                sprintf(
+                                    '%s attribute cannot declare a method on "%s::%s()".',
+                                    $attributeClass,
+                                    $reflector->getDeclaringClass()->getName(),
+                                    $reflector->getName()
+                                )
+                            );
+                        }
+
+                        $tagAttributes['method'] = $reflector->getName();
+                    }
+
+                    $definition->addTag($tag, $tagAttributes);
+                }
+            );
+        }
     }
 }

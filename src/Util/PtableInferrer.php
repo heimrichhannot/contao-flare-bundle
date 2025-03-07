@@ -54,6 +54,28 @@ class PtableInferrer
         return $GLOBALS['TL_DCA'][$this->entityTable] ?? null;
     }
 
+    public function getDcaMainPtable(): ?string
+    {
+        if (!$entityDca = $this->getDCA()) {
+            return null;
+        }
+
+        if (\is_string($ptable = $entityDca['config']['ptable'] ?? null)) {
+            return $ptable;
+        }
+
+        return null;
+    }
+
+    public function isDcaDynamicPtable(): ?string
+    {
+        if (!$entityDca = $this->getDCA()) {
+            return null;
+        }
+
+        return $entityDca['config']['dynamicPtable'] ?? null;
+    }
+
     /**
      * @throws InferenceException
      */

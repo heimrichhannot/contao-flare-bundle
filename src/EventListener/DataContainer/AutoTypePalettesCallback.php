@@ -9,7 +9,7 @@ use Contao\Model;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
-use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ConfigInterface;
+use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ServiceConfigInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
@@ -48,7 +48,7 @@ readonly class AutoTypePalettesCallback
             default => null,
         };
 
-        if (empty($alias) || !($config instanceof ConfigInterface)) {
+        if (empty($alias) || !($config instanceof ServiceConfigInterface)) {
             return;
         }
 
@@ -76,11 +76,11 @@ readonly class AutoTypePalettesCallback
     }
 
     protected function applyPalette(
-        DataContainer   $dc,
-        string          $alias,
-        ConfigInterface $config,
-        ListModel       $listModel,
-        ?FilterModel    $filterModel
+        DataContainer          $dc,
+        string                 $alias,
+        ServiceConfigInterface $config,
+        ListModel              $listModel,
+        ?FilterModel           $filterModel
     ): void {
         if (!($table = $dc->table) || $alias === 'default' || \str_starts_with($alias, '__')) {
             return;
@@ -93,16 +93,18 @@ readonly class AutoTypePalettesCallback
 
         $service = $config->getService();
 
+        $paletteConfigFactory = static fn() => new PaletteConfig(
+            alias: $alias,
+            dataContainer: $dc,
+            prefix: $prefix,
+            suffix: $suffix,
+            listModel: $listModel,
+            filterModel: $filterModel
+        );
+
         if ($service instanceof PaletteContract)
         {
-            $paletteConfig = new PaletteConfig(
-                alias: $alias,
-                dataContainer: $dc,
-                prefix: $prefix,
-                suffix: $suffix,
-                listModel: $listModel,
-                filterModel: $filterModel
-            );
+            $paletteConfig = $paletteConfigFactory();
 
             $palette = $service->getPalette($paletteConfig);
 
@@ -110,11 +112,16 @@ readonly class AutoTypePalettesCallback
             $suffix = $paletteConfig->getSuffix();
         }
 
-        if (!isset($palette))
+        if (!isset($palette) && $config instanceof PaletteContract)
         {
-            $palette = $config->getPalette();
+            $paletteConfig = $paletteConfigFactory();
+
+            $palette = $config->getPalette($paletteConfig);
+
+            $prefix = $paletteConfig->getPrefix();
+            $suffix = $paletteConfig->getSuffix();
         }
 
-        $dcaPalettes[$alias] = Str::mergePalettes($prefix, $palette, $suffix);
+        $dcaPalettes[$alias] = Str::mergePalettes($prefix, $palette ?? null, $suffix);
     }
 }

@@ -40,7 +40,7 @@ class RegisterListTypesPass implements CompilerPassInterface
             {
                 $alias = $attributes['alias'] = $this->getListTypeAlias($definition, $attributes);
 
-                $serviceId = 'huh.flare.list_type._' . $alias;
+                $serviceId = 'huh.flare.list_type.' . $alias;
 
                 $childDefinition = new ChildDefinition((string) $reference);
                 $childDefinition->setPublic(true);

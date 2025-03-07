@@ -39,6 +39,7 @@ class HeimrichHannotFlareBundle extends Bundle
     public function build(ContainerBuilder $container): void
     {
         parent::build($container);
+        $container->addCompilerPass(new DependencyInjection\Compiler\RegisterFlareCallbacksPass());
         $container->addCompilerPass(new DependencyInjection\Compiler\RegisterFilterElementsPass());
         $container->addCompilerPass(new DependencyInjection\Compiler\RegisterListTypesPass());
     }

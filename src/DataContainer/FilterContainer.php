@@ -9,8 +9,11 @@ use Contao\DataContainer;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
+use HeimrichHannot\FlareBundle\Util\MethodInjector;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -24,6 +27,7 @@ class FilterContainer
     public function __construct(
         private readonly ContaoFramework $contaoFramework,
         private readonly FilterElementRegistry $filterElementRegistry,
+        private readonly FlareCallbackRegistry $callbackRegistry,
         private readonly RequestStack $requestStack,
     ) {}
 
@@ -230,8 +234,11 @@ class FilterContainer
         return \array_combine($tables, $tables);
     }
 
+    /**
+     * @throws \ReflectionException
+     */
     #[AsCallback(self::TABLE_NAME, 'fields.whitelistParents.options')]
-    public function getFieldOptions_whitelistParents(?DataContainer $dc): array
+    public function getFieldOptions(?DataContainer $dc): array
     {
         if (!$dc?->id
             || !($filterModel = FilterModel::findByPk($dc->id))
@@ -240,42 +247,34 @@ class FilterContainer
             return [];
         }
 
-        try {
-            $inferrer = new PtableInferrer($filterModel, $listModel);
-            $ptable = $inferrer->explicit();
-        } catch (InferenceException) {
-            $ptable = null;
+        $namespace = "filter." . $filterModel->type;
+        $target = "fields.{$dc->field}.options";
+
+        if (!$callbacks = $this->callbackRegistry->getSorted($namespace, $target)) {
+            return [];
         }
 
-        if (!\str_contains($dc->field, '__'))
-            // this is a regular field
+        foreach ($callbacks as $callbackConfig)
         {
-            return DcaHelper::getArchiveOptions($ptable);
-        }
-        // else => this is a group field
+            $method = $callbackConfig->getMethod();
+            $service = $callbackConfig->getService();
 
-        if (\count($groupParts = \explode('__', $dc->field)) !== 3) {
-            return [];
-        }
+            if (!\method_exists($service, $method)) {
+                continue;
+            }
 
-        [$field, $groupField, $index] = $groupParts;
-        // $sourcePtableField = \sprintf('%s__tablePtable__%s', $field, $index);
+            $options = MethodInjector::invoke($service, $method, [
+                FilterModel::class => $filterModel,
+                ListModel::class  => $listModel,
+                DataContainer::class  => $dc,
+            ]);
 
-        if ($field !== 'groupWhitelistParents' || $groupField !== 'whitelistParents') {
-            return [];
-        }
-
-        if (!$savedGroups = StringUtil::deserialize($filterModel->groupWhitelistParents ?? '')) {
-            return [];
-        }
-
-        if (!$group = $savedGroups[(int) $index] ?? null) {
-            return [];
+            if (isset($options)) {
+                return $options;
+            }
         }
 
-        $ptable = $group['tablePtable'] ?? null;
-
-        return DcaHelper::getArchiveOptions($ptable);
+        return [];
     }
 
     // </editor-fold>

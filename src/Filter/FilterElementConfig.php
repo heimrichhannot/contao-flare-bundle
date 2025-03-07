@@ -2,10 +2,12 @@
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
-use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ConfigInterface;
+use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
+use HeimrichHannot\FlareBundle\Contract\PaletteContract;
+use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ServiceConfigInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
 
-class FilterElementConfig implements ConfigInterface
+class FilterElementConfig implements ServiceConfigInterface, PaletteContract
 {
     public const TAG = 'huh.flare.filter_element';
 
@@ -51,7 +53,7 @@ class FilterElementConfig implements ConfigInterface
         $this->formType = $formType;
     }
 
-    public function getPalette(): ?string
+    public function getPalette(PaletteConfig $config): ?string
     {
         return $this->palette;
     }

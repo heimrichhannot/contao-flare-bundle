@@ -36,7 +36,7 @@ class FilterQueryBuilder
         return $this;
     }
 
-    public function bind(string $param, mixed $value): static
+    public function bind(string $param, string|int|array $value): static
     {
         $param = \ltrim($param, ':');
 
@@ -103,6 +103,8 @@ class FilterQueryBuilder
             },
             $sql
         );
+
+        // $parameters = \array_map(static fn($p) => \is_array($p) ? \implode(', ', $p) : $p, $parameters);
 
         return [$sql, $parameters];
     }

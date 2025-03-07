@@ -2,10 +2,12 @@
 
 namespace HeimrichHannot\FlareBundle\List;
 
-use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ConfigInterface;
+use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
+use HeimrichHannot\FlareBundle\Contract\PaletteContract;
+use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ServiceConfigInterface;
 use HeimrichHannot\FlareBundle\List\Type\AbstractListType;
 
-class ListTypeConfig implements ConfigInterface
+class ListTypeConfig implements ServiceConfigInterface, PaletteContract
 {
     public const TAG = 'huh.flare.list_type';
 
@@ -50,7 +52,7 @@ class ListTypeConfig implements ConfigInterface
         $this->dataContainer = $dataContainer;
     }
 
-    public function getPalette(): ?string
+    public function getPalette(PaletteConfig $config): ?string
     {
         return $this->palette;
     }

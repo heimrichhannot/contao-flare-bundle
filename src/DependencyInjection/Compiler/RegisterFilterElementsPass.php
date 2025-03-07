@@ -40,7 +40,7 @@ class RegisterFilterElementsPass implements CompilerPassInterface
             {
                 $alias = $attributes['alias'] = $this->getFilterElementAlias($definition, $attributes);
 
-                $serviceId = 'huh.flare.filter_element._' . $alias;
+                $serviceId = 'huh.flare.filter_element.' . $alias;
 
                 $childDefinition = new ChildDefinition((string) $reference);
                 $childDefinition->setPublic(true);

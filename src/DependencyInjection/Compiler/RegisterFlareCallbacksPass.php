@@ -46,18 +46,18 @@ class RegisterFlareCallbacksPass implements CompilerPassInterface
                     $namespace .= $attributes['element'] ?? null;
                     $target = $attributes['target'] ?? null;
 
-                    $serviceId = 'huh.flare.flare_callback.' . $namespace . '._' . $target;
+                    # $serviceId = 'huh.flare.flare_callback.' . $namespace . '._' . $target;
 
-                    $childDefinition = clone $definition;
-                    $childDefinition->setPublic(true);
+                    # $childDefinition = clone $definition;
+                    # $childDefinition->setPublic(true);
 
                     $config = $this->getFilterCallbackConfig($container, $reference, $attributes);
 
                     /** @see FlareCallbackRegistry::add() */
                     $registry->addMethodCall('add', [$namespace, $target, (int) ($attributes['priority'] ?? 0), $config]);
 
-                    $childDefinition->setTags($definition->getTags());
-                    $container->setDefinition($serviceId, $childDefinition);
+                    # $childDefinition->setTags($definition->getTags());
+                    # $container->setDefinition($serviceId, $childDefinition);
                 }
             }
         }

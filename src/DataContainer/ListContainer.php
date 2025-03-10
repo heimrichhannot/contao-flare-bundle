@@ -6,22 +6,18 @@ use Contao\CoreBundle\Config\ResourceFinderInterface;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Exception;
 use HeimrichHannot\FlareBundle\Contract\DataContainerContract;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListCallback;
 use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackContainerInterface;
 use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackRegistry;
 use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Util\MethodInjector;
+use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-/**
- * @internal For internal use only. API might change without notice.
- */
 class ListContainer implements FlareCallbackContainerInterface
 {
     public const TABLE_NAME = 'tl_flare_list';
+    public const CALLBACK_PREFIX = 'list';
 
     public function __construct(
         private readonly Connection              $connection,
@@ -30,8 +26,86 @@ class ListContainer implements FlareCallbackContainerInterface
         private readonly ResourceFinderInterface $resourceFinder,
     ) {}
 
+    /* ============================= *
+     *  CALLBACK HANDLING            *
+     * ============================= */
+    // <editor-fold desc="Callback Handling">
+
     /**
-     * @throws Exception
+     * @throws \RuntimeException
+     */
+    public function handleFieldOptions(?DataContainer $dc): array
+    {
+        if (!$listModel = $this->getListModelFromDataContainer($dc)) {
+            return [];
+        }
+
+        $namespace = static::CALLBACK_PREFIX . '.' . $listModel->type;
+        $target = \sprintf('fields.%s.options', $dc->field);
+
+        $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
+
+        return CallbackHelper::firstReturn($callbacks, [], [
+            ListModel::class  => $listModel,
+            DataContainer::class  => $dc,
+        ]) ?? [];
+    }
+
+    /**
+     * @throws \RuntimeException
+     */
+    public function handleLoadField(mixed $value, DataContainer $dc): mixed
+    {
+        return $this->handleValueCallback($value, $dc, \sprintf('fields.%s.load', $dc->field));
+    }
+
+    /**
+     * @throws \RuntimeException
+     */
+    public function handleSaveField(mixed $value, DataContainer $dc): mixed
+    {
+        return $this->handleValueCallback($value, $dc, \sprintf('fields.%s.save', $dc->field));
+    }
+
+    /**
+     * @throws \RuntimeException
+     */
+    public function handleValueCallback(mixed $value, DataContainer $dc, string $target): mixed
+    {
+        if (!$listModel = $this->getListModelFromDataContainer($dc)) {
+            return $value;
+        }
+
+        $namespace =  static::CALLBACK_PREFIX . '.' . $listModel->type;
+
+        $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
+
+        return CallbackHelper::firstReturn($callbacks, [$value], [
+            ListModel::class  => $listModel,
+            DataContainer::class  => $dc
+        ]) ?? $value;
+    }
+
+    public function getListModelFromDataContainer(?DataContainer $dc): ?ListModel
+    {
+        if (!$dc?->id) {
+            return null;
+        }
+
+        return ListModel::findByPk($dc->id);
+    }
+
+    // </editor-fold>
+
+    /* ============================= *
+     *  CONFIG                       *
+     * ============================= */
+    // <editor-fold desc="Config">
+
+    /**
+     * @noinspection PhpFullyQualifiedNameUsageInspection
+     * @throws \Doctrine\DBAL\Exception
+     * @internal For internal use only. Do not call this method directly.
      */
     #[AsCallback(self::TABLE_NAME, 'config.onsubmit')]
     public function onSubmitConfig(DataContainer $dc): void
@@ -63,6 +137,16 @@ class ListContainer implements FlareCallbackContainerInterface
         }
     }
 
+    // </editor-fold>
+
+    /* ============================= *
+     *  OPTIONS                      *
+     * ============================= */
+    // <editor-fold desc="Options">
+
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
     #[AsCallback(self::TABLE_NAME, 'fields.type.options')]
     public function getTypeOptions(): array
     {
@@ -79,7 +163,10 @@ class ListContainer implements FlareCallbackContainerInterface
         return $options;
     }
 
-    #[AsListCallback('default', 'fields.dc.options')]
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
+    #[AsCallback(self::TABLE_NAME, 'fields.dc.options')]
     public function getDataContainerOptions(): array
     {
         $choices = [];
@@ -96,56 +183,5 @@ class ListContainer implements FlareCallbackContainerInterface
         return $choices;
     }
 
-    /**
-     * @throws \ReflectionException
-     */
-    public function getFieldOptions(?DataContainer $dc): array
-    {
-        if (!$dc?->id || !($listModel = ListModel::findByPk($dc->id))?->type) {
-            return [];
-        }
-
-        $prefix = 'list.';
-
-        $namespace = $prefix . $listModel->type;
-        $target = "fields.{$dc->field}.options";
-
-        $callbacks = \array_merge(
-            $this->callbackRegistry->getSorted($namespace, $target) ?? [],
-            $this->callbackRegistry->getSorted($prefix . 'default', $target) ?? []
-        );
-
-        foreach ($callbacks as $callbackConfig)
-        {
-            $method = $callbackConfig->getMethod();
-            $service = $callbackConfig->getService();
-
-            if (!\method_exists($service, $method)) {
-                continue;
-            }
-
-            $options = MethodInjector::invoke($service, $method, [
-                ListModel::class  => $listModel,
-                DataContainer::class  => $dc,
-            ]);
-
-            if (isset($options)) {
-                return $options;
-            }
-        }
-
-        return [];
-    }
-
-    public function onLoadField(mixed $value, DataContainer $dc): mixed
-    {
-        // TODO: Implement onLoadField() method.
-        return $value;
-    }
-
-    public function onSaveField(mixed $value, DataContainer $dc): mixed
-    {
-        // TODO: Implement onSaveField() method.
-        return $value;
-    }
+    // </editor-fold>
 }

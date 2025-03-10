@@ -2,7 +2,6 @@
 
 namespace HeimrichHannot\FlareBundle\EventListener\Contao;
 
-use Contao\Controller;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use Contao\Input;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
@@ -13,10 +12,10 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 #[AsHook('loadDataContainer')]
-class LoadDataContainerListener
+readonly class LoadDataContainerListener
 {
     public function __construct(
-        private readonly FlareCallbackRegistry $registry,
+        private FlareCallbackRegistry $registry,
     ) {}
 
     /**
@@ -50,10 +49,7 @@ class LoadDataContainerListener
             'tl_flare_list' => 'list.',
         };
 
-        $callbacks = \array_merge(
-            $this->registry->get($prefix . $model->type) ?? [],
-            $this->registry->get($prefix . 'default') ?? []
-        );
+        $callbacks = $this->registry->get($prefix . $model->type) ?? [];
 
         if (empty($callbacks)) {
             return;
@@ -81,7 +77,7 @@ class LoadDataContainerListener
             if (!empty($callbacks["fields.$field.options"]))
                 // bind options callback
             {
-                $definition['options_callback'] ??= [$class, 'getFieldOptions'];
+                $definition['options_callback'] = [$class, 'handleFieldOptions'];
             }
 
             if (!empty($callbacks["fields.$field.load"]))
@@ -91,7 +87,7 @@ class LoadDataContainerListener
                     $definition['load_callback'] = [];
                 }
 
-                $definition['load_callback'][] = [$class, 'onLoadField'];
+                $definition['load_callback'][] = [$class, 'handleLoadField'];
             }
 
             if (!empty($callbacks["fields.$field.save"]))
@@ -101,7 +97,7 @@ class LoadDataContainerListener
                     $definition['save_callback'] = [];
                 }
 
-                $definition['save_callback'][] = [$class, 'onSaveField'];
+                $definition['save_callback'][] = [$class, 'handleSaveField'];
             }
         }
     }

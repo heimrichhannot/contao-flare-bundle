@@ -7,25 +7,22 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Database;
 use Contao\DataContainer;
 use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackContainerInterface;
 use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
-use HeimrichHannot\FlareBundle\Util\MethodInjector;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-/**
- * @internal For internal use only. API might change without notice.
- */
 class FilterContainer implements FlareCallbackContainerInterface
 {
     public const TABLE_NAME = 'tl_flare_filter';
+    public const CALLBACK_PREFIX = 'filter';
 
     public function __construct(
         private readonly ContaoFramework       $contaoFramework,
@@ -35,10 +32,101 @@ class FilterContainer implements FlareCallbackContainerInterface
     ) {}
 
     /* ============================= *
+     *  CALLBACK HANDLING            *
+     * ============================= */
+    // <editor-fold desc="Callback Handling">
+
+    /**
+     * @throws \RuntimeException
+     */
+    public function handleFieldOptions(?DataContainer $dc): array
+    {
+        [$filterModel, $listModel] = $this->getModelsFromDataContainer($dc);
+
+        if (!$filterModel || !$listModel) {
+            return [];
+        }
+
+        $namespace = static::CALLBACK_PREFIX . '.' . $filterModel->type;
+        $target = \sprintf('fields.%s.options', $dc->field);
+
+        $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
+
+        return CallbackHelper::firstReturn($callbacks, [], [
+            FilterModel::class => $filterModel,
+            ListModel::class  => $listModel,
+            DataContainer::class  => $dc,
+        ]) ?? [];
+    }
+
+    /**
+     * @throws \RuntimeException
+     */
+    public function handleLoadField(mixed $value, DataContainer $dc): mixed
+    {
+        return $this->handleValueCallback($value, $dc, \sprintf('fields.%s.load', $dc->field));
+    }
+
+    /**
+     * @throws \RuntimeException
+     */
+    public function handleSaveField(mixed $value, DataContainer $dc): mixed
+    {
+        return $this->handleValueCallback($value, $dc, \sprintf('fields.%s.save', $dc->field));
+    }
+
+    /**
+     * @throws \RuntimeException
+     */
+    public function handleValueCallback(mixed $value, DataContainer $dc, string $target): mixed
+    {
+        [$filterModel, $listModel] = $this->getModelsFromDataContainer($dc);
+
+        if (!$filterModel || !$listModel) {
+            return $value;
+        }
+
+        $namespace =  static::CALLBACK_PREFIX . '.' . $filterModel->type;
+
+        $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
+
+        return CallbackHelper::firstReturn($callbacks, [$value], [
+            FilterModel::class => $filterModel,
+            ListModel::class  => $listModel,
+            DataContainer::class  => $dc
+        ]) ?? $value;
+    }
+
+    /**
+     * @param DataContainer|null $dc
+     * @return array{FilterModel, ListModel}|array{null, null}
+     */
+    public function getModelsFromDataContainer(?DataContainer $dc): array
+    {
+        try
+        {
+            if ($dc?->id
+                && ($filterModel = FilterModel::findByPk($dc->id))?->type
+                && ($listModel = $filterModel->getRelated('pid')))
+            {
+                return [$filterModel, $listModel];
+            }
+        }
+        catch (\Throwable) {}
+
+        return [null, null];
+    }
+
+    // </editor-fold>
+
+    /* ============================= *
      *  LOAD AND SAVE                *
      * ============================= */
     // <editor-fold desc="Load and Save">
 
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
     #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.load')]
     #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.save')]
     public function onLoadField_fieldPublished(mixed $value, DataContainer $dc): string
@@ -47,6 +135,9 @@ class FilterContainer implements FlareCallbackContainerInterface
         return $x;
     }
 
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
     #[AsCallback(self::TABLE_NAME, 'fields.fieldStart.load')]
     #[AsCallback(self::TABLE_NAME, 'fields.fieldStart.save')]
     public function onLoadField_fieldStart(mixed $value, DataContainer $dc): string
@@ -54,6 +145,9 @@ class FilterContainer implements FlareCallbackContainerInterface
         return $value ?: DcaHelper::tryGetColumnName($dc, 'start', '');
     }
 
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
     #[AsCallback(self::TABLE_NAME, 'fields.fieldStop.load')]
     #[AsCallback(self::TABLE_NAME, 'fields.fieldStop.save')]
     public function onLoadField_fieldStop(mixed $value, DataContainer $dc): string
@@ -61,6 +155,9 @@ class FilterContainer implements FlareCallbackContainerInterface
         return $value ?: DcaHelper::tryGetColumnName($dc, 'stop', '');
     }
 
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
     #[AsCallback(self::TABLE_NAME, 'fields.fieldPid.load')]
     #[AsCallback(self::TABLE_NAME, 'fields.fieldPid.save')]
     public function onLoadField_fieldPid(mixed $value, DataContainer $dc): string
@@ -68,6 +165,9 @@ class FilterContainer implements FlareCallbackContainerInterface
         return $value ?: DcaHelper::tryGetColumnName($dc, 'pid', '');
     }
 
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
     #[AsCallback(self::TABLE_NAME, 'fields.fieldPtable.load')]
     #[AsCallback(self::TABLE_NAME, 'fields.fieldPtable.save')]
     public function onLoadField_fieldPtable(mixed $value, DataContainer $dc): string
@@ -75,6 +175,9 @@ class FilterContainer implements FlareCallbackContainerInterface
         return $value ?: DcaHelper::tryGetColumnName($dc, 'ptable', '');
     }
 
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
     #[AsCallback(self::TABLE_NAME, 'fields.intrinsic.load')]
     public function onLoadField_intrinsic(mixed $value, DataContainer $dc): bool
     {
@@ -104,6 +207,9 @@ class FilterContainer implements FlareCallbackContainerInterface
         return $value;
     }
 
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
     #[AsCallback(self::TABLE_NAME, 'fields.intrinsic.save')]
     public function onSaveField_intrinsic(mixed $value, DataContainer $dc): mixed
     {
@@ -118,28 +224,20 @@ class FilterContainer implements FlareCallbackContainerInterface
         return $value;
     }
 
-    public function onLoadField(mixed $value, DataContainer $dc): mixed
-    {
-        // TODO: Implement onLoadField() method.
-        return $value;
-    }
+    // </editor-fold>
 
-    public function onSaveField(mixed $value, DataContainer $dc): mixed
-    {
-        // TODO: Implement onSaveField() method.
-        return $value;
-    }
+    /* ============================= *
+     *  CONFIG                       *
+     * ============================= */
+    // <editor-fold desc="Config">
 
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
     #[AsCallback(self::TABLE_NAME, 'config.onsubmit')]
     public function onSubmit_whichPtable(DataContainer $dc): void
     {
-        if (!$dc->id
-            || $dc->table !== self::TABLE_NAME
-            || !($filterModel = FilterModel::findByPk($dc->id))
-            || !($listModel = $filterModel->getRelated('pid')))
-        {
-            return;
-        }
+        [$filterModel, $listModel] = $this->getModelsFromDataContainer($dc);
 
         try
         {
@@ -162,6 +260,9 @@ class FilterContainer implements FlareCallbackContainerInterface
      * ============================= */
     // <editor-fold desc="Options">
 
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
     #[AsCallback(self::TABLE_NAME, 'fields.type.options')]
     public function getFieldOptions_type(): array
     {
@@ -178,7 +279,10 @@ class FilterContainer implements FlareCallbackContainerInterface
         return $options;
     }
 
-    #[AsFilterCallback('default', 'fields.fieldPublished.options')]
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.options')]
     public function getFieldOptions_fieldBool(?DataContainer $dc): array
     {
         return DcaHelper::getFieldOptions(
@@ -188,8 +292,11 @@ class FilterContainer implements FlareCallbackContainerInterface
         );
     }
 
-    #[AsFilterCallback('default', 'fields.fieldStart.options')]
-    #[AsFilterCallback('default', 'fields.fieldStop.options')]
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldStart.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldStop.options')]
     public function getFieldOptions_fieldDatim(?DataContainer $dc): array
     {
         return DcaHelper::getFieldOptions(
@@ -199,8 +306,11 @@ class FilterContainer implements FlareCallbackContainerInterface
         );
     }
 
-    #[AsFilterCallback('default', 'fields.fieldPid.options')]
-    public function getFieldOptions_fieldPid(?DataContainer $dc): array
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldPid.options')]
+    public function getFieldOptions_fieldPid(DataContainer $dc): array
     {
         return DcaHelper::getFieldOptions(
             $dc,
@@ -216,8 +326,11 @@ class FilterContainer implements FlareCallbackContainerInterface
         );
     }
 
-    #[AsFilterCallback('default', 'fields.fieldPtable.options')]
-    public function getFieldOptions_fieldPtable(?DataContainer $dc): array
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldPtable.options')]
+    public function getFieldOptions_fieldPtable(DataContainer $dc): array
     {
         return DcaHelper::getFieldOptions(
             $dc,
@@ -236,8 +349,11 @@ class FilterContainer implements FlareCallbackContainerInterface
         );
     }
 
-    #[AsFilterCallback('default', 'fields.tablePtable.options')]
-    public function getFieldOptions_tablePtable(?DataContainer $dc): array
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
+    #[AsCallback(self::TABLE_NAME, 'fields.tablePtable.options')]
+    public function getFieldOptions_tablePtable(DataContainer $dc): array
     {
         $db = $this->contaoFramework->createInstance(Database::class);
 
@@ -249,64 +365,25 @@ class FilterContainer implements FlareCallbackContainerInterface
         return \array_combine($tables, $tables);
     }
 
-    /**
-     * @throws \ReflectionException
-     */
-    public function getFieldOptions(?DataContainer $dc): array
-    {
-        if (!$dc?->id
-            || !($filterModel = FilterModel::findByPk($dc->id))?->type
-            || !($listModel = $filterModel->getRelated('pid')))
-        {
-            return [];
-        }
-
-        $prefix = 'filter.';
-
-        $namespace = $prefix . $filterModel->type;
-        $target = "fields.{$dc->field}.options";
-
-        $callbacks = \array_merge(
-            $this->callbackRegistry->getSorted($namespace, $target) ?? [],
-            $this->callbackRegistry->getSorted($prefix . 'default', $target) ?? []
-        );
-
-        foreach ($callbacks as $callbackConfig)
-        {
-            $method = $callbackConfig->getMethod();
-            $service = $callbackConfig->getService();
-
-            if (!\method_exists($service, $method)) {
-                continue;
-            }
-
-            $options = MethodInjector::invoke($service, $method, [
-                FilterModel::class => $filterModel,
-                ListModel::class  => $listModel,
-                DataContainer::class  => $dc,
-            ]);
-
-            if (isset($options)) {
-                return $options;
-            }
-        }
-
-        return [];
-    }
-
     // </editor-fold>
 
     /* ============================= *
-     *  LABELS                       *
+     *  LIST                         *
      * ============================= */
-    // <editor-fold desc="Labels">
+    // <editor-fold desc="List">
 
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
     #[AsCallback(self::TABLE_NAME, 'list.label.group')]
     public function listLabelGroup(string $group, string $mode, string $field, array $record, DataContainer $dc): string
     {
         return '';
     }
 
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
     #[AsCallback(self::TABLE_NAME, 'list.sorting.child_record')]
     public function listLabelLabel(array $row): string
     {

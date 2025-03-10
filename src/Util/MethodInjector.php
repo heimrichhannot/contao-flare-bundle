@@ -2,13 +2,24 @@
 
 namespace HeimrichHannot\FlareBundle\Util;
 
+/**
+ * Class MethodInjector
+ *
+ * @internl For internal use only. API might change without notice.
+ */
 class MethodInjector
 {
     /**
-     * @throws \ReflectionException
+     * @throws \ReflectionException thrown by ReflectionMethod::invokeArgs()
+     * @throws \InvalidArgumentException thrown if the method does not exist
+     * @throws \RuntimeException thrown if a parameter cannot be resolved
      */
-    public static function invoke($service, string $method, array $availableParams = []): mixed
-    {
+    public static function invoke(
+        object $service,
+        string $method,
+        array $mandatoryParams = [],
+        array $optionalParams = []
+    ): mixed {
         if (!method_exists($service, $method)) {
             throw new \InvalidArgumentException(sprintf(
                 'Method %s::%s does not exist.',
@@ -18,7 +29,7 @@ class MethodInjector
         }
 
         $reflectionMethod = new \ReflectionMethod($service, $method);
-        $arguments = [];
+        $arguments = $mandatoryParams;
 
         foreach ($reflectionMethod->getParameters() as $parameter)
         {
@@ -26,16 +37,16 @@ class MethodInjector
             {
                 $typeName = $parameter->getType()->getName();
 
-                if (\array_key_exists($typeName, $availableParams))
+                if (\array_key_exists($typeName, $optionalParams))
                 {
-                    $arguments[] = $availableParams[$typeName];
+                    $arguments[] = $optionalParams[$typeName];
                     continue;
                 }
             }
 
-            if (\array_key_exists($parameter->getName(), $availableParams))
+            if (\array_key_exists($parameter->getName(), $optionalParams))
             {
-                $arguments[] = $availableParams[$parameter->getName()];
+                $arguments[] = $optionalParams[$parameter->getName()];
                 continue;
             }
 

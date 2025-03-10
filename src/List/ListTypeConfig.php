@@ -16,6 +16,7 @@ class ListTypeConfig implements ServiceConfigInterface, PaletteContract
         private array   $attributes = [],
         private ?string $dataContainer = null,
         private ?string $palette = null,
+        private ?string $method = null
     ) {}
 
     /**
@@ -60,5 +61,15 @@ class ListTypeConfig implements ServiceConfigInterface, PaletteContract
     public function setPalette(?string $palette): void
     {
         $this->palette = $palette;
+    }
+
+    public function getMethod(): ?string
+    {
+        return $this->method;
+    }
+
+    public function setMethod(?string $method): void
+    {
+        $this->method = $method;
     }
 }

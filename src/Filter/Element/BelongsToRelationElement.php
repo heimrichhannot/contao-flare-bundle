@@ -5,7 +5,6 @@ namespace HeimrichHannot\FlareBundle\Filter\Element;
 use Contao\DataContainer;
 use Contao\Message;
 use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\Contract\Config\OptionsConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;

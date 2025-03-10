@@ -28,7 +28,7 @@ class ArchiveElement extends BelongsToRelationElement implements PaletteContract
             }
 
             $qb->where("`pid` IN (:pidIn)")
-                ->bind('pidIn', \implode(', ', $whitelist));
+                ->bind('pidIn', $whitelist);
 
             return;
         }

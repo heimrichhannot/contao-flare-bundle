@@ -112,4 +112,19 @@ readonly class Str
         \array_walk($palettes, static fn ($palette) => \trim((string) $palette, ';'));
         return \implode(';', \array_filter($palettes, static fn ($palette) => (bool) $palette));
     }
+
+    public static function sqlSerialize(array $parameters, bool $doubleQuote = false, ?string $separator = null): string
+    {
+        $quote = $doubleQuote ? '"' : "'";
+        $out = [];
+
+        foreach ($parameters as $value)
+        {
+            $out[] = \is_int($value)
+                ? $value
+                : \sprintf("%s%s%s", $quote, \addslashes((string) $value), $quote);
+        }
+
+        return \implode($separator ?? ', ', $out);
+    }
 }

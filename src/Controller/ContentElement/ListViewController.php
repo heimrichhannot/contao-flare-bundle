@@ -84,8 +84,8 @@ class ListViewController extends AbstractContentElementController
             $filters->add(new FilterContext($listModel, $filterModel, $config, $filterElementAlias, $table));
         }
 
-        [$sql, $params] = $this->buildFilteredQuery($filters, $table);
-        $result = $this->connection->executeQuery($sql, $params);
+        [$sql, $params, $types] = $this->buildFilteredQuery($filters, $table);
+        $result = $this->connection->executeQuery($sql, $params, $types);
 
         $entries = $result->fetchAllAssociative();
 
@@ -107,6 +107,7 @@ class ListViewController extends AbstractContentElementController
     {
         $combinedConditions = [];
         $combinedParameters = [];
+        $combinedTypes = [];
 
         $as = 'main';
 
@@ -129,7 +130,7 @@ class ListViewController extends AbstractContentElementController
             $event = new FilterElementInvokedEvent($filter, $filterQueryBuilder, $method);
             $this->eventDispatcher->dispatch($event, "huh.flare.filter_element.{$filter->getFilterAlias()}.invoked");
 
-            [$sql, $params] = $filterQueryBuilder->buildQuery((string) $i);
+            [$sql, $params, $types] = $filterQueryBuilder->buildQuery((string) $i);
 
             if (empty($sql))
             {
@@ -138,6 +139,7 @@ class ListViewController extends AbstractContentElementController
 
             $combinedConditions[] = $sql;
             $combinedParameters = \array_merge($combinedParameters, $params);
+            $combinedTypes = \array_merge($combinedTypes, $types);
         }
 
         $finalSQL = "SELECT * FROM $table AS $as";
@@ -146,7 +148,7 @@ class ListViewController extends AbstractContentElementController
             $finalSQL .= ' WHERE ' . $this->connection->createExpressionBuilder()->and(...$combinedConditions);
         }
 
-        return [$finalSQL, $combinedParameters];
+        return [$finalSQL, $combinedParameters, $combinedTypes];
     }
 
     protected function getBackendResponse(Template $template, ContentModel $model, Request $request): ?Response

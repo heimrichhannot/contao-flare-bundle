@@ -53,7 +53,8 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
             return;
         }
 
-        $qb->where("`$fieldPid` IN (" . \implode(', ', $whitelistParents) . ")");
+        $qb->where("`$fieldPid` IN (:whitelist)")
+            ->bind('whitelist', $whitelistParents);
     }
 
     public function filterDynamicPtableField(
@@ -88,7 +89,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
             );
 
             $qb->bind($gKey_tablePtable, $g_tablePtable);
-            $qb->bind($gKey_whitelistParents, \implode(', ', $g_whitelistParents));
+            $qb->bind($gKey_whitelistParents, $g_whitelistParents);
         }
 
         if (empty($ors))

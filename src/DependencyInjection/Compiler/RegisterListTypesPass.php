@@ -77,8 +77,15 @@ class RegisterListTypesPass implements CompilerPassInterface
 
     protected function getListTypeAlias(Definition $definition, array $attributes): string
     {
-        if (!empty($attributes['alias'])) {
-            return (string) $attributes['alias'];
+        if (!empty($attributes['alias']))
+        {
+            $alias = (string) $attributes['alias'];
+
+            if ($alias === 'default') {
+                throw new \InvalidArgumentException('The list type alias "default" is a reserved keyword.');
+            }
+
+            return $alias;
         }
 
         $className = $definition->getClass();

@@ -60,7 +60,9 @@ class PtableInferrer
             return null;
         }
 
-        if (\is_string($ptable = $entityDca['config']['ptable'] ?? null)) {
+        $ptable = $entityDca['config']['ptable'] ?? null;
+
+        if (!empty($ptable) && \is_string($ptable)) {
             return $ptable;
         }
 

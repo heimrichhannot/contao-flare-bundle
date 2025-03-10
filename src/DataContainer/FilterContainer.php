@@ -7,8 +7,10 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Database;
 use Contao\DataContainer;
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackContainerInterface;
 use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -18,17 +20,18 @@ use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-class FilterContainer
+/**
+ * @internal For internal use only. API might change without notice.
+ */
+class FilterContainer implements FlareCallbackContainerInterface
 {
     public const TABLE_NAME = 'tl_flare_filter';
 
-    protected array $dcTableCache = [];
-
     public function __construct(
-        private readonly ContaoFramework $contaoFramework,
+        private readonly ContaoFramework       $contaoFramework,
         private readonly FilterElementRegistry $filterElementRegistry,
         private readonly FlareCallbackRegistry $callbackRegistry,
-        private readonly RequestStack $requestStack,
+        private readonly RequestStack          $requestStack,
     ) {}
 
     /* ============================= *
@@ -115,6 +118,18 @@ class FilterContainer
         return $value;
     }
 
+    public function onLoadField(mixed $value, DataContainer $dc): mixed
+    {
+        // TODO: Implement onLoadField() method.
+        return $value;
+    }
+
+    public function onSaveField(mixed $value, DataContainer $dc): mixed
+    {
+        // TODO: Implement onSaveField() method.
+        return $value;
+    }
+
     #[AsCallback(self::TABLE_NAME, 'config.onsubmit')]
     public function onSubmit_whichPtable(DataContainer $dc): void
     {
@@ -163,7 +178,7 @@ class FilterContainer
         return $options;
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.options')]
+    #[AsFilterCallback('default', 'fields.fieldPublished.options')]
     public function getFieldOptions_fieldBool(?DataContainer $dc): array
     {
         return DcaHelper::getFieldOptions(
@@ -173,8 +188,8 @@ class FilterContainer
         );
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldStart.options')]
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldStop.options')]
+    #[AsFilterCallback('default', 'fields.fieldStart.options')]
+    #[AsFilterCallback('default', 'fields.fieldStop.options')]
     public function getFieldOptions_fieldDatim(?DataContainer $dc): array
     {
         return DcaHelper::getFieldOptions(
@@ -184,7 +199,7 @@ class FilterContainer
         );
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldPid.options')]
+    #[AsFilterCallback('default', 'fields.fieldPid.options')]
     public function getFieldOptions_fieldPid(?DataContainer $dc): array
     {
         return DcaHelper::getFieldOptions(
@@ -201,7 +216,7 @@ class FilterContainer
         );
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldPtable.options')]
+    #[AsFilterCallback('default', 'fields.fieldPtable.options')]
     public function getFieldOptions_fieldPtable(?DataContainer $dc): array
     {
         return DcaHelper::getFieldOptions(
@@ -221,7 +236,7 @@ class FilterContainer
         );
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.tablePtable.options')]
+    #[AsFilterCallback('default', 'fields.tablePtable.options')]
     public function getFieldOptions_tablePtable(?DataContainer $dc): array
     {
         $db = $this->contaoFramework->createInstance(Database::class);
@@ -237,22 +252,24 @@ class FilterContainer
     /**
      * @throws \ReflectionException
      */
-    #[AsCallback(self::TABLE_NAME, 'fields.whitelistParents.options')]
     public function getFieldOptions(?DataContainer $dc): array
     {
         if (!$dc?->id
-            || !($filterModel = FilterModel::findByPk($dc->id))
+            || !($filterModel = FilterModel::findByPk($dc->id))?->type
             || !($listModel = $filterModel->getRelated('pid')))
         {
             return [];
         }
 
-        $namespace = "filter." . $filterModel->type;
+        $prefix = 'filter.';
+
+        $namespace = $prefix . $filterModel->type;
         $target = "fields.{$dc->field}.options";
 
-        if (!$callbacks = $this->callbackRegistry->getSorted($namespace, $target)) {
-            return [];
-        }
+        $callbacks = \array_merge(
+            $this->callbackRegistry->getSorted($namespace, $target) ?? [],
+            $this->callbackRegistry->getSorted($prefix . 'default', $target) ?? []
+        );
 
         foreach ($callbacks as $callbackConfig)
         {

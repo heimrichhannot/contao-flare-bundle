@@ -5,6 +5,8 @@ namespace HeimrichHannot\FlareBundle\DependencyInjection\Registry;
 /**
  * An abstract registry class that can be used to register service configurations.
  *
+ * @internal For internal use only. API might change without notice.
+ *
  * @template namespace of string
  * @template key of string
  * @template prio of int

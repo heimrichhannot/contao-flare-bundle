@@ -20,7 +20,7 @@ class RegisterFlareCallbacksPass implements CompilerPassInterface
             return;
         }
 
-        $tags = [
+        $mapTagPrefix = [
             FlareCallbackConfig::TAG => null,
             FlareCallbackConfig::TAG_FILTER_CALLBACK => 'filter',
             FlareCallbackConfig::TAG_LIST_CALLBACK => 'list',
@@ -28,7 +28,7 @@ class RegisterFlareCallbacksPass implements CompilerPassInterface
 
         $registry = $container->findDefinition(FlareCallbackRegistry::class);
 
-        foreach ($tags as $tag => $prefix)
+        foreach ($mapTagPrefix as $tag => $prefix)
         {
             foreach ($this->findAndSortTaggedServices($tag, $container) as $reference)
             {
@@ -37,27 +37,23 @@ class RegisterFlareCallbacksPass implements CompilerPassInterface
                 }
 
                 $definition = $container->findDefinition((string) $reference);
-                $tags = $definition->getTag($tag);
+                $mapTagPrefix = $definition->getTag($tag);
                 $definition->clearTag($tag);
 
-                foreach ($tags as $attributes)
+                foreach ($mapTagPrefix as $attributes)
                 {
                     $namespace = $prefix ? $prefix . '.' : '';
                     $namespace .= $attributes['element'] ?? null;
                     $target = $attributes['target'] ?? null;
 
-                    # $serviceId = 'huh.flare.flare_callback.' . $namespace . '._' . $target;
-
-                    # $childDefinition = clone $definition;
-                    # $childDefinition->setPublic(true);
+                    if (!$namespace || !$target) {
+                        continue;
+                    }
 
                     $config = $this->getFilterCallbackConfig($container, $reference, $attributes);
 
                     /** @see FlareCallbackRegistry::add() */
                     $registry->addMethodCall('add', [$namespace, $target, (int) ($attributes['priority'] ?? 0), $config]);
-
-                    # $childDefinition->setTags($definition->getTags());
-                    # $container->setDefinition($serviceId, $childDefinition);
                 }
             }
         }

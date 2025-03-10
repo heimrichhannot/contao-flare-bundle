@@ -2,7 +2,6 @@
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
-use Contao\DataContainer;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
@@ -18,7 +17,7 @@ use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 #[AsFilterElement(alias: ArchiveElement::TYPE)]
 class ArchiveElement extends AbstractFilterElement implements PaletteContract
 {
-    const TYPE = 'flare_archive';
+    public const TYPE = 'flare_archive';
 
     public function __invoke(FilterQueryBuilder $qb, FilterContext $context): void
     {

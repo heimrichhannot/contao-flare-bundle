@@ -2,7 +2,6 @@
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection;
 
-use Exception;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFlareCallback;
@@ -27,7 +26,7 @@ class HeimrichHannotFlareExtension extends Extension
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     public function load(array $configs, ContainerBuilder $container): void
     {

@@ -9,9 +9,9 @@ use Contao\DataContainer;
  */
 interface FlareCallbackContainerInterface
 {
-    public function handleFieldOptions(?DataContainer $dc): array;
+    public function handleFieldOptions(?DataContainer $dc, string $target): array;
 
-    public function handleLoadField(mixed $value, DataContainer $dc): mixed;
+    public function handleLoadField(mixed $value, DataContainer $dc, string $target): mixed;
 
-    public function handleSaveField(mixed $value, DataContainer $dc): mixed;
+    public function handleSaveField(mixed $value, DataContainer $dc, string $target): mixed;
 }

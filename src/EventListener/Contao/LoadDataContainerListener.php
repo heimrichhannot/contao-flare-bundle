@@ -3,6 +3,7 @@
 namespace HeimrichHannot\FlareBundle\EventListener\Contao;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
+use Contao\DataContainer;
 use Contao\Input;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
@@ -15,7 +16,9 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 readonly class LoadDataContainerListener
 {
     public function __construct(
+        private FilterContainer $filterContainer,
         private FlareCallbackRegistry $registry,
+        private ListContainer $listContainer,
     ) {}
 
     /**
@@ -55,12 +58,12 @@ readonly class LoadDataContainerListener
             return;
         }
 
-        $class = match ($table) {
-            'tl_flare_filter' => FilterContainer::class,
-            'tl_flare_list' => ListContainer::class,
+        $container = match ($table) {
+            'tl_flare_filter' => $this->filterContainer,
+            'tl_flare_list' => $this->listContainer,
         };
 
-        if (!\is_subclass_of($class, FlareCallbackContainerInterface::class)) {
+        if (!\is_subclass_of($container, FlareCallbackContainerInterface::class)) {
             return;
         }
 
@@ -74,30 +77,41 @@ readonly class LoadDataContainerListener
                 continue;
             }
 
-            if (!empty($callbacks["fields.$field.options"]))
+            // Always pass the target to the handler method,
+            //   to ensure that cloning of fields is possible
+            //   without interfering with the callback execution.
+            // This is required for the group widget, for example.
+
+            if (!empty($callbacks[$target = "fields.$field.options"]))
                 // bind options callback
             {
-                $definition['options_callback'] = [$class, 'handleFieldOptions'];
+                $definition['options_callback'] = static function (?DataContainer $dc) use ($container, $target) {
+                    return $container->handleFieldOptions($dc, $target);
+                };
             }
 
-            if (!empty($callbacks["fields.$field.load"]))
+            if (!empty($callbacks[$target = "fields.$field.load"]))
                 // bind load callback
             {
                 if (!\is_array($definition['load_callback'] ?? null)) {
                     $definition['load_callback'] = [];
                 }
 
-                $definition['load_callback'][] = [$class, 'handleLoadField'];
+                $definition['load_callback'][] = static function (?DataContainer $dc) use ($container, $target) {
+                    return $container->handleLoadField($dc->value, $dc, $target);
+                };
             }
 
-            if (!empty($callbacks["fields.$field.save"]))
+            if (!empty($callbacks[$target = "fields.$field.save"]))
                 // bind save callback
             {
                 if (!\is_array($definition['save_callback'] ?? null)) {
                     $definition['save_callback'] = [];
                 }
 
-                $definition['save_callback'][] = [$class, 'handleSaveField'];
+                $definition['save_callback'][] = static function (?DataContainer $dc) use ($container, $target) {
+                    return $container->handleSaveField($dc->value, $dc, $target);
+                };
             }
         }
     }

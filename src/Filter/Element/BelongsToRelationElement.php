@@ -2,22 +2,18 @@
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
-use Contao\DataContainer;
 use Contao\Message;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
-use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 
-#[AsFilterElement(alias: BelongsToRelationElement::TYPE, palette: '{filter_legend},fieldPid')]
+#[AsFilterElement(alias: BelongsToRelationElement::TYPE)]
 class BelongsToRelationElement extends AbstractFilterElement implements PaletteContract
 {
     const TYPE = 'flare_relation_belongsTo';
@@ -38,7 +34,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
         try
         {
             $ptable = $inferrer->explicit();
-            $dynamicPtableField = $inferrer->tryGetDynamicPtableField();
+            $fieldDynamicPtable = $inferrer->tryGetDynamicPtableField();
         }
         catch (InferenceException)
         {
@@ -46,9 +42,9 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
             return;
         }
 
-        if (\is_string($dynamicPtableField))
+        if (\is_string($fieldDynamicPtable))
         {
-            $this->filterDynamicPtableField($dynamicPtableField, $filterModel, $qb, $fieldPid);
+            $this->filterDynamicPtableField($qb, $filterModel, $fieldDynamicPtable, $fieldPid);
             return;
         }
 
@@ -61,9 +57,9 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
     }
 
     public function filterDynamicPtableField(
-        string             $dynamicPtableField,
-        FilterModel        $filterModel,
         FilterQueryBuilder $qb,
+        FilterModel        $filterModel,
+        string             $dynamicPtableField,
         string             $fieldPid
     ): void {
         if (!$parentGroups = StringUtil::deserialize($filterModel->groupWhitelistParents))
@@ -159,46 +155,5 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
         }
 
         return $palette;
-    }
-
-    #[AsFilterCallback(self::TYPE, 'fields.whitelistParents.options')]
-    public function getOptions_whitelistParents(FilterModel $filterModel, ListModel $listModel, DataContainer $dc): array
-    {
-        try {
-            $inferrer = new PtableInferrer($filterModel, $listModel);
-            $ptable = $inferrer->explicit();
-        } catch (InferenceException) {
-            $ptable = null;
-        }
-
-        if (!\str_contains($dc->field, '__'))
-            // this is a regular field
-        {
-            return DcaHelper::getArchiveOptions($ptable);
-        }
-        // else => this is a group field
-
-        if (\count($groupParts = \explode('__', $dc->field)) !== 3) {
-            return [];
-        }
-
-        [$field, $groupField, $index] = $groupParts;
-        // $sourcePtableField = \sprintf('%s__tablePtable__%s', $field, $index);
-
-        if ($field !== 'groupWhitelistParents' || $groupField !== 'whitelistParents') {
-            return [];
-        }
-
-        if (!$savedGroups = StringUtil::deserialize($filterModel->groupWhitelistParents ?? '')) {
-            return [];
-        }
-
-        if (!$group = $savedGroups[(int) $index] ?? null) {
-            return [];
-        }
-
-        $ptable = $group['tablePtable'] ?? null;
-
-        return DcaHelper::getArchiveOptions($ptable);
     }
 }

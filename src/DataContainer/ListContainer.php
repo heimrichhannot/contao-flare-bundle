@@ -34,14 +34,13 @@ class ListContainer implements FlareCallbackContainerInterface
     /**
      * @throws \RuntimeException
      */
-    public function handleFieldOptions(?DataContainer $dc): array
+    public function handleFieldOptions(?DataContainer $dc, string $target): array
     {
         if (!$listModel = $this->getListModelFromDataContainer($dc)) {
             return [];
         }
 
         $namespace = static::CALLBACK_PREFIX . '.' . $listModel->type;
-        $target = \sprintf('fields.%s.options', $dc->field);
 
         $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
 
@@ -54,17 +53,17 @@ class ListContainer implements FlareCallbackContainerInterface
     /**
      * @throws \RuntimeException
      */
-    public function handleLoadField(mixed $value, DataContainer $dc): mixed
+    public function handleLoadField(mixed $value, DataContainer $dc, string $target): mixed
     {
-        return $this->handleValueCallback($value, $dc, \sprintf('fields.%s.load', $dc->field));
+        return $this->handleValueCallback($value, $dc, $target);
     }
 
     /**
      * @throws \RuntimeException
      */
-    public function handleSaveField(mixed $value, DataContainer $dc): mixed
+    public function handleSaveField(mixed $value, DataContainer $dc, string $target): mixed
     {
-        return $this->handleValueCallback($value, $dc, \sprintf('fields.%s.save', $dc->field));
+        return $this->handleValueCallback($value, $dc, $target);
     }
 
     /**

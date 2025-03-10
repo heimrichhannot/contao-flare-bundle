@@ -5,17 +5,13 @@ namespace HeimrichHannot\FlareBundle\Filter\Element;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Model\FilterModel;
-use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 
 #[AsFilterElement(alias: ArchiveElement::TYPE)]
-class ArchiveElement extends AbstractFilterElement implements PaletteContract
+class ArchiveElement extends BelongsToRelationElement implements PaletteContract
 {
     public const TYPE = 'flare_archive';
 
@@ -39,7 +35,7 @@ class ArchiveElement extends AbstractFilterElement implements PaletteContract
 
         if ($inferrer->isDcaDynamicPtable())
         {
-            // todo
+            $this->filterDynamicPtableField($qb, $filterModel, 'ptable', 'pid');
             return;
         }
 
@@ -62,18 +58,5 @@ class ArchiveElement extends AbstractFilterElement implements PaletteContract
         }
 
         return null;
-    }
-
-    #[AsFilterCallback(self::TYPE, 'fields.whitelistParents.options')]
-    public function getOptions_whitelistParents(FilterModel $filterModel, ListModel $listModel): array
-    {
-        $inferrer = new PtableInferrer($filterModel, $listModel);
-
-        if ($ptable = $inferrer->getDcaMainPtable())
-        {
-            return DcaHelper::getArchiveOptions($ptable);
-        }
-
-        return [];
     }
 }

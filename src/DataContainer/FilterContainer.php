@@ -7,6 +7,7 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Database;
 use Contao\DataContainer;
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackContainerInterface;
@@ -39,7 +40,7 @@ class FilterContainer implements FlareCallbackContainerInterface
     /**
      * @throws \RuntimeException
      */
-    public function handleFieldOptions(?DataContainer $dc): array
+    public function handleFieldOptions(?DataContainer $dc, string $target): array
     {
         [$filterModel, $listModel] = $this->getModelsFromDataContainer($dc);
 
@@ -48,7 +49,6 @@ class FilterContainer implements FlareCallbackContainerInterface
         }
 
         $namespace = static::CALLBACK_PREFIX . '.' . $filterModel->type;
-        $target = \sprintf('fields.%s.options', $dc->field);
 
         $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
 
@@ -62,17 +62,17 @@ class FilterContainer implements FlareCallbackContainerInterface
     /**
      * @throws \RuntimeException
      */
-    public function handleLoadField(mixed $value, DataContainer $dc): mixed
+    public function handleLoadField(mixed $value, DataContainer $dc, string $target): mixed
     {
-        return $this->handleValueCallback($value, $dc, \sprintf('fields.%s.load', $dc->field));
+        return $this->handleValueCallback($value, $dc, $target);
     }
 
     /**
      * @throws \RuntimeException
      */
-    public function handleSaveField(mixed $value, DataContainer $dc): mixed
+    public function handleSaveField(mixed $value, DataContainer $dc, string $target): mixed
     {
-        return $this->handleValueCallback($value, $dc, \sprintf('fields.%s.save', $dc->field));
+        return $this->handleValueCallback($value, $dc, $target);
     }
 
     /**
@@ -101,12 +101,13 @@ class FilterContainer implements FlareCallbackContainerInterface
      * @param DataContainer|null $dc
      * @return array{FilterModel, ListModel}|array{null, null}
      */
-    public function getModelsFromDataContainer(?DataContainer $dc): array
+    public function getModelsFromDataContainer(?DataContainer $dc, bool $ignoreType = false): array
     {
         try
         {
-            if ($dc?->id
-                && ($filterModel = FilterModel::findByPk($dc->id))?->type
+            if (($id = $dc?->id)
+                && ($filterModel = FilterModel::findByPk($id))
+                && ($ignoreType || $filterModel->type)
                 && ($listModel = $filterModel->getRelated('pid')))
             {
                 return [$filterModel, $listModel];
@@ -237,7 +238,8 @@ class FilterContainer implements FlareCallbackContainerInterface
     #[AsCallback(self::TABLE_NAME, 'config.onsubmit')]
     public function onSubmit_whichPtable(DataContainer $dc): void
     {
-        [$filterModel, $listModel] = $this->getModelsFromDataContainer($dc);
+        // ignore type because the type is not updated yet
+        [$filterModel, $listModel] = $this->getModelsFromDataContainer($dc, ignoreType: true);
 
         try
         {
@@ -363,6 +365,47 @@ class FilterContainer implements FlareCallbackContainerInterface
 
         $tables = \array_filter($tables, static fn(string $table) => $db->tableExists($table));
         return \array_combine($tables, $tables);
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.whitelistParents.options')]
+    public function getOptions_whitelistParents(DataContainer $dc): array
+    {
+        [$filterModel, $listModel] = $this->getModelsFromDataContainer($dc);
+
+        if (!$filterModel || !$listModel) {
+            return [];
+        }
+
+        $inferrer = new PtableInferrer($filterModel, $listModel);
+
+        if ($ptable = $inferrer->getDcaMainPtable())
+        {
+            return DcaHelper::getArchiveOptions($ptable);
+        }
+        // else => this is a group field
+
+        if (\count($groupParts = \explode('__', $dc->field)) !== 3) {
+            return [];
+        }
+
+        [$field, $groupField, $index] = $groupParts;
+        // $sourcePtableField = \sprintf('%s__tablePtable__%s', $field, $index);
+
+        if ($field !== 'groupWhitelistParents' || $groupField !== 'whitelistParents') {
+            return [];
+        }
+
+        if (!$savedGroups = StringUtil::deserialize($filterModel->groupWhitelistParents ?? '')) {
+            return [];
+        }
+
+        if (!$group = $savedGroups[(int) $index] ?? null) {
+            return [];
+        }
+
+        $ptable = $group['tablePtable'] ?? null;
+
+        return DcaHelper::getArchiveOptions($ptable);
     }
 
     // </editor-fold>

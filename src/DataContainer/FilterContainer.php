@@ -364,7 +364,7 @@ class FilterContainer implements FlareCallbackContainerInterface
         }
 
         $tables = \array_filter($tables, static fn(string $table) => $db->tableExists($table));
-        return \array_combine($tables, $tables);
+        return \array_combine($tables, $tables) ?: [];
     }
 
     #[AsCallback(self::TABLE_NAME, 'fields.whitelistParents.options')]

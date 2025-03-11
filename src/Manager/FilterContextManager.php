@@ -8,6 +8,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Form\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
@@ -18,8 +19,9 @@ use Symfony\Component\Form\FormInterface;
 readonly class FilterContextManager
 {
     public function __construct(
+        private ChoicesBuilderFactory $choicesBuilderFactory,
         private FilterElementRegistry $filterElementRegistry,
-        private FormFactoryInterface $formFactory
+        private FormFactoryInterface  $formFactory
     ) {}
 
     public function collect(ListModel $listModel): ?FilterContextCollection
@@ -64,13 +66,14 @@ readonly class FilterContextManager
     public function buildForm(FilterContextCollection $filters, string $name): FormInterface
     {
         $builder = $this->formFactory->createNamedBuilder($name, FormType::class, null, [
-            'csrf_protection' => false,
-            'method'          => 'GET',
+            'csrf_protection'    => false,
+            'method'             => 'GET',
+            'translation_domain' => 'flare_form',
         ]);
 
         $defaultOptions = [
-            'inherit_data' => false,
-            'label'        => false,
+            'inherit_data'                    => false,
+            'label'                           => false,
         ];
 
         foreach ($filters->getIterator() as $filter)
@@ -93,10 +96,15 @@ readonly class FilterContextManager
             {
                 try
                 {
-                    $options = \array_merge(
-                        $defaultOptions,
-                        $filterElement->getFormTypeOptions($filter)
-                    );
+                    $choicesBuilder = $this->choicesBuilderFactory->createChoicesBuilder();
+                    $generatedOptions = $filterElement->getFormTypeOptions($filter, $choicesBuilder);
+
+                    $choicesOptions = $choicesBuilder->isEnabled() ? [
+                        'choices' => $choicesBuilder->buildChoices(),
+                        'choice_label' => $choicesBuilder->buildChoiceLabel(),
+                    ] : [];
+
+                    $options = \array_merge($defaultOptions, $choicesOptions, $generatedOptions);
                 }
                 catch (FilterException $e)
                 {
@@ -122,7 +130,7 @@ readonly class FilterContextManager
         if ($builder->count())
         {
             $builder->add('submit', SubmitType::class, [
-                'label' => 'Filter',
+                'label' => 'submit',
             ]);
         }
 

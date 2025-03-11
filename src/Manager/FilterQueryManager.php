@@ -71,7 +71,7 @@ readonly class FilterQueryManager
 
             try
             {
-                $service->{$method}($filterQueryBuilder, $filter);
+                $service->{$method}($filter, $filterQueryBuilder);
             }
             catch (FilterException $e)
             {

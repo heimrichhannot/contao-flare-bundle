@@ -18,7 +18,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
 {
     const TYPE = 'flare_relation_belongsTo';
 
-    public function __invoke(FilterQueryBuilder $qb, FilterContext $context): void
+    public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
         $filterModel = $context->getFilterModel();
         $listModel = $context->getListModel();

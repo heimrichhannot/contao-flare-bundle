@@ -14,7 +14,7 @@ class PublishedElement extends AbstractFilterElement
 {
     const TYPE = 'flare_published';
 
-    public function __invoke(FilterQueryBuilder $qb, FilterContext $context): void
+    public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
         $filterModel = $context->getFilterModel();
 

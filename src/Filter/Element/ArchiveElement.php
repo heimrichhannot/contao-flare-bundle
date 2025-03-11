@@ -11,6 +11,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 
@@ -22,7 +23,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterQueryBuilder $qb, FilterContext $context): void
+    public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
         $submittedWhitelist = $context->getSubmittedData();
         $filterModel = $context->getFilterModel();
@@ -81,17 +82,16 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
     /**
      * @throws FilterException
      */
-    public function getFormTypeOptions(FilterContext $context): array
+    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
     {
-        $choices = null;
-
         $filterModel = $context->getFilterModel();
         $inferrer = new PtableInferrer($filterModel, $context->getListModel());
 
+        $choices->enable();
+        $choices->setLabel('test');
+
         if ($ptable = $inferrer->getDcaMainPtable())
         {
-            $choices = [];
-
             if ($whitelist = StringUtil::deserialize($filterModel->whitelistParents))
             {
                 $pClass = Model::getClassFromTable($ptable);
@@ -104,23 +104,23 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
                 foreach ($parents as $parent)
                 {
-                    $choices[$parent->title ?? $parent->id] = $parent->id;
+                    $choices->add($parent->id, $parent);
                 }
             }
+
+            return [
+                'multiple' => true,
+                'expanded' => true,
+            ];
         }
 
         if ($inferrer->isDcaDynamicPtable())
         {
+            \dump('dynamic ptable');
+
+            throw new FilterException('Not yet implemented.');
         }
 
-        if ($choices === null) {
-            throw new FilterException('No valid ptable found.');
-        }
-
-        return [
-            'choices' => $choices,
-            'multiple' => true,
-            'expanded' => true,
-        ];
+        throw new FilterException('No valid ptable found.');
     }
 }

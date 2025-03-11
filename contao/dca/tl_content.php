@@ -20,8 +20,22 @@ $dca['fields'][ContentContainer::FIELD_LIST] = [
     'sql' => "int(10) unsigned NOT NULL default 0",
 ];
 
+$dca['fields'][ContentContainer::FIELD_FORM_NAME] = [
+    'inputType' => 'text',
+    'exclude' => true,
+    'search' => true,
+    'sorting' => true,
+    'flag' => 1,
+    'eval' => ['mandatory' => false, 'maxlength' => 64, 'tl_class' => 'w50'],
+    'sql' => "varchar(64) NOT NULL default ''",
+];
+
 $dca['palettes'][ListViewController::TYPE] = '{type_legend},type,headline;'
-    . \sprintf('{flare_list_legend},%s;', ContentContainer::FIELD_LIST)  # translate these keys
+    . \sprintf(
+        '{flare_list_legend},%s,%s;',  # translate these keys
+        ContentContainer::FIELD_LIST,
+        ContentContainer::FIELD_FORM_NAME
+    )
     . '{template_legend:hide},customTpl;'
     . '{protected_legend:hide},protected;'
     . '{expert_legend:hide},guests,cssID;'

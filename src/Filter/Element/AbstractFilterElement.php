@@ -4,16 +4,11 @@ namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-abstract class AbstractFilterElement implements TranslatorInterface
+abstract class AbstractFilterElement
 {
     public function __construct(
         private readonly TranslatorInterface $translator
     ) {}
-
-    public function formTypeOptions(): array
-    {
-        return [];
-    }
 
     public function trans(string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
     {

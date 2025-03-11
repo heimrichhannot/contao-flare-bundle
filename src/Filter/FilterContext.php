@@ -5,14 +5,15 @@ namespace HeimrichHannot\FlareBundle\Filter;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
-readonly class FilterContext
+class FilterContext
 {
     public function __construct(
-        private ListModel           $listModel,
-        private FilterModel         $filterModel,
-        private FilterElementConfig $filterElementConfig,
-        private string              $filterElementAlias,
-        private string              $table,
+        private readonly ListModel           $listModel,
+        private readonly FilterModel         $filterModel,
+        private readonly FilterElementConfig $filterElementConfig,
+        private readonly string              $filterElementAlias,
+        private readonly string              $table,
+        private mixed                        $submittedData = null
     ) {}
 
     public function getListModel(): ListModel
@@ -38,5 +39,15 @@ readonly class FilterContext
     public function getTable(): string
     {
         return $this->table;
+    }
+
+    public function getSubmittedData(): mixed
+    {
+        return $this->submittedData;
+    }
+
+    public function setSubmittedData(mixed $submittedData): void
+    {
+        $this->submittedData = $submittedData;
     }
 }

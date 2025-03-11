@@ -1,17 +1,23 @@
-<div class="container mt-4">
-    <pre>Ich bin ein FLARE Katalog</pre>
+{% extends '@Contao/block_searchable.html5' %}
 
-    {{ form(flare.filter_form) }}
+{% block content %}
+    <div class="mt-4">
 
-    <hr>
+        {{ form(flare.filter_form) }}
 
-    {% for entry in flare.entries %}
-        <div class="row">
-            <div class="col-12">
-                {{ dump(entry) }}
+        <hr>
+
+        {% for entry in flare.entries %}
+            <div class="row">
+                <div class="col-12">
+                    <details>
+                        {# (entry.headline is defined) ? (entry.headline|fmt_headline_value|default('<' ~ loop.index ~ '>')) : #}
+                        <summary>#{{ entry.id }} {{ entry.title ?? (entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>')) }}</summary>
+                        {{ dump(entry) }}
+                    </details>
+                </div>
             </div>
-        </div>
-    {% endfor %}
-</div>
+        {% endfor %}
 
-{#{{ dump() }}#}
+    </div>
+{% endblock %}

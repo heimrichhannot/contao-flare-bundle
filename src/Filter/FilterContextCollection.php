@@ -13,24 +13,23 @@ use HeimrichHannot\FlareBundle\Collection\Collection;
  */
 class FilterContextCollection extends Collection
 {
+    protected string $table;
+
+    public function getTable(): string
+    {
+        return $this->table;
+    }
+
+    public function setTable(string $table): static
+    {
+        $this->table = $table;
+
+        return $this;
+    }
+
     /** {@inheritDoc} */
     protected function getItemType(): string
     {
         return FilterContext::class;
-    }
-
-    public function collectFormTypes(): array
-    {
-        $formTypes = [];
-
-        foreach ($this->items as $filter)
-        {
-            if ($formType = $filter->getConfig()->getFormType())
-            {
-                $formTypes[] = $formType;
-            }
-        }
-
-        return $formTypes;
     }
 }

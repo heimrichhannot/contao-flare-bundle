@@ -113,18 +113,12 @@ readonly class Str
         return \implode(';', \array_filter($palettes, static fn ($palette) => (bool) $palette));
     }
 
-    public static function sqlSerialize(array $parameters, bool $doubleQuote = false, ?string $separator = null): string
+    public static function isValidSqlName(?string $db_or_col_name): bool
     {
-        $quote = $doubleQuote ? '"' : "'";
-        $out = [];
-
-        foreach ($parameters as $value)
-        {
-            $out[] = \is_int($value)
-                ? $value
-                : \sprintf("%s%s%s", $quote, \addslashes((string) $value), $quote);
+        if (!$db_or_col_name) {
+            return false;
         }
 
-        return \implode($separator ?? ', ', $out);
+        return (bool) preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $db_or_col_name);
     }
 }

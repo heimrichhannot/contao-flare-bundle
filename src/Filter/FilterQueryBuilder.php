@@ -12,6 +12,7 @@ class FilterQueryBuilder
     private array $conditions = [];
     private array $parameters = [];
     private array $types = [];
+    private bool $blocking = false;
 
     public function __construct(
         private readonly ExpressionBuilder $expr,
@@ -26,6 +27,28 @@ class FilterQueryBuilder
     public function alias(): string
     {
         return $this->alias;
+    }
+
+    public function isBlocking(): bool
+    {
+        return $this->blocking;
+    }
+
+    public function blockList(): void
+    {
+        $this->blocking = true;
+    }
+
+    public function unblockList(): void
+    {
+        $this->blocking = false;
+    }
+
+    public function clear(): void
+    {
+        $this->conditions = [];
+        $this->parameters = [];
+        $this->types = [];
     }
 
     public function where(string|CompositeExpression $query, ?array $params = null): static
@@ -90,15 +113,15 @@ class FilterQueryBuilder
 
             foreach ($value as $v)
             {
-                if ($not1 = !\is_int($v)) {
+                if ($notInt = !\is_int($v)) {
                     $allInt = false;
                 }
                 // Allowed: scalar, null, object with __toString method
-                if ($not2 = !(\is_scalar($v) || \is_null($v) || (\is_object($v) && \method_exists($v, '__toString')))) {
+                if ($notStr = !(\is_scalar($v) || \is_null($v) || (\is_object($v) && \method_exists($v, '__toString')))) {
                     $allStr = false;
                 }
 
-                if ($not1 && $not2) {
+                if ($notInt && $notStr) {
                     return null;
                 }
             }
@@ -142,14 +165,14 @@ class FilterQueryBuilder
     public function buildQuery(?string $prefix): array
     {
         if (empty($this->conditions)) {
-            return ['', []];
+            return ['', [], []];
         }
 
         $cond = $this->expr->and(...$this->conditions);
         $sql = (string) $cond;
 
         if ($prefix === null) {
-            return [$sql, $this->parameters];
+            return [$sql, $this->parameters, $this->types];
         }
 
         $prefix = '_' . \trim($prefix, '_') . '_';

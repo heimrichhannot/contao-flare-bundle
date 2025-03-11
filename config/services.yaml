@@ -3,6 +3,9 @@ services:
         autowire:      true
         autoconfigure: true
 
+    Psr\Log\LoggerInterface:
+        alias: monolog.logger.contao
+
     HeimrichHannot\FlareBundle\:
         resource: ../src
         exclude:

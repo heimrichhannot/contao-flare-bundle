@@ -53,14 +53,14 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
             return;
         }
 
-        $qb->where("`$fieldPid` IN (:whitelist)")
+        $qb->where($qb->expr()->in($fieldPid, ":whitelist"))
             ->bind('whitelist', $whitelistParents);
     }
 
     public function filterDynamicPtableField(
         FilterQueryBuilder $qb,
         FilterModel        $filterModel,
-        string             $dynamicPtableField,
+        string             $fieldDynamicPtable,
         string             $fieldPid
     ): void {
         if (!$parentGroups = StringUtil::deserialize($filterModel->groupWhitelistParents))
@@ -84,7 +84,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
             $gKey_whitelistParents = \sprintf(':g%s_whitelist', $i);
 
             $ors[] = $qb->expr()->and(
-                $qb->expr()->eq($dynamicPtableField, $gKey_tablePtable),
+                $qb->expr()->eq($fieldDynamicPtable, $gKey_tablePtable),
                 $qb->expr()->in($fieldPid, $gKey_whitelistParents)
             );
 

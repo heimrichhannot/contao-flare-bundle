@@ -4,3 +4,8 @@
     margin-inline-start: 1ch;
     opacity: .5;
 }
+
+.tl_formbody_edit #sub_formatEmptyOption,
+.tl_formbody_edit #sub_formatLabel {
+    display: inline;
+}

@@ -41,4 +41,19 @@ $lang['whichPtable_options'] = [
 $lang['archive_legend'] = 'Archiv-Einstellungen';
 $lang['whitelistParents'] = ['Eltern-Whitelist', 'Bitte wählen Sie die Archive aus, die für diesen Filter zulässig sind.'];
 $lang['groupWhitelistParents'] = ['Zulässige Eltern-Archive definieren', 'Bitte wählen Sie die Tabellen und Archive aus, die für diesen Filter zulässig sind.'];
+$lang['formatLabel'] = ['Formatierung', 'Bitte wählen Sie eine Formatierung für die Anzeige.'];
+$lang['formatLabel_custom'] = 'Eigene Formatierung';
+$lang['formatLabelCustom'] = ['Eigene Formatierung', 'Bitte geben Sie eine Formatierung für die Anzeige ein.'];
 ###< archive_legend ###
+
+###> form_legend ###
+$lang['form_legend'] = 'Formulareinstellungen';
+$lang['isMandatory'] = ['Pflichtfeld', 'Das Feld muss ausgefüllt werden.'];
+$lang['isMultiple'] = ['Mehrfachauswahl', 'Erlaube die Auswahl mehrerer Elemente.'];
+$lang['isExpanded'] = ['Auswahl expandieren', 'Zeige alle Elemente auf einmal in einer Liste mit Checkboxen.'];
+$lang['hasEmptyOption'] = ['Leere Option hinzufügen', 'Füge eine leere Option am Anfang der Liste hinzu.'];
+$lang['formatEmptyOption'] = ['Leere Option anzeigen als', 'Bitte wählen Sie eine Formatierung für die leere Option aus.'];
+$lang['formatEmptyOption_custom'] = 'Eigene Formatierung';
+$lang['formatEmptyOptionCustom'] = ['Formatierung der leeren Option', 'Bitte geben Sie einen Text oder ein Labelformat für die leere Option ein.'];
+$lang['preselect'] = ['Vorauswahl', 'Geben Sie an, welche Werte vorausgewählt sein sollen.'];
+###< form_legend ###

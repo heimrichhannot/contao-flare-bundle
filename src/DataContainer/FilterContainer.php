@@ -6,8 +6,8 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Database;
 use Contao\DataContainer;
+use Contao\Model;
 use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackContainerInterface;
@@ -30,6 +30,7 @@ class FilterContainer implements FlareCallbackContainerInterface
         private readonly FilterElementRegistry $filterElementRegistry,
         private readonly FlareCallbackRegistry $callbackRegistry,
         private readonly RequestStack          $requestStack,
+        private readonly TranslatorInterface   $translator,
     ) {}
 
     /* ============================= *
@@ -62,7 +63,7 @@ class FilterContainer implements FlareCallbackContainerInterface
     /**
      * @throws \RuntimeException
      */
-    public function handleLoadField(mixed $value, DataContainer $dc, string $target): mixed
+    public function handleLoadField(mixed $value, ?DataContainer $dc, string $target): mixed
     {
         return $this->handleValueCallback($value, $dc, $target);
     }
@@ -70,7 +71,7 @@ class FilterContainer implements FlareCallbackContainerInterface
     /**
      * @throws \RuntimeException
      */
-    public function handleSaveField(mixed $value, DataContainer $dc, string $target): mixed
+    public function handleSaveField(mixed $value, ?DataContainer $dc, string $target): mixed
     {
         return $this->handleValueCallback($value, $dc, $target);
     }
@@ -78,7 +79,7 @@ class FilterContainer implements FlareCallbackContainerInterface
     /**
      * @throws \RuntimeException
      */
-    public function handleValueCallback(mixed $value, DataContainer $dc, string $target): mixed
+    public function handleValueCallback(mixed $value, ?DataContainer $dc, string $target): mixed
     {
         [$filterModel, $listModel] = $this->getModelsFromDataContainer($dc);
 
@@ -273,7 +274,7 @@ class FilterContainer implements FlareCallbackContainerInterface
         foreach ($this->filterElementRegistry->all() as $alias => $filterElement)
         {
             $service = $filterElement->getService();
-            $options[$alias] = \class_implements($service, TranslatorInterface::class)
+            $options[$alias] = $service instanceof TranslatorInterface
                 ? $service->trans($alias)
                 : $alias;
         }
@@ -406,6 +407,38 @@ class FilterContainer implements FlareCallbackContainerInterface
         $ptable = $group['tablePtable'] ?? null;
 
         return DcaHelper::getArchiveOptions($ptable);
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.formatLabel.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.formatEmptyOption.options')]
+    public function getOptions_formatLabel(DataContainer $dc): array
+    {
+        $catalogue = $this->translator->getCatalogue();
+        $labels = $catalogue->all('flare_form');
+
+        $options = [];
+
+        $prefix = match ($dc->field) {
+            'formatLabel' => 'format.',
+            'formatEmptyOption' => 'empty_option.',
+            default => null
+        };
+
+        foreach ($labels as $key => $label)
+        {
+            if ($prefix && !\str_starts_with($key, $prefix)) {
+                continue;
+            }
+
+            $options[$key] = $label . ' [' . $key . ']';
+        }
+
+        \asort($options);
+
+        unset($options['custom']);
+
+        /** @noinspection PhpTranslationDomainInspection */
+        return ['custom' => $this->translator->trans("tl_flare_filter.{$dc->field}_custom", [], 'contao_tl_flare_filter')] + $options;
     }
 
     // </editor-fold>

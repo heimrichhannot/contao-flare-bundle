@@ -109,7 +109,7 @@ readonly class Str
      */
     public static function mergePalettes(...$palettes): string
     {
-        \array_walk($palettes, static fn ($palette) => \trim((string) $palette, ';'));
+        \array_walk($palettes, static fn ($palette) => \trim((string) $palette, ";, \n\r\t\v\0"));
         return \implode(';', \array_filter($palettes, static fn ($palette) => (bool) $palette));
     }
 

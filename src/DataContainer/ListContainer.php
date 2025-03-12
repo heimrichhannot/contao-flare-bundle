@@ -53,7 +53,7 @@ class ListContainer implements FlareCallbackContainerInterface
     /**
      * @throws \RuntimeException
      */
-    public function handleLoadField(mixed $value, DataContainer $dc, string $target): mixed
+    public function handleLoadField(mixed $value, ?DataContainer $dc, string $target): mixed
     {
         return $this->handleValueCallback($value, $dc, $target);
     }
@@ -61,7 +61,7 @@ class ListContainer implements FlareCallbackContainerInterface
     /**
      * @throws \RuntimeException
      */
-    public function handleSaveField(mixed $value, DataContainer $dc, string $target): mixed
+    public function handleSaveField(mixed $value, ?DataContainer $dc, string $target): mixed
     {
         return $this->handleValueCallback($value, $dc, $target);
     }
@@ -69,7 +69,7 @@ class ListContainer implements FlareCallbackContainerInterface
     /**
      * @throws \RuntimeException
      */
-    public function handleValueCallback(mixed $value, DataContainer $dc, string $target): mixed
+    public function handleValueCallback(mixed $value, ?DataContainer $dc, string $target): mixed
     {
         if (!$listModel = $this->getListModelFromDataContainer($dc)) {
             return $value;

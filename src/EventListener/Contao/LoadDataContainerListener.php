@@ -97,8 +97,8 @@ readonly class LoadDataContainerListener
                     $definition['load_callback'] = [];
                 }
 
-                $definition['load_callback'][] = static function (?DataContainer $dc) use ($container, $target) {
-                    return $container->handleLoadField($dc->value, $dc, $target);
+                $definition['load_callback'][] = static function (mixed $value, ?DataContainer $dc) use ($container, $target) {
+                    return $container->handleLoadField($value, $dc, $target);
                 };
             }
 
@@ -109,8 +109,8 @@ readonly class LoadDataContainerListener
                     $definition['save_callback'] = [];
                 }
 
-                $definition['save_callback'][] = static function (?DataContainer $dc) use ($container, $target) {
-                    return $container->handleSaveField($dc->value, $dc, $target);
+                $definition['save_callback'][] = static function (mixed $value, ?DataContainer $dc) use ($container, $target, $model) {
+                    return $container->handleSaveField($value, $dc, $target);
                 };
             }
         }

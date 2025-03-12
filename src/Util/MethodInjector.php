@@ -31,8 +31,16 @@ class MethodInjector
         $reflectionMethod = new \ReflectionMethod($service, $method);
         $arguments = $mandatoryParams;
 
+        $skipped = 0;
+
         foreach ($reflectionMethod->getParameters() as $parameter)
         {
+            if ($skipped < \count($mandatoryParams))
+            {
+                $skipped++;
+                continue;
+            }
+
             if ($parameter->getType() && !$parameter->getType()->isBuiltin())
             {
                 $typeName = $parameter->getType()->getName();

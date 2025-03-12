@@ -101,7 +101,7 @@ readonly class FilterContextManager
 
                     $choicesOptions = $choicesBuilder->isEnabled() ? [
                         'choices' => $choicesBuilder->buildChoices(),
-                        'choice_label' => $choicesBuilder->buildChoiceLabel(),
+                        'choice_label' => $choicesBuilder->buildChoiceLabelCallback(),
                     ] : [];
 
                     $options = \array_merge($defaultOptions, $choicesOptions, $generatedOptions);

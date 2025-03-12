@@ -14,17 +14,11 @@ use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\Extension;
+use Symfony\Component\DependencyInjection\Extension\PrependExtensionInterface;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
-class HeimrichHannotFlareExtension extends Extension
+class HeimrichHannotFlareExtension extends Extension implements PrependExtensionInterface
 {
-    public const ALIAS = 'huh_flare';
-
-    public function getAlias(): string
-    {
-        return static::ALIAS;
-    }
-
     /**
      * @throws \Exception
      */
@@ -32,6 +26,12 @@ class HeimrichHannotFlareExtension extends Extension
     {
         $loader = new YamlFileLoader($container, new FileLocator(\dirname(__DIR__) . '/../config'));
         $loader->load('services.yaml');
+
+        $configuration = new Configuration();
+        $flareConfig = $this->processConfiguration($configuration, $configs);
+
+        $container->setParameter($this->getAlias(), $flareConfig);
+        $container->setParameter($this->getAlias() . '.format_label_defaults', $flareConfig['format_label_defaults'] ?? []);
 
         $attributesForAutoconfiguration = [
             AsFlareCallback::class => FlareCallbackConfig::TAG,
@@ -70,5 +70,16 @@ class HeimrichHannotFlareExtension extends Extension
                 }
             );
         }
+    }
+
+    public function getAlias(): string
+    {
+        return 'huh_flare';
+    }
+
+    public function prepend(ContainerBuilder $container): void
+    {
+        $loader = new YamlFileLoader($container, new FileLocator(\dirname(__DIR__) . '/../config'));
+        $loader->load('config.yaml');
     }
 }

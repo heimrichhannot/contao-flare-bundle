@@ -17,10 +17,18 @@ use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
  * @property string $type
  * @property bool $published
  * @property bool $intrinsic
+ * @property bool $isMandatory
+ * @property bool $isMultiple
+ * @property bool $isExpanded
+ * @property bool $hasEmptyOption
  * @property bool $usePublished
  * @property bool $useStart
  * @property bool $useStop
  * @property bool $invertPublished
+ * @property string $formatLabel
+ * @property string $formatLabelCustom
+ * @property string $formatEmptyOption
+ * @property string $formatEmptyOptionCustom
  * @property string $whichPtable
  * @property string $fieldPublished
  * @property string $fieldStart

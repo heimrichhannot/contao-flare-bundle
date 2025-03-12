@@ -79,7 +79,6 @@ $dca['fields'] = [
         'sql' => "int(10) unsigned NOT NULL default '0'",
     ],
     'sorting' => [
-        'sorting' => true,
         'flag' => DataContainer::SORT_ASC,
         'sql' => "int(10) unsigned NOT NULL default 0",
     ],
@@ -89,7 +88,6 @@ $dca['fields'] = [
     'title' => [
         'exclude' => true,
         'search' => true,
-        'sorting' => true,
         'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
         'inputType' => 'text',
         'eval' => ['mandatory' => true, 'maxlength' => 255, 'tl_class' => 'w50'],
@@ -99,8 +97,8 @@ $dca['fields'] = [
         'inputType' => 'select',
         'exclude' => true,
         'filter' => true,
-        'sorting' => true,
-        'reference' => &$GLOBALS['TL_LANG']['FLARE']['FILTER'],
+        'search' => true,
+        'reference' => &$GLOBALS['TL_LANG']['FLARE']['filter'],
         'eval' => [
             'mandatory' => true,
             'includeBlankOption' => true,
@@ -129,10 +127,68 @@ $dca['fields'] = [
         'eval' => ['tl_class' => 'cbx w50'],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
+    'preselect' => [
+        'inputType' => 'text',
+        'default' => null,
+        'eval' => ['tl_class' => 'w100 clr'],
+        'sql' => ['type' => 'blob', 'notnull' => false],
+    ],
+    'isMandatory' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => false,
+            'tl_class' => 'cbx w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'isMultiple' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => false,
+            'tl_class' => 'cbx w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'isExpanded' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => false,
+            'tl_class' => 'cbx w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'hasEmptyOption' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => true,
+            'tl_class' => 'cbx w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
     'usePublished' => [
         'exclude' => true,
         'toggle' => true,
-        'filter' => true,
+        'filter' => false,
         'default' => true,
         'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
         'inputType' => 'checkbox',
@@ -145,7 +201,7 @@ $dca['fields'] = [
     'useStart' => [
         'exclude' => true,
         'toggle' => true,
-        'filter' => true,
+        'filter' => false,
         'default' => true,
         'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
         'inputType' => 'checkbox',
@@ -158,7 +214,7 @@ $dca['fields'] = [
     'useStop' => [
         'exclude' => true,
         'toggle' => true,
-        'filter' => true,
+        'filter' => false,
         'default' => true,
         'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
         'inputType' => 'checkbox',
@@ -171,7 +227,7 @@ $dca['fields'] = [
     'invertPublished' => [
         'exclude' => true,
         'toggle' => true,
-        'filter' => true,
+        'filter' => false,
         'default' => false,
         'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
         'inputType' => 'checkbox',
@@ -180,9 +236,53 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
+    'formatLabel' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => false,
+            'submitOnChange' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'formatLabelCustom' => [
+        'exclude' => true,
+        'search' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
+        'inputType' => 'text',
+        'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'formatEmptyOption' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => false,
+            'submitOnChange' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50 clr',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'formatEmptyOptionCustom' => [
+        'exclude' => true,
+        'search' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
+        'inputType' => 'text',
+        'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
     'whichPtable' => [
         'exclude' => true,
-        'filter' => true,
+        'filter' => false,
         'default' => 'auto',
         'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
         'inputType' => 'radio',
@@ -198,8 +298,7 @@ $dca['fields'] = [
     'fieldPublished' => [
         'inputType' => 'select',
         'exclude' => true,
-        'filter' => true,
-        'sorting' => true,
+        'filter' => false,
         'eval' => [
             'mandatory' => true,
             'includeBlankOption' => true,
@@ -212,8 +311,7 @@ $dca['fields'] = [
     'fieldStart' => [
         'inputType' => 'select',
         'exclude' => true,
-        'filter' => true,
-        'sorting' => true,
+        'filter' => false,
         'eval' => [
             'mandatory' => true,
             'includeBlankOption' => true,
@@ -226,8 +324,7 @@ $dca['fields'] = [
     'fieldStop' => [
         'inputType' => 'select',
         'exclude' => true,
-        'filter' => true,
-        'sorting' => true,
+        'filter' => false,
         'eval' => [
             'mandatory' => true,
             'includeBlankOption' => true,
@@ -240,8 +337,7 @@ $dca['fields'] = [
     'fieldPid' => [
         'inputType' => 'select',
         'exclude' => true,
-        'filter' => true,
-        'sorting' => true,
+        'filter' => false,
         'eval' => [
             'submitOnChange' => true,
             'mandatory' => true,
@@ -255,8 +351,7 @@ $dca['fields'] = [
     'fieldPtable' => [
         'inputType' => 'select',
         'exclude' => true,
-        'filter' => true,
-        'sorting' => true,
+        'filter' => false,
         'eval' => [
             'mandatory' => true,
             'includeBlankOption' => true,
@@ -269,8 +364,7 @@ $dca['fields'] = [
     'tablePtable' => [
         'inputType' => 'select',
         'exclude' => true,
-        'filter' => true,
-        'sorting' => true,
+        'filter' => false,
         'eval' => [
             'mandatory' => true,
             'submitOnChange' => true,
@@ -292,22 +386,25 @@ $dca['fields'] = [
     ],
     'groupWhitelistParents' => [
         'inputType' => 'group',
-        'palette' => ['tablePtable', 'whitelistParents'],
+        'palette' => ['tablePtable', 'whitelistParents', 'formatLabel'],
         'fields' => [
             '&tablePtable' => [
                 'eval' => ['tl_class' => 'clr w50'],
             ],
             '&whitelistParents' => [
                 'eval' => ['tl_class' => 'w50'],
-            ]
+            ],
+            '&formatLabel' => [
+                'eval' => ['tl_class' => 'w50'],
+            ],
         ],
         'order' => false,
         'sql' => ['type' => 'blob', 'notnull' => false]
-    ]
+    ],
 ];
 
 $dca['palettes'] = [
-    '__selector__' => ['type', 'usePublished', 'useStart', 'useStop', 'whichPtable'],
+    '__selector__' => ['type', 'usePublished', 'useStart', 'useStop', 'whichPtable', 'formatLabel', 'formatEmptyOption'],
     '__prefix__' => '{title_legend},title,type,intrinsic',
     '__suffix__' => '{publish_legend},published',
 ];
@@ -321,4 +418,6 @@ $dca['subpalettes'] = [
     'whichPtable_auto' => '',
     'whichPtable_dynamic' => 'fieldPtable',
     'whichPtable_static' => 'tablePtable',
+    'formatLabel_custom' => 'formatLabelCustom',
+    'formatEmptyOption_custom' => 'formatEmptyOptionCustom',
 ];

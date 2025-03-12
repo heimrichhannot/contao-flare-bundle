@@ -1,0 +1,16 @@
+huh_flare:
+    format_label_defaults:
+        tl_article:         '%%title%%'
+        tl_content:         '%%type%% [ID %%id%%] [P %%ptable%%.id=%%pid%%]'
+        tl_calendar:        '%%title%%'
+        tl_calendar_events: '%%title%%'
+        tl_faq:             '%%question%%'
+        tl_faq_category:    '%%headline%%'
+        tl_flare_filter:    '%%title%% [%%type%%] [ID %%id%%, PID %%pid%%]'
+        tl_flare_list:      '%%title%% [%%type%%]'
+        tl_form:            '%%title%%'
+        tl_form_field:      '%%type%% [ID %%id%%, PID %%pid%%]'
+        tl_news:            '%%title%%'
+        tl_news_archive:    '%%title%%'
+        tl_user:            '%%username%% (%%name%%<%%email%%>)'
+        tl_user_group:      '%%name%%'

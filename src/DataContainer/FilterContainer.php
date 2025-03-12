@@ -8,6 +8,7 @@ use Contao\Database;
 use Contao\DataContainer;
 use Contao\Model;
 use Contao\StringUtil;
+use Dflydev\DotAccessData\Data;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackContainerInterface;
@@ -94,7 +95,7 @@ class FilterContainer implements FlareCallbackContainerInterface
         return CallbackHelper::firstReturn($callbacks, [$value], [
             FilterModel::class => $filterModel,
             ListModel::class  => $listModel,
-            DataContainer::class  => $dc
+            DataContainer::class  => $dc,
         ]) ?? $value;
     }
 
@@ -410,15 +411,25 @@ class FilterContainer implements FlareCallbackContainerInterface
     }
 
     #[AsCallback(self::TABLE_NAME, 'fields.formatLabel.options')]
-    #[AsCallback(self::TABLE_NAME, 'fields.formatEmptyOption.options')]
     public function getOptions_formatLabel(DataContainer $dc): array
+    {
+        return $this->getFormatOptions('formatLabel');
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.formatEmptyOption.options')]
+    public function getOptions_formatEmptyOption(DataContainer $dc): array
+    {
+        return $this->getFormatOptions('formatEmptyOption');
+    }
+
+    public function getFormatOptions(string $field, ?string $prefix = null): array
     {
         $catalogue = $this->translator->getCatalogue();
         $labels = $catalogue->all('flare_form');
 
         $options = [];
 
-        $prefix = match ($dc->field) {
+        $prefix ??= match ($field) {
             'formatLabel' => 'format.',
             'formatEmptyOption' => 'empty_option.',
             default => null
@@ -433,12 +444,12 @@ class FilterContainer implements FlareCallbackContainerInterface
             $options[$key] = $label . ' [' . $key . ']';
         }
 
-        \asort($options);
-
         unset($options['custom']);
 
+        \asort($options);
+
         /** @noinspection PhpTranslationDomainInspection */
-        return ['custom' => $this->translator->trans("tl_flare_filter.{$dc->field}_custom", [], 'contao_tl_flare_filter')] + $options;
+        return ['custom' => $this->translator->trans("tl_flare_filter.{$field}_custom", [], 'contao_tl_flare_filter')] + $options;
     }
 
     // </editor-fold>

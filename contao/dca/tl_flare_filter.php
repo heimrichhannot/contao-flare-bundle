@@ -124,7 +124,10 @@ $dca['fields'] = [
         'default' => true,
         'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
         'inputType' => 'checkbox',
-        'eval' => ['tl_class' => 'cbx w50'],
+        'eval' => [
+            'submitOnChange' => true,
+            'tl_class' => 'cbx w50'
+        ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
     'preselect' => [
@@ -386,7 +389,7 @@ $dca['fields'] = [
     ],
     'groupWhitelistParents' => [
         'inputType' => 'group',
-        'palette' => ['tablePtable', 'whitelistParents', 'formatLabel'],
+        'palette' => ['tablePtable', 'whitelistParents', 'formatLabel', 'formatLabelCustom'],
         'fields' => [
             '&tablePtable' => [
                 'eval' => ['tl_class' => 'clr w50'],
@@ -395,6 +398,9 @@ $dca['fields'] = [
                 'eval' => ['tl_class' => 'w50'],
             ],
             '&formatLabel' => [
+                'eval' => ['tl_class' => 'w50'],
+            ],
+            '&formatLabelCustom' => [
                 'eval' => ['tl_class' => 'w50'],
             ],
         ],

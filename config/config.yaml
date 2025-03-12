@@ -10,7 +10,7 @@ huh_flare:
         tl_flare_list:      '%%title%% [%%type%%]'
         tl_form:            '%%title%%'
         tl_form_field:      '%%type%% [ID %%id%%, PID %%pid%%]'
-        tl_news:            '%%title%%'
+        tl_news:            '%%headline%%'
         tl_news_archive:    '%%title%%'
         tl_user:            '%%username%% (%%name%%<%%email%%>)'
         tl_user_group:      '%%name%%'

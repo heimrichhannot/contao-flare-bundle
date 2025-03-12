@@ -7,6 +7,7 @@ use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
@@ -18,6 +19,9 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
 {
     const TYPE = 'flare_relation_belongsTo';
 
+    /**
+     * @throws FilterException
+     */
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
         $filterModel = $context->getFilterModel();
@@ -25,8 +29,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
 
         if (!$fieldPid = $filterModel->fieldPid)
         {
-            $qb->where('1 = 0');
-            return;
+            throw new FilterException('No parent field defined.');
         }
 
         $inferrer = new PtableInferrer($filterModel, $listModel);
@@ -38,7 +41,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
         }
         catch (InferenceException)
         {
-            $qb->where('1 = 0');
+            $qb->blockList();
             return;
         }
 
@@ -49,8 +52,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
         }
 
         if (!$ptable || !$whitelistParents = StringUtil::deserialize($filterModel->whitelistParents)) {
-            $qb->where('1 = 0');
-            return;
+            throw new FilterException('No whitelisted parents.');
         }
 
         $qb->where($qb->expr()->in($fieldPid, ":whitelist"))
@@ -65,7 +67,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
     ): void {
         if (!$parentGroups = StringUtil::deserialize($filterModel->groupWhitelistParents))
         {
-            $qb->where('1 = 0');
+            $qb->blockList();
             return;
         }
 

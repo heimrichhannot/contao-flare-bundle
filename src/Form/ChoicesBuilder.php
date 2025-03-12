@@ -4,6 +4,8 @@ namespace HeimrichHannot\FlareBundle\Form;
 
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Contract\LabelableInterface;
+use HeimrichHannot\FlareBundle\Util\Str;
+use NewsModel;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -91,6 +93,11 @@ class ChoicesBuilder
         return $this->modelSuffix;
     }
 
+    public function count(): int
+    {
+        return \count($this->map);
+    }
+
     public function buildChoices(): array
     {
         $keys = \array_keys($this->map);
@@ -102,16 +109,22 @@ class ChoicesBuilder
         return function ($choice, $key, $value) {
             $obj = $this->map[$key] ?? null;
 
+            $params = [
+                '%@choice%' => Str::force($choice),
+                '%@key%' => Str::force($key),
+                '%@value%' => Str::force($value),
+                '%@type%' => \gettype($obj),
+                '%@class%' => \is_object($obj) ? \get_class($obj) : null,
+            ];
+
             if (\is_string($obj))
             {
-                return $this->translator->trans($obj, [], 'flare_form');
+                return $this->translator->trans($obj, $params, 'flare_form');
             }
 
             $label = $this->label
                 ?? $this->mapTypeLabel[$obj::class]
                 ?? ($obj instanceof Model ? $this->tryGetModelLabel($obj::getTable()) : null);
-
-            $params = [];
 
             if ($obj instanceof LabelableInterface)
             {
@@ -120,6 +133,9 @@ class ChoicesBuilder
             elseif ($obj instanceof Model)
             {
                 $label ??= (string) $obj->id;
+
+                $params['%@table%'] = $obj::getTable();
+                $params['%@name%'] = $this->translator->trans('table.' . $obj::getTable(), [], 'flare_form');
 
                 foreach ($obj->row() as $field => $value) {
                     $params['%' . $field . '%'] = $value;

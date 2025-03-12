@@ -4,6 +4,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Contao\DataContainer;
 use Contao\Model;
+use Contao\Model\Collection;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\FormTypeOptionsContract;
@@ -127,6 +128,15 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
         $choices->enable();
 
+        if ($filterModel->hasEmptyOption)
+        {
+            $emptyOptionLabel = ($filterModel->formatEmptyOption === 'custom')
+                ? ($filterModel->formatEmptyOptionCustom)
+                : ($filterModel->formatEmptyOption ?: null);
+
+            $choices->add('', $emptyOptionLabel);
+        }
+
         if ($ptable = $inferrer->getDcaMainPtable())
         {
             $label = ($filterModel->formatLabel === 'custom')
@@ -135,29 +145,15 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
             $choices->setLabel($label);
 
-            if ($filterModel->hasEmptyOption)
-            {
-                $emptyOptionLabel = ($filterModel->formatEmptyOption === 'custom')
-                    ? ($filterModel->formatEmptyOptionCustom)
-                    : ($filterModel->formatEmptyOption ?: null);
+            $parents = $this->getParentsFromWhitelistBlob($ptable, $filterModel->whitelistParents);
 
-                $choices->add('', $emptyOptionLabel);
+            if (!$parents) {
+                throw new FilterException('No whitelisted parents defined or parent table class invalid.');
             }
 
-            if ($whitelist = StringUtil::deserialize($filterModel->whitelistParents))
+            foreach ($parents as $parent)
             {
-                $pClass = Model::getClassFromTable($ptable);
-
-                if (!class_exists($pClass)) {
-                    throw new FilterException('Invalid parent table class.');
-                }
-
-                $parents = $pClass::findMultipleByIds($whitelist);
-
-                foreach ($parents as $parent)
-                {
-                    $choices->add($parent->id, $parent);
-                }
+                $choices->add($parent->id, $parent);
             }
 
             return [
@@ -169,9 +165,52 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
         if ($inferrer->isDcaDynamicPtable())
         {
-            \dump('dynamic ptable');
+            if (!$groupWhitelist = StringUtil::deserialize($filterModel->groupWhitelistParents)) {
+                throw new FilterException('No whitelisted parents defined.');
+            }
 
-            throw new FilterException('Not yet implemented.');
+            foreach ($groupWhitelist as $group)
+            {
+                $table = $group['tablePtable'] ?? null;
+                $whitelistParents = $group['whitelistParents'] ?? null;
+
+                if (!$table || !$whitelist = StringUtil::deserialize($whitelistParents)) {
+                    continue;
+                }
+
+                $pClass = Model::getClassFromTable($table);
+
+                if (!\class_exists($pClass)) {
+                    throw new FilterException(\sprintf('Invalid parent table class "%s" of table "%s".', $pClass, $table));
+                }
+
+                $parents = $pClass::findMultipleByIds($whitelist);
+
+                foreach ($parents as $parent)
+                {
+                    $choices->add(\sprintf('%s.%s', $table, $parent->id), $parent);
+                }
+
+                $formatLabel = $group['formatLabel'] ?? null;
+                $formatLabel = ($formatLabel === 'custom')
+                    ? ($group['formatLabelCustom'] ?? null)
+                    : ($formatLabel ?: null);
+
+                $choices->setLabel($formatLabel, $table);
+            }
+
+            if (!$choices->count())
+            {
+                throw new FilterException('No valid whitelisted parents defined.');
+            }
+
+            $choices->setModelSuffix('(%@name%)');
+
+            return [
+                'required' => $filterModel->isMandatory,
+                'multiple' => $filterModel->isMultiple,
+                'expanded' => $filterModel->isExpanded,
+            ];
         }
 
         throw new FilterException('No valid ptable found.');
@@ -200,17 +239,9 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
         if ($ptable = $inferrer->getDcaMainPtable())
         {
-            if (!$whitelist = StringUtil::deserialize($filterModel->whitelistParents)) {
+            if (!$parents = $this->getParentsFromWhitelistBlob($ptable, $filterModel->whitelistParents)) {
                 return $value;
             }
-
-            $pClass = Model::getClassFromTable($ptable);
-
-            if (!class_exists($pClass)) {
-                return $value;
-            }
-
-            $parents = $pClass::findMultipleByIds($whitelist);
 
             foreach ($parents as $parent) {
                 $choices->add($parent->id, $parent);
@@ -221,9 +252,48 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
         if ($inferrer->isDcaDynamicPtable())
         {
-            // todo
+            $choices->setModelSuffix('[%@table%.id=%id%]');
+
+            if (!$groupWhitelist = StringUtil::deserialize($filterModel->groupWhitelistParents)) {
+                return $value;
+            }
+
+            foreach ($groupWhitelist as $group)
+            {
+                $parents = $this->getParentsFromWhitelistBlob(
+                    table: $table = $group['tablePtable'] ?? null,
+                    blob: $group['whitelistParents'] ?? null
+                );
+
+                if (!$parents) {
+                    continue;
+                }
+
+                foreach ($parents as $parent) {
+                    $choices->add(\sprintf('%s.%s', $table, $parent?->id), $parent);
+                }
+            }
         }
 
         return $value;
+    }
+
+    public function getParentsFromWhitelistBlob(?string $table, ?string $blob): ?Collection
+    {
+        if (!$table || !$blob) {
+            return null;
+        }
+
+        if (!$whitelist = StringUtil::deserialize($blob)) {
+            return null;
+        }
+
+        $pClass = Model::getClassFromTable($table);
+
+        if (!\class_exists($pClass)) {
+            return null;
+        }
+
+        return $pClass::findMultipleByIds($whitelist);
     }
 }

@@ -121,4 +121,29 @@ readonly class Str
 
         return (bool) preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $db_or_col_name);
     }
+
+    public static function force(mixed $value): string
+    {
+        if (\is_scalar($value)) {
+            return (string) $value;
+        }
+
+        if (\is_string($value) || $value instanceof \Stringable) {
+            return (string) $value;
+        }
+
+        if (\is_array($value)) {
+            return '['.static::implode(',', \array_map(static fn ($v) => static::force($v), \iterator_to_array($value))).']';
+        }
+
+        if (\is_object($value) && method_exists($value, '__toString')) {
+            return (string) $value;
+        }
+
+        if (\is_object($value)) {
+            return \get_class($value);
+        }
+
+        return \gettype($value);
+    }
 }

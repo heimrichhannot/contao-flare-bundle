@@ -38,6 +38,7 @@ use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
  * @property string $tablePtable
  * @property string $whitelistParents
  * @property string $groupWhitelistParents
+ * @property string $preselect
  */
 class FilterModel extends Model
 {

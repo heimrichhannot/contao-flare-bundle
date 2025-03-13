@@ -81,7 +81,7 @@ class ListContainer implements FlareCallbackContainerInterface
 
         return CallbackHelper::firstReturn($callbacks, [$value], [
             ListModel::class  => $listModel,
-            DataContainer::class  => $dc
+            DataContainer::class  => $dc,
         ]) ?? $value;
     }
 

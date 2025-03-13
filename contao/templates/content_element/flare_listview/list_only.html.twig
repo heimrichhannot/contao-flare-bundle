@@ -1,0 +1,15 @@
+{% extends '@Contao/block_searchable.html5' %}
+
+{% block content %}
+
+    {% block list %}
+        {% for entry in flare_list(list_model, form_name) %}
+            <details>
+                {# (entry.headline is defined) ? (entry.headline|fmt_headline_value|default('<' ~ loop.index ~ '>')) : #}
+                <summary>#{{ entry.id }} {{ entry.title ?? (entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>')) }}</summary>
+                {{ dump(entry) }}
+            </details>
+        {% endfor %}
+    {% endblock %}
+
+{% endblock %}

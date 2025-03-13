@@ -1,0 +1,17 @@
+{% extends '@Contao/block_unsearchable.html5' %}
+
+{% block content %}
+    {% block filter %}
+        {% set form = flare_form(list_model, form_name) %}
+
+        {{ form_start(form) }}
+        {{ form_widget(form) }}
+
+        {% block submit %}
+            <button type="submit" class="btn btn-primary">{{ 'submit'|trans([], 'flare_form') }}</button>
+        {% endblock %}
+
+        {{ form_end(form) }}
+
+    {% endblock %}
+{% endblock %}

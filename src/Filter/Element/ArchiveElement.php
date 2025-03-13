@@ -8,6 +8,7 @@ use Contao\Model\Collection;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\FormTypeOptionsContract;
+use HeimrichHannot\FlareBundle\Contract\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -21,9 +22,10 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\FormInterface;
 
 #[AsFilterElement(alias: ArchiveElement::TYPE, formType: ChoiceType::class)]
-class ArchiveElement extends BelongsToRelationElement implements FormTypeOptionsContract, PaletteContract
+class ArchiveElement extends BelongsToRelationElement implements FormTypeOptionsContract, HydrateFormContract, PaletteContract
 {
     public const TYPE = 'flare_archive';
 
@@ -295,5 +297,15 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
         }
 
         return $pClass::findMultipleByIds($whitelist);
+    }
+
+    public function hydrateForm(FilterContext $context, FormInterface $field): void
+    {
+        $filterModel = $context->getFilterModel();
+
+        if ($preselect = StringUtil::deserialize($filterModel->preselect ?: null))
+        {
+            $field->setData($preselect);
+        }
     }
 }

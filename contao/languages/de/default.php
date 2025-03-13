@@ -4,6 +4,7 @@ use HeimrichHannot\FlareBundle\Controller\ContentElement\ListViewController;
 
 $lang = &$GLOBALS['TL_LANG'];
 $flare = &$lang['FLARE'];
+$err = &$lang['ERR']['flare'];
 
 $lang['CTE'][ListViewController::TYPE] = ['FLARE Listenansicht', 'Zeigt eine FLARE-Liste an.'];
 
@@ -17,3 +18,5 @@ $flare['list'] = [
     'flare_generic_dc' => ['Data-Container', 'Listet Elemente eines Data-Containers auf.'],
     'flare_news' => ['Nachrichten', 'Listet Nachrichten auf.'],
 ];
+
+$err['listview']['malconfigured'] = 'Diese Listenansicht ist fehlerhaft konfiguriert.';

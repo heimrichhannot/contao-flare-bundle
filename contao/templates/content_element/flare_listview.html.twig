@@ -1,23 +1,30 @@
 {% extends '@Contao/block_searchable.html5' %}
 
 {% block content %}
-    <div class="mt-4">
 
-        {{ form(flare.filter_form) }}
+    {% block filter %}
+        {% set form = flare_form(list_model, form_name) %}
+        {{ form_start(form) }}
+            {{ form_widget(form) }}
+            <button type="submit" class="btn btn-primary">{{ 'submit'|trans([], 'flare_form') }}</button>
+        {{ form_end(form) }}
+    {% endblock %}
 
-        <hr>
+    <hr>
 
-        {% for entry in flare.entries %}
-            <div class="row">
-                <div class="col-12">
-                    <details>
-                        {# (entry.headline is defined) ? (entry.headline|fmt_headline_value|default('<' ~ loop.index ~ '>')) : #}
-                        <summary>#{{ entry.id }} {{ entry.title ?? (entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>')) }}</summary>
-                        {{ dump(entry) }}
-                    </details>
-                </div>
-            </div>
+    {% block list %}
+        {% for entry in flare_list(list_model, form_name) %}
+            <details>
+                <summary>#{{ entry.id }} {{ entry.title ?? entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>') }}</summary>
+                {{ dump(entry) }}
+            </details>
         {% endfor %}
+    {% endblock %}
 
-    </div>
+    <hr>
+
+    {% block pagination %}
+
+    {% endblock %}
+
 {% endblock %}

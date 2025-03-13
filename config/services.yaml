@@ -9,9 +9,14 @@ services:
     HeimrichHannot\FlareBundle\:
         resource: ../src
         exclude:
-            - ../src/{Collection,Contao,ContaoManager,DependencyInjection,Model}
+            - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Event,Model}
             - ../src/Filter/{FilterContext,FilterContextCollection,FilterQueryBuilder}.php
+            - ../src/Form/ChoicesBuilder.php
             - ../src/List/ListTypeConfig.php
+
+    HeimrichHannot\FlareBundle\Manager\TemplateManager:
+        bind:
+            $finderFactory: '@contao.twig.finder_factory'
 
 #    bind:
 #      $projectDir: '%kernel.project_dir%'

@@ -8,8 +8,8 @@
             url.searchParams.forEach((_, k) => {
                 if (k.startsWith(f.name + '[')) url.searchParams.delete(k);
             });
-            new FormData(f).forEach((value, key) => {
-                url.searchParams.append(key, value);
+            new FormData(f).forEach((v, k) => {
+                url.searchParams.append(k, v);
             });
             window.location.href = url.toString();
         });

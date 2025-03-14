@@ -38,12 +38,16 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
      */
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
-        $submittedWhitelist = $context->getSubmittedData();
+        $submitted = $context->getSubmittedData();
         $filterModel = $context->getFilterModel();
         $inferrer = new PtableInferrer($filterModel, $context->getListModel());
 
-        if (\is_array($submittedWhitelist)) {
-            $submittedWhitelist = \array_filter($submittedWhitelist, static fn($v) => $v && \is_scalar($v));
+        if (!$filterModel->isMultiple && \is_scalar($submitted)) {
+            $submitted = [$submitted];
+        }
+
+        if (\is_array($submitted)) {
+            $submitted = \array_filter($submitted, static fn($v) => $v && \is_scalar($v));
         }
 
         if ($inferrer->getDcaMainPtable())
@@ -52,25 +56,19 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
                 throw new FilterException('No whitelisted parents defined.');
             }
 
-            if (\is_array($submittedWhitelist) && !empty($submittedWhitelist))
+            if (\is_array($submitted) and !$filterModel->hasEmptyOption || !empty($submitted))
+                // we expect $submitted to be an array of parent ids
+                // if empty option is enabled, empty array is allowed
             {
-                $whitelist = \array_intersect($whitelist, $submittedWhitelist);
+                $whitelist = \array_map('intval', $whitelist);
+                $submitted = \array_map('intval', $submitted);
+                $whitelist = \array_intersect($whitelist, $submitted);
 
                 if (empty($whitelist))
                 {
                     $qb->blockList();
                     return;
                 }
-            }
-            elseif (\is_scalar($submittedWhitelist) && $submittedWhitelist = (int) $submittedWhitelist)
-            {
-                if (!\in_array($submittedWhitelist, $whitelist))
-                {
-                    $qb->blockList();
-                    return;
-                }
-
-                $whitelist = [$submittedWhitelist];
             }
 
             $qb->where("`pid` IN (:pidIn)")
@@ -81,7 +79,24 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
         if ($inferrer->isDcaDynamicPtable())
         {
-            $this->filterDynamicPtableField($qb, $filterModel, 'ptable', 'pid');
+            if (\is_array($submitted) && !$filterModel->hasEmptyOption || !empty($submitted))
+                // we expect $submitted to be an array of values formatted {table}.{id}
+                // if empty option is enabled, empty array is allowed
+            {
+                $submittedGroup = [];
+                foreach ($submitted as $value)
+                {
+                    if (!\str_contains($value, '.')) {  // skip invalid values
+                        continue;
+                    }
+
+                    [$table, $id] = \explode('.', $value, 2);
+
+                    $submittedGroup[$table][] = \intval($id);
+                }
+            }
+
+            $this->filterDynamicPtableField($qb, $filterModel, 'ptable', 'pid', $submittedGroup ?? null);
             return;
         }
 

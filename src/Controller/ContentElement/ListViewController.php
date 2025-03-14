@@ -26,11 +26,11 @@ class ListViewController extends AbstractContentElementController
     public const TYPE = 'flare_listview';
 
     public function __construct(
-        private readonly FilterListManager        $filterListManager,
-        private readonly KernelInterface          $kernel,
-        private readonly LoggerInterface          $logger,
-        private readonly ScopeMatcher             $scopeMatcher,
-        private readonly TranslatorInterface      $translator,
+        private readonly FilterListManager   $filterListManager,
+        private readonly KernelInterface     $kernel,
+        private readonly LoggerInterface     $logger,
+        private readonly ScopeMatcher        $scopeMatcher,
+        private readonly TranslatorInterface $translator,
     ) {}
 
     /**

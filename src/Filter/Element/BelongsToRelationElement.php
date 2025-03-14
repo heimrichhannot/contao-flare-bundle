@@ -59,11 +59,21 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
             ->bind('whitelist', $whitelistParents);
     }
 
+    /**
+     * Expected format:
+     * ```php
+     *   $submittedData = [
+     *       'tl_article' => [1, 5, 35, ...],
+     *       'tl_news' => [2, 3, 4, ...],
+     *   ];
+     * ```
+     */
     public function filterDynamicPtableField(
         FilterQueryBuilder $qb,
         FilterModel        $filterModel,
         string             $fieldDynamicPtable,
-        string             $fieldPid
+        string             $fieldPid,
+        ?array             $submittedData = null,
     ): void {
         if (!$parentGroups = StringUtil::deserialize($filterModel->groupWhitelistParents))
         {
@@ -82,6 +92,21 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
                 continue;
             }
 
+            if (isset($submittedData))
+            {
+                $submittedWhitelist = $submittedData[$g_tablePtable] ?? null;
+
+                if (!\is_array($submittedWhitelist)) {
+                    continue;
+                }
+
+                $g_whitelistParents = \array_intersect($g_whitelistParents, $submittedWhitelist);
+            }
+
+            if (empty($g_whitelistParents)) {
+                continue;
+            }
+
             $gKey_tablePtable = \sprintf(':g%s_ptable', $i);
             $gKey_whitelistParents = \sprintf(':g%s_whitelist', $i);
 
@@ -96,7 +121,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
 
         if (empty($ors))
         {
-            $qb->where('1 = 0');
+            $qb->blockList();
             return;
         }
 

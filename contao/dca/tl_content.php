@@ -30,20 +30,9 @@ $dca['fields'][$formName = ContentContainer::FIELD_FORM_NAME] = [
     'sql' => "varchar(64) NOT NULL default ''",
 ];
 
-$tplField = [
-    'exclude' => true,
-    'inputType' => 'select',
-    'eval' => ['chosen' => true, 'tl_class' => 'w50'],
-    'sql' => "varchar(64) COLLATE ascii_bin NOT NULL default ''",
-];
-
-/*$dca['fields'][$errTpl = ContentContainer::FIELD_ERROR_TEMPLATE] = $tplField;
-$dca['fields'][$formTpl = ContentContainer::FIELD_FORM_TEMPLATE] = $tplField;
-$dca['fields'][$listTpl = ContentContainer::FIELD_LIST_TEMPLATE] = $tplField;*/
-
 $dca['palettes'][ListViewController::TYPE] = '{type_legend},type,headline;'
     . "{flare_list_legend},$list,$formName;"
-    . "{template_legend:hide},customTpl;" // ,$errTpl,$formTpl,$listTpl
+    . "{template_legend:hide},customTpl;"
     . '{protected_legend:hide},protected;'
     . '{expert_legend:hide},guests,cssID;'
     . '{invisible_legend:hide},invisible,start,stop';

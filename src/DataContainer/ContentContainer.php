@@ -3,7 +3,6 @@
 namespace HeimrichHannot\FlareBundle\DataContainer;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
-use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\Manager\TemplateManager;
 
 class ContentContainer

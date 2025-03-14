@@ -5,7 +5,6 @@ namespace HeimrichHannot\FlareBundle\FlareContainer;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\Form\FormInterface;
-use Symfony\Component\Form\FormView;
 
 class FlareContainer
 {

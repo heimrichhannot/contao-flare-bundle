@@ -2,16 +2,14 @@
 
 namespace HeimrichHannot\FlareBundle\Exception;
 
-use Exception;
-
-class InferenceException extends Exception
+class InferenceException extends FlareException
 {
     public function __construct(
         string           $message,
         protected string $translationKey = '',
         protected array  $formatParams = [],
         int              $code = 0,
-        Exception        $previous = null
+        \Throwable       $previous = null
     ) {
         parent::__construct($message, $code, $previous);
     }

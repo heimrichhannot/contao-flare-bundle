@@ -3,49 +3,51 @@
 namespace HeimrichHannot\FlareBundle\Twig\Runtime;
 
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Manager\FilterListManager;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\FlareContainer\FlareContainer;
+use HeimrichHannot\FlareBundle\FlareContainer\FlareContainerBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
 use Twig\Extension\RuntimeExtensionInterface;
 
 class FlareRuntime implements RuntimeExtensionInterface
 {
+    protected array $containerCache = [];
+
     public function __construct(
-        private readonly FilterListManager $filterListManager,
+        private readonly FlareContainerBuilderFactory $containerBuilderFactory,
     ) {}
 
     /**
      * @throws FilterException
      */
-    public function getFormComponent(ListModel|string|int $listModel, ?string $formName = null): FormInterface
+    public function createFormView(FlareContainer $container): FormView
     {
-        $listModel = $this->getListModel($listModel);
-        $formName = $this->filterListManager->makeFormName($listModel, $formName);
-
-        return $this->filterListManager->getForm($listModel, $formName);
+        return $container->getFormComponent()->createView();
     }
 
     /**
-     * @throws FilterException
+     * @throws FlareException
      */
-    public function getFormView(ListModel|string|int $listModel, ?string $formName = null): FormView
+    public function getFlare(ListModel|string|int $listModel, array $options = []): FlareContainer
     {
-        return $this->getFormComponent($listModel, $formName)->createView();
-    }
+        $cacheKey = $listModel->id . '@' . \md5(\serialize($options));
 
-    /**
-     * @noinspection PhpFullyQualifiedNameUsageInspection
-     *
-     * @throws FilterException
-     * @throws \Doctrine\DBAL\Exception
-     */
-    public function getEntries(ListModel|string|int $listModel, ?string $formName = null): array
-    {
+        if (isset($this->containerCache[$cacheKey])) {
+            return $this->containerCache[$cacheKey];
+        }
+
         $listModel = $this->getListModel($listModel);
-        $formName = $this->filterListManager->makeFormName($listModel, $formName);
 
-        return $this->filterListManager->getEntries($listModel, $formName);
+        $container = $this->containerBuilderFactory
+            ->create()
+            ->setListModel($listModel)
+            ->setFormName($options['form_name'] ?? null)
+            ->build();
+
+        $this->containerCache[$cacheKey] = $container;
+
+        return $container;
     }
 
     /**

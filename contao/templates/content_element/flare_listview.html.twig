@@ -2,29 +2,53 @@
 
 {% block content %}
 
+    flare(list_model, {
+        pagination: pagi_settings,
+        form_name: form_name,
+    })
+
+    flare.form
+
+    flare.entries
+
+    flare.pagination.total
+
     {% block filter %}
-        {% set form = flare_form(list_model, form_name) %}
+
+        {% set form = flare|flare_form %}
+
         {{ form_start(form) }}
             {{ form_widget(form) }}
             <button type="submit" class="btn btn-primary">{{ 'submit'|trans([], 'flare_form') }}</button>
         {{ form_end(form) }}
+
     {% endblock %}
 
     <hr>
 
     {% block list %}
-        {% for entry in flare_list(list_model, form_name) %}
+
+        {% for entry in flare.entries %}
             <details>
                 <summary>#{{ entry.id }} {{ entry.title ?? entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>') }}</summary>
                 {{ dump(entry) }}
             </details>
         {% endfor %}
+
     {% endblock %}
 
     <hr>
 
     {% block pagination %}
-
+        {#{% set pagi = flare_pagination(list_model, form_name) %}
+        <p>{{ 'page'|trans([], 'flare_pagination') }} {{ pagi.current }} / {{ pagi.total }}</p>
+        <ul>
+            {% for page in pagi.pages %}
+                <li>
+                    <a href="{{ page.url }}">{{ page.label }}</a>
+                </li>
+            {% endfor %}
+        </ul>#}
     {% endblock %}
 
 {% endblock %}

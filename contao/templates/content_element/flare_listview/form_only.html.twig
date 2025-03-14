@@ -2,7 +2,8 @@
 
 {% block content %}
     {% block filter %}
-        {% set form = flare_form(list_model, form_name) %}
+
+        {% set form = flare|flare_form %}
 
         {{ form_start(form) }}
         {{ form_widget(form) }}

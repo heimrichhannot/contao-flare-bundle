@@ -11,6 +11,7 @@ use Contao\StringUtil;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\FlareContainer\FlareContainerBuilderFactory;
 use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
 use HeimrichHannot\FlareBundle\Manager\FilterListManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -27,6 +28,7 @@ class ListViewController extends AbstractContentElementController
 
     public function __construct(
         private readonly FilterListManager   $filterListManager,
+        private readonly FlareContainerBuilderFactory $flareContainerBuilderFactory,
         private readonly KernelInterface     $kernel,
         private readonly LoggerInterface     $logger,
         private readonly ScopeMatcher        $scopeMatcher,
@@ -80,22 +82,23 @@ class ListViewController extends AbstractContentElementController
 
         try
         {
-            $formName = $this->filterListManager->makeFormName($listModel, $model->flare_formName ?: null);
-            $this->filterListManager->getForm($listModel, $formName);
+            $container = $this->flareContainerBuilderFactory
+                ->create()
+                ->setListModel($listModel)
+                ->setFormName($model->flare_formName ?: null)
+                ->build();
         }
         catch (FilterException $e)
         {
-            $this->logger->error(\sprintf('%s (tl_content.id=%s, tl_flare_list.id=%s)', $e->getMessage(), $model->id, $listModel->id));
+            $this->logger->error(\sprintf('%s (tl_content.id=%s, tl_flare_list.id=%s)', $e->getMessage(), $model->id, $listModel->id),
+                ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
 
             return $this->getErrorResponse($e);
         }
 
-        $data = [
-            'form_name' => $formName,
-            'list_model' => $listModel,
-        ];
+        $data = ['flare' => $container];
 
-        $template->setData($template->getData() + $data);
+        $template->setData($data + $template->getData());
 
         return $template->getResponse();
     }

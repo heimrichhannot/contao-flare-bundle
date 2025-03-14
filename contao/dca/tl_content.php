@@ -32,7 +32,7 @@ $dca['fields'][$formName = ContentContainer::FIELD_FORM_NAME] = [
 
 $dca['palettes'][ListViewController::TYPE] = '{type_legend},type,headline;'
     . "{flare_list_legend},$list,$formName;"
-    . "{template_legend:hide},customTpl;"
+    . '{template_legend:hide},customTpl;'
     . '{protected_legend:hide},protected;'
     . '{expert_legend:hide},guests,cssID;'
     . '{invisible_legend:hide},invisible,start,stop';

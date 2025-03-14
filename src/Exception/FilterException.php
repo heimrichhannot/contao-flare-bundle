@@ -2,7 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Exception;
 
-class FilterException extends \Exception
+class FilterException extends FlareException
 {
     public function __construct(
         string $message = "",

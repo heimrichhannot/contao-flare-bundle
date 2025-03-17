@@ -12,6 +12,8 @@ use Contao\Template;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\ListView\Builder\ListViewBuilderFactory;
+use HeimrichHannot\FlareBundle\Paginator\Builder\PaginatorBuilderFactory;
+use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,11 +27,11 @@ class ListViewController extends AbstractContentElementController
     public const TYPE = 'flare_listview';
 
     public function __construct(
-        private readonly ListViewBuilderFactory $listViewBuilderFactory,
-        private readonly KernelInterface        $kernel,
-        private readonly LoggerInterface        $logger,
-        private readonly ScopeMatcher           $scopeMatcher,
-        private readonly TranslatorInterface    $translator,
+        private readonly ListViewBuilderFactory   $listViewBuilderFactory,
+        private readonly KernelInterface          $kernel,
+        private readonly LoggerInterface          $logger,
+        private readonly ScopeMatcher             $scopeMatcher,
+        private readonly TranslatorInterface      $translator,
     ) {}
 
     /**
@@ -79,10 +81,15 @@ class ListViewController extends AbstractContentElementController
 
         try
         {
+            $paginatorConfig = new PaginatorConfig(
+                itemsPerPage: \intval($model->flare_itemsPerPage ?: 2)
+            );
+
             $listViewDto = $this->listViewBuilderFactory
                 ->create()
                 ->setListModel($listModel)
                 ->setFormName($model->flare_formName ?: null)
+                ->setPaginatorConfig($paginatorConfig)
                 ->build();
         }
         catch (FilterException $e)

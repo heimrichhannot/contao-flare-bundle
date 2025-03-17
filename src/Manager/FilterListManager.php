@@ -4,6 +4,9 @@ namespace HeimrichHannot\FlareBundle\Manager;
 
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
+use HeimrichHannot\FlareBundle\Paginator\Builder\PaginatorBuilderFactory;
+use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
+use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -13,10 +16,12 @@ class FilterListManager
     protected array $filterContextCache = [];
     protected array $formCache = [];
     protected array $entriesCache = [];
+    protected array $paginationCache = [];
 
     public function __construct(
-        private readonly FilterContextManager $contextManager,
-        private readonly RequestStack         $requestStack,
+        private readonly FilterContextManager    $contextManager,
+        private readonly PaginatorBuilderFactory $paginationBuilderFactory,
+        private readonly RequestStack            $requestStack,
     ) {}
 
     /**
@@ -75,7 +80,7 @@ class FilterListManager
      * @throws FilterException
      * @throws \Doctrine\DBAL\Exception
      */
-    public function getEntries(ListModel $listModel, string $formName): array
+    public function getEntries(ListModel $listModel, string $formName, PaginatorConfig $paginatorConfig): array
     {
         $form = $this->getForm($listModel, $formName);
 
@@ -90,16 +95,44 @@ class FilterListManager
 
         $filters = $this->getFilterContextCollection($listModel, $formName);
 
-        $entries = $this->contextManager->fetchEntries($filters);
+        $pagination = $this->getPaginator($listModel, $formName, $paginatorConfig);
+
+        $entries = $this->contextManager->fetchEntries($filters, $pagination);
 
         $this->entriesCache[$cacheKey] = $entries;
 
         return $entries;
     }
 
-    public function makeCacheKey(ListModel $listModel, string $formName): string
+    public function getPaginator(ListModel $listModel, string $formName, PaginatorConfig $paginatorConfig): Paginator
     {
-        return $listModel->id . '@' . $formName;
+        $form = $this->getForm($listModel, $formName);
+
+        if ($form->isSubmitted() && !$form->isValid()) {
+            return $this->paginationBuilderFactory->create()->buildEmpty();
+        }
+
+        $cacheKey = $this->makeCacheKey($listModel, $formName);
+        if (isset($this->paginationCache[$cacheKey])) {
+            return $this->paginationCache[$cacheKey];
+        }
+
+        $filters = $this->getFilterContextCollection($listModel, $formName);
+        $total = $this->contextManager->fetchCount($filters);
+
+        return $this->paginationBuilderFactory
+            ->create()
+            ->fromConfig($paginatorConfig)
+            ->queryPrefix($formName)
+            ->handleRequest()
+            ->totalItems($total)
+            ->build();
+    }
+
+    public function makeCacheKey(ListModel $listModel, string $formName, ...$args): string
+    {
+        $parts = [$listModel->id, $formName, ...$args];
+        return \implode('@', $parts);
     }
 
     public function makeFormName(ListModel $listModel, ?string $formName = null): string

@@ -2,16 +2,16 @@
 
 namespace HeimrichHannot\FlareBundle\ListView\Builder;
 
-use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolver;
+use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolverInterface;
 
 readonly class ListViewBuilderFactory
 {
     public function __construct(
-        private ListViewResolver $containerStrategies,
+        private ListViewResolverInterface $resolver,
     ) {}
 
     public function create(): ListViewBuilder
     {
-        return new ListViewBuilder($this->containerStrategies);
+        return new ListViewBuilder($this->resolver);
     }
 }

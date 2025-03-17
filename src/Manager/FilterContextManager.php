@@ -13,16 +13,14 @@ use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilderFactory;
+use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 readonly class FilterContextManager
 {
@@ -32,8 +30,6 @@ readonly class FilterContextManager
         private EventDispatcherInterface $eventDispatcher,
         private FilterElementRegistry    $filterElementRegistry,
         private FormFactoryInterface     $formFactory,
-        private RequestStack             $requestStack,
-        private UrlGeneratorInterface    $urlGenerator,
     ) {}
 
     public function collect(ListModel $listModel): ?FilterContextCollection
@@ -225,9 +221,13 @@ readonly class FilterContextManager
      * @throws FilterException
      * @throws \Doctrine\DBAL\Exception
      */
-    public function fetchEntries(FilterContextCollection $filters): array
+    public function fetchEntries(FilterContextCollection $filters, ?Paginator $paginator = null): array
     {
-        [$sql, $params, $types] = $this->buildFilteredQuery($filters);
+        [$sql, $params, $types] = $this->buildFilteredQuery(
+            filters: $filters,
+            limit: $paginator?->getItemsPerPage() ?: null,
+            offset: $paginator?->getOffset() ?: null,
+        );
 
         $result = $this->connection->executeQuery($sql, $params, $types);
 
@@ -238,11 +238,29 @@ readonly class FilterContextManager
         return $entries;
     }
 
+    public function fetchCount(FilterContextCollection $filters): int
+    {
+        [$sql, $params, $types] = $this->buildFilteredQuery($filters, isCounting: true);
+
+        $result = $this->connection->executeQuery($sql, $params, $types);
+
+        $count = $result->fetchOne() ?: 0;
+
+        $result->free();
+
+        return $count;
+    }
+
     /**
      * @throws FilterException
      */
-    public function buildFilteredQuery(FilterContextCollection $filters): array
-    {
+    public function buildFilteredQuery(
+        FilterContextCollection $filters,
+        ?int                    $limit = null,
+        ?int                    $offset = null,
+        ?string                 $order = null,
+        bool                    $isCounting = false,
+    ): array {
         $combinedConditions = [];
         $combinedParameters = [];
         $combinedTypes = [];
@@ -254,7 +272,10 @@ readonly class FilterContextManager
             throw new FilterException(\sprintf('[FLARE] Invalid table name: %s', $table), method: __METHOD__);
         }
 
-        $blockResult = ["SELECT 1 FROM `$table` LIMIT 0", [], []];
+        $blockResult = ["SELECT 1 FROM `$table` as $as LIMIT 0", [], []];
+        if ($isCounting) {
+            $blockResult[0] = "SELECT COUNT(*) FROM `$table` AS $as";
+        }
 
         foreach ($filters as $i => $filter)
         {
@@ -305,10 +326,15 @@ readonly class FilterContextManager
             $combinedTypes = \array_merge($combinedTypes, $types);
         }
 
-        $finalSQL = "SELECT * FROM `$table` AS $as";
-        if (!empty($combinedConditions))
+        $finalSQL = $isCounting ? "SELECT COUNT(*)" : "SELECT *";
+        $finalSQL .= " FROM `$table` AS $as WHERE ";
+        $finalSQL .= empty($combinedConditions) ? '1' : $this->connection->createExpressionBuilder()->and(...$combinedConditions);
+
+        if (!$isCounting)
         {
-            $finalSQL .= ' WHERE ' . $this->connection->createExpressionBuilder()->and(...$combinedConditions);
+            if (isset($limit)) $finalSQL .= " LIMIT $limit";
+            if (isset($offset)) $finalSQL .= " OFFSET $offset";
+            if (isset($order)) $finalSQL .= " ORDER BY $order";
         }
 
         return [$finalSQL, $combinedParameters, $combinedTypes];

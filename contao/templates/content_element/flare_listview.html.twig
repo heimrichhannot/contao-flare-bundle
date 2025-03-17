@@ -3,16 +3,15 @@
 
 {% block content %}
 
-    flare(list_model, {
-        pagination: pagi_settings,
-        form_name: form_name,
-    })
+    {#
+        flare = flare(list_model, {
+            pagination: pagi_settings,
+            form_name: form_name,
+        })
 
-    flare.form
-
-    flare.entries
-
-    flare.pagination.total
+        flare.entries
+        flare.paginator
+    #}
 
     {% block filter %}
 
@@ -41,15 +40,29 @@
     <hr>
 
     {% block pagination %}
-        {#{% set pagi = flare_pagination(list_model, form_name) %}
-        <p>{{ 'page'|trans([], 'flare_pagination') }} {{ pagi.current }} / {{ pagi.total }}</p>
-        <ul>
-            {% for page in pagi.pages %}
-                <li>
-                    <a href="{{ page.url }}">{{ page.label }}</a>
+        {# @var \HeimrichHannot\FlareBundle\Paginator\Paginator paginator #}
+        {% set paginator = flare.paginator %}
+        <nav>
+            <p>page {{ paginator.currentPageNumber }} / {{ paginator.lastPageNumber }} showing {{ paginator.itemsPerPage ?: 'all' }} items per page ({{ paginator.firstItemNumber }} to {{ paginator.lastItemNumber }}) of {{ paginator.totalItems }} in total</p>
+            <ul class="pagination">
+                {# @var \HeimrichHannot\FlareBundle\Paginator\PageItem page #}
+                <li class="page-item {% if not paginator.previousPage %}disabled{% endif %}">
+                    <a href="{{ paginator.previous.url|default('#') }}" class="page-link">&#12296;</a>
                 </li>
-            {% endfor %}
-        </ul>#}
+                {% for page in paginator.board(3, 1) %}
+                    <li class="page-item {% if page.current %}active{% endif %} {% if page.ellipsis %}disabled{% endif %}">
+                        {% if not page.ellipsis %}
+                            <a href="{{ page.url }}" class="page-link">{{ page.number }}</a>
+                        {% else %}
+                            <span class="page-link">&hellip;</span>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+                <li class="page-item {% if not paginator.nextPage %}disabled{% endif %}">
+                    <a href="{{ paginator.next.url|default('#') }}" class="page-link">&#12297;</a>
+                </li>
+            </ul>
+        </nav>
     {% endblock %}
 
 {% endblock %}

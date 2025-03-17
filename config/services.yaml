@@ -15,6 +15,7 @@ services:
             - ../src/List/ListTypeConfig.php
             - ../src/ListView/ListViewDto.php
             - ../src/ListView/Builder/ListViewBuilder.php
+            - ../src/ListView/Builder/PaginationBuilder.php
 
     HeimrichHannot\FlareBundle\Manager\TemplateManager:
         bind:

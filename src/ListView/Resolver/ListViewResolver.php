@@ -3,7 +3,9 @@
 namespace HeimrichHannot\FlareBundle\ListView\Resolver;
 
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\ListView\ListViewDto;
+use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Manager\FilterListManager;
 use Symfony\Component\Form\FormInterface;
 
@@ -19,7 +21,7 @@ readonly class ListViewResolver implements ListViewResolverInterface
      */
     public function getEntries(ListViewDto $dto): array
     {
-        return $this->filterListManager->getEntries($dto->getListModel(), $dto->getFormName());
+        return $this->filterListManager->getEntries($dto->getListModel(), $dto->getFormName(), $dto->getPaginatorConfig());
     }
 
     /**
@@ -33,5 +35,15 @@ readonly class ListViewResolver implements ListViewResolverInterface
     public function getFormName(ListViewDto $dto): string
     {
         return $this->filterListManager->makeFormName($dto->getListModel());
+    }
+
+    public function getPaginator(ListViewDto $dto): Paginator
+    {
+        return $this->filterListManager->getPaginator($dto->getListModel(), $dto->getFormName(), $dto->getPaginatorConfig());
+    }
+
+    public function getPaginatorConfig(ListViewDto $dto): PaginatorConfig
+    {
+        return new PaginatorConfig(itemsPerPage: 0);
     }
 }

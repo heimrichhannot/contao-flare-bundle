@@ -1,3 +1,4 @@
+{# @var flare \HeimrichHannot\FlareBundle\ListView\ListViewDto #}
 {% extends '@Contao/block_searchable.html5' %}
 
 {% block content %}
@@ -15,7 +16,7 @@
 
     {% block filter %}
 
-        {% set form = flare|flare_form %}
+        {% set form = flare_form(flare) %}
 
         {{ form_start(form) }}
             {{ form_widget(form) }}

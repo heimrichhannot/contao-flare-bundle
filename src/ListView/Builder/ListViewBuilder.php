@@ -1,17 +1,19 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\FlareContainer;
+namespace HeimrichHannot\FlareBundle\ListView\Builder;
 
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\ListView\ListViewDto;
+use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolverInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
-class FlareContainerBuilder
+class ListViewBuilder
 {
     private ListModel $listModel;
     private ?string $formName = null;
 
     public function __construct(
-        private readonly FlareContainerStrategies $containerStrategies,
+        private readonly ListViewResolverInterface $containerStrategies,
     ) {}
 
     public function setListModel(ListModel $listModel): static
@@ -29,12 +31,12 @@ class FlareContainerBuilder
     /**
      * @throws FlareException
      */
-    public function build(): FlareContainer
+    public function build(): ListViewDto
     {
         if (!isset($this->listModel)) {
             throw new FlareException('No list model provided.');
         }
 
-        return new FlareContainer($this->listModel, $this->containerStrategies, $this->formName);
+        return new ListViewDto($this->listModel, $this->containerStrategies, $this->formName);
     }
 }

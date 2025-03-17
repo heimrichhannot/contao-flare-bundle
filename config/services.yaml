@@ -11,9 +11,10 @@ services:
         exclude:
             - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Event,Model}
             - ../src/Filter/{FilterContext,FilterContextCollection,FilterQueryBuilder}.php
-            - ../src/FlareContainer/{FlareContainer,FlareContainerBuilder}.php
             - ../src/Form/ChoicesBuilder.php
             - ../src/List/ListTypeConfig.php
+            - ../src/ListView/ListViewDto.php
+            - ../src/ListView/Builder/ListViewBuilderFactory.php
 
     HeimrichHannot\FlareBundle\Manager\TemplateManager:
         bind:

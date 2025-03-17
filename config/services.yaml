@@ -14,7 +14,7 @@ services:
             - ../src/Form/ChoicesBuilder.php
             - ../src/List/ListTypeConfig.php
             - ../src/ListView/ListViewDto.php
-            - ../src/ListView/Builder/ListViewBuilderFactory.php
+            - ../src/ListView/Builder/ListViewBuilder.php
 
     HeimrichHannot\FlareBundle\Manager\TemplateManager:
         bind:

@@ -12,7 +12,6 @@ use Contao\Template;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\ListView\Builder\ListViewBuilderFactory;
-use HeimrichHannot\FlareBundle\Paginator\Builder\PaginatorBuilderFactory;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Psr\Log\LoggerInterface;

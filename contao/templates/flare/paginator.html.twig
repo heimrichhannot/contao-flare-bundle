@@ -1,0 +1,21 @@
+{# @var \HeimrichHannot\FlareBundle\Paginator\Paginator paginator #}
+<nav>
+    <ul>
+        <li class="flare_paginator__item flare_paginator__item--previous{% if not paginator.previousPage %} flare_paginator__item--disabled{% endif %}">
+            <a href="{{ paginator.previous.url|default('#') }}" class="flare_paginator__link flare_paginator__link--page">&#12296;</a>
+        </li>
+        {% for page in paginator.board %}
+            {# @var \HeimrichHannot\FlareBundle\Paginator\PageItem page #}
+            <li class="flare_paginator__item{% if page.current %} flare_paginator__item--active{% endif %}{% if page.ellipsis %} flare_paginator__item--disabled{% endif %}{% if page.filler %} flare_paginator__item--filler{% endif %}">
+                {% if page.ellipsis %}
+                    <span class="flare_paginator__link flare-paginator__link--ellipsis">&hellip;</span>
+                {% else %}
+                    <a href="{{ page.url }}" class="flare_paginator__link flare_paginator__link--page">{{ page.number }}</a>
+                {% endif %}
+            </li>
+        {% endfor %}
+        <li class="flare_paginator__item flare_paginator__item--next{% if not paginator.nextPage %} flare_paginator__item--disabled{% endif %}">
+            <a href="{{ paginator.next.url|default('#') }}" class="flare_paginator__link flare_paginator__link--page">&#12297;</a>
+        </li>
+    </ul>
+</nav>

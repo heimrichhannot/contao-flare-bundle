@@ -117,7 +117,7 @@ readonly class Paginator extends PaginatorConfig
         return $this->getPageItem($this->lastPage);
     }
 
-    public function getPageItem($page): PageItem
+    public function getPageItem($page, ?bool $isFiller = null): PageItem
     {
         return new PageItem(
             number: $page,
@@ -129,7 +129,8 @@ readonly class Paginator extends PaginatorConfig
             isNext: $page === $this->nextPage,
             hasPrevious: $page > 1,
             hasNext: $page < $this->lastPage,
-            isEllipsis: false
+            isEllipsis: false,
+            isFiller: $isFiller ?? false,
         );
     }
     
@@ -155,80 +156,51 @@ readonly class Paginator extends PaginatorConfig
         }
     }
 
-    public function getFrameLeft(
-        int $maxFramePages = self::DEFAULT_FRAME_PAGES,
-        int $maxWindowPages = self::DEFAULT_WINDOW_PAGES
-    ): iterable {
-        $window = $this->getPageNumberWindow($maxWindowPages);
-        $range = \range(1, \min($window[0] - 1, $maxFramePages));
-
-        foreach ($range as $page)
-        {
-            yield $this->getPageItem($page);
-        }
-    }
-
-    public function getFrameRight(
-        int $maxFramePages = self::DEFAULT_FRAME_PAGES,
-        int $maxWindowPages = self::DEFAULT_WINDOW_PAGES
-    ): iterable {
-        $window = $this->getPageNumberWindow($maxWindowPages);
-        $range = \range(\max($window[\count($window) - 1] + 1, $this->lastPage - $maxFramePages + 1), $this->lastPage);
-
-        foreach ($range as $page)
-        {
-            yield $this->getPageItem($page);
-        }
-    }
-
     public function getBoard(
         int $maxWindowPages = self::DEFAULT_WINDOW_PAGES,
         int $maxFramePages = self::DEFAULT_FRAME_PAGES,
-        bool $ellipsis = true
     ): iterable {
         if ($this->isEmpty() || !$this->isLimited()) {
             return;
         }
 
-        $window = $this->getPageNumberWindow($maxWindowPages);
-        $windowStart = $window[0];
-        $windowEnd = $window[\count($window) - 1];
-
-        // Left frame
-        $frameLeftEnd = \min($windowStart - 1, $maxFramePages);
-        for ($page = 1; $page <= $frameLeftEnd; $page++) {
-            yield $this->getPageItem($page);
+        if ($this->lastPage <= 1) {
+            yield $this->getPageItem(1);
+            return;
         }
 
-        // Left ellipsis
-        if ($ellipsis) {
-            $leftGap = $windowStart - $frameLeftEnd - 1;
-            if ($leftGap === 1) {
-                yield $this->getPageItem($frameLeftEnd + 1);
-            } elseif ($leftGap > 1) {
-                yield PageItem::newEllipsis();
+        // Define all page sets
+        $windowPages = $this->getPageNumberWindow($maxWindowPages);
+        $leftFramePages = \range(1, \min($maxFramePages, $this->lastPage));
+        $rightFramePages = \range(\max(1, $this->lastPage - $maxFramePages + 1), $this->lastPage);
+
+        // Create a set of all pages that should be visible
+        $visiblePages = \array_unique(\array_merge($leftFramePages, $windowPages, $rightFramePages));
+        \sort($visiblePages);
+
+        // Yield pages with ellipses for gaps
+        $prevPage = 0;
+        foreach ($visiblePages as $page)
+        {
+            // Check if there's a gap
+            if ($prevPage > 0 && $page - $prevPage > 1)
+            {
+                $gap = $page - $prevPage - 1;
+
+                if ($gap === 1)
+                    // Just one gap page, so show it
+                {
+                    yield $this->getPageItem($prevPage + 1, isFiller: true);
+                }
+                elseif ($gap > 1)
+                    // Multiple gap pages, show ellipsis
+                {
+                    yield PageItem::newEllipsis();
+                }
             }
-        }
 
-        // Window pages
-        foreach ($window as $page) {
             yield $this->getPageItem($page);
-        }
-
-        // Right ellipsis
-        if ($ellipsis) {
-            $rightGap = ($this->lastPage - $maxFramePages) - $windowEnd;
-            if ($rightGap === 1) {
-                yield $this->getPageItem($windowEnd + 1);
-            } elseif ($rightGap > 1) {
-                yield PageItem::newEllipsis();
-            }
-        }
-
-        // Right frame
-        $frameRightStart = \max($windowEnd + 1, $this->lastPage - $maxFramePages + 1);
-        for ($page = $frameRightStart; $page <= $this->lastPage; $page++) {
-            yield $this->getPageItem($page);
+            $prevPage = $page;
         }
     }
 

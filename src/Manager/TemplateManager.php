@@ -9,7 +9,7 @@ readonly class TemplateManager
 {
     public function __construct(private FinderFactory $finderFactory) {}
 
-    public function getTemplateFinder(string $namespace, ?string $extension = null): Finder
+    public function makeFinder(string $namespace, ?string $extension = null): Finder
     {
         return $this->finderFactory
             ->create()

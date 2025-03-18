@@ -1,6 +1,7 @@
 <?php
 
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ListViewController;
+use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 
 $lang = &$GLOBALS['TL_LANG'];
 $flare = &$lang['FLARE'];
@@ -20,3 +21,4 @@ $flare['list'] = [
 ];
 
 $err['listview']['malconfigured'] = 'Diese Listenansicht ist fehlerhaft konfiguriert.';
+$err['tl_content'][ContentContainer::FIELD_FORM_NAME] = 'Muss mit einem Buchstaben beginnen und darf nur a-z, 0-9, _ beinhalten. Darf nicht mit _page enden.';

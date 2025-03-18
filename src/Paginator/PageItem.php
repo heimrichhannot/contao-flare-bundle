@@ -15,6 +15,7 @@ readonly class PageItem
         private bool   $hasPrevious,
         private bool   $hasNext,
         private bool   $isEllipsis = false,
+        private bool   $isFiller = false,
     ) {}
 
     public static function newEllipsis(): PageItem
@@ -30,6 +31,7 @@ readonly class PageItem
             hasPrevious: true,
             hasNext: true,
             isEllipsis: true,
+            isFiller: true,
         );
     }
 
@@ -81,5 +83,10 @@ readonly class PageItem
     public function isEllipsis(): bool
     {
         return $this->isEllipsis;
+    }
+
+    public function isFiller(): bool
+    {
+        return $this->isFiller;
     }
 }

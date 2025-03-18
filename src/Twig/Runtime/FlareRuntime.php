@@ -7,19 +7,20 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\ListView\ListViewDto;
 use HeimrichHannot\FlareBundle\ListView\Builder\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use Symfony\Component\Form\FormView;
 use Twig\Extension\RuntimeExtensionInterface;
 
 class FlareRuntime implements RuntimeExtensionInterface
 {
-    protected array $containerCache = [];
+    protected array $listViewCache = [];
 
     public function __construct(
-        private readonly ListViewBuilderFactory $containerBuilderFactory,
+        private readonly ListViewBuilderFactory $listViewBuilderFactory,
     ) {}
 
     /**
-     * @throws FilterException
+     * @throws FlareException
      */
     public function createFormView(ListViewDto $container): FormView
     {
@@ -27,27 +28,39 @@ class FlareRuntime implements RuntimeExtensionInterface
     }
 
     /**
+     * Returns a list view DTO for the given list model.
+     *
+     * @param array{
+     *     form_name?: string,
+     *     items_per_page?: int,
+     * } $options
+     *
      * @throws FlareException
      */
     public function getFlare(ListModel|string|int $listModel, array $options = []): ListViewDto
     {
         $cacheKey = $listModel->id . '@' . \md5(\serialize($options));
 
-        if (isset($this->containerCache[$cacheKey])) {
-            return $this->containerCache[$cacheKey];
+        if (isset($this->listViewCache[$cacheKey])) {
+            return $this->listViewCache[$cacheKey];
         }
 
         $listModel = $this->getListModel($listModel);
 
-        $container = $this->containerBuilderFactory
+        $paginatorConfig = new PaginatorConfig(
+            itemsPerPage: $options['items_per_page'] ?? null,
+        );
+
+        $listViewDto = $this->listViewBuilderFactory
             ->create()
             ->setListModel($listModel)
             ->setFormName($options['form_name'] ?? null)
+            ->setPaginatorConfig($paginatorConfig)
             ->build();
 
-        $this->containerCache[$cacheKey] = $container;
+        $this->listViewCache[$cacheKey] = $listViewDto;
 
-        return $container;
+        return $listViewDto;
     }
 
     /**

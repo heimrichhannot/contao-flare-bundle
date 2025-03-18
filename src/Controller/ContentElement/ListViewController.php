@@ -82,7 +82,7 @@ class ListViewController extends AbstractContentElementController
         try
         {
             $paginatorConfig = new PaginatorConfig(
-                itemsPerPage: \intval($model->flare_itemsPerPage ?: 2)
+                itemsPerPage: \intval($model->flare_itemsPerPage ?: 0)
             );
 
             $listViewDto = $this->listViewBuilderFactory

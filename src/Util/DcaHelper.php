@@ -20,7 +20,7 @@ class DcaHelper
     protected static function getListDCTableFromDataContainer(?DataContainer $dc): ?string
     {
         if (!$dc
-            || !($row = $dc?->activeRecord?->row())
+            || !($row = $dc->activeRecord?->row())
             || !($pid = $row['pid'] ?? null))
         {
             return null;
@@ -39,9 +39,17 @@ class DcaHelper
         return static::$dcTableCache[$pid] = $table;
     }
 
-    public static function tryGetColumnName(DataContainer $dc, string $column, ?string $default = null): ?string
-    {
-        if (!$table = static::getListDCTableFromDataContainer($dc)) {
+    public static function tryGetColumnName(
+        DataContainer|string|null $dc_or_table,
+        string                    $column,
+        ?string                   $default = null
+    ): ?string {
+        if (\is_string($dc_or_table))
+        {
+            $table = $dc_or_table;
+        }
+        elseif (!$table = static::getListDCTableFromDataContainer($dc_or_table))
+        {
             return $default;
         }
 
@@ -54,9 +62,14 @@ class DcaHelper
         return $column;
     }
 
-    public static function getFieldOptions(?DataContainer $dc, ?callable $predicate = null): array
+    public static function getFieldOptions(DataContainer|string|null $dc_or_table, ?callable $predicate = null): array
     {
-        if (!$table = static::getListDCTableFromDataContainer($dc)) {
+        if (\is_string($dc_or_table))
+        {
+            $table = $dc_or_table;
+        }
+        elseif (!$table = static::getListDCTableFromDataContainer($dc_or_table))
+        {
             return [];
         }
 

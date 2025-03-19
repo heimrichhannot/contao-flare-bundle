@@ -2,6 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\DataContainer;
 
+use Contao\Controller;
 use Contao\CoreBundle\Config\ResourceFinderInterface;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
@@ -12,6 +13,7 @@ use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackRegistry;
 use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
+use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ListContainer implements FlareCallbackContainerInterface
@@ -168,18 +170,55 @@ class ListContainer implements FlareCallbackContainerInterface
     #[AsCallback(self::TABLE_NAME, 'fields.dc.options')]
     public function getDataContainerOptions(): array
     {
-        $choices = [];
+        $options = [];
 
         $files = $this->resourceFinder->findIn('dca')->name('tl_*.php');
 
         foreach ($files as $file) {
             $name = $file->getBasename('.php');
-            $choices[$name] = $name;
+            $options[$name] = $name;
         }
 
-        \ksort($choices);
+        \ksort($options);
+
+        return $options;
+    }
+
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldAutoItem.options')]
+    public function getFieldAutoItemOptions(?DataContainer $dc = null): array
+    {
+        if (empty($row = $dc->activeRecord->row()) || empty($table = $row['dc'])) {
+            return ['alias' => 'alias', 'id' => 'id'];
+        }
+
+        Controller::loadDataContainer($table);
+
+        $choices = [];
+
+        $fields = \array_keys($GLOBALS['TL_DCA'][$table]['fields'] ?? []);
+
+        foreach ($fields as $field) {
+            $choices[$field] = $table . '.' . $field;
+        }
 
         return $choices;
+    }
+
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldAutoItem.load')]
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldAutoItem.save')]
+    public function onLoadField_fieldPublished(mixed $value, DataContainer $dc): string
+    {
+        if (empty($row = $dc->activeRecord->row()) || empty($table = $row['dc'])) {
+            return '';
+        }
+
+        return $value ?: DcaHelper::tryGetColumnName($table, 'alias', 'id');
     }
 
     // </editor-fold>

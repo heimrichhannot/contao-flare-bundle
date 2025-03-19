@@ -39,6 +39,9 @@ use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
  * @property string $whitelistParents
  * @property string $groupWhitelistParents
  * @property string $preselect
+ * @property string $equationOperator
+ * @property string $equationLeft
+ * @property string $equationRight
  */
 class FilterModel extends Model
 {

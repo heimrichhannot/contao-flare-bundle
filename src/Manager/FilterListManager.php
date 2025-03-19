@@ -2,6 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Manager;
 
+use Contao\Model;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Paginator\Builder\PaginatorBuilderFactory;
@@ -20,7 +21,7 @@ class FilterListManager
 
     public function __construct(
         private readonly FilterContextManager    $contextManager,
-        private readonly PaginatorBuilderFactory $paginationBuilderFactory,
+        private readonly PaginatorBuilderFactory $paginatorBuilderFactory,
         private readonly RequestStack            $requestStack,
     ) {}
 
@@ -109,7 +110,7 @@ class FilterListManager
         $form = $this->getForm($listModel, $formName);
 
         if ($form->isSubmitted() && !$form->isValid()) {
-            return $this->paginationBuilderFactory->create()->buildEmpty();
+            return $this->paginatorBuilderFactory->create()->buildEmpty();
         }
 
         $cacheKey = $this->makeCacheKey($listModel, $formName);
@@ -120,7 +121,7 @@ class FilterListManager
         $filters = $this->getFilterContextCollection($listModel, $formName);
         $total = $this->contextManager->fetchCount($filters);
 
-        return $this->paginationBuilderFactory
+        return $this->paginatorBuilderFactory
             ->create()
             ->fromConfig($paginatorConfig)
             ->queryPrefix($formName)

@@ -57,3 +57,10 @@ $lang['formatEmptyOption_custom'] = 'Eigene Formatierung';
 $lang['formatEmptyOptionCustom'] = ['Formatierung der leeren Option', 'Bitte geben Sie einen Text oder ein Labelformat für die leere Option ein.'];
 $lang['preselect'] = ['Vorauswahl', 'Geben Sie an, welche Werte vorausgewählt sein sollen.'];
 ###< form_legend ###
+
+###> flare_simple_equation_legend ###
+$lang['flare_simple_equation_legend'] = 'Gleichungseinstellungen';
+$lang['equationOperator'] = ['Operator', 'Operator der Gleichung aus.'];
+$lang['equationLeft'] = ['Linker Operand', 'Bitte wählen Sie den linken Operanden für die Gleichung aus.'];
+$lang['equationRight'] = ['Rechter Operand', 'Bitte wählen Sie den rechten Operanden für die Gleichung aus.'];
+###< flare_simple_equation_legend ###

@@ -20,6 +20,6 @@ class GenericDataContainerList extends AbstractListType implements PaletteContra
 
     public function getPalette(PaletteConfig $config): ?string
     {
-        return '{data_container_legend},dc';
+        return '{data_container_legend},dc,fieldAutoItem';
     }
 }

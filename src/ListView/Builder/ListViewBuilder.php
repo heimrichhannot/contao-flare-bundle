@@ -12,7 +12,7 @@ class ListViewBuilder
 {
     private ?string $formName = null;
     private ListModel $listModel;
-    private PaginatorConfig $paginatorConfig;
+    private ?PaginatorConfig $paginatorConfig = null;
 
     public function __construct(
         private readonly ListViewResolverInterface $resolver,
@@ -30,7 +30,7 @@ class ListViewBuilder
         return $this;
     }
 
-    public function setPaginatorConfig(PaginatorConfig $config): static
+    public function setPaginatorConfig(?PaginatorConfig $config): static
     {
         $this->paginatorConfig = $config;
         return $this;

@@ -134,8 +134,7 @@ class FilterContainer implements FlareCallbackContainerInterface
     #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.save')]
     public function onLoadField_fieldPublished(mixed $value, DataContainer $dc): string
     {
-        $x = $value ?: DcaHelper::tryGetColumnName($dc, 'published', '');
-        return $x;
+        return $value ?: DcaHelper::tryGetColumnName($dc, 'published', '');
     }
 
     /**

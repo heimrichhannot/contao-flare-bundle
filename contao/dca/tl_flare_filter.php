@@ -4,6 +4,7 @@ use Contao\DataContainer;
 use Contao\DC_Table;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Util\DBEquationOperator;
 use HeimrichHannot\FlareBundle\Util\Str;
 
 $dca = &$GLOBALS['TL_DCA'][FilterModel::getTable()];
@@ -406,6 +407,28 @@ $dca['fields'] = [
         ],
         'order' => false,
         'sql' => ['type' => 'blob', 'notnull' => false]
+    ],
+    'equationOperator' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'select',
+        'options' => DBEquationOperator::asOptions(false),
+        'eval' => ['mandatory' => true, 'maxlength' => 255, 'alwaysSave' => true, 'submitOnChange' => true],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'equationLeft' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'select',
+        'eval' => ['mandatory' => true, 'maxlength' => 255],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'equationRight' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'text',
+        'eval' => ['mandatory' => false, 'maxlength' => 255],
+        'sql' => "varchar(255) NOT NULL default ''",
     ],
 ];
 

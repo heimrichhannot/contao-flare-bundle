@@ -111,15 +111,27 @@ $dca['fields'] = [
     'dc' => [
         'inputType' => 'select',
         'eval' => [
+            'mandatory' => true,
             'chosen' => true,
             'submitOnChange' => true,
             'includeBlankOption' => true,
             'tl_class' => 'w50',
-            'mandatory' => true,
         ],
         'exclude' => true,
         'sql' => "varchar(128) NOT NULL default ''",
-    ]
+    ],
+    'fieldAutoItem' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => false,
+            'chosen' => true,
+            'includeBlankOption' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
 ];
 
 $dca['palettes'] = [

@@ -5,33 +5,31 @@ namespace HeimrichHannot\FlareBundle\Controller\ContentElement;
 use Contao\ContentModel;
 use Contao\CoreBundle\Controller\ContentElement\AbstractContentElementController;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsContentElement;
+use Contao\CoreBundle\Exception\InternalServerErrorHttpException;
 use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\CoreBundle\Routing\ScopeMatcher;
-use Contao\StringUtil;
+use Contao\Input;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\ListView\Builder\ListViewBuilderFactory;
-use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
+use HeimrichHannot\FlareBundle\Manager\ReaderManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
-#[AsContentElement(ListViewController::TYPE, category: 'includes', template: 'content_element/flare_listview')]
-class ListViewController extends AbstractContentElementController
+#[AsContentElement(ReaderController::TYPE, category: 'includes', template: 'content_element/flare_reader')]
+class ReaderController extends AbstractContentElementController
 {
-    public const TYPE = 'flare_listview';
+    public const TYPE = 'flare_reader';
 
     public function __construct(
         private readonly ListViewBuilderFactory $listViewBuilderFactory,
-        private readonly KernelInterface        $kernel,
         private readonly LoggerInterface        $logger,
+        private readonly ReaderManager          $readerManager,
         private readonly ScopeMatcher           $scopeMatcher,
-        private readonly TranslatorInterface    $translator,
     ) {}
 
     /**
@@ -44,24 +42,12 @@ class ListViewController extends AbstractContentElementController
             : $this->getBackendResponse($template, $model, $request);
     }
 
-    /**
-     * @throws \Exception
-     */
-    protected function getErrorResponse(?\Exception $e = null): Response
-    {
-        if (isset($e) && $this->kernel->getEnvironment() === 'dev') {
-            throw $e;
-        }
-        /** @noinspection PhpTranslationKeyInspection, PhpTranslationDomainInspection */
-        $msg = $this->translator->trans('ERR.flare.listview.malconfigured', [], 'contao_modules');
-        return new Response($msg);
-    }
-
-    /**
-     * @throws \Exception
-     */
     protected function getFrontendResponse(Template $template, ContentModel $model, Request $request): ?Response
     {
+        if (!$autoItem = Input::get('auto_item')) {
+            throw $this->createNotFoundException('No auto_item found.');
+        }
+
         try
         {
             /** @var ?ListModel $listModel */
@@ -76,31 +62,26 @@ class ListViewController extends AbstractContentElementController
             $this->logger->error(\sprintf('%s (tl_content.id=%s)', $e->getMessage(), $model->id),
                 ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
 
-            return $this->getErrorResponse($e);
+            throw new InternalServerErrorHttpException($e->getMessage(), $e);
         }
 
         try
         {
-            $paginatorConfig = new PaginatorConfig(
-                itemsPerPage: \intval($model->flare_itemsPerPage ?: 0)
-            );
-
-            $listViewDto = $this->listViewBuilderFactory
-                ->create()
-                ->setListModel($listModel)
-                ->setFormName($model->flare_formName ?: null)
-                ->setPaginatorConfig($paginatorConfig)
-                ->build();
+            $model = $this->readerManager->getModel($listModel, $autoItem);
         }
         catch (FlareException $e)
         {
             $this->logger->error(\sprintf('%s (tl_content.id=%s, tl_flare_list.id=%s)', $e->getMessage(), $model->id, $listModel->id),
                 ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
 
-            return $this->getErrorResponse($e);
+            throw new InternalServerErrorHttpException($e->getMessage(), $e);
         }
 
-        $data = ['flare' => $listViewDto];
+        if (!isset($model)) {
+            throw $this->createNotFoundException('No model found.');
+        }
+
+        $data = ['model' => $model];
 
         $template->setData($data + $template->getData());
 
@@ -109,18 +90,6 @@ class ListViewController extends AbstractContentElementController
 
     protected function getBackendResponse(Template $template, ContentModel $model, Request $request): ?Response
     {
-        try {
-            /** @var ?ListModel $listModel */
-            $listModel = $model->getRelated(ContentContainer::FIELD_LIST) ?? null;
-        } catch (\Exception $e) {
-            return new Response($e->getMessage());
-        }
-
-        if (($headline = StringUtil::deserialize($model->headline, true)) && !empty($headline['value'])) {
-            $unit = !empty($headline['unit']) ? $headline['unit'] : 'h2';
-            $hl = \sprintf('<%s>%s</%s>', $unit, $headline['value'], $unit);
-        }
-
-        return new Response(($hl ?? '') . \sprintf('%s <span class="tl_gray">[%s]</span>', $listModel->title, $listModel->type));
+        return new Response('Backend');
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ListViewController;
+use HeimrichHannot\FlareBundle\Controller\ContentElement\ReaderController;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 
 $lang = &$GLOBALS['TL_LANG'];
@@ -8,6 +9,7 @@ $flare = &$lang['FLARE'];
 $err = &$lang['ERR']['flare'];
 
 $lang['CTE'][ListViewController::TYPE] = ['FLARE Listenansicht', 'Zeigt eine FLARE-Liste an.'];
+$lang['CTE'][ReaderController::TYPE] = ['FLARE Detailleser', 'Zeigt den Leser zu einer FLARE-Liste an.'];
 
 $flare['filter'] = [
     'flare_archive' => ['Archiv', 'Filtern nach Archiv.'],

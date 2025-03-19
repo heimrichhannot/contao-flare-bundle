@@ -9,3 +9,13 @@
 .tl_formbody_edit #sub_formatLabel {
     display: inline;
 }
+
+@media (min-width: 620px) {
+    #pal_flare_simple_equation_legend {
+        display: grid;
+        grid-template-columns: 3fr 1fr 3fr;
+    }
+    #ctrl_equationOperator {
+        text-align: center;
+    }
+}

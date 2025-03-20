@@ -50,7 +50,7 @@ class FilterContextBuilder
 
     public function build(): ?FilterContext
     {
-        if (!isset($this->listModel) || !$table = $this->listModel->getTable()) {
+        if (!isset($this->listModel) || !$table = $this->listModel->dc) {
             return null;
         }
 
@@ -59,7 +59,7 @@ class FilterContextBuilder
             $filterModel->{$prop} = $value;
         }
 
-        $alias = $this->filterElementAlias ?: Str::random(8, Str::CHARS_ALPHA_LOWER);
+        $alias = $this->filterElementAlias ?: ('_auto_' . Str::random(8, Str::CHARS_ALPHA_LOWER));
         $config = new FilterElementConfig($this->filterElement, ['alias' => $alias]);
 
         return new FilterContext(

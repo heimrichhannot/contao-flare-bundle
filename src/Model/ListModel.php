@@ -13,6 +13,7 @@ use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
  * @property string $type
  * @property bool $published
  * @property string $dc
+ * @property string $fieldAutoItem
  */
 class ListModel extends Model
 {

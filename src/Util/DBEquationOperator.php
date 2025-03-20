@@ -4,51 +4,75 @@ namespace HeimrichHannot\FlareBundle\Util;
 
 enum DBEquationOperator: string
 {
-    case EQUALS = '=';
-    case NOT_EQUALS = '!=';
-    case GREATER_THAN = '>';
-    case GREATER_THAN_OR_EQUALS = '>=';
-    case LESS_THAN = '<';
-    case LESS_THAN_OR_EQUALS = '<=';
-    case LIKE = 'LIKE';
-    case NOT_LIKE = 'NOT LIKE';
-    case IN = 'IN';
-    case NOT_IN = 'NOT IN';
-    case IS_NULL = 'IS NULL';
-    case IS_NOT_NULL = 'IS NOT NULL';
+    case EQUALS = 'eq';
+    case NOT_EQUALS = 'neq';
+    case GREATER_THAN = 'gt';
+    case GREATER_THAN_EQUALS = 'gte';
+    case LESS_THAN = 'lt';
+    case LESS_THAN_EQUALS = 'lte';
+    case LIKE = 'like';
+    case NOT_LIKE = 'unlike';
+    case IN = 'in';
+    case NOT_IN = 'ni';
+    case IS_NULL = 'null';
+    case IS_NOT_NULL = 'notnull';
+
+    public function isUnary(): bool
+    {
+        return match ($this) {
+            DBEquationOperator::IS_NULL, DBEquationOperator::IS_NOT_NULL => true,
+            default => false,
+        };
+    }
+
+    public function getOperator(): string
+    {
+        return match ($this) {
+            DBEquationOperator::EQUALS => '=',
+            DBEquationOperator::NOT_EQUALS => '!=',
+            DBEquationOperator::GREATER_THAN => '>',
+            DBEquationOperator::GREATER_THAN_EQUALS => '>=',
+            DBEquationOperator::LESS_THAN => '<',
+            DBEquationOperator::LESS_THAN_EQUALS => '<=',
+            DBEquationOperator::LIKE => 'LIKE',
+            DBEquationOperator::NOT_LIKE => 'NOT LIKE',
+            DBEquationOperator::IN => 'IN',
+            DBEquationOperator::NOT_IN => 'NOT IN',
+            DBEquationOperator::IS_NULL => 'IS NULL',
+            DBEquationOperator::IS_NOT_NULL => 'IS NOT NULL',
+        };
+    }
 
     public static function asOptions(bool $includeIn = true): array
     {
         $cases = DBEquationOperator::cases();
 
-        if ($includeIn) {
-            unset($cases[DBEquationOperator::IN->name]);
-            unset($cases[DBEquationOperator::NOT_IN->name]);
+        if (!$includeIn) {
+            $cases = \array_filter($cases, static fn($case) => !\in_array($case, [DBEquationOperator::IN, DBEquationOperator::NOT_IN]));
         }
 
-        return \array_change_key_case(\array_combine(
-            \array_map(static fn($case) => $case->name, $cases),
-            \array_map(static fn($case) => $case->value, $cases)
-        ), \CASE_LOWER);  // lowercase keys
+        return \array_combine(
+            \array_map(static fn($case) => $case->value, $cases),
+            \array_map(static fn($case) => $case->getOperator(), $cases)
+        );
     }
 
     public static function match(DBEquationOperator|string $operator): ?DBEquationOperator
     {
-        if (\is_string($operator))
-        {
-            if ($from = DBEquationOperator::tryFrom($operator)) {
-                return $from;
-            }
-
-            foreach (self::cases() as $case) {
-                if (\strtoupper($case->name) === \strtoupper($operator)) {
-                    return $case;
-                }
-            }
-
-            return null;
+        if ($operator instanceof DBEquationOperator) {
+            return $operator;
         }
 
-        return $operator;
+        if ($from = DBEquationOperator::tryFrom($operator)) {
+            return $from;
+        }
+
+        foreach (self::cases() as $case) {
+            if (\strtoupper($case->name) === \strtoupper($operator)) {
+                return $case;
+            }
+        }
+
+        return null;
     }
 }

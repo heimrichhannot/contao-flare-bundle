@@ -1,8 +1,7 @@
-<?php
+<?php /** @noinspection PhpFullyQualifiedNameUsageInspection */
 
 namespace HeimrichHannot\FlareBundle\Manager;
 
-use Contao\Model;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Paginator\Builder\PaginatorBuilderFactory;
@@ -76,8 +75,6 @@ class FilterListManager
     }
 
     /**
-     * @noinspection PhpFullyQualifiedNameUsageInspection
-     *
      * @throws FilterException
      * @throws \Doctrine\DBAL\Exception
      */
@@ -105,6 +102,10 @@ class FilterListManager
         return $entries;
     }
 
+    /**
+     * @throws FilterException
+     * @throws \Doctrine\DBAL\Exception
+     */
     public function getPaginator(ListModel $listModel, string $formName, PaginatorConfig $paginatorConfig): Paginator
     {
         $form = $this->getForm($listModel, $formName);

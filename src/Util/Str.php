@@ -4,6 +4,13 @@ namespace HeimrichHannot\FlareBundle\Util;
 
 readonly class Str
 {
+    public const CHARS_ALPHA = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    public const CHARS_ALPHA_LOWER = 'abcdefghijklmnopqrstuvwxyz';
+    public const CHARS_ALPHA_UPPER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    public const CHARS_ALPHANUMERIC = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    public const CHARS_HEX = '0123456789abcdef';
+    public const CHARS_NUM = '0123456789';
+
     public static function trimSubstrings(
         string            $str,
         array|string|null $both = null,
@@ -145,5 +152,18 @@ readonly class Str
         }
 
         return \gettype($value);
+    }
+
+    public static function random($length = 10, ?string $chars = null): string
+    {
+        $chars ??= '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $max = \mb_strlen($chars, '8bit') - 1;
+        $rand = '';
+
+        for ($i = 0; $i < $length; $i++) {
+            $rand .= $chars[\random_int(0, $max)];
+        }
+
+        return $rand;
     }
 }

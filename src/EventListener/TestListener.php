@@ -7,7 +7,7 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 class TestListener
 {
-    #[AsEventListener('huh.flare.filter_element.flare_published.invoked')]
+    #[AsEventListener('huh.flare.filter_element._flreader_auto_item.invoked')]
     public function onFilterElementInvoked(FilterElementInvokedEvent $event): void
     {
         \dump($event->getQueryBuilder()->getConditions());

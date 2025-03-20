@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpFullyQualifiedNameUsageInspection */
 
 namespace HeimrichHannot\FlareBundle\Manager;
 
@@ -216,28 +216,40 @@ readonly class FilterContextManager
     }
 
     /**
-     * @noinspection PhpFullyQualifiedNameUsageInspection
-     *
      * @throws FilterException
      * @throws \Doctrine\DBAL\Exception
      */
-    public function fetchEntries(FilterContextCollection $filters, ?Paginator $paginator = null): array
-    {
+    public function fetchEntries(
+        FilterContextCollection $filters,
+        ?Paginator              $paginator = null,
+        ?bool $returnIds = null
+    ): array {
+        $returnIds ??= false;
+
         [$sql, $params, $types] = $this->buildFilteredQuery(
             filters: $filters,
             limit: $paginator?->getItemsPerPage() ?: null,
             offset: $paginator?->getOffset() ?: null,
+            onlyId: $returnIds
         );
 
         $result = $this->connection->executeQuery($sql, $params, $types);
 
-        $entries = $result->fetchAllAssociative();
+        if ($returnIds) {
+            $entries = $result->fetchFirstColumn();
+        } else {
+            $entries = $result->fetchAllAssociative();
+        }
 
         $result->free();
 
         return $entries;
     }
 
+    /**
+     * @throws FilterException
+     * @throws \Doctrine\DBAL\Exception
+     */
     public function fetchCount(FilterContextCollection $filters): int
     {
         [$sql, $params, $types] = $this->buildFilteredQuery($filters, isCounting: true);
@@ -260,6 +272,7 @@ readonly class FilterContextManager
         ?int                    $offset = null,
         ?string                 $order = null,
         bool                    $isCounting = false,
+        bool                    $onlyId = false,
     ): array {
         $combinedConditions = [];
         $combinedParameters = [];
@@ -326,7 +339,11 @@ readonly class FilterContextManager
             $combinedTypes = \array_merge($combinedTypes, $types);
         }
 
-        $finalSQL = $isCounting ? "SELECT COUNT(*)" : "SELECT *";
+        $finalSQL = match (true) {
+            $isCounting => "SELECT COUNT(*)",
+            $onlyId => "SELECT $as.id AS id",
+            default => "SELECT *",
+        };
         $finalSQL .= " FROM `$table` AS $as WHERE ";
         $finalSQL .= empty($combinedConditions) ? '1' : $this->connection->createExpressionBuilder()->and(...$combinedConditions);
 

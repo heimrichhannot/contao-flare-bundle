@@ -5,6 +5,7 @@ namespace HeimrichHannot\FlareBundle\Model;
 use Contao\Model;
 use Contao\Model\Collection;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
+use HeimrichHannot\FlareBundle\Util\DBEquationOperator;
 
 /**
  * Class FilterModel

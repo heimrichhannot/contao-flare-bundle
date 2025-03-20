@@ -1,0 +1,5 @@
+reader.default_template.warning: Default template selected
+reader.default_template.description: Please create/select a custom template for this FLARE reader.
+
+list.default_template.warning: Default template selected
+list.default_template.description: Please create/select a custom template for this FLARE list.

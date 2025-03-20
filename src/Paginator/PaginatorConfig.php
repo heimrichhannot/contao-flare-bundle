@@ -16,4 +16,11 @@ readonly class PaginatorConfig
     {
         return $this->itemsPerPage;
     }
+
+    public function __toString(): string
+    {
+        return \serialize([
+            'itemsPerPage' => $this->itemsPerPage,
+        ]);
+    }
 }

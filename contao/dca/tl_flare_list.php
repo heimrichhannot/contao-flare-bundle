@@ -132,12 +132,20 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
+    'jumpToReader' => [
+        'exclude' => true,
+        'inputType' => 'pageTree',
+        'foreignKey' => 'tl_page.title',
+        'eval' => ['fieldType' => 'radio', 'tl_class' => 'clr'],
+        'sql' => "int(10) unsigned NOT NULL default 0",
+        'relation' => ['type' => 'hasOne', 'load' => 'lazy'],
+    ],
 ];
 
 $dca['palettes'] = [
     '__selector__' => ['type'],
     '__prefix__' => '{title_legend},title,type',
-    '__suffix__' => '{publish_legend},published',
+    '__suffix__' => '{flare_reader_legend},jumpToReader;{publish_legend},published',
 ];
 
 $dca['palettes']['default'] = Str::mergePalettes($dca['palettes']['__prefix__'], $dca['palettes']['__suffix__']);

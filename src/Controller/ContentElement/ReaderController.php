@@ -45,7 +45,7 @@ class ReaderController extends AbstractContentElementController
     protected function getFrontendResponse(Template $template, ContentModel $model, Request $request): ?Response
     {
         if (!$autoItem = Input::get('auto_item')) {
-            throw $this->createNotFoundException('No auto_item found.');
+            throw $this->createNotFoundException('No auto_item supplied.');
         }
 
         try

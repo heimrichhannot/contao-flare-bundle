@@ -2,6 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\ListView\Resolver;
 
+use Contao\Model;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\ListView\ListViewDto;
@@ -15,6 +16,8 @@ interface ListViewResolverInterface
      */
     public function getEntries(ListViewDto $dto): array;
 
+    public function getModel(ListViewDto $dto, int $id): Model;
+
     /**
      * @throws FlareException
      */
@@ -25,4 +28,6 @@ interface ListViewResolverInterface
     public function getPaginator(ListViewDto $dto): Paginator;
 
     public function getPaginatorConfig(ListViewDto $dto): PaginatorConfig;
+
+    public function getDetailsPageUrl(ListViewDto $dto, int $id): ?string;
 }

@@ -28,10 +28,24 @@
 
     {% block list %}
 
+        <div style="color: #800; background: #fdd; padding: 1rem; margin-bottom: 1rem;">
+            <strong>{{ 'list.default_template.warning'|trans([], 'flare') }}</strong>
+            <br><small>{{ 'list.default_template.description'|trans([], 'flare') }}</small>
+        </div>
+
         {% for entry in flare.entries %}
             <details>
-                <summary>#{{ entry.id }} {{ entry.title ?? entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>') }}</summary>
-                {{ dump(entry) }}
+                <summary>#{{ entry.id }} <a href="{{ flare.to(entry.id) }}">{{ entry.title ?? entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>') }}</a></summary>
+                <div style="width: 100%; max-height: max(30vh, 150px); overflow: auto auto; background: #def; margin-bottom: .5rem">
+                    <div style="display: grid; grid-template-columns: max-content auto; gap: .125rem 1rem; font-family: monospace; padding: .5rem 1rem 2rem; font-size: .9em;">
+                        {% for key, field in entry %}
+                            {% if key not in ['password'] %}
+                                <div>{{ key }}</div>
+                                <div>{{ field|default('-') }}</div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
             </details>
         {% endfor %}
 

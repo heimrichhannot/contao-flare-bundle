@@ -40,4 +40,17 @@ class CallbackHelper
 
         return null;
     }
+
+    public static function tryGetProperty(object $obj, string $prop, mixed $default = null): mixed
+    {
+        if (\method_exists($obj, 'get' . \ucfirst($prop))) {
+            return $obj->{'get' . \ucfirst($prop)}();
+        }
+
+        if (\property_exists($obj, $prop) || \method_exists($obj, '__get')) {
+            return $obj->{$prop};
+        }
+
+        return $default;
+    }
 }

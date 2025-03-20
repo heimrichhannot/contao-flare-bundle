@@ -2,14 +2,20 @@
 
 namespace HeimrichHannot\FlareBundle\Manager;
 
+use Contao\Model;
+use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Paginator\Builder\PaginatorBuilderFactory;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Util\CallbackHelper;
+use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class FilterListManager
 {
@@ -22,6 +28,7 @@ class FilterListManager
         private readonly FilterContextManager    $contextManager,
         private readonly PaginatorBuilderFactory $paginatorBuilderFactory,
         private readonly RequestStack            $requestStack,
+        private readonly UrlGeneratorInterface   $urlGenerator,
     ) {}
 
     /**
@@ -78,28 +85,54 @@ class FilterListManager
      * @throws FilterException
      * @throws \Doctrine\DBAL\Exception
      */
-    public function getEntries(ListModel $listModel, string $formName, PaginatorConfig $paginatorConfig): array
+    public function getEntries(ListModel $listModel, string $formName, ?PaginatorConfig $paginatorConfig = null): array
     {
         $form = $this->getForm($listModel, $formName);
 
-        if ($form->isSubmitted() && !$form->isValid()) {
+        if ($form->isSubmitted() && !$form->isValid())
+        {
             return [];
         }
 
-        $cacheKey = $this->makeCacheKey($listModel, $formName);
-        if (isset($this->entriesCache[$cacheKey])) {
+        $cacheKey = $this->makeCacheKey($listModel, $formName, (string) $paginatorConfig);
+        if (isset($this->entriesCache[$cacheKey]))
+        {
             return $this->entriesCache[$cacheKey];
         }
 
         $filters = $this->getFilterContextCollection($listModel, $formName);
 
-        $pagination = $this->getPaginator($listModel, $formName, $paginatorConfig);
+        if ($paginatorConfig) {
+            $pagination = $this->getPaginator($listModel, $formName, $paginatorConfig);
+        }
 
-        $entries = $this->contextManager->fetchEntries($filters, $pagination);
+        $entries = $this->contextManager->fetchEntries($filters, $pagination ?? null);
 
         $this->entriesCache[$cacheKey] = $entries;
 
         return $entries;
+    }
+
+    /**
+     * @throws FlareException
+     * @throws \Doctrine\DBAL\Exception
+     */
+    public function getModel(ListModel $listModel, string $formName, int $id): Model
+    {
+        if ($model = Model\Registry::getInstance()->fetch($listModel->dc, $id)) {
+            return $model;
+        }
+
+        $modelClass = Model::getClassFromTable($listModel->dc);
+        if (!\class_exists($modelClass)) {
+            throw new FlareException(\sprintf('Model class does not exist: "%s"', $modelClass), source: __METHOD__);
+        }
+
+        if (!$row = $this->getEntries($listModel, $formName)[$id] ?? null) {
+            throw new FlareException('Invalid entry id.', source: __METHOD__);
+        }
+
+        return new $modelClass($row);
     }
 
     /**
@@ -129,6 +162,31 @@ class FilterListManager
             ->handleRequest()
             ->totalItems($total)
             ->build();
+    }
+
+    /**
+     * @throws FlareException
+     * @throws \Doctrine\DBAL\Exception
+     */
+    public function getDetailsPageUrl(ListModel $listModel, string $formName, int $id): ?string
+    {
+        if (!$pageId = \intval($listModel->jumpToReader ?: 0)) {
+            return null;
+        }
+
+        $autoItemField = $listModel->getAutoItemField();
+        $model = $this->getModel($listModel, $formName, $id);
+
+        if (!$autoItem = CallbackHelper::tryGetProperty($model, $autoItemField)) {
+            return null;
+        }
+
+        $page = PageModel::findByPk($pageId);
+        if (!$page) {
+            throw new FlareException(\sprintf('Details page not found [ID %s]', $pageId), source: __METHOD__);
+        }
+
+        return \rtrim($page->getAbsoluteUrl(), '/') . '/' . $autoItem;
     }
 
     public function makeCacheKey(ListModel $listModel, string $formName, ...$args): string

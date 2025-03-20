@@ -20,3 +20,8 @@ $lang['data_container_legend'] = 'DC-Einstellungen';
 $lang['dc'] = ['Data-Container', 'Bitte wählen Sie den Data-Container, auf dessen Einträgen die Liste basieren soll.'];
 $lang['fieldAutoItem'] = ['Auto-Item-Feld', 'Bitte wählen Sie das Feld aus, das als Auto-Item verwendet werden soll.'];
 ###< data_container_legend ###
+
+###> flare_reader_legend ###
+$lang['flare_reader_legend'] = 'Leser-Einstellungen';
+$lang['jumpToReader'] = ['Detailleserseite', 'Bitte wählen Sie die Seite aus, zu der Besucher weitergeleitet werden, wenn sie auf einen Listeneintrag klicken.'];
+###< flare_reader_legend ###

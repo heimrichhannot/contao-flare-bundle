@@ -1,0 +1,5 @@
+reader.default_template.warning: Standard-Template ausgewählt
+reader.default_template.description: Bitte erstellen/wählen Sie ein benutzerdefiniertes Template für diesen FLARE-Reader.
+
+list.default_template.warning: Standard-Template ausgewählt
+list.default_template.description: Bitte erstellen/wählen Sie ein benutzerdefiniertes Template für diese FLARE-Liste.

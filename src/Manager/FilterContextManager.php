@@ -239,6 +239,7 @@ readonly class FilterContextManager
             $entries = $result->fetchFirstColumn();
         } else {
             $entries = $result->fetchAllAssociative();
+            $entries = \array_combine(\array_column($entries, 'id'), $entries);
         }
 
         $result->free();
@@ -286,9 +287,6 @@ readonly class FilterContextManager
         }
 
         $blockResult = ["SELECT 1 FROM `$table` as $as LIMIT 0", [], []];
-        if ($isCounting) {
-            $blockResult[0] = "SELECT COUNT(*) FROM `$table` AS $as";
-        }
 
         foreach ($filters as $i => $filter)
         {
@@ -340,7 +338,7 @@ readonly class FilterContextManager
         }
 
         $finalSQL = match (true) {
-            $isCounting => "SELECT COUNT(*)",
+            $isCounting => "SELECT COUNT(*) AS count",
             $onlyId => "SELECT $as.id AS id",
             default => "SELECT *",
         };

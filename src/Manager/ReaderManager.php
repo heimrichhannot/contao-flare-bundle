@@ -37,9 +37,9 @@ readonly class ReaderManager
         $fieldAutoItem = $listModel->fieldAutoItem ?: DcaHelper::tryGetColumnName($table, 'alias', 'id');
 
         $context = $this->filterContextBuilderFactory->create()
-            ->setFilterElementAlias('_flreader_auto_item')
             ->setListModel($listModel)
             ->setFilterElement($this->simpleEquation)
+            ->setFilterElementAlias('_flare_auto_item')
             ->setFilterModelProperties([
                 'equationLeft' => $fieldAutoItem,
                 'equationOperator' => DBEquationOperator::EQUALS->value,
@@ -55,22 +55,22 @@ readonly class ReaderManager
 
         try
         {
-            $entries = $this->filterContextManager->fetchEntries($collection, returnIds: true);
+            $ids = $this->filterContextManager->fetchEntries($collection, returnIds: true);
         }
         catch (\Exception $e)
         {
             throw new FlareException('Error fetching entries for auto_item.', source: __METHOD__, previous: $e);
         }
 
-        if (empty($entries)) {
+        if (empty($ids)) {
             return null;
         }
 
-        if (\count($entries) > 1) {
+        if (\count($ids) > 1) {
             throw new FlareException('Multiple entries found for auto_item.', source: __METHOD__);
         }
 
-        $id = \intval(\reset($entries));
+        $id = \intval(\reset($ids));
 
         if ($id < 1) {
             throw new FlareException('Invalid entry id.', source: __METHOD__);

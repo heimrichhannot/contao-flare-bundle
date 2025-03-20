@@ -2,6 +2,8 @@
 
 namespace HeimrichHannot\FlareBundle\ListView;
 
+use Contao\Model;
+use Contao\NewsModel;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolverInterface;
@@ -14,6 +16,8 @@ class ListViewDto
     private iterable $entries;
     private FormInterface $formComponent;
     private Paginator $paginator;
+    private array $models = [];
+    private array $readerUrls = [];
 
     public function __construct(
         private readonly ListModel                 $listModel,
@@ -76,5 +80,32 @@ class ListViewDto
         }
 
         return $this->paginatorConfig;
+    }
+
+    public function getModel(int|string $id): Model
+    {
+        $id = \intval($id);
+
+        if (!isset($this->models[$id])) {
+            $this->models[$id] = $this->resolver->getModel($this, $id);
+        }
+
+        return $this->models[$id];
+    }
+
+    public function getDetailsPageUrl(int|string $id): ?string
+    {
+        $id = \intval($id);
+
+        if (!isset($this->readerUrls[$id])) {
+            $this->readerUrls[$id] = $this->resolver->getDetailsPageUrl($this, $id);
+        }
+
+        return $this->readerUrls[$id];
+    }
+
+    public function to(...$args): ?string
+    {
+        return $this->getDetailsPageUrl(...$args);
     }
 }

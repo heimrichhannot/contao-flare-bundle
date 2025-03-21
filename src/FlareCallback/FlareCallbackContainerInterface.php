@@ -3,7 +3,6 @@
 namespace HeimrichHannot\FlareBundle\FlareCallback;
 
 use Contao\DataContainer;
-use Contao\Model;
 
 /**
  * @internal For internal use only. API might change without notice.

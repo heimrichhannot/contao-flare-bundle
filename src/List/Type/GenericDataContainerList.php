@@ -7,7 +7,6 @@ use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\Contract\DataContainerContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
-use HeimrichHannot\FlareBundle\Model\ListModel;
 
 #[AsListType(GenericDataContainerList::TYPE)]
 class GenericDataContainerList implements PaletteContract, DataContainerContract

@@ -14,7 +14,7 @@ use HeimrichHannot\FlareBundle\Util\DBEquationOperator;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 
 #[AsFilterElement(alias: SimpleEquation::TYPE)]
-class SimpleEquation extends AbstractFilterElement implements PaletteContract
+class SimpleEquation implements PaletteContract
 {
     public const TYPE = 'flare_equation_simple';
 
@@ -55,7 +55,7 @@ class SimpleEquation extends AbstractFilterElement implements PaletteContract
     }
 
     #[AsFilterCallback(self::TYPE, 'fields.equationLeft.options')]
-    public function onLoad_equationLeft(ListModel $listModel): array
+    public function getEquationLeftOptions(ListModel $listModel): array
     {
         if (!$listModel->dc) {
             return [];

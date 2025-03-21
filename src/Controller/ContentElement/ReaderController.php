@@ -107,7 +107,7 @@ class ReaderController extends AbstractContentElementController
             ($hl ?? '') . \sprintf(
                 '%s <span class="tl_gray">[%s, %s]</span>',
                 $listModel->title,
-                $this->translator->listModelType($listModel),
+                $this->translator->listModel($listModel),
                 $listModel->dc,
             )
         );

@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpFullyQualifiedNameUsageInspection */
 
 namespace HeimrichHannot\FlareBundle\DataContainer;
 
@@ -11,10 +11,11 @@ use HeimrichHannot\FlareBundle\Contract\DataContainerContract;
 use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackContainerInterface;
 use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackRegistry;
 use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
-use Symfony\Contracts\Translation\TranslatorInterface;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class ListContainer implements FlareCallbackContainerInterface
 {
@@ -26,6 +27,7 @@ class ListContainer implements FlareCallbackContainerInterface
         private readonly FlareCallbackRegistry   $callbackRegistry,
         private readonly ListTypeRegistry        $listTypeRegistry,
         private readonly ResourceFinderInterface $resourceFinder,
+        private readonly TranslationManager      $translationManager,
     ) {}
 
     /* ============================= *
@@ -115,20 +117,21 @@ class ListContainer implements FlareCallbackContainerInterface
             return;
         }
 
-        if (!$listTypeConfig = $this->listTypeRegistry->get($row['type'] ?? null)) {
+        if (!$listTypeConfig = $this->listTypeRegistry->get($row['type'] ?: null)) {
             return;
         }
 
-        if (!$service = $listTypeConfig->getService()) {
-            return;
-        }
-
+        $service = $listTypeConfig->getService();
         if ($service instanceof DataContainerContract) {
             $expectedDataContainer = $service->getDataContainerName($row, $dc);
         }
 
         // if data container is not set, use the default data container of the list type
         $expectedDataContainer ??= $listTypeConfig->getDataContainer() ?? '';
+
+        if (!$expectedDataContainer) {
+            throw new BadRequestHttpException('No data container found for list type ' . $row['type']);
+        }
 
         if ($expectedDataContainer !== ($row['dc'] ?? null))
         {
@@ -153,12 +156,9 @@ class ListContainer implements FlareCallbackContainerInterface
     {
         $options = [];
 
-        foreach ($this->listTypeRegistry->all() as $alias => $filterElement)
+        foreach ($this->listTypeRegistry->all() as $alias => $listTypeConfig)
         {
-            $service = $filterElement->getService();
-            $options[$alias] = \class_implements($service, TranslatorInterface::class)
-                ? $filterElement->getService()->trans($alias)
-                : $alias;
+            $options[$alias] = $this->translationManager->listModel($alias);
         }
 
         return $options;

@@ -127,7 +127,7 @@ class ListViewController extends AbstractContentElementController
             ($hl ?? '') . \sprintf(
                 '%s <span class="tl_gray">[%s, %s]</span>',
                 $listModel->title,
-                $this->translationManager->listModelType($listModel),
+                $this->translationManager->listModel($listModel),
                 $listModel->dc
             )
         );

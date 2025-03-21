@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
     alias: NewsListType::TYPE,
     dataContainer: 'tl_news'
 )]
-class NewsListType extends AbstractListType
+class NewsListType
 {
     public const TYPE = 'flare_news';
 }

@@ -11,25 +11,35 @@ readonly class TranslationManager
         // private readonly TranslatorInterface $translator,
     ) {}
 
-    public function listModelType(ListModel|string $listModel_or_type): string
+    public function listModel(ListModel|string $listModel_or_alias): string
     {
         Controller::loadLanguageFile('default');
 
-        $type = $listModel_or_type;
-        if ($listModel_or_type instanceof ListModel) {
-            $type = $listModel_or_type->type;
-        }
+        $alias = (string) ($listModel_or_alias instanceof ListModel ? $listModel_or_alias->type : $listModel_or_alias);
 
-        $type = (string) $type;
-
-        $lang = $GLOBALS['TL_LANG']['FLARE']['list'][$type] ?? null;
+        $lang = $GLOBALS['TL_LANG']['FLARE']['list'][$alias] ?? null;
 
         /** @noinspection PhpDuplicateMatchArmBodyInspection */
         return match(true) {
-            empty($lang) => $type,
-            \is_array($lang) => (string) ($lang[0] ?? $type),
+            empty($lang) => $alias,
+            \is_array($lang) => (string) ($lang[0] ?? $alias),
             \is_string($lang) => $lang,
-            default => $type,
+            default => $alias,
+        };
+    }
+
+    public function filterElement(string $alias): string
+    {
+        Controller::loadLanguageFile('default');
+
+        $lang = $GLOBALS['TL_LANG']['FLARE']['filter'][$alias] ?? null;
+
+        /** @noinspection PhpDuplicateMatchArmBodyInspection */
+        return match(true) {
+            empty($lang) => $alias,
+            \is_array($lang) => (string) ($lang[0] ?? $alias),
+            \is_string($lang) => $lang,
+            default => $alias,
         };
     }
 }

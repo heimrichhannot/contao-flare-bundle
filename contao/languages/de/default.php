@@ -15,11 +15,13 @@ $flare['filter'] = [
     'flare_archive' => ['Archiv', 'Filtern nach Archiv.'],
     'flare_published' => ['Veröffentlicht', 'Nur veröffentlichte Elemente anzeigen.'],
     'flare_relation_belongsTo' => ['Relation: Gehört zu', 'Filtern nach zugehörigen Eltern-Entitäten.'],
+    'flare_equation_simple' => ['Einfache Gleichung', 'Filtern, ob ein Feld einer einfachen Gleichung entspricht.'],
 ];
 
 $flare['list'] = [
     'flare_generic_dc' => ['Data-Container', 'Listet Elemente eines Data-Containers auf.'],
     'flare_news' => ['Nachrichten', 'Listet Nachrichten auf.'],
+    'flare_events' => ['Events', 'Listet Events auf.'],
 ];
 
 $err['listview']['malconfigured'] = 'Diese Listenansicht ist fehlerhaft konfiguriert.';

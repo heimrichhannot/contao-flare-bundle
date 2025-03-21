@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 
 #[AsListType(EventsList::TYPE, dataContainer: 'tl_calendar_events')]
-class EventsList extends AbstractListType implements PaletteContract
+class EventsList implements PaletteContract
 {
     public const TYPE = 'flare_events';
 

@@ -6,13 +6,12 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Database;
 use Contao\DataContainer;
-use Contao\Model;
 use Contao\StringUtil;
-use Dflydev\DotAccessData\Data;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackContainerInterface;
 use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackRegistry;
+use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
@@ -31,6 +30,7 @@ class FilterContainer implements FlareCallbackContainerInterface
         private readonly FilterElementRegistry $filterElementRegistry,
         private readonly FlareCallbackRegistry $callbackRegistry,
         private readonly RequestStack          $requestStack,
+        private readonly TranslationManager    $translationManager,
         private readonly TranslatorInterface   $translator,
     ) {}
 
@@ -273,10 +273,7 @@ class FilterContainer implements FlareCallbackContainerInterface
 
         foreach ($this->filterElementRegistry->all() as $alias => $filterElement)
         {
-            $service = $filterElement->getService();
-            $options[$alias] = $service instanceof TranslatorInterface
-                ? $service->trans($alias)
-                : $alias;
+            $options[$alias] = $this->translationManager->filterElement($alias);
         }
 
         return $options;
@@ -479,20 +476,12 @@ class FilterContainer implements FlareCallbackContainerInterface
 
         if ($type = $row['type'] ?? null)
         {
-            $filterElement = $this->filterElementRegistry->get($type);
-            $service = $filterElement?->getService();
-
-            if ($service instanceof TranslatorInterface)
-            {
-                $typeLabel = $service->trans($row['type'] ?? '');
-            }
-
-            $typeLabel = StringUtil::specialchars($typeLabel ?? $type);
+            $typeLabel = StringUtil::specialchars($this->translationManager->filterElement($type));
         }
 
         $typeLabel ??= 'N/A';
 
-        $html = "<div class=\"cte_type $key\">$typeLabel</div>";
+        $html = "<div class=\"cte_type $key\">[$typeLabel]</div>";
         $html .= $title ? "<div><strong>$title</strong></div>" : '';
 
         return $html;

@@ -13,6 +13,7 @@ use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\ListView\Builder\ListViewBuilderFactory;
+use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Psr\Log\LoggerInterface;
@@ -31,6 +32,7 @@ class ListViewController extends AbstractContentElementController
         private readonly KernelInterface        $kernel,
         private readonly LoggerInterface        $logger,
         private readonly ScopeMatcher           $scopeMatcher,
+        private readonly TranslationManager     $translationManager,
         private readonly TranslatorInterface    $translator,
     ) {}
 
@@ -121,6 +123,13 @@ class ListViewController extends AbstractContentElementController
             $hl = \sprintf('<%s>%s</%s>', $unit, $headline['value'], $unit);
         }
 
-        return new Response(($hl ?? '') . \sprintf('%s <span class="tl_gray">[%s]</span>', $listModel->title, $listModel->type));
+        return new Response(
+            ($hl ?? '') . \sprintf(
+                '%s <span class="tl_gray">[%s, %s]</span>',
+                $listModel->title,
+                $this->translationManager->listModelType($listModel),
+                $listModel->dc
+            )
+        );
     }
 }

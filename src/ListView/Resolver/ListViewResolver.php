@@ -8,27 +8,29 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\ListView\ListViewDto;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
-use HeimrichHannot\FlareBundle\Manager\FilterListManager;
+use HeimrichHannot\FlareBundle\Manager\ListViewManager;
 use Symfony\Component\Form\FormInterface;
 
 readonly class ListViewResolver implements ListViewResolverInterface
 {
     public function __construct(
-        private FilterListManager $filterListManager,
+        private ListViewManager $manager,
     ) {}
 
     /**
-     * @throws FilterException
-     * @throws \Doctrine\DBAL\Exception
+     * @throws FlareException
      */
     public function getEntries(ListViewDto $dto): array
     {
-        return $this->filterListManager->getEntries($dto->getListModel(), $dto->getFormName(), $dto->getPaginatorConfig());
+        return $this->manager->getEntries($dto->getListModel(), $dto->getFormName(), $dto->getPaginatorConfig());
     }
 
+    /**
+     * @throws FlareException
+     */
     public function getModel(ListViewDto $dto, int $id): Model
     {
-        return $this->filterListManager->getModel($dto->getListModel(), $dto->getFormName(), $id);
+        return $this->manager->getModel($dto->getListModel(), $dto->getFormName(), $id);
     }
 
     /**
@@ -36,17 +38,20 @@ readonly class ListViewResolver implements ListViewResolverInterface
      */
     public function getForm(ListViewDto $dto): FormInterface
     {
-        return $this->filterListManager->getForm($dto->getListModel(), $dto->getFormName());
+        return $this->manager->getForm($dto->getListModel(), $dto->getFormName());
     }
 
     public function getFormName(ListViewDto $dto): string
     {
-        return $this->filterListManager->makeFormName($dto->getListModel());
+        return $this->manager->makeFormName($dto->getListModel());
     }
 
+    /**
+     * @throws FlareException
+     */
     public function getPaginator(ListViewDto $dto): Paginator
     {
-        return $this->filterListManager->getPaginator($dto->getListModel(), $dto->getFormName(), $dto->getPaginatorConfig());
+        return $this->manager->getPaginator($dto->getListModel(), $dto->getFormName(), $dto->getPaginatorConfig());
     }
 
     public function getPaginatorConfig(ListViewDto $dto): PaginatorConfig
@@ -54,8 +59,11 @@ readonly class ListViewResolver implements ListViewResolverInterface
         return new PaginatorConfig(itemsPerPage: 0);
     }
 
+    /**
+     * @throws FlareException
+     */
     public function getDetailsPageUrl(ListViewDto $dto, int $id): ?string
     {
-        return $this->filterListManager->getDetailsPageUrl($dto->getListModel(), $dto->getFormName(), $id);
+        return $this->manager->getDetailsPageUrl($dto->getListModel(), $dto->getFormName(), $id);
     }
 }

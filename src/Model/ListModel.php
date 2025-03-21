@@ -15,6 +15,7 @@ use HeimrichHannot\FlareBundle\Util\DcaHelper;
  * @property bool $published
  * @property string $dc
  * @property string $fieldAutoItem
+ * @property string $jumpToReader
  */
 class ListModel extends Model
 {

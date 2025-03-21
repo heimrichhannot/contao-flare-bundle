@@ -9,6 +9,7 @@
     </div>
 
     <div style="display: grid; grid-template-columns: max-content auto max-content auto; gap: .125rem 1rem; font-family: monospace; padding: 1rem; background: #def; font-size: .9em;">
+        <strong style="grid-column: 1 / -1; margin-bottom: 1rem">{{ model.table }}</strong>
         {% for key, field in model.row %}
             {% if key not in ['password'] %}
                 <div>{{ key }}</div>

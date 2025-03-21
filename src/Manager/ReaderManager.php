@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Manager;
 
 use Contao\Model;
@@ -8,23 +10,23 @@ use HeimrichHannot\FlareBundle\Filter\Builder\FilterContextBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquation;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\DBEquationOperator;
-use HeimrichHannot\FlareBundle\Util\DcaHelper;
 
 readonly class ReaderManager
 {
     public function __construct(
-        private FilterContextBuilderFactory $filterContextBuilderFactory,
-        private FilterContextManager        $filterContextManager,
+        private FilterContextBuilderFactory $contextBuilderFactory,
+        private FilterContextManager        $contextManager,
+        private FilterQueryManager          $queryManager,
         private SimpleEquation              $simpleEquation,
     ) {}
 
     /**
      * @throws FlareException
      */
-    public function getModel(ListModel $listModel, string|int $autoItem): ?Model
+    public function getModelByAutoItem(ListModel $listModel, string|int $autoItem): ?Model
     {
         if (!($table = $listModel->dc)
-            || !($collection = $this->filterContextManager->collect($listModel)))
+            || !($collection = $this->contextManager->collect($listModel)))
         {
             return null;
         }
@@ -34,14 +36,12 @@ readonly class ReaderManager
             throw new FlareException(\sprintf('Model class does not exist: "%s"', $modelClass), source: __METHOD__);
         }
 
-        $fieldAutoItem = $listModel->fieldAutoItem ?: DcaHelper::tryGetColumnName($table, 'alias', 'id');
-
-        $context = $this->filterContextBuilderFactory->create()
+        $context = $this->contextBuilderFactory->create()
             ->setListModel($listModel)
             ->setFilterElement($this->simpleEquation)
             ->setFilterElementAlias('_flare_auto_item')
             ->setFilterModelProperties([
-                'equationLeft' => $fieldAutoItem,
+                'equationLeft' => $listModel->getAutoItemField(),
                 'equationOperator' => DBEquationOperator::EQUALS->value,
                 'equationRight' => $autoItem,
             ])
@@ -55,7 +55,7 @@ readonly class ReaderManager
 
         try
         {
-            $ids = $this->filterContextManager->fetchEntries($collection, returnIds: true);
+            $ids = $this->queryManager->fetchEntries($collection, returnIds: true);
         }
         catch (\Exception $e)
         {

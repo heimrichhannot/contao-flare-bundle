@@ -9,12 +9,13 @@ use Contao\CoreBundle\Exception\InternalServerErrorHttpException;
 use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Input;
+use Contao\StringUtil;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\ListView\Builder\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Manager\ReaderManager;
+use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,10 +27,10 @@ class ReaderController extends AbstractContentElementController
     public const TYPE = 'flare_reader';
 
     public function __construct(
-        private readonly ListViewBuilderFactory $listViewBuilderFactory,
-        private readonly LoggerInterface        $logger,
-        private readonly ReaderManager          $readerManager,
-        private readonly ScopeMatcher           $scopeMatcher,
+        private readonly LoggerInterface    $logger,
+        private readonly ReaderManager      $readerManager,
+        private readonly ScopeMatcher       $scopeMatcher,
+        private readonly TranslationManager $translator,
     ) {}
 
     /**
@@ -67,7 +68,7 @@ class ReaderController extends AbstractContentElementController
 
         try
         {
-            $model = $this->readerManager->getModel($listModel, $autoItem);
+            $model = $this->readerManager->getModelByAutoItem($listModel, $autoItem);
         }
         catch (FlareException $e)
         {
@@ -90,6 +91,25 @@ class ReaderController extends AbstractContentElementController
 
     protected function getBackendResponse(Template $template, ContentModel $model, Request $request): ?Response
     {
-        return new Response('Backend');
+        try {
+            /** @var ?ListModel $listModel */
+            $listModel = $model->getRelated(ContentContainer::FIELD_LIST) ?? null;
+        } catch (\Exception $e) {
+            return new Response($e->getMessage());
+        }
+
+        if (($headline = StringUtil::deserialize($model->headline, true)) && !empty($headline['value'])) {
+            $unit = !empty($headline['unit']) ? $headline['unit'] : 'h2';
+            $hl = \sprintf('<%s>%s</%s>', $unit, $headline['value'], $unit);
+        }
+
+        return new Response(
+            ($hl ?? '') . \sprintf(
+                '%s <span class="tl_gray">[%s, %s]</span>',
+                $listModel->title,
+                $this->translator->listModelType($listModel),
+                $listModel->dc,
+            )
+        );
     }
 }

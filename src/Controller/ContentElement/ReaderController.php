@@ -36,14 +36,14 @@ class ReaderController extends AbstractContentElementController
     /**
      * @throws \Exception
      */
-    protected function getResponse(Template $template, ContentModel $model, Request $request): ?Response
+    protected function getResponse(Template $template, ContentModel $model, Request $request): Response
     {
         return $this->scopeMatcher->isFrontendRequest($request)
             ? $this->getFrontendResponse($template, $model, $request)
             : $this->getBackendResponse($template, $model, $request);
     }
 
-    protected function getFrontendResponse(Template $template, ContentModel $model, Request $request): ?Response
+    protected function getFrontendResponse(Template $template, ContentModel $model, Request $request): Response
     {
         if (!$autoItem = Input::get('auto_item')) {
             throw $this->createNotFoundException('No auto_item supplied.');
@@ -89,7 +89,7 @@ class ReaderController extends AbstractContentElementController
         return $template->getResponse();
     }
 
-    protected function getBackendResponse(Template $template, ContentModel $model, Request $request): ?Response
+    protected function getBackendResponse(Template $template, ContentModel $model, Request $request): Response
     {
         try {
             /** @var ?ListModel $listModel */

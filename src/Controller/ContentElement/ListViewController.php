@@ -39,7 +39,7 @@ class ListViewController extends AbstractContentElementController
     /**
      * @throws \Exception
      */
-    protected function getResponse(Template $template, ContentModel $model, Request $request): ?Response
+    protected function getResponse(Template $template, ContentModel $model, Request $request): Response
     {
         return $this->scopeMatcher->isFrontendRequest($request)
             ? $this->getFrontendResponse($template, $model, $request)
@@ -62,7 +62,7 @@ class ListViewController extends AbstractContentElementController
     /**
      * @throws \Exception
      */
-    protected function getFrontendResponse(Template $template, ContentModel $model, Request $request): ?Response
+    protected function getFrontendResponse(Template $template, ContentModel $model, Request $request): Response
     {
         try
         {

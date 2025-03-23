@@ -30,10 +30,10 @@ class HeimrichHannotFlareBundle extends Bundle
         return DependencyInjection\HeimrichHannotFlareExtension::class;
     }
 
-    public function getContainerExtension(): false|ExtensionInterface|null
+    public function getContainerExtension(): ?ExtensionInterface
     {
-        $this->extension ??= $this->createContainerExtension() ?? false;
-        return $this->extension ?: null;
+        $this->extension ??= $this->createContainerExtension() ?: null;
+        return $this->extension;
     }
 
     public function build(ContainerBuilder $container): void

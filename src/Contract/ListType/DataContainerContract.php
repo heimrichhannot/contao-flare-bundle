@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\Contract;
+namespace HeimrichHannot\FlareBundle\Contract\ListType;
 
 use Contao\DataContainer;
 

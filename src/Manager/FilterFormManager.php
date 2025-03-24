@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Manager;
 
-use HeimrichHannot\FlareBundle\Contract\FormTypeOptionsContract;
-use HeimrichHannot\FlareBundle\Contract\HydrateFormContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilderFactory;
@@ -87,7 +87,7 @@ readonly class FilterFormManager
 
             $key = $filter->getFilterModel()->id;
 
-            $builder->add($key, $formType, $options);
+            $builder->add((string) $key, $formType, $options);
         }
 
         // *Always add submit button in template, not to the form builder!*

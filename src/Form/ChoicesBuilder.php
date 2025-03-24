@@ -5,7 +5,6 @@ namespace HeimrichHannot\FlareBundle\Form;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Contract\LabelableInterface;
 use HeimrichHannot\FlareBundle\Util\Str;
-use NewsModel;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 

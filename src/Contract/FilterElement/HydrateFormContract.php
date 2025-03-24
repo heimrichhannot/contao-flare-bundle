@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\Contract;
+namespace HeimrichHannot\FlareBundle\Contract\FilterElement;
 
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use Symfony\Component\Form\FormInterface;

@@ -5,7 +5,7 @@ namespace HeimrichHannot\FlareBundle\List\Type;
 use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
-use HeimrichHannot\FlareBundle\Contract\DataContainerContract;
+use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 
 #[AsListType(GenericDataContainerList::TYPE)]

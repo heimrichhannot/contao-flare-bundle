@@ -65,7 +65,7 @@ See the examples below.
 namespace App\Flare\FilterElement;
 
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use HeimrichHannot\FlareBundle\Contract\Filter\PaletteContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
@@ -74,6 +74,7 @@ use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
+use Symfony\Component\Form\FormInterface;
 
 /**
  * Create a custom filter element by using the AsFilterElement attribute.

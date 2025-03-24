@@ -26,13 +26,13 @@ class Format extends AbstractExtension
         ];
     }
 
-    public function fmtHeadline(?string $value): string
+    public function fmtHeadline(string|array|null $value): string
     {
         if (empty($value)) {
             return '';
         }
 
-        if (\str_starts_with($value, 'a:') && \str_contains($value, '{'))
+        if (\is_string($value) && \str_starts_with($value, 'a:') && \str_contains($value, '{'))
         {
             $deserialized = StringUtil::deserialize($value);
 
@@ -40,6 +40,11 @@ class Format extends AbstractExtension
                 return $value;
             }
 
+            $value = $deserialized;
+        }
+
+        if (\is_array($value))
+        {
             $unit = $deserialized['unit'] ?? 'h2';
             $value = $deserialized['value'] ?? '';
 

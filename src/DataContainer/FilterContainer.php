@@ -193,7 +193,7 @@ class FilterContainer implements FlareCallbackContainerInterface
             return $value;
         }
 
-        if (!$row = $dc->activeRecord?->row()) {
+        if (!$row = $dc->getCurrentRecord()) {
             return $value;
         }
 
@@ -215,7 +215,7 @@ class FilterContainer implements FlareCallbackContainerInterface
     #[AsCallback(self::TABLE_NAME, 'fields.intrinsic.save')]
     public function onSaveField_intrinsic(mixed $value, DataContainer $dc): mixed
     {
-        if ($value || !$row = $dc->activeRecord?->row()) {
+        if ($value || !$row = $dc->getCurrentRecord()) {
             return $value;
         }
 

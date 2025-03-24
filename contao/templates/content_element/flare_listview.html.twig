@@ -1,5 +1,11 @@
 {# @var flare \HeimrichHannot\FlareBundle\ListView\ListViewDto #}
-{% extends '@Contao/block_searchable.html5' %}
+{# {% extends '@Contao/block_searchable.html5' %} #}
+
+{% block headline %}
+    {% if headline %}
+        {{ fmt_headline(headline) }}
+    {% endif %}
+{% endblock %}
 
 {% block content %}
 

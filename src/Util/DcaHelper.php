@@ -20,7 +20,7 @@ class DcaHelper
     protected static function getListDCTableFromDataContainer(?DataContainer $dc): ?string
     {
         if (!$dc
-            || !($row = $dc->activeRecord?->row())
+            || !($row = $dc->getCurrentRecord())
             || !($pid = $row['pid'] ?? null))
         {
             return null;

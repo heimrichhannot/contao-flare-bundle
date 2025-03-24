@@ -113,7 +113,7 @@ class ListContainer implements FlareCallbackContainerInterface
     #[AsCallback(self::TABLE_NAME, 'config.onsubmit')]
     public function onSubmitConfig(DataContainer $dc): void
     {
-        if (!$dc->id || !$row = $dc->activeRecord?->row()) {
+        if (!$dc->id || !$row = $dc->getCurrentRecord()) {
             return;
         }
 
@@ -190,7 +190,7 @@ class ListContainer implements FlareCallbackContainerInterface
     #[AsCallback(self::TABLE_NAME, 'fields.fieldAutoItem.options')]
     public function getFieldAutoItemOptions(?DataContainer $dc = null): array
     {
-        if (empty($row = $dc->activeRecord->row()) || empty($table = $row['dc'])) {
+        if (empty($row = $dc->getCurrentRecord()) || empty($table = $row['dc'])) {
             return ['alias' => 'alias', 'id' => 'id'];
         }
 
@@ -214,7 +214,7 @@ class ListContainer implements FlareCallbackContainerInterface
     #[AsCallback(self::TABLE_NAME, 'fields.fieldAutoItem.save')]
     public function onLoadField_fieldPublished(mixed $value, DataContainer $dc): string
     {
-        if (empty($row = $dc->activeRecord->row()) || empty($table = $row['dc'])) {
+        if (empty($row = $dc->getCurrentRecord()) || empty($table = $row['dc'])) {
             return '';
         }
 

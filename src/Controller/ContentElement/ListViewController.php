@@ -104,6 +104,18 @@ class ListViewController extends AbstractContentElementController
 
         $data = ['flare' => $listViewDto];
 
+        // if (\is_array($model->headline))
+        // {
+        //     $data['hl'] = 'h2';
+        //
+        //     if (!empty($model->headline['value'])) {
+        //         $data['headline'] = $model->headline['value'];
+        //         $data['hl'] = !empty($model->headline['unit']) ? $model->headline['unit'] : 'h2';
+        //     } else {
+        //         $data['headline'] = null;
+        //     }
+        // }
+
         $template->setData($data + $template->getData());
 
         return $template->getResponse();

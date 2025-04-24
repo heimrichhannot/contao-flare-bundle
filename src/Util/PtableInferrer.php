@@ -17,7 +17,7 @@ class PtableInferrer
 
     public function __construct(
         protected FilterModel $filterModel,
-        protected ListModel $listModel
+        protected ListModel $listModel,
     ) {
         $this->entityTable = $this->listModel->dc;
     }
@@ -93,8 +93,11 @@ class PtableInferrer
 
         $this->inferred = true;
 
-        if ($this->filterModel->fieldPid === 'pid' && \is_string($ptable = $entityDca['config']['ptable'] ?? null))
+        $fieldPid = $this->filterModel->fieldPid ?: 'pid';
+
+        if ($fieldPid === 'pid' && \is_string($ptable = $entityDca['config']['ptable'] ?? null))
             // the parent table is defined in the data container
+            //   => default contao behavior with the parent id field being "pid"
         {
             $this->inferredPtable = $ptable;
             $this->autoInferable = true;
@@ -103,7 +106,7 @@ class PtableInferrer
             return $this->inferredPtable;
         }
 
-        if (\is_string($foreignKey = $entityDca['fields'][$this->filterModel->fieldPid]['foreignKey'] ?? null))
+        if (\is_string($foreignKey = $entityDca['fields'][$fieldPid]['foreignKey'] ?? null))
             // the parent table is defined in the field's foreign key
         {
             [$ptable, $field] = \explode('.', $foreignKey);
@@ -130,11 +133,16 @@ class PtableInferrer
     {
         if ($alwaysInfer) $this->infer();
 
-        return match ($this->filterModel->whichPtable) {
+        return match ($this->filterModel->whichPtable ?: 'auto') {
             'dynamic' => null,
             'static' => $this->filterModel->tablePtable ?? null,
             default => $this->infer(),
         };
+    }
+
+    public function getPidField(): string
+    {
+        return $this->filterModel->fieldPid ?: 'pid';
     }
 
     /**

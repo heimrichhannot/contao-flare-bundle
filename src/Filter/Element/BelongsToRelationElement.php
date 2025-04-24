@@ -152,15 +152,17 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
         $palette = '{filter_legend},fieldPid,whichPtable';
 
         $inferrer = new PtableInferrer($filterModel, $listModel);
+        $table = $inferrer->getEntityTable();
+        $fieldPid = $inferrer->getPidField();
 
         try
         {
             $ptable = $inferrer->explicit(true);
 
             Message::addInfo(match (true) {
-                $inferrer->isAutoInferable() => \sprintf('Parent table of "%s.%s" inferred as "%s"', $listModel->dc, $filterModel->fieldPid, $ptable),
-                $inferrer->isAutoDynamicPtable() => \sprintf('Parent table of "%s" can be inferred dynamically', $listModel->dc),
-                default => \sprintf('Parent table cannot be inferred on "%s.%s"', $listModel->dc, $filterModel->fieldPid)
+                $inferrer->isAutoInferable() && $ptable => \sprintf('Parent table of "%s.%s" inferred as "%s"', $table, $fieldPid, $ptable),
+                $inferrer->isAutoDynamicPtable() => \sprintf('Parent table of "%s" can be inferred dynamically', $table),
+                default => \sprintf('Parent table cannot be inferred on "%s.%s"', $table, $fieldPid)
             });
         }
         catch (InferenceException $e)

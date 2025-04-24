@@ -17,10 +17,36 @@ class DcaHelper
 {
     private static array $dcTableCache = [];
 
+    public static function currentRecord(?DataContainer $dc): ?array
+    {
+        if (!$dc) {
+            return null;
+        }
+
+        if (\method_exists($dc, 'getCurrentRecord')) {
+            return $dc->getCurrentRecord();
+        }
+
+        if (!($id = $dc->id ?? null)) {
+            return null;
+        }
+
+        $modelClass = Model::getClassFromTable($dc->table);
+        if (!\class_exists($modelClass)) {
+            return null;
+        }
+
+        if (!($record = $modelClass::findByPk($id))) {
+            return null;
+        }
+
+        return $record->row();
+    }
+
     protected static function getListDCTableFromDataContainer(?DataContainer $dc): ?string
     {
         if (!$dc
-            || !($row = $dc->getCurrentRecord())
+            || !($row = static::currentRecord($dc))
             || !($pid = $row['pid'] ?? null))
         {
             return null;

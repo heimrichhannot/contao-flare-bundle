@@ -20,7 +20,7 @@ class PublishedElement extends AbstractFilterElement
 
         if ($filterModel->usePublished ?? true)
         {
-            $publishedField = ($filterModel->fieldPublished ?: "published");
+            $publishedField = ($filterModel->fieldPublished ?: 'published');
             $invertPublished = $filterModel->invertPublished ?? false;
             $operator = $invertPublished ? '!=' : '=';
             $qb->where("$publishedField $operator 1");  // "published = 1" or "published != 1"
@@ -28,14 +28,14 @@ class PublishedElement extends AbstractFilterElement
 
         if ($filterModel->useStart ?? true)
         {
-            $startField = ($filterModel->fieldStart ?: "start");
+            $startField = ($filterModel->fieldStart ?: 'start');
             $qb->where("($startField = \"\" OR $startField = 0 OR $startField <= :start)")
                 ->bind('start', time());
         }
 
         if ($filterModel->useStop ?? true)
         {
-            $stopField = ($filterModel->fieldStop ?: "stop");
+            $stopField = ($filterModel->fieldStop ?: 'stop');
             $qb->where("($stopField = \"\" OR $stopField = 0 OR $stopField >= :stop)")
                 ->bind('stop', time());
         }

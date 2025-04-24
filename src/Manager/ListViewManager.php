@@ -175,12 +175,12 @@ class ListViewManager
         $filters = $this->getFilterContextCollection($listModel, $formName);
 
         if ($paginatorConfig) {
-            $pagination = $this->getPaginator($listModel, $formName, $paginatorConfig);
+            $paginator = $this->getPaginator($listModel, $formName, $paginatorConfig);
         }
 
         try
         {
-            $entries = $this->queryManager->fetchEntries($filters, $pagination ?? null);
+            $entries = $this->queryManager->fetchEntries($filters, $paginator ?? null);
         }
         catch (FlareException $e)
         {

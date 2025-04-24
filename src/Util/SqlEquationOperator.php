@@ -2,7 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Util;
 
-enum DBEquationOperator: string
+enum SqlEquationOperator: string
 {
     case EQUALS = 'eq';
     case NOT_EQUALS = 'neq';
@@ -20,7 +20,7 @@ enum DBEquationOperator: string
     public function isUnary(): bool
     {
         return match ($this) {
-            DBEquationOperator::IS_NULL, DBEquationOperator::IS_NOT_NULL => true,
+            SqlEquationOperator::IS_NULL, SqlEquationOperator::IS_NOT_NULL => true,
             default => false,
         };
     }
@@ -28,27 +28,27 @@ enum DBEquationOperator: string
     public function getOperator(): string
     {
         return match ($this) {
-            DBEquationOperator::EQUALS => '=',
-            DBEquationOperator::NOT_EQUALS => '!=',
-            DBEquationOperator::GREATER_THAN => '>',
-            DBEquationOperator::GREATER_THAN_EQUALS => '>=',
-            DBEquationOperator::LESS_THAN => '<',
-            DBEquationOperator::LESS_THAN_EQUALS => '<=',
-            DBEquationOperator::LIKE => 'LIKE',
-            DBEquationOperator::NOT_LIKE => 'NOT LIKE',
-            DBEquationOperator::IN => 'IN',
-            DBEquationOperator::NOT_IN => 'NOT IN',
-            DBEquationOperator::IS_NULL => 'IS NULL',
-            DBEquationOperator::IS_NOT_NULL => 'IS NOT NULL',
+            SqlEquationOperator::EQUALS => '=',
+            SqlEquationOperator::NOT_EQUALS => '!=',
+            SqlEquationOperator::GREATER_THAN => '>',
+            SqlEquationOperator::GREATER_THAN_EQUALS => '>=',
+            SqlEquationOperator::LESS_THAN => '<',
+            SqlEquationOperator::LESS_THAN_EQUALS => '<=',
+            SqlEquationOperator::LIKE => 'LIKE',
+            SqlEquationOperator::NOT_LIKE => 'NOT LIKE',
+            SqlEquationOperator::IN => 'IN',
+            SqlEquationOperator::NOT_IN => 'NOT IN',
+            SqlEquationOperator::IS_NULL => 'IS NULL',
+            SqlEquationOperator::IS_NOT_NULL => 'IS NOT NULL',
         };
     }
 
     public static function asOptions(bool $includeIn = true): array
     {
-        $cases = DBEquationOperator::cases();
+        $cases = SqlEquationOperator::cases();
 
         if (!$includeIn) {
-            $cases = \array_filter($cases, static fn($case) => !\in_array($case, [DBEquationOperator::IN, DBEquationOperator::NOT_IN]));
+            $cases = \array_filter($cases, static fn($case) => !\in_array($case, [SqlEquationOperator::IN, SqlEquationOperator::NOT_IN]));
         }
 
         return \array_combine(
@@ -57,13 +57,13 @@ enum DBEquationOperator: string
         );
     }
 
-    public static function match(DBEquationOperator|string $operator): ?DBEquationOperator
+    public static function match(SqlEquationOperator|string $operator): ?SqlEquationOperator
     {
-        if ($operator instanceof DBEquationOperator) {
+        if ($operator instanceof SqlEquationOperator) {
             return $operator;
         }
 
-        if ($from = DBEquationOperator::tryFrom($operator)) {
+        if ($from = SqlEquationOperator::tryFrom($operator)) {
             return $from;
         }
 

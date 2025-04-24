@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Util\DBEquationOperator;
+use HeimrichHannot\FlareBundle\Util\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 
 #[AsFilterElement(alias: SimpleEquation::TYPE)]
@@ -25,21 +25,21 @@ class SimpleEquation implements PaletteContract
     {
         $filterModel = $context->getFilterModel();
 
-        if (!$filterModel->equationLeft || !$op = DBEquationOperator::match($filterModel->equationOperator)) {
+        if (!$filterModel->equationLeft || !$op = SqlEquationOperator::match($filterModel->equationOperator)) {
             throw new FilterException('Invalid filter configuration.');
         }
 
         $where = match ($op) {
-            DBEquationOperator::EQUALS => $qb->expr()->eq($filterModel->equationLeft, ':eq_right'),
-            DBEquationOperator::NOT_EQUALS => $qb->expr()->neq($filterModel->equationLeft, ':eq_right'),
-            DBEquationOperator::GREATER_THAN => $qb->expr()->gt($filterModel->equationLeft, ':eq_right'),
-            DBEquationOperator::GREATER_THAN_EQUALS => $qb->expr()->gte($filterModel->equationLeft, ':eq_right'),
-            DBEquationOperator::LESS_THAN => $qb->expr()->lt($filterModel->equationLeft, ':eq_right'),
-            DBEquationOperator::LESS_THAN_EQUALS => $qb->expr()->lte($filterModel->equationLeft, ':eq_right'),
-            DBEquationOperator::LIKE => $qb->expr()->like($filterModel->equationLeft, ':eq_right'),
-            DBEquationOperator::NOT_LIKE => $qb->expr()->notLike($filterModel->equationLeft, ':eq_right'),
-            DBEquationOperator::IS_NULL => $qb->expr()->isNull($filterModel->equationLeft),
-            DBEquationOperator::IS_NOT_NULL => $qb->expr()->isNotNull($filterModel->equationLeft),
+            SqlEquationOperator::EQUALS => $qb->expr()->eq($filterModel->equationLeft, ':eq_right'),
+            SqlEquationOperator::NOT_EQUALS => $qb->expr()->neq($filterModel->equationLeft, ':eq_right'),
+            SqlEquationOperator::GREATER_THAN => $qb->expr()->gt($filterModel->equationLeft, ':eq_right'),
+            SqlEquationOperator::GREATER_THAN_EQUALS => $qb->expr()->gte($filterModel->equationLeft, ':eq_right'),
+            SqlEquationOperator::LESS_THAN => $qb->expr()->lt($filterModel->equationLeft, ':eq_right'),
+            SqlEquationOperator::LESS_THAN_EQUALS => $qb->expr()->lte($filterModel->equationLeft, ':eq_right'),
+            SqlEquationOperator::LIKE => $qb->expr()->like($filterModel->equationLeft, ':eq_right'),
+            SqlEquationOperator::NOT_LIKE => $qb->expr()->notLike($filterModel->equationLeft, ':eq_right'),
+            SqlEquationOperator::IS_NULL => $qb->expr()->isNull($filterModel->equationLeft),
+            SqlEquationOperator::IS_NOT_NULL => $qb->expr()->isNotNull($filterModel->equationLeft),
             default => null,
         };
 
@@ -68,8 +68,8 @@ class SimpleEquation implements PaletteContract
     {
         $filterModel = $config->getFilterModel();
 
-        return match (DBEquationOperator::match($filterModel->equationOperator)) {
-            DBEquationOperator::IS_NULL, DBEquationOperator::IS_NOT_NULL => '{flare_simple_equation_legend},equationLeft,equationOperator',
+        return match (SqlEquationOperator::match($filterModel->equationOperator)) {
+            SqlEquationOperator::IS_NULL, SqlEquationOperator::IS_NOT_NULL => '{flare_simple_equation_legend},equationLeft,equationOperator',
             default => '{flare_simple_equation_legend},equationLeft,equationOperator,equationRight',
         };
     }

@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Builder\FilterContextBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquation;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Util\DBEquationOperator;
+use HeimrichHannot\FlareBundle\Util\SqlEquationOperator;
 
 readonly class ReaderManager
 {
@@ -42,7 +42,7 @@ readonly class ReaderManager
             ->setFilterElementAlias('_flare_auto_item')
             ->setFilterModelProperties([
                 'equationLeft' => $listModel->getAutoItemField(),
-                'equationOperator' => DBEquationOperator::EQUALS->value,
+                'equationOperator' => SqlEquationOperator::EQUALS->value,
                 'equationRight' => $autoItem,
             ])
             ->build();

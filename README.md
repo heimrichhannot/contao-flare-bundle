@@ -86,9 +86,10 @@ use Symfony\Component\Form\FormInterface;
  *   and has to start with a letter and can only contain letters, numbers, and
  *   underscores.
  *
- *   WE RECOMMEND USING A UNIQUE VENDOR PREFIX FOR THE ALIAS.
+ *   USE A VENDOR PREFIX on the alias of each custom filter or list-type to
+ *   prevent naming conflicts. For example: 'mycompany_awesomenessRating'.
  *   Use 'app_' as prefix in your application code that is not distributed as
- *   a library.
+ *   a library. All flare-included filter elements use 'flare_' as prefix.
  *
  * The **palette** parameter is used to define the basic contao palette that
  *   is inserted between the title and footer legends when editing a filter
@@ -102,7 +103,7 @@ use Symfony\Component\Form\FormInterface;
  *
  * You MAY implement additional contract interfaces that allow you to modify
  *   the behavior of the filter element in various ways. These interfaces are
- *   documented in the code on the methods that they require.
+ *   documented in the following code on the methods that they require.
  */
 #[AsFilterElement(
     alias: MyCustomElement::TYPE,
@@ -115,7 +116,7 @@ class MyCustomElement implements FormTypeOptionsContract, HydrateFormContract, P
 
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
-        /** {@see \HeimrichHannot\FlareBundle\Filter\FilterContext} to see available methods */
+        /** {@see \HeimrichHannot\FlareBundle\Filter\FilterContext} for available methods */
         $filterModel = $context->getFilterModel();  // how the filter element has been configured in the backend
         $submittedData = $context->getSubmittedData();  // the user-submitted form data
 
@@ -123,14 +124,14 @@ class MyCustomElement implements FormTypeOptionsContract, HydrateFormContract, P
           * {@see \HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder} to see how it works,
           *   although practically you only need to use the where() and bind() methods.
           *
-          * Using $qb->where(...) multiple times will concatenate the conditions with AND.
+          * Using `$qb->where(...)` multiple times will concatenate the conditions with AND.
           *   For a usage example with OR, see below.
           *
-          * $qb->bind(...) accepts an optional third parameter for the PDO-type of the value.
+          * `$qb->bind(...)` accepts an optional third parameter for the PDO-type of the value.
           *   {@see \Doctrine\DBAL\ParameterType} and
           *   {@see \Doctrine\DBAL\ArrayParameterType} for available types.
-          *   This is only necessary when the data type cannot be inferred from the value,
-          *   e.g. when using some arrays or objects.
+          *   This is only necessary when the data type cannot be inferred from the value
+          *   (e.g., on some mixed-type arrays or objects) and is usually not needed.
           */
         $qb->where('someColumn = :custom')
             ->bind('custom', $filterModel->myCustomField,
@@ -145,12 +146,12 @@ class MyCustomElement implements FormTypeOptionsContract, HydrateFormContract, P
         $qb->where(
             $qb->expr()->or(
                 $qb->expr()->eq('someColumn', ':custom'),
+                'secondColumn = :second',  // functionally equivalent to line above
                 $qb->expr()->isNotNull('anotherColumn'),
-                'thirdColumn = :third'
             )
         )
             ->bind('custom', $filterModel->myCustomField)
-            ->bind('third', $filterModel->thirdWhatever);
+            ->bind('second', $filterModel->thirdWhatever);
     }
 
     /**
@@ -166,7 +167,7 @@ class MyCustomElement implements FormTypeOptionsContract, HydrateFormContract, P
      * MUST return an array of options.
      */
     #[AsFilterCallback(self::TYPE, 'fields.myCustomField.options')]
-    public function getMyCustomFieldOptions(ListModel $listModel, ...): array
+    public function getMyCustomFieldOptions(ListModel $listModel, /* ... */): array
     {
         if (!$listModel->dc) {
             return [];
@@ -188,13 +189,13 @@ class MyCustomElement implements FormTypeOptionsContract, HydrateFormContract, P
      */
     #[AsFilterCallback(self::TYPE, 'fields.myCustomField.load')]
     #[AsFilterCallback(self::TYPE, 'fields.myCustomField.save')]
-    public function onLoadSave_myCustomField(mixed $value, ...): mixed
+    public function onLoadSave_myCustomField(mixed $value, /* ... */): mixed
     {
         return $value;
     }
 
     /**
-     * Implement the FormTypeOptionsContract interface to modify the form type options.
+     * Implement the `FormTypeOptionsContract` interface to modify the form type options.
      *   e.g. to add choices to a choice field.
      *
      * The result of this method is passed to the Symfony FormType during form creation.
@@ -233,7 +234,7 @@ class MyCustomElement implements FormTypeOptionsContract, HydrateFormContract, P
     }
 
     /**
-     * Implement the HydrateFormContract interface to modify the form field after it has been created.
+     * Implement the `HydrateFormContract` interface to modify the form field after it has been created.
      * This is useful for setting default values, adding attributes, or even changing the field type.
      */
     public function hydrateForm(FilterContext $context, FormInterface $field): void
@@ -249,16 +250,17 @@ class MyCustomElement implements FormTypeOptionsContract, HydrateFormContract, P
     }
 
     /**
-     * Implement the PaletteContract interface to assemble custom palettes for the filter element.
+     * Implement the `PaletteContract` interface to assemble custom palettes for the filter element.
      *   e.g. to respect certain conditions following the filter element's configuration.
      *
      * {@see \HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig} to see available methods.
      *
-     * The method should return the palette string or null if the default palette that is defined
-     *   in the AsFilterElement attribute should be used.
+     * The method should return the palette string (or null if the default palette that is defined
+     *   in the `AsFilterElement` attribute should be used).
      *
      * Just like the attribute palette, the returned palette string is inserted between the title
-     *   and footer legends.
+     *   and footer legends. But here you can manipulate the palette string to your liking, e.g.
+     *   to conditionally add fields or legends, depending on the respective configuration.
      *
      * Tip: You may also use Contao's PaletteManipulator and apply it to an empty string to create
      *   the desired palette.
@@ -270,3 +272,4 @@ class MyCustomElement implements FormTypeOptionsContract, HydrateFormContract, P
         return '{custom_legend},customFilterField';
     }
 }
+```

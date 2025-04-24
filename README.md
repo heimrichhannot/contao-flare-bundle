@@ -2,6 +2,9 @@
 
 This Contao CMS extension streamlines the filtering and listing of entities on the frontend while also supporting individual detail views (readers).
 
+> [!NOTE]
+> Flare is a work in progress and is not yet feature-complete. We are actively working on it and will release updates regularly.
+
 ## Installation
 
 Install the bundle via Composer:

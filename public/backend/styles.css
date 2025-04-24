@@ -16,7 +16,8 @@
         display: grid;
         grid-template-columns: 3fr 1fr 3fr;
     }
-    [data-contao--toggle-fieldset-id-value="flare_simple_equation_legend"] > legend {
+    [data-contao--toggle-fieldset-id-value="flare_simple_equation_legend"] > legend,
+    #pal_flare_simple_equation_legend > legend {
         grid-column: 1 / -1;
     }
     #ctrl_equationOperator {

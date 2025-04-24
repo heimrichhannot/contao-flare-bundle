@@ -186,15 +186,15 @@ abstract class Collection implements IteratorAggregate, Countable, Serializable
         }
 
         return match ($expectedType) {
-            'int', 'integer'   => is_int($item),
-            'bool', 'boolean'  => is_bool($item),
-            'string'           => is_string($item),
-            'float', 'double'  => is_float($item),
-            'array'            => is_array($item),
-            'object'           => is_object($item),
-            'callable'         => is_callable($item),
-            'resource'         => is_resource($item),
-            'null'             => $item === null,
+            'int', 'integer'   => \is_int($item),
+            'bool', 'boolean'  => \is_bool($item),
+            'string'           => \is_string($item),
+            'float', 'double'  => \is_float($item),
+            'array'            => \is_array($item),
+            'object'           => \is_object($item),
+            'callable'         => \is_callable($item),
+            'resource'         => \is_resource($item),
+            'null'             => \is_null($item),
             'mixed'            => true,
             default            => false
         };

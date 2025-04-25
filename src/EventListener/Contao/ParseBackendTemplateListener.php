@@ -18,11 +18,11 @@ readonly class ParseBackendTemplateListener
     {
         if ('be_main' === $template)
         {
-            $elements = $this->filterElementRegistry->all();
-            \dump('parseBackendTemplate: all filter elements', $elements);
+            // $elements = $this->filterElementRegistry->all();
+            // \dump('parseBackendTemplate: all filter elements', $elements);
 
-            $types = $this->listTypeRegistry->all();
-            \dump('parseBackendTemplate: all list types', $types);
+            // $types = $this->listTypeRegistry->all();
+            // \dump('parseBackendTemplate: all list types', $types);
         }
 
         return $buffer;

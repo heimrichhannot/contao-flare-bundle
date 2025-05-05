@@ -2,6 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
+use HeimrichHannot\FlareBundle\Contract\Config\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
@@ -39,5 +40,41 @@ class PublishedElement extends AbstractFilterElement
             $qb->where("($stopField = \"\" OR $stopField = 0 OR $stopField >= :stop)")
                 ->bind('stop', time());
         }
+    }
+
+    public static function define(
+        string|false|null $published = null,
+        string|false|null $start = null,
+        string|false|null $stop = null,
+        bool|null $invertPublished = null,
+    ): FilterDefinition {
+        $published ??= 'published';
+        $start ??= 'start';
+        $stop ??= 'stop';
+        $invertPublished ??= false;
+
+        $definition = new FilterDefinition(
+            type: static::TYPE,
+            title: 'Is Published',
+            intrinsic: true,
+        );
+
+        if ($published) {
+            $definition->usePublished = true;
+            $definition->fieldPublished = $published;
+            $definition->invertPublished = $invertPublished;
+        }
+
+        if ($start) {
+            $definition->useStart = true;
+            $definition->fieldStart = $start;
+        }
+
+        if ($stop) {
+            $definition->useStop = true;
+            $definition->fieldStop = $stop;
+        }
+
+        return $definition;
     }
 }

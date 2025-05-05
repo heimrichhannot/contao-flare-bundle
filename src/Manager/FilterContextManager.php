@@ -11,6 +11,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\List\Type\AbstractListType;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
@@ -43,19 +44,15 @@ readonly class FilterContextManager
             return null;
         }
 
-        $filterModels = FilterModel::findByPid($listModel->id, published: true);
-
-        if (!$filterModels->count()) {
-            return null;
-        }
-
         Controller::loadDataContainer($table);
 
-        $filters = FilterContextCollection::create($listModel);
+        $filterModels = FilterModel::findByPid($listModel->id, published: true) ?? [];
+        $collection = FilterContextCollection::create($listModel);
 
         $addedFilters = [];
 
         foreach ($filterModels as $filterModel)
+            // Collect filters defined in the backend
         {
             if (!$filterModel->published) {
                 continue;
@@ -67,25 +64,68 @@ readonly class FilterContextManager
                 continue;
             }
 
-            $filters->add(new FilterContext($listModel, $filterModel, $config, $filterElementAlias, $table));
+            $collection->add(new FilterContext($listModel, $filterModel, $config, $filterElementAlias, $table));
 
             $addedFilters[] = $filterElementAlias;
         }
 
-        if ($listType instanceof PresetFiltersContract)
-        {
-            $addedFilters = \array_unique($addedFilters);
+        // Add filters defined by the filter element type
+        $this->applyPresetFilters($listType, $addedFilters, $listModel, $collection, $table);
 
-            $presetConfig = new PresetFiltersConfig(
-                listModel: $listModel,
-                manualFilterAliases: $addedFilters,
-            );
+        return $collection;
+    }
 
-            $listType->getPresetFilters($presetConfig);
-
-            // todo: continue work on this mechanic
+    /**
+     * @noinspection PhpDocSignatureInspection
+     * @param object|AbstractListType      $listType
+     * @param array                        $addedFilters
+     * @param ListModel                    $listModel
+     * @param FilterContextCollection|null $filters
+     * @param string                       $table
+     * @return void
+     */
+    private function applyPresetFilters(
+        object $listType,
+        array $addedFilters,
+        ListModel $listModel,
+        ?FilterContextCollection $filters,
+        string $table
+    ): void {
+        if (!$listType instanceof PresetFiltersContract) {
+            return;
         }
 
-        return $filters;
+        $addedFilters = \array_unique($addedFilters);
+
+        $presetConfig = new PresetFiltersConfig(
+            listModel: $listModel,
+            manualFilterAliases: $addedFilters,
+        );
+
+        $listType->getPresetFilters($presetConfig);
+
+        $filterDefinitions = $presetConfig->getFilterDefinitions();
+
+        foreach ($filterDefinitions as $arrDefinition)
+        {
+            ['definition' => $definition, 'final' => $final] = $arrDefinition;
+
+            if (!$final && \in_array($definition->getType(), $addedFilters, true))
+                // skip if filter is not final and already added
+            {
+                continue;
+            }
+
+            if (!$config = $this->filterElementRegistry->get($definition->getType())) {
+                continue;
+            }
+
+            $filterModel = new FilterModel();
+            $filterModel->setRow($definition->getRow());
+
+            $filters->add(new FilterContext($listModel, $filterModel, $config, $definition->getType(), $table));
+        }
+
+        // todo: overhaul this mechanic
     }
 }

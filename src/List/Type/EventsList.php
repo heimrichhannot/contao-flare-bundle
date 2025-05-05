@@ -2,19 +2,25 @@
 
 namespace HeimrichHannot\FlareBundle\List\Type;
 
-use Contao\CoreBundle\DataContainer\PaletteManipulator;
-use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
+use HeimrichHannot\FlareBundle\Contract\Config\PresetFiltersConfig;
+use HeimrichHannot\FlareBundle\Contract\ListType\PresetFiltersContract;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
+use HeimrichHannot\FlareBundle\Filter\Element\PublishedElement;
 
 #[AsListType(EventsList::TYPE, dataContainer: 'tl_calendar_events')]
-class EventsList implements PaletteContract
+class EventsList implements PaletteContract, PresetFiltersContract
 {
     public const TYPE = 'flare_events';
 
     public function getPalette(PaletteConfig $config): ?string
     {
-        return '{test_legend},test;{another_legend},another_field';
+        return null;
+    }
+
+    public function getPresetFilters(PresetFiltersConfig $config): void
+    {
+        $config->add(PublishedElement::define(), true);
     }
 }

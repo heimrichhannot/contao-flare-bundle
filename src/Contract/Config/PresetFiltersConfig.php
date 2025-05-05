@@ -6,7 +6,10 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 
 class PresetFiltersConfig
 {
-    /** @var array{object} $filterDefinitions
+    /** @var array<array{
+     *     definition: FilterDefinition,
+     *     final: bool
+     * }> $filterDefinitions
      */
     private array $filterDefinitions = [];
 
@@ -31,27 +34,20 @@ class PresetFiltersConfig
 
     public function add(FilterDefinition $filterDefinition, bool $final = false): static
     {
-        $this->filterDefinitions[] = new class($filterDefinition, $final)
-        {
-            public function __construct(
-                private readonly FilterDefinition $filterDefinition,
-                private readonly bool             $final,
-            ) {}
-
-            public function getFilterDefinition(): FilterDefinition
-            {
-                return $this->filterDefinition;
-            }
-
-            public function isFinal(): bool
-            {
-                return $this->final;
-            }
-        };
+        $this->filterDefinitions[] = [
+            'definition' => $filterDefinition,
+            'final'      => $final,
+        ];
 
         return $this;
     }
 
+    /**
+     * @return array<array{
+     *     definition: FilterDefinition,
+     *     final: bool
+     * }>
+     */
     public function getFilterDefinitions(): array
     {
         return $this->filterDefinitions;

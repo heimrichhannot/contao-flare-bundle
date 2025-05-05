@@ -47,7 +47,7 @@ class FilterContextCollection extends Collection
         return FilterContext::class;
     }
 
-    public static function create(ListModel $listModel): ?static
+    public static function create(ListModel $listModel): static
     {
         return (new static())
             ->setListModel($listModel)

@@ -50,7 +50,7 @@ class FilterContainer implements FlareCallbackContainerInterface
             return [];
         }
 
-        $namespace = static::CALLBACK_PREFIX . '.' . $filterModel->type;
+        $namespace = static::CALLBACK_PREFIX . '.' . $filterModel->alias;
 
         $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
 
@@ -88,7 +88,7 @@ class FilterContainer implements FlareCallbackContainerInterface
             return $value;
         }
 
-        $namespace =  static::CALLBACK_PREFIX . '.' . $filterModel->type;
+        $namespace =  static::CALLBACK_PREFIX . '.' . $filterModel->alias;
 
         $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
 
@@ -109,7 +109,7 @@ class FilterContainer implements FlareCallbackContainerInterface
         {
             if (($id = $dc?->id)
                 && ($filterModel = FilterModel::findByPk($id))
-                && ($ignoreType || $filterModel->type)
+                && ($ignoreType || $filterModel->alias)
                 && ($listModel = $filterModel->getRelated('pid')))
             {
                 return [$filterModel, $listModel];

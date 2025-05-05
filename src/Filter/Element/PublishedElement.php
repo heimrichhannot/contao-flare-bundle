@@ -54,7 +54,7 @@ class PublishedElement extends AbstractFilterElement
         $invertPublished ??= false;
 
         $definition = new FilterDefinition(
-            type: static::TYPE,
+            alias: static::TYPE,
             title: 'Is Published',
             intrinsic: true,
         );

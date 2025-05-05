@@ -70,36 +70,26 @@ readonly class FilterContextManager
         }
 
         // Add filters defined by the filter element type
-        $this->applyPresetFilters($listType, $addedFilters, $listModel, $collection, $table);
+        $this->addPresetFilters($collection, $listModel, $listType, $addedFilters);
 
         return $collection;
     }
 
-    /**
-     * @noinspection PhpDocSignatureInspection
-     * @param object|AbstractListType      $listType
-     * @param array                        $addedFilters
-     * @param ListModel                    $listModel
-     * @param FilterContextCollection|null $filters
-     * @param string                       $table
-     * @return void
-     */
-    private function applyPresetFilters(
-        object $listType,
-        array $addedFilters,
-        ListModel $listModel,
-        ?FilterContextCollection $filters,
-        string $table
+    private function addPresetFilters(
+        FilterContextCollection $collection,
+        ListModel               $listModel,
+        object                  $listType,
+        array                   $manualFilters,
     ): void {
         if (!$listType instanceof PresetFiltersContract) {
             return;
         }
 
-        $addedFilters = \array_unique($addedFilters);
+        $manualFilters = \array_unique($manualFilters);
 
         $presetConfig = new PresetFiltersConfig(
             listModel: $listModel,
-            manualFilterAliases: $addedFilters,
+            manualFilterAliases: $manualFilters,
         );
 
         $listType->getPresetFilters($presetConfig);
@@ -110,20 +100,20 @@ readonly class FilterContextManager
         {
             ['definition' => $definition, 'final' => $final] = $arrDefinition;
 
-            if (!$final && \in_array($definition->getType(), $addedFilters, true))
+            if (!$final && \in_array($definition->getAlias(), $manualFilters, true))
                 // skip if filter is not final and already added
             {
                 continue;
             }
 
-            if (!$config = $this->filterElementRegistry->get($definition->getType())) {
+            if (!$config = $this->filterElementRegistry->get($definition->getAlias())) {
                 continue;
             }
 
             $filterModel = new FilterModel();
             $filterModel->setRow($definition->getRow());
 
-            $filters->add(new FilterContext($listModel, $filterModel, $config, $definition->getType(), $table));
+            $collection->add(new FilterContext($listModel, $filterModel, $config, $definition->getAlias(), $listModel->dc));
         }
 
         // todo: overhaul this mechanic

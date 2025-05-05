@@ -9,20 +9,20 @@ class FilterDefinition
     use FilterModelDocTrait;
 
     public function __construct(
-        private string $type,
+        private string $alias,
         private string $title,
         private bool   $intrinsic,
         private array  $properties = [],
     ) {}
 
-    public function getType(): string
+    public function getAlias(): string
     {
-        return $this->type;
+        return $this->alias;
     }
 
-    public function setType(string $type): void
+    public function setAlias(string $alias): void
     {
-        $this->type = $type;
+        $this->alias = $alias;
     }
 
     public function getTitle(): string
@@ -68,7 +68,7 @@ class FilterDefinition
     public function __set(string $key, mixed $value): void
     {
         match ($key) {
-            'alias', 'elementAlias', 'type' => $this->setType($value),
+            'alias', 'elementAlias', 'type' => $this->setAlias($value),
             'title' => $this->setTitle($value),
             'intrinsic' => $this->setIntrinsic($value),
             default => $this->properties[$key] = $value,
@@ -78,7 +78,7 @@ class FilterDefinition
     public function __get(string $key): mixed
     {
         return match ($key) {
-            'alias', 'elementAlias', 'type' => $this->getType(),
+            'alias', 'elementAlias', 'type' => $this->getAlias(),
             'title' => $this->getTitle(),
             'intrinsic' => $this->isIntrinsic(),
             default => $this->getProperty($key),
@@ -89,7 +89,7 @@ class FilterDefinition
     {
         return \array_merge($this->properties, [
             'title' => $this->title,
-            'type' => $this->type,
+            'type' => $this->alias,
             'published' => true,
             'intrinsic' => $this->intrinsic,
         ]);

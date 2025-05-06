@@ -35,8 +35,8 @@ readonly class FilterFormManager
         ]);
 
         $defaultOptions = [
-            'inherit_data'                    => false,
-            'label'                           => false,
+            'inherit_data' => false,
+            'label'        => false,
         ];
 
         foreach ($filters->getIterator() as $filter)
@@ -50,7 +50,7 @@ readonly class FilterFormManager
                 continue;
             }
 
-            if (!$filterModel->published || !$filterModel->alias || $filterModel->intrinsic)
+            if (!$filterModel->published || !$filterModel->type || $filterModel->intrinsic)
             {
                 continue;
             }

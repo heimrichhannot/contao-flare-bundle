@@ -10,8 +10,10 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ChoicesBuilder
 {
-    /** @var array<Model|LabelableInterface> $map */
-    private array $map = [];
+    /** @var array<Model|LabelableInterface> $choices */
+    private array $choices = [];
+    private array $groups = [];
+    private array $choiceGroupMap = [];
     private string $modelSuffix = '';
     private bool $enabled = false;
     private ?string $label = null;
@@ -47,9 +49,30 @@ class ChoicesBuilder
         return $this;
     }
 
-    public function add(string|int $key, Model|LabelableInterface|string $value): static
+    public function add(
+        string|int                      $key,
+        Model|LabelableInterface|string $value,
+        string|null                     $group = null,
+    ): static {
+        $this->choices[$key] = $value;
+
+        if ($group !== null) {
+            $this->choiceGroupMap[$key] = $group;
+        }
+
+        return $this;
+    }
+
+    public function addGroup(string $key, string $label): static
     {
-        $this->map[$key] = $value;
+        $this->groups[$key] = $label;
+
+        return $this;
+    }
+
+    public function removeGroup(string $key): static
+    {
+        unset($this->groups[$key]);
 
         return $this;
     }
@@ -94,19 +117,19 @@ class ChoicesBuilder
 
     public function count(): int
     {
-        return \count($this->map);
+        return \count($this->choices);
     }
 
     public function buildChoices(): array
     {
-        $keys = \array_keys($this->map);
+        $keys = \array_keys($this->choices);
         return \array_combine($keys, $keys) ?: [];
     }
 
     public function buildChoiceLabelCallback(): callable
     {
         return function ($choice, $key, $value) {
-            $obj = $this->map[$key] ?? null;
+            $obj = $this->choices[$key] ?? null;
 
             $params = [
                 '%@choice%' => Str::force($choice),
@@ -155,7 +178,7 @@ class ChoicesBuilder
 
         $labelFactory = $this->buildChoiceLabelCallback();
 
-        foreach ($this->map as $key => $value) {
+        foreach ($this->choices as $key => $value) {
             $options[$key] = $labelFactory($value, $key, $value);
         }
 

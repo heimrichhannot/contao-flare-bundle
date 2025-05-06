@@ -8,7 +8,7 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property int    $sorting
  * @property int    $tstamp
  * @property string $title
- * @property string $alias
+ * @property string $type
  * @property bool   $published
  * @property bool   $intrinsic
  * @property bool   $isMandatory

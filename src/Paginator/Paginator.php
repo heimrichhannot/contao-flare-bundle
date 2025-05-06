@@ -2,122 +2,182 @@
 
 namespace HeimrichHannot\FlareBundle\Paginator;
 
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-
 readonly class Paginator extends PaginatorConfig
 {
-    public const DEFAULT_WINDOW_PAGES = 5;
+    public const DEFAULT_WINDOW_PADDING = 2;
     public const DEFAULT_FRAME_PAGES = 1;
 
-    private string $routeName;
-    private array $routeParams;
-
+    /**
+     * @param \Closure(int): string $urlGenerator A closure that generates the URL for a given page number.
+     */
     public function __construct(
-        private int                   $currentPage,
-        private int                   $itemsPerPage,
-        private int                   $totalItems,
-        private int                   $lastPage,
-        private ?int                  $previousPage,
-        private ?int                  $nextPage,
-        private int                   $firstItemNumber,
-        private int                   $lastItemNumber,
-        private bool                  $hasNextPage,
-        private bool                  $hasPreviousPage,
-        private RequestStack          $requestStack,
-        private UrlGeneratorInterface $urlGenerator,
-        private ?string               $queryPrefix = null,
-        ?string                       $routeName = null,
-        ?array                        $routeParams = null,
+        private int      $currentPage,
+        private int      $itemsPerPage,
+        private int      $totalItems,
+        private int      $lastPage,
+        private ?int     $previousPage,
+        private ?int     $nextPage,
+        private int      $firstItemNumber,
+        private int      $lastItemNumber,
+        private bool     $hasNextPage,
+        private bool     $hasPreviousPage,
+        private \Closure $urlGenerator,
+        private ?string  $queryPrefix = null,
     ) {
         parent::__construct($itemsPerPage);
-
-        $this->routeName = $routeName ?? $this->getCurrentRouteName();
-        $this->routeParams = $routeParams ?? $this->getCurrentRouteParams();
     }
 
+    /**
+     * Returns true if the paginator has no items.
+     * @api
+     */
     public function isEmpty(): bool
     {
         return $this->totalItems === 0;
     }
 
+    /**
+     * Returns true if the paginator is configured to limit the number of items per page.
+     * @api
+     */
     public function isLimited(): bool
     {
         return $this->itemsPerPage > 0;
     }
 
+    /**
+     * Returns the page number of the current page.
+     * @api
+     */
     public function getCurrentPageNumber(): int
     {
         return $this->currentPage;
     }
 
+    /**
+     * Returns the number of items across all pages.
+     * @api
+     */
     public function getTotalItems(): int
     {
         return $this->totalItems;
     }
 
+    /**
+     * Returns the number of the last page.
+     * @api
+     */
     public function getLastPageNumber(): int
     {
         return $this->lastPage;
     }
 
+    /**
+     * Returns the page number of the previous page.
+     * @api
+     */
     public function getPreviousPageNumber(): ?int
     {
         return $this->previousPage;
     }
 
+    /**
+     * Returns the page number of the next page.
+     * @api
+     */
     public function getNextPageNumber(): ?int
     {
         return $this->nextPage;
     }
 
+    /**
+     * Returns the number of the first item on the current page.
+     * @api
+     */
     public function getFirstItemNumber(): int
     {
         return $this->firstItemNumber;
     }
 
+    /**
+     * Returns the number of the last item on the current page.
+     * @api
+     */
     public function getLastItemNumber(): int
     {
         return $this->lastItemNumber;
     }
 
+    /**
+     * Returns true if there is a next page.
+     * @api
+     */
     public function hasNextPage(): bool
     {
         return $this->hasNextPage;
     }
 
+    /**
+     * Returns true if there is a previous page.
+     * @api
+     */
     public function hasPreviousPage(): bool
     {
         return $this->hasPreviousPage;
     }
 
+    /**
+     * Get the current page item.
+     * @api
+     */
     public function getCurrent(): PageItem
     {
         return $this->getPageItem($this->currentPage);
     }
 
+    /**
+     * Get the previous page item.
+     * @api
+     */
     public function getPrevious(): ?PageItem
     {
         return $this->hasPreviousPage ? $this->getPageItem($this->previousPage) : null;
     }
 
+    /**
+     * Get the next page item.
+     * @api
+     */
     public function getNext(): ?PageItem
     {
         return $this->hasNextPage ? $this->getPageItem($this->nextPage) : null;
     }
 
+    /**
+     * Get the first page item.
+     * @api
+     */
     public function getFirst(): PageItem
     {
         return $this->getPageItem(1);
     }
 
+    /**
+     * Get the last page item.
+     * @api
+     */
     public function getLast(): PageItem
     {
         return $this->getPageItem($this->lastPage);
     }
 
-    public function getPageItem($page, ?bool $isFiller = null): PageItem
+    /**
+     * Returns a page item for the given page number.
+     *
+     * @param int       $page The page number to create the item for.
+     * @param bool|null $isFiller Whether the item is a filler (i.e. ellipsis or in place there of) or not.
+     */
+    public function getPageItem(int $page, ?bool $isFiller = null): PageItem
     {
         return new PageItem(
             number: $page,
@@ -133,7 +193,12 @@ readonly class Paginator extends PaginatorConfig
             isFiller: $isFiller ?? false,
         );
     }
-    
+
+    /**
+     * Returns an iterable of all available page items.
+     *
+     * @api
+     */
     public function getPages(): iterable
     {
         if ($this->isEmpty()) {
@@ -146,9 +211,15 @@ readonly class Paginator extends PaginatorConfig
         }
     }
 
-    public function getWindow(int $maxPages = self::DEFAULT_WINDOW_PAGES): iterable
+    /**
+     * Returns an iterable of page items within the current page number window.
+     *
+     * @param int $padding The number of pages to show on each side of the current page.
+     * @api
+     */
+    public function getWindow(int $padding = self::DEFAULT_WINDOW_PADDING): iterable
     {
-        $range = $this->getPageNumberWindow($maxPages);
+        $range = $this->getPageNumberWindow($padding);
 
         foreach ($range as $page)
         {
@@ -156,8 +227,15 @@ readonly class Paginator extends PaginatorConfig
         }
     }
 
-    public function getBoard(
-        int $maxWindowPages = self::DEFAULT_WINDOW_PAGES,
+    /**
+     * Returns an iterable of page items for the navigation bar with ellipses for gaps.
+     *
+     * @param int $windowPadding The number of pages to show on each side of the current page.
+     * @param int $maxFramePages The maximum number of pages to show in the left and right frames.
+     * @api
+     */
+    public function getNavigation(
+        int $windowPadding = self::DEFAULT_WINDOW_PADDING,
         int $maxFramePages = self::DEFAULT_FRAME_PAGES,
     ): iterable {
         if ($this->isEmpty() || !$this->isLimited()) {
@@ -170,7 +248,7 @@ readonly class Paginator extends PaginatorConfig
         }
 
         // Define all page sets
-        $windowPages = $this->getPageNumberWindow($maxWindowPages);
+        $windowPages = $this->getPageNumberWindow($windowPadding);
         $leftFramePages = \range(1, \min($maxFramePages, $this->lastPage));
         $rightFramePages = \range(\max(1, $this->lastPage - $maxFramePages + 1), $this->lastPage);
 
@@ -205,11 +283,18 @@ readonly class Paginator extends PaginatorConfig
     }
 
     /**
-     * Returns an array of page numbers for pagination navigation
+     * Returns an array of page numbers: The current page padded by the given amount of surrounding pages.
+     *
+     * @example ```php
+     * $paginator->getCurrentPageNumber() === 5;
+     * $paginator->getPageNumberWindow(2) === [3, 4, 5, 6, 7];
+     * ```
+     *
      * @return array<int>
      */
-    public function getPageNumberWindow(int $maxPages): array
+    public function getPageNumberWindow(int $padding): array
     {
+        $maxPages = \max($padding, 0) + 1; // Ensure at least one page is shown
         $start = \max(1, $this->currentPage - \floor($maxPages / 2));
         $end = \min($this->lastPage, $start + $maxPages - 1);
 
@@ -220,58 +305,43 @@ readonly class Paginator extends PaginatorConfig
     }
 
     /**
-     * Returns the offset for database queries
+     * Returns the offset for database queries.
      */
     public function getOffset(): int
     {
         return ($this->currentPage - 1) * $this->itemsPerPage;
     }
 
+    /**
+     * Returns the URL for the given page number.
+     *
+     * @param int $page
+     * @return string
+     * @api
+     */
     public function getPageUrl(int $page): string
     {
-        return $this->urlGenerator->generate(
-            $this->routeName,
-            \array_merge($this->routeParams, [$this->getPageParameter() => $page])
-        );
+        return ($this->urlGenerator)($page);
     }
 
-    private function getCurrentRouteName(): string
-    {
-        $request = $this->getCurrentRequest();
-        return $request->attributes->get('_route');
-    }
-
-    private function getCurrentRouteParams(): array
-    {
-        $request = $this->getCurrentRequest();
-        $params = $request->attributes->get('_route_params', []);
-
-        $pageParam = $this->getPageParameter();
-
-        // Merge query parameters, excluding the page parameter
-        $queryParams = \array_filter(
-            $request->query->all(),
-            static fn(string $key) => $key !== $pageParam,
-            \ARRAY_FILTER_USE_KEY
-        );
-
-        return \array_merge($params, $queryParams);
-    }
-
-    private function getCurrentRequest(): Request
-    {
-        $request = $this->requestStack->getCurrentRequest();
-        if (!$request->attributes->get('_route')) {
-            throw new \RuntimeException('No route found in current request');
-        }
-        return $request;
-    }
-
+    /**
+     * Get the page parameter name for the current context.
+     * @api
+     */
     public function getPageParameter(): string
     {
         return self::pageParam($this->queryPrefix);
     }
 
+    /**
+     * Helper function to generate a page parameter name with a given prefix.
+     *
+     * If the prefix is null, the default page parameter name 'page' is returned.
+     * Otherwise, the prefix is sanitized and appended with '_page'.
+     *
+     * @param string|null $prefix The prefix to use for the page parameter.
+     * @return string The generated page parameter name.
+     */
     public static function pageParam(string $prefix = null): string
     {
         $prefix = \preg_replace(['/[^a-z0-9_]/i', '/_?page$/i', '/_{2,}/'], ['_', '', '_'], $prefix);

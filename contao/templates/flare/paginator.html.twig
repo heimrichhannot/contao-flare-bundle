@@ -4,7 +4,7 @@
         <li class="flare_paginator__item flare_paginator__item--previous{% if not paginator.previousPage %} flare_paginator__item--disabled{% endif %}">
             <a href="{{ paginator.previous.url|default('#') }}" class="flare_paginator__link flare_paginator__link--page">&#12296;</a>
         </li>
-        {% for page in paginator.board %}
+        {% for page in paginator.navigation %}
             {# @var \HeimrichHannot\FlareBundle\Paginator\PageItem page #}
             <li class="flare_paginator__item{% if page.current %} flare_paginator__item--active{% endif %}{% if page.ellipsis %} flare_paginator__item--disabled{% endif %}{% if page.filler %} flare_paginator__item--filler{% endif %}">
                 {% if page.ellipsis %}

@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Paginator\Builder;
 
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
+use HeimrichHannot\FlareBundle\Paginator\Builder\PaginatorUrlProvider;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -20,8 +21,8 @@ class PaginatorBuilder
     private ?array $routeParams = null;
 
     public function __construct(
-        private readonly RequestStack $requestStack,
-        private readonly UrlGeneratorInterface $urlGenerator,
+        private readonly PaginatorUrlProvider $urlProvider,
+        private readonly RequestStack         $requestStack,
     ) {}
 
     public function fromConfig(PaginatorConfig $config): static
@@ -77,9 +78,25 @@ class PaginatorBuilder
 
         $defaultPage ??= 1;
 
-        $this->currentPage = \intval($request->query->get(Paginator::pageParam($this->queryPrefix), $defaultPage));
+        $this->currentPage = \intval($request->query->get(
+            Paginator::pageParam($this->queryPrefix),
+            $defaultPage,
+        ));
 
         return $this;
+    }
+
+    /**
+     * @return callable(int $page): string
+     */
+    public function makeUrlGenerator(): callable
+    {
+        return $this->urlProvider->createGeneratorFromRequest(
+            request: $this->requestStack->getCurrentRequest(),
+            routeName: $this->routeName,
+            routeParams: $this->routeParams,
+            queryPrefix: $this->queryPrefix,
+        );
     }
 
     public function build(): Paginator
@@ -108,11 +125,8 @@ class PaginatorBuilder
             lastItemNumber: $lastItemNumber,
             hasNextPage: $currentPage < $lastPage,
             hasPreviousPage: $currentPage > 1,
-            requestStack: $this->requestStack,
-            urlGenerator: $this->urlGenerator,
+            urlGenerator: $this->makeUrlGenerator(),
             queryPrefix: $this->queryPrefix,
-            routeName: $this->routeName,
-            routeParams: $this->routeParams,
         );
     }
 
@@ -129,8 +143,7 @@ class PaginatorBuilder
             lastItemNumber: 0,
             hasNextPage: false,
             hasPreviousPage: false,
-            requestStack: $this->requestStack,
-            urlGenerator: $this->urlGenerator,
+            urlGenerator: $this->makeUrlGenerator(),
             queryPrefix: $this->queryPrefix,
         );
     }

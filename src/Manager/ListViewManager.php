@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Manager;
 
+use Contao\CoreBundle\Routing\ContentUrlGenerator;
 use Contao\Model;
 use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
@@ -16,6 +17,7 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
  * Class ListViewManager
@@ -249,12 +251,11 @@ class ListViewManager
             return null;
         }
 
-        $page = PageModel::findByPk($pageId);
-        if (!$page) {
+        if (!$page = PageModel::findByPk($pageId)) {
             throw new FlareException(\sprintf('Details page not found [ID %s]', $pageId), source: __METHOD__);
         }
 
-        return \rtrim($page->getAbsoluteUrl(), '/') . '/' . $autoItem;
+        return $page->getAbsoluteUrl('/' . $autoItem);
     }
 
     /**

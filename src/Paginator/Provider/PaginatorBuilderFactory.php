@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Paginator\Builder;
+namespace HeimrichHannot\FlareBundle\Paginator\Provider;
 
 use Symfony\Component\HttpFoundation\RequestStack;
 

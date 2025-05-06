@@ -9,7 +9,7 @@ use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\Paginator\Builder\PaginatorBuilderFactory;
+use HeimrichHannot\FlareBundle\Paginator\Provider\PaginatorBuilderFactory;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Model\ListModel;

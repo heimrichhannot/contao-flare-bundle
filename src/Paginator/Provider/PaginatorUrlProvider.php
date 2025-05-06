@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\Paginator\Builder;
+namespace HeimrichHannot\FlareBundle\Paginator\Provider;
 
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use Symfony\Component\HttpFoundation\Request;

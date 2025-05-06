@@ -10,14 +10,11 @@ services:
         resource: ../src
         exclude:
             - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Event,Model}
+            - ../src/**/*Builder.php
             - ../src/Filter/{FilterContext,FilterContextCollection,FilterQueryBuilder}.php
-            - ../src/Form/ChoicesBuilder.php
             - ../src/List/ListTypeConfig.php
             - ../src/ListView/ListViewDto.php
-            - ../src/ListView/Builder/ListViewBuilder.php
-            - ../src/ListView/Builder/PaginationBuilder.php
             - ../src/Paginator/*.php
-            - ../src/Paginator/Builder/PaginatorBuilder.php
 
     HeimrichHannot\FlareBundle\Manager\TemplateManager:
         bind:

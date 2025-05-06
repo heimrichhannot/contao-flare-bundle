@@ -6,10 +6,8 @@ namespace HeimrichHannot\FlareBundle\Paginator\Builder;
 
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
-use HeimrichHannot\FlareBundle\Paginator\Builder\PaginatorUrlProvider;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class PaginatorBuilder
 {

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Manager;
 
-use Contao\CoreBundle\Routing\ContentUrlGenerator;
 use Contao\Model;
 use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
@@ -17,7 +16,6 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
  * Class ListViewManager

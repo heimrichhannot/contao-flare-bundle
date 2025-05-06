@@ -45,7 +45,7 @@ readonly class PaginatorUrlProvider
         if (\is_null($routeParams))
         {
             $params = $request->attributes->get('_route_params', []);
-            $pageParam = self::pageParam($queryPrefix);
+            $pageParam = Paginator::pageParam($queryPrefix);
 
             // Merge query parameters, excluding the page parameter
             $queryParams = \array_filter(
@@ -58,11 +58,5 @@ readonly class PaginatorUrlProvider
         }
 
         return $this->createGenerator($routeName, $routeParams, $queryPrefix);
-    }
-
-    public static function pageParam(string $prefix = null): string
-    {
-        $prefix = \preg_replace(['/[^a-z0-9_]/i', '/_?page$/i', '/_{2,}/'], ['_', '', '_'], $prefix);
-        return $prefix ? \rtrim($prefix, '_') . '_page' : 'page';
     }
 }

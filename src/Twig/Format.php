@@ -43,15 +43,14 @@ class Format extends AbstractExtension
             $value = $deserialized;
         }
 
-        if (\is_array($value))
-        {
-            $unit = $deserialized['unit'] ?? 'h2';
-            $value = $deserialized['value'] ?? '';
-
-            return "<$unit>$value</$unit>";
+        if (!\is_array($value)) {
+            return $value;
         }
 
-        return $value;
+        $unit = $value['tag_name'] ?? $value['unit'] ?? 'h2';
+        $value = $value['text'] ?? $value['value'] ?? '';
+
+        return "<$unit>$value</$unit>";
     }
 
     public function fmtHeadlineValue(?string $value): string

@@ -150,7 +150,7 @@ readonly class FilterFormManager
                 continue;
             }
 
-            if (!$filterModel->published || !$filterModel->alias || $filterModel->intrinsic)
+            if (!$filterModel->published || !$filterModel->type || $filterModel->intrinsic)
             {
                 continue;
             }

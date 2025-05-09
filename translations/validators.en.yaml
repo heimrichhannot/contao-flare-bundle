@@ -1,0 +1,4 @@
+flare:
+    form:
+        date_range:
+            to_greater_than_from: "The end date must be after the start date."

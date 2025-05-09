@@ -28,6 +28,7 @@ $lang['fieldStart'] = ['Startdatum-Feld', 'Bitte wählen Sie das Feld aus, das a
 $lang['fieldStop'] = ['Enddatum-Feld', 'Bitte wählen Sie das Feld aus, das als Enddatum verwendet werden soll.'];
 $lang['fieldPid'] = ['Eltern-ID-Feld', 'Bitte wählen Sie das Feld aus, das die ID der Elternentität enthält.'];
 $lang['fieldPtable'] = ['Elterntabelle-Feld', 'Bitte wählen Sie das Feld aus, das den Tabellennamen der Elternentität enthält.'];
+$lang['fieldGeneric'] = ['Feld', 'Bitte wählen Sie das Feld aus, welches der Filter verwendet.'];
 $lang['tablePtable'] = ['Elterntabelle', 'Bitte wählen Sie die Tabelle aus, die die Elternentität darstellt.'];
 $lang['whichPtable'] = ['Elterntabelle ermitteln', 'Wenn möglich, Elternentität automatisch ermitteln oder manuell festlegen.'];
 $lang['whichPtable_options'] = [

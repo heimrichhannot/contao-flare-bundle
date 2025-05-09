@@ -352,6 +352,15 @@ class FilterContainer implements FlareCallbackContainerInterface
     /**
      * @internal For internal use only. Do not call this method directly.
      */
+    #[AsCallback(self::TABLE_NAME, 'fields.fieldGeneric.options')]
+    public function getFieldOptions_fieldGeneric(DataContainer $dc): array
+    {
+        return DcaHelper::getFieldOptions($dc);
+    }
+
+    /**
+     * @internal For internal use only. Do not call this method directly.
+     */
     #[AsCallback(self::TABLE_NAME, 'fields.tablePtable.options')]
     public function getFieldOptions_tablePtable(DataContainer $dc): array
     {

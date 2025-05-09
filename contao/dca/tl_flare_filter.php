@@ -365,6 +365,19 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
+    'fieldGeneric' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50 clr',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
     'tablePtable' => [
         'inputType' => 'select',
         'exclude' => true,

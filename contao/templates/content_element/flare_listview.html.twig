@@ -30,9 +30,9 @@
 
         {% endblock %}
 
-        <hr>
-
         {% block list %}
+
+            <hr>
 
             <div style="color: #800; background: #fdd; padding: 1rem; margin-bottom: 1rem;">
                 <strong>{{ 'list.default_template.warning'|trans([], 'flare') }}</strong>
@@ -57,9 +57,9 @@
                 </details>
             {% endfor %}
 
-        {% endblock %}
+            <hr>
 
-        <hr>
+        {% endblock %}
 
         {% block pagination %}
             {# @var \HeimrichHannot\FlareBundle\Paginator\Paginator paginator #}

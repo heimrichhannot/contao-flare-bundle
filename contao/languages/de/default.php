@@ -3,6 +3,7 @@
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ListViewController;
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ReaderController;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
+use HeimrichHannot\FlareBundle\Filter\Element;
 
 $lang = &$GLOBALS['TL_LANG'];
 $flare = &$lang['FLARE'];
@@ -12,10 +13,11 @@ $lang['CTE'][ListViewController::TYPE] = ['FLARE Listenansicht', 'Zeigt eine FLA
 $lang['CTE'][ReaderController::TYPE] = ['FLARE Detailleser', 'Zeigt den Leser zu einer FLARE-Liste an.'];
 
 $flare['filter'] = [
-    'flare_archive' => ['Archiv', 'Filtern nach Archiv.'],
-    'flare_published' => ['Veröffentlicht', 'Nur veröffentlichte Elemente anzeigen.'],
-    'flare_relation_belongsTo' => ['Relation: Gehört zu', 'Filtern nach zugehörigen Eltern-Entitäten.'],
-    'flare_equation_simple' => ['Einfache Gleichung', 'Filtern, ob ein Feld einer einfachen Gleichung entspricht.'],
+    Element\ArchiveElement::TYPE => ['Archiv', 'Filtern nach Archiv.'],
+    Element\PublishedElement::TYPE => ['Veröffentlicht', 'Nur veröffentlichte Elemente anzeigen.'],
+    Element\BelongsToRelationElement::TYPE => ['Relation: Gehört zu', 'Filtern nach zugehörigen Eltern-Entitäten.'],
+    Element\DateRangeElement::TYPE => ['Datumsbereich', 'Filtern nach einem Datumsbereich.'],
+    Element\SimpleEquation::TYPE => ['Einfache Gleichung', 'Filtern, ob ein Feld einer einfachen Gleichung entspricht.'],
 ];
 
 $flare['list'] = [

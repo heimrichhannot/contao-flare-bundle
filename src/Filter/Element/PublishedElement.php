@@ -2,6 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
+use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\Config\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -15,13 +16,17 @@ class PublishedElement extends AbstractFilterElement
 {
     const TYPE = 'flare_published';
 
+    public function __construct(
+        private readonly Connection $connection
+    ) {}
+
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
         $filterModel = $context->getFilterModel();
 
         if ($filterModel->usePublished ?? true)
         {
-            $publishedField = ($filterModel->fieldPublished ?: 'published');
+            $publishedField = $this->connection->quoteIdentifier($filterModel->fieldPublished ?: 'published');
             $invertPublished = $filterModel->invertPublished ?? false;
             $operator = $invertPublished ? '!=' : '=';
             $qb->where("$publishedField $operator 1");  // "published = 1" or "published != 1"
@@ -29,16 +34,16 @@ class PublishedElement extends AbstractFilterElement
 
         if ($filterModel->useStart ?? true)
         {
-            $startField = ($filterModel->fieldStart ?: 'start');
+            $startField = $this->connection->quoteIdentifier($filterModel->fieldStart ?: 'start');
             $qb->where("$startField = \"\" OR $startField = 0 OR $startField <= :start")
-                ->bind('start', time());
+                ->bind('start', \time());
         }
 
         if ($filterModel->useStop ?? true)
         {
-            $stopField = ($filterModel->fieldStop ?: 'stop');
+            $stopField = $this->connection->quoteIdentifier($filterModel->fieldStop ?: 'stop');
             $qb->where("$stopField = \"\" OR $stopField = 0 OR $stopField >= :stop")
-                ->bind('stop', time());
+                ->bind('stop', \time());
         }
     }
 

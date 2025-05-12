@@ -20,7 +20,9 @@ class DateRangeElement implements FormTypeOptionsContract
 
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
-        // TODO: Implement __invoke() method.
+        $submittedData = $context->getSubmittedData();
+        $from = $submittedData['from'] ?? null;
+        $to = $submittedData['to'] ?? null;
     }
 
     public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array

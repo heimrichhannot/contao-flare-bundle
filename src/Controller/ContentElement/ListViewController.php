@@ -9,6 +9,7 @@ use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\StringUtil;
 use Contao\Template;
+use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -28,6 +29,7 @@ class ListViewController extends AbstractContentElementController
     public const TYPE = 'flare_listview';
 
     public function __construct(
+        private readonly SymfonyResponseTagger  $responseTagger,
         private readonly ListViewBuilderFactory $listViewBuilderFactory,
         private readonly KernelInterface        $kernel,
         private readonly LoggerInterface        $logger,
@@ -102,19 +104,9 @@ class ListViewController extends AbstractContentElementController
             return $this->getErrorResponse($e);
         }
 
-        $data = ['flare' => $listViewDto];
+        $this->responseTagger->addTags(['contao.db.' . $listModel->dc]);
 
-        // if (\is_array($model->headline))
-        // {
-        //     $data['hl'] = 'h2';
-        //
-        //     if (!empty($model->headline['value'])) {
-        //         $data['headline'] = $model->headline['value'];
-        //         $data['hl'] = !empty($model->headline['unit']) ? $model->headline['unit'] : 'h2';
-        //     } else {
-        //         $data['headline'] = null;
-        //     }
-        // }
+        $data = ['flare' => $listViewDto];
 
         $template->setData($data + $template->getData());
 

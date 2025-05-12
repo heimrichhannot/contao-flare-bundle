@@ -36,7 +36,7 @@ class DcaHelper
             return null;
         }
 
-        if (!($record = $modelClass::findByPk($id))) {
+        if (!$record = $modelClass::findByPk($id)) {
             return null;
         }
 

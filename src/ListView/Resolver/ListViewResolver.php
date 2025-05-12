@@ -22,7 +22,11 @@ readonly class ListViewResolver implements ListViewResolverInterface
      */
     public function getEntries(ListViewDto $dto): array
     {
-        return $this->manager->getEntries($dto->getListModel(), $dto->getFormName(), $dto->getPaginatorConfig());
+        return $this->manager->getEntries(
+            listModel: $dto->getListModel(),
+            formName: $dto->getFormName(),
+            paginatorConfig: $dto->getPaginatorConfig(),
+        );
     }
 
     /**
@@ -30,7 +34,12 @@ readonly class ListViewResolver implements ListViewResolverInterface
      */
     public function getModel(ListViewDto $dto, int $id): Model
     {
-        return $this->manager->getModel($dto->getListModel(), $dto->getFormName(), $id);
+        return $this->manager->getModel(
+            listModel: $dto->getListModel(),
+            formName: $dto->getFormName(),
+            paginatorConfig: $dto->getPaginatorConfig(),
+            id: $id,
+        );
     }
 
     /**
@@ -38,12 +47,15 @@ readonly class ListViewResolver implements ListViewResolverInterface
      */
     public function getForm(ListViewDto $dto): FormInterface
     {
-        return $this->manager->getForm($dto->getListModel(), $dto->getFormName());
+        return $this->manager->getForm(
+            listModel: $dto->getListModel(),
+            formName: $dto->getFormName(),
+        );
     }
 
     public function getFormName(ListViewDto $dto): string
     {
-        return $this->manager->makeFormName($dto->getListModel());
+        return $this->manager->makeFormName(listModel: $dto->getListModel());
     }
 
     /**
@@ -51,7 +63,11 @@ readonly class ListViewResolver implements ListViewResolverInterface
      */
     public function getPaginator(ListViewDto $dto): Paginator
     {
-        return $this->manager->getPaginator($dto->getListModel(), $dto->getFormName(), $dto->getPaginatorConfig());
+        return $this->manager->getPaginator(
+            listModel: $dto->getListModel(),
+            formName: $dto->getFormName(),
+            paginatorConfig: $dto->getPaginatorConfig(),
+        );
     }
 
     public function getPaginatorConfig(ListViewDto $dto): PaginatorConfig
@@ -64,6 +80,11 @@ readonly class ListViewResolver implements ListViewResolverInterface
      */
     public function getDetailsPageUrl(ListViewDto $dto, int $id): ?string
     {
-        return $this->manager->getDetailsPageUrl($dto->getListModel(), $dto->getFormName(), $id);
+        return $this->manager->getDetailsPageUrl(
+            listModel: $dto->getListModel(),
+            formName: $dto->getFormName(),
+            paginatorConfig: $dto->getPaginatorConfig(),
+            id: $id,
+        );
     }
 }

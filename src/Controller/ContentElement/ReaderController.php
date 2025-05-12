@@ -3,6 +3,7 @@
 namespace HeimrichHannot\FlareBundle\Controller\ContentElement;
 
 use Contao\ContentModel;
+use Contao\CoreBundle\Cache\EntityCacheTags;
 use Contao\CoreBundle\Controller\ContentElement\AbstractContentElementController;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsContentElement;
 use Contao\CoreBundle\Exception\InternalServerErrorHttpException;
@@ -27,6 +28,7 @@ class ReaderController extends AbstractContentElementController
     public const TYPE = 'flare_reader';
 
     public function __construct(
+        private readonly EntityCacheTags    $entityCacheTags,
         private readonly LoggerInterface    $logger,
         private readonly ReaderManager      $readerManager,
         private readonly ScopeMatcher       $scopeMatcher,
@@ -81,6 +83,8 @@ class ReaderController extends AbstractContentElementController
         if (!isset($model)) {
             throw $this->createNotFoundException('No model found.');
         }
+
+        $this->entityCacheTags->tagWith($model);
 
         $data = ['model' => $model];
 

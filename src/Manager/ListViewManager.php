@@ -121,7 +121,7 @@ class ListViewManager
             return $this->paginatorBuilderFactory->create()->buildEmpty();
         }
 
-        $cacheKey = $this->makeCacheKey($listModel, $formName);
+        $cacheKey = $this->makeCacheKey($listModel, $formName, (string) $paginatorConfig);
         if (isset($this->paginationCache[$cacheKey])) {
             return $this->paginationCache[$cacheKey];
         }
@@ -137,7 +137,7 @@ class ListViewManager
             throw new FlareException($e->getMessage(), $e->getCode(), $e);
         }
 
-        return $this->paginatorBuilderFactory
+        return $this->paginationCache[$cacheKey] = $this->paginatorBuilderFactory
             ->create()
             ->fromConfig($paginatorConfig)
             ->queryPrefix($formName)
@@ -149,15 +149,15 @@ class ListViewManager
     /**
      * Get the entries for a given list model, form name, and optional paginator configuration.
      *
-     * @param ListModel            $listModel       The list model.
-     * @param string               $formName        The form name.
-     * @param PaginatorConfig|null $paginatorConfig The paginator configuration (optional).
+     * @param ListModel       $listModel       The list model.
+     * @param string          $formName        The form name.
+     * @param PaginatorConfig $paginatorConfig The paginator configuration (optional).
      *
      * @return array The entries as an associative array of rows from the database, indexed by their primary key.
      *
      * @throws FlareException If an error occurs while fetching the entries.
      */
-    public function getEntries(ListModel $listModel, string $formName, ?PaginatorConfig $paginatorConfig = null): array
+    public function getEntries(ListModel $listModel, string $formName, PaginatorConfig $paginatorConfig): array
     {
         $form = $this->getForm($listModel, $formName);
 
@@ -174,9 +174,7 @@ class ListViewManager
 
         $filters = $this->getFilterContextCollection($listModel, $formName);
 
-        if ($paginatorConfig) {
-            $paginator = $this->getPaginator($listModel, $formName, $paginatorConfig);
-        }
+        $paginator = $this->getPaginator($listModel, $formName, $paginatorConfig);
 
         try
         {
@@ -207,7 +205,7 @@ class ListViewManager
      *
      * @throws FlareException If the model class does not exist or the entry ID is invalid.
      */
-    public function getModel(ListModel $listModel, string $formName, int $id): Model
+    public function getModel(ListModel $listModel, string $formName, PaginatorConfig $paginatorConfig, int $id): Model
     {
         if ($model = Model\Registry::getInstance()->fetch($listModel->dc, $id)) {
             return $model;
@@ -218,7 +216,7 @@ class ListViewManager
             throw new FlareException(\sprintf('Model class does not exist: "%s"', $modelClass), source: __METHOD__);
         }
 
-        if (!$row = $this->getEntries($listModel, $formName)[$id] ?? null) {
+        if (!$row = $this->getEntries($listModel, $formName, $paginatorConfig)[$id] ?? null) {
             throw new FlareException('Invalid entry id.', source: __METHOD__);
         }
 
@@ -228,22 +226,27 @@ class ListViewManager
     /**
      * Get the URL of the details page of a particular entry for a given list model, form name, and entry ID.
      *
-     * @param ListModel $listModel The list model.
-     * @param string    $formName  The form name.
-     * @param int       $id        The entry ID.
+     * @param ListModel       $listModel The list model.
+     * @param string          $formName The form name.
+     * @param PaginatorConfig $paginatorConfig The paginator configuration.
+     * @param int             $id The entry ID.
      *
      * @return string|null The URL of the details page, or null if not found.
      *
      * @throws FlareException If the details page is not found.
      */
-    public function getDetailsPageUrl(ListModel $listModel, string $formName, int $id): ?string
-    {
+    public function getDetailsPageUrl(
+        ListModel       $listModel,
+        string          $formName,
+        PaginatorConfig $paginatorConfig,
+        int             $id,
+    ): ?string {
         if (!$pageId = \intval($listModel->jumpToReader ?: 0)) {
             return null;
         }
 
         $autoItemField = $listModel->getAutoItemField();
-        $model = $this->getModel($listModel, $formName, $id);
+        $model = $this->getModel($listModel, $formName, $paginatorConfig, $id);
 
         if (!$autoItem = CallbackHelper::tryGetProperty($model, $autoItemField)) {
             return null;
@@ -267,6 +270,7 @@ class ListViewManager
      */
     public function makeCacheKey(ListModel $listModel, string $formName, ...$args): string
     {
+        $args = \array_filter($args);
         $parts = [$listModel->id, $formName, ...$args];
         return \implode('@', $parts);
     }

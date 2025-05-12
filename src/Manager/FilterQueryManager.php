@@ -31,12 +31,16 @@ readonly class FilterQueryManager
     ): array {
         $returnIds ??= false;
 
-        [$sql, $params, $types] = $this->buildFilteredQuery(
+        [$sql, $params, $types, $allowed] = $this->buildFilteredQuery(
             filters: $filters,
             limit: $paginator?->getItemsPerPage() ?: null,
             offset: $paginator?->getOffset() ?: null,
             onlyId: $returnIds
         );
+
+        if (!$allowed) {
+            return [];
+        }
 
         $result = $this->connection->executeQuery($sql, $params, $types);
 
@@ -58,7 +62,11 @@ readonly class FilterQueryManager
      */
     public function fetchCount(FilterContextCollection $filters): int
     {
-        [$sql, $params, $types] = $this->buildFilteredQuery($filters, isCounting: true);
+        [$sql, $params, $types, $allowed] = $this->buildFilteredQuery($filters, isCounting: true);
+
+        if (!$allowed) {
+            return 0;
+        }
 
         $result = $this->connection->executeQuery($sql, $params, $types);
 
@@ -91,7 +99,7 @@ readonly class FilterQueryManager
             throw new FilterException(\sprintf('[FLARE] Invalid table name: %s', $table), method: __METHOD__);
         }
 
-        $blockResult = ["SELECT 1 FROM `$table` as $as LIMIT 0", [], []];
+        $blockResult = ["SELECT 1 FROM `$table` as $as LIMIT 0", [], [], false];
 
         foreach ($filters as $i => $filter)
         {
@@ -157,6 +165,6 @@ readonly class FilterQueryManager
             if (isset($order)) $finalSQL .= " ORDER BY $order";
         }
 
-        return [$finalSQL, $combinedParameters, $combinedTypes];
+        return [$finalSQL, $combinedParameters, $combinedTypes, true];
     }
 }

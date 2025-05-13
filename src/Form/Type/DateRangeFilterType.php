@@ -66,7 +66,24 @@ class DateRangeFilterType extends AbstractType
      */
     public function validateRange(array $data, ExecutionContextInterface $context): void
     {
-        if (!empty($data['from']) && !empty($data['to']) && $data['from'] > $data['to'])
+        $from = $data['from'] ?? null;
+        $to = $data['to'] ?? null;
+
+        if (!empty($from) && !$from instanceof \DateTimeInterface)
+        {
+            $context->buildViolation('flare.form.date_range.from_invalid')
+                ->atPath('from')
+                ->addViolation();
+        }
+
+        if (!empty($to) && !$to instanceof \DateTimeInterface)
+        {
+            $context->buildViolation('flare.form.date_range.to_invalid')
+                ->atPath('to')
+                ->addViolation();
+        }
+
+        if (!empty($from) && !empty($to) && $from > $to)
         {
             $context
                 ->buildViolation('flare.form.date_range.to_greater_than_from')

@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Manager;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Builder\FilterContextBuilderFactory;
-use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquation;
+use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\SqlEquationOperator;
 
@@ -17,7 +17,7 @@ readonly class ReaderManager
         private FilterContextBuilderFactory $contextBuilderFactory,
         private FilterContextManager        $contextManager,
         private FilterQueryManager          $queryManager,
-        private SimpleEquation              $simpleEquation,
+        private SimpleEquationElement       $simpleEquation,
     ) {}
 
     /**

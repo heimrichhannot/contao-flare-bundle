@@ -13,8 +13,8 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 
-#[AsFilterElement(alias: SimpleEquation::TYPE)]
-class SimpleEquation implements PaletteContract
+#[AsFilterElement(alias: SimpleEquationElement::TYPE)]
+class SimpleEquationElement implements PaletteContract
 {
     public const TYPE = 'flare_equation_simple';
 

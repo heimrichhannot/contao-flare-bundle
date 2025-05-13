@@ -29,6 +29,7 @@ $lang['fieldStop'] = ['Enddatum-Feld', 'Bitte wählen Sie das Feld aus, das als 
 $lang['fieldPid'] = ['Eltern-ID-Feld', 'Bitte wählen Sie das Feld aus, das die ID der Elternentität enthält.'];
 $lang['fieldPtable'] = ['Elterntabelle-Feld', 'Bitte wählen Sie das Feld aus, das den Tabellennamen der Elternentität enthält.'];
 $lang['fieldGeneric'] = ['Feld', 'Bitte wählen Sie das Feld aus, welches der Filter verwendet.'];
+$lang['columnsGeneric'] = ['Spalten', 'Bitte wählen Sie die Spalten aus, die der Filter verwenden soll.'];
 $lang['tablePtable'] = ['Elterntabelle', 'Bitte wählen Sie die Tabelle aus, die die Elternentität darstellt.'];
 $lang['whichPtable'] = ['Elterntabelle ermitteln', 'Wenn möglich, Elternentität automatisch ermitteln oder manuell festlegen.'];
 $lang['whichPtable_options'] = [
@@ -48,7 +49,7 @@ $lang['formatLabelCustom'] = ['Eigene Formatierung', 'Bitte geben Sie eine Forma
 ###< archive_legend ###
 
 ###> form_legend ###
-$lang['form_legend'] = 'Formulareinstellungen';
+$lang['form_legend'] = 'Formular-Einstellungen';
 $lang['isMandatory'] = ['Pflichtfeld', 'Das Feld muss ausgefüllt werden.'];
 $lang['isMultiple'] = ['Mehrfachauswahl', 'Erlaube die Auswahl mehrerer Elemente.'];
 $lang['isExpanded'] = ['Auswahl expandieren', 'Zeige alle Elemente auf einmal in einer Liste mit Checkboxen.'];
@@ -57,6 +58,7 @@ $lang['formatEmptyOption'] = ['Leere Option anzeigen als', 'Bitte wählen Sie ei
 $lang['formatEmptyOption_custom'] = 'Eigene Formatierung';
 $lang['formatEmptyOptionCustom'] = ['Formatierung der leeren Option', 'Bitte geben Sie einen Text oder ein Labelformat für die leere Option ein.'];
 $lang['preselect'] = ['Vorauswahl', 'Geben Sie an, welche Werte vorausgewählt sein sollen.'];
+$lang['placeholder'] = ['Platzhalter', 'Bitte geben Sie einen Platzhaltertext ein.'];
 ###< form_legend ###
 
 ###> flare_simple_equation_legend ###

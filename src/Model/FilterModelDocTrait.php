@@ -24,6 +24,7 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string $formatEmptyOption
  * @property string $formatEmptyOptionCustom
  * @property string $whichPtable
+ * @property string $columnsGeneric
  * @property string $fieldGeneric
  * @property string $fieldPublished
  * @property string $fieldStart
@@ -37,6 +38,7 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string $equationOperator
  * @property string $equationLeft
  * @property string $equationRight
+ * @property string $placeholder
  */
 trait FilterModelDocTrait
 {

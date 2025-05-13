@@ -378,6 +378,20 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
+    'columnsGeneric' => [ // "columns" instead of "fields" to prevent confusion and typos
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'default' => null,
+        'eval' => [
+            'chosen' => true,
+            'multiple' => true,
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'tl_class' => 'clr w100',
+        ],
+        'sql' => ['type' => 'blob', 'notnull' => false],
+    ],
     'tablePtable' => [
         'inputType' => 'select',
         'exclude' => true,
@@ -437,6 +451,13 @@ $dca['fields'] = [
         'sql' => "varchar(255) NOT NULL default ''",
     ],
     'equationRight' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'text',
+        'eval' => ['mandatory' => false, 'maxlength' => 255],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'placeholder' => [
         'exclude' => true,
         'search' => false,
         'inputType' => 'text',

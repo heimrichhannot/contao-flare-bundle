@@ -4,6 +4,7 @@ use HeimrichHannot\FlareBundle\Controller\ContentElement\ListViewController;
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ReaderController;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Filter\Element;
+use HeimrichHannot\FlareBundle\List\Type;
 use HeimrichHannot\FlareBundle\SortDescriptor\Order;
 
 $lang = &$GLOBALS['TL_LANG'];
@@ -18,13 +19,14 @@ $flare['filter'] = [
     Element\PublishedElement::TYPE => ['Veröffentlicht', 'Nur veröffentlichte Elemente anzeigen.'],
     Element\BelongsToRelationElement::TYPE => ['Relation: Gehört zu', 'Filtern nach zugehörigen Eltern-Entitäten.'],
     Element\DateRangeElement::TYPE => ['Datumsbereich', 'Filtern nach einem Datumsbereich.'],
-    Element\SimpleEquation::TYPE => ['Einfache Gleichung', 'Filtern, ob ein Feld einer einfachen Gleichung entspricht.'],
+    Element\SimpleEquationElement::TYPE => ['Einfache Gleichung', 'Filtern, ob ein Feld einer einfachen Gleichung entspricht.'],
+    Element\SearchKeywordsElement::TYPE => ['Stichwortsuche', 'Filtern nach Freitexteingabe.'],
 ];
 
 $flare['list'] = [
-    'flare_generic_dc' => ['Data-Container', 'Listet Elemente eines Data-Containers auf.'],
-    'flare_news' => ['Nachrichten', 'Listet Nachrichten auf.'],
-    'flare_events' => ['Events', 'Listet Events auf.'],
+    Type\GenericDataContainerList::TYPE => ['Data-Container', 'Listet Elemente eines Data-Containers auf.'],
+    Type\NewsListType::TYPE => ['Nachrichten', 'Listet Nachrichten auf.'],
+    Type\EventsList::TYPE => ['Events', 'Listet Events auf.'],
 ];
 
 $flare['sort_order'] = [

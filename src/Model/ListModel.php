@@ -16,6 +16,7 @@ use HeimrichHannot\FlareBundle\Util\DcaHelper;
  * @property string $dc
  * @property string $fieldAutoItem
  * @property string $jumpToReader
+ * @property array  $sortSettings
  */
 class ListModel extends Model
 {

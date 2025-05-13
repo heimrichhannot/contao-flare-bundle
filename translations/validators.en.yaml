@@ -2,3 +2,5 @@ flare:
     form:
         date_range:
             to_greater_than_from: "The end date must be after the start date."
+            to_invalid: "The end date is invalid."
+            from_invalid: "The start date is invalid."

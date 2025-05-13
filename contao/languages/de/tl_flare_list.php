@@ -21,6 +21,13 @@ $lang['dc'] = ['Data-Container', 'Bitte wählen Sie den Data-Container, auf dess
 $lang['fieldAutoItem'] = ['Auto-Item-Feld', 'Bitte wählen Sie das Feld aus, das als Auto-Item verwendet werden soll.'];
 ###< data_container_legend ###
 
+###> flare_defaults_legend ###
+$lang['flare_defaults_legend'] = 'Standardwerte';
+$lang['sortSettings'] = ['Standard-Sortierung', 'Hier können Sie die standardmäßige Sortierung der Liste anpassen.'];
+$lang['sortSettings__column'] = ['Spalte', 'Bitte wählen Sie die Spalte, nach der die Liste standardmäßig sortiert werden soll.'];
+$lang['sortSettings__direction'] = ['Sortierreihenfolge', 'Bitte wählen Sie die Sortierreihenfolge.'];
+###< flare_defaults_legend ###
+
 ###> flare_reader_legend ###
 $lang['flare_reader_legend'] = 'Leser-Einstellungen';
 $lang['jumpToReader'] = ['Detailleserseite', 'Bitte wählen Sie die Seite aus, zu der Besucher weitergeleitet werden, wenn sie auf einen Listeneintrag klicken.'];

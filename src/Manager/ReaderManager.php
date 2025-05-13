@@ -55,7 +55,7 @@ readonly class ReaderManager
 
         try
         {
-            $ids = $this->queryManager->fetchEntries($collection, returnIds: true);
+            $ids = $this->queryManager->fetchEntries(filters: $collection, returnIds: true);
         }
         catch (\Exception $e)
         {

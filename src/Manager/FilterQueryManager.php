@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Manager;
 
 use Doctrine\DBAL\Connection;
+use HeimrichHannot\FlareBundle\Dto\FilteredQueryDto;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokedEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
+use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -26,23 +28,26 @@ readonly class FilterQueryManager
      */
     public function fetchEntries(
         FilterContextCollection $filters,
+        ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
-        ?bool                   $returnIds = null
+        ?bool                   $returnIds = null,
     ): array {
         $returnIds ??= false;
 
-        [$sql, $params, $types, $allowed] = $this->buildFilteredQuery(
+        $dto = $this->buildFilteredQuery(
             filters: $filters,
             limit: $paginator?->getItemsPerPage() ?: null,
             offset: $paginator?->getOffset() ?: null,
+            order: $sortDescriptor?->toSql(),
             onlyId: $returnIds
         );
 
-        if (!$allowed) {
+        if (!$dto->isAllowed())
+        {
             return [];
         }
 
-        $result = $this->connection->executeQuery($sql, $params, $types);
+        $result = $this->connection->executeQuery($dto->getQuery(), $dto->getParams(), $dto->getTypes());
 
         if ($returnIds) {
             $entries = $result->fetchFirstColumn();
@@ -62,13 +67,13 @@ readonly class FilterQueryManager
      */
     public function fetchCount(FilterContextCollection $filters): int
     {
-        [$sql, $params, $types, $allowed] = $this->buildFilteredQuery($filters, isCounting: true);
+        $dto = $this->buildFilteredQuery($filters, isCounting: true);
 
-        if (!$allowed) {
+        if (!$dto->isAllowed()) {
             return 0;
         }
 
-        $result = $this->connection->executeQuery($sql, $params, $types);
+        $result = $this->connection->executeQuery($dto->getQuery(), $dto->getParams(), $dto->getTypes());
 
         $count = $result->fetchOne() ?: 0;
 
@@ -87,19 +92,19 @@ readonly class FilterQueryManager
         ?string                 $order = null,
         bool                    $isCounting = false,
         bool                    $onlyId = false,
-    ): array {
+    ): FilteredQueryDto {
         $combinedConditions = [];
         $combinedParameters = [];
         $combinedTypes = [];
 
-        $table = $filters->getTable();
-        $as = 'main';
-
-        if (!Str::isValidSqlName($table)) {
-            throw new FilterException(\sprintf('[FLARE] Invalid table name: %s', $table), method: __METHOD__);
+        if (!Str::isValidSqlName($filters->getTable())) {
+            throw new FilterException(
+                \sprintf('[FLARE] Invalid table name: %s', $filters->getTable()), method: __METHOD__
+            );
         }
 
-        $blockResult = ["SELECT 1 FROM `$table` as $as LIMIT 0", [], [], false];
+        $table = $this->connection->quoteIdentifier($filters->getTable());
+        $as = $this->connection->quoteIdentifier('main');
 
         foreach ($filters as $i => $filter)
         {
@@ -135,7 +140,7 @@ readonly class FilterQueryManager
 
             if ($filterQueryBuilder->isBlocking())
             {
-                return $blockResult;
+                return FilteredQueryDto::block();
             }
 
             [$sql, $params, $types] = $filterQueryBuilder->buildQuery((string) $i);
@@ -155,16 +160,16 @@ readonly class FilterQueryManager
             $onlyId => "SELECT $as.id AS id",
             default => "SELECT *",
         };
-        $finalSQL .= " FROM `$table` AS $as WHERE ";
+        $finalSQL .= " FROM $table AS $as WHERE ";
         $finalSQL .= empty($combinedConditions) ? '1' : $this->connection->createExpressionBuilder()->and(...$combinedConditions);
 
         if (!$isCounting)
         {
+            if (isset($order)) $finalSQL .= " ORDER BY $order";
             if (isset($limit)) $finalSQL .= " LIMIT $limit";
             if (isset($offset)) $finalSQL .= " OFFSET $offset";
-            if (isset($order)) $finalSQL .= " ORDER BY $order";
         }
 
-        return [$finalSQL, $combinedParameters, $combinedTypes, true];
+        return new FilteredQueryDto($finalSQL, $combinedParameters, $combinedTypes, true);
     }
 }

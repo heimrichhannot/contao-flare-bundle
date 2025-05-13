@@ -2,3 +2,5 @@ flare:
     form:
         date_range:
             to_greater_than_from: "Das Enddatum muss nach dem Startdatum liegen."
+            to_invalid: "Das Enddatum ist ungültig."
+            from_invalid: "Das Startdatum ist ungültig."

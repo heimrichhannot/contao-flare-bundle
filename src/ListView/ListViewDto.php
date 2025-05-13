@@ -9,6 +9,7 @@ use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolverInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
+use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Symfony\Component\Form\FormInterface;
 
 class ListViewDto
@@ -23,6 +24,7 @@ class ListViewDto
         private readonly ListModel                 $listModel,
         private readonly ListViewResolverInterface $resolver,
         private ?PaginatorConfig                   $paginatorConfig = null,
+        private ?SortDescriptor                    $sortDescriptor = null,
         private ?string                            $formName = null,
     ) {}
 
@@ -80,6 +82,15 @@ class ListViewDto
         }
 
         return $this->paginatorConfig;
+    }
+
+    public function getSortDescriptor(): ?SortDescriptor
+    {
+        if (!isset($this->sortDescriptor)) {
+            $this->sortDescriptor = $this->resolver->getSortDescriptor($this);
+        }
+
+        return $this->sortDescriptor;
     }
 
     public function getModel(int|string $id): Model

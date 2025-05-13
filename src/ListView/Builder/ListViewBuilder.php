@@ -7,12 +7,14 @@ use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\ListView\ListViewDto;
 use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolverInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 
 class ListViewBuilder
 {
     private ?string $formName = null;
     private ListModel $listModel;
     private ?PaginatorConfig $paginatorConfig = null;
+    private ?SortDescriptor $sortDescriptor = null;
 
     public function __construct(
         private readonly ListViewResolverInterface $resolver,
@@ -37,6 +39,15 @@ class ListViewBuilder
     }
 
     /**
+     * @param SortDescriptor|null $sortDescriptor Use null to use the respective list model's default sort descriptor.
+     */
+    public function setSortDescriptor(?SortDescriptor $sortDescriptor): static
+    {
+        $this->sortDescriptor = $sortDescriptor;
+        return $this;
+    }
+
+    /**
      * @throws FlareException
      */
     public function build(): ListViewDto
@@ -49,6 +60,7 @@ class ListViewBuilder
             listModel: $this->listModel,
             resolver: $this->resolver,
             paginatorConfig: $this->paginatorConfig,
+            sortDescriptor: $this->sortDescriptor,
             formName: $this->formName,
         );
     }

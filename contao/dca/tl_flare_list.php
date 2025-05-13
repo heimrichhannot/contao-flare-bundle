@@ -2,11 +2,13 @@
 
 use Contao\DataContainer;
 use Contao\DC_Table;
+use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\SortDescriptor\Order;
 use HeimrichHannot\FlareBundle\Util\Str;
 
-$dca = &$GLOBALS['TL_DCA'][ListModel::getTable()];
+$dca = &$GLOBALS['TL_DCA'][$table = ListModel::getTable()];
 
 $dca['config'] = [
     'ctable' => [FilterModel::getTable()],
@@ -140,12 +142,48 @@ $dca['fields'] = [
         'sql' => "int(10) unsigned NOT NULL default 0",
         'relation' => ['type' => 'hasOne', 'load' => 'lazy'],
     ],
+    'sortSettings' => [
+        'inputType' => 'group',
+        'palette' => ['column', 'direction'],
+        'fields' => [
+            'column' => [
+                'label' => &$GLOBALS['TL_LANG'][$table]['sortSettings__column'],
+                'inputType' => 'select',
+                'exclude' => true,
+                'filter' => false,
+                'options_callback' => [ListContainer::class, 'getFieldOptions_columns'],
+                'eval' => [
+                    'mandatory' => true,
+                    'chosen' => true,
+                    'includeBlankOption' => true,
+                    'tl_class' => 'w50',
+                ],
+            ],
+            'direction' => [
+                'label' => &$GLOBALS['TL_LANG'][$table]['sortSettings__direction'],
+                'inputType' => 'select',
+                'exclude' => true,
+                'filter' => false,
+                'default' => Order::ASC,
+                'options' => [Order::ASC, Order::DESC],
+                'reference' => &$GLOBALS['TL_LANG']['FLARE']['sort_order'],
+                'eval' => [
+                    'mandatory' => true,
+                    'includeBlankOption' => false,
+                    'chosen' => true,
+                    'tl_class' => 'w50',
+                ],
+            ],
+        ],
+        'order' => true,
+        'sql' => ['type' => 'blob', 'notnull' => false]
+    ],
 ];
 
 $dca['palettes'] = [
     '__selector__' => ['type'],
     '__prefix__' => '{title_legend},title,type',
-    '__suffix__' => '{flare_reader_legend},jumpToReader;{publish_legend},published',
+    '__suffix__' => '{flare_defaults_legend},sortSettings;{flare_reader_legend},jumpToReader;{publish_legend},published',
 ];
 
 $dca['palettes']['default'] = Str::mergePalettes($dca['palettes']['__prefix__'], $dca['palettes']['__suffix__']);

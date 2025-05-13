@@ -17,6 +17,7 @@ use HeimrichHannot\FlareBundle\ListView\Builder\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -94,6 +95,7 @@ class ListViewController extends AbstractContentElementController
                 ->setListModel($listModel)
                 ->setFormName($model->flare_formName ?: null)
                 ->setPaginatorConfig($paginatorConfig)
+                ->setSortDescriptor(null)
                 ->build();
         }
         catch (FlareException $e)

@@ -24,6 +24,7 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string $formatEmptyOption
  * @property string $formatEmptyOptionCustom
  * @property string $whichPtable
+ * @property string $fieldGeneric
  * @property string $fieldPublished
  * @property string $fieldStart
  * @property string $fieldStop

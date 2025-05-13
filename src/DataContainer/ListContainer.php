@@ -209,6 +209,17 @@ class ListContainer implements FlareCallbackContainerInterface
 
     /**
      * @internal For internal use only. Do not call this method directly.
+     *
+     * @see contao/dca/tl_flare_list.php -> `$dca['fields']['sortSettings']['fields']['column']['options_callback']`
+     */
+    public function getFieldOptions_columns(DataContainer $dc): array
+    {
+        $row = DcaHelper::currentRecord($dc);
+        return DcaHelper::getFieldOptions($row['dc'] ?? null);
+    }
+
+    /**
+     * @internal For internal use only. Do not call this method directly.
      */
     #[AsCallback(self::TABLE_NAME, 'fields.fieldAutoItem.load')]
     #[AsCallback(self::TABLE_NAME, 'fields.fieldAutoItem.save')]

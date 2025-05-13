@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Manager;
 
 use Contao\Model;
 use Contao\PageModel;
+use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
@@ -13,6 +14,7 @@ use HeimrichHannot\FlareBundle\Paginator\Provider\PaginatorBuilderFactory;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -20,14 +22,15 @@ use Symfony\Component\HttpFoundation\RequestStack;
 /**
  * Class ListViewManager
  *
- * Manages the list view, including filters, forms, pagination, and entries.
+ * Manages the list view, including filters, forms, pagination, sort order and entries.
  */
 class ListViewManager
 {
     protected array $filterContextCache = [];
     protected array $formCache = [];
     protected array $entriesCache = [];
-    protected array $paginationCache = [];
+    protected array $sortCache = [];
+    protected array $paginatorCache = [];
 
     public function __construct(
         private readonly FilterContextManager    $contextManager,
@@ -102,6 +105,32 @@ class ListViewManager
         return $form;
     }
 
+    public function getSortDescriptor(
+        ListModel       $listModel,
+        string          $formName,
+        ?SortDescriptor $sortDescriptor = null,
+    ): ?SortDescriptor {
+        if ($sortDescriptor instanceof SortDescriptor) {
+            return $sortDescriptor;
+        }
+
+        $cacheKey = $this->makeCacheKey($listModel, $formName);
+        if (isset($this->sortCache[$cacheKey])) {
+            return $this->sortCache[$cacheKey];
+        }
+
+        if (!$listModel->sortSettings) {
+            return null;
+        }
+
+        $sortSettings = StringUtil::deserialize($listModel->sortSettings);
+        if (!$sortSettings || !\is_array($sortSettings)) {
+            return null;
+        }
+
+        return $this->sortCache[$cacheKey] = SortDescriptor::fromSettings($sortSettings);
+    }
+
     /**
      * Get the paginator for a given list model, form name, and paginator configuration.
      *
@@ -122,8 +151,8 @@ class ListViewManager
         }
 
         $cacheKey = $this->makeCacheKey($listModel, $formName, (string) $paginatorConfig);
-        if (isset($this->paginationCache[$cacheKey])) {
-            return $this->paginationCache[$cacheKey];
+        if (isset($this->paginatorCache[$cacheKey])) {
+            return $this->paginatorCache[$cacheKey];
         }
 
         $filters = $this->getFilterContextCollection($listModel, $formName);
@@ -137,7 +166,7 @@ class ListViewManager
             throw new FlareException($e->getMessage(), $e->getCode(), $e);
         }
 
-        return $this->paginationCache[$cacheKey] = $this->paginatorBuilderFactory
+        return $this->paginatorCache[$cacheKey] = $this->paginatorBuilderFactory
             ->create()
             ->fromConfig($paginatorConfig)
             ->queryPrefix($formName)
@@ -157,8 +186,12 @@ class ListViewManager
      *
      * @throws FlareException If an error occurs while fetching the entries.
      */
-    public function getEntries(ListModel $listModel, string $formName, PaginatorConfig $paginatorConfig): array
-    {
+    public function getEntries(
+        ListModel       $listModel,
+        string          $formName,
+        PaginatorConfig $paginatorConfig,
+        ?SortDescriptor $sortDescriptor = null,
+    ): array {
         $form = $this->getForm($listModel, $formName);
 
         if ($form->isSubmitted() && !$form->isValid())
@@ -172,13 +205,17 @@ class ListViewManager
             return $this->entriesCache[$cacheKey];
         }
 
-        $filters = $this->getFilterContextCollection($listModel, $formName);
-
-        $paginator = $this->getPaginator($listModel, $formName, $paginatorConfig);
-
         try
         {
-            $entries = $this->queryManager->fetchEntries($filters, $paginator ?? null);
+            $filters        = $this->getFilterContextCollection($listModel, $formName);
+            $sortDescriptor = $this->getSortDescriptor($listModel, $formName, $sortDescriptor);
+            $paginator      = $this->getPaginator($listModel, $formName, $paginatorConfig);
+
+            $entries = $this->queryManager->fetchEntries(
+                filters: $filters,
+                sortDescriptor: $sortDescriptor,
+                paginator: $paginator,
+            );
         }
         catch (FlareException $e)
         {
@@ -205,9 +242,17 @@ class ListViewManager
      *
      * @throws FlareException If the model class does not exist or the entry ID is invalid.
      */
-    public function getModel(ListModel $listModel, string $formName, PaginatorConfig $paginatorConfig, int $id): Model
-    {
-        if ($model = Model\Registry::getInstance()->fetch($listModel->dc, $id)) {
+    public function getModel(
+        ListModel       $listModel,
+        string          $formName,
+        PaginatorConfig $paginatorConfig,
+        int             $id,
+        ?SortDescriptor  $sortDescriptor = null,
+    ): Model {
+        $registry = Model\Registry::getInstance();
+        if ($model = $registry->fetch($listModel->dc, $id))
+            // Contao native model cache
+        {
             return $model;
         }
 
@@ -216,11 +261,25 @@ class ListViewManager
             throw new FlareException(\sprintf('Model class does not exist: "%s"', $modelClass), source: __METHOD__);
         }
 
-        if (!$row = $this->getEntries($listModel, $formName, $paginatorConfig)[$id] ?? null) {
+        $entries = $this->getEntries(
+            listModel: $listModel,
+            formName: $formName,
+            paginatorConfig: $paginatorConfig,
+            sortDescriptor: $sortDescriptor,
+        );
+
+        if (!$row = $entries[$id] ?? null) {
             throw new FlareException('Invalid entry id.', source: __METHOD__);
         }
 
-        return new $modelClass($row);
+        $model = new $modelClass($row);
+        if (!$model instanceof Model) {
+            throw new FlareException('Invalid model instance.', source: __METHOD__);
+        }
+
+        $registry->register($model);
+
+        return $model;
     }
 
     /**

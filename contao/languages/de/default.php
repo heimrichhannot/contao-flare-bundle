@@ -4,6 +4,7 @@ use HeimrichHannot\FlareBundle\Controller\ContentElement\ListViewController;
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ReaderController;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Filter\Element;
+use HeimrichHannot\FlareBundle\SortDescriptor\Order;
 
 $lang = &$GLOBALS['TL_LANG'];
 $flare = &$lang['FLARE'];
@@ -24,6 +25,11 @@ $flare['list'] = [
     'flare_generic_dc' => ['Data-Container', 'Listet Elemente eines Data-Containers auf.'],
     'flare_news' => ['Nachrichten', 'Listet Nachrichten auf.'],
     'flare_events' => ['Events', 'Listet Events auf.'],
+];
+
+$flare['sort_order'] = [
+    Order::ASC => ['Aufsteigend [ASC]', 'Sortierung aufsteigend.'],
+    Order::DESC => ['Absteigend [DESC]', 'Sortierung absteigend.'],
 ];
 
 $err['listview']['malconfigured'] = 'Diese Listenansicht ist fehlerhaft konfiguriert.';

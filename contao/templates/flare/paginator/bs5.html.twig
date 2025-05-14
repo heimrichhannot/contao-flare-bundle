@@ -1,12 +1,12 @@
 {# @var \HeimrichHannot\FlareBundle\Paginator\Paginator paginator #}
-<nav>
-    <ul class="pagination">
-        <li class="page-item {% if not paginator.previousPage %}disabled{% endif %}">
-            <a href="{{ paginator.previous.url|default('#') }}" class="page-link">&#12296;</a>
+<nav{% if navClass|default(false) %} class="{{ navClass }}"{% endif %}>
+    <ul class="pagination{% if paginationClass|default(false) %} {{ paginationClass }}{% endif %}">
+        <li class="page-item{% if not paginator.previousPage %} disabled{% endif %}">
+            <a href="{{ paginator.previous.url|default('#') }}" class="page-link">{{ prevContent|default('&#12296;')|raw }}</a>
         </li>
         {% for page in paginator.navigation %}
             {# @var \HeimrichHannot\FlareBundle\Paginator\PageItem page #}
-            <li class="page-item {% if page.current %}active{% endif %} {% if page.ellipsis %}disabled{% endif %}">
+            <li class="page-item{% if page.current %} active{% endif %}{% if page.ellipsis %} disabled{% endif %}">
                 {% if page.ellipsis %}
                     <span class="page-link">&hellip;</span>
                 {% else %}
@@ -14,8 +14,8 @@
                 {% endif %}
             </li>
         {% endfor %}
-        <li class="page-item {% if not paginator.nextPage %}disabled{% endif %}">
-            <a href="{{ paginator.next.url|default('#') }}" class="page-link">&#12297;</a>
+        <li class="page-item{% if not paginator.nextPage %} disabled{% endif %}">
+            <a href="{{ paginator.next.url|default('#') }}" class="page-link">{{ nextContent|default('&#12297;')|raw }}</a>
         </li>
     </ul>
 </nav>

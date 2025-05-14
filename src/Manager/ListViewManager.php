@@ -111,6 +111,17 @@ class ListViewManager
         return $form;
     }
 
+    /**
+     * Get the sort descriptor for a given list model and form name.
+     *
+     * @param ListModel           $listModel The list model.
+     * @param string              $formName The form name.
+     * @param SortDescriptor|null $sortDescriptor A possible sort descriptor override (optional).
+     *
+     * @return SortDescriptor|null The sort descriptor, or null if none is found.
+     *
+     * @throws FlareException bubbling from {@see SortDescriptor::fromSettings()}
+     */
     public function getSortDescriptor(
         ListModel       $listModel,
         string          $formName,
@@ -238,6 +249,15 @@ class ListViewManager
         return $entries;
     }
 
+    /**
+     * Get the list item provider for a given list model.
+     * If the list model implements the {@see ListItemProviderContract} interface, it will be used to retrieve the
+     * list item provider. Otherwise, the default item provider {@see ListItemProvider} will be used.
+     *
+     * @param ListModel $listModel The list model.
+     *
+     * @return ListItemProviderInterface The list item provider to use.
+     */
     public function getListItemProvider(ListModel $listModel): ListItemProviderInterface
     {
         $service = $this->listTypeRegistry->get($listModel->type ?: null);
@@ -254,9 +274,10 @@ class ListViewManager
     /**
      * Get the model of an entry's row for a given list model, form name, and entry ID.
      *
-     * @param ListModel $listModel The list model.
-     * @param string    $formName  The form name.
-     * @param int       $id        The entry ID.
+     * @param ListModel       $listModel The list model.
+     * @param string          $formName The form name.
+     * @param int             $id The entry ID.
+     * @param PaginatorConfig $paginatorConfig The paginator configuration.
      *
      * @return Model The model.
      *
@@ -267,7 +288,7 @@ class ListViewManager
         string          $formName,
         PaginatorConfig $paginatorConfig,
         int             $id,
-        ?SortDescriptor  $sortDescriptor = null,
+        ?SortDescriptor $sortDescriptor = null,
     ): Model {
         $registry = Model\Registry::getInstance();
         if ($model = $registry->fetch($listModel->dc, $id))

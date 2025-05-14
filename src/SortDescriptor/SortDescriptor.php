@@ -31,6 +31,9 @@ final class SortDescriptor
         return new self($orders);
     }
 
+    /**
+     * @throws FlareException If the settings are not in the expected format.
+     */
     public static function fromSettings(array $settings): self
     {
         $orders = [];

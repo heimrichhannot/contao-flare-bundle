@@ -7,14 +7,9 @@ namespace HeimrichHannot\FlareBundle\Manager;
 use Contao\Model;
 use Contao\PageModel;
 use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\Contract\Config\ListItemProviderConfig;
-use HeimrichHannot\FlareBundle\Contract\ListType\ListItemProviderContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\List\ListItemProvider;
-use HeimrichHannot\FlareBundle\List\ListItemProviderInterface;
-use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Paginator\Provider\PaginatorBuilderFactory;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
@@ -40,8 +35,7 @@ class ListViewManager
     public function __construct(
         private readonly FilterContextManager    $contextManager,
         private readonly FilterFormManager       $formManager,
-        private readonly ListItemProvider        $defaultItemProvider,
-        private readonly ListTypeRegistry        $listTypeRegistry,
+        private readonly ListItemProviderManager $itemProvider,
         private readonly PaginatorBuilderFactory $paginatorBuilderFactory,
         private readonly RequestStack            $requestStack,
     ) {}
@@ -172,11 +166,13 @@ class ListViewManager
             return $this->paginatorCache[$cacheKey];
         }
 
-        $filters = $this->getFilterContextCollection($listModel, $formName);
+        $itemProvider = $this->itemProvider->ofListModel($listModel);
 
         try
         {
-            $total = $this->defaultItemProvider->fetchCount($filters);
+            $filters = $this->getFilterContextCollection($listModel, $formName);
+
+            $total = $itemProvider->fetchCount($filters);
         }
         catch (\Exception $e)
         {
@@ -222,9 +218,10 @@ class ListViewManager
             return $this->entriesCache[$cacheKey];
         }
 
+        $itemProvider = $this->itemProvider->ofListModel($listModel);
+
         try
         {
-            $itemProvider   = $this->getListItemProvider($listModel);
             $filters        = $this->getFilterContextCollection($listModel, $formName);
             $sortDescriptor = $this->getSortDescriptor($listModel, $formName, $sortDescriptor);
             $paginator      = $this->getPaginator($listModel, $formName, $paginatorConfig);
@@ -247,28 +244,6 @@ class ListViewManager
         $this->entriesCache[$cacheKey] = $entries;
 
         return $entries;
-    }
-
-    /**
-     * Get the list item provider for a given list model.
-     * If the list model implements the {@see ListItemProviderContract} interface, it will be used to retrieve the
-     * list item provider. Otherwise, the default item provider {@see ListItemProvider} will be used.
-     *
-     * @param ListModel $listModel The list model.
-     *
-     * @return ListItemProviderInterface The list item provider to use.
-     */
-    public function getListItemProvider(ListModel $listModel): ListItemProviderInterface
-    {
-        $service = $this->listTypeRegistry->get($listModel->type ?: null);
-
-        if ($service instanceof ListItemProviderContract)
-        {
-            return $service->getListItemProvider(new ListItemProviderConfig($listModel))
-                ?? $this->defaultItemProvider;
-        }
-
-        return $this->defaultItemProvider;
     }
 
     /**

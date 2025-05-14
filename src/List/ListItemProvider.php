@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Manager;
+namespace HeimrichHannot\FlareBundle\List;
 
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Dto\FilteredQueryDto;
@@ -15,7 +15,7 @@ use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
-readonly class FilterQueryManager
+readonly class ListItemProvider implements ListItemProviderInterface
 {
     public function __construct(
         private Connection               $connection,
@@ -30,6 +30,40 @@ readonly class FilterQueryManager
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
+    ): array {
+        return $this->fetchEntriesOrIds(
+            filters: $filters,
+            sortDescriptor: $sortDescriptor,
+            paginator: $paginator,
+            returnIds: false,
+        );
+    }
+
+    /**
+     * @throws FilterException
+     * @throws \Doctrine\DBAL\Exception
+     */
+    public function fetchIds(
+        FilterContextCollection $filters,
+        ?SortDescriptor         $sortDescriptor = null,
+        ?Paginator              $paginator = null,
+    ): array {
+        return $this->fetchEntriesOrIds(
+            filters: $filters,
+            sortDescriptor: $sortDescriptor,
+            paginator: $paginator,
+            returnIds: true,
+        );
+    }
+
+    /**
+     * @throws FilterException
+     * @throws \Doctrine\DBAL\Exception
+     */
+    protected function fetchEntriesOrIds(
+        FilterContextCollection $filters,
+        ?SortDescriptor         $sortDescriptor = null,
+        ?Paginator              $paginator = null,
         ?bool                   $returnIds = null,
     ): array {
         $returnIds ??= false;
@@ -39,7 +73,7 @@ readonly class FilterQueryManager
             limit: $paginator?->getItemsPerPage() ?: null,
             offset: $paginator?->getOffset() ?: null,
             order: $sortDescriptor?->toSql(),
-            onlyId: $returnIds
+            onlyId: $returnIds,
         );
 
         if (!$dto->isAllowed())
@@ -99,7 +133,7 @@ readonly class FilterQueryManager
 
         if (!Str::isValidSqlName($filters->getTable())) {
             throw new FilterException(
-                \sprintf('[FLARE] Invalid table name: %s', $filters->getTable()), method: __METHOD__
+                \sprintf('[FLARE] Invalid table name: %s', $filters->getTable()), method: __METHOD__,
             );
         }
 
@@ -131,7 +165,7 @@ readonly class FilterQueryManager
                 throw new FilterException(
                     \sprintf('[FLARE] Query denied: %s', $e->getMessage()),
                     code: $e->getCode(), previous: $e, method: $method,
-                    source: \sprintf('tl_flare_filter.id=%s', $filter->getFilterModel()?->id)
+                    source: \sprintf('tl_flare_filter.id=%s', $filter->getFilterModel()?->id),
                 );
             }
 

@@ -8,6 +8,7 @@ use Contao\Model;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Builder\FilterContextBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationElement;
+use HeimrichHannot\FlareBundle\List\ListItemProvider;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\SqlEquationOperator;
 
@@ -16,7 +17,7 @@ readonly class ReaderManager
     public function __construct(
         private FilterContextBuilderFactory $contextBuilderFactory,
         private FilterContextManager        $contextManager,
-        private FilterQueryManager          $queryManager,
+        private ListItemProvider            $queryManager,
         private SimpleEquationElement       $simpleEquation,
     ) {}
 
@@ -55,11 +56,11 @@ readonly class ReaderManager
 
         try
         {
-            $ids = $this->queryManager->fetchEntries(filters: $collection, returnIds: true);
+            $ids = $this->queryManager->fetchIds(filters: $collection);
         }
         catch (\Exception $e)
         {
-            throw new FlareException('Error fetching entries for auto_item.', source: __METHOD__, previous: $e);
+            throw new FlareException('Error fetching entries for auto_item.', previous: $e, source: __METHOD__);
         }
 
         if (empty($ids)) {

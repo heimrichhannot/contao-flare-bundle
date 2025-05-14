@@ -2,17 +2,25 @@
 
 namespace HeimrichHannot\FlareBundle\List\Type;
 
+use HeimrichHannot\FlareBundle\Contract\Config\ListItemProviderConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PresetFiltersConfig;
+use HeimrichHannot\FlareBundle\Contract\ListType\ListItemProviderContract;
 use HeimrichHannot\FlareBundle\Contract\ListType\PresetFiltersContract;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedElement;
+use HeimrichHannot\FlareBundle\List\ListItemProviderInterface;
+use HeimrichHannot\FlareBundle\List\Type\ItemProvider\EventsListItemProvider;
 
 #[AsListType(EventsList::TYPE, dataContainer: 'tl_calendar_events')]
-class EventsList implements PaletteContract, PresetFiltersContract
+class EventsList implements ListItemProviderContract, PaletteContract, PresetFiltersContract
 {
     public const TYPE = 'flare_events';
+
+    public function __construct(
+        private readonly EventsListItemProvider $itemProvider,
+    ) {}
 
     public function getPalette(PaletteConfig $config): ?string
     {
@@ -22,5 +30,10 @@ class EventsList implements PaletteContract, PresetFiltersContract
     public function getPresetFilters(PresetFiltersConfig $config): void
     {
         $config->add(PublishedElement::define(), true);
+    }
+
+    public function getListItemProvider(ListItemProviderConfig $config): ?ListItemProviderInterface
+    {
+        return $this->itemProvider;
     }
 }

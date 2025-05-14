@@ -7,9 +7,14 @@ namespace HeimrichHannot\FlareBundle\Manager;
 use Contao\Model;
 use Contao\PageModel;
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\Contract\Config\ListItemProviderConfig;
+use HeimrichHannot\FlareBundle\Contract\ListType\ListItemProviderContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
+use HeimrichHannot\FlareBundle\List\ListItemProvider;
+use HeimrichHannot\FlareBundle\List\ListItemProviderInterface;
+use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Paginator\Provider\PaginatorBuilderFactory;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
@@ -35,7 +40,8 @@ class ListViewManager
     public function __construct(
         private readonly FilterContextManager    $contextManager,
         private readonly FilterFormManager       $formManager,
-        private readonly FilterQueryManager      $queryManager,
+        private readonly ListItemProvider        $defaultItemProvider,
+        private readonly ListTypeRegistry        $listTypeRegistry,
         private readonly PaginatorBuilderFactory $paginatorBuilderFactory,
         private readonly RequestStack            $requestStack,
     ) {}
@@ -159,7 +165,7 @@ class ListViewManager
 
         try
         {
-            $total = $this->queryManager->fetchCount($filters);
+            $total = $this->defaultItemProvider->fetchCount($filters);
         }
         catch (\Exception $e)
         {
@@ -207,11 +213,12 @@ class ListViewManager
 
         try
         {
+            $itemProvider   = $this->getListItemProvider($listModel);
             $filters        = $this->getFilterContextCollection($listModel, $formName);
             $sortDescriptor = $this->getSortDescriptor($listModel, $formName, $sortDescriptor);
             $paginator      = $this->getPaginator($listModel, $formName, $paginatorConfig);
 
-            $entries = $this->queryManager->fetchEntries(
+            $entries = $itemProvider->fetchEntries(
                 filters: $filters,
                 sortDescriptor: $sortDescriptor,
                 paginator: $paginator,
@@ -229,6 +236,19 @@ class ListViewManager
         $this->entriesCache[$cacheKey] = $entries;
 
         return $entries;
+    }
+
+    public function getListItemProvider(ListModel $listModel): ListItemProviderInterface
+    {
+        $service = $this->listTypeRegistry->get($listModel->type ?: null);
+
+        if ($service instanceof ListItemProviderContract)
+        {
+            return $service->getListItemProvider(new ListItemProviderConfig($listModel))
+                ?? $this->defaultItemProvider;
+        }
+
+        return $this->defaultItemProvider;
     }
 
     /**

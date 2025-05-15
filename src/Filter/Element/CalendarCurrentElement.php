@@ -2,27 +2,53 @@
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
+use Contao\Config;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Type\DateRangeFilterType;
+use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 
 #[AsFilterElement(
     alias: CalendarCurrentElement::TYPE,
     formType: DateRangeFilterType::class,
 )]
-class CalendarCurrentElement implements PaletteContract
+class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
 {
     public const TYPE = 'flare_calendar_current';
 
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
+        $submittedData = $context->getSubmittedData();
         $filterModel = $context->getFilterModel();
 
-        $start = 0;
-        $end = \min(\PHP_INT_MAX, 4294967295);
+        $start = DateTimeHelper::getTimestamp($filterModel->startAt) ?: 0;
+        $end = DateTimeHelper::getTimestamp($filterModel->stopAt) ?: DateTimeHelper::maxTimestamp();
+
+        $from = $submittedData['from'] ?? null;
+        $to = $submittedData['to'] ?? null;
+
+        if ($from instanceof \DateTimeInterface)
+        {
+            $from = $from->getTimestamp();
+
+            if (!$filterModel->isLimited || $from >= $start) {
+                $start = $from;
+            }
+        }
+
+        if ($to instanceof \DateTimeInterface)
+        {
+            $to = $to->getTimestamp();
+
+            if (!$filterModel->isLimited || $to <= $end) {
+                $end = $to;
+            }
+        }
 
         $qb->where($qb->expr()->or(
             "startTime>=:start AND startTime<=:end",  // event starts in range
@@ -41,6 +67,51 @@ class CalendarCurrentElement implements PaletteContract
 
     public function getPalette(PaletteConfig $config): ?string
     {
-        return '{date_start_legend},configureStart;{date_stop_legend},configureStop';
+        $filterModel = $config->getFilterModel();
+
+        $palette = '{date_start_legend},configureStart;{date_stop_legend},configureStop;';
+
+        if (!$filterModel->intrinsic) {
+            $palette .= '{form_legend},isLimited;';
+        }
+
+        return $palette;
+    }
+
+    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
+    {
+        $options = [
+            'required' => false,
+        ];
+
+        $filterModel = $context->getFilterModel();
+
+        if (!$filterModel->isLimited) {
+            return $options;
+        }
+
+        $timeZone = new \DateTimeZone(Config::get('timeZone') ?: \date_default_timezone_get() ?: 'UTC');
+
+        if ($filterModel->configureStart
+            && $filterModel->startAt
+            && ($startAt = \strtotime($filterModel->startAt))
+            && ($startAt = DateTimeHelper::timestampToDateTime($startAt)))
+        {
+            $startAt->setTimezone($timeZone);
+            $options['from_min'] = $startAt;
+            $options['to_min'] = $startAt;
+        }
+
+        if ($filterModel->configureStop
+            && $filterModel->stopAt
+            && ($stopAt = \strtotime($filterModel->stopAt))
+            && ($stopAt = DateTimeHelper::timestampToDateTime($stopAt)))
+        {
+            $stopAt->setTimezone($timeZone);
+            $options['from_max'] = $stopAt;
+            $options['to_max'] = $stopAt;
+        }
+
+        return $options;
     }
 }

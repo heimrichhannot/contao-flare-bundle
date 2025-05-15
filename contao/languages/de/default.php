@@ -35,5 +35,58 @@ $flare['sort_order'] = [
     Order::DESC => ['Absteigend [DESC]', 'Sortierung absteigend.'],
 ];
 
+$flare['date_time'] = [
+    'custom' => 'Benutzerdefiniert',
+    'date' => 'Eigenes Datum festlegen',
+    'str' => 'Datum-String (PHP)',
+
+    // day
+    'day'              => 'Tag',
+    'yesterday'        => 'Gestern',
+    'now'              => 'Aktueller Zeitpunkt',
+    'today'            => 'Heute',
+    'tomorrow'         => 'Morgen',
+
+    // week
+    'week'             => 'Woche',
+    'last_week'        => 'Letzte Woche',
+    'this_week'        => 'Diese Woche',
+    'next_week'        => 'Nächste Woche',
+
+    // month
+    'month'            => 'Monat',
+    'last_month'       => 'Letzten Monat',
+    'this_month'       => 'Diesen Monat',
+    'next_month'       => 'Nächsten Monat',
+
+    // year
+    'year'             => 'Jahr',
+    'next_year'        => 'Nächstes Jahr',
+    'this_year'        => 'Dieses Jahr',
+    'last_year'        => 'Letztes Jahr',
+
+    // relative_future
+    'relative_future'  => 'Relativ in der Zukunft',
+    'in_1_week'        => 'In 1 Woche',
+    'in_2_weeks'       => 'In 2 Wochen',
+    'in_3_weeks'       => 'In 3 Wochen',
+    'in_1_month'       => 'In 1 Monat',
+    'in_2_months'      => 'In 2 Monaten',
+    'in_3_months'      => 'In 3 Monaten',
+    'in_1_year'        => 'In 1 Jahr',
+    'in_2_years'       => 'In 2 Jahren',
+
+    // relative_past
+    'relative_past'    => 'Relativ in der Vergangenheit',
+    '1_week_ago'       => 'Vor 1 Woche',
+    '2_weeks_ago'      => 'Vor 2 Wochen',
+    '3_weeks_ago'      => 'Vor 3 Wochen',
+    '1_month_ago'      => 'Vor 1 Monat',
+    '2_months_ago'     => 'Vor 2 Monaten',
+    '3_months_ago'     => 'Vor 3 Monaten',
+    '1_year_ago'       => 'Vor 1 Jahr',
+    '2_years_ago'      => 'Vor 2 Jahren',
+];
+
 $err['listview']['malconfigured'] = 'Diese Listenansicht ist fehlerhaft konfiguriert.';
 $err['tl_content'][ContentContainer::FIELD_FORM_NAME] = 'Muss mit einem Buchstaben beginnen und darf nur a-z, 0-9, _ beinhalten. Darf nicht mit _page enden.';

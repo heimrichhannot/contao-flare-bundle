@@ -14,6 +14,7 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property bool   $isMandatory
  * @property bool   $isMultiple
  * @property bool   $isExpanded
+ * @property bool   $isLimited
  * @property bool   $hasEmptyOption
  * @property bool   $usePublished
  * @property bool   $useStart

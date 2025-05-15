@@ -13,23 +13,39 @@ class DateRangeFilterType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        $fromMin = $options['from_min']?->format('Y-m-d');
+        /** @var \DateTimeInterface $fromMax */
+        if ($fromMax = $options['from_max'] ?? null) {
+            $fromMax = \DateTime::createFromInterface($fromMax);
+            $fromMax->modify('-1 second');
+            $fromMax = $fromMax->format('Y-m-d');
+        }
+
         $builder->add('from', DateType::class, [
             'widget'    => 'single_text',
             'label'     => 'label.date_range.from',
             'html5'     => true,
             'attr'      => \array_filter([
-                'min' => $options['from_min']?->format('Y-m-d'),
-                'max' => $options['from_max']?->format('Y-m-d'),
+                'min' => $fromMin,
+                'max' => $fromMax,
             ]),
         ]);
+
+        $toMin = $options['to_min']?->format('Y-m-d');
+        /** @var \DateTimeInterface $toMax */
+        if ($toMax = $options['to_max'] ?? null) {
+            $toMax = \DateTime::createFromInterface($toMax);
+            $toMax->modify('-1 second');
+            $toMax = $toMax->format('Y-m-d');
+        }
 
         $builder->add('to', DateType::class, [
             'widget'    => 'single_text',
             'label'     => 'label.date_range.to',
             'html5'     => true,
             'attr'      => \array_filter([
-                'min' => $options['to_min']?->format('Y-m-d'),
-                'max' => $options['to_max']?->format('Y-m-d'),
+                'min' => $toMin,
+                'max' => $toMax,
             ]),
         ]);
     }

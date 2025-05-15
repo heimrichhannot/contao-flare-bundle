@@ -501,9 +501,8 @@ class FilterContainer implements FlareCallbackContainerInterface
     {
         return [
             '',
-            'date',
-            ...\array_keys(DateTimeHelper::TIME_SPAN_MAP),
-            'str',
+            'custom' => ['date', 'str'],
+            ...DateTimeHelper::getTimeSpanOptions(),
         ];
     }
 

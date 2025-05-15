@@ -6,6 +6,7 @@ use Contao\Controller;
 use Contao\DataContainer;
 use Contao\Model;
 use Contao\StringUtil;
+use Dflydev\DotAccessData\Data;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 /**
@@ -17,16 +18,8 @@ class DcaHelper
 {
     private static array $dcTableCache = [];
 
-    public static function currentRecord(?DataContainer $dc): ?array
+    public static function modelOf(?DataContainer $dc): ?Model
     {
-        if (!$dc) {
-            return null;
-        }
-
-        if (\method_exists($dc, 'getCurrentRecord')) {
-            return $dc->getCurrentRecord();
-        }
-
         if (!($id = $dc->id ?? null)) {
             return null;
         }
@@ -36,17 +29,34 @@ class DcaHelper
             return null;
         }
 
-        if (!$record = $modelClass::findByPk($id)) {
+        if (!$model = $modelClass::findByPk($id)) {
             return null;
         }
 
-        return $record->row();
+        return $model;
+    }
+
+    public static function rowOf(?DataContainer $dc): ?array
+    {
+        if (!$dc) {
+            return null;
+        }
+
+        if (\method_exists($dc, 'getCurrentRecord')) {
+            return $dc->getCurrentRecord();
+        }
+
+        if (!$model = static::modelOf($dc)) {
+            return null;
+        }
+
+        return $model->row();
     }
 
     protected static function getListDCTableFromDataContainer(?DataContainer $dc): ?string
     {
         if (!$dc
-            || !($row = static::currentRecord($dc))
+            || !($row = static::rowOf($dc))
             || !($pid = $row['pid'] ?? null))
         {
             return null;
@@ -68,7 +78,7 @@ class DcaHelper
     public static function tryGetColumnName(
         DataContainer|string|null $dc_or_table,
         string                    $column,
-        ?string                   $default = null
+        ?string                   $default = null,
     ): ?string {
         if (\is_string($dc_or_table))
         {

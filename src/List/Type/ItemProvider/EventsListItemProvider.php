@@ -3,10 +3,8 @@
 namespace HeimrichHannot\FlareBundle\List\Type\ItemProvider;
 
 use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\Dto\FilteredQueryDto;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\List\ListFilterTrait;
 use HeimrichHannot\FlareBundle\List\ListItemProvider;
 use HeimrichHannot\FlareBundle\List\ListItemProviderInterface;
@@ -50,7 +48,7 @@ class EventsListItemProvider implements ListItemProviderInterface
         ?Paginator              $paginator = null,
     ): array {
         $sortDescriptor ??= SortDescriptor::fromMap([
-            'startTime' => 'DESC',
+            'startTime' => 'ASC',
             'endTime'   => 'DESC',
         ]);
 
@@ -76,6 +74,8 @@ class EventsListItemProvider implements ListItemProviderInterface
         $entries = \array_combine(\array_column($entries, 'id'), $entries);
 
         $result->free();
+
+        // todo
 
         return $entries;
     }

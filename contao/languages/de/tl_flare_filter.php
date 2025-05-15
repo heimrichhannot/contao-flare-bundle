@@ -39,6 +39,33 @@ $lang['whichPtable_options'] = [
 ];
 ###< filter_legend ###
 
+###> date_legend ###
+$lang['date_legend'] = 'Datumseinstellungen';
+$lang['date_start_legend'] = 'Startdatumseinstellungen';
+$lang['date_stop_legend'] = 'Enddatumseinstellungen';
+$lang['configureStart'] = ['Startdatum konfigurieren', 'Bitte wählen Sie die Konfiguration für das Startdatum aus.'];
+$lang['configureStop'] = ['Enddatum konfigurieren', 'Bitte wählen Sie die Konfiguration für das Enddatum aus.'];
+$lang['configureDate_options'] = [
+    'date' => 'Eigenes Datum festlegen',
+    'now' => 'Aktueller Zeitpunkt',
+    'today' => 'Heute',
+    'tomorrow' => 'Morgen',
+    'yesterday' => 'Gestern',
+    'this_week' => 'Diese Woche',
+    'next_week' => 'Nächste Woche',
+    'last_week' => 'Letzte Woche',
+    'this_month' => 'Diesen Monat',
+    'next_month' => 'Nächsten Monat',
+    'last_month' => 'Letzten Monat',
+    'this_year' => 'Dieses Jahr',
+    'next_year' => 'Nächstes Jahr',
+    'last_year' => 'Letztes Jahr',
+    'str' => 'Datums-String (PHP)',
+];
+$lang['startAt'] = ['Startdatum', 'Bitte geben Sie ein Startdatum ein.'];
+$lang['stopAt'] = ['Enddatum', 'Bitte geben Sie ein Enddatum ein.'];
+###< date_legend ###
+
 ###> archive_legend ###
 $lang['archive_legend'] = 'Archiv-Einstellungen';
 $lang['whitelistParents'] = ['Eltern-Whitelist', 'Bitte wählen Sie die Archive aus, die für diesen Filter zulässig sind.'];

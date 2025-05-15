@@ -2,12 +2,18 @@
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
+use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
+use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Form\Type\DateRangeFilterType;
 
-#[AsFilterElement(alias: CalendarCurrentElement::TYPE)]
-class CalendarCurrentElement
+#[AsFilterElement(
+    alias: CalendarCurrentElement::TYPE,
+    formType: DateRangeFilterType::class,
+)]
+class CalendarCurrentElement implements PaletteContract
 {
     public const TYPE = 'flare_calendar_current';
 
@@ -31,5 +37,10 @@ class CalendarCurrentElement
 
         $qb->bind('start', $start);
         $qb->bind('end', $end);
+    }
+
+    public function getPalette(PaletteConfig $config): ?string
+    {
+        return '{date_start_legend},configureStart;{date_stop_legend},configureStop';
     }
 }

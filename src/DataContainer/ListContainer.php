@@ -113,7 +113,7 @@ class ListContainer implements FlareCallbackContainerInterface
     #[AsCallback(self::TABLE_NAME, 'config.onsubmit')]
     public function onSubmitConfig(DataContainer $dc): void
     {
-        if (!$dc->id || !$row = DcaHelper::currentRecord($dc)) {
+        if (!$dc->id || !$row = DcaHelper::rowOf($dc)) {
             return;
         }
 
@@ -190,7 +190,7 @@ class ListContainer implements FlareCallbackContainerInterface
     #[AsCallback(self::TABLE_NAME, 'fields.fieldAutoItem.options')]
     public function getFieldAutoItemOptions(?DataContainer $dc = null): array
     {
-        if (empty($row = DcaHelper::currentRecord($dc)) || empty($table = $row['dc'])) {
+        if (empty($row = DcaHelper::rowOf($dc)) || empty($table = $row['dc'])) {
             return ['alias' => 'alias', 'id' => 'id'];
         }
 
@@ -214,7 +214,7 @@ class ListContainer implements FlareCallbackContainerInterface
      */
     public function getFieldOptions_columns(DataContainer $dc): array
     {
-        $row = DcaHelper::currentRecord($dc);
+        $row = DcaHelper::rowOf($dc);
         return DcaHelper::getFieldOptions($row['dc'] ?? null);
     }
 
@@ -225,7 +225,7 @@ class ListContainer implements FlareCallbackContainerInterface
     #[AsCallback(self::TABLE_NAME, 'fields.fieldAutoItem.save')]
     public function onLoadField_fieldPublished(mixed $value, DataContainer $dc): string
     {
-        if (empty($row = DcaHelper::currentRecord($dc)) || empty($table = $row['dc'])) {
+        if (empty($row = DcaHelper::rowOf($dc)) || empty($table = $row['dc'])) {
             return '';
         }
 

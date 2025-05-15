@@ -39,6 +39,10 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string $equationLeft
  * @property string $equationRight
  * @property string $placeholder
+ * @property string $startAt
+ * @property string $stopAt
+ * @property string $configureStart
+ * @property string $configureStop
  */
 trait FilterModelDocTrait
 {

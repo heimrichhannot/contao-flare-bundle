@@ -105,6 +105,7 @@ $dca['fields'] = [
             'includeBlankOption' => true,
             'submitOnChange' => true,
             'tl_class' => 'w50',
+            'chosen' => true,
         ],
         'sql' => "varchar(32) NOT NULL default ''",
     ],
@@ -164,6 +165,19 @@ $dca['fields'] = [
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
     'isExpanded' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => false,
+            'tl_class' => 'cbx w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'isLimited' => [
         'exclude' => true,
         'toggle' => true,
         'filter' => false,
@@ -464,10 +478,70 @@ $dca['fields'] = [
         'eval' => ['mandatory' => false, 'maxlength' => 255],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
+    'configureStart' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'select',
+        'reference' => &$GLOBALS['TL_LANG'][FilterModel::getTable()]['configureDate_options'],
+        'default' => 'today',
+        'eval' => [
+            'mandatory' => false,
+            'maxlength' => 255,
+            'tl_class' => 'clr w50',
+            'includeBlankOption' => true,
+            'chosen' => true,
+            'submitOnChange' => true,
+            'alwaysSave' => true,
+        ],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'configureStop' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'select',
+        'reference' => &$GLOBALS['TL_LANG'][FilterModel::getTable()]['configureDate_options'],
+        'default' => '',
+        'eval' => [
+            'mandatory' => false,
+            'maxlength' => 255,
+            'tl_class' => 'clr w50',
+            'includeBlankOption' => true,
+            'chosen' => true,
+            'submitOnChange' => true,
+            'alwaysSave' => true,
+        ],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'startAt' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'text',
+        'eval' => [
+            'mandatory' => false,
+            'maxlength' => 255,
+            'rgxp' => 'datim',
+            'datepicker' => true,
+            'tl_class' => 'w50 wizard',
+        ],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'stopAt' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'text',
+        'eval' => [
+            'mandatory' => false,
+            'maxlength' => 255,
+            'rgxp' => 'datim',
+            'datepicker' => true,
+            'tl_class' => 'w50 wizard',
+        ],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
 ];
 
 $dca['palettes'] = [
-    '__selector__' => ['type', 'usePublished', 'useStart', 'useStop', 'whichPtable', 'formatLabel', 'formatEmptyOption'],
+    '__selector__' => ['type', 'usePublished', 'useStart', 'useStop', 'whichPtable', 'formatLabel', 'formatEmptyOption', 'configureStart', 'configureStop'],
     '__prefix__' => '{title_legend},title,type,intrinsic',
     '__suffix__' => '{publish_legend},published',
 ];
@@ -483,4 +557,8 @@ $dca['subpalettes'] = [
     'whichPtable_static' => 'tablePtable',
     'formatLabel_custom' => 'formatLabelCustom',
     'formatEmptyOption_custom' => 'formatEmptyOptionCustom',
+    'configureStart_str' => 'startAt',
+    'configureStart_date' => 'startAt',
+    'configureStop_str' => 'stopAt',
+    'configureStop_date' => 'stopAt',
 ];

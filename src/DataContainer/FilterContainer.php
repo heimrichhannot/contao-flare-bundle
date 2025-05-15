@@ -15,6 +15,7 @@ use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
+use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -193,7 +194,7 @@ class FilterContainer implements FlareCallbackContainerInterface
             return $value;
         }
 
-        if (!$row = DcaHelper::currentRecord($dc)) {
+        if (!$row = DcaHelper::rowOf($dc)) {
             return $value;
         }
 
@@ -215,13 +216,79 @@ class FilterContainer implements FlareCallbackContainerInterface
     #[AsCallback(self::TABLE_NAME, 'fields.intrinsic.save')]
     public function onSaveField_intrinsic(mixed $value, DataContainer $dc): mixed
     {
-        if ($value || !$row = DcaHelper::currentRecord($dc)) {
+        if ($value || !$row = DcaHelper::rowOf($dc)) {
             return $value;
         }
 
         if ($this->filterElementRegistry->get($row['type'] ?? null)?->isIntrinsicRequired()) {
             return '1';
         }
+
+        return $value;
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.configureStart.save')]
+    #[AsCallback(self::TABLE_NAME, 'fields.configureStop.save')]
+    public function onSaveField_configureDate(string $value, DataContainer $dc): string
+    {
+        if (!$value) {
+            return $value;
+        }
+
+        $modifyField = match ($dc->field) {
+            'configureStop' => 'stopAt',
+            'configureStart' => 'startAt',
+            default => null,
+        };
+
+        if ($modifyField)
+        {
+            $this->onConfigureDateSave($modifyField, $value, $dc);
+        }
+
+        return $value;
+    }
+
+    private function onConfigureDateSave(string $field, string $value, DataContainer $dc): void
+    {
+        if (!$model = DcaHelper::modelOf($dc)) {
+            return;
+        }
+
+        if (!$timeString = DateTimeHelper::getTimeString($value)) {
+            return;
+        }
+
+        $model->{$field} = $timeString;
+        $model->save();
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.startAt.load')]
+    #[AsCallback(self::TABLE_NAME, 'fields.stopAt.load')]
+    public function onLoadField_startStopAt(string $value, DataContainer $dc): string
+    {
+        if (!isset($GLOBALS['TL_DCA'][self::TABLE_NAME]['fields'][$dc->field])) {
+            return $value;
+        }
+
+        $configuredBy = match ($dc->field) {
+            'startAt' => 'configureStart',
+            'stopAt' => 'configureStop',
+            default => null,
+        };
+
+        if (!$configuredBy || !$model = DcaHelper::modelOf($dc)) {
+            return $value;
+        }
+
+        if ($model->{$configuredBy} === 'date') {
+            return \is_numeric($value) ? $value : (\strtotime($value) ?: '');
+        }
+
+        $eval = &$GLOBALS['TL_DCA'][self::TABLE_NAME]['fields'][$dc->field]['eval'];
+        unset($eval['rgxp']);
+        unset($eval['datepicker']);
+        $eval['tl_class'] = \str_replace('wizard', '', $eval['tl_class'] ?? '');
 
         return $value;
     }
@@ -288,7 +355,7 @@ class FilterContainer implements FlareCallbackContainerInterface
         return DcaHelper::getFieldOptions(
             $dc,
             static fn(string $table, string $field, array $definition) =>
-                ($definition['inputType'] ?? null) === 'checkbox'
+                ($definition['inputType'] ?? null) === 'checkbox',
         );
     }
 
@@ -302,7 +369,7 @@ class FilterContainer implements FlareCallbackContainerInterface
         return DcaHelper::getFieldOptions(
             $dc,
             static fn(string $table, string $field, array $definition) =>
-                ($definition['inputType'] ?? null) === 'text' && ($definition['eval']['rgxp'] ?? null) === 'datim'
+                ($definition['inputType'] ?? null) === 'text' && ($definition['eval']['rgxp'] ?? null) === 'datim',
         );
     }
 
@@ -322,7 +389,7 @@ class FilterContainer implements FlareCallbackContainerInterface
                 }
 
                 return DcaHelper::testSQLType($definition['sql'] ?? null, 'int');
-            }
+            },
         );
     }
 
@@ -345,7 +412,7 @@ class FilterContainer implements FlareCallbackContainerInterface
                 }
 
                 return DcaHelper::testSQLType($definition['sql'] ?? null, 'text');
-            }
+            },
         );
     }
 
@@ -426,6 +493,18 @@ class FilterContainer implements FlareCallbackContainerInterface
     public function getOptions_formatEmptyOption(DataContainer $dc): array
     {
         return $this->getFormatOptions('formatEmptyOption');
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.configureStart.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.configureStop.options')]
+    public function getOptions_configureDate(): array
+    {
+        return [
+            '',
+            'date',
+            ...\array_keys(DateTimeHelper::TIME_SPAN_MAP),
+            'str',
+        ];
     }
 
     public function getFormatOptions(string $field, ?string $prefix = null): array

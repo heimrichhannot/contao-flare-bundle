@@ -93,14 +93,16 @@ readonly class AutoTypePalettesCallback
 
         $service = $config->getService();
 
-        $paletteConfigFactory = static fn() => new PaletteConfig(
-            alias: $alias,
-            dataContainer: $dc,
-            prefix: $prefix,
-            suffix: $suffix,
-            listModel: $listModel,
-            filterModel: $filterModel
-        );
+        $paletteConfigFactory = static function () use ($alias, $dc, &$prefix, &$suffix, $listModel, $filterModel) {
+            return new PaletteConfig(
+                alias: $alias,
+                dataContainer: $dc,
+                prefix: "" . $prefix,
+                suffix: "" . $suffix,
+                listModel: $listModel,
+                filterModel: $filterModel
+            );
+        };
 
         if ($service instanceof PaletteContract)
         {

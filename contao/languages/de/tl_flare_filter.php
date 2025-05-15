@@ -47,6 +47,7 @@ $lang['configureStart'] = ['Startdatum konfigurieren', 'Bitte wählen Sie die Ko
 $lang['configureStop'] = ['Enddatum konfigurieren', 'Bitte wählen Sie die Konfiguration für das Enddatum aus.'];
 $lang['startAt'] = ['Startdatum', 'Bitte geben Sie ein Startdatum ein.'];
 $lang['stopAt'] = ['Enddatum', 'Bitte geben Sie ein Enddatum ein.'];
+$lang['hasExtendedEvents'] = ['Veranstaltungen erweitern', 'Alle Veranstaltungen im Zeitraum zeigen, auch wenn sie davor beginnen und den Zeitraum überlagern.'];
 ###< date_legend ###
 
 ###> archive_legend ###

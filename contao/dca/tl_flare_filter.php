@@ -538,6 +538,18 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
+    'hasExtendedEvents' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'tl_class' => 'cbx w50 clr'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
 ];
 
 $dca['palettes'] = [

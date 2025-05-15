@@ -2,7 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Util;
 
-use DateTimeImmutable;
+use Contao\Config;
 
 class DateTimeHelper
 {
@@ -50,6 +50,17 @@ class DateTimeHelper
         ],
     ];
 
+    private static \DateTimeZone $timeZone;
+
+    public static function getTimeZone(): \DateTimeZone
+    {
+        if (isset(self::$timeZone)) {
+            return self::$timeZone;
+        }
+
+        return self::$timeZone = new \DateTimeZone(Config::get('timeZone') ?: \date_default_timezone_get() ?: 'UTC');
+    }
+
     public static function getTimeSpanOptions(): array
     {
         return \array_map(static fn ($timeSpanOptions) => \array_keys($timeSpanOptions), self::TIME_SPANS);
@@ -72,39 +83,35 @@ class DateTimeHelper
         return min(\PHP_INT_MAX, 4294967295);
     }
 
-    public static function getTimeString(string $timeSpan): ?string
+    public static function spanToTimeString(string $timeSpan): ?string
     {
         return self::getTimeSpanMap()[$timeSpan] ?? null;
     }
 
-    public static function getTimestamp(string $timeSpan): ?int
+    public static function getTimestamp(string $time_span_or_string_or_stamp): ?int
     {
-        if (\is_numeric($timeSpan)) {
-            return (int) $timeSpan;
+        if (\is_numeric($time_span_or_string_or_stamp)) {
+            return (int) $time_span_or_string_or_stamp;
         }
 
-        if (!$timeString = self::getTimeString($timeSpan)) {
-            return null;
-        }
+        $timeString = self::spanToTimeString($time_span_or_string_or_stamp) ?? $time_span_or_string_or_stamp;
 
         return \strtotime($timeString) ?: null;
     }
 
-    public static function timestampToDateTime(int|string $timestamp): ?\DateTimeInterface
+    public static function timestampToDateTime(int|string|null $timestamp): ?\DateTime
     {
-        return \DateTime::createFromFormat('U', (string) $timestamp) ?: null;
-    }
-
-    public static function getDateTime(string $timeSpan): ?\DateTimeInterface
-    {
-        if (\is_numeric($timeSpan)) {
-            return self::timestampToDateTime($timeSpan);
-        }
-
-        if (!$timestamp = self::getTimestamp($timeSpan)) {
+        if (\is_null($timestamp)) {
             return null;
         }
 
-        return static::timestampToDateTime($timestamp);
+        return \DateTime::createFromFormat('U', (string) $timestamp)?->setTimezone(self::getTimeZone()) ?: null;
+    }
+
+    public static function getDateTime(string $time_span_or_string_or_stamp): ?\DateTime
+    {
+        return static::timestampToDateTime(
+            self::getTimestamp($time_span_or_string_or_stamp)
+        );
     }
 }

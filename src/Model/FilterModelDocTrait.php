@@ -16,6 +16,7 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property bool   $isExpanded
  * @property bool   $isLimited
  * @property bool   $hasEmptyOption
+ * @property bool   $hasExtendedEvents
  * @property bool   $usePublished
  * @property bool   $useStart
  * @property bool   $useStop

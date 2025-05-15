@@ -255,7 +255,7 @@ class FilterContainer implements FlareCallbackContainerInterface
             return;
         }
 
-        if (!$timeString = DateTimeHelper::getTimeString($value)) {
+        if (!$timeString = DateTimeHelper::spanToTimeString($value)) {
             return;
         }
 
@@ -281,7 +281,9 @@ class FilterContainer implements FlareCallbackContainerInterface
             return $value;
         }
 
-        if ($model->{$configuredBy} === 'date') {
+        $mode = $model->{$configuredBy} ?? 'date';
+
+        if ($mode === 'date') {
             return \is_numeric($value) ? $value : (\strtotime($value) ?: '');
         }
 

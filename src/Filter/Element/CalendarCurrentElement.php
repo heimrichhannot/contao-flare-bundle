@@ -50,16 +50,21 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
             }
         }
 
-        $qb->where($qb->expr()->or(
+        $or = [
             "startTime>=:start AND startTime<=:end",  // event starts in range
-            "endTime>=:start AND endTime<=:end",  // event ends in range
-            "startTime<=:start AND endTime>=:end",  // event is in range
             $qb->expr()->and(  // event is recurring
                 "recurring=1",
                 $qb->expr()->or("recurrences=0", "repeatEnd>=:start"),
                 "startTime<=:end",  // event starts before end of range
             ),
-        ));
+        ];
+
+        if ($filterModel->hasExtendedEvents) {
+            $or[] = "endTime>=:start AND endTime<=:end";  // event ends in range
+            $or[] = "startTime<=:start AND endTime>=:end";  // event is in range
+        }
+
+        $qb->where($qb->expr()->or(...$or));
 
         $qb->bind('start', $start);
         $qb->bind('end', $stop);
@@ -69,7 +74,7 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
     {
         $filterModel = $config->getFilterModel();
 
-        $palette = '{date_start_legend},configureStart;{date_stop_legend},configureStop;';
+        $palette = '{date_start_legend},configureStart,hasExtendedEvents;{date_stop_legend},configureStop;';
 
         if (!$filterModel->intrinsic) {
             $palette .= '{form_legend},isLimited;';
@@ -90,14 +95,11 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
             return $options;
         }
 
-        $timeZone = new \DateTimeZone(Config::get('timeZone') ?: \date_default_timezone_get() ?: 'UTC');
-
         if ($filterModel->configureStart
             && $filterModel->startAt
             && ($startAt = \strtotime($filterModel->startAt))
             && ($startAt = DateTimeHelper::timestampToDateTime($startAt)))
         {
-            $startAt->setTimezone($timeZone);
             $options['from_min'] = $startAt;
             $options['to_min'] = $startAt;
         }
@@ -107,7 +109,6 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
             && ($stopAt = \strtotime($filterModel->stopAt))
             && ($stopAt = DateTimeHelper::timestampToDateTime($stopAt)))
         {
-            $stopAt->setTimezone($timeZone);
             $options['from_max'] = $stopAt;
             $options['to_max'] = $stopAt;
         }

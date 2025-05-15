@@ -24,6 +24,15 @@ class EventsList implements ListItemProviderContract, PaletteContract, PresetFil
 
     public function getPalette(PaletteConfig $config): ?string
     {
+        if ($suffix = $config->getSuffix())
+        {
+            $suffix = \str_replace('sortSettings', '', $suffix);
+            $suffix = \preg_replace('/(?:^|;)\{[^}]*},*(?:;|$)/', ';', $suffix);
+            $suffix = \preg_replace('/;{2,}/', ';', $suffix);
+            $suffix = \trim($suffix, ';');
+            $config->setSuffix($suffix);
+        }
+
         return null;
     }
 

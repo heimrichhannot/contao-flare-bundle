@@ -26,8 +26,8 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
         $submittedData = $context->getSubmittedData();
         $filterModel = $context->getFilterModel();
 
-        $start = DateTimeHelper::getTimestamp($filterModel->startAt) ?: 0;
-        $end = DateTimeHelper::getTimestamp($filterModel->stopAt) ?: DateTimeHelper::maxTimestamp();
+        $start = \strtotime($filterModel->startAt) ?: 0;
+        $stop = \strtotime($filterModel->stopAt) ?: DateTimeHelper::maxTimestamp();
 
         $from = $submittedData['from'] ?? null;
         $to = $submittedData['to'] ?? null;
@@ -45,8 +45,8 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
         {
             $to = $to->getTimestamp();
 
-            if (!$filterModel->isLimited || $to <= $end) {
-                $end = $to;
+            if (!$filterModel->isLimited || $to <= $stop) {
+                $stop = $to;
             }
         }
 
@@ -62,7 +62,7 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
         ));
 
         $qb->bind('start', $start);
-        $qb->bind('end', $end);
+        $qb->bind('end', $stop);
     }
 
     public function getPalette(PaletteConfig $config): ?string

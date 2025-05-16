@@ -28,9 +28,9 @@ class ListViewManager
 {
     protected array $filterContextCache = [];
     protected array $formCache = [];
-    protected array $entriesCache = [];
-    protected array $sortCache = [];
-    protected array $paginatorCache = [];
+    protected array $listEntriesCache = [];
+    protected array $listSortCache = [];
+    protected array $listPaginatorCache = [];
 
     public function __construct(
         private readonly FilterContextManager    $contextManager,
@@ -126,8 +126,8 @@ class ListViewManager
         }
 
         $cacheKey = $this->makeCacheKey($listModel, $formName);
-        if (isset($this->sortCache[$cacheKey])) {
-            return $this->sortCache[$cacheKey];
+        if (isset($this->listSortCache[$cacheKey])) {
+            return $this->listSortCache[$cacheKey];
         }
 
         if (!$listModel->sortSettings) {
@@ -139,7 +139,7 @@ class ListViewManager
             return null;
         }
 
-        return $this->sortCache[$cacheKey] = SortDescriptor::fromSettings($sortSettings);
+        return $this->listSortCache[$cacheKey] = SortDescriptor::fromSettings($sortSettings);
     }
 
     /**
@@ -162,8 +162,8 @@ class ListViewManager
         }
 
         $cacheKey = $this->makeCacheKey($listModel, $formName, (string) $paginatorConfig);
-        if (isset($this->paginatorCache[$cacheKey])) {
-            return $this->paginatorCache[$cacheKey];
+        if (isset($this->listPaginatorCache[$cacheKey])) {
+            return $this->listPaginatorCache[$cacheKey];
         }
 
         $itemProvider = $this->itemProvider->ofListModel($listModel);
@@ -179,7 +179,7 @@ class ListViewManager
             throw new FlareException($e->getMessage(), $e->getCode(), $e);
         }
 
-        return $this->paginatorCache[$cacheKey] = $this->paginatorBuilderFactory
+        return $this->listPaginatorCache[$cacheKey] = $this->paginatorBuilderFactory
             ->create()
             ->fromConfig($paginatorConfig)
             ->queryPrefix($formName)
@@ -213,9 +213,9 @@ class ListViewManager
         }
 
         $cacheKey = $this->makeCacheKey($listModel, $formName, (string) $paginatorConfig);
-        if (isset($this->entriesCache[$cacheKey]))
+        if (isset($this->listEntriesCache[$cacheKey]))
         {
-            return $this->entriesCache[$cacheKey];
+            return $this->listEntriesCache[$cacheKey];
         }
 
         $itemProvider = $this->itemProvider->ofListModel($listModel);
@@ -241,9 +241,23 @@ class ListViewManager
             throw new FlareException($e->getMessage(), $e->getCode(), $e);
         }
 
-        $this->entriesCache[$cacheKey] = $entries;
+        $this->listEntriesCache[$cacheKey] = $entries;
 
         return $entries;
+    }
+
+    /**
+     * @throws FilterException
+     */
+    public function getEntry(
+        ListModel       $listModel,
+        string          $formName,
+        int             $id,
+    ): ?array {
+        $itemProvider = $this->itemProvider->ofListModel($listModel);
+        $filters = $this->getFilterContextCollection($listModel, $formName);
+
+        return $itemProvider->fetchEntry(filters: $filters, id: $id);
     }
 
     /**
@@ -261,9 +275,7 @@ class ListViewManager
     public function getModel(
         ListModel       $listModel,
         string          $formName,
-        PaginatorConfig $paginatorConfig,
         int             $id,
-        ?SortDescriptor $sortDescriptor = null,
     ): Model {
         $registry = Model\Registry::getInstance();
         if ($model = $registry->fetch($listModel->dc, $id))
@@ -277,14 +289,7 @@ class ListViewManager
             throw new FlareException(\sprintf('Model class does not exist: "%s"', $modelClass), source: __METHOD__);
         }
 
-        $entries = $this->getEntries(
-            listModel: $listModel,
-            formName: $formName,
-            paginatorConfig: $paginatorConfig,
-            sortDescriptor: $sortDescriptor,
-        );
-
-        if (!$row = $entries[$id] ?? null) {
+        if (!$row = $this->getEntry($listModel, $formName, $id)) {
             throw new FlareException('Invalid entry id.', source: __METHOD__);
         }
 
@@ -303,7 +308,6 @@ class ListViewManager
      *
      * @param ListModel       $listModel The list model.
      * @param string          $formName The form name.
-     * @param PaginatorConfig $paginatorConfig The paginator configuration.
      * @param int             $id The entry ID.
      *
      * @return string|null The URL of the details page, or null if not found.
@@ -313,7 +317,6 @@ class ListViewManager
     public function getDetailsPageUrl(
         ListModel       $listModel,
         string          $formName,
-        PaginatorConfig $paginatorConfig,
         int             $id,
     ): ?string {
         if (!$pageId = \intval($listModel->jumpToReader ?: 0)) {
@@ -321,7 +324,7 @@ class ListViewManager
         }
 
         $autoItemField = $listModel->getAutoItemField();
-        $model = $this->getModel($listModel, $formName, $paginatorConfig, $id);
+        $model = $this->getModel($listModel, $formName, $id);
 
         if (!$autoItem = CallbackHelper::tryGetProperty($model, $autoItemField)) {
             return null;

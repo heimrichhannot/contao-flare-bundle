@@ -2,6 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
+use HeimrichHannot\FlareBundle\Contract\Config\FilterDefinition;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
@@ -72,5 +73,23 @@ class SimpleEquationElement implements PaletteContract
             SqlEquationOperator::IS_NULL, SqlEquationOperator::IS_NOT_NULL => '{flare_simple_equation_legend},equationLeft,equationOperator',
             default => '{flare_simple_equation_legend},equationLeft,equationOperator,equationRight',
         };
+    }
+
+    public static function define(
+        string              $equationLeft,
+        SqlEquationOperator $equationOperator,
+        mixed               $equationRight = null,
+    ): FilterDefinition {
+        $definition = new FilterDefinition(
+            alias: static::TYPE,
+            title: 'Simple Equation',
+            intrinsic: true,
+        );
+
+        $definition->equationLeft = $equationLeft;
+        $definition->equationOperator = $equationOperator->value;
+        $definition->equationRight = $equationRight;
+
+        return $definition;
     }
 }

@@ -39,9 +39,7 @@ readonly class ListViewResolver implements ListViewResolverInterface
         return $this->manager->getModel(
             listModel: $dto->getListModel(),
             formName: $dto->getFormName(),
-            paginatorConfig: $dto->getPaginatorConfig(),
             id: $id,
-            sortDescriptor: $dto->getSortDescriptor(),
         );
     }
 
@@ -91,7 +89,6 @@ readonly class ListViewResolver implements ListViewResolverInterface
         return $this->manager->getDetailsPageUrl(
             listModel: $dto->getListModel(),
             formName: $dto->getFormName(),
-            paginatorConfig: $dto->getPaginatorConfig(),
             id: $id,
         );
     }

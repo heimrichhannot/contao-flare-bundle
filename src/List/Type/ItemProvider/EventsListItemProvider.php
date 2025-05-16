@@ -5,24 +5,30 @@ namespace HeimrichHannot\FlareBundle\List\Type\ItemProvider;
 use Contao\StringUtil;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Exception\NotImplementedException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
+use HeimrichHannot\FlareBundle\List\AbstractListItemProvider;
 use HeimrichHannot\FlareBundle\List\ListFilterTrait;
 use HeimrichHannot\FlareBundle\List\ListItemProvider;
-use HeimrichHannot\FlareBundle\List\ListItemProviderInterface;
+use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
-class EventsListItemProvider implements ListItemProviderInterface
+class EventsListItemProvider extends AbstractListItemProvider
 {
     use ListFilterTrait;
 
     public function __construct(
         private readonly Connection               $connection,
         private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly FilterContextManager     $filterContextManager,
         private readonly ListItemProvider         $listItemProvider,
-    ) {}
+    ) {
+        parent::__construct($this->filterContextManager);
+    }
 
     protected function getConnection(): Connection
     {
@@ -34,20 +40,125 @@ class EventsListItemProvider implements ListItemProviderInterface
         return $this->eventDispatcher;
     }
 
+    /**
+     * @throws FilterException
+     * @throws FlareException
+     */
     public function fetchCount(FilterContextCollection $filters): int
     {
-        // TODO: Implement fetchCount() method.
+        $byDate = $this->fetchEntriesGrouped(
+            filters: $filters,
+            reduceSelect: true,
+        );
 
-        return 0;
+        $count = 0;
+        foreach ($byDate as $entriesOnDate)
+        {
+            $count += \count($entriesOnDate);
+        }
+
+        return $count;
     }
 
     /**
      * @throws FilterException
+     * @throws FlareException
      */
     public function fetchEntries(
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
+    ): array {
+        $byDate = $this->fetchEntriesGrouped(
+            filters: $filters,
+            sortDescriptor: $sortDescriptor,
+        );
+
+        $table = $filters->getTable();
+
+        // Now, we need to flatten the array and sort it by date while respecting the paginator
+        $limit = $paginator?->getItemsPerPage() ?: null;
+        $targetOffset = \max(0, ($paginator?->getFirstItemNumber() ?? 1) - 1);
+        $currentOffset = 0;
+        $entries = [];
+
+        foreach ($byDate as $date => $entriesOnDate)
+        {
+            if ($limit && \count($entries) >= $limit) {
+                break;
+            }
+
+            // If we have a target offset, we need to skip the entries until we reach it.
+            // If there are more entries on the current date than the target offset, we can skip all of them.
+            if ($targetOffset && $currentOffset + \count($entriesOnDate) <= $targetOffset) {
+                $currentOffset += \count($entriesOnDate);
+                continue;
+            }
+
+            // Otherwise, we need to skip the entries one by one until we reach the target offset.
+            // This way, each entry appears on exactly one page only.
+            foreach ($entriesOnDate as $entry)
+            {
+                if ($targetOffset && $currentOffset < $targetOffset) {
+                    $currentOffset++;
+                    continue;
+                }
+
+                // Group the entry by date by adding a new field to the entry (as defined in the dca)
+                $entry['_flare_event_group'] = $date;
+
+                // Add the entry to the list
+                $entries[] = $entry;
+
+                $this->entryCache["$table.{$entry['id']}"] ??= $entry;
+
+                if ($limit && \count($entries) >= $limit) {
+                    break;
+                }
+            }
+        }
+
+        return $entries;
+    }
+
+    /**
+     * @throws FilterException
+     * @throws FlareException
+     */
+    public function fetchIds(
+        FilterContextCollection $filters,
+        ?SortDescriptor         $sortDescriptor = null,
+        ?Paginator              $paginator = null,
+    ): array {
+        if ($paginator) {
+            throw new NotImplementedException('Pagination is not yet supported for fetching IDs of an events list.', method: __METHOD__);
+        }
+
+        $byDate = $this->fetchEntriesGrouped(
+            filters: $filters,
+            sortDescriptor: $sortDescriptor,
+            reduceSelect: true,
+        );
+
+        $ids = [];
+        foreach ($byDate as $entriesOnDate)
+        {
+            $ids = \array_merge($ids, \array_column($entriesOnDate, 'id'));
+        }
+
+        return $ids;
+    }
+
+    /**
+     * @return array<string, array> All entries mapped to each day on which they occur.
+     *
+     * @throws FilterException
+     * @throws FlareException
+     */
+    protected function fetchEntriesGrouped(
+        FilterContextCollection $filters,
+        ?SortDescriptor         $sortDescriptor = null,
+        ?bool                   $reduceSelect = null,
     ): array {
         $sortDescriptor ??= SortDescriptor::fromMap([
             'startTime' => 'ASC',
@@ -57,6 +168,7 @@ class EventsListItemProvider implements ListItemProviderInterface
         $dto = $this->buildFilteredQuery(
             filters: $filters,
             order: $sortDescriptor?->toSql(),
+            select: $reduceSelect ? ['id', 'startTime', 'endTime', 'repeatEach', 'repeatEnd'] : null,
         );
 
         if (!$dto->isAllowed())
@@ -64,11 +176,16 @@ class EventsListItemProvider implements ListItemProviderInterface
             return [];
         }
 
-        $result = $this->connection->executeQuery($dto->getQuery(), $dto->getParams(), $dto->getTypes());
+        try
+        {
+            $result = $this->connection->executeQuery($dto->getQuery(), $dto->getParams(), $dto->getTypes());
 
-        $entries = $result->fetchAllAssociative();
-
-        $entries = \array_combine(\array_column($entries, 'id'), $entries);
+            $entries = $result->fetchAllAssociative();
+        }
+        catch (\Throwable $exception)
+        {
+            throw new FlareException($exception->getMessage(), $exception->getCode(), $exception, method: __METHOD__);
+        }
 
         $result->free();
 
@@ -102,7 +219,11 @@ class EventsListItemProvider implements ListItemProviderInterface
         foreach ($byDate as $date => $entries)
         {
             \usort($entries, function ($a, $b) {
-                return $a['startTime'] <=> $b['startTime'];
+                if (0 === $comp = $a['startTime'] <=> $b['startTime']) {
+                    return $a['endTime'] <=> $b['endTime'];
+                }
+
+                return $comp;
             });
 
             $byDate[$date] = $entries;
@@ -113,55 +234,29 @@ class EventsListItemProvider implements ListItemProviderInterface
             return $a <=> $b;
         });
 
-        // Now, we need to flatten the array and sort it by date while respecting the paginator
-        $limit = $paginator?->getItemsPerPage() ?: null;
-        $targetOffset = $paginator?->getOffset() ?: null;
-        $currentOffset = 0;
-        $entries = [];
-
-        foreach ($byDate as $entriesOnDate)
-        {
-            if ($limit && \count($entries) >= $limit) {
-                break;
-            }
-
-            // If we have a target offset, we need to skip the entries until we reach it.
-            // If there are more entries on the current date than the target offset, we can skip all of them.
-            if ($targetOffset && $currentOffset + \count($entriesOnDate) <= $targetOffset) {
-                $currentOffset += \count($entriesOnDate);
-                continue;
-            }
-
-            // Otherwise, we need to skip the entries one by one until we reach the target offset.
-            // This way, each entry appears on exactly one page only.
-            foreach ($entriesOnDate as $entry)
-            {
-                if ($targetOffset && $currentOffset < $targetOffset) {
-                    $currentOffset++;
-                    continue;
-                }
-
-                $entries[$entry['id']] = $entry;
-
-                if ($limit && \count($entries) >= $limit) {
-                    break;
-                }
-            }
-        }
-
-        return $entries;
+        return $byDate;
     }
 
+    /**
+     * @throws FlareException
+     */
     protected function fillInitialEvents(array &$out, array $entry, \DateTime $startDate, \DateTime $endDate): void
     {
-        $interval = new \DateInterval('P1D');
-        $period = new \DatePeriod($startDate, $interval, $endDate->modify('+1 day'));
-        foreach ($period as $date)
-        {
-            $out[$date->format('Y-m-d')][] = $entry;
+        try {
+            $interval = new \DateInterval('P1D');
+            $period = new \DatePeriod($startDate, $interval, $endDate->modify('+1 day'));
+            foreach ($period as $date)
+            {
+                $out[$date->format('Y-m-d')][] = $entry;
+            }
+        } catch (\Exception $e) {
+            throw new FlareException($e->getMessage(), $e->getCode(), $e, method: __METHOD__);
         }
     }
 
+    /**
+     * @throws FlareException
+     */
     protected function fillRecurringEvents(array &$out, array $entry, \DateTime $startDate, \DateTime $endDate): void
     {
         $repeat = StringUtil::deserialize($entry['repeatEach'] ?? null, true);
@@ -195,29 +290,26 @@ class EventsListItemProvider implements ListItemProviderInterface
             return;
         }
 
-        $repeatDate = clone $startDate;
-        $repeatDate->modify($timeStr);
-
-        $repeatEnd = (DateTimeHelper::timestampToDateTime($entry['repeatEnd'] ?? null)
-            ?->setTimezone(DateTimeHelper::getTimeZone())
-            ->setTime(0, 0, 0)
-        ) ?: clone $endDate;
-
-        while ($repeatDate <= $repeatEnd)
+        try
         {
-            $out[$repeatDate->format('Y-m-d')][] = $entry;
+            $repeatDate = clone $startDate;
+            $repeatDate->modify($timeStr);
 
-            $repeatDate->add($repeatInterval);
+            $repeatEnd = (DateTimeHelper::timestampToDateTime($entry['repeatEnd'] ?? null)
+                ?->setTimezone(DateTimeHelper::getTimeZone())
+                ->setTime(0, 0, 0)
+            ) ?: clone $endDate;
+
+            while ($repeatDate <= $repeatEnd)
+            {
+                $out[$repeatDate->format('Y-m-d')][] = $entry;
+
+                $repeatDate->add($repeatInterval);
+            }
         }
-    }
-
-    public function fetchIds(
-        FilterContextCollection $filters,
-        ?SortDescriptor         $sortDescriptor = null,
-        ?Paginator              $paginator = null,
-    ): array {
-        // TODO: Implement fetchIds() method.
-
-        return [];
+        catch (\Exception $e)
+        {
+            throw new FlareException($e->getMessage(), $e->getCode(), $e, method: __METHOD__);
+        }
     }
 }

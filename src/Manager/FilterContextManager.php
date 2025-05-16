@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Manager;
 
 use Contao\Controller;
+use HeimrichHannot\FlareBundle\Contract\Config\FilterDefinition;
 use HeimrichHannot\FlareBundle\Contract\Config\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\PresetFiltersContract;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
-use HeimrichHannot\FlareBundle\List\Type\AbstractListType;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
@@ -106,16 +106,24 @@ readonly class FilterContextManager
                 continue;
             }
 
-            if (!$config = $this->filterElementRegistry->get($definition->getAlias())) {
-                continue;
+            if ($filterContext = $this->definitionToContext($listModel, $definition))
+            {
+                $collection->add($filterContext);
             }
-
-            $filterModel = new FilterModel();
-            $filterModel->setRow($definition->getRow());
-
-            $collection->add(new FilterContext($listModel, $filterModel, $config, $definition->getAlias(), $listModel->dc));
         }
 
         // todo: overhaul this mechanic
+    }
+
+    public function definitionToContext(ListModel $listModel, FilterDefinition $definition): ?FilterContext
+    {
+        if (!$config = $this->filterElementRegistry->get($definition->getAlias())) {
+            return null;
+        }
+
+        $filterModel = new FilterModel();
+        $filterModel->setRow($definition->getRow());
+
+        return new FilterContext($listModel, $filterModel, $config, $definition->getAlias(), $listModel->dc);
     }
 }

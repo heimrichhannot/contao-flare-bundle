@@ -40,6 +40,7 @@ trait ListFilterTrait
         ?int                    $offset = null,
         bool                    $isCounting = false,
         bool                    $onlyId = false,
+        ?array                  $select = null,
     ): FilteredQueryDto {
         $combinedConditions = [];
         $combinedParameters = [];
@@ -74,9 +75,17 @@ trait ListFilterTrait
             $combinedTypes = \array_merge($combinedTypes, $types);
         }
 
+        if (\is_array($select))
+        {
+            $select = \array_map(function ($value) use ($as) {
+                return $as . "." . $this->getConnection()->quoteIdentifier($value);
+            }, $select);
+        }
+
         $finalSQL = match (true) {
             $isCounting => "SELECT COUNT(*) AS count",
             $onlyId => "SELECT $as.id AS id",
+            \is_array($select) => "SELECT " . \implode(',', $select),
             default => "SELECT *",
         };
         $finalSQL .= " FROM $table AS $as WHERE ";

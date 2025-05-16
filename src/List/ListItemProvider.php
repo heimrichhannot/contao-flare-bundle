@@ -5,22 +5,24 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\List;
 
 use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\Dto\FilteredQueryDto;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
-class ListItemProvider implements ListItemProviderInterface
+class ListItemProvider extends AbstractListItemProvider
 {
     use ListFilterTrait;
 
     public function __construct(
         private readonly Connection               $connection,
         private readonly EventDispatcherInterface $eventDispatcher,
-    ) {}
+        private readonly FilterContextManager     $filterContextManager,
+    ) {
+        parent::__construct($filterContextManager);
+    }
 
     protected function getConnection(): Connection
     {
@@ -41,12 +43,23 @@ class ListItemProvider implements ListItemProviderInterface
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
     ): array {
-        return $this->fetchEntriesOrIds(
+        $entries = $this->fetchEntriesOrIds(
             filters: $filters,
             sortDescriptor: $sortDescriptor,
             paginator: $paginator,
             returnIds: false,
         );
+
+        $table = $filters->getTable();
+
+        $entries = \array_combine(
+            \array_map(fn ($id) => "$table.$id", \array_column($entries, 'id')),
+            $entries
+        );
+
+        $this->entryCache += $entries;
+
+        return $entries;
     }
 
     /**
@@ -97,7 +110,6 @@ class ListItemProvider implements ListItemProviderInterface
             $entries = $result->fetchFirstColumn();
         } else {
             $entries = $result->fetchAllAssociative();
-            $entries = \array_combine(\array_column($entries, 'id'), $entries);
         }
 
         $result->free();

@@ -197,12 +197,8 @@ class EventsListItemProvider extends AbstractListItemProvider
             $startTime = $entry['startTime'] ?? null;
             $endTime = $entry['endTime'] ?? $startTime;
 
-            $startDate = DateTimeHelper::timestampToDateTime($startTime)
-                ?->setTimezone(DateTimeHelper::getTimeZone())
-                ->setTime(0, 0, 0);
-            $endDate = DateTimeHelper::timestampToDateTime($endTime)
-                ?->setTimezone(DateTimeHelper::getTimeZone())
-                ->setTime(0, 0, 0);
+            $startDate = DateTimeHelper::timestampToDateTime($startTime)?->setTime(0, 0, 0);
+            $endDate = DateTimeHelper::timestampToDateTime($endTime)?->setTime(0, 0, 0);
 
             if (!$startDate || !$endDate) {
                 continue;

@@ -91,8 +91,6 @@ readonly class AutoTypePalettesCallback
         $prefix = $dcaPalettes['__prefix__'] ?? '';
         $suffix = $dcaPalettes['__suffix__'] ?? '';
 
-        $service = $config->getService();
-
         $paletteConfigFactory = static function () use ($alias, $dc, &$prefix, &$suffix, $listModel, $filterModel) {
             return new PaletteConfig(
                 alias: $alias,
@@ -103,6 +101,8 @@ readonly class AutoTypePalettesCallback
                 filterModel: $filterModel
             );
         };
+
+        $service = $config->getService();
 
         if ($service instanceof PaletteContract)
         {

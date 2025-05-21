@@ -8,6 +8,9 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 
 class FilterContext
 {
+    /**
+     * @internal Use {@see FilterContextBuilder} (inject {@see FilterContextBuilderFactory}) to create a new instance.
+     */
     public function __construct(
         private readonly ContentContext      $contentContext,
         private readonly ListModel           $listModel,

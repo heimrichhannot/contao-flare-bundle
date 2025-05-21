@@ -25,7 +25,7 @@ readonly class ListViewResolver implements ListViewResolverInterface
     {
         return $this->manager->getEntries(
             listModel: $dto->getListModel(),
-            formName: $dto->getFormName(),
+            contentContext: $dto->getContentContext(),
             paginatorConfig: $dto->getPaginatorConfig(),
             sortDescriptor: $dto->getSortDescriptor(),
         );
@@ -37,9 +37,9 @@ readonly class ListViewResolver implements ListViewResolverInterface
     public function getModel(ListViewDto $dto, int $id): Model
     {
         return $this->manager->getModel(
-            listModel: $dto->getListModel(),
-            formName: $dto->getFormName(),
             id: $id,
+            listModel: $dto->getListModel(),
+            contentContext: $dto->getContentContext(),
         );
     }
 
@@ -50,13 +50,8 @@ readonly class ListViewResolver implements ListViewResolverInterface
     {
         return $this->manager->getForm(
             listModel: $dto->getListModel(),
-            formName: $dto->getFormName(),
+            contentContext: $dto->getContentContext(),
         );
-    }
-
-    public function getFormName(ListViewDto $dto): string
-    {
-        return $this->manager->makeFormName(listModel: $dto->getListModel());
     }
 
     /**
@@ -66,7 +61,7 @@ readonly class ListViewResolver implements ListViewResolverInterface
     {
         return $this->manager->getPaginator(
             listModel: $dto->getListModel(),
-            formName: $dto->getFormName(),
+            contentContext: $dto->getContentContext(),
             paginatorConfig: $dto->getPaginatorConfig(),
         );
     }
@@ -87,9 +82,9 @@ readonly class ListViewResolver implements ListViewResolverInterface
     public function getDetailsPageUrl(ListViewDto $dto, int $id): ?string
     {
         return $this->manager->getDetailsPageUrl(
-            listModel: $dto->getListModel(),
-            formName: $dto->getFormName(),
             id: $id,
+            listModel: $dto->getListModel(),
+            contentContext: $dto->getContentContext(),
         );
     }
 }

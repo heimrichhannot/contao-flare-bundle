@@ -20,9 +20,11 @@ class FilterDefinition
         return $this->alias;
     }
 
-    public function setAlias(string $alias): void
+    public function setAlias(string $alias, ?string &$og = null): static
     {
+        $og = $this->alias;
         $this->alias = $alias;
+        return $this;
     }
 
     public function getTitle(): string
@@ -30,9 +32,10 @@ class FilterDefinition
         return $this->title;
     }
 
-    public function setTitle(string $title): void
+    public function setTitle(string $title): static
     {
         $this->title = $title;
+        return $this;
     }
 
     public function isIntrinsic(): bool
@@ -40,9 +43,10 @@ class FilterDefinition
         return $this->intrinsic;
     }
 
-    public function setIntrinsic(bool $intrinsic): void
+    public function setIntrinsic(bool $intrinsic): static
     {
         $this->intrinsic = $intrinsic;
+        return $this;
     }
 
     public function getProperties(): array

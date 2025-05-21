@@ -5,6 +5,7 @@ namespace HeimrichHannot\FlareBundle\List;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Dto\FilteredQueryDto;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokedEvent;
+use HeimrichHannot\FlareBundle\Event\FilterElementInvokingEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
@@ -15,6 +16,7 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 trait ListFilterTrait
 {
     abstract function getConnection(): Connection;
+
     abstract function getEventDispatcher(): EventDispatcherInterface;
 
     /**
@@ -53,7 +55,7 @@ trait ListFilterTrait
         {
             $filterQueryBuilder = new FilterQueryBuilder($this->getConnection()->createExpressionBuilder(), $as);
 
-            if (!$this->invokeFilter($filterQueryBuilder, $filter))
+            if (!$this->invokeFilter(filterQueryBuilder: $filterQueryBuilder, filter: $filter))
             {
                 continue;
             }
@@ -119,9 +121,30 @@ trait ListFilterTrait
             return false;
         }
 
+        $shouldInvoke = true;
+        $callback = $service->{$method}(...);
+
+        if ($dispatchEvent ?? true)
+        {
+            $event = new FilterElementInvokingEvent($filter, $callback, true);
+
+            $this->getEventDispatcher()->dispatch(
+                $event,
+                "huh.flare.filter_element.{$filter->getFilterAlias()}.invoking"
+            );
+
+            $shouldInvoke = $event->shouldInvoke();
+            $callback = $event->getCallback();
+        }
+
+        if (!$shouldInvoke)
+        {
+            return false;
+        }
+
         try
         {
-            $service->{$method}($filter, $filterQueryBuilder);
+            $callback($filter, $filterQueryBuilder);
         }
         catch (FilterException $e)
         {

@@ -13,6 +13,7 @@ use Contao\Input;
 use Contao\StringUtil;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Manager\ReaderManager;
@@ -68,9 +69,18 @@ class ReaderController extends AbstractContentElementController
             throw new InternalServerErrorHttpException($e->getMessage(), $e);
         }
 
+        $contentContext = new ContentContext(
+            context: ContentContext::CONTEXT_READER,
+            contentModel: $model,
+        );
+
         try
         {
-            $model = $this->readerManager->getModelByAutoItem($listModel, $autoItem);
+            $model = $this->readerManager->getModelByAutoItem(
+                autoItem: $autoItem,
+                listModel: $listModel,
+                contentContext: $contentContext,
+            );
         }
         catch (FlareException $e)
         {

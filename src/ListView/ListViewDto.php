@@ -3,8 +3,9 @@
 namespace HeimrichHannot\FlareBundle\ListView;
 
 use Contao\Model;
-use Contao\NewsModel;
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\ListView\Builder\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolverInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -20,26 +21,25 @@ class ListViewDto
     private array $models = [];
     private array $readerUrls = [];
 
+    /**
+     * @internal Use {@see ListViewBuilder} (inject {@see ListViewBuilderFactory}) to create a new instance.
+     */
     public function __construct(
+        private readonly ContentContext            $contentContext,
         private readonly ListModel                 $listModel,
         private readonly ListViewResolverInterface $resolver,
         private ?PaginatorConfig                   $paginatorConfig = null,
         private ?SortDescriptor                    $sortDescriptor = null,
-        private ?string                            $formName = null,
     ) {}
+
+    public function getContentContext(): ContentContext
+    {
+        return $this->contentContext;
+    }
 
     public function getListModel(): ListModel
     {
         return $this->listModel;
-    }
-
-    public function getFormName(): string
-    {
-        if (!isset($this->formName)) {
-            $this->formName = $this->resolver->getFormName($this);
-        }
-
-        return $this->formName;
     }
 
     /**

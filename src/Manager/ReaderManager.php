@@ -5,28 +5,31 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Manager;
 
 use Contao\Model;
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Builder\FilterContextBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationElement;
+use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\SqlEquationOperator;
 
 readonly class ReaderManager
 {
     public function __construct(
-        private FilterContextBuilderFactory $contextBuilderFactory,
-        private FilterContextManager        $contextManager,
-        private ListItemProviderManager     $itemProvider,
-        private SimpleEquationElement       $simpleEquation,
+        private FilterContextManager    $filterContextManager,
+        private ListItemProviderManager $itemProvider,
+        private FilterElementRegistry   $filterElementRegistry,
     ) {}
 
     /**
      * @throws FlareException
      */
-    public function getModelByAutoItem(ListModel $listModel, string|int $autoItem): ?Model
-    {
+    public function getModelByAutoItem(
+        string|int     $autoItem,
+        ListModel      $listModel,
+        ContentContext $contentContext,
+    ): ?Model {
         if (!($table = $listModel->dc)
-            || !($collection = $this->contextManager->collect($listModel)))
+            || !($collection = $this->filterContextManager->collect($listModel, $contentContext)))
         {
             return null;
         }
@@ -36,22 +39,24 @@ readonly class ReaderManager
             throw new FlareException(\sprintf('Model class does not exist: "%s"', $modelClass), source: __METHOD__);
         }
 
-        $context = $this->contextBuilderFactory->create()
-            ->setListModel($listModel)
-            ->setFilterElement($this->simpleEquation)
-            ->setFilterElementAlias('_flare_auto_item')
-            ->setFilterModelProperties([
-                'equationLeft' => $listModel->getAutoItemField(),
-                'equationOperator' => SqlEquationOperator::EQUALS->value,
-                'equationRight' => $autoItem,
-            ])
-            ->build();
+        $autoItemDefinition = SimpleEquationElement::define(
+            equationLeft: $listModel->getAutoItemField(),
+            equationOperator: SqlEquationOperator::EQUALS,
+            equationRight: $autoItem,
+        )->setAlias('_flare_auto_item', $ogAlias);
 
-        if (!$context) {
+        $autoItemFilterContext = $this->filterContextManager->definitionToContext(
+            definition: $autoItemDefinition,
+            listModel: $listModel,
+            contentContext: $contentContext,
+            config: $this->filterElementRegistry->get($ogAlias),
+        );
+
+        if (!$autoItemFilterContext) {
             return null;
         }
 
-        $collection->add($context);
+        $collection->add($autoItemFilterContext);
 
         $itemProvider = $this->itemProvider->ofListModel($listModel);
 

@@ -7,6 +7,7 @@ namespace HeimrichHannot\FlareBundle\Manager;
 use Contao\Model;
 use Contao\PageModel;
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
@@ -44,16 +45,18 @@ class ListViewManager
      * Get the filter context collection for a given list model and form name.
      * The form name ist required to cache the filter context collection, which is dependent on a filter form instance.
      *
-     * @param ListModel $listModel The list model.
-     * @param string    $formName  The form name.
+     * @param ListModel      $listModel The list model.
+     * @param ContentContext $contentContext The content context.
      *
      * @return FilterContextCollection The filter context collection.
      *
      * @throws FilterException If the list model is not published or setup is incomplete.
      */
-    public function getFilterContextCollection(ListModel $listModel, string $formName): FilterContextCollection
-    {
-        $cacheKey = $this->makeCacheKey($listModel, $formName);
+    public function getFilterContextCollection(
+        ListModel      $listModel,
+        ContentContext $contentContext,
+    ): FilterContextCollection {
+        $cacheKey = $this->makeCacheKey($listModel, $contentContext);
         if (isset($this->filterContextCache[$cacheKey])) {
             return $this->filterContextCache[$cacheKey];
         }
@@ -62,7 +65,7 @@ class ListViewManager
             throw new FilterException("List model not published [ID $listModel->id]", source: __METHOD__);
         }
 
-        if (!$filters = $this->contextManager->collect($listModel)) {
+        if (!$filters = $this->contextManager->collect($listModel, $contentContext)) {
             throw new FilterException("List model setup incomplete [ID {$listModel->id}]", source: __METHOD__);
         }
 
@@ -74,16 +77,16 @@ class ListViewManager
     /**
      * Get the form for a given list model and form name.
      *
-     * @param ListModel $listModel The list model.
-     * @param string    $formName  The form name.
+     * @param ListModel      $listModel The list model.
+     * @param ContentContext $contentContext The content context.
      *
      * @return FormInterface The form.
      *
      * @throws FilterException If the request is not available.
      */
-    public function getForm(ListModel $listModel, string $formName): FormInterface
+    public function getForm(ListModel $listModel, ContentContext $contentContext): FormInterface
     {
-        $cacheKey = $this->makeCacheKey($listModel, $formName);
+        $cacheKey = $this->makeCacheKey($listModel, $contentContext);
         if (isset($this->formCache[$cacheKey])) {
             return $this->formCache[$cacheKey];
         }
@@ -92,7 +95,8 @@ class ListViewManager
             throw new FilterException('Request not available', source: __METHOD__);
         }
 
-        $filters = $this->getFilterContextCollection($listModel, $formName);
+        $filters = $this->getFilterContextCollection($listModel, $contentContext);
+        $formName = $this->makeFormName($listModel, $contentContext);
 
         $form = $this->formManager->buildForm($filters, $formName);
         $form->handleRequest($request);
@@ -109,7 +113,7 @@ class ListViewManager
      * Get the sort descriptor for a given list model and form name.
      *
      * @param ListModel           $listModel The list model.
-     * @param string              $formName The form name.
+     * @param ContentContext      $contentContext The content context.
      * @param SortDescriptor|null $sortDescriptor A possible sort descriptor override (optional).
      *
      * @return SortDescriptor|null The sort descriptor, or null if none is found.
@@ -118,14 +122,14 @@ class ListViewManager
      */
     public function getSortDescriptor(
         ListModel       $listModel,
-        string          $formName,
+        ContentContext  $contentContext,
         ?SortDescriptor $sortDescriptor = null,
     ): ?SortDescriptor {
         if ($sortDescriptor instanceof SortDescriptor) {
             return $sortDescriptor;
         }
 
-        $cacheKey = $this->makeCacheKey($listModel, $formName);
+        $cacheKey = $this->makeCacheKey($listModel, $contentContext);
         if (isset($this->listSortCache[$cacheKey])) {
             return $this->listSortCache[$cacheKey];
         }
@@ -146,22 +150,25 @@ class ListViewManager
      * Get the paginator for a given list model, form name, and paginator configuration.
      *
      * @param ListModel       $listModel       The list model.
-     * @param string          $formName        The form name.
+     * @param ContentContext  $contentContext  The content context.
      * @param PaginatorConfig $paginatorConfig The paginator configuration.
      *
      * @return Paginator The paginator.
      *
      * @throws FlareException If an error occurs while fetching the total count of entries or building the paginator.
      */
-    public function getPaginator(ListModel $listModel, string $formName, PaginatorConfig $paginatorConfig): Paginator
-    {
-        $form = $this->getForm($listModel, $formName);
+    public function getPaginator(
+        ListModel       $listModel,
+        ContentContext  $contentContext,
+        PaginatorConfig $paginatorConfig,
+    ): Paginator {
+        $form = $this->getForm($listModel, $contentContext);
 
         if ($form->isSubmitted() && !$form->isValid()) {
             return $this->paginatorBuilderFactory->create()->buildEmpty();
         }
 
-        $cacheKey = $this->makeCacheKey($listModel, $formName, (string) $paginatorConfig);
+        $cacheKey = $this->makeCacheKey($listModel, $contentContext, (string) $paginatorConfig);
         if (isset($this->listPaginatorCache[$cacheKey])) {
             return $this->listPaginatorCache[$cacheKey];
         }
@@ -170,7 +177,7 @@ class ListViewManager
 
         try
         {
-            $filters = $this->getFilterContextCollection($listModel, $formName);
+            $filters = $this->getFilterContextCollection($listModel, $contentContext);
 
             $total = $itemProvider->fetchCount($filters);
         }
@@ -178,6 +185,8 @@ class ListViewManager
         {
             throw new FlareException($e->getMessage(), $e->getCode(), $e);
         }
+
+        $formName = $this->makeFormName($listModel, $contentContext);
 
         return $this->listPaginatorCache[$cacheKey] = $this->paginatorBuilderFactory
             ->create()
@@ -191,9 +200,10 @@ class ListViewManager
     /**
      * Get the entries for a given list model, form name, and optional paginator configuration.
      *
-     * @param ListModel       $listModel       The list model.
-     * @param string          $formName        The form name.
-     * @param PaginatorConfig $paginatorConfig The paginator configuration (optional).
+     * @param ListModel           $listModel The list model.
+     * @param ContentContext      $contentContext The content context.
+     * @param PaginatorConfig     $paginatorConfig The paginator configuration.
+     * @param SortDescriptor|null $sortDescriptor A possible sort descriptor override (optional).
      *
      * @return array The entries as an associative array of rows from the database, indexed by their primary key.
      *
@@ -201,18 +211,18 @@ class ListViewManager
      */
     public function getEntries(
         ListModel       $listModel,
-        string          $formName,
+        ContentContext  $contentContext,
         PaginatorConfig $paginatorConfig,
         ?SortDescriptor $sortDescriptor = null,
     ): array {
-        $form = $this->getForm($listModel, $formName);
+        $form = $this->getForm($listModel, $contentContext);
 
         if ($form->isSubmitted() && !$form->isValid())
         {
             return [];
         }
 
-        $cacheKey = $this->makeCacheKey($listModel, $formName, (string) $paginatorConfig);
+        $cacheKey = $this->makeCacheKey($listModel, $contentContext, (string) $paginatorConfig);
         if (isset($this->listEntriesCache[$cacheKey]))
         {
             return $this->listEntriesCache[$cacheKey];
@@ -222,9 +232,9 @@ class ListViewManager
 
         try
         {
-            $filters        = $this->getFilterContextCollection($listModel, $formName);
-            $sortDescriptor = $this->getSortDescriptor($listModel, $formName, $sortDescriptor);
-            $paginator      = $this->getPaginator($listModel, $formName, $paginatorConfig);
+            $filters        = $this->getFilterContextCollection($listModel, $contentContext);
+            $sortDescriptor = $this->getSortDescriptor($listModel, $contentContext, $sortDescriptor);
+            $paginator      = $this->getPaginator($listModel, $contentContext, $paginatorConfig);
 
             $entries = $itemProvider->fetchEntries(
                 filters: $filters,
@@ -249,33 +259,29 @@ class ListViewManager
     /**
      * @throws FilterException
      */
-    public function getEntry(
-        ListModel       $listModel,
-        string          $formName,
-        int             $id,
-    ): ?array {
+    public function getEntry(int $id, ListModel $listModel, ContentContext $contentContext): ?array
+    {
         $itemProvider = $this->itemProvider->ofListModel($listModel);
-        $filters = $this->getFilterContextCollection($listModel, $formName);
+        $filters = $this->getFilterContextCollection($listModel, $contentContext);
 
-        return $itemProvider->fetchEntry(filters: $filters, id: $id);
+        return $itemProvider->fetchEntry(id: $id, filters: $filters, contentContext: $contentContext);
     }
 
     /**
      * Get the model of an entry's row for a given list model, form name, and entry ID.
      *
-     * @param ListModel       $listModel The list model.
-     * @param string          $formName The form name.
      * @param int             $id The entry ID.
-     * @param PaginatorConfig $paginatorConfig The paginator configuration.
+     * @param ListModel       $listModel The list model.
+     * @param ContentContext  $contentContext The content context.
      *
      * @return Model The model.
      *
      * @throws FlareException If the model class does not exist or the entry ID is invalid.
      */
     public function getModel(
-        ListModel       $listModel,
-        string          $formName,
         int             $id,
+        ListModel       $listModel,
+        ContentContext  $contentContext,
     ): Model {
         $registry = Model\Registry::getInstance();
         if ($model = $registry->fetch($listModel->dc, $id))
@@ -289,7 +295,7 @@ class ListViewManager
             throw new FlareException(\sprintf('Model class does not exist: "%s"', $modelClass), source: __METHOD__);
         }
 
-        if (!$row = $this->getEntry($listModel, $formName, $id)) {
+        if (!$row = $this->getEntry(id: $id, listModel: $listModel, contentContext: $contentContext)) {
             throw new FlareException('Invalid entry id.', source: __METHOD__);
         }
 
@@ -306,25 +312,25 @@ class ListViewManager
     /**
      * Get the URL of the details page of a particular entry for a given list model, form name, and entry ID.
      *
-     * @param ListModel       $listModel The list model.
-     * @param string          $formName The form name.
-     * @param int             $id The entry ID.
+     * @param int            $id The entry ID.
+     * @param ListModel      $listModel The list model.
+     * @param ContentContext $contentContext The content context.
      *
      * @return string|null The URL of the details page, or null if not found.
      *
      * @throws FlareException If the details page is not found.
      */
     public function getDetailsPageUrl(
-        ListModel       $listModel,
-        string          $formName,
-        int             $id,
+        int            $id,
+        ListModel      $listModel,
+        ContentContext $contentContext,
     ): ?string {
         if (!$pageId = \intval($listModel->jumpToReader ?: 0)) {
             return null;
         }
 
         $autoItemField = $listModel->getAutoItemField();
-        $model = $this->getModel($listModel, $formName, $id);
+        $model = $this->getModel(id: $id, listModel: $listModel, contentContext: $contentContext);
 
         if (!$autoItem = CallbackHelper::tryGetProperty($model, $autoItemField)) {
             return null;
@@ -340,29 +346,29 @@ class ListViewManager
     /**
      * Create a cache key for a given list model, form name, and additional arguments.
      *
-     * @param ListModel $listModel The list model.
-     * @param string    $formName  The form name.
-     * @param mixed     ...$args   Additional arguments that should be part of the cache key (optional).
+     * @param ListModel      $listModel The list model.
+     * @param ContentContext $context The content context.
+     * @param mixed          ...$args Additional arguments that should be part of the cache key (optional).
      *
      * @return string The cache key.
      */
-    public function makeCacheKey(ListModel $listModel, string $formName, ...$args): string
+    public function makeCacheKey(ListModel $listModel, ContentContext $context, ...$args): string
     {
         $args = \array_filter($args);
-        $parts = [$listModel->id, $formName, ...$args];
+        $parts = [$listModel->id, $context->getUniqueId(), ...$args];
         return \implode('@', $parts);
     }
 
     /**
      * Automatically generate a form name for a given list model if none is provided.
      *
-     * @param ListModel     $listModel The list model.
-     * @param string|null   $formName  A provided form name (optional).
+     * @param ListModel      $listModel The list model.
+     * @param ContentContext $contentContext The content context.
      *
      * @return string The form name.
      */
-    public function makeFormName(ListModel $listModel, ?string $formName = null): string
+    public function makeFormName(ListModel $listModel, ContentContext $contentContext): string
     {
-        return $formName ?: 'fl' . $listModel->id;
+        return $contentContext->getFormName() ?: 'fl' . $listModel->id;
     }
 }

@@ -24,8 +24,6 @@ interface ListViewResolverInterface
      */
     public function getForm(ListViewDto $dto): FormInterface;
 
-    public function getFormName(ListViewDto $dto): string;
-
     public function getPaginator(ListViewDto $dto): Paginator;
 
     public function getPaginatorConfig(ListViewDto $dto): PaginatorConfig;

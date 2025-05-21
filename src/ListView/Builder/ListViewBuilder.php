@@ -2,6 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\ListView\Builder;
 
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\ListView\ListViewDto;
@@ -11,7 +12,7 @@ use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 
 class ListViewBuilder
 {
-    private ?string $formName = null;
+    private ContentContext $contentContext;
     private ListModel $listModel;
     private ?PaginatorConfig $paginatorConfig = null;
     private ?SortDescriptor $sortDescriptor = null;
@@ -20,15 +21,15 @@ class ListViewBuilder
         private readonly ListViewResolverInterface $resolver,
     ) {}
 
-    public function setListModel(ListModel $listModel): static
+    public function setContentContext(ContentContext $contentContext): static
     {
-        $this->listModel = $listModel;
+        $this->contentContext = $contentContext;
         return $this;
     }
 
-    public function setFormName(?string $formName): static
+    public function setListModel(ListModel $listModel): static
     {
-        $this->formName = $formName;
+        $this->listModel = $listModel;
         return $this;
     }
 
@@ -52,16 +53,20 @@ class ListViewBuilder
      */
     public function build(): ListViewDto
     {
+        if (!isset($this->contentContext)) {
+            throw new FlareException('No content context provided.');
+        }
+
         if (!isset($this->listModel)) {
             throw new FlareException('No list model provided.');
         }
 
         return new ListViewDto(
+            contentContext: $this->contentContext,
             listModel: $this->listModel,
             resolver: $this->resolver,
             paginatorConfig: $this->paginatorConfig,
             sortDescriptor: $this->sortDescriptor,
-            formName: $this->formName,
         );
     }
 }

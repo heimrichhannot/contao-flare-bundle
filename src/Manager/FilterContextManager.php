@@ -8,8 +8,11 @@ use Contao\Controller;
 use HeimrichHannot\FlareBundle\Contract\Config\FilterDefinition;
 use HeimrichHannot\FlareBundle\Contract\Config\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\PresetFiltersContract;
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Filter\Builder\FilterContextBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
+use HeimrichHannot\FlareBundle\Filter\FilterElementConfig;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -23,6 +26,7 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 readonly class FilterContextManager
 {
     public function __construct(
+        private FilterContextBuilderFactory $contextBuilderFactory,
         private FilterElementRegistry $filterElementRegistry,
         private ListTypeRegistry $listTypeRegistry,
     ) {}
@@ -30,7 +34,7 @@ readonly class FilterContextManager
     /**
      * Collects filter contexts for a given list model.
      */
-    public function collect(ListModel $listModel): ?FilterContextCollection
+    public function collect(ListModel $listModel, ContentContext $context): ?FilterContextCollection
     {
         if (!$listModel->id || !$table = $listModel->dc) {
             return null;
@@ -64,18 +68,33 @@ readonly class FilterContextManager
                 continue;
             }
 
-            $collection->add(new FilterContext($listModel, $filterModel, $config, $filterElementAlias, $table));
+            $filterContext = $this->contextBuilderFactory->create()
+                ->setContentContext($context)
+                ->setListModel($listModel)
+                ->setFilterModel($filterModel)
+                ->setFilterElementAlias($filterElementAlias)
+                ->setFilterElementConfig($config)
+                ->build();
+
+            $collection->add($filterContext);
 
             $addedFilters[] = $filterElementAlias;
         }
 
         // Add filters defined by the filter element type
-        $this->addPresetFilters($collection, $listModel, $listType, $addedFilters);
+        $this->addPresetFilters(
+            context: $context,
+            collection: $collection,
+            listModel: $listModel,
+            listType: $listType,
+            manualFilters: $addedFilters,
+        );
 
         return $collection;
     }
 
     private function addPresetFilters(
+        ContentContext          $context,
         FilterContextCollection $collection,
         ListModel               $listModel,
         object                  $listType,
@@ -106,8 +125,13 @@ readonly class FilterContextManager
                 continue;
             }
 
-            if ($filterContext = $this->definitionToContext($listModel, $definition))
-            {
+            $filterContext = $this->definitionToContext(
+                definition: $definition,
+                listModel: $listModel,
+                contentContext: $context,
+            );
+
+            if ($filterContext) {
                 $collection->add($filterContext);
             }
         }
@@ -115,15 +139,25 @@ readonly class FilterContextManager
         // todo: overhaul this mechanic
     }
 
-    public function definitionToContext(ListModel $listModel, FilterDefinition $definition): ?FilterContext
-    {
-        if (!$config = $this->filterElementRegistry->get($definition->getAlias())) {
+    public function definitionToContext(
+        FilterDefinition     $definition,
+        ListModel            $listModel,
+        ContentContext       $contentContext,
+        ?FilterElementConfig $config = null,
+    ): ?FilterContext {
+        if (!$config ??= $this->filterElementRegistry->get($definition->getAlias())) {
             return null;
         }
 
         $filterModel = new FilterModel();
         $filterModel->setRow($definition->getRow());
 
-        return new FilterContext($listModel, $filterModel, $config, $definition->getAlias(), $listModel->dc);
+        return $this->contextBuilderFactory->create()
+            ->setContentContext($contentContext)
+            ->setListModel($listModel)
+            ->setFilterModel($filterModel)
+            ->setFilterElementConfig($config)
+            ->setFilterElementAlias($definition->getAlias())
+            ->build();
     }
 }

@@ -2,16 +2,18 @@
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
-use Contao\Config;
+use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Event\FilterElementInvokingEvent;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Type\DateRangeFilterType;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsFilterElement(
     alias: CalendarCurrentElement::TYPE,
@@ -68,6 +70,16 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
 
         $qb->bind('start', $start);
         $qb->bind('end', $stop);
+    }
+
+    #[AsEventListener('huh.flare.filter_element.' . self::TYPE . '.invoking')]
+    public function onInvoking(FilterElementInvokingEvent $event): void
+    {
+        $filterModel = $event->getFilter()->getFilterModel();
+
+        if (!$filterModel->isLimited && $event->getFilter()->getContentContext()->isReader()) {
+            $event->setShouldInvoke(false);
+        }
     }
 
     public function getPalette(PaletteConfig $config): ?string

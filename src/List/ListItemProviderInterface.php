@@ -2,6 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\List;
 
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
@@ -37,7 +38,11 @@ interface ListItemProviderInterface
      *
      * @return array<string, mixed>|null Returns an associative array mapping column names to their values, or null if not found.
      */
-    public function fetchEntry(FilterContextCollection $filters, int $id): ?array;
+    public function fetchEntry(
+        int $id,
+        FilterContextCollection $filters,
+        ContentContext $contentContext,
+    ): ?array;
 
     /**
      * Fetch the IDs of entries from the database.

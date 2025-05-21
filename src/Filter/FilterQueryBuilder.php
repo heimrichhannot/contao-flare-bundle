@@ -86,6 +86,17 @@ class FilterQueryBuilder
         return $this;
     }
 
+    public function reset(?bool $resetBlocking = null): void
+    {
+        $this->conditions = [];
+        $this->parameters = [];
+        $this->types = [];
+
+        if ($resetBlocking ?? false) {
+            $this->blocking = false;
+        }
+    }
+
     protected function tryGetPDOType(mixed $value): ?int
     {
         if (\is_null($value)) {
@@ -197,7 +208,7 @@ class FilterQueryBuilder
 
                 return $matches[0];
             },
-            $sql
+            $sql,
         );
 
         // $parameters = \array_map(static fn($p) => \is_array($p) ? Str::sqlSerialize($p) : $p, $parameters);

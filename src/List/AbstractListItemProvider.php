@@ -2,6 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\List;
 
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
@@ -23,15 +24,16 @@ abstract class AbstractListItemProvider implements ListItemProviderInterface
     /**
      * Fetch a single entry by its ID. Caches the result for future calls.
      */
-    public function fetchEntry(FilterContextCollection $filters, int $id): ?array
+    public function fetchEntry(int $id, FilterContextCollection $filters, ContentContext $contentContext): ?array
     {
         if (isset($this->entryCache[$cacheKey = "{$filters->getTable()}.$id"])) {
             return $this->entryCache[$cacheKey];
         }
 
         $idFilterContext = $this->filterContextManager->definitionToContext(
-            $filters->getListModel(),
-            SimpleEquationElement::define('id', SqlEquationOperator::EQUALS, $id),
+            definition: SimpleEquationElement::define('id', SqlEquationOperator::EQUALS, $id),
+            listModel: $filters->getListModel(),
+            contentContext: $contentContext,
         );
 
         $filters->add($idFilterContext);

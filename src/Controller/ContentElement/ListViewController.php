@@ -11,13 +11,13 @@ use Contao\StringUtil;
 use Contao\Template;
 use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\ListView\Builder\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -86,14 +86,19 @@ class ListViewController extends AbstractContentElementController
 
         try
         {
+            $contentContext = new ContentContext(
+                context: ContentContext::CONTEXT_LIST,
+                contentModel: $model,
+                formName: $model->flare_formName ?: null,
+            );
+
             $paginatorConfig = new PaginatorConfig(
                 itemsPerPage: \intval($model->flare_itemsPerPage ?: 0)
             );
 
-            $listViewDto = $this->listViewBuilderFactory
-                ->create()
+            $listViewDto = $this->listViewBuilderFactory->create()
+                ->setContentContext($contentContext)
                 ->setListModel($listModel)
-                ->setFormName($model->flare_formName ?: null)
                 ->setPaginatorConfig($paginatorConfig)
                 ->setSortDescriptor(null)
                 ->build();

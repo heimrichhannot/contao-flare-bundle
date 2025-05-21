@@ -2,7 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Twig\Runtime;
 
-use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\ListView\ListViewDto;
 use HeimrichHannot\FlareBundle\ListView\Builder\ListViewBuilderFactory;
@@ -58,10 +58,15 @@ class FlareRuntime implements RuntimeExtensionInterface
             $sortDescriptor = SortDescriptor::fromMap($options['sort']);
         }
 
-        $listViewDto = $this->listViewBuilderFactory
-            ->create()
+        $contentContext = new ContentContext(
+            context: ContentContext::CONTEXT_TWIG,
+            contentModel: null,
+            formName: $options['form_name'] ?? null,
+        );
+
+        $listViewDto = $this->listViewBuilderFactory->create()
+            ->setContentContext($contentContext)
             ->setListModel($listModel)
-            ->setFormName($options['form_name'] ?? null)
             ->setPaginatorConfig($paginatorConfig)
             ->setSortDescriptor($sortDescriptor)
             ->build();

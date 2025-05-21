@@ -2,19 +2,26 @@
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 class FilterContext
 {
     public function __construct(
+        private readonly ContentContext      $contentContext,
         private readonly ListModel           $listModel,
         private readonly FilterModel         $filterModel,
         private readonly FilterElementConfig $filterElementConfig,
         private readonly string              $filterElementAlias,
         private readonly string              $table,
-        private mixed                        $submittedData = null
+        private mixed                        $submittedData = null,
     ) {}
+
+    public function getContentContext(): ContentContext
+    {
+        return $this->contentContext;
+    }
 
     public function getListModel(): ListModel
     {

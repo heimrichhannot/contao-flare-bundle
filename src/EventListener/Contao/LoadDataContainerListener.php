@@ -43,7 +43,7 @@ readonly class LoadDataContainerListener
             'tl_flare_list' => ListModel::findByPk($id),
         };
 
-        if (!$model || !$model->alias) {
+        if (!$model || !$model->type) {
             return;
         }
 
@@ -52,7 +52,7 @@ readonly class LoadDataContainerListener
             'tl_flare_list' => 'list.',
         };
 
-        $callbacks = $this->registry->get($prefix . $model->alias) ?? [];
+        $callbacks = $this->registry->get($prefix . $model->type) ?? [];
 
         if (empty($callbacks)) {
             return;

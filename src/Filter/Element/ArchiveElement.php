@@ -143,16 +143,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
         $filterModel = $context->getFilterModel();
         $inferrer = new PtableInferrer($filterModel, $context->getListModel());
 
-        $choices->enable();
-
-        if ($filterModel->hasEmptyOption)
-        {
-            $emptyOptionLabel = ($filterModel->formatEmptyOption === 'custom')
-                ? ($filterModel->formatEmptyOptionCustom)
-                : ($filterModel->formatEmptyOption ?: null);
-
-            $choices->add('', $emptyOptionLabel);
-        }
+        $choices->enable()->setEmptyOption((bool) $filterModel->hasEmptyOption);
 
         if ($ptable = $inferrer->getDcaMainPtable())
         {

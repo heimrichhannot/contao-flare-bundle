@@ -16,6 +16,8 @@ class ChoicesBuilder
     private array $choiceGroupMap = [];
     private string $modelSuffix = '';
     private bool $enabled = false;
+    private bool $emptyOption = false;
+    private LabelableInterface|string|null $emptyOptionLabel = null;
     private ?string $label = null;
     private array $mapTypeLabel = [];
 
@@ -54,6 +56,8 @@ class ChoicesBuilder
         Model|LabelableInterface|string $value,
         string|null                     $group = null,
     ): static {
+        $key = (string) $key;
+
         $this->choices[$key] = $value;
 
         if ($group !== null) {
@@ -103,6 +107,26 @@ class ChoicesBuilder
         return $this;
     }
 
+    public function hasEmptyOption(): bool
+    {
+        return $this->emptyOption;
+    }
+
+    public function setEmptyOption(LabelableInterface|string|bool|null $value): static
+    {
+        if (\is_bool($value))
+        {
+            $this->emptyOption = $value;
+
+            return $this;
+        }
+
+        $this->emptyOption = true;
+        $this->emptyOptionLabel = $value;
+
+        return $this;
+    }
+
     public function setModelSuffix(string $modelSuffix): static
     {
         $this->modelSuffix = $modelSuffix;
@@ -123,58 +147,89 @@ class ChoicesBuilder
     public function buildChoices(): array
     {
         $keys = \array_keys($this->choices);
-        return \array_combine($keys, $keys) ?: [];
+
+        $choices = [];
+        if ($this->emptyOption) {
+            $choices['__flare_empty__'] = '__flare_empty__';
+        }
+
+        return \array_merge($choices, \array_combine($keys, $keys) ?: []);
     }
 
     public function buildChoiceLabelCallback(): callable
     {
-        return function ($choice, $key, $value) {
-            $obj = $this->choices[$key] ?? null;
-
-            $params = [
-                '%@choice%' => Str::force($choice),
-                '%@key%' => Str::force($key),
-                '%@value%' => Str::force($value),
-                '%@type%' => \gettype($obj),
-                '%@class%' => \is_object($obj) ? \get_class($obj) : null,
-            ];
-
-            if (\is_string($obj))
+        return function (mixed $choice, mixed $key, mixed $value) {
+            if ($key === '__flare_empty__')
             {
-                return $this->translator->trans($obj, $params, 'flare_form');
+                return $this->buildChoiceLabel($this->emptyOptionLabel, '', '', '');
             }
 
-            $label = $this->label
-                ?? $this->mapTypeLabel[$obj::class]
-                ?? ($obj instanceof Model ? $this->tryGetModelLabel($obj::getTable()) : null);
-
-            if ($obj instanceof LabelableInterface)
-            {
-                $params = $obj->getLabelParameters();
-            }
-            elseif ($obj instanceof Model)
-            {
-                $label ??= (string) $obj->id;
-
-                $params['%@table%'] = $obj::getTable();
-                $params['%@name%'] = $this->translator->trans('table.' . $obj::getTable(), [], 'flare_form');
-
-                foreach ($obj->row() as $field => $value) {
-                    $params['%' . $field . '%'] = $value;
-                }
-
-                if ($this->getModelSuffix()) {
-                    $label = \trim($label) . ' ' . \trim($this->getModelSuffix());
-                }
-            }
-
-            return $this->translator->trans((string) $label ? : '-', $params, 'flare_form');
+            $obj = $this->choices[$value] ?? $this->choices[$key] ?? null;
+            return $this->buildChoiceLabel($obj, $choice, $key, $value);
         };
     }
 
+    public function buildChoiceLabel(mixed $obj, mixed $choice, mixed $key, mixed $value): string
+    {
+        $params = [
+            '%@choice%' => Str::force($choice),
+            '%@key%' => Str::force($key),
+            '%@value%' => Str::force($value),
+            '%@type%' => \gettype($obj),
+            '%@class%' => \is_object($obj) ? \get_class($obj) : null,
+        ];
+
+        if (\str_starts_with($choice, '0')) {
+            $x = 1;
+        }
+
+        if ($obj === null && $this->emptyOption)
+        {
+            return $this->translator->trans('empty_option.dash', $params, 'flare_form');
+        }
+
+        if (\is_string($obj))
+        {
+            return $this->translator->trans($obj, $params, 'flare_form');
+        }
+
+        $label = $this->label
+            ?? ($obj ? $this->mapTypeLabel[$obj::class] : null)
+            ?? ($obj instanceof Model ? $this->tryGetModelLabel($obj::getTable()) : null);
+
+        if ($obj instanceof LabelableInterface)
+        {
+            $params = \array_merge($params, $obj->getLabelParameters());
+        }
+        elseif ($obj instanceof Model)
+        {
+            $label ??= (string) $obj->id;
+
+            $params['%@table%'] = $obj::getTable();
+            $params['%@name%'] = $this->translator->trans('table.' . $obj::getTable(), [], 'flare_form');
+
+            foreach ($obj->row() as $field => $value) {
+                $params['%' . $field . '%'] = $value;
+            }
+
+            if ($this->getModelSuffix()) {
+                $label = \trim($label) . ' ' . \trim($this->getModelSuffix());
+            }
+        }
+
+        return $this->translator->trans((string) $label ? : '-', $params, 'flare_form');
+    }
+
+    /**
+     * Builds the Contao-compatible options array for a form field.
+     */
     public function buildOptions(): array
     {
         $options = [];
+
+        if ($this->emptyOption) {
+            $options[''] = $this->buildChoiceLabel($this->emptyOptionLabel, '', '', '');
+        }
 
         $labelFactory = $this->buildChoiceLabelCallback();
 

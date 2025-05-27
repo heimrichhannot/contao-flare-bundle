@@ -12,12 +12,14 @@ use Contao\Template;
 use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Event\ListViewBuiltEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\ListView\Builder\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -30,13 +32,14 @@ class ListViewController extends AbstractContentElementController
     public const TYPE = 'flare_listview';
 
     public function __construct(
-        private readonly SymfonyResponseTagger  $responseTagger,
-        private readonly ListViewBuilderFactory $listViewBuilderFactory,
-        private readonly KernelInterface        $kernel,
-        private readonly LoggerInterface        $logger,
-        private readonly ScopeMatcher           $scopeMatcher,
-        private readonly TranslationManager     $translationManager,
-        private readonly TranslatorInterface    $translator,
+        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly KernelInterface          $kernel,
+        private readonly ListViewBuilderFactory   $listViewBuilderFactory,
+        private readonly LoggerInterface          $logger,
+        private readonly ScopeMatcher             $scopeMatcher,
+        private readonly SymfonyResponseTagger    $responseTagger,
+        private readonly TranslationManager       $translationManager,
+        private readonly TranslatorInterface      $translator,
     ) {}
 
     /**
@@ -114,6 +117,17 @@ class ListViewController extends AbstractContentElementController
         $this->responseTagger->addTags(['contao.db.' . $listModel->dc]);
 
         $data = ['flare' => $listViewDto];
+
+        $event = new ListViewBuiltEvent(
+            contentContext: $contentContext,
+            contentModel: $model,
+            listModel: $listModel,
+            paginatorConfig: $paginatorConfig,
+            template: $template,
+            data: $data
+        );
+
+        $this->eventDispatcher->dispatch($event, 'huh.flare.list_view.built');
 
         $template->setData($data + $template->getData());
 

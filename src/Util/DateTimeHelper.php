@@ -52,6 +52,8 @@ class DateTimeHelper
 
     private static \DateTimeZone $timeZone;
 
+    private static array $timeSpanMap;
+
     public static function getTimeZone(): \DateTimeZone
     {
         if (isset(self::$timeZone)) {
@@ -68,14 +70,18 @@ class DateTimeHelper
 
     public static function getTimeSpanMap(): array
     {
-        $options = [];
-
-        foreach (self::TIME_SPANS as $timeSpanOptions)
-        {
-            $options += $timeSpanOptions;
+        if (isset(self::$timeSpanMap)) {
+            return self::$timeSpanMap;
         }
 
-        return $options;
+        $map = [];
+
+        foreach (self::TIME_SPANS as $options)
+        {
+            $map += $options;
+        }
+
+        return self::$timeSpanMap = $map;
     }
 
     public static function maxTimestamp(): int
@@ -88,7 +94,7 @@ class DateTimeHelper
         return self::getTimeSpanMap()[$timeSpan] ?? null;
     }
 
-    public static function getTimestamp(string $time_span_or_string_or_stamp): ?int
+    public static function toTimestamp(string $time_span_or_string_or_stamp): ?int
     {
         if (\is_numeric($time_span_or_string_or_stamp)) {
             return (int) $time_span_or_string_or_stamp;
@@ -108,10 +114,10 @@ class DateTimeHelper
         return \DateTime::createFromFormat('U', (string) $timestamp)?->setTimezone(self::getTimeZone()) ?: null;
     }
 
-    public static function getDateTime(string $time_span_or_string_or_stamp): ?\DateTime
+    public static function toDateTime(string $time_span_or_string_or_stamp): ?\DateTime
     {
         return static::timestampToDateTime(
-            self::getTimestamp($time_span_or_string_or_stamp)
+            self::toTimestamp($time_span_or_string_or_stamp)
         );
     }
 }

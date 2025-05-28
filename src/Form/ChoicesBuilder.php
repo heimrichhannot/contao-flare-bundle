@@ -6,11 +6,12 @@ use Contao\Model;
 use HeimrichHannot\FlareBundle\Contract\LabelableInterface;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ChoicesBuilder
 {
-    /** @var array<Model|LabelableInterface> $choices */
+    /** @var array<Model|LabelableInterface|string> $choices */
     private array $choices = [];
     private array $groups = [];
     private array $choiceGroupMap = [];
@@ -51,13 +52,16 @@ class ChoicesBuilder
         return $this;
     }
 
+    public function getChoice(string $key): Model|LabelableInterface|string|null
+    {
+        return $this->choices[$key] ?? null;
+    }
+
     public function add(
-        string|int                      $key,
+        string                          $key,
         Model|LabelableInterface|string $value,
         string|null                     $group = null,
     ): static {
-        $key = (string) $key;
-
         $this->choices[$key] = $value;
 
         if ($group !== null) {
@@ -158,63 +162,72 @@ class ChoicesBuilder
 
     public function buildChoiceLabelCallback(): callable
     {
-        return function (mixed $choice, mixed $key, mixed $value) {
+        return function (mixed $choice, string $key, mixed $value): TranslatableMessage|string {
             if ($key === '__flare_empty__')
             {
-                return $this->buildChoiceLabel($this->emptyOptionLabel, '', '', '');
+                return $this->buildChoiceLabel($this->emptyOptionLabel, '', '');
             }
 
-            $obj = $this->choices[$value] ?? $this->choices[$key] ?? null;
-            return $this->buildChoiceLabel($obj, $choice, $key, $value);
+            $obj = match (true) {
+                \is_object($choice) => $choice,
+                \is_string($choice), \is_numeric($choice) => $this->getChoice($key) ?? $choice,
+                default => null,
+            };
+
+            return $this->buildChoiceLabel($obj, $key, $value);
         };
     }
 
-    public function buildChoiceLabel(mixed $obj, mixed $choice, mixed $key, mixed $value): string
-    {
+    public function buildChoiceLabel(mixed $choice, string $key, mixed $value): TranslatableMessage|string {
         $params = [
             '%@choice%' => Str::force($choice),
             '%@key%' => Str::force($key),
             '%@value%' => Str::force($value),
-            '%@type%' => \gettype($obj),
-            '%@class%' => \is_object($obj) ? \get_class($obj) : null,
+            '%@type%' => \gettype($choice),
+            '%@class%' => \is_object($choice) ? \get_class($choice) : null,
         ];
 
-        if (\str_starts_with($choice, '0')) {
-            $x = 1;
-        }
-
-        if ($obj === null && $this->emptyOption)
+        if (\is_null($choice))
         {
             return $this->translator->trans('empty_option.dash', $params, 'flare_form');
         }
 
-        if (\is_string($obj))
+        if (\is_string($choice))
         {
-            return $this->translator->trans($obj, $params, 'flare_form');
+            return $this->translator->trans($choice, $params, 'flare_form');
         }
 
-        $label = $this->label
-            ?? ($obj ? $this->mapTypeLabel[$obj::class] : null)
-            ?? ($obj instanceof Model ? $this->tryGetModelLabel($obj::getTable()) : null);
+        $label = $this->label ?? null;
 
-        if ($obj instanceof LabelableInterface)
-        {
-            $params = \array_merge($params, $obj->getLabelParameters());
+        if ($choice instanceof Model) {
+            $label = $this->tryGetModelLabel($choice::getTable()) ?? $label;
         }
-        elseif ($obj instanceof Model)
+
+        if (is_object($choice) && isset($this->mapTypeLabel[$choice::class])) {
+            $label = $this->mapTypeLabel[$choice::class] ?? $label;
+        }
+
+        if (!$label && $choice instanceof Model) {
+            $label = (string) $choice->id;
+        }
+
+        if ($choice instanceof Model)
         {
-            $label ??= (string) $obj->id;
+            $params['%@table%'] = $choice::getTable();
+            $params['%@name%'] = $this->translator->trans('table.' . $choice::getTable(), [], 'flare_form');
 
-            $params['%@table%'] = $obj::getTable();
-            $params['%@name%'] = $this->translator->trans('table.' . $obj::getTable(), [], 'flare_form');
-
-            foreach ($obj->row() as $field => $value) {
+            foreach ($choice->row() as $field => $value) {
                 $params['%' . $field . '%'] = $value;
             }
 
             if ($this->getModelSuffix()) {
                 $label = \trim($label) . ' ' . \trim($this->getModelSuffix());
             }
+        }
+
+        if ($choice instanceof LabelableInterface)
+        {
+            $params = \array_merge($params, $choice->getLabelParameters());
         }
 
         return $this->translator->trans((string) $label ? : '-', $params, 'flare_form');

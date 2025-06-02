@@ -2,6 +2,10 @@
 
 namespace HeimrichHannot\FlareBundle\Twig\Runtime;
 
+use Contao\ContentModel;
+use Contao\Controller;
+use Contao\Model;
+use Contao\Template;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\ListView\ListViewDto;
@@ -92,5 +96,77 @@ class FlareRuntime implements RuntimeExtensionInterface
         }
 
         throw new \InvalidArgumentException('Invalid list model');
+    }
+
+    public function getTlContent(Model $model): ?callable
+    {
+        $table = $model->getTable();
+        $id = $model->id;
+
+        $text = Template::once(function () use ($table, $id) {
+            if (!$elm = ContentModel::findPublishedByPidAndTable($id, $table))
+            {
+                return '';
+            }
+
+            $text = '';
+
+            while ($elm->next())
+            {
+                $text .= Controller::getContentElement($elm->current());
+            }
+
+            return $text;
+        });
+
+        return $this->getCallableWrapper($text);
+    }
+
+    /**
+     * @see \Contao\CoreBundle\Twig\Interop\ContextFactory::getCallableWrapper()
+     * @return object{
+     *     __invoke: callable(mixed ...$args): mixed,
+     *     __toString: callable(): string,
+     *     invoke: callable(mixed ...$args): mixed
+     * }
+     */
+    private function getCallableWrapper(callable $callable): object
+    {
+        return new class($callable) implements \Stringable {
+            /**
+             * @var callable
+             */
+            private $callable;
+
+            public function __construct(callable $callable)
+            {
+                $this->callable = $callable;
+            }
+
+            /**
+             * Delegates call to callable, e.g. when in a Contao template context.
+             */
+            public function __invoke(mixed ...$args): mixed
+            {
+                return ($this->callable)(...$args);
+            }
+
+            /**
+             * Called when evaluating "{{ var }}" in a Twig template.
+             */
+            public function __toString(): string
+            {
+                return (string) $this();
+            }
+
+            /**
+             * Called when evaluating "{{ var.invoke() }}" in a Twig template. We do not cast
+             * to string here, so that other types (like arrays) are supported as well.
+             */
+            public function invoke(mixed ...$args): mixed
+            {
+                return $this(...$args);
+            }
+        };
     }
 }

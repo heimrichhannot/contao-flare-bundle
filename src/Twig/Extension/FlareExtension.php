@@ -16,6 +16,7 @@ class FlareExtension extends AbstractExtension
         return [
             new TwigFunction('flare', [FlareRuntime::class, 'getFlare']),
             new TwigFunction('flare_form', [FlareRuntime::class, 'createFormView']),
+            new TwigFunction('flare_content', [FlareRuntime::class, 'getTlContent'], ['is_safe' => ['html']]),
         ];
     }
 

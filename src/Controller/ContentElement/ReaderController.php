@@ -14,11 +14,13 @@ use Contao\StringUtil;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Event\ReaderBuiltEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Manager\ReaderManager;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -29,11 +31,12 @@ class ReaderController extends AbstractContentElementController
     public const TYPE = 'flare_reader';
 
     public function __construct(
-        private readonly EntityCacheTags    $entityCacheTags,
-        private readonly LoggerInterface    $logger,
-        private readonly ReaderManager      $readerManager,
-        private readonly ScopeMatcher       $scopeMatcher,
-        private readonly TranslationManager $translator,
+        private readonly EntityCacheTags          $entityCacheTags,
+        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly LoggerInterface          $logger,
+        private readonly ReaderManager            $readerManager,
+        private readonly ScopeMatcher             $scopeMatcher,
+        private readonly TranslationManager       $translator,
     ) {}
 
     /**
@@ -46,7 +49,7 @@ class ReaderController extends AbstractContentElementController
             : $this->getBackendResponse($template, $model, $request);
     }
 
-    protected function getFrontendResponse(Template $template, ContentModel $model, Request $request): Response
+    protected function getFrontendResponse(Template $template, ContentModel $contentModel, Request $request): Response
     {
         if (!$autoItem = Input::get('auto_item')) {
             throw $this->createNotFoundException('No auto_item supplied.');
@@ -55,7 +58,7 @@ class ReaderController extends AbstractContentElementController
         try
         {
             /** @var ?ListModel $listModel */
-            $listModel = $model->getRelated(ContentContainer::FIELD_LIST) ?? null;
+            $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST) ?? null;
 
             if (!$listModel instanceof ListModel) {
                 throw new FilterException('No list model found.');
@@ -63,7 +66,7 @@ class ReaderController extends AbstractContentElementController
         }
         catch (\Exception $e)
         {
-            $this->logger->error(\sprintf('%s (tl_content.id=%s)', $e->getMessage(), $model->id),
+            $this->logger->error(\sprintf('%s (tl_content.id=%s)', $e->getMessage(), $contentModel->id),
                 ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
 
             throw new InternalServerErrorHttpException($e->getMessage(), $e);
@@ -71,7 +74,7 @@ class ReaderController extends AbstractContentElementController
 
         $contentContext = new ContentContext(
             context: ContentContext::CONTEXT_READER,
-            contentModel: $model,
+            contentModel: $contentModel,
         );
 
         try
@@ -84,7 +87,7 @@ class ReaderController extends AbstractContentElementController
         }
         catch (FlareException $e)
         {
-            $this->logger->error(\sprintf('%s (tl_content.id=%s, tl_flare_list.id=%s)', $e->getMessage(), $model->id, $listModel->id),
+            $this->logger->error(\sprintf('%s (tl_content.id=%s, tl_flare_list.id=%s)', $e->getMessage(), $contentModel->id, $listModel->id),
                 ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
 
             throw new InternalServerErrorHttpException($e->getMessage(), $e);
@@ -98,7 +101,17 @@ class ReaderController extends AbstractContentElementController
 
         $data = ['model' => $model];
 
-        $template->setData($data + $template->getData());
+        $event = new ReaderBuiltEvent(
+            contentContext: $contentContext,
+            contentModel: $contentModel,
+            listModel: $listModel,
+            template: $template,
+            data: $data
+        );
+
+        $this->eventDispatcher->dispatch($event, 'huh.flare.reader.built');
+
+        $template->setData($event->getData() + $template->getData());
 
         return $template->getResponse();
     }

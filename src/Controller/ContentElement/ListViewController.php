@@ -129,7 +129,7 @@ class ListViewController extends AbstractContentElementController
 
         $this->eventDispatcher->dispatch($event, 'huh.flare.list_view.built');
 
-        $template->setData($data + $template->getData());
+        $template->setData($event->getData() + $template->getData());
 
         return $template->getResponse();
     }

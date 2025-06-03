@@ -39,23 +39,25 @@
                 <br><small>{{ 'list.default_template.description'|trans([], 'flare') }}</small>
             </div>
 
-            {% for entry in flare.entries %}
-                <details>
-                    <summary>#{{ entry.id }} <a href="{{ flare.to(entry.id) }}">{{ entry.title ?? entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>') }}</a></summary>
-                    <div style="width: 100%; max-height: max(30vh, 150px); overflow: auto auto; background: #def; margin-bottom: .5rem">
-                        {% set model = flare.model(entry.id) %}
-                        <div style="display: grid; grid-template-columns: max-content auto; gap: .125rem 1rem; font-family: monospace; padding: .5rem 1rem 3rem; font-size: .9em;">
-                            <strong style="grid-column: 1 / -1; margin-bottom: .25rem">{{ model.table }}</strong>
-                            {% for key, field in entry %}
-                                {% if key not in ['password'] %}
-                                    <div>{{ key }}</div>
-                                    <div>{{ field|default('-') }}</div>
-                                {% endif %}
-                            {% endfor %}
+            {% if app.request.get('_preview') or app.environment == 'dev' %}
+                {% for entry in flare.entries %}
+                    <details>
+                        <summary>#{{ entry.id }} <a href="{{ flare.to(entry.id) }}">{{ entry.title ?? entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>') }}</a></summary>
+                        <div style="width: 100%; max-height: max(30vh, 150px); overflow: auto auto; background: #def; margin-bottom: .5rem">
+                            {% set model = flare.model(entry.id) %}
+                            <div style="display: grid; grid-template-columns: max-content auto; gap: .125rem 1rem; font-family: monospace; padding: .5rem 1rem 3rem; font-size: .9em;">
+                                <strong style="grid-column: 1 / -1; margin-bottom: .25rem">{{ model.table }}</strong>
+                                {% for key, field in entry %}
+                                    {% if key not in ['password'] %}
+                                        <div>{{ key }}</div>
+                                        <div>{{ field|default('-') }}</div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
                         </div>
-                    </div>
-                </details>
-            {% endfor %}
+                    </details>
+                {% endfor %}
+            {% endif %}
 
             <hr>
 

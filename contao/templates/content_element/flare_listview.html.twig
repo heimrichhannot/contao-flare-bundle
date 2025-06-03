@@ -1,73 +1,65 @@
 {# @var flare \HeimrichHannot\FlareBundle\ListView\ListViewDto #}
-<div class="flare-listview {{ element_css_classes|default(class|default('')) }}"{% if element_html_id|default(false) %} id="{{ element_html_id }}"{% endif %}>
+{% extends '@Contao/flare/_flare_base.html.twig' %}
 
-    {% block headline %}
-        {% if headline %}
-            {{ fmt_headline(headline) }}
-        {% endif %}
+{% block content %}
+
+    {#
+        set flare = flare(list_model, {
+            form_name: 'lieselotte',
+            items_per_page: 10,
+        })
+
+        flare.entries
+        flare.paginator
+    #}
+
+    {% block filter %}
+
+        {% set form = flare_form(flare) %}
+
+        {{ form_start(form) }}
+            {{ form_widget(form) }}
+            <button type="submit" class="btn btn-primary">{{ 'submit'|trans([], 'flare_form') }}</button>
+        {{ form_end(form) }}
+
     {% endblock %}
 
-    {% block content %}
+    {% block list %}
 
-        {#
-            set flare = flare(list_model, {
-                form_name: 'lieselotte',
-                items_per_page: 10,
-            })
+        <hr>
 
-            flare.entries
-            flare.paginator
-        #}
+        <div style="color: #800; background: #fdd; padding: 1rem; margin-bottom: 1rem;">
+            <strong>{{ 'list.default_template.warning'|trans([], 'flare') }}</strong>
+            <br><small>{{ 'list.default_template.description'|trans([], 'flare') }}</small>
+        </div>
 
-        {% block filter %}
-
-            {% set form = flare_form(flare) %}
-
-            {{ form_start(form) }}
-                {{ form_widget(form) }}
-                <button type="submit" class="btn btn-primary">{{ 'submit'|trans([], 'flare_form') }}</button>
-            {{ form_end(form) }}
-
-        {% endblock %}
-
-        {% block list %}
-
-            <hr>
-
-            <div style="color: #800; background: #fdd; padding: 1rem; margin-bottom: 1rem;">
-                <strong>{{ 'list.default_template.warning'|trans([], 'flare') }}</strong>
-                <br><small>{{ 'list.default_template.description'|trans([], 'flare') }}</small>
-            </div>
-
-            {% if app.request.get('_preview') or app.environment == 'dev' %}
-                {% for entry in flare.entries %}
-                    <details>
-                        <summary>#{{ entry.id }} <a href="{{ flare.to(entry.id) }}">{{ entry.title ?? entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>') }}</a></summary>
-                        <div style="width: 100%; max-height: max(30vh, 150px); overflow: auto auto; background: #def; margin-bottom: .5rem">
-                            {% set model = flare.model(entry.id) %}
-                            <div style="display: grid; grid-template-columns: max-content auto; gap: .125rem 1rem; font-family: monospace; padding: .5rem 1rem 3rem; font-size: .9em;">
-                                <strong style="grid-column: 1 / -1; margin-bottom: .25rem">{{ model.table }}</strong>
-                                {% for key, field in entry %}
-                                    {% if key not in ['password'] %}
-                                        <div>{{ key }}</div>
-                                        <div>{{ field|default('-') }}</div>
-                                    {% endif %}
-                                {% endfor %}
-                            </div>
+        {% if app.request.get('_preview') or app.environment == 'dev' %}
+            {% for entry in flare.entries %}
+                <details>
+                    <summary>#{{ entry.id }} <a href="{{ flare.to(entry.id) }}">{{ entry.title ?? entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>') }}</a></summary>
+                    <div style="width: 100%; max-height: max(30vh, 150px); overflow: auto auto; background: #def; margin-bottom: .5rem">
+                        {% set model = flare.model(entry.id) %}
+                        <div style="display: grid; grid-template-columns: max-content auto; gap: .125rem 1rem; font-family: monospace; padding: .5rem 1rem 3rem; font-size: .9em;">
+                            <strong style="grid-column: 1 / -1; margin-bottom: .25rem">{{ model.table }}</strong>
+                            {% for key, field in entry %}
+                                {% if key not in ['password'] %}
+                                    <div>{{ key }}</div>
+                                    <div>{{ field|default('-') }}</div>
+                                {% endif %}
+                            {% endfor %}
                         </div>
-                    </details>
-                {% endfor %}
-            {% endif %}
+                    </div>
+                </details>
+            {% endfor %}
+        {% endif %}
 
-            <hr>
-
-        {% endblock %}
-
-        {% block pagination %}
-            {# @var \HeimrichHannot\FlareBundle\Paginator\Paginator paginator #}
-            {% include '@Contao/flare/paginator/bs5.html.twig' with { paginator: flare.paginator } %}
-        {% endblock %}
+        <hr>
 
     {% endblock %}
 
-</div>
+    {% block pagination %}
+        {# @var \HeimrichHannot\FlareBundle\Paginator\Paginator paginator #}
+        {% include '@Contao/flare/paginator/bs5.html.twig' with { paginator: flare.paginator } %}
+    {% endblock %}
+
+{% endblock %}

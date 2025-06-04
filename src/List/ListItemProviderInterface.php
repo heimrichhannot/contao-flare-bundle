@@ -48,7 +48,7 @@ interface ListItemProviderInterface
      * Fetch the IDs of entries from the database.
      * MUST return a flat array of IDs in the order requested and within the pagination's window.
      *
-     * @return array<int> Returns an array of IDs.
+     * @return array<int> Returns an array of unique IDs.
      */
     public function fetchIds(
         FilterContextCollection $filters,

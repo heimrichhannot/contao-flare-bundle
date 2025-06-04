@@ -107,7 +107,7 @@ class ListItemProvider extends AbstractListItemProvider
         $result = $this->connection->executeQuery($dto->getQuery(), $dto->getParams(), $dto->getTypes());
 
         if ($returnIds) {
-            $entries = $result->fetchFirstColumn();
+            $entries = \array_unique($result->fetchFirstColumn());
         } else {
             $entries = $result->fetchAllAssociative();
         }

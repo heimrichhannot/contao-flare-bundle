@@ -146,7 +146,7 @@ class EventsListItemProvider extends AbstractListItemProvider
             $ids = \array_merge($ids, \array_column($entriesOnDate, 'id'));
         }
 
-        return $ids;
+        return \array_unique($ids);
     }
 
     /**

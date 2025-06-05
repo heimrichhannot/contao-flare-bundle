@@ -475,7 +475,14 @@ $dca['fields'] = [
         'exclude' => true,
         'search' => false,
         'inputType' => 'text',
-        'eval' => ['mandatory' => false, 'maxlength' => 255],
+        'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'label' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'text',
+        'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
     'configureStart' => [

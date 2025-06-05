@@ -80,7 +80,7 @@ readonly class AutoTypePalettesCallback
         string                 $alias,
         ServiceConfigInterface $config,
         ListModel              $listModel,
-        ?FilterModel           $filterModel
+        ?FilterModel           $filterModel,
     ): void {
         if (!($table = $dc->table) || $alias === 'default' || \str_starts_with($alias, '__')) {
             return;
@@ -98,7 +98,7 @@ readonly class AutoTypePalettesCallback
                 prefix: "" . $prefix,
                 suffix: "" . $suffix,
                 listModel: $listModel,
-                filterModel: $filterModel
+                filterModel: $filterModel,
             );
         };
 

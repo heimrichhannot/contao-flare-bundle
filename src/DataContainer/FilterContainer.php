@@ -2,24 +2,12 @@
 
 namespace HeimrichHannot\FlareBundle\DataContainer;
 
-use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
-use Contao\CoreBundle\Framework\ContaoFramework;
-use Contao\Database;
 use Contao\DataContainer;
-use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\Exception\InferenceException;
-use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackContainerInterface;
 use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackRegistry;
-use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
-use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
-use HeimrichHannot\FlareBundle\Util\DcaHelper;
-use HeimrichHannot\FlareBundle\Util\PtableInferrer;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
 class FilterContainer implements FlareCallbackContainerInterface
 {
@@ -34,6 +22,26 @@ class FilterContainer implements FlareCallbackContainerInterface
      *  CALLBACK HANDLING            *
      * ============================= */
     // <editor-fold desc="Callback Handling">
+
+    public function handleConfigOnLoad(?DataContainer $dc, string $target): void
+    {
+        [$filterModel, $listModel] = $this->getModelsFromDataContainer($dc);
+
+        if (!$filterModel || !$listModel) {
+            return;
+        }
+
+        $namespace = static::CALLBACK_PREFIX . '.' . $filterModel->type;
+
+        $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
+        $callbacks = \array_reverse($callbacks);
+
+        CallbackHelper::call($callbacks, [], [
+            FilterModel::class => $filterModel,
+            ListModel::class  => $listModel,
+            DataContainer::class  => $dc,
+        ]);
+    }
 
     /**
      * @throws \RuntimeException

@@ -35,6 +35,23 @@ class ListContainer implements FlareCallbackContainerInterface
      * ============================= */
     // <editor-fold desc="Callback Handling">
 
+    public function handleConfigOnLoad(?DataContainer $dc, string $target): void
+    {
+        if (!$listModel = $this->getListModelFromDataContainer($dc)) {
+            return;
+        }
+
+        $namespace = static::CALLBACK_PREFIX . '.' . $listModel->type;
+
+        $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
+        $callbacks = \array_reverse($callbacks);
+
+        CallbackHelper::call($callbacks, [], [
+            ListModel::class  => $listModel,
+            DataContainer::class  => $dc,
+        ]);
+    }
+
     /**
      * @throws \RuntimeException
      */

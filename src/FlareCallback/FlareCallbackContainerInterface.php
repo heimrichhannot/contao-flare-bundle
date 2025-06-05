@@ -9,6 +9,8 @@ use Contao\DataContainer;
  */
 interface FlareCallbackContainerInterface
 {
+    public function handleConfigOnLoad(?DataContainer $dc, string $target): void;
+
     public function handleFieldOptions(?DataContainer $dc, string $target): array;
 
     public function handleLoadField(mixed $value, ?DataContainer $dc, string $target): mixed;

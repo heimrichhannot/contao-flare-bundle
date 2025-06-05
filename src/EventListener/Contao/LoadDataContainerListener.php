@@ -12,7 +12,7 @@ use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
-#[AsHook('loadDataContainer')]
+#[AsHook('loadDataContainer', priority: -100)]
 readonly class LoadDataContainerListener
 {
     public function __construct(
@@ -65,6 +65,13 @@ readonly class LoadDataContainerListener
 
         if (!\is_subclass_of($container, FlareCallbackContainerInterface::class)) {
             return;
+        }
+
+        if (!empty($callbacks[$target = 'config.onload'])) {
+            // bind onload callback
+            $GLOBALS['TL_DCA'][$table]['config']['onload_callback'][] = static function (DataContainer $dc) use ($container, $target) {
+                $container->handleConfigOnLoad($dc, $target);
+            };
         }
 
         $exclude = \array_fill_keys(['id', 'pid', 'tstamp', 'sorting', 'type', 'published', 'intrinsic'], true);

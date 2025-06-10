@@ -8,12 +8,15 @@ use Contao\CoreBundle\Controller\ContentElement\AbstractContentElementController
 use Contao\CoreBundle\DependencyInjection\Attribute\AsContentElement;
 use Contao\CoreBundle\Exception\InternalServerErrorHttpException;
 use Contao\CoreBundle\Monolog\ContaoContext;
+use Contao\CoreBundle\Routing\ResponseContext\HtmlHeadBag\HtmlHeadBag;
+use Contao\CoreBundle\Routing\ResponseContext\ResponseContextAccessor;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Input;
 use Contao\StringUtil;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Event\ReaderBuiltEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -35,6 +38,7 @@ class ReaderController extends AbstractContentElementController
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly LoggerInterface          $logger,
         private readonly ReaderManager            $readerManager,
+        private readonly ResponseContextAccessor  $responseContextAccessor,
         private readonly ScopeMatcher             $scopeMatcher,
         private readonly TranslationManager       $translator,
     ) {}
@@ -55,6 +59,8 @@ class ReaderController extends AbstractContentElementController
             throw $this->createNotFoundException('No auto_item supplied.');
         }
 
+        $errData = ['tl_content.id' => $contentModel->id];
+
         try
         {
             /** @var ?ListModel $listModel */
@@ -63,41 +69,42 @@ class ReaderController extends AbstractContentElementController
             if (!$listModel instanceof ListModel) {
                 throw new FilterException('No list model found.');
             }
-        }
-        catch (\Exception $e)
-        {
-            $this->logger->error(\sprintf('%s (tl_content.id=%s)', $e->getMessage(), $contentModel->id),
-                ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
 
-            throw new InternalServerErrorHttpException($e->getMessage(), $e);
-        }
+            $errData['tl_flare_list.id'] = $listModel->id;
 
-        $contentContext = new ContentContext(
-            context: ContentContext::CONTEXT_READER,
-            contentModel: $contentModel,
-        );
+            $contentContext = new ContentContext(
+                context: ContentContext::CONTEXT_READER,
+                contentModel: $contentModel,
+            );
 
-        try
-        {
             $model = $this->readerManager->getModelByAutoItem(
                 autoItem: $autoItem,
                 listModel: $listModel,
                 contentContext: $contentContext,
             );
+
+            if (!isset($model)) {
+                throw $this->createNotFoundException('No model found.');
+            }
+
+            $errData[$model->getTable() . '.id'] = $model->id;
+
+            $this->entityCacheTags->tagWith($model);
+
+            $pageMeta = $this->readerManager->getPageMeta(
+                listModel: $listModel,
+                model: $model,
+                contentContext: $contentContext,
+                contentModel: $contentModel,
+            );
         }
         catch (FlareException $e)
         {
-            $this->logger->error(\sprintf('%s (tl_content.id=%s, tl_flare_list.id=%s)', $e->getMessage(), $contentModel->id, $listModel->id),
+            $this->logger->error(\sprintf('%s (%s)', $e->getMessage(), \implode(', ', $errData)),
                 ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
 
             throw new InternalServerErrorHttpException($e->getMessage(), $e);
         }
-
-        if (!isset($model)) {
-            throw $this->createNotFoundException('No model found.');
-        }
-
-        $this->entityCacheTags->tagWith($model);
 
         $data = ['model' => $model];
 
@@ -105,15 +112,41 @@ class ReaderController extends AbstractContentElementController
             contentContext: $contentContext,
             contentModel: $contentModel,
             listModel: $listModel,
+            pageMeta: $pageMeta,
             template: $template,
-            data: $data
+            data: $data,
         );
 
         $this->eventDispatcher->dispatch($event, 'huh.flare.reader.built');
 
         $template->setData($event->getData() + $template->getData());
 
+        $this->applyPageMeta($pageMeta);
+
         return $template->getResponse();
+    }
+
+    public function applyPageMeta(ReaderPageMetaDto $pageMeta, ?HtmlHeadBag $htmlHeadBag = null): void
+    {
+        $htmlHeadBag ??= $this->responseContextAccessor?->getResponseContext()?->get(HtmlHeadBag::class);
+
+        if (!$htmlHeadBag) {
+            return;
+        }
+
+        $htmlHeadBag->setTitle($pageMeta->getTitle());
+
+        if ($description = $pageMeta->getDescription()) {
+            $htmlHeadBag->setMetaDescription($description);
+        }
+
+        if ($canonical = $pageMeta->getCanonical()) {
+            $htmlHeadBag->setCanonicalUri($canonical);
+        }
+
+        if ($robots = $pageMeta->getRobots()) {
+            $htmlHeadBag->setMetaRobots($robots);
+        }
     }
 
     protected function getBackendResponse(Template $template, ContentModel $model, Request $request): Response
@@ -136,7 +169,7 @@ class ReaderController extends AbstractContentElementController
                 $listModel->title,
                 $this->translator->listModel($listModel),
                 $listModel->dc,
-            )
+            ),
         );
     }
 }

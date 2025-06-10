@@ -33,7 +33,7 @@
             <br><small>{{ 'list.default_template.description'|trans([], 'flare') }}</small>
         </div>
 
-        {% if app.request.get('_preview') or app.environment == 'dev' %}
+        {% if app.request.get('_preview') or app.debug %}
             {% for entry in flare.entries %}
                 <details>
                     <summary>#{{ entry.id }} <a href="{{ flare.to(entry.id) }}">{{ entry.title ?? entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>') }}</a></summary>

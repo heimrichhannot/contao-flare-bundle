@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Manager;
 
+use Contao\ContentModel;
+use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\Model;
+use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
+use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageMetaContract;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\SqlEquationOperator;
 
@@ -16,7 +22,9 @@ readonly class ReaderManager
 {
     public function __construct(
         private FilterContextManager    $filterContextManager,
+        private HtmlDecoder             $htmlDecoder,
         private ListItemProviderManager $itemProvider,
+        private ListTypeRegistry        $listTypeRegistry,
         private FilterElementRegistry   $filterElementRegistry,
     ) {}
 
@@ -84,5 +92,39 @@ readonly class ReaderManager
         }
 
         return $modelClass::findByPk($id);
+    }
+
+    /**
+     * @throws FlareException If no list type config is registered for the given list model type.
+     */
+    public function getPageMeta(
+        ListModel         $listModel,
+        Model             $model,
+        ContentContext    $contentContext,
+        ContentModel      $contentModel,
+    ): ReaderPageMetaDto {
+        if (!$listTypeConfig = $this->listTypeRegistry->get($listModel->type))
+        {
+            throw new FlareException(\sprintf('No list type config registered for type "%s".', $listModel->type), source: __METHOD__);
+        }
+
+        $service = $listTypeConfig->getService();
+
+        if ($service instanceof ReaderPageMetaContract)
+        {
+            $config = new ReaderPageMetaConfig($listModel, $model, $contentContext, $contentModel);
+            $pageMeta = $service->getReaderPageMeta($config);
+        }
+
+        $pageMeta ??= new ReaderPageMetaDto();
+
+        if (!$pageMeta->getTitle())
+        {
+            $pageMeta->setTitle($this->htmlDecoder->inputEncodedToPlainText(
+                $model->title ?? $model->headline ?? $model->name ?? $model->alias ?? $model->id ?: ''
+            ));
+        }
+
+        return $pageMeta;
     }
 }

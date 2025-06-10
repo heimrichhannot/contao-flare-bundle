@@ -9,8 +9,8 @@
 <div class="{{ html_class }}"{% if html_id is not null %} id="{{ html_id }}"{% endif %}>
     {% block wrapper %}
         {% block headline %}
-            {% if headline %}
-                {{ fmt_headline(headline) }}
+            {% if headline and flare_fmt_headline_value(headline) %}
+                {{ headline|flare_fmt_headline }}
             {% endif %}
         {% endblock %}
         {% block content %}

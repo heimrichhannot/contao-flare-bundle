@@ -32,3 +32,10 @@ $lang['sortSettings__direction'] = ['Sortierreihenfolge', 'Bitte wählen Sie die
 $lang['flare_reader_legend'] = 'Leser-Einstellungen';
 $lang['jumpToReader'] = ['Detailleserseite', 'Bitte wählen Sie die Seite aus, zu der Besucher weitergeleitet werden, wenn sie auf einen Listeneintrag klicken.'];
 ###< flare_reader_legend ###
+
+###> meta_legend ###
+$lang['meta_legend'] = 'Meta-Einstellungen';
+$lang['metaTitleFormat'] = ['Meta-Titel-Format', 'Verwenden Sie Simple-Tokens um Felder des Data-Containers als Titel auszugeben.'];
+$lang['metaDescriptionFormat'] = ['Meta-Beschreibungs-Format', 'Verwenden Sie Simple-Tokens um Felder des Data-Containers als Beschreibung auszugeben.'];
+$lang['metaRobotsFormat'] = ['Meta-Robots-Format', 'Geben Sie ein statisches Robots-Attribut an oder verwenden Sie Simple-Tokens um Felder des Containers dafür auszugeben.'];
+###< meta_legend ###

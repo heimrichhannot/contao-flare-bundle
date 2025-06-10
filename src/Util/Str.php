@@ -2,6 +2,8 @@
 
 namespace HeimrichHannot\FlareBundle\Util;
 
+use Contao\StringUtil;
+
 readonly class Str
 {
     public const CHARS_ALPHA = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -165,5 +167,49 @@ readonly class Str
         }
 
         return $rand;
+    }
+
+    public static function getHeadline(array|string|null $headline, bool $withTags = false): ?string
+    {
+        if (!$headline) {
+            return null;
+        }
+
+        if (\is_string($headline)) {
+            $headline = StringUtil::deserialize($headline);
+        }
+
+        if (\is_string($headline)) {
+            return $headline ?: null;
+        }
+
+        $tagName = $headline['tag_name'] ?? $headline['unit'] ?? 'h2';
+        $value = $headline['text'] ?? $headline['value'] ?? '';
+
+        return $withTags ? "<$tagName>$value</$tagName>" : $value;
+    }
+
+    public static function htmlToMeta(
+        string $text,
+        ?int   $charLimit = null,
+        int    $flags = \ENT_QUOTES | \ENT_HTML5,
+    ): string {
+        $text = \preg_replace('/(\r\n|\n|\r){2,}/', "\n", $text);
+
+        $text = \mb_trim(\strip_tags($text));
+        $text = \preg_replace('/\s+/', ' ', $text);
+        $text = \html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        if (!\is_null($charLimit) && \mb_strlen($text) > $charLimit)
+        {
+            $text = \mb_substr($text, 0, $charLimit);
+
+            $lastSpace = \mb_strrpos($text, ' ');
+            if ($lastSpace !== false) {
+                $text = \mb_substr($text, 0, $lastSpace);
+            }
+        }
+
+        return \htmlentities(\mb_trim($text), $flags, 'UTF-8');
     }
 }

@@ -2,24 +2,31 @@
 
 namespace HeimrichHannot\FlareBundle\List\Type;
 
+use Contao\CalendarEventsModel;
+use Contao\CoreBundle\String\HtmlDecoder;
 use HeimrichHannot\FlareBundle\Contract\Config\ListItemProviderConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PresetFiltersConfig;
+use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\ListItemProviderContract;
 use HeimrichHannot\FlareBundle\Contract\ListType\PresetFiltersContract;
+use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageMetaContract;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
+use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedElement;
 use HeimrichHannot\FlareBundle\List\ListItemProviderInterface;
 use HeimrichHannot\FlareBundle\List\Type\ItemProvider\EventsListItemProvider;
+use HeimrichHannot\FlareBundle\Util\Str;
 
 #[AsListType(EventsList::TYPE, dataContainer: 'tl_calendar_events')]
-class EventsList implements ListItemProviderContract, PaletteContract, PresetFiltersContract
+class EventsList implements ListItemProviderContract, PaletteContract, PresetFiltersContract, ReaderPageMetaContract
 {
     public const TYPE = 'flare_events';
 
     public function __construct(
         private readonly EventsListItemProvider $itemProvider,
+        private readonly HtmlDecoder            $htmlDecoder,
     ) {}
 
     public function getPalette(PaletteConfig $config): ?string
@@ -44,5 +51,37 @@ class EventsList implements ListItemProviderContract, PaletteContract, PresetFil
     public function getListItemProvider(ListItemProviderConfig $config): ?ListItemProviderInterface
     {
         return $this->itemProvider;
+    }
+
+    public function getReaderPageMeta(ReaderPageMetaConfig $config): ?ReaderPageMetaDto
+    {
+        global $objPage;
+
+        /** @var CalendarEventsModel $model */
+        $model = $config->getModel();
+
+        $pageMeta = new ReaderPageMetaDto();
+
+        $pageMeta->setTitle($this->htmlDecoder->inputEncodedToPlainText(
+            $model->pageTitle ?: $model->title ?: $objPage->title
+        ));
+
+        $description = $model->description ? (
+            $this->htmlDecoder->inputEncodedToPlainText($model->description) ?: null
+        ) : null;
+
+        $description ??= $model->teaser ? (
+            Str::htmlToMeta($this->htmlDecoder->inputEncodedToPlainText($model->teaser), 250) ?: null
+        ) : null;
+
+        if ($description) {
+            $pageMeta->setDescription($description);
+        }
+
+        if ($robots = $model->robots ?: null) {
+            $pageMeta->setRobots($robots);
+        }
+
+        return $pageMeta;
     }
 }

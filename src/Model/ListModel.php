@@ -17,6 +17,9 @@ use HeimrichHannot\FlareBundle\Util\DcaHelper;
  * @property string $fieldAutoItem
  * @property string $jumpToReader
  * @property array  $sortSettings
+ * @property string $metaTitleFormat
+ * @property string $metaDescriptionFormat
+ * @property string $metaRobotsFormat
  */
 class ListModel extends Model
 {

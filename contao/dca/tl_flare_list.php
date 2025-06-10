@@ -178,6 +178,27 @@ $dca['fields'] = [
         'order' => true,
         'sql' => ['type' => 'blob', 'notnull' => false]
     ],
+    'metaTitleFormat' => [
+        'inputType' => 'text',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => ['maxlength' => 255, 'tl_class' => 'w50', 'placeholder' => '##title##'],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'metaDescriptionFormat' => [
+        'inputType' => 'text',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => ['maxlength' => 255, 'tl_class' => 'w50'],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'metaRobotsFormat' => [
+        'inputType' => 'text',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => ['maxlength' => 255, 'tl_class' => 'w50'],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
 ];
 
 $dca['palettes'] = [

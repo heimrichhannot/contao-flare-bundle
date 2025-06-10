@@ -57,7 +57,7 @@ class ListViewController extends AbstractContentElementController
      */
     protected function getErrorResponse(?\Exception $e = null): Response
     {
-        if (isset($e) && $this->kernel->getEnvironment() === 'dev') {
+        if (isset($e) && $this->kernel->isDebug()) {
             throw $e;
         }
         /** @noinspection PhpTranslationKeyInspection, PhpTranslationDomainInspection */

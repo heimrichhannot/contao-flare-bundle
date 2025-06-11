@@ -30,23 +30,35 @@ class ChoicesBuilder
     /**
      * @param string|null $label Setting a label will override the default label for all choices. Null to use the
      *     default labels.
-     * @param string|null $class Setting a class will override the default label for the given class. Null to use the
-     *     default labels.
+     * @param string|null $class_or_table Setting a model class or table will override the default label for the
+     *     given model. Provide null to use the default labels.
      * @return $this Fluent interface
      */
-    public function setLabel(?string $label, ?string $class = null): self
+    public function setLabel(?string $label, ?string $class_or_table = null): self
     {
-        if ($class === null)
+        if ($class_or_table !== null && \class_exists($class_or_table))
+        {
+            if (!\is_subclass_of($class_or_table, Model::class))
+            {
+                throw new \InvalidArgumentException(
+                    \sprintf('Class "%s" must be a subclass of "%s".', $class_or_table, Model::class)
+                );
+            }
+
+            $class_or_table = $class_or_table::getTable();
+        }
+
+        if ($class_or_table === null)
         {
             $this->label = $label;
         }
         elseif ($label === null)
         {
-            unset($this->mapTypeLabel[$class]);
+            unset($this->mapTypeLabel[$class_or_table]);
         }
         else
         {
-            $this->mapTypeLabel[$class] = $label;
+            $this->mapTypeLabel[$class_or_table] = $label;
         }
 
         return $this;
@@ -178,7 +190,8 @@ class ChoicesBuilder
         };
     }
 
-    public function buildChoiceLabel(mixed $choice, string $key, mixed $value): TranslatableMessage|string {
+    public function buildChoiceLabel(mixed $choice, string $key, mixed $value): TranslatableMessage|string
+    {
         $params = [
             '%@choice%' => Str::force($choice),
             '%@key%' => Str::force($key),
@@ -200,7 +213,7 @@ class ChoicesBuilder
         $label = $this->label ?? null;
 
         if ($choice instanceof Model) {
-            $label = $this->tryGetModelLabel($choice::getTable()) ?? $label;
+            $label = $this->tryGetModelLabel($choice::class) ?? $label;
         }
 
         if (is_object($choice) && isset($this->mapTypeLabel[$choice::class])) {
@@ -253,13 +266,13 @@ class ChoicesBuilder
         return $options;
     }
 
-    private function tryGetModelLabel($table): ?string
+    private function tryGetModelLabel($class): ?string
     {
-        if (isset($this->mapTypeLabel[$table])) {
-            return $this->mapTypeLabel[$table];
+        if (isset($this->mapTypeLabel[$class])) {
+            return $this->mapTypeLabel[$class];
         }
 
         $defaults = $this->parameterBag->get('huh_flare.format_label_defaults') ?? [];
-        return $defaults[$table] ?? null;
+        return $defaults[$class] ?? null;
     }
 }

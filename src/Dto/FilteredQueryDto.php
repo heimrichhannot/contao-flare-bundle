@@ -2,13 +2,13 @@
 
 namespace HeimrichHannot\FlareBundle\Dto;
 
-class FilteredQueryDto
+readonly class FilteredQueryDto
 {
     public function __construct(
-        private readonly string $query,
-        private readonly array $params,
-        private readonly array $types,
-        private readonly bool $allowed,
+        private string $query,
+        private array  $params,
+        private array  $types,
+        private bool   $allowed,
     ) {}
 
     public function getQuery(): string

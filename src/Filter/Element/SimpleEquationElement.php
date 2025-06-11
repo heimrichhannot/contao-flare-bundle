@@ -26,21 +26,23 @@ class SimpleEquationElement implements PaletteContract
     {
         $filterModel = $context->getFilterModel();
 
-        if (!$filterModel->equationLeft || !$op = SqlEquationOperator::match($filterModel->equationOperator)) {
+        if (!($operand = $filterModel->equationLeft)
+            || !$op = SqlEquationOperator::match($filterModel->equationOperator))
+        {
             throw new FilterException('Invalid filter configuration.');
         }
 
         $where = match ($op) {
-            SqlEquationOperator::EQUALS => $qb->expr()->eq($filterModel->equationLeft, ':eq_right'),
-            SqlEquationOperator::NOT_EQUALS => $qb->expr()->neq($filterModel->equationLeft, ':eq_right'),
-            SqlEquationOperator::GREATER_THAN => $qb->expr()->gt($filterModel->equationLeft, ':eq_right'),
-            SqlEquationOperator::GREATER_THAN_EQUALS => $qb->expr()->gte($filterModel->equationLeft, ':eq_right'),
-            SqlEquationOperator::LESS_THAN => $qb->expr()->lt($filterModel->equationLeft, ':eq_right'),
-            SqlEquationOperator::LESS_THAN_EQUALS => $qb->expr()->lte($filterModel->equationLeft, ':eq_right'),
-            SqlEquationOperator::LIKE => $qb->expr()->like($filterModel->equationLeft, ':eq_right'),
-            SqlEquationOperator::NOT_LIKE => $qb->expr()->notLike($filterModel->equationLeft, ':eq_right'),
-            SqlEquationOperator::IS_NULL => $qb->expr()->isNull($filterModel->equationLeft),
-            SqlEquationOperator::IS_NOT_NULL => $qb->expr()->isNotNull($filterModel->equationLeft),
+            SqlEquationOperator::EQUALS => $qb->expr()->eq($operand, ':eq_right'),
+            SqlEquationOperator::NOT_EQUALS => $qb->expr()->neq($operand, ':eq_right'),
+            SqlEquationOperator::GREATER_THAN => $qb->expr()->gt($operand, ':eq_right'),
+            SqlEquationOperator::GREATER_THAN_EQUALS => $qb->expr()->gte($operand, ':eq_right'),
+            SqlEquationOperator::LESS_THAN => $qb->expr()->lt($operand, ':eq_right'),
+            SqlEquationOperator::LESS_THAN_EQUALS => $qb->expr()->lte($operand, ':eq_right'),
+            SqlEquationOperator::LIKE => $qb->expr()->like($operand, ':eq_right'),
+            SqlEquationOperator::NOT_LIKE => $qb->expr()->notLike($operand, ':eq_right'),
+            SqlEquationOperator::IS_NULL => $qb->expr()->isNull($operand),
+            SqlEquationOperator::IS_NOT_NULL => $qb->expr()->isNotNull($operand),
             default => null,
         };
 
@@ -51,7 +53,7 @@ class SimpleEquationElement implements PaletteContract
         $qb->where($where);
 
         if (!$op->isUnary()) {
-            $qb->bind(':eq_right', $filterModel->equationRight ?: '');
+            $qb->setParameter(':eq_right', $filterModel->equationRight ?: '');
         }
     }
 
@@ -69,10 +71,11 @@ class SimpleEquationElement implements PaletteContract
     {
         $filterModel = $config->getFilterModel();
 
-        return match (SqlEquationOperator::match($filterModel->equationOperator)) {
-            SqlEquationOperator::IS_NULL, SqlEquationOperator::IS_NOT_NULL => '{flare_simple_equation_legend},equationLeft,equationOperator',
-            default => '{flare_simple_equation_legend},equationLeft,equationOperator,equationRight',
-        };
+        if (SqlEquationOperator::match($filterModel->equationOperator)?->isUnary()) {
+            return '{flare_simple_equation_legend},equationLeft,equationOperator';
+        }
+
+        return '{flare_simple_equation_legend},equationLeft,equationOperator,equationRight';
     }
 
     public static function define(

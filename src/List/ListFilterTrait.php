@@ -6,6 +6,7 @@ use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Dto\FilteredQueryDto;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokedEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokingEvent;
+use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
@@ -15,6 +16,10 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 trait ListFilterTrait
 {
+    public const FILTER_OK = 0;
+    public const FILTER_SKIP = 1;
+    public const FILTER_FAIL = 2;
+
     abstract function getConnection(): Connection;
 
     abstract function getEventDispatcher(): EventDispatcherInterface;
@@ -53,14 +58,18 @@ trait ListFilterTrait
 
         foreach ($filters as $i => $filter)
         {
-            $filterQueryBuilder = new FilterQueryBuilder($this->getConnection()->createExpressionBuilder(), $as);
+            $filterQueryBuilder = new FilterQueryBuilder($this->getConnection(), $as);
 
-            if (!$this->invokeFilter(filterQueryBuilder: $filterQueryBuilder, filter: $filter))
+            $status = $this->invokeFilter(filterQueryBuilder: $filterQueryBuilder, filter: $filter);
+
+            if ($status === self::FILTER_SKIP)
             {
                 continue;
             }
 
-            if ($filterQueryBuilder->isBlocking())
+            if ($status !== self::FILTER_OK)
+                // If the filter failed, we stop building the query and return a blocked query.
+                // This is useful for cases where the filter is not applicable or has an error.
             {
                 return FilteredQueryDto::block();
             }
@@ -111,14 +120,14 @@ trait ListFilterTrait
         FilterQueryBuilder $filterQueryBuilder,
         FilterContext      $filter,
         ?bool              $dispatchEvent = null,
-    ): bool {
+    ): int {
         $config = $filter->getConfig();
 
         $service = $config->getService();
         $method = $config->getMethod() ?? '__invoke';
 
         if (!\method_exists($service, $method)) {
-            return false;
+            return self::FILTER_SKIP;
         }
 
         $shouldInvoke = true;
@@ -137,14 +146,17 @@ trait ListFilterTrait
             $callback = $event->getCallback();
         }
 
-        if (!$shouldInvoke)
-        {
-            return false;
+        if (!$shouldInvoke) {
+            return self::FILTER_SKIP;
         }
 
         try
         {
             $callback($filter, $filterQueryBuilder);
+        }
+        catch (AbortFilteringException)
+        {
+            return self::FILTER_FAIL;
         }
         catch (FilterException $e)
         {
@@ -153,7 +165,7 @@ trait ListFilterTrait
             throw new FilterException(
                 \sprintf('[FLARE] Query denied: %s', $e->getMessage()),
                 code: $e->getCode(), previous: $e, method: $method,
-                source: \sprintf('tl_flare_filter.id=%s', $filter->getFilterModel()?->id),
+                source: \sprintf('tl_flare_filter.id=%s', $filter->getFilterModel()?->id ?: 'unknown'),
             );
         }
 
@@ -166,6 +178,6 @@ trait ListFilterTrait
             );
         }
 
-        return true;
+        return self::FILTER_OK;
     }
 }

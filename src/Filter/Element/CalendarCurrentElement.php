@@ -66,10 +66,10 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
             $or[] = "startTime<=:start AND endTime>=:end";  // event is in range
         }
 
-        $qb->where($qb->expr()->or(...$or));
+        $qb->whereOr(...$or);
 
-        $qb->bind('start', $start);
-        $qb->bind('end', $stop);
+        $qb->setParameter('start', $start);
+        $qb->setParameter('end', $stop);
     }
 
     #[AsEventListener('huh.flare.filter_element.' . self::TYPE . '.invoking')]

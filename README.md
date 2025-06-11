@@ -116,9 +116,24 @@ class MyCustomElement implements FormTypeOptionsContract, HydrateFormContract, P
 
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
-        /** {@see \HeimrichHannot\FlareBundle\Filter\FilterContext} for available methods */
-        $filterModel = $context->getFilterModel();  // how the filter element has been configured in the backend
-        $submittedData = $context->getSubmittedData();  // the user-submitted form data
+        /**
+         * The FilterContext provides access to the filter element's configuration.
+         * All fields that have been configured in the backend are available here.
+         *
+         * See {@see \HeimrichHannot\FlareBundle\Filter\FilterContext} for available
+         *   methods and properties.
+         *
+         * @var FilterModel $filterModel
+         */
+        $filterModel = $context->getFilterModel();
+        
+        /**
+         * The submitted form data and its type is dependent on the form type that is used.
+         * If the form has not yet been submitted, this will be null.
+         *
+         * @var mixed $submittedData
+         */
+        $submittedData = $context->getSubmittedData();
 
         /**
           * {@see \HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder} to see how it works,
@@ -126,16 +141,9 @@ class MyCustomElement implements FormTypeOptionsContract, HydrateFormContract, P
           *
           * Using `$qb->where(...)` multiple times will concatenate the conditions with AND.
           *   For a usage example with OR, see below.
-          *
-          * `$qb->bind(...)` accepts an optional third parameter for the PDO-type of the value.
-          *   {@see \Doctrine\DBAL\ParameterType} and
-          *   {@see \Doctrine\DBAL\ArrayParameterType} for available types.
-          *   This is only necessary when the data type cannot be inferred from the value
-          *   (e.g., on some mixed-type arrays or objects) and is usually not needed.
           */
         $qb->where('someColumn = :custom')
-            ->bind('custom', $filterModel->myCustomField,
-                /* optional PDO-type: */\Doctrine\DBAL\ParameterType::STRING);
+            ->setParameter('custom', $filterModel->myCustomField);
 
         /**
          * For more complex queries, you may also use doctrine's expression builder,
@@ -143,15 +151,32 @@ class MyCustomElement implements FormTypeOptionsContract, HydrateFormContract, P
          *
          * The following example also demonstrates how to create an OR query condition.
          */
-        $qb->where(
-            $qb->expr()->or(
-                $qb->expr()->eq('someColumn', ':custom'),
-                'secondColumn = :second',  // functionally equivalent to line above
-                $qb->expr()->isNotNull('anotherColumn'),
-            )
-        )
-            ->bind('custom', $filterModel->myCustomField)
-            ->bind('second', $filterModel->thirdWhatever);
+        $qb->whereOr(
+            $qb->expr()->isNotNull('anotherColumn'),
+            $qb->expr()->eq('someColumn', ':custom'),
+            'secondColumn = :second',  // functionally equivalent to line above
+        );
+        $qb->setParameter('custom', $filterModel->myCustomField);
+        /*
+         * `$qb->setParameter(...)` accepts an optional third value to explicitly specify a
+         *   PDO-type of the parameter. See {@see \Doctrine\DBAL\ParameterType} and
+         *   {@see \Doctrine\DBAL\ArrayParameterType} for available types.
+         *   This is only necessary when the data type cannot be inferred from the value
+         *   (e.g., on some mixed-type arrays or objects) and is usually not needed.
+         */
+        $qb->setParameter('second', $filterModel->secondValue,
+                /* optional PDO-type: */\Doctrine\DBAL\ParameterType::STRING);
+        
+        /**
+         * You can also abort the query if you want to stop filtering altogether.
+         *
+         * Calling {@see FilterQueryBuilder::abort()} will throw an exception and stop
+         *   the execution of further filter elements. The filtering logic will handle
+         *   the exception and return an empty result set.
+         */
+        if ($submittedData === 'make-me-break') {
+            $qb->abort(); // Filter invocation will end here.
+        }
     }
 
     /**
@@ -210,19 +235,25 @@ class MyCustomElement implements FormTypeOptionsContract, HydrateFormContract, P
      */
     public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
     {
-        // This is how to use the choices builder.
+        // This is how to use the choices-builder.
         $choices
-            ->enable()  // It's disabled by default and will be ignored unless enabled.
+            ->enable()  // Disabled by default. Will be ignored unless enabled.
             ->add('some_key', 'A Contao\Model instance, value, or label')
             ->add('another_key', 'Another string or object from which a label can be made')
-            // If you add Model instances as choices, specify how their label should be created
-            //   by using placeholders. The placeholders are replaced with the respective
-            //   properties of the model instance.
-            // Sensible default label placeholders are already set for the most common models.
-            ->setLabel('%title%')
-            // When setting labels, specify the model class or table name to only use this label
-            //   on the respective choices of this model. This way, you can use different labels
-            //   for different models.
+            /**
+             * You MAY add {@see \Contao\Model} instances as choices.
+             *   When adding models, specify how their label should be created by setting labels
+             *   with placeholders. The placeholders are replaced with the respective properties
+             *   of the model instance.
+             *
+             * **Sensible default labels are already defined for the most common models.**
+             */
+            ->setLabel('%title%')  // Define the default label for all passed model instances.
+            /**
+             * When setting labels, you MAY also specify the model class or table name to apply
+             *   the label to all instances of that class or respective table. This way, you can
+             *   add choices of multiple models to the same field.
+             */
             ->setLabel('%id% - %title%', 'tl_news');
 
         // ... this is all you need to do to add choices to a choice field. The respecive choice

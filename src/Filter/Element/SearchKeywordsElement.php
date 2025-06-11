@@ -20,10 +20,6 @@ class SearchKeywordsElement implements FormTypeOptionsContract
 {
     public const TYPE = 'flare_search_keywords';
 
-    public function __construct(
-        private readonly Connection $connection,
-    ) {}
-
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
         $submittedData = $context->getSubmittedData();
@@ -36,7 +32,7 @@ class SearchKeywordsElement implements FormTypeOptionsContract
             return;
         }
 
-        $columns = \array_map(fn($column) => $this->connection->quoteIdentifier($column), $columns);
+        $columns = \array_map(fn($column) => $qb->quoteIdentifier($column), $columns);
 
         if (empty($searchTerms = $this->makeTerms($submittedData))) {
             return;
@@ -49,10 +45,10 @@ class SearchKeywordsElement implements FormTypeOptionsContract
                 static fn($column) => $qb->expr()->like($column, $param),
                 $columns
             ));
-            $qb->bind($param, '%' . $term . '%');
+            $qb->setParameter($param, '%' . $term . '%');
         }
 
-        $qb->where($qb->expr()->and(...$and));
+        $qb->whereAnd(...$and);
     }
 
     private function makeTerms(string $text): array

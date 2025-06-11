@@ -54,12 +54,12 @@ class FieldValueChoiceElement implements FormTypeOptionsContract, HydrateFormCon
         if (\count($submittedData) < 2)
         {
             $qb->where("LOWER(TRIM($field)) = :value")
-                ->bind('value', \reset($submittedData));
+                ->setParameter('value', \reset($submittedData));
         }
         else
         {
             $qb->where("LOWER(TRIM($field)) IN (:values)")
-                ->bind('values', $submittedData);
+                ->setParameter('values', $submittedData);
         }
     }
 

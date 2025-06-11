@@ -27,10 +27,6 @@ class DcaSelectField implements FormTypeOptionsContract, HydrateFormContract, Pa
 {
     public const TYPE = 'flare_dcaSelectField';
 
-    public function __construct(
-        private readonly Connection $connection,
-    ) {}
-
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
         if ($context->getContentContext()->isReader()) {
@@ -44,14 +40,11 @@ class DcaSelectField implements FormTypeOptionsContract, HydrateFormContract, Pa
 
         if (!$targetField = $filterModel->fieldGeneric)
         {
-            $qb->blockList();
-            return;
+            $qb->abort();
         }
 
-        $targetField = $this->connection->quoteIdentifier($targetField);
-
-        $qb->where($qb->expr()->eq($targetField, ':value'))
-            ->bind('value', $submittedData);
+        $qb->where($qb->expr()->eq($qb->quoteIdentifier($targetField), ':value'))
+            ->setParameter('value', $submittedData);
     }
 
     public function getPalette(PaletteConfig $config): ?string

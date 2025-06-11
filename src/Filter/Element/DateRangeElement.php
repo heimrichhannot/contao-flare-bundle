@@ -27,7 +27,7 @@ class DateRangeElement implements FormTypeOptionsContract
         $submittedData = $context->getSubmittedData();
         $filterModel = $context->getFilterModel();
 
-        if (!$field = $filterModel?->fieldGeneric) {
+        if (!$field = $filterModel->fieldGeneric) {
             throw new FilterException('Set fieldGeneric in filter model.');
         }
 
@@ -36,12 +36,12 @@ class DateRangeElement implements FormTypeOptionsContract
 
         if ($from instanceof \DateTimeInterface) {
             $qb->where($qb->expr()->gte($field, ':from'))
-                ->bind('from', $from->getTimestamp());
+                ->setParameter('from', $from->getTimestamp());
         }
 
         if ($to instanceof \DateTimeInterface) {
             $qb->where($qb->expr()->lte($field, ':to'))
-                ->bind('to', $to->getTimestamp());
+                ->setParameter('to', $to->getTimestamp());
         }
     }
 

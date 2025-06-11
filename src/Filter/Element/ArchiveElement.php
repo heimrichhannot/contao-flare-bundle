@@ -66,13 +66,12 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
                 if (empty($whitelist))
                 {
-                    $qb->blockList();
-                    return;
+                    $qb->abort();
                 }
             }
 
             $qb->where("`pid` IN (:pidIn)")
-                ->bind('pidIn', $whitelist);
+                ->setParameter('pidIn', $whitelist);
 
             return;
         }

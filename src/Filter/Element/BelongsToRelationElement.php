@@ -41,8 +41,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
         }
         catch (InferenceException)
         {
-            $qb->blockList();
-            return;
+            $qb->abort();
         }
 
         if (\is_string($fieldDynamicPtable))
@@ -56,7 +55,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
         }
 
         $qb->where($qb->expr()->in($fieldPid, ":whitelist"))
-            ->bind('whitelist', $whitelistParents);
+            ->setParameter('whitelist', $whitelistParents);
     }
 
     /**
@@ -77,8 +76,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
     ): void {
         if (!$parentGroups = StringUtil::deserialize($filterModel->groupWhitelistParents))
         {
-            $qb->blockList();
-            return;
+            $qb->abort();
         }
 
         $ors = [];
@@ -115,14 +113,13 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
                 $qb->expr()->in($fieldPid, $gKey_whitelistParents)
             );
 
-            $qb->bind($gKey_tablePtable, $g_tablePtable);
-            $qb->bind($gKey_whitelistParents, $g_whitelistParents);
+            $qb->setParameter($gKey_tablePtable, $g_tablePtable);
+            $qb->setParameter($gKey_whitelistParents, $g_whitelistParents);
         }
 
         if (empty($ors))
         {
-            $qb->blockList();
-            return;
+            $qb->abort();
         }
 
         if (\count($ors) === 1)
@@ -131,7 +128,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
             return;
         }
 
-        $qb->where($qb->expr()->or(...$ors));
+        $qb->whereOr(...$ors);
     }
 
     public function getPalette(PaletteConfig $config): ?string

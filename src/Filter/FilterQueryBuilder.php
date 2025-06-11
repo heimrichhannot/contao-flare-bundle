@@ -78,7 +78,7 @@ class FilterQueryBuilder
             return $this;
         }
 
-        $this->conditions[] = $this->expr->and(...$conditions);
+        $this->conditions[] = $this->expr()->and(...$conditions);
 
         return $this;
     }
@@ -89,7 +89,7 @@ class FilterQueryBuilder
             return $this;
         }
 
-        $this->conditions[] = $this->expr->or(...$conditions);
+        $this->conditions[] = $this->expr()->or(...$conditions);
 
         return $this;
     }
@@ -213,7 +213,7 @@ class FilterQueryBuilder
             return ['', [], []];
         }
 
-        $cond = $this->expr->and(...$this->conditions);
+        $cond = $this->expr()->and(...$this->conditions);
         $sql = (string) $cond;
 
         if ($prefix === null) {

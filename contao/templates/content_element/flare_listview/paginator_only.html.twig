@@ -4,7 +4,7 @@
 
     {% block pagination %}
         {# @var \HeimrichHannot\FlareBundle\Paginator\Paginator paginator #}
-        {% include '@Contao/flare/paginator/bs5.html.twig' with { paginator: flare.paginator } %}
+        {{ include('@Contao/flare/paginator/bs5.html.twig', { paginator: flare.paginator }) }}
     {% endblock %}
 
 {% endblock %}

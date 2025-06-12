@@ -1,5 +1,5 @@
 ---
-title: Getting Started
+title: Introduction
 sidebar_position: 1
 ---
 

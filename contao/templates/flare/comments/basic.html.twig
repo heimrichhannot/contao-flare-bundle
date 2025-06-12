@@ -1,0 +1,11 @@
+{% extends "@Contao/content_element/_base.html.twig" %}
+{% set type = 'comments' %}
+
+{% block content %}
+    <h2>{{ 'MSC.comments'|trans({}, 'contao_default') }} ({{ comments|length }})</h2>
+
+    {{ comments|join('')|raw }}
+    {{ pagination|default('')|raw }}
+
+    {{ include('@Contao/mod_comment_form', data) }}
+{% endblock %}

@@ -201,6 +201,16 @@ $dca['fields'] = [
     ],
 ];
 
+###> contao/comments-bundle support
+$dca['fields']['comments_enabled'] = [
+    'exclude' => true,
+    'default' => false,
+    'inputType' => 'checkbox',
+    'eval' => ['doNotCopy' => true, 'tl_class' => 'w50'],
+    'sql' => ['type' => 'boolean', 'default' => false],
+];
+###< contao/comments-bundle support
+
 $dca['palettes'] = [
     '__selector__' => ['type'],
     '__prefix__' => '{title_legend},title,type',

@@ -39,3 +39,8 @@ $lang['metaTitleFormat'] = ['Meta-Titel-Format', 'Verwenden Sie Simple-Tokens um
 $lang['metaDescriptionFormat'] = ['Meta-Beschreibungs-Format', 'Verwenden Sie Simple-Tokens um Felder des Data-Containers als Beschreibung auszugeben.'];
 $lang['metaRobotsFormat'] = ['Meta-Robots-Format', 'Geben Sie ein statisches Robots-Attribut an oder verwenden Sie Simple-Tokens um Felder des Containers dafür auszugeben.'];
 ###< meta_legend ###
+
+###> comments_legend ###
+$lang['comments_legend'] = 'Kommentareinstellungen';
+$lang['comments_enabled'] = ['Kommentare aktivieren', 'Aktivieren Sie die Kommentarfunktion für Einträge dieser Liste.'];
+###< comments_legend ###

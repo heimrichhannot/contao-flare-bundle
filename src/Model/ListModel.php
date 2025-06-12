@@ -14,6 +14,7 @@ use HeimrichHannot\FlareBundle\Util\DcaHelper;
  * @property string $type
  * @property bool $published
  * @property string $dc
+ * @property bool $comments_enabled
  * @property string $fieldAutoItem
  * @property string $jumpToReader
  * @property array  $sortSettings

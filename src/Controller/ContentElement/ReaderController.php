@@ -111,6 +111,7 @@ class ReaderController extends AbstractContentElementController
         $event = new ReaderBuiltEvent(
             contentContext: $contentContext,
             contentModel: $contentModel,
+            displayModel: $model,
             listModel: $listModel,
             pageMeta: $pageMeta,
             template: $template,

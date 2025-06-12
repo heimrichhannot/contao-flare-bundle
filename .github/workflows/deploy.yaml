@@ -18,4 +18,5 @@ jobs:
       - run: npm run deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_USER: ${{ github.actor }}
           NODE_ENV: production

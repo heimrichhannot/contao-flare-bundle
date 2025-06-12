@@ -20,11 +20,11 @@ const config = {
   },
 
   // Set the production url of your site here
-  url: 'https://heimrichhannot.github.io/contao-flare-docs/',
+  url: 'https://heimrichhannot.github.io',
   trailingSlash: false,
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/',
+  baseUrl: '/contao-flare-docs/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.

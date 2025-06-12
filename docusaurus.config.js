@@ -20,7 +20,7 @@ const config = {
   },
 
   // Set the production url of your site here
-  url: 'https://flare-docs.heimrichhannot.github.io',
+  url: 'https://heimrichhannot.github.io/contao-flare-docs/',
   trailingSlash: false,
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
@@ -30,6 +30,7 @@ const config = {
   // If you aren't using GitHub pages, you don't need these.
   organizationName: 'heimrichhannot', // Usually your GitHub org/user name.
   projectName: 'contao-flare-docs', // Usually your repo name.
+  deploymentBranch: 'gh-pages', // The branch that GitHub pages will deploy from.
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',

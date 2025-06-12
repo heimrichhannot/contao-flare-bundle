@@ -18,10 +18,10 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\RequestStack;
 
-class CommentsListener
+readonly class CommentsListener
 {
     public function __construct(
-        private readonly RequestStack $requestStack,
+        private RequestStack $requestStack,
     ) {}
 
     /**

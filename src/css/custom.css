@@ -1,0 +1,97 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+@font-face {
+    font-family: 'Wix Madefor Text';
+    font-style: normal;
+    font-weight: 400 800;
+    src: url('/fonts/WixMadeforText-VariableFont_wght.ttf') format('truetype');
+    font-display: fallback;
+}
+
+@font-face {
+    font-family: 'Wix Madefor Text';
+    font-style: italic;
+    font-weight: 400 800;
+    src: url('/fonts/WixMadeforText-Italic-VariableFont_wght.ttf') format('truetype');
+    font-display: fallback;
+}
+
+/* Grayscale Design palette: https://grayscale.design/app?lums=93.88,87.19,69.16,61.14,42.57,28.39,17.57,11.21,6.97,4.72,1.63&palettes=%23e0e000,%23007daa&filters=1.9%7C-11.5,-1.3%7C-9.8&names=plus,huh&labels=, */
+:root {
+    --grayscale-50: rgb(248, 248, 248);
+    --grayscale-100: rgb(240, 240, 240);
+    --grayscale-200: rgb(225, 225, 225);
+    --grayscale-300: rgb(205, 205, 205);
+    --grayscale-400: rgb(174, 174, 174);
+    --grayscale-500: rgb(145, 145, 145);
+    --grayscale-600: rgb(118, 118, 118);
+    --grayscale-700: rgb(94, 94, 94);
+    --grayscale-800: rgb(75, 75, 75);
+    --grayscale-900: rgb(61, 61, 61);
+    --grayscale-950: rgb(34, 34, 34);
+
+    --plus-50: rgb(249, 250, 220);
+    --plus-100: rgb(243, 247, 128);
+    --plus-200: rgb(224, 224, 0); /* secondary */
+    --plus-300: rgb(207, 214, 13);
+    --plus-400: rgb(172, 183, 24);
+    --plus-500: rgb(141, 153, 32);
+    --plus-600: rgb(112, 122, 37);
+    --plus-700: rgb(89, 99, 40);
+    --plus-800: rgb(71, 78, 41);
+    --plus-900: rgb(59, 64, 43);
+    --plus-950: rgb(34, 35, 30);
+    --plus: var(--plus-200);
+
+    --huh-50: rgb(244, 249, 250);
+    --huh-100: rgb(228, 243, 246);
+    --huh-200: rgb(176, 225, 236);
+    --huh-300: rgb(142, 217, 235);
+    --huh-400: rgb(39, 189, 232);
+    --huh-500: rgb(11, 157, 204);
+    --huh-600: rgb(0, 125, 170); /* primary */
+    --huh-700: rgb(7, 102, 132);
+    --huh-800: rgb(11, 81, 102);
+    --huh-900: rgb(14, 67, 81);
+    --huh-950: rgb(11, 38, 43);
+    --huh: var(--huh-600);
+}
+
+/* You can override the default Infima variables here. */
+:root {
+    --ifm-color-primary-darkest: var(--huh-900);
+    --ifm-color-primary-darker: var(--huh-800);
+    --ifm-color-primary-dark: var(--huh-700);
+    --ifm-color-primary: var(--huh-600);
+    --ifm-color-primary-light: var(--huh-500);
+    --ifm-color-primary-lighter: var(--huh-400);
+    --ifm-color-primary-lightest: var(--huh-300);
+    --ifm-code-font-size: 95%;
+    --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+
+    --ifm-font-family-base: 'Wix Madefor Text', sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+    --ifm-color-primary-darkest: var(--huh-700);
+    --ifm-color-primary-darker: var(--huh-600);
+    --ifm-color-primary-dark: var(--huh-500);
+    --ifm-color-primary: var(--huh-400);
+    --ifm-color-primary-light: var(--huh-300);
+    --ifm-color-primary-lighter: var(--huh-200);
+    --ifm-color-primary-lightest: var(--huh-100);
+    --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+.footer--dark {
+    --ifm-footer-background-color: var(--huh-900);
+}
+
+.text--muted {
+    color: var(--grayscale-500) !important;
+}

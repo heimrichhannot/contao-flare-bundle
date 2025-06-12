@@ -37,8 +37,8 @@ const config = {
   // useful metadata like html lang. For example, if your site is Chinese, you
   // may want to replace "en" with "zh-Hans".
   i18n: {
-    defaultLocale: 'de',
-    locales: ['de'],
+    defaultLocale: 'en',
+    locales: ['en'],
   },
 
   presets: [
@@ -51,9 +51,9 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/heimrichhannot/contao-flare-docs/',
+            'https://github.com/heimrichhannot/contao-flare-docs/tree/main/',
         },
-        blog: {
+        blog: false/*{
           showReadingTime: true,
           feedOptions: {
             type: ['rss', 'atom'],
@@ -67,7 +67,7 @@ const config = {
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
           onUntruncatedBlogPosts: 'warn',
-        },
+        }*/,
         theme: {
           customCss: './src/css/custom.css',
         },
@@ -84,7 +84,7 @@ const config = {
         title: 'FLARE',
         logo: {
           alt: 'Contao Flare Bundle Logo',
-          src: 'img/logo.svg',
+          src: 'img/plus.svg',
         },
         items: [
           {
@@ -93,7 +93,7 @@ const config = {
             position: 'left',
             label: 'Documentation',
           },
-          {to: '/blog', label: 'Blog', position: 'left'},
+          /*{to: '/blog', label: 'Blog', position: 'left'},*/
           {
             href: 'https://github.com/heimrichhannot/contao-flare-bundle',
             label: 'GitHub',
@@ -122,11 +122,12 @@ const config = {
             ],
           }
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Heimrich & Hannot GmbH. Alle Rechte vorbehalten.`,
+        copyright: `Copyright © ${new Date().getFullYear()}, Heimrich & Hannot GmbH.`,
       },
       prism: {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
+        additionalLanguages: ['php', 'php-extras', 'phpdoc'],
       },
     }),
 };

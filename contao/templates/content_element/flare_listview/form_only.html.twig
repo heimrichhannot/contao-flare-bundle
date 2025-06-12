@@ -9,7 +9,7 @@
         {{ form_widget(form) }}
 
         {% block submit %}
-            <button type="submit" class="btn btn-primary">{{ 'submit'|trans([], 'flare_form') }}</button>
+            <button type="submit" class="btn btn-primary">{{ 'submit'|trans({}, 'flare_form') }}</button>
         {% endblock %}
 
         {{ form_end(form) }}

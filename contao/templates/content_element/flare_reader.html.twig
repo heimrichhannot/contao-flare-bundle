@@ -4,8 +4,8 @@
 {% block content %}
 
     <div style="color: #800; background: #fdd; padding: 1rem;">
-        <strong>{{ 'reader.default_template.warning'|trans([], 'flare') }}</strong>
-        <br><small>{{ 'reader.default_template.description'|trans([], 'flare') }}</small>
+        <strong>{{ 'reader.default_template.warning'|trans({}, 'flare') }}</strong>
+        <br><small>{{ 'reader.default_template.description'|trans({}, 'flare') }}</small>
     </div>
 
     {% if app.request.get('_preview') or app.debug %}
@@ -20,4 +20,10 @@
         </div>
     {% endif %}
 
+{% endblock %}
+
+{% block footer %}
+    {% if comments|default(false) %}
+        {{ include('@Contao/flare/comments/basic.html.twig', comments) }}
+    {% endif %}
 {% endblock %}

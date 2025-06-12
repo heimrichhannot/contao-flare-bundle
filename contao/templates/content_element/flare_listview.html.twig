@@ -19,7 +19,7 @@
 
         {{ form_start(form) }}
             {{ form_widget(form) }}
-            <button type="submit" class="btn btn-primary">{{ 'submit'|trans([], 'flare_form') }}</button>
+            <button type="submit" class="btn btn-primary">{{ 'submit'|trans({}, 'flare_form') }}</button>
         {{ form_end(form) }}
 
     {% endblock %}
@@ -29,8 +29,8 @@
         <hr>
 
         <div style="color: #800; background: #fdd; padding: 1rem; margin-bottom: 1rem;">
-            <strong>{{ 'list.default_template.warning'|trans([], 'flare') }}</strong>
-            <br><small>{{ 'list.default_template.description'|trans([], 'flare') }}</small>
+            <strong>{{ 'list.default_template.warning'|trans({}, 'flare') }}</strong>
+            <br><small>{{ 'list.default_template.description'|trans({}, 'flare') }}</small>
         </div>
 
         {% if app.request.get('_preview') or app.debug %}

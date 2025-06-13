@@ -127,8 +127,8 @@ const config = {
         copyright: `Copyright © ${new Date().getFullYear()}, Heimrich & Hannot GmbH.`,
       },
       prism: {
-        theme: prismThemes.github,
-        darkTheme: prismThemes.dracula,
+        theme: prismThemes.oneLight,
+        darkTheme: prismThemes.oneDark,
         additionalLanguages: ['php', 'php-extras', 'phpdoc'],
       },
     }),

@@ -44,7 +44,7 @@ contao/templates/content_element/{flare_listview,flare_reader}/my_variant.html.t
 
 ## Filter and List: List View Template
 
-The `flare_listview.html.twig` template is a solid starting point for customizing the list view of your Flare.
+The `flare_listview.html.twig` template is a solid starting point for customizing list views.
 
 :::tip
 We recommend that you extend `@Contao/content_element/flare_listview.html.twig` to create your own variant.
@@ -131,8 +131,8 @@ By extending the base template, you can override specific blocks to customize th
 
 ### Customizing the Filter Form
 
-The `filter` block in the `flare_listview` templates is responsible for rendering the filter form.
-Use Symfony's form theming to customize the appearance of the filter form.
+The `filter` block in the `flare_listview` templates is used to render the filter form.
+Use [Symfony Form Themes](https://symfony.com/doc/current/form/form_themes.html) to customize the appearance of the filter form.
 
 :::info
 Since form themes are related to Symfony Forms and not Contao, we recommend that you place your custom form themes

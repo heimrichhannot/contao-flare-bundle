@@ -40,9 +40,17 @@ class ChoicesBuilder
         {
             if (!\is_subclass_of($class_or_table, Model::class))
             {
-                throw new \InvalidArgumentException(
-                    \sprintf('Class "%s" must be a subclass of "%s".', $class_or_table, Model::class)
-                );
+                // In Contao < 5.0, "tl_article" is a valid class, but not a subclass of Model.
+                //   Hence, we need to check if it's a table name from which a Model class can be derived.
+                $class_or_table = Model::getClassFromTable($class_or_table);
+
+                // Then check again if the class is a subclass of Model.
+                if (!$class_or_table || !\class_exists($class_or_table) || !\is_subclass_of($class_or_table, Model::class))
+                {
+                    throw new \InvalidArgumentException(
+                        \sprintf('Class "%s" must be a subclass of "%s".', $class_or_table, Model::class)
+                    );
+                }
             }
 
             $class_or_table = $class_or_table::getTable();

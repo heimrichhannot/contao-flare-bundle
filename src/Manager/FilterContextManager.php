@@ -6,7 +6,9 @@ namespace HeimrichHannot\FlareBundle\Manager;
 
 use Contao\Controller;
 use HeimrichHannot\FlareBundle\Contract\Config\FilterDefinition;
+use HeimrichHannot\FlareBundle\Contract\Config\InScopeConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PresetFiltersConfig;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
 use HeimrichHannot\FlareBundle\Contract\ListType\PresetFiltersContract;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Filter\Builder\FilterContextBuilderFactory;
@@ -65,6 +67,25 @@ readonly class FilterContextManager
             $filterElementAlias = $filterModel->type;
 
             if (!$config = $this->filterElementRegistry->get($filterElementAlias)) {
+                continue;
+            }
+
+            // Skip if the filter is not configured for the current context
+            if ($config->getService() instanceof InScopeContract)
+            {
+                $inScopeConfig = new InScopeConfig(
+                    contentContext: $context,
+                    listModel: $listModel,
+                    filterModel: $filterModel,
+                    filterElementConfig: $config,
+                );
+
+                if (!$config->getService()->isInScope($inScopeConfig)) {
+                    continue;
+                }
+            }
+            elseif (!$config->isAvailableForContext($context))
+            {
                 continue;
             }
 

@@ -10,21 +10,25 @@ class AsFilterElement
     public array $attributes;
 
     /**
-     * @param string $alias
-     * @param class-string<FormTypeInterface>|null $formType
-     * @param string $method
+     * @param string                           $alias
+     * @param ?string                          $palette
+     * @param ?class-string<FormTypeInterface> $formType
+     * @param ?string                          $method
+     * @param ?string[]                        $scopes  Where the filter should be applied, e.g. 'list', 'reader'.
      */
     public function __construct(
         string  $alias,
         ?string $palette = null,
         ?string $formType = null,
         ?string $method = null,
+        ?array  $scopes = null,
                 ...$attributes
     ) {
         $attributes['alias'] = $alias;
         $attributes['palette'] = $palette;
         $attributes['formType'] = $formType;
         $attributes['method'] = $method;
+        $attributes['scopes'] = $scopes;
 
         $this->attributes = $attributes;
     }

@@ -4,19 +4,23 @@ namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
+use HeimrichHannot\FlareBundle\DependencyInjection\Compiler\RegisterFilterElementsPass;
 use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ServiceConfigInterface;
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
 
 class FilterElementConfig implements ServiceConfigInterface, PaletteContract
 {
     public const TAG = 'huh.flare.filter_element';
 
+    /** @see RegisterFilterElementsPass::getFilterElementConfig */
     public function __construct(
         private         $service,
         private array   $attributes = [],
         private ?string $palette = null,
         private ?string $formType = null,
-        private ?string $method = null
+        private ?string $method = null,
+        private ?array  $scopes = null,
     ) {}
 
     /**
@@ -73,6 +77,16 @@ class FilterElementConfig implements ServiceConfigInterface, PaletteContract
         $this->method = $method;
     }
 
+    public function getScopes(): ?array
+    {
+        return $this->scopes;
+    }
+
+    public function setScopes(?array $scopes): void
+    {
+        $this->scopes = $scopes;
+    }
+
     public function hasFormType(): bool
     {
         $class = $this->getFormType();
@@ -82,5 +96,21 @@ class FilterElementConfig implements ServiceConfigInterface, PaletteContract
     public function isIntrinsicRequired(): bool
     {
         return !$this->hasFormType();
+    }
+
+    public function isAvailableForContext(ContentContext $contentContext): bool
+    {
+        if (\is_null($scopes = $this->getScopes()))
+        {
+            return true;
+        }
+
+        if ($contentContext->isTwig())
+            // Twig context is always available for now. Maybe change this in the future.
+        {
+            return true;
+        }
+
+        return \in_array($contentContext->getContext(), $scopes, true);
     }
 }

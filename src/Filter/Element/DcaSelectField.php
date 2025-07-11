@@ -4,13 +4,13 @@ namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Contao\Controller;
 use Contao\StringUtil;
-use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
@@ -22,6 +22,7 @@ use Symfony\Component\Form\FormInterface;
 #[AsFilterElement(
     alias: DcaSelectField::TYPE,
     formType: ChoiceType::class,
+    scopes: [ContentContext::CONTEXT_LIST]
 )]
 class DcaSelectField implements FormTypeOptionsContract, HydrateFormContract, PaletteContract
 {
@@ -29,14 +30,11 @@ class DcaSelectField implements FormTypeOptionsContract, HydrateFormContract, Pa
 
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
-        if ($context->getContentContext()->isReader()) {
+        if (!$submittedData = $context->getSubmittedData()) {
             return;
         }
 
         $filterModel = $context->getFilterModel();
-        if (!$submittedData = $context->getSubmittedData()) {
-            return;
-        }
 
         if (!$targetField = $filterModel->fieldGeneric)
         {

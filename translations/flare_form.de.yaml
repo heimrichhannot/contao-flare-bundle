@@ -24,7 +24,7 @@ empty_option:
 table:
     tl_article: "Artikel"
     tl_calendar: "Kalender"
-    tl_calendar_events: "Kalender-Einträge"
+    tl_calendar_events: "Kalender-Ereignisse"
     tl_calendar_feed: "Kalender-Feed"
     tl_comments: "Kommentare"
     tl_comments_notify: "Kommentare-Benachrichtigung"

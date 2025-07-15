@@ -1,8 +1,11 @@
 <?php
 
-/*
- * @copyright Copyright (c) 2025, Heimrich & Hannot GmbH
- * @license LGPL-3.0-or-later
+/**
+ * Heimrich & Hannot Flare Bundle
+ *
+ * @copyright 2025 Heimrich & Hannot GmbH
+ * @author    Eric Gesemann <e.gesemann@heimrich-hannot.de>
+ * @license   LGPL-3.0-or-later
  */
 
 namespace HeimrichHannot\FlareBundle\ContaoManager;
@@ -34,6 +37,6 @@ class Plugin implements BundlePluginInterface, RoutingPluginInterface
      */
     public function getRouteCollection(LoaderResolverInterface $resolver, KernelInterface $kernel)
     {
-        return $resolver->resolve($routing = '@HeimrichHannotFlareBundle/config/routes.yaml')->load($routing);
+        return $resolver->resolve($routes = '@HeimrichHannotFlareBundle/config/routes.yaml')->load($routes);
     }
 }

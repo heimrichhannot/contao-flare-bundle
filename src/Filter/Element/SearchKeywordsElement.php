@@ -3,9 +3,9 @@
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Contao\StringUtil;
-use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
@@ -15,6 +15,7 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
     alias: SearchKeywordsElement::TYPE,
     palette: '{filter_legend},columnsGeneric;{form_legend},placeholder',
     formType: TextType::class,
+    scopes: [ContentContext::CONTEXT_LIST]
 )]
 class SearchKeywordsElement implements FormTypeOptionsContract
 {
@@ -53,7 +54,7 @@ class SearchKeywordsElement implements FormTypeOptionsContract
 
     private function makeTerms(string $text): array
     {
-        $text = \mb_strtolower($text);
+        $text = (string) \mb_strtolower($text);
         $text = \preg_replace('/[^\p{L}\p{Nd}-]+/u', ' ', $text);
         $text = \preg_replace('/\s+/', ' ', $text);
         $terms = \explode(' ', \trim($text));

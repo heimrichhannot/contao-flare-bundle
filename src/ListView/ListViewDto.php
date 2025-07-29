@@ -95,7 +95,7 @@ class ListViewDto
 
     public function getModel(int|string $id): Model
     {
-        $id = \intval($id);
+        $id = (int) $id;
 
         if (!isset($this->models[$id])) {
             $this->models[$id] = $this->resolver->getModel($this, $id);
@@ -106,7 +106,7 @@ class ListViewDto
 
     public function getDetailsPageUrl(int|string $id): ?string
     {
-        $id = \intval($id);
+        $id = (int) $id;
 
         if (!isset($this->readerUrls[$id])) {
             $this->readerUrls[$id] = $this->resolver->getDetailsPageUrl($this, $id);

@@ -40,6 +40,8 @@ readonly class FieldsOptionsCallbacks
             $options[$alias] = $this->translationManager->filterElement($alias);
         }
 
+        \asort($options, \SORT_NATURAL);
+
         return $options;
     }
 

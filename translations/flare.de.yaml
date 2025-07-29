@@ -6,7 +6,7 @@ list.default_template.description: Bitte erstellen/wählen Sie ein benutzerdefin
 
 filter.limited_scope.single: "Dieser Filter ist ausschließlich anwendbar auf: %scope%"
 filter.limited_scope.multiple: "Dieser Filter ist anwendbar auf: %scopes%"
-filter.limited_scope.dynamic: "Der Geltungsbereich dieses Filters wird anhand der Filterelementkonfiguration dynamisch ermittelt."
+filter.limited_scope.dynamic: "Der Geltungsbereich dieses Filters wird anhand dieser Konfiguration dynamisch ermittelt."
 filter.limited_scope.disqualified: "Dieser Filter ist nicht anwendbar, da der Geltungsbereich nicht definiert ist."
 
 filter.scope.list: "Listenansicht"

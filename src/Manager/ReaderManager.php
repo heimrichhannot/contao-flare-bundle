@@ -16,7 +16,7 @@ use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Util\SqlEquationOperator;
+use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 
 readonly class ReaderManager
 {

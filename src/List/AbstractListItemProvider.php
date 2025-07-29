@@ -6,7 +6,7 @@ use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
-use HeimrichHannot\FlareBundle\Util\SqlEquationOperator;
+use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 
 /**
  * Abstract class for list item providers.

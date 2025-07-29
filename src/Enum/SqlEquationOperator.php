@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\Util;
+namespace HeimrichHannot\FlareBundle\Enum;
 
 enum SqlEquationOperator: string
 {
@@ -20,7 +20,7 @@ enum SqlEquationOperator: string
     public function isUnary(): bool
     {
         return match ($this) {
-            SqlEquationOperator::IS_NULL, SqlEquationOperator::IS_NOT_NULL => true,
+            self::IS_NULL, self::IS_NOT_NULL => true,
             default => false,
         };
     }
@@ -28,27 +28,31 @@ enum SqlEquationOperator: string
     public function getOperator(): string
     {
         return match ($this) {
-            SqlEquationOperator::EQUALS => '=',
-            SqlEquationOperator::NOT_EQUALS => '!=',
-            SqlEquationOperator::GREATER_THAN => '>',
-            SqlEquationOperator::GREATER_THAN_EQUALS => '>=',
-            SqlEquationOperator::LESS_THAN => '<',
-            SqlEquationOperator::LESS_THAN_EQUALS => '<=',
-            SqlEquationOperator::LIKE => 'LIKE',
-            SqlEquationOperator::NOT_LIKE => 'NOT LIKE',
-            SqlEquationOperator::IN => 'IN',
-            SqlEquationOperator::NOT_IN => 'NOT IN',
-            SqlEquationOperator::IS_NULL => 'IS NULL',
-            SqlEquationOperator::IS_NOT_NULL => 'IS NOT NULL',
+            self::EQUALS => '=',
+            self::NOT_EQUALS => '!=',
+            self::GREATER_THAN => '>',
+            self::GREATER_THAN_EQUALS => '>=',
+            self::LESS_THAN => '<',
+            self::LESS_THAN_EQUALS => '<=',
+            self::LIKE => 'LIKE',
+            self::NOT_LIKE => 'NOT LIKE',
+            self::IN => 'IN',
+            self::NOT_IN => 'NOT IN',
+            self::IS_NULL => 'IS NULL',
+            self::IS_NOT_NULL => 'IS NOT NULL',
         };
     }
 
     public static function asOptions(bool $includeIn = true): array
     {
-        $cases = SqlEquationOperator::cases();
+        $cases = self::cases();
 
-        if (!$includeIn) {
-            $cases = \array_filter($cases, static fn($case) => !\in_array($case, [SqlEquationOperator::IN, SqlEquationOperator::NOT_IN]));
+        if (!$includeIn)
+        {
+            $cases = \array_filter($cases, static fn($case) => !\in_array($case, [
+                SqlEquationOperator::IN,
+                SqlEquationOperator::NOT_IN
+            ]));
         }
 
         return \array_combine(
@@ -59,11 +63,11 @@ enum SqlEquationOperator: string
 
     public static function match(SqlEquationOperator|string $operator): ?SqlEquationOperator
     {
-        if ($operator instanceof SqlEquationOperator) {
+        if ($operator instanceof self) {
             return $operator;
         }
 
-        if ($from = SqlEquationOperator::tryFrom($operator)) {
+        if ($from = self::tryFrom($operator)) {
             return $from;
         }
 

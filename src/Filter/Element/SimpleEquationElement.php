@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Util\SqlEquationOperator;
+use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 
 #[AsFilterElement(alias: SimpleEquationElement::TYPE)]
@@ -71,7 +71,7 @@ class SimpleEquationElement implements PaletteContract
     {
         $filterModel = $config->getFilterModel();
 
-        if (SqlEquationOperator::match($filterModel->equationOperator)?->isUnary()) {
+        if (SqlEquationOperator::match($filterModel?->equationOperator)?->isUnary()) {
             return '{flare_simple_equation_legend},equationLeft,equationOperator';
         }
 

@@ -73,20 +73,21 @@ class DcaSelectField implements FormTypeOptionsContract, HydrateFormContract, Pa
         $listModel = $context->getListModel();
         $filterModel = $context->getFilterModel();
 
-        $optionsField = $this->getOptionsField($listModel, $filterModel) ?? [];
-        $reference = $optionsField['reference'] ?? [];
+        $emptyPlaceholder = $filterModel->isMandatory ? 'empty_option.prompt' : 'empty_option.no_selection';
 
         $return = [
             'multiple' => (bool) $filterModel->isMultiple,
             'expanded' => (bool) $filterModel->isExpanded,
             'required' => (bool) $filterModel->isMandatory,
-            'placeholder' => $filterModel->placeholder
-                ?: ($filterModel->isMandatory ? 'empty_option.prompt' : 'empty_option.no_selection'),
+            'placeholder' => $filterModel->placeholder ?: $emptyPlaceholder,
         ];
 
         if ($filterModel->label) {
             $return['label'] = $filterModel->label;
         }
+
+        $optionsField = $this->getOptionsField($listModel, $filterModel) ?? [];
+        $reference = $optionsField['reference'] ?? [];
 
         if (!$options = $optionsField['options'] ?? null) {
             return $return;

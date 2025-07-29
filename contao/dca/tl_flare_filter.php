@@ -2,6 +2,8 @@
 
 use Contao\DataContainer;
 use Contao\DC_Table;
+use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
+use HeimrichHannot\FlareBundle\Enum\BoolMode;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
@@ -561,14 +563,31 @@ $dca['fields'] = [
         'exclude' => true,
         'search' => false,
         'inputType' => 'select',
-        'options' => SqlEquationOperator::asOptions(false),
-        'eval' => ['mandatory' => true, 'maxlength' => 255, 'alwaysSave' => true, 'submitOnChange' => true],
-        'sql' => "varchar(255) NOT NULL default ''",
+        'options' => BoolMode::asOptions(),
+        'eval' => [
+            'mandatory' => true,
+            'maxlength' => 255,
+            'alwaysSave' => true,
+            'submitOnChange' => true,
+            'tl_class' => 'w50 clr',
+        ],
+        'sql' => "varchar(64) NOT NULL default ''",
+    ],
+    'boolBinaryChoices' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'select',
+        'options' => BoolBinaryChoices::asOptions(),
+        'eval' => ['mandatory' => true, 'maxlength' => 255, 'alwaysSave' => true, 'tl_class' => 'w50 clr'],
+        'sql' => "varchar(64) NOT NULL default ''",
     ],
 ];
 
 $dca['palettes'] = [
-    '__selector__' => ['type', 'usePublished', 'useStart', 'useStop', 'whichPtable', 'formatLabel', 'formatEmptyOption', 'configureStart', 'configureStop'],
+    '__selector__' => [
+        'type', 'usePublished', 'useStart', 'useStop', 'whichPtable', 'formatLabel', 'formatEmptyOption',
+        'configureStart', 'configureStop', 'boolMode',
+    ],
     '__prefix__' => '{title_legend},title,type,intrinsic',
     '__suffix__' => '{publish_legend},published',
 ];
@@ -588,4 +607,5 @@ $dca['subpalettes'] = [
     'configureStart_date' => 'startAt',
     'configureStop_str' => 'stopAt',
     'configureStop_date' => 'stopAt',
+    'boolMode_binary' => 'boolBinaryChoices',
 ];

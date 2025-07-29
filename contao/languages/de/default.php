@@ -16,10 +16,11 @@ $lang['CTE'][ReaderController::TYPE] = ['FLARE Detailleser', 'Zeigt den Leser zu
 
 $flare['filter'] = [
     Element\ArchiveElement::TYPE => ['Archiv', 'Filtern nach Archiv.'],
-    Element\PublishedElement::TYPE => ['Veröffentlicht', 'Nur veröffentlichte Elemente anzeigen.'],
     Element\BelongsToRelationElement::TYPE => ['Relation: Gehört zu', 'Filtern nach zugehörigen Eltern-Entitäten.'],
+    Element\BooleanElement::TYPE => ['Boolescher Eigenschaftswert', 'Filtern nach einem Boolean.'],
     Element\CalendarCurrentElement::TYPE => ['Kalender-Zeitfenster', 'Filtern nach aktuellen Events.'],
     Element\DateRangeElement::TYPE => ['Datumsbereich', 'Filtern nach einem Datumsbereich.'],
+    Element\PublishedElement::TYPE => ['Veröffentlicht', 'Nur veröffentlichte Elemente anzeigen.'],
     Element\SimpleEquationElement::TYPE => ['Einfache Gleichung', 'Filtern, ob ein Feld einer einfachen Gleichung entspricht.'],
     Element\SearchKeywordsElement::TYPE => ['Stichwortsuche', 'Filtern nach Freitexteingabe.'],
 ];

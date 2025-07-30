@@ -34,8 +34,8 @@ class FilterModel extends Model
 
     public function whichPtable_disableAutoOption(): void
     {
-        $GLOBALS['TL_DCA'][FilterModel::getTable()]['fields']['whichPtable']['options'] = ['dynamic', 'static'];
-        $GLOBALS['TL_DCA'][FilterModel::getTable()]['fields']['whichPtable']['default'] = ['dynamic'];
+        $GLOBALS['TL_DCA'][self::getTable()]['fields']['whichPtable']['options'] = ['dynamic', 'static'];
+        $GLOBALS['TL_DCA'][self::getTable()]['fields']['whichPtable']['default'] = ['dynamic'];
 
         if ($this->whichPtable === 'auto')
         {

@@ -3,23 +3,27 @@
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Contao\Controller;
+use Contao\Message;
 use Doctrine\DBAL\ParameterType;
 use HeimrichHannot\FlareBundle\Contract\Config\InScopeConfig;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Enum\BoolMode;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 
 #[AsFilterElement(
     alias: self::TYPE,
-    palette: '{filter_legend},fieldGeneric,boolMode,preselect',
+    palette: '{filter_legend},fieldGeneric,label,boolMode,preselect',
     formType: CheckboxType::class
 )]
-class BooleanElement extends AbstractFilterElement implements InScopeContract
+class BooleanElement extends AbstractFilterElement implements InScopeContract, FormTypeOptionsContract
 {
     public const TYPE = 'flare_bool';
 
@@ -91,6 +95,10 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract
             'false' => 'flare.bool_preselect.false',
         ];
         ###< preselect
+
+        if ($filterModel->boolMode === BoolMode::TERNARY->value) {
+            Message::addError('The ternary mode is currently not supported by the boolean filter element. Please use the binary mode instead.');
+        }
     }
 
     #[AsFilterCallback(self::TYPE, 'fields.fieldGeneric.options')]
@@ -102,20 +110,31 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract
             return [];
         }
 
+        $cbx = 'Checkbox';
+        $non = 'Non-Checkbox';
+
         $options = [
-            'cbx' => [], // checkbox fields
-            'non' => [], // non-checkbox fields
+            $cbx => [], // checkbox fields
+            $non => [], // non-checkbox fields
         ];
 
         foreach ($GLOBALS['TL_DCA'][$listModel->dc]['fields'] as $name => $field)
         {
-            $group = ('checkbox' === ($field['inputType'] ?? null)) ? 'cbx' : 'non';
+            $group = ('checkbox' === ($field['inputType'] ?? null)) ? $cbx : $non;
             $options[$group][$name] = $listModel->dc . '.' . $name;
         }
 
-        \sort($options['cbx']);
-        \sort($options['non']);
+        \asort($options[$cbx]);
+        \asort($options[$non]);
 
         return $options;
+    }
+
+    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
+    {
+        return [
+            'required' => false,
+            'label' => $context->getFilterModel()->label ?: $context->getFilterModel()->title ?: 'CBX',
+        ];
     }
 }

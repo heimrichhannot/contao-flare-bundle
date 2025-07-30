@@ -46,6 +46,8 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string $stopAt
  * @property string $configureStart
  * @property string $configureStop
+ * @property string $boolMode
+ * @property string $boolBinaryChoices
  */
 trait FilterModelDocTrait
 {

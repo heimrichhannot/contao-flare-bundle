@@ -141,9 +141,12 @@ class EventsListItemProvider extends AbstractListItemProvider
         );
 
         $ids = [];
-        foreach ($byDate as $entriesOnDate)
-        {
-            $ids = \array_merge($ids, \array_column($entriesOnDate, 'id'));
+        foreach ($byDate as $entriesOnDate) {
+            foreach ($entriesOnDate as $entry) {
+                if (!empty($entry['id'])) {
+                    $ids[] = $entry['id'];
+                }
+            }
         }
 
         return \array_unique($ids);

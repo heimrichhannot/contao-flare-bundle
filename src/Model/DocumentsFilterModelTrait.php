@@ -25,7 +25,6 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string $formatLabelCustom
  * @property string $formatEmptyOption
  * @property string $formatEmptyOptionCustom
- * @property string $whichPtable
  * @property string $columnsGeneric
  * @property string $fieldGeneric
  * @property string $fieldPublished
@@ -34,6 +33,7 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string $fieldPid
  * @property string $fieldPtable
  * @property string $tablePtable
+ * @property string $whichPtable
  * @property string $whitelistParents
  * @property string $groupWhitelistParents
  * @property string $preselect

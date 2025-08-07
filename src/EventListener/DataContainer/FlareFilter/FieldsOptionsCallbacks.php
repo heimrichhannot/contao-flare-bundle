@@ -11,6 +11,7 @@ use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
+use HeimrichHannot\FlareBundle\Util\DcaFieldFilter;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -69,38 +70,13 @@ readonly class FieldsOptionsCallbacks
     #[AsCallback(self::TABLE_NAME, 'fields.fieldPid.options')]
     public function getFieldOptions_fieldPid(DataContainer $dc): array
     {
-        return DcaHelper::getFieldOptions(
-            $dc,
-            static function(string $table, string $field, array $definition) {
-                if (\str_contains($field, 'pid')
-                    || \is_array($definition['relation'] ?? null)
-                    || \is_string($definition['foreignKey'] ?? null)) {
-                    return true;
-                }
-
-                return DcaHelper::testSQLType($definition['sql'] ?? null, 'int');
-            },
-        );
+        return DcaHelper::getFieldOptions($dc, DcaFieldFilter::pid(...));
     }
 
     #[AsCallback(self::TABLE_NAME, 'fields.fieldPtable.options')]
     public function getFieldOptions_fieldPtable(DataContainer $dc): array
     {
-        return DcaHelper::getFieldOptions(
-            $dc,
-            static function(string $table, string $field, array $definition) {
-                if (\str_contains($field, 'ptable')) {
-                    return true;
-                }
-
-                if (($definition['inputType'] ?? null) === 'text'
-                    && !DcaHelper::testSQLType($definition['sql'] ?? null, 'int')) {
-                    return true;
-                }
-
-                return DcaHelper::testSQLType($definition['sql'] ?? null, 'text');
-            },
-        );
+        return DcaHelper::getFieldOptions($dc, DcaFieldFilter::ptable(...));
     }
 
     #[AsCallback(self::TABLE_NAME, 'fields.fieldGeneric.options')]

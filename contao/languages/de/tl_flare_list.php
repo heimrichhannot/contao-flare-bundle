@@ -40,6 +40,20 @@ $lang['metaDescriptionFormat'] = ['Meta-Beschreibungs-Format', 'Verwenden Sie Si
 $lang['metaRobotsFormat'] = ['Meta-Robots-Format', 'Geben Sie ein statisches Robots-Attribut an oder verwenden Sie Simple-Tokens um Felder des Containers dafür auszugeben.'];
 ###< meta_legend ###
 
+###> parent_legend
+$lang['parent_legend'] = 'Eltern-Einstellungen';
+$lang['hasParent'] = ['Eltern-Relation verfügbar', 'Aktivieren, damit Filter nach Archiveigenschaften filtern können.'];
+$lang['fieldPid'] = ['Eltern-ID-Feld', 'Bitte wählen Sie das Feld aus, das die ID der Elternentität enthält.'];
+$lang['fieldPtable'] = ['Elterntabelle-Feld', 'Bitte wählen Sie das Feld aus, das den Tabellennamen der Elternentität enthält.'];
+$lang['tablePtable'] = ['Elterntabelle', 'Bitte wählen Sie die Tabelle aus, die die Elternentität darstellt.'];
+$lang['whichPtable'] = ['Elterntabelle ermitteln', 'Wenn möglich, Elternentität automatisch ermitteln oder manuell festlegen.'];
+$lang['whichPtable_options'] = [
+    'auto' => 'Elterntabelle automatisch ermitteln',
+    'dynamic' => 'Spalte mit dynamischer Elterntabelle festlegen',
+    'static' => 'Statische Elterntabelle festlegen',
+];
+###< relations_legend
+
 ###> comments_legend ###
 $lang['comments_legend'] = 'Kommentareinstellungen';
 $lang['comments_enabled'] = ['Kommentare aktivieren', 'Aktivieren Sie die Kommentarfunktion für Einträge dieser Liste.'];

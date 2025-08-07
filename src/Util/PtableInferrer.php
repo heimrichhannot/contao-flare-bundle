@@ -4,11 +4,20 @@ namespace HeimrichHannot\FlareBundle\Util;
 
 use Contao\Controller;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
-use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 class PtableInferrer
 {
+    public const WHICH_PTABLE_AUTO = 'auto';
+    public const WHICH_PTABLE_STATIC = 'static';
+    public const WHICH_PTABLE_DYNAMIC = 'dynamic';
+    public const WHICH_PTABLE_DEFAULT = self::WHICH_PTABLE_AUTO;
+    public const WHICH_PTABLE_OPTIONS = [
+        self::WHICH_PTABLE_AUTO,
+        self::WHICH_PTABLE_STATIC,
+        self::WHICH_PTABLE_DYNAMIC,
+    ];
+
     protected bool $autoInferable = true;
     protected bool $autoDynamicPtable = false;
     protected string $entityTable;
@@ -16,15 +25,15 @@ class PtableInferrer
     protected ?string $inferredPtable;
 
     public function __construct(
-        protected FilterModel $filterModel,
-        protected ListModel $listModel,
+        protected PtableInferrable $inferrable,
+        protected ListModel        $listModel,
     ) {
         $this->entityTable = $this->listModel->dc;
     }
 
-    public function getFilterModel(): FilterModel
+    public function getInferrable(): PtableInferrable
     {
-        return $this->filterModel;
+        return $this->inferrable;
     }
 
     public function getListModel(): ListModel
@@ -93,7 +102,7 @@ class PtableInferrer
 
         $this->inferred = true;
 
-        $fieldPid = $this->filterModel->fieldPid ?: 'pid';
+        $fieldPid = $this->inferrable->getInferFieldPid() ?: 'pid';
 
         if ($fieldPid === 'pid' && \is_string($ptable = $entityDca['config']['ptable'] ?? null))
             // the parent table is defined in the data container
@@ -133,16 +142,16 @@ class PtableInferrer
     {
         if ($alwaysInfer) $this->infer();
 
-        return match ($this->filterModel->whichPtable ?: 'auto') {
-            'dynamic' => null,
-            'static' => $this->filterModel->tablePtable ?? null,
+        return match ($this->inferrable->getInferWhichPtable()) {
+            self::WHICH_PTABLE_DYNAMIC => null,
+            self::WHICH_PTABLE_STATIC => $this->inferrable->getInferTablePtable(),
             default => $this->infer(),
         };
     }
 
     public function getPidField(): string
     {
-        return $this->filterModel->fieldPid ?: 'pid';
+        return $this->inferrable->getInferFieldPid() ?: 'pid';
     }
 
     /**
@@ -150,14 +159,14 @@ class PtableInferrer
      */
     public function tryGetDynamicPtableField(): string|null
     {
-        if ($this->filterModel->whichPtable === 'static')
+        if ($this->inferrable->getInferWhichPtable() === self::WHICH_PTABLE_STATIC)
         {
             return null;
         }
 
-        if ($this->filterModel->whichPtable === 'dynamic')
+        if ($this->inferrable->getInferWhichPtable() === self::WHICH_PTABLE_DYNAMIC)
         {
-            return $this->filterModel->fieldPtable ?: 'ptable';
+            return $this->inferrable->getInferFieldPtable() ?: 'ptable';
         }
 
         $this->infer();

@@ -134,6 +134,73 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
+    'hasParent' => [
+        'exclude' => true,
+        'filter' => true,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'tl_class' => 'w50 cbx',
+            'alwaysSave' => true,
+            'submitOnChange' => true,
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'fieldPid' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'submitOnChange' => true,
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NULL default ''",
+    ],
+    'whichPtable' => [
+        'exclude' => true,
+        'filter' => false,
+        'default' => 'auto',
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'radio',
+        'options' => ['auto', 'dynamic', 'static'],
+        'reference' => &$GLOBALS['TL_LANG'][$table]['whichPtable_options'],
+        'eval' => [
+            'submitOnChange' => true,
+            'alwaysSave' => true,
+            'tl_class' => 'w50 clr'
+        ],
+        'sql' => "varchar(32) NOT NULL default 'auto'",
+    ],
+    'fieldPtable' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50 clr',
+        ],
+        'sql' => "varchar(128) NULL default ''",
+    ],
+    'tablePtable' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => true,
+            'submitOnChange' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NULL default ''",
+    ],
     'jumpToReader' => [
         'exclude' => true,
         'inputType' => 'pageTree',
@@ -212,11 +279,15 @@ $dca['fields']['comments_enabled'] = [
 ###< contao/comments-bundle support
 
 $dca['palettes'] = [
-    '__selector__' => ['type'],
+    '__selector__' => ['type', 'whichPtable'],
     '__prefix__' => '{title_legend},title,type',
     '__suffix__' => '{flare_defaults_legend},sortSettings;{flare_reader_legend},jumpToReader;{publish_legend},published',
 ];
 
 $dca['palettes']['default'] = Str::mergePalettes($dca['palettes']['__prefix__'], $dca['palettes']['__suffix__']);
 
-$dca['subpalettes'] = [];
+$dca['subpalettes'] = [
+    'whichPtable_auto' => '',
+    'whichPtable_dynamic' => 'fieldPtable',
+    'whichPtable_static' => 'tablePtable',
+];

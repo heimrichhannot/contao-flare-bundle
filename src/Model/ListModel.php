@@ -5,6 +5,7 @@ namespace HeimrichHannot\FlareBundle\Model;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
+use HeimrichHannot\FlareBundle\Util\PtableInferrable;
 
 /**
  * Class ListModel
@@ -21,9 +22,16 @@ use HeimrichHannot\FlareBundle\Util\DcaHelper;
  * @property string $metaTitleFormat
  * @property string $metaDescriptionFormat
  * @property string $metaRobotsFormat
+ * @property bool   $hasParent
+ * @property string $fieldPid
+ * @property string $fieldPtable
+ * @property string $tablePtable
+ * @property string $whichPtable
  */
-class ListModel extends Model
+class ListModel extends Model implements PtableInferrable
 {
+    use PtableInferrableTrait;
+
     protected static $strTable = ListContainer::TABLE_NAME;
 
     public function getAutoItemField(): string

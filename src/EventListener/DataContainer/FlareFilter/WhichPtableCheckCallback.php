@@ -8,17 +8,26 @@ use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 
+#[AsCallback(FilterContainer::TABLE_NAME, 'config.onload')]
 #[AsCallback(FilterContainer::TABLE_NAME, 'config.onsubmit')]
-readonly class ConfigOnSubmitCallback
+readonly class WhichPtableCheckCallback
 {
     public function __construct(
         private FilterContainer $filterContainer,
     ) {}
 
-    public function __invoke(DataContainer $dc): void
+    public function __invoke(?DataContainer $dc): void
     {
-        // ignore type because the type is not updated yet
+        if (!$dc) {
+            return;
+        }
+
+        // ignore the type because it is not updated yet
         [$filterModel, $listModel] = $this->filterContainer->getModelsFromDataContainer($dc, ignoreType: true);
+
+        if (!$filterModel || !$listModel) {
+            return;
+        }
 
         try
         {

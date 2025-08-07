@@ -13,7 +13,7 @@ class PaletteConfig
         private readonly DataContainer $dataContainer,
         private string                 $prefix,
         private string                 $suffix,
-        private readonly ?ListModel    $listModel,
+        private readonly ListModel     $listModel,
         private readonly ?FilterModel  $filterModel,
     ) {}
 
@@ -51,7 +51,7 @@ class PaletteConfig
         return $this;
     }
 
-    public function getListModel(): ?ListModel
+    public function getListModel(): ListModel
     {
         return $this->listModel;
     }

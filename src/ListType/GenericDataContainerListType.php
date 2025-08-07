@@ -2,23 +2,27 @@
 
 namespace HeimrichHannot\FlareBundle\ListType;
 
+use Contao\CoreBundle\DataContainer\PaletteManipulator;
 use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\CoreBundle\String\SimpleTokenParser;
 use Contao\DataContainer;
+use Contao\Message;
+use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageMetaContract;
 use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
+use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
+use HeimrichHannot\FlareBundle\Exception\InferenceException;
+use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 use HeimrichHannot\FlareBundle\Util\Str;
 
-#[AsListType(
-    alias: self::TYPE,
-    palette: '{data_container_legend},dc,fieldAutoItem;{meta_legend},metaTitleFormat,metaDescriptionFormat,metaRobotsFormat'
-)]
-class GenericDataContainerListType implements DataContainerContract, ReaderPageMetaContract
+#[AsListType(alias: self::TYPE, palette: self::DEFAULT_PALETTE)]
+class GenericDataContainerListType implements DataContainerContract, ReaderPageMetaContract, PaletteContract
 {
     public const TYPE = 'flare_generic_dc';
+    public const DEFAULT_PALETTE = '{data_container_legend},dc,fieldAutoItem;{parent_legend},hasParent;{meta_legend},metaTitleFormat,metaDescriptionFormat,metaRobotsFormat';
 
     public function __construct(
         private readonly HtmlDecoder       $htmlDecoder,
@@ -82,5 +86,45 @@ class GenericDataContainerListType implements DataContainerContract, ReaderPageM
         }
 
         return $pageMeta;
+    }
+
+    public function getPalette(PaletteConfig $config): ?string
+    {
+        $listModel = $config->getListModel();
+
+        if (!$listModel->hasParent) {
+            return null;
+        }
+
+        $pm = PaletteManipulator::create()
+            ->addField('fieldPid', 'parent_legend', PaletteManipulator::POSITION_APPEND)
+            ->addField('whichPtable', 'parent_legend', PaletteManipulator::POSITION_APPEND)
+        ;
+
+        $table = $listModel->dc;
+
+        $inferrer = new PtableInferrer($listModel, $listModel);
+
+        try
+        {
+            $ptable = $inferrer->explicit(true);
+
+            Message::addInfo(match (true) {
+                $inferrer->isAutoInferable() && $ptable => \sprintf('Parent table of "%s.%s" inferred as "%s"', $table, $listModel->fieldPid, $ptable),
+                $inferrer->isAutoDynamicPtable() => \sprintf('Parent table of "%s" can be inferred dynamically', $table),
+                default => \sprintf('Parent table cannot be inferred on "%s.%s"', $table, $listModel->fieldPid)
+            });
+        }
+        catch (InferenceException $e)
+        {
+            Message::addError($e->getMessage());
+        }
+
+        if (!$inferrer->isAutoInferable())
+        {
+            $listModel->whichPtable_disableAutoOption();
+        }
+
+        return $pm->applyToString(self::DEFAULT_PALETTE);
     }
 }

@@ -5,13 +5,14 @@ namespace HeimrichHannot\FlareBundle\Model;
 use Contao\Model;
 use Contao\Model\Collection;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
+use HeimrichHannot\FlareBundle\Util\PtableInferrable;
 
 /**
  * Class FilterModel
  */
-class FilterModel extends Model
+class FilterModel extends Model implements PtableInferrable
 {
-    use DocumentsFilterModelTrait;
+    use DocumentsFilterModelTrait, PtableInferrableTrait;
 
     protected static $strTable = FilterContainer::TABLE_NAME;
 
@@ -30,17 +31,5 @@ class FilterModel extends Model
         }
 
         return $result;
-    }
-
-    public function whichPtable_disableAutoOption(): void
-    {
-        $GLOBALS['TL_DCA'][self::getTable()]['fields']['whichPtable']['options'] = ['dynamic', 'static'];
-        $GLOBALS['TL_DCA'][self::getTable()]['fields']['whichPtable']['default'] = ['dynamic'];
-
-        if ($this->whichPtable === 'auto')
-        {
-            $this->whichPtable = 'dynamic';
-            $this->save();
-        }
     }
 }

@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Util\Str;
 
-$dca = &$GLOBALS['TL_DCA'][FilterModel::getTable()];
+$dca = &$GLOBALS['TL_DCA'][$table = FilterModel::getTable()];
 
 $dca['config'] = [
     'dataContainer' => DC_Table::class,
@@ -307,7 +307,7 @@ $dca['fields'] = [
         'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
         'inputType' => 'radio',
         'options' => ['auto', 'dynamic', 'static'],
-        'reference' => &$GLOBALS['TL_LANG'][FilterModel::getTable()]['whichPtable_options'],
+        'reference' => &$GLOBALS['TL_LANG'][$table]['whichPtable_options'],
         'eval' => [
             'submitOnChange' => true,
             'alwaysSave' => true,
@@ -381,6 +381,29 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
+    'tablePtable' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => true,
+            'submitOnChange' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'whitelistParents' => [
+        'inputType' => 'select',
+        'default' => null,
+        'eval' => [
+            'chosen' => true,
+            'multiple' => true,
+        ],
+        'sql' => ['type' => 'blob', 'notnull' => false],
+    ],
     'fieldGeneric' => [
         'inputType' => 'select',
         'exclude' => true,
@@ -405,29 +428,6 @@ $dca['fields'] = [
             'mandatory' => true,
             'includeBlankOption' => true,
             'tl_class' => 'clr w100',
-        ],
-        'sql' => ['type' => 'blob', 'notnull' => false],
-    ],
-    'tablePtable' => [
-        'inputType' => 'select',
-        'exclude' => true,
-        'filter' => false,
-        'eval' => [
-            'mandatory' => true,
-            'submitOnChange' => true,
-            'includeBlankOption' => true,
-            'alwaysSave' => true,
-            'chosen' => true,
-            'tl_class' => 'w50',
-        ],
-        'sql' => "varchar(128) NOT NULL default ''",
-    ],
-    'whitelistParents' => [
-        'inputType' => 'select',
-        'default' => null,
-        'eval' => [
-            'chosen' => true,
-            'multiple' => true,
         ],
         'sql' => ['type' => 'blob', 'notnull' => false],
     ],

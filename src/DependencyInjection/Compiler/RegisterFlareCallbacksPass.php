@@ -2,8 +2,8 @@
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
-use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackConfig;
-use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackRegistry;
+use HeimrichHannot\FlareBundle\Registry\Descriptor\FlareCallbackDescriptor;
+use HeimrichHannot\FlareBundle\Registry\FlareCallbackRegistry;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\PriorityTaggedServiceTrait;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -21,9 +21,9 @@ class RegisterFlareCallbacksPass implements CompilerPassInterface
         }
 
         $mapTagPrefix = [
-            FlareCallbackConfig::TAG => null,
-            FlareCallbackConfig::TAG_FILTER_CALLBACK => 'filter',
-            FlareCallbackConfig::TAG_LIST_CALLBACK => 'list',
+            FlareCallbackDescriptor::TAG => null,
+            FlareCallbackDescriptor::TAG_FILTER_CALLBACK => 'filter',
+            FlareCallbackDescriptor::TAG_LIST_CALLBACK => 'list',
         ];
 
         $registry = $container->findDefinition(FlareCallbackRegistry::class);
@@ -64,8 +64,8 @@ class RegisterFlareCallbacksPass implements CompilerPassInterface
         Reference        $reference,
         array            $attributes,
     ): Reference {
-        /** @see FlareCallbackConfig::__construct */
-        $definition = new Definition(FlareCallbackConfig::class, [
+        /** @see \HeimrichHannot\FlareBundle\Registry\Descriptor\FlareCallbackDescriptor::__construct */
+        $definition = new Definition(FlareCallbackDescriptor::class, [
             $reference,
             $attributes,
             $attributes['element'] ?? null,

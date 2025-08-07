@@ -3,17 +3,17 @@
 namespace HeimrichHannot\FlareBundle\Contract\Config;
 
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
-use HeimrichHannot\FlareBundle\Filter\FilterElementConfig;
+use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
-class InScopeConfig
+readonly class InScopeConfig
 {
     public function __construct(
-        private readonly ContentContext $contentContext,
-        private readonly ListModel $listModel,
-        private readonly FilterModel $filterModel,
-        private readonly FilterElementConfig $filterElementConfig,
+        private ContentContext          $contentContext,
+        private ListModel               $listModel,
+        private FilterModel             $filterModel,
+        private FilterElementDescriptor $filterElementConfig,
     ) {}
 
     public function getContentContext(): ContentContext
@@ -31,7 +31,7 @@ class InScopeConfig
         return $this->filterModel;
     }
 
-    public function getFilterElementConfig(): FilterElementConfig
+    public function getFilterElementConfig(): FilterElementDescriptor
     {
         return $this->filterElementConfig;
     }

@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
  */
 class FilterModel extends Model
 {
-    use FilterModelDocTrait;
+    use DocumentsFilterModelTrait;
 
     protected static $strTable = FilterContainer::TABLE_NAME;
 

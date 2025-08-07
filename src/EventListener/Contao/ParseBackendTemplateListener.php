@@ -3,8 +3,8 @@
 namespace HeimrichHannot\FlareBundle\EventListener\Contao;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
-use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 
 #[AsHook('parseBackendTemplate')]
 readonly class ParseBackendTemplateListener

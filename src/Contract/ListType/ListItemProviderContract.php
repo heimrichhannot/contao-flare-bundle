@@ -3,7 +3,7 @@
 namespace HeimrichHannot\FlareBundle\Contract\ListType;
 
 use HeimrichHannot\FlareBundle\Contract\Config\ListItemProviderConfig;
-use HeimrichHannot\FlareBundle\List\ListItemProviderInterface;
+use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
 
 /**
  * Implement this interface to specify a custom list item provider for a list type.

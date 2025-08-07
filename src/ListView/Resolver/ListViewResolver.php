@@ -6,7 +6,7 @@ use Contao\Model;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
-use HeimrichHannot\FlareBundle\ListView\ListViewDto;
+use HeimrichHannot\FlareBundle\ListView\ListView;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Manager\ListViewManager;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
@@ -21,7 +21,7 @@ readonly class ListViewResolver implements ListViewResolverInterface
     /**
      * @throws FlareException
      */
-    public function getEntries(ListViewDto $dto): array
+    public function getEntries(ListView $dto): array
     {
         return $this->manager->getEntries(
             listModel: $dto->getListModel(),
@@ -34,7 +34,7 @@ readonly class ListViewResolver implements ListViewResolverInterface
     /**
      * @throws FlareException
      */
-    public function getModel(ListViewDto $dto, int $id): Model
+    public function getModel(ListView $dto, int $id): Model
     {
         return $this->manager->getModel(
             id: $id,
@@ -46,7 +46,7 @@ readonly class ListViewResolver implements ListViewResolverInterface
     /**
      * @throws FilterException
      */
-    public function getForm(ListViewDto $dto): FormInterface
+    public function getForm(ListView $dto): FormInterface
     {
         return $this->manager->getForm(
             listModel: $dto->getListModel(),
@@ -57,7 +57,7 @@ readonly class ListViewResolver implements ListViewResolverInterface
     /**
      * @throws FlareException
      */
-    public function getPaginator(ListViewDto $dto): Paginator
+    public function getPaginator(ListView $dto): Paginator
     {
         return $this->manager->getPaginator(
             listModel: $dto->getListModel(),
@@ -66,12 +66,12 @@ readonly class ListViewResolver implements ListViewResolverInterface
         );
     }
 
-    public function getPaginatorConfig(ListViewDto $dto): PaginatorConfig
+    public function getPaginatorConfig(ListView $dto): PaginatorConfig
     {
         return new PaginatorConfig(itemsPerPage: 0);
     }
 
-    public function getSortDescriptor(ListViewDto $dto): ?SortDescriptor
+    public function getSortDescriptor(ListView $dto): ?SortDescriptor
     {
         return null;
     }
@@ -79,7 +79,7 @@ readonly class ListViewResolver implements ListViewResolverInterface
     /**
      * @throws FlareException
      */
-    public function getDetailsPageUrl(ListViewDto $dto, int $id): ?string
+    public function getDetailsPageUrl(ListView $dto, int $id): ?string
     {
         return $this->manager->getDetailsPageUrl(
             id: $id,

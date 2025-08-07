@@ -9,10 +9,10 @@ use Contao\Model;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
-use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ServiceConfigInterface;
+use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ServiceDescriptorInterface;
 use HeimrichHannot\FlareBundle\Event\PaletteEvent;
-use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -45,17 +45,17 @@ readonly class AutoTypePalettesCallback
             return;
         }
 
-        $config = match (Model::getClassFromTable($dc->table)) {
+        $descriptor = match (Model::getClassFromTable($dc->table)) {
             FilterModel::class => $this->filterElementRegistry->get($alias = $filterModel?->type),
             ListModel::class => $this->listTypeRegistry->get($alias = $listModel->type),
             default => null,
         };
 
-        if (empty($alias) || !($config instanceof ServiceConfigInterface)) {
+        if (empty($alias) || !($descriptor instanceof ServiceDescriptorInterface)) {
             return;
         }
 
-        $this->applyPalette($dc, $alias, $config, $listModel, $filterModel);
+        $this->applyPalette($dc, $alias, $descriptor, $listModel, $filterModel);
     }
 
     protected function getModelsFromDC(DataContainer $dc): array
@@ -79,11 +79,11 @@ readonly class AutoTypePalettesCallback
     }
 
     protected function applyPalette(
-        DataContainer          $dc,
-        string                 $alias,
-        ServiceConfigInterface $config,
-        ListModel              $listModel,
-        ?FilterModel           $filterModel,
+        DataContainer              $dc,
+        string                     $alias,
+        ServiceDescriptorInterface $config,
+        ListModel                  $listModel,
+        ?FilterModel               $filterModel,
     ): void {
         if (!($table = $dc->table) || $alias === 'default' || \str_starts_with($alias, '__')) {
             return;

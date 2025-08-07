@@ -8,8 +8,8 @@ use Contao\Model;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\ListView\ListViewDto;
-use HeimrichHannot\FlareBundle\ListView\Builder\ListViewBuilderFactory;
+use HeimrichHannot\FlareBundle\ListView\ListView;
+use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
@@ -27,7 +27,7 @@ class FlareRuntime implements RuntimeExtensionInterface
     /**
      * @throws FlareException
      */
-    public function createFormView(ListViewDto $container): FormView
+    public function createFormView(ListView $container): FormView
     {
         return $container->getFormComponent()->createView();
     }
@@ -43,7 +43,7 @@ class FlareRuntime implements RuntimeExtensionInterface
      *
      * @throws FlareException
      */
-    public function getFlare(ListModel|string|int $listModel, array $options = []): ListViewDto
+    public function getFlare(ListModel|string|int $listModel, array $options = []): ListView
     {
         $cacheKey = $listModel->id . '@' . \md5(\serialize($options));
 
@@ -89,7 +89,8 @@ class FlareRuntime implements RuntimeExtensionInterface
             return $listModel;
         }
 
-        $listModel = ListModel::findByPk(\intval($listModel));
+        /** @noinspection CallableParameterUseCaseInTypeContextInspection */
+        $listModel = ListModel::findByPk((int) $listModel);
 
         if ($listModel instanceof ListModel) {
             return $listModel;

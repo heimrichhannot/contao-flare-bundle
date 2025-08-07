@@ -207,17 +207,17 @@ class FilterQueryBuilder
         }
     }
 
-    public function buildQuery(?string $prefix): array
+    public function build(?string $prefix): FilterQuery
     {
         if (empty($this->conditions)) {
-            return ['', [], []];
+            return new FilterQuery('', [], []);
         }
 
         $cond = $this->expr()->and(...$this->conditions);
         $sql = (string) $cond;
 
         if ($prefix === null) {
-            return [$sql, $this->parameters, $this->types];
+            return new FilterQuery($sql, $this->parameters, $this->types);
         }
 
         if (!\preg_match('/^[a-zA-Z0-9_]+$/', $prefix)) {
@@ -251,6 +251,6 @@ class FilterQueryBuilder
             $sql,
         );
 
-        return [$sql, $parameters, $types];
+        return new FilterQuery($sql, $parameters, $types);
     }
 }

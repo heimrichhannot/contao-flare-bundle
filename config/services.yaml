@@ -9,12 +9,11 @@ services:
     HeimrichHannot\FlareBundle\:
         resource: ../src
         exclude:
-            - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Dto,Event,Model,SortDescriptor}
-            - ../src/**/*Builder.php
-            - ../src/Filter/{FilterContext,FilterContextCollection,FilterQueryBuilder}.php
-            - ../src/List/ListTypeConfig.php
-            - ../src/ListView/ListViewDto.php
+            - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Dto,Event,Filter,Model,SortDescriptor}
+            - ../src/**/*{Builder,Collection}.php
+            - ../src/ListView/*.php
             - ../src/Paginator/*.php
+            - ../src/Registry/Descriptor
 
     HeimrichHannot\FlareBundle\Manager\TemplateManager:
         bind:

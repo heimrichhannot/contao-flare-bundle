@@ -41,8 +41,8 @@ readonly class FilterFormManager
 
         foreach ($filters->getIterator() as $filter)
         {
-            $formType = $filter->getConfig()->getFormType();
-            $filterElement = $filter->getConfig()->getService();
+            $formType = $filter->getDescriptor()->getFormType();
+            $filterElement = $filter->getDescriptor()->getService();
             $filterModel = $filter->getFilterModel();
 
             if (!$formType || !$filterElement || !$filterModel)
@@ -110,7 +110,7 @@ readonly class FilterFormManager
 
         foreach ($filters->getIterator() as $filter)
         {
-            $filterElement = $filter->getConfig()->getService();
+            $filterElement = $filter->getDescriptor()->getService();
             $filterModel = $filter->getFilterModel();
 
             if (!$filterModel || !$filterElement instanceof HydrateFormContract)
@@ -142,7 +142,7 @@ readonly class FilterFormManager
 
         foreach ($filters->getIterator() as $filter)
         {
-            $filterElement = $filter->getConfig()->getService();
+            $filterElement = $filter->getDescriptor()->getService();
             $filterModel = $filter->getFilterModel();
 
             if (!$filterElement || !$filterModel)

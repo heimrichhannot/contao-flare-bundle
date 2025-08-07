@@ -2,11 +2,11 @@
 
 namespace HeimrichHannot\FlareBundle\Contract\Config;
 
-use HeimrichHannot\FlareBundle\Model\FilterModelDocTrait;
+use HeimrichHannot\FlareBundle\Model\DocumentsFilterModelTrait;
 
 class FilterDefinition
 {
-    use FilterModelDocTrait;
+    use DocumentsFilterModelTrait;
 
     public function __construct(
         private string $alias,

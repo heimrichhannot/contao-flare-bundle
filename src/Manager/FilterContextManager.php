@@ -11,12 +11,12 @@ use HeimrichHannot\FlareBundle\Contract\Config\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
 use HeimrichHannot\FlareBundle\Contract\ListType\PresetFiltersContract;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
-use HeimrichHannot\FlareBundle\Filter\Builder\FilterContextBuilderFactory;
+use HeimrichHannot\FlareBundle\Factory\FilterContextBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\Filter\FilterElementConfig;
-use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
@@ -94,7 +94,7 @@ readonly class FilterContextManager
                 ->setListModel($listModel)
                 ->setFilterModel($filterModel)
                 ->setFilterElementAlias($filterElementAlias)
-                ->setFilterElementConfig($config)
+                ->setFilterElementDescriptor($config)
                 ->build();
 
             $collection->add($filterContext);
@@ -161,12 +161,12 @@ readonly class FilterContextManager
     }
 
     public function definitionToContext(
-        FilterDefinition     $definition,
-        ListModel            $listModel,
-        ContentContext       $contentContext,
-        ?FilterElementConfig $config = null,
+        FilterDefinition         $definition,
+        ListModel                $listModel,
+        ContentContext           $contentContext,
+        ?FilterElementDescriptor $descriptor = null,
     ): ?FilterContext {
-        if (!$config ??= $this->filterElementRegistry->get($definition->getAlias())) {
+        if (!$descriptor ??= $this->filterElementRegistry->get($definition->getAlias())) {
             return null;
         }
 
@@ -177,7 +177,7 @@ readonly class FilterContextManager
             ->setContentContext($contentContext)
             ->setListModel($listModel)
             ->setFilterModel($filterModel)
-            ->setFilterElementConfig($config)
+            ->setFilterElementDescriptor($descriptor)
             ->setFilterElementAlias($definition->getAlias())
             ->build();
     }

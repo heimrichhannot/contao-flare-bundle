@@ -2,8 +2,8 @@
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
-use HeimrichHannot\FlareBundle\Filter\FilterElementConfig;
-use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
@@ -23,7 +23,7 @@ class RegisterFilterElementsPass implements CompilerPassInterface
             return;
         }
 
-        $tag = FilterElementConfig::TAG;
+        $tag = FilterElementDescriptor::TAG;
         $registry = $container->findDefinition(FilterElementRegistry::class);
 
         foreach ($this->findAndSortTaggedServices($tag, $container) as $reference)
@@ -61,8 +61,8 @@ class RegisterFilterElementsPass implements CompilerPassInterface
         Reference        $reference,
         array            $attributes
     ): Reference {
-        /** @see FilterElementConfig::__construct */
-        $definition = new Definition(FilterElementConfig::class, [
+        /** @see \HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor::__construct */
+        $definition = new Definition(FilterElementDescriptor::class, [
             $reference,
             $attributes,
             $attributes['palette'] ?? null,

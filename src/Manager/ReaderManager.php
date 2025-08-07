@@ -12,9 +12,9 @@ use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageMetaContract;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationElement;
-use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 
@@ -57,7 +57,7 @@ readonly class ReaderManager
             definition: $autoItemDefinition,
             listModel: $listModel,
             contentContext: $contentContext,
-            config: $this->filterElementRegistry->get($ogAlias),
+            descriptor: $this->filterElementRegistry->get($ogAlias),
         );
 
         if (!$autoItemFilterContext) {
@@ -85,7 +85,7 @@ readonly class ReaderManager
             throw new FlareException('Multiple entries found for auto_item.', source: __METHOD__);
         }
 
-        $id = \intval(\reset($ids));
+        $id = (int) \reset($ids);
 
         if ($id < 1) {
             throw new FlareException('Invalid entry id.', source: __METHOD__);

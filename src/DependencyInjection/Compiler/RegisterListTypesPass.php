@@ -2,8 +2,9 @@
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
-use HeimrichHannot\FlareBundle\List\ListTypeConfig;
-use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
@@ -23,7 +24,7 @@ class RegisterListTypesPass implements CompilerPassInterface
             return;
         }
 
-        $tag = ListTypeConfig::TAG;
+        $tag = ListTypeDescriptor::TAG;
         $registry = $container->findDefinition(ListTypeRegistry::class);
 
         foreach ($this->findAndSortTaggedServices($tag, $container) as $reference)
@@ -61,8 +62,8 @@ class RegisterListTypesPass implements CompilerPassInterface
         Reference        $reference,
         array            $attributes
     ): Reference {
-        /** @see ListTypeConfig::__construct */
-        $definition = new Definition(ListTypeConfig::class, [
+        /** @see ListTypeDescriptor::__construct */
+        $definition = new Definition(ListTypeDescriptor::class, [
             $reference,
             $attributes,
             $attributes['dataContainer'] ?? null,

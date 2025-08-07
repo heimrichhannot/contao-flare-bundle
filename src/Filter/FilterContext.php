@@ -3,8 +3,10 @@
 namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Factory\FilterContextBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
 
 class FilterContext
 {
@@ -12,13 +14,13 @@ class FilterContext
      * @internal Use {@see FilterContextBuilder} (inject {@see FilterContextBuilderFactory}) to create a new instance.
      */
     public function __construct(
-        private readonly ContentContext      $contentContext,
-        private readonly ListModel           $listModel,
-        private readonly FilterModel         $filterModel,
-        private readonly FilterElementConfig $filterElementConfig,
-        private readonly string              $filterElementAlias,
-        private readonly string              $table,
-        private mixed                        $submittedData = null,
+        private readonly ContentContext          $contentContext,
+        private readonly ListModel               $listModel,
+        private readonly FilterModel             $filterModel,
+        private readonly FilterElementDescriptor $filterElementDescriptor,
+        private readonly string                  $filterElementAlias,
+        private readonly string                  $table,
+        private mixed                            $submittedData = null,
     ) {}
 
     public function getContentContext(): ContentContext
@@ -36,9 +38,9 @@ class FilterContext
         return $this->filterModel;
     }
 
-    public function getConfig(): FilterElementConfig
+    public function getDescriptor(): FilterElementDescriptor
     {
-        return $this->filterElementConfig;
+        return $this->filterElementDescriptor;
     }
 
     public function getFilterAlias(): string

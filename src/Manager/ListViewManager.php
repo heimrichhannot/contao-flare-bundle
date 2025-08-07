@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\Paginator\Provider\PaginatorBuilderFactory;
+use HeimrichHannot\FlareBundle\Factory\PaginatorBuilderFactory;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -23,7 +23,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 /**
  * Class ListViewManager
  *
- * Manages the list view, including filters, forms, pagination, sort order and entries.
+ * Manages the list view, including filters, forms, pagination, sort-order, and entries.
  */
 class ListViewManager
 {
@@ -325,7 +325,7 @@ class ListViewManager
         ListModel      $listModel,
         ContentContext $contentContext,
     ): ?string {
-        if (!$pageId = \intval($listModel->jumpToReader ?: 0)) {
+        if (!$pageId = (int) ($listModel->jumpToReader ?: 0)) {
             return null;
         }
 

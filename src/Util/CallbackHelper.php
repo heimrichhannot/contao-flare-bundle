@@ -2,7 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Util;
 
-use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ServiceConfigInterface;
+use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ServiceDescriptorInterface;
 
 /**
  * Class CallbackHelper
@@ -14,9 +14,9 @@ class CallbackHelper
     /**
      * Invokes a set of callbacks with the given mandatory and optional parameters.
      *
-     * @param ServiceConfigInterface[] $callbacks An array of callbacks or a single callable.
-     * @param array                    $mandatory Mandatory parameters to pass to the callbacks.
-     * @param array                    $parameters Optional parameters to pass to the callbacks.
+     * @param ServiceDescriptorInterface[] $callbacks An array of callbacks or a single callable.
+     * @param array                        $mandatory Mandatory parameters to pass to the callbacks.
+     * @param array                        $parameters Optional parameters to pass to the callbacks.
      *
      * @throws \InvalidArgumentException if the callback is not callable.
      * @throws \RuntimeException if an error occurs while invoking the callback.
@@ -46,9 +46,8 @@ class CallbackHelper
     }
 
     /**
+     * @param ServiceDescriptorInterface[] $callbacks
      * @throws \RuntimeException thrown if the callback method parameters cannot be auto-resolved
-     *
-     * @param ServiceConfigInterface[] $callbacks
      */
     public static function firstReturn(array $callbacks, array $mandatory, array $parameters): mixed
     {

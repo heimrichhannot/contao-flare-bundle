@@ -7,7 +7,7 @@ use Contao\DataContainer;
 use Contao\Message;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
-use HeimrichHannot\FlareBundle\Filter\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -40,32 +40,32 @@ readonly class ConfigOnLoadCallback
             return;
         }
 
-        if (!$config = $this->filterElementRegistry->get($model->type)) {
+        if (!$descriptor = $this->filterElementRegistry->get($model->type)) {
             return;
         }
 
-        if ($config->getService() instanceof InScopeContract)
+        if ($descriptor->getService() instanceof InScopeContract)
         {
             Message::addInfo($this->translator->trans('filter.limited_scope.dynamic', [], 'flare'));
             return;
         }
 
         // If the filter is not limited in scope, we don't need to show the information message.
-        if (\is_null($config->getScopes()))
+        if (\is_null($descriptor->getScopes()))
         {
             return;
         }
 
-        if (empty($config->getScopes()))
+        if (empty($descriptor->getScopes()))
         {
             Message::addInfo($this->translator->trans('filter.limited_scope.disqualified', [], 'flare'));
             return;
         }
 
-        if (\count($config->getScopes()) === 1)
+        if (\count($descriptor->getScopes()) === 1)
         {
             Message::addInfo($this->translator->trans('filter.limited_scope.single', [
-                '%scope%' => $this->translator->trans('filter.scope.' . $config->getScopes()[0], [], 'flare'),
+                '%scope%' => $this->translator->trans('filter.scope.' . $descriptor->getScopes()[0], [], 'flare'),
             ], 'flare'));
             return;
         }
@@ -73,7 +73,7 @@ readonly class ConfigOnLoadCallback
         Message::addInfo($this->translator->trans('filter.limited_scope.multiple', [
             '%scopes%' => implode(', ', \array_map(
                 fn (string $scope) => $this->translator->trans('filter.scope.' . $scope, [], 'flare'),
-                $config->getScopes()
+                $descriptor->getScopes()
             )),
         ], 'flare'));
     }

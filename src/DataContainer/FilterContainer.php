@@ -3,8 +3,7 @@
 namespace HeimrichHannot\FlareBundle\DataContainer;
 
 use Contao\DataContainer;
-use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackContainerInterface;
-use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackRegistry;
+use HeimrichHannot\FlareBundle\Registry\FlareCallbackRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;

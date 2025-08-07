@@ -8,9 +8,8 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
-use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackContainerInterface;
-use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackRegistry;
-use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Registry\FlareCallbackRegistry;
+use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
@@ -143,7 +142,7 @@ class ListContainer implements FlareCallbackContainerInterface
             $expectedDataContainer = $service->getDataContainerName($row, $dc);
         }
 
-        // if data container is not set, use the default data container of the list type
+        // if no data container is set, use the default data container of the list type
         $expectedDataContainer ??= $listTypeConfig->getDataContainer() ?? '';
 
         if (!$expectedDataContainer) {

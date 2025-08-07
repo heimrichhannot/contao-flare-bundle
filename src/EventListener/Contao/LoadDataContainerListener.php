@@ -7,8 +7,8 @@ use Contao\DataContainer;
 use Contao\Input;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
-use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackContainerInterface;
-use HeimrichHannot\FlareBundle\FlareCallback\FlareCallbackRegistry;
+use HeimrichHannot\FlareBundle\DataContainer\FlareCallbackContainerInterface;
+use HeimrichHannot\FlareBundle\Registry\FlareCallbackRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
@@ -52,7 +52,7 @@ readonly class LoadDataContainerListener
             'tl_flare_list' => 'list.',
         };
 
-        $callbacks = $this->registry->get($prefix . $model->type) ?? [];
+        $callbacks = $this->registry->getNamespace($prefix . $model->type) ?? [];
 
         if (empty($callbacks)) {
             return;

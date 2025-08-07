@@ -2,8 +2,6 @@
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Attribute;
 
-use HeimrichHannot\FlareBundle\Util\Str;
-
 #[\Attribute(\Attribute::TARGET_CLASS | \Attribute::IS_REPEATABLE)]
 class AsListType
 {

@@ -4,9 +4,9 @@ namespace HeimrichHannot\FlareBundle\Manager;
 
 use HeimrichHannot\FlareBundle\Contract\Config\ListItemProviderConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\ListItemProviderContract;
-use HeimrichHannot\FlareBundle\List\ListItemProvider;
-use HeimrichHannot\FlareBundle\List\ListItemProviderInterface;
-use HeimrichHannot\FlareBundle\List\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProvider;
+use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
+use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 readonly class ListItemProviderManager
@@ -19,7 +19,7 @@ readonly class ListItemProviderManager
     /**
      * Get the list item provider for a given list model.
      * If the list model implements the {@see ListItemProviderContract} interface, it will be used to retrieve the
-     * list item provider. Otherwise, the default item provider {@see ListItemProvider} will be used.
+     * list item provider. Otherwise, the default item provider {@see \HeimrichHannot\FlareBundle\ListItemProvider\ListItemProvider} will be used.
      *
      * @param ListModel $listModel The list model.
      *

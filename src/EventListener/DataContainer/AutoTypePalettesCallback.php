@@ -81,7 +81,7 @@ readonly class AutoTypePalettesCallback
     protected function applyPalette(
         DataContainer              $dc,
         string                     $alias,
-        ServiceDescriptorInterface $config,
+        ServiceDescriptorInterface $descriptor,
         ListModel                  $listModel,
         ?FilterModel               $filterModel,
     ): void {
@@ -105,7 +105,7 @@ readonly class AutoTypePalettesCallback
             );
         };
 
-        $service = $config->getService();
+        $service = $descriptor->getService();
 
         if ($service instanceof PaletteContract)
             // If the service implements PaletteContract, use its getPalette method.
@@ -118,12 +118,12 @@ readonly class AutoTypePalettesCallback
             $suffix = $paletteConfig->getSuffix();
         }
 
-        if (!isset($palette) && $config instanceof PaletteContract)
+        if (!isset($palette) && $descriptor instanceof PaletteContract)
             // Grab the default palette specified in the AsListType or AsFilterElement attributes.
         {
             $paletteConfig = $paletteConfigFactory();
 
-            $palette = $config->getPalette($paletteConfig);
+            $palette = $descriptor->getPalette($paletteConfig);
 
             $prefix = $paletteConfig->getPrefix();
             $suffix = $paletteConfig->getSuffix();
@@ -143,7 +143,7 @@ readonly class AutoTypePalettesCallback
         {
             $event = new PaletteEvent($paletteConfigFactory(), $palette);
 
-            $this->eventDispatcher->dispatch($event, "huh.flare.$target.palette");
+            $this->eventDispatcher->dispatch($event, "flare.$target.palette");
 
             $palette = $event->getPalette();
             $paletteConfig = $event->getPaletteConfig();

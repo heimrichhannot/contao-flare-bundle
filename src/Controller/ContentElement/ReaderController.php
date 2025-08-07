@@ -118,7 +118,7 @@ class ReaderController extends AbstractContentElementController
             data: $data,
         );
 
-        $this->eventDispatcher->dispatch($event, 'huh.flare.reader.built');
+        $this->eventDispatcher->dispatch($event, 'flare.reader.built');
 
         $template->setData($event->getData() + $template->getData());
 

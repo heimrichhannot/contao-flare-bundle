@@ -27,7 +27,7 @@ readonly class CommentsListener
     /**
      * Attach comments to the reader content element template data.
      */
-    #[AsEventListener('huh.flare.reader.built')]
+    #[AsEventListener('flare.reader.built')]
     public function onReaderBuilt(ReaderBuiltEvent $event): void
     {
         /** @var ListModel $listModel */
@@ -94,7 +94,7 @@ readonly class CommentsListener
     /**
      * Attach the comments_enabled field to the flare_news palette.
      */
-    #[AsEventListener('huh.flare.list.palette')]
+    #[AsEventListener('flare.list.palette')]
     public function onListPalette(PaletteEvent $event): void
     {
         if ($event->getPaletteConfig()->getAlias() !== 'flare_news') {

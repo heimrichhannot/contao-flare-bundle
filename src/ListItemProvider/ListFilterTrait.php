@@ -27,7 +27,7 @@ trait ListFilterTrait
     /**
      * @throws FilterException
      */
-    public function getQuotTable(FilterContextCollection $filters): string
+    public function quoteTable(FilterContextCollection $filters): string
     {
         if (!Str::isValidSqlName($filters->getTable())) {
             throw new FilterException(
@@ -53,12 +53,12 @@ trait ListFilterTrait
         $combinedParameters = [];
         $combinedTypes = [];
 
-        $table = $this->getQuotTable($filters);
-        $as = $this->getConnection()->quoteIdentifier('main');
+        $table = $this->quoteTable($filters);
+        $asMain = $this->getConnection()->quoteIdentifier('main');
 
         foreach ($filters as $i => $filter)
         {
-            $filterQueryBuilder = new FilterQueryBuilder($this->getConnection(), $as);
+            $filterQueryBuilder = new FilterQueryBuilder($this->getConnection(), $asMain);
 
             $status = $this->invokeFilter(filterQueryBuilder: $filterQueryBuilder, filter: $filter);
 
@@ -95,18 +95,18 @@ trait ListFilterTrait
 
         if (\is_array($select))
         {
-            $select = \array_map(function ($value) use ($as) {
-                return $as . "." . $this->getConnection()->quoteIdentifier($value);
+            $select = \array_map(function ($value) use ($asMain) {
+                return $asMain . "." . $this->getConnection()->quoteIdentifier($value);
             }, $select);
         }
 
         $finalSQL = match (true) {
             $isCounting => "SELECT COUNT(*) AS count",
-            $onlyId => "SELECT $as.id AS id",
+            $onlyId => "SELECT $asMain.id AS id",
             \is_array($select) => "SELECT " . \implode(',', $select),
             default => "SELECT *",
         };
-        $finalSQL .= " FROM $table AS $as WHERE ";
+        $finalSQL .= " FROM $table AS $asMain WHERE ";
         $finalSQL .= empty($combinedConditions) ? '1'
             : $this->connection->createExpressionBuilder()->and(...$combinedConditions);
 
@@ -146,7 +146,7 @@ trait ListFilterTrait
 
             $this->getEventDispatcher()->dispatch(
                 $event,
-                "huh.flare.filter_element.{$filter->getFilterAlias()}.invoking"
+                "flare.filter_element.{$filter->getFilterAlias()}.invoking"
             );
 
             $shouldInvoke = $event->shouldInvoke();
@@ -181,7 +181,7 @@ trait ListFilterTrait
             $event = new FilterElementInvokedEvent($filter, $filterQueryBuilder, $method);
             $this->getEventDispatcher()->dispatch(
                 $event,
-                "huh.flare.filter_element.{$filter->getFilterAlias()}.invoked"
+                "flare.filter_element.{$filter->getFilterAlias()}.invoked"
             );
         }
 

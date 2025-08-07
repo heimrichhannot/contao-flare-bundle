@@ -71,7 +71,7 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
         $qb->setParameter('end', $stop);
     }
 
-    #[AsEventListener('huh.flare.filter_element.' . self::TYPE . '.invoking')]
+    #[AsEventListener('flare.filter_element.' . self::TYPE . '.invoking')]
     public function onInvoking(FilterElementInvokingEvent $event): void
     {
         $filterModel = $event->getFilter()->getFilterModel();
@@ -87,7 +87,7 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
 
         $palette = '{date_start_legend},configureStart,hasExtendedEvents;{date_stop_legend},configureStop;';
 
-        if (!$filterModel->intrinsic) {
+        if (!$filterModel?->intrinsic) {
             $palette .= '{form_legend},isLimited;';
         }
 

@@ -16,7 +16,7 @@ use HeimrichHannot\FlareBundle\Util\Str;
     alias: self::TYPE,
     palette: '{data_container_legend},dc,fieldAutoItem;{meta_legend},metaTitleFormat,metaDescriptionFormat,metaRobotsFormat'
 )]
-class GenericDataContainerList implements DataContainerContract, ReaderPageMetaContract
+class GenericDataContainerListType implements DataContainerContract, ReaderPageMetaContract
 {
     public const TYPE = 'flare_generic_dc';
 

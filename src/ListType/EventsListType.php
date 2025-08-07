@@ -19,8 +19,8 @@ use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
 use HeimrichHannot\FlareBundle\ListItemProvider\EventsListItemProvider;
 use HeimrichHannot\FlareBundle\Util\Str;
 
-#[AsListType(EventsList::TYPE, dataContainer: 'tl_calendar_events')]
-class EventsList extends AbstractListType implements ListItemProviderContract, PaletteContract, PresetFiltersContract, ReaderPageMetaContract
+#[AsListType(self::TYPE, dataContainer: 'tl_calendar_events')]
+class EventsListType extends AbstractListType implements ListItemProviderContract, PaletteContract, PresetFiltersContract, ReaderPageMetaContract
 {
     public const TYPE = 'flare_events';
 

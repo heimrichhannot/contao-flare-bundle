@@ -14,7 +14,7 @@ use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
 use HeimrichHannot\FlareBundle\Util\Str;
 
 #[AsListType(
-    alias: NewsListType::TYPE,
+    alias: self::TYPE,
     dataContainer: 'tl_news',
     palette: '{filter_legend},',
 )]
@@ -23,7 +23,7 @@ class NewsListType implements PresetFiltersContract, ReaderPageMetaContract
     public const TYPE = 'flare_news';
 
     public function __construct(
-        private HtmlDecoder $htmlDecoder,
+        private readonly HtmlDecoder $htmlDecoder,
     ) {}
 
     public function getPresetFilters(PresetFiltersConfig $config): void

@@ -26,9 +26,9 @@ $flare['filter'] = [
 ];
 
 $flare['list'] = [
-    ListType\GenericDataContainerList::TYPE => ['Data-Container', 'Listet Elemente eines Data-Containers auf.'],
+    ListType\GenericDataContainerListType::TYPE => ['Data-Container', 'Listet Elemente eines Data-Containers auf.'],
     ListType\NewsListType::TYPE => ['Nachrichten', 'Listet Nachrichten auf.'],
-    ListType\EventsList::TYPE => ['Events', 'Listet Events auf.'],
+    ListType\EventsListType::TYPE => ['Events', 'Listet Events auf.'],
 ];
 
 $flare['sort_order'] = [

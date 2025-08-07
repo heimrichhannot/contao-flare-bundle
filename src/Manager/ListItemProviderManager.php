@@ -19,7 +19,7 @@ readonly class ListItemProviderManager
     /**
      * Get the list item provider for a given list model.
      * If the list model implements the {@see ListItemProviderContract} interface, it will be used to retrieve the
-     * list item provider. Otherwise, the default item provider {@see \HeimrichHannot\FlareBundle\ListItemProvider\ListItemProvider} will be used.
+     * list item provider. Otherwise, the default item provider {@see ListItemProvider} will be used.
      *
      * @param ListModel $listModel The list model.
      *

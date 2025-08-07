@@ -78,9 +78,9 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
         if ($inferrer->isDcaDynamicPtable())
         {
-            if (\is_array($submitted) && !$filterModel->hasEmptyOption || !empty($submitted))
+            if ((\is_array($submitted) && !$filterModel->hasEmptyOption) || !empty($submitted))
                 // we expect $submitted to be an array of values formatted {table}.{id}
-                // if empty option is enabled, empty array is allowed
+                // if hasEmptyOption is enabled, an empty array is allowed
             {
                 $submittedGroup = [];
                 foreach ($submitted as $value)
@@ -91,7 +91,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
                     [$table, $id] = \explode('.', $value, 2);
 
-                    $submittedGroup[$table][] = \intval($id);
+                    $submittedGroup[$table][] = (int) $id;
                 }
             }
 

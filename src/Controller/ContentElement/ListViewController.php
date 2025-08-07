@@ -96,10 +96,10 @@ class ListViewController extends AbstractContentElementController
             );
 
             $paginatorConfig = new PaginatorConfig(
-                itemsPerPage: \intval($model->flare_itemsPerPage ?: 0)
+                itemsPerPage: (int) ($model->flare_itemsPerPage ?: 0)
             );
 
-            $listViewDto = $this->listViewBuilderFactory->create()
+            $listView = $this->listViewBuilderFactory->create()
                 ->setContentContext($contentContext)
                 ->setListModel($listModel)
                 ->setPaginatorConfig($paginatorConfig)
@@ -116,7 +116,7 @@ class ListViewController extends AbstractContentElementController
 
         $this->responseTagger->addTags(['contao.db.' . $listModel->dc]);
 
-        $data = ['flare' => $listViewDto];
+        $data = ['flare' => $listView];
 
         $event = new ListViewBuiltEvent(
             contentContext: $contentContext,
@@ -138,7 +138,7 @@ class ListViewController extends AbstractContentElementController
     {
         try {
             /** @var ?ListModel $listModel */
-            $listModel = $model->getRelated(ContentContainer::FIELD_LIST) ?? null;
+            $listModel = $model->getRelated(ContentContainer::FIELD_LIST);
         } catch (\Exception $e) {
             return new Response($e->getMessage());
         }

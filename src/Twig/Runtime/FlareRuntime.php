@@ -68,16 +68,16 @@ class FlareRuntime implements RuntimeExtensionInterface
             formName: $options['form_name'] ?? null,
         );
 
-        $listViewDto = $this->listViewBuilderFactory->create()
+        $listView = $this->listViewBuilderFactory->create()
             ->setContentContext($contentContext)
             ->setListModel($listModel)
             ->setPaginatorConfig($paginatorConfig)
             ->setSortDescriptor($sortDescriptor)
             ->build();
 
-        $this->listViewCache[$cacheKey] = $listViewDto;
+        $this->listViewCache[$cacheKey] = $listView;
 
-        return $listViewDto;
+        return $listView;
     }
 
     /**

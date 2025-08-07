@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\Contract\Config;
+namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\Model\DocumentsFilterModelTrait;
 
@@ -67,6 +67,14 @@ class FilterDefinition
     public function setProperties(array $properties): void
     {
         $this->properties = $properties;
+    }
+
+    public function __isset(string $name): bool
+    {
+        return match ($name) {
+            'alias', 'elementAlias', 'type', 'title', 'intrinsic' => true,
+            default => $this->hasProperty($name) && $this->getProperty($name) !== null,
+        };
     }
 
     public function __set(string $key, mixed $value): void

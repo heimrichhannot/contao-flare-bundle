@@ -2,6 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Contract\Config;
 
+use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 class PresetFiltersConfig

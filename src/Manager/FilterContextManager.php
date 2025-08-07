@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Manager;
 
 use Contao\Controller;
-use HeimrichHannot\FlareBundle\Contract\Config\FilterDefinition;
+use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Contract\Config\InScopeConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
@@ -52,6 +52,7 @@ readonly class FilterContextManager
 
         Controller::loadDataContainer($table);
 
+        /** @noinspection ProperNullCoalescingOperatorUsageInspection */
         $filterModels = FilterModel::findByPid($listModel->id, published: true) ?? [];
         $collection = FilterContextCollection::create($listModel);
 
@@ -141,7 +142,7 @@ readonly class FilterContextManager
             ['definition' => $definition, 'final' => $final] = $arrDefinition;
 
             if (!$final && \in_array($definition->getAlias(), $manualFilters, true))
-                // skip if filter is not final and already added
+                // skip if the filter is not final and already added
             {
                 continue;
             }

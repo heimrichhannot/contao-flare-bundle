@@ -2,7 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
-use HeimrichHannot\FlareBundle\Contract\Config\FilterDefinition;
+use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;

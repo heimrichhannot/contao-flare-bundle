@@ -1,4 +1,4 @@
-{# @var flare \HeimrichHannot\FlareBundle\ListView\ListViewDto #}
+{# @var flare \HeimrichHannot\FlareBundle\ListView\ListView #}
 {% extends '@Contao/flare/_flare_base.html.twig' %}
 
 {% block content %}
@@ -59,7 +59,7 @@
 
     {% block pagination %}
         {# @var \HeimrichHannot\FlareBundle\Paginator\Paginator paginator #}
-        {{ include('@Contao/flare/paginator/bs5.html.twig', { paginator: flare.paginator }) }}
+        {{ include('@Contao/flare/paginator.html.twig', { paginator: flare.paginator }) }}
     {% endblock %}
 
 {% endblock %}

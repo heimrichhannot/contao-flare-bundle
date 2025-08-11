@@ -67,25 +67,27 @@ readonly class FilterContextManager
 
             $filterElementAlias = $filterModel->type;
 
-            if (!$config = $this->filterElementRegistry->get($filterElementAlias)) {
+            if (!$descriptor = $this->filterElementRegistry->get($filterElementAlias)) {
                 continue;
             }
 
+            $service = $descriptor->getService();
+
             // Skip if the filter is not configured for the current context
-            if ($config->getService() instanceof InScopeContract)
+            if ($service instanceof InScopeContract)
             {
                 $inScopeConfig = new InScopeConfig(
                     contentContext: $context,
                     listModel: $listModel,
                     filterModel: $filterModel,
-                    filterElementConfig: $config,
+                    descriptor: $descriptor,
                 );
 
-                if (!$config->getService()->isInScope($inScopeConfig)) {
+                if (!$service->isInScope($inScopeConfig)) {
                     continue;
                 }
             }
-            elseif (!$config->isAvailableForContext($context))
+            elseif (!$descriptor->isAvailableForContext($context))
             {
                 continue;
             }
@@ -95,7 +97,7 @@ readonly class FilterContextManager
                 ->setListModel($listModel)
                 ->setFilterModel($filterModel)
                 ->setFilterElementAlias($filterElementAlias)
-                ->setFilterElementDescriptor($config)
+                ->setFilterElementDescriptor($descriptor)
                 ->build();
 
             $collection->add($filterContext);

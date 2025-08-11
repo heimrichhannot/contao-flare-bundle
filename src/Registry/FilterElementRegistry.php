@@ -16,4 +16,15 @@ class FilterElementRegistry extends AbstractServiceDescriptorRegistry
     {
         return FilterElementDescriptor::class;
     }
+
+    public function get(?string $alias): ?FilterElementDescriptor
+    {
+        $descriptor = parent::get($alias);
+
+        if (!$descriptor instanceof FilterElementDescriptor) {
+            return null;
+        }
+
+        return $descriptor;
+    }
 }

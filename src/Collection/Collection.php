@@ -59,7 +59,7 @@ abstract class Collection implements IteratorAggregate, Countable, Serializable
     {
         $expectedType = $this->getItemType();
 
-        // Enforce type safety: check if item matches the expected type.
+        // Enforce type safety: check if the item matches the expected type.
         if (!$this->isItemOfType($item, $expectedType)) {
             $typeName = \is_object($item) ? \get_class($item) : \gettype($item);
             throw new TypeError("Expected item of type {$expectedType}, got {$typeName}.");

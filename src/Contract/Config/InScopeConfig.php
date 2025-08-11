@@ -13,7 +13,7 @@ readonly class InScopeConfig
         private ContentContext          $contentContext,
         private ListModel               $listModel,
         private FilterModel             $filterModel,
-        private FilterElementDescriptor $filterElementConfig,
+        private FilterElementDescriptor $descriptor,
     ) {}
 
     public function getContentContext(): ContentContext
@@ -31,8 +31,8 @@ readonly class InScopeConfig
         return $this->filterModel;
     }
 
-    public function getFilterElementConfig(): FilterElementDescriptor
+    public function getDescriptor(): FilterElementDescriptor
     {
-        return $this->filterElementConfig;
+        return $this->descriptor;
     }
 }

@@ -6,6 +6,7 @@ use Contao\DataContainer;
 use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
+use Doctrine\DBAL\ArrayParameterType;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
@@ -71,7 +72,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
             }
 
             $qb->where("`pid` IN (:pidIn)")
-                ->setParameter('pidIn', $whitelist);
+                ->setParameter('pidIn', $whitelist, ArrayParameterType::INTEGER);
 
             return;
         }
@@ -104,7 +105,10 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
     public function getPalette(PaletteConfig $config): ?string
     {
-        $filterModel = $config->getFilterModel();
+        if (!$filterModel = $config->getFilterModel()) {
+            return null;
+        }
+
         $inferrer = new PtableInferrer($filterModel, $config->getListModel());
 
         $palettes = [];
@@ -230,6 +234,10 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
         FilterModel    $filterModel,
         ListModel      $listModel
     ): mixed {
+        if (!$dc) {
+            return [];
+        }
+
         $dca = &$GLOBALS['TL_DCA'][$dc->table]['fields'][$dc->field];
 
         $inferrer = new PtableInferrer($filterModel, $listModel);

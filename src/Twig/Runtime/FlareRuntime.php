@@ -108,7 +108,7 @@ class FlareRuntime implements RuntimeExtensionInterface
         $table = $model->getTable();
         $id = $model->id;
 
-        $text = Template::once(function () use ($table, $id) {
+        $text = Template::once(static function () use ($table, $id) {
             if (!$elm = ContentModel::findPublishedByPidAndTable($id, $table))
             {
                 return '';

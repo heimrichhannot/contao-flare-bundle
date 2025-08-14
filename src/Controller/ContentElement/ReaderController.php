@@ -7,6 +7,7 @@ use Contao\CoreBundle\Cache\EntityCacheTags;
 use Contao\CoreBundle\Controller\ContentElement\AbstractContentElementController;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsContentElement;
 use Contao\CoreBundle\Exception\InternalServerErrorHttpException;
+use Contao\CoreBundle\Exception\ResponseException;
 use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\CoreBundle\Routing\ResponseContext\HtmlHeadBag\HtmlHeadBag;
 use Contao\CoreBundle\Routing\ResponseContext\ResponseContextAccessor;
@@ -27,6 +28,7 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Twig\Error\RuntimeError;
 
 #[AsContentElement(ReaderController::TYPE, category: 'includes', template: 'content_element/flare_reader')]
 class ReaderController extends AbstractContentElementController
@@ -124,7 +126,21 @@ class ReaderController extends AbstractContentElementController
 
         $this->applyPageMeta($pageMeta);
 
-        return $template->getResponse();
+        try
+        {
+            return $template->getResponse();
+        }
+        catch (RuntimeError $e)
+        {
+            $previous = $e;
+            while ($previous = $previous->getPrevious()) {
+                if ($previous instanceof ResponseException) {
+                    throw $previous;
+                }
+            }
+
+            throw $e;
+        }
     }
 
     public function applyPageMeta(ReaderPageMetaDto $pageMeta, ?HtmlHeadBag $htmlHeadBag = null): void

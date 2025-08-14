@@ -4,7 +4,11 @@ namespace HeimrichHannot\FlareBundle\Twig\Runtime;
 
 use Contao\ContentModel;
 use Contao\Controller;
+use Contao\FilesModel;
+use Contao\FrontendTemplate;
 use Contao\Model;
+use Contao\Model\Collection;
+use Contao\StringUtil;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -121,6 +125,47 @@ class FlareRuntime implements RuntimeExtensionInterface
         });
 
         return $this->getCallableWrapper($text);
+    }
+
+    public function getEnclosure(Model|array $entity, ?string $field = null)
+    {
+        if ($entity instanceof Model) {
+            $entity = $entity->row();
+        }
+
+        $template = new FrontendTemplate();
+        $template->enclosure = [];
+
+        Controller::addEnclosuresToTemplate($template, $entity, $field ?? 'enclosure');
+
+        return $template->enclosure;
+    }
+
+    public function getEnclosureFiles(Model|array|string|null $enclosure): array
+    {
+        if ($enclosure instanceof Model) {
+            $enclosure = $enclosure->enclosure ?: null;
+        }
+
+        if (\is_string($enclosure)) {
+            $enclosure = StringUtil::deserialize($enclosure, true);
+        }
+
+        if (!$enclosure) {
+            return [];
+        }
+
+        $files = FilesModel::findMultipleByUuids(\array_values($enclosure));
+
+        if ($files instanceof Collection) {
+            return $files->fetchAll();
+        }
+
+        if (\is_array($files)) {
+            return $files;
+        }
+
+        return [];
     }
 
     /**

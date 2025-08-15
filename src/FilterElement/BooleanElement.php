@@ -10,6 +10,7 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
 use HeimrichHannot\FlareBundle\Enum\BoolMode;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
@@ -35,7 +36,16 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract, F
             $qb->abort();
         }
 
-        $value = $this->normalizeValue($context->getSubmittedData()) ?? $this->normalizeValue($filterModel->preselect);
+        $mode = BoolMode::tryFrom($filterModel->boolMode ?: '') ?? BoolMode::BINARY;
+
+        if ($mode === BoolMode::BINARY) {
+            $boolBinaryChoices = BoolBinaryChoices::tryFrom($filterModel->boolBinaryChoices ?: '') ?? BoolBinaryChoices::NULL_TRUE;
+        }
+
+        // todo: refactor
+
+        $value = $this->normalizeValue($context->getSubmittedData(), $boolBinaryChoices ?? null)
+            ?? $this->normalizeValue($filterModel->preselect);
 
         if ($value === null) {
             return;
@@ -65,13 +75,15 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract, F
         return $config->getContentContext()->isList();
     }
 
-    public function normalizeValue(mixed $value): ?bool
+    public function normalizeValue(mixed $value, ?BoolBinaryChoices $choices = null): ?bool
     {
         if (\is_string($value)) {
             $value = \strtolower(\trim($value));
         }
 
-        if ($value === null || $value === '' || $value === 'null') {
+        if ($value === null || $value === '' || $value === 'null'
+            || ($choices === BoolBinaryChoices::NULL_TRUE && !$value))
+        {
             return null;
         }
 

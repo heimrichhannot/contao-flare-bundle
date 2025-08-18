@@ -109,7 +109,7 @@ $dca['fields'] = [
             'tl_class' => 'w50',
             'chosen' => true,
         ],
-        'sql' => "varchar(32) NOT NULL default ''",
+        'sql' => "varchar(128) NOT NULL default ''",
     ],
     'published' => [
         'exclude' => true,

@@ -99,7 +99,7 @@ $dca['fields'] = [
             'submitOnChange' => true,
             'tl_class' => 'w50',
         ],
-        'sql' => "varchar(32) NOT NULL default ''",
+        'sql' => "varchar(128) NOT NULL default ''",
     ],
     'published' => [
         'inputType' => 'checkbox',

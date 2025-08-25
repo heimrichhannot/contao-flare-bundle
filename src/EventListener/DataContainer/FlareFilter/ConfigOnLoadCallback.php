@@ -28,50 +28,44 @@ readonly class ConfigOnLoadCallback
      */
     public function __invoke(?DataContainer $dc = null): void
     {
-        if (!$dc || !$dc->id) {
+        if (!$filterModel = DcaHelper::modelOf($dc)) {
             return;
         }
 
-        if (!$model = DcaHelper::modelOf($dc)) {
+        if (!$filterModel instanceof FilterModel) {
             return;
         }
 
-        if (!$model instanceof FilterModel) {
-            return;
-        }
-
-        if (!$descriptor = $this->filterElementRegistry->get($model->type)) {
+        if (!$descriptor = $this->filterElementRegistry->get($filterModel->type)) {
             return;
         }
 
         if ($descriptor->getService() instanceof InScopeContract)
+            // If the filter is limited in scope by a dynamic service implementation, make the user aware of this.
         {
             Message::addInfo($this->translator->trans('filter.limited_scope.dynamic', [], 'flare'));
             return;
         }
 
-        // If the filter is not limited in scope, we don't need to show the information message.
         if (\is_null($descriptor->getScopes()))
+            // If the filter is not limited in scope, we don't need to show the information message.
         {
             return;
         }
 
         if (empty($descriptor->getScopes()))
+            // If the filter is limited in scope, but the scope is empty, signal a misconfiguration.
         {
             Message::addInfo($this->translator->trans('filter.limited_scope.disqualified', [], 'flare'));
             return;
         }
 
-        if (\count($descriptor->getScopes()) === 1)
-        {
-            Message::addInfo($this->translator->trans('filter.limited_scope.single', [
-                '%scope%' => $this->translator->trans('filter.scope.' . $descriptor->getScopes()[0], [], 'flare'),
-            ], 'flare'));
-            return;
-        }
+        $msgKey = (\count($descriptor->getScopes()) === 1)
+            ? 'filter.limited_scope.single'
+            : 'filter.limited_scope.multiple';
 
-        Message::addInfo($this->translator->trans('filter.limited_scope.multiple', [
-            '%scopes%' => implode(', ', \array_map(
+        Message::addInfo($this->translator->trans($msgKey, [
+            '%scopes%' => \implode(', ', \array_map(
                 fn (string $scope) => $this->translator->trans('filter.scope.' . $scope, [], 'flare'),
                 $descriptor->getScopes()
             )),

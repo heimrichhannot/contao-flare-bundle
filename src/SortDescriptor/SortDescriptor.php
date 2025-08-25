@@ -16,6 +16,22 @@ final class SortDescriptor
         return new self([]);
     }
 
+    /**
+     * Creates a sort descriptor from a map of column names and directions.
+     *
+     * Example:
+     * ```
+     * $sd = SortDescriptor::fromMap([
+     *     'name' => 'asc',
+     *     'age' => 'desc'
+     * ]);
+     * ```
+     *
+     * @param array $map  An array of column names as keys and directions as their values
+     *                      (`ASC` or `DESC`, case-insensitive).
+     * @return self  A new SortDescriptor instance.
+     * @throws FlareException  If the map is not in the expected format.
+     */
     public static function fromMap(array $map): self
     {
         $orders = [];

@@ -98,8 +98,12 @@ class ListView
         return $this->models[$id];
     }
 
-    public function getDetailsPageUrl(int|string $id): ?string
+    public function getDetailsPageUrl(Model|int|string $id): ?string
     {
+        if ($id instanceof Model) {
+            $id = $id->id;
+        }
+
         $id = (int) $id;
 
         if (!isset($this->readerUrls[$id])) {

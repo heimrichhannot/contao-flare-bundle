@@ -8,6 +8,7 @@ use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\Expression\CompositeExpression;
 use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 
 class FilterQueryBuilder
 {
@@ -16,6 +17,10 @@ class FilterQueryBuilder
     private array $parameters = [];
     private array $types = [];
 
+    /**
+     * @param Connection $connection The DBAL Connection.
+     * @param string $alias The unquoted alias of the table to be filtered.
+     */
     public function __construct(
         private readonly Connection $connection,
         private readonly string     $alias,
@@ -33,10 +38,30 @@ class FilterQueryBuilder
 
     /**
      * Quotes an identifier (e.g., table or column name) for use in a SQL query.
+     *
+     * @deprecated Use {@see self::column()} instead.
      */
     public function quoteIdentifier(string $value): string
     {
         return $this->connection->quoteIdentifier($value);
+    }
+
+    /**
+     * Quotes a column identifier, ensuring that it is properly attached to the current table alias.
+     *
+     * Required for joins and subqueries to work properly.
+     *
+     * @param string $column The column name to quote.
+     * @return string The quoted column identifier.
+     * @throws FilterException If the column name contains invalid characters.
+     */
+    public function column(string $column): string
+    {
+        if (!\preg_match('/^[a-zA-Z0-9_]+$/', $column)) {
+            throw new FilterException('Invalid column name: only alphanumeric characters and underscores are allowed.');
+        }
+
+        return $this->connection->quoteIdentifier($this->alias() . '.' . $column);
     }
 
     /**

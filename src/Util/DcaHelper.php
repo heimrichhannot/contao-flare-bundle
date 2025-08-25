@@ -6,7 +6,6 @@ use Contao\Controller;
 use Contao\DataContainer;
 use Contao\Model;
 use Contao\StringUtil;
-use Dflydev\DotAccessData\Data;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 /**
@@ -20,7 +19,7 @@ class DcaHelper
 
     public static function modelOf(?DataContainer $dc): ?Model
     {
-        if (!($id = $dc->id ?? null)) {
+        if (!$dc || !($id = $dc->id ?? null)) {
             return null;
         }
 

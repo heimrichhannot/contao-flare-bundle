@@ -68,12 +68,12 @@ class ListViewController extends AbstractContentElementController
     /**
      * @throws \Exception
      */
-    protected function getFrontendResponse(Template $template, ContentModel $model, Request $request): Response
+    protected function getFrontendResponse(Template $template, ContentModel $contentModel, Request $request): Response
     {
         try
         {
             /** @var ?ListModel $listModel */
-            $listModel = $model->getRelated(ContentContainer::FIELD_LIST) ?? null;
+            $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST);
 
             if (!$listModel instanceof ListModel) {
                 throw new FilterException('No list model found.');
@@ -81,7 +81,7 @@ class ListViewController extends AbstractContentElementController
         }
         catch (\Exception $e)
         {
-            $this->logger->error(\sprintf('%s (tl_content.id=%s)', $e->getMessage(), $model->id),
+            $this->logger->error(\sprintf('%s (tl_content.id=%s)', $e->getMessage(), $contentModel->id),
                 ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
 
             return $this->getErrorResponse($e);
@@ -91,12 +91,12 @@ class ListViewController extends AbstractContentElementController
         {
             $contentContext = new ContentContext(
                 context: ContentContext::CONTEXT_LIST,
-                contentModel: $model,
-                formName: $model->flare_formName ?: null,
+                contentModel: $contentModel,
+                formName: $contentModel->flare_formName ?: null,
             );
 
             $paginatorConfig = new PaginatorConfig(
-                itemsPerPage: (int) ($model->flare_itemsPerPage ?: 0)
+                itemsPerPage: (int) ($contentModel->flare_itemsPerPage ?: 0)
             );
 
             $listView = $this->listViewBuilderFactory->create()
@@ -108,7 +108,7 @@ class ListViewController extends AbstractContentElementController
         }
         catch (FlareException $e)
         {
-            $this->logger->error(\sprintf('%s (tl_content.id=%s, tl_flare_list.id=%s)', $e->getMessage(), $model->id, $listModel->id),
+            $this->logger->error(\sprintf('%s (tl_content.id=%s, tl_flare_list.id=%s)', $e->getMessage(), $contentModel->id, $listModel->id),
                 ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
 
             return $this->getErrorResponse($e);
@@ -120,7 +120,7 @@ class ListViewController extends AbstractContentElementController
 
         $event = new ListViewBuiltEvent(
             contentContext: $contentContext,
-            contentModel: $model,
+            contentModel: $contentModel,
             listModel: $listModel,
             paginatorConfig: $paginatorConfig,
             template: $template,

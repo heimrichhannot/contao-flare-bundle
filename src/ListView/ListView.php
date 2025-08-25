@@ -42,9 +42,6 @@ class ListView
         return $this->listModel;
     }
 
-    /**
-     * @throws \Doctrine\DBAL\Exception
-     */
     public function getEntries(): iterable
     {
         if (!isset($this->entries)) {
@@ -54,9 +51,6 @@ class ListView
         return $this->entries;
     }
 
-    /**
-     * @throws FlareException
-     */
     public function getFormComponent(): FormInterface
     {
         if (!isset($this->formComponent)) {

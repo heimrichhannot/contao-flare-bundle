@@ -53,8 +53,8 @@ trait ListFilterTrait
         $combinedParameters = [];
         $combinedTypes = [];
 
-        $table = $this->quoteTable($filters);
-        $asMain = $this->getConnection()->quoteIdentifier('main');
+        $qTable = $this->quoteTable($filters);  // quote early for value check
+        $asMain = 'main';
 
         foreach ($filters as $i => $filter)
         {
@@ -93,20 +93,28 @@ trait ListFilterTrait
             }
         }
 
-        if (\is_array($select))
+        if (\is_array($select) && !empty($select))
         {
-            $select = \array_map(function ($value) use ($asMain) {
-                return $asMain . "." . $this->getConnection()->quoteIdentifier($value);
-            }, $select);
+            $select = \array_unique(\array_map(function ($column) use ($asMain) {
+                return $this->getConnection()->quoteIdentifier($asMain . '.' . $column);
+            }, $select));
+        }
+
+        if (\is_array($select) && empty($select))
+        {
+            return FilteredQueryDto::block();
         }
 
         $finalSQL = match (true) {
             $isCounting => "SELECT COUNT(*) AS count",
-            $onlyId => "SELECT $asMain.id AS id",
+            $onlyId => "SELECT " . $this->getConnection()->quoteIdentifier($asMain . '.id') . " AS id",
             \is_array($select) => "SELECT " . \implode(',', $select),
             default => "SELECT *",
         };
-        $finalSQL .= " FROM $table AS $asMain WHERE ";
+
+        // todo: add support for joins
+
+        $finalSQL .= " FROM $qTable AS $asMain WHERE ";
         $finalSQL .= empty($combinedConditions) ? '1'
             : $this->connection->createExpressionBuilder()->and(...$combinedConditions);
 

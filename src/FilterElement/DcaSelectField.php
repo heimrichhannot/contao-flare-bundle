@@ -11,6 +11,7 @@ use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
@@ -28,20 +29,21 @@ class DcaSelectField implements FormTypeOptionsContract, HydrateFormContract, Pa
 {
     public const TYPE = 'flare_dcaSelectField';
 
+    /**
+     * @throws FilterException
+     */
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
         if (!$submittedData = $context->getSubmittedData()) {
             return;
         }
 
-        $filterModel = $context->getFilterModel();
-
-        if (!$targetField = $filterModel->fieldGeneric)
+        if (!$targetField = $context->getFilterModel()->fieldGeneric)
         {
             $qb->abort();
         }
 
-        $qb->where($qb->expr()->eq($qb->quoteIdentifier($targetField), ':value'))
+        $qb->where($qb->expr()->eq($qb->column($targetField), ':value'))
             ->setParameter('value', $submittedData);
     }
 

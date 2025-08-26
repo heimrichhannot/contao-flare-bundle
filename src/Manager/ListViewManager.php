@@ -12,6 +12,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Factory\PaginatorBuilderFactory;
+use HeimrichHannot\FlareBundle\List\ListContext;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -29,17 +30,38 @@ class ListViewManager
 {
     protected array $filterContextCache = [];
     protected array $formCache = [];
+    protected array $listQueryCache = [];
     protected array $listEntriesCache = [];
     protected array $listSortCache = [];
     protected array $listPaginatorCache = [];
 
     public function __construct(
-        private readonly FilterContextManager    $contextManager,
+        private readonly FilterContextManager    $filterContext,
         private readonly FilterFormManager       $formManager,
+        private readonly ListQueryManager        $listQuery,
         private readonly ListItemProviderManager $itemProvider,
         private readonly PaginatorBuilderFactory $paginatorBuilderFactory,
         private readonly RequestStack            $requestStack,
     ) {}
+
+    /**
+     * @throws FlareException
+     */
+    public function getListQuery(
+        ListModel      $listModel,
+        ContentContext $contentContext,
+    ) {
+        $cacheKey = $this->makeCacheKey($listModel, $contentContext);
+        if (isset($this->listQueryCache[$cacheKey])) {
+            return $this->listQueryCache[$cacheKey];
+        }
+
+        $listContext = $this->listQuery->prepare($listModel);
+
+        $this->listQueryCache[$cacheKey] = $listContext;
+
+        return $listContext;
+    }
 
     /**
      * Get the filter context collection for a given list model and form name.
@@ -65,7 +87,7 @@ class ListViewManager
             throw new FilterException("List model not published [ID $listModel->id]", source: __METHOD__);
         }
 
-        if (!$filters = $this->contextManager->collect($listModel, $contentContext)) {
+        if (!$filters = $this->filterContext->collect($listModel, $contentContext)) {
             throw new FilterException("List model setup incomplete [ID {$listModel->id}]", source: __METHOD__);
         }
 
@@ -177,9 +199,10 @@ class ListViewManager
 
         try
         {
+            $listQuery = $this->getListQuery($listModel, $contentContext);
             $filters = $this->getFilterContextCollection($listModel, $contentContext);
 
-            $total = $itemProvider->fetchCount($filters);
+            $total = $itemProvider->fetchCount($listQuery, $filters);
         }
         catch (\Exception $e)
         {
@@ -232,11 +255,13 @@ class ListViewManager
 
         try
         {
+            $listQuery      = $this->getListQuery($listModel, $contentContext);
             $filters        = $this->getFilterContextCollection($listModel, $contentContext);
             $sortDescriptor = $this->getSortDescriptor($listModel, $contentContext, $sortDescriptor);
             $paginator      = $this->getPaginator($listModel, $contentContext, $paginatorConfig);
 
             $entries = $itemProvider->fetchEntries(
+                listQuery: $listQuery,
                 filters: $filters,
                 sortDescriptor: $sortDescriptor,
                 paginator: $paginator,
@@ -257,14 +282,15 @@ class ListViewManager
     }
 
     /**
-     * @throws FilterException
+     * @throws FlareException
      */
     public function getEntry(int $id, ListModel $listModel, ContentContext $contentContext): ?array
     {
         $itemProvider = $this->itemProvider->ofListModel($listModel);
+        $listQuery = $this->getListQuery($listModel, $contentContext);
         $filters = $this->getFilterContextCollection($listModel, $contentContext);
 
-        return $itemProvider->fetchEntry(id: $id, filters: $filters, contentContext: $contentContext);
+        return $itemProvider->fetchEntry(id: $id, listQuery: $listQuery, filters: $filters, contentContext: $contentContext);
     }
 
     /**

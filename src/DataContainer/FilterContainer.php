@@ -3,7 +3,7 @@
 namespace HeimrichHannot\FlareBundle\DataContainer;
 
 use Contao\DataContainer;
-use HeimrichHannot\FlareBundle\Registry\FlareCallbackRegistry;
+use HeimrichHannot\FlareBundle\Manager\FlareCallbackManager;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
@@ -11,10 +11,9 @@ use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 class FilterContainer implements FlareCallbackContainerInterface
 {
     public const TABLE_NAME = 'tl_flare_filter';
-    public const CALLBACK_PREFIX = 'filter';
 
     public function __construct(
-        private readonly FlareCallbackRegistry $callbackRegistry,
+        private readonly FlareCallbackManager $callbacks,
     ) {}
 
     /* ============================= *
@@ -30,10 +29,7 @@ class FilterContainer implements FlareCallbackContainerInterface
             return;
         }
 
-        $namespace = static::CALLBACK_PREFIX . '.' . $filterModel->type;
-
-        $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
-        $callbacks = \array_reverse($callbacks);
+        $callbacks = $this->callbacks->getFilterCallbacks($filterModel->type, $target, lowPrioFirst: true);
 
         CallbackHelper::call($callbacks, [], [
             FilterModel::class => $filterModel,
@@ -53,9 +49,7 @@ class FilterContainer implements FlareCallbackContainerInterface
             return [];
         }
 
-        $namespace = static::CALLBACK_PREFIX . '.' . $filterModel->type;
-
-        $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
+        $callbacks = $this->callbacks->getFilterCallbacks($filterModel->type, $target);
 
         return CallbackHelper::firstReturn($callbacks, [], [
             FilterModel::class => $filterModel,
@@ -91,9 +85,7 @@ class FilterContainer implements FlareCallbackContainerInterface
             return $value;
         }
 
-        $namespace =  static::CALLBACK_PREFIX . '.' . $filterModel->type;
-
-        $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
+        $callbacks = $this->callbacks->getFilterCallbacks($filterModel->type, $target);
 
         return CallbackHelper::firstReturn($callbacks, [$value], [
             FilterModel::class => $filterModel,

@@ -12,6 +12,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
 use HeimrichHannot\FlareBundle\Enum\BoolMode;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
@@ -28,6 +29,9 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract, F
 {
     public const TYPE = 'flare_bool';
 
+    /**
+     * @throws FilterException
+     */
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
         $filterModel = $context->getFilterModel();
@@ -39,7 +43,8 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract, F
         $mode = BoolMode::tryFrom($filterModel->boolMode ?: '') ?? BoolMode::BINARY;
 
         if ($mode === BoolMode::BINARY) {
-            $boolBinaryChoices = BoolBinaryChoices::tryFrom($filterModel->boolBinaryChoices ?: '') ?? BoolBinaryChoices::NULL_TRUE;
+            $boolBinaryChoices = BoolBinaryChoices::tryFrom($filterModel->boolBinaryChoices ?: '')
+                ?? BoolBinaryChoices::NULL_TRUE;
         }
 
         // todo: refactor
@@ -51,12 +56,12 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract, F
             return;
         }
 
-        $qField = $qb->quoteIdentifier($targetField);
+        $target = $qb->column($targetField);
 
         $qb->where($qb->expr()->or(
-            $qb->expr()->eq($qField, ':bool'),
-            $qb->expr()->eq($qField, ':numeric'),
-            $qb->expr()->eq($qField, ':string'),
+            $qb->expr()->eq($target, ':bool'),
+            $qb->expr()->eq($target, ':numeric'),
+            $qb->expr()->eq($target, ':string'),
         ))
             ->setParameter('bool', $value, ParameterType::BOOLEAN)
             ->setParameter('numeric', $value ? 1 : 0, ParameterType::INTEGER)

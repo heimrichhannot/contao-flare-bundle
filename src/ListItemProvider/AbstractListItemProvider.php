@@ -5,6 +5,7 @@ namespace HeimrichHannot\FlareBundle\ListItemProvider;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
+use HeimrichHannot\FlareBundle\List\ListQuery;
 use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 
@@ -24,8 +25,12 @@ abstract class AbstractListItemProvider implements ListItemProviderInterface
     /**
      * Fetch a single entry by its ID. Caches the result for future calls.
      */
-    public function fetchEntry(int $id, FilterContextCollection $filters, ContentContext $contentContext): ?array
-    {
+    public function fetchEntry(
+        int                     $id,
+        ListQuery               $listQuery,
+        FilterContextCollection $filters,
+        ContentContext          $contentContext
+    ): ?array {
         if (isset($this->entryCache[$cacheKey = "{$filters->getTable()}.$id"])) {
             return $this->entryCache[$cacheKey];
         }
@@ -38,7 +43,7 @@ abstract class AbstractListItemProvider implements ListItemProviderInterface
 
         $filters->add($idFilterContext);
 
-        $entries = $this->fetchEntries(filters: $filters);
+        $entries = $this->fetchEntries(listQuery: $listQuery, filters: $filters);
 
         return $this->entryCache[$cacheKey] = $entries[\array_key_first($entries)] ?? null;
     }

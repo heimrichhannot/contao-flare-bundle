@@ -71,7 +71,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
                 }
             }
 
-            $qb->where("`pid` IN (:pidIn)")
+            $qb->where($qb->expr()->in($qb->column('pid'), ':pidIn'))
                 ->setParameter('pidIn', $whitelist, ArrayParameterType::INTEGER);
 
             return;

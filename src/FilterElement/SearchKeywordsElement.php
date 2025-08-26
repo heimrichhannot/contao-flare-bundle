@@ -6,6 +6,7 @@ use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
@@ -33,7 +34,10 @@ class SearchKeywordsElement implements FormTypeOptionsContract
             return;
         }
 
-        $columns = \array_map(fn($column) => $qb->quoteIdentifier($column), $columns);
+        $columns = \array_map(
+        /**
+         * @throws FilterException
+         */ fn($column) => $qb->column($column), $columns);
 
         if (empty($searchTerms = $this->makeTerms($submittedData))) {
             return;

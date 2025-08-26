@@ -2,6 +2,10 @@
 
 namespace HeimrichHannot\FlareBundle\Dto;
 
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Exception as DBALException;
+use Doctrine\DBAL\Result as DBALResult;
+
 readonly class FilteredQueryDto
 {
     public function __construct(
@@ -34,5 +38,13 @@ readonly class FilteredQueryDto
     public static function block(): self
     {
         return new self('SELECT NULL WHERE 1 = 0 LIMIT 0', [], [], false);
+    }
+
+    /**
+     * @throws DBALException When the query fails.
+     */
+    public function execute(Connection $connection): DBALResult
+    {
+        return $connection->executeQuery($this->getQuery(), $this->getParams(), $this->getTypes());
     }
 }

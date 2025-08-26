@@ -21,6 +21,7 @@ class DateRangeElement implements FormTypeOptionsContract
 
     /**
      * @throws FilterException
+     * @throws \HeimrichHannot\FlareBundle\Exception\FilterException
      */
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
@@ -34,13 +35,15 @@ class DateRangeElement implements FormTypeOptionsContract
         $from = $submittedData['from'] ?? null;
         $to = $submittedData['to'] ?? null;
 
+        $colField = $qb->column($field);
+
         if ($from instanceof \DateTimeInterface) {
-            $qb->where($qb->expr()->gte($field, ':from'))
+            $qb->where($qb->expr()->gte($colField, ':from'))
                 ->setParameter('from', $from->getTimestamp());
         }
 
         if ($to instanceof \DateTimeInterface) {
-            $qb->where($qb->expr()->lte($field, ':to'))
+            $qb->where($qb->expr()->lte($colField, ':to'))
                 ->setParameter('to', $to->getTimestamp());
         }
     }

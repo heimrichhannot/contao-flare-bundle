@@ -32,6 +32,8 @@ class SimpleEquationElement implements PaletteContract
             throw new FilterException('Invalid filter configuration.');
         }
 
+        $operand = $qb->column($operand);
+
         $where = match ($op) {
             SqlEquationOperator::EQUALS => $qb->expr()->eq($operand, ':eq_right'),
             SqlEquationOperator::NOT_EQUALS => $qb->expr()->neq($operand, ':eq_right'),

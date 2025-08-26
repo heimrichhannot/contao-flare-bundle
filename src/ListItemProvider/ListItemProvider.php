@@ -7,6 +7,7 @@ namespace HeimrichHannot\FlareBundle\ListItemProvider;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
+use HeimrichHannot\FlareBundle\List\ListQuery;
 use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
@@ -39,11 +40,13 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws \Doctrine\DBAL\Exception
      */
     public function fetchEntries(
+        ListQuery               $listQuery,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
     ): array {
         $entries = $this->fetchEntriesOrIds(
+            listQuery: $listQuery,
             filters: $filters,
             sortDescriptor: $sortDescriptor,
             paginator: $paginator,
@@ -53,7 +56,10 @@ class ListItemProvider extends AbstractListItemProvider
         $table = $filters->getTable();
 
         $entries = \array_combine(
-            \array_map(fn ($id) => "$table.$id", \array_column($entries, 'id')),
+            \array_map(
+                static fn ($id) => \sprintf('%s.%d', $table, $id),
+                \array_column($entries, 'id')
+            ),
             $entries
         );
 
@@ -67,11 +73,13 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws \Doctrine\DBAL\Exception
      */
     public function fetchIds(
+        ListQuery               $listQuery,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
     ): array {
         return $this->fetchEntriesOrIds(
+            listQuery: $listQuery,
             filters: $filters,
             sortDescriptor: $sortDescriptor,
             paginator: $paginator,
@@ -84,6 +92,7 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws \Doctrine\DBAL\Exception
      */
     protected function fetchEntriesOrIds(
+        ListQuery               $listQuery,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
@@ -92,6 +101,7 @@ class ListItemProvider extends AbstractListItemProvider
         $returnIds ??= false;
 
         $dto = $this->buildFilteredQuery(
+            listQuery: $listQuery,
             filters: $filters,
             order: $sortDescriptor?->toSql(),
             limit: $paginator?->getItemsPerPage() ?: null,
@@ -121,9 +131,13 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws FilterException
      * @throws \Doctrine\DBAL\Exception
      */
-    public function fetchCount(FilterContextCollection $filters): int
+    public function fetchCount(ListQuery $listQuery, FilterContextCollection $filters): int
     {
-        $dto = $this->buildFilteredQuery($filters, isCounting: true);
+        $dto = $this->buildFilteredQuery(
+            listQuery: $listQuery,
+            filters: $filters,
+            isCounting: true
+        );
 
         if (!$dto->isAllowed()) {
             return 0;

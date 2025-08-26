@@ -9,6 +9,7 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
@@ -34,6 +35,9 @@ class FieldValueChoiceElement implements FormTypeOptionsContract, HydrateFormCon
         private readonly ChoicesBuilderFactory $choicesBuilderFactory,
     ) {}
 
+    /**
+     * @throws FilterException
+     */
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
         if ($context->getContentContext()->isReader()) {
@@ -49,16 +53,16 @@ class FieldValueChoiceElement implements FormTypeOptionsContract, HydrateFormCon
 
         $submittedData = \array_map('strtolower', \array_map('trim', $submittedData));
 
-        $field = $this->connection->quoteIdentifier($field);
+        $colField = $qb->column($field);
 
         if (\count($submittedData) < 2)
         {
-            $qb->where("LOWER(TRIM($field)) = :value")
+            $qb->where("LOWER(TRIM($colField)) = :value")
                 ->setParameter('value', \reset($submittedData));
         }
         else
         {
-            $qb->where("LOWER(TRIM($field)) IN (:values)")
+            $qb->where("LOWER(TRIM($colField)) IN (:values)")
                 ->setParameter('values', $submittedData);
         }
     }
@@ -120,7 +124,7 @@ class FieldValueChoiceElement implements FormTypeOptionsContract, HydrateFormCon
         FilterModel    $filterModel,
         ListModel      $listModel
     ): mixed {
-        if (!($table = $listModel->dc) || !($valueField = $filterModel->fieldGeneric)) {
+        if (!$dc || !($table = $listModel->dc) || !($valueField = $filterModel->fieldGeneric)) {
             return $value;
         }
 

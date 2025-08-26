@@ -141,10 +141,10 @@ readonly class FilterContextManager
 
         foreach ($filterDefinitions as $arrDefinition)
         {
-            ['definition' => $definition, 'final' => $final] = $arrDefinition;
+            ['definition' => $definition, 'replaceable' => $replaceable] = $arrDefinition;
 
-            if (!$final && \in_array($definition->getAlias(), $manualFilters, true))
-                // skip if the filter is not final and already added
+            if ($replaceable && \in_array($definition->getAlias(), $manualFilters, true))
+                // skip if the filter is replaceable and already added, i.e., when the filter was replaced
             {
                 continue;
             }

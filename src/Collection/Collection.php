@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Collection;
 
+use Contao\StringUtil;
 use IteratorAggregate;
 use Countable;
 use Serializable;
@@ -61,7 +62,7 @@ abstract class Collection implements IteratorAggregate, Countable, Serializable
 
         // Enforce type safety: check if the item matches the expected type.
         if (!$this->isItemOfType($item, $expectedType)) {
-            $typeName = \is_object($item) ? \get_class($item) : \gettype($item);
+            $typeName = \get_debug_type($item);
             throw new TypeError("Expected item of type {$expectedType}, got {$typeName}.");
         }
 
@@ -136,7 +137,7 @@ abstract class Collection implements IteratorAggregate, Countable, Serializable
      */
     public function unserialize(string $data): void
     {
-        $unserialized = \unserialize($data);
+        $unserialized = StringUtil::deserialize($data);
 
         if (!is_array($unserialized)) {
             throw new UnexpectedValueException("Invalid data: expected an array.");

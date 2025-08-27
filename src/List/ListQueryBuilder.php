@@ -4,6 +4,7 @@ namespace HeimrichHannot\FlareBundle\List;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
+use HeimrichHannot\FlareBundle\Dto\SqlQuery;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 
 class ListQueryBuilder
@@ -19,7 +20,7 @@ class ListQueryBuilder
         private readonly string     $mainFrom,
         private readonly string     $mainAlias,
     ) {
-        $this->tables[$mainAlias] = $this->connection->quoteIdentifier($mainFrom);
+        $this->tables[$mainAlias] = $mainFrom;
     }
 
     public function expr(): ExpressionBuilder
@@ -37,6 +38,15 @@ class ListQueryBuilder
         return $this->mainFrom;
     }
 
+    public function getFromAs(): string
+    {
+        return \sprintf(
+            '%s AS %s',
+            $this->connection->quoteIdentifier($this->mainFrom),
+            $this->connection->quoteIdentifier($this->mainAlias),
+        );
+    }
+
     public function getTables(): array
     {
         return $this->tables;
@@ -47,13 +57,22 @@ class ListQueryBuilder
         return $this->tables[$alias] ?? null;
     }
 
-    public function column(string $column, ?string $of = null): string
+    public function column(string $column, ?string $of = null, ?bool $quoteColumn = null): string
     {
         if (!$column = \trim($column)) {
             throw new \InvalidArgumentException('Column name must not be empty');
         }
 
+        $quoteColumn ??= true;
         $of ??= $this->mainAlias;
+
+        if (!$quoteColumn && !\preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $column)) {
+            throw new \InvalidArgumentException("Invalid column name format: {$column}");
+        }
+
+        if (!$quoteColumn || $column === '*') {
+            return $this->connection->quoteIdentifier($of) . '.' . $column;
+        }
 
         return $this->connection->quoteIdentifier($of . '.' . $column);
     }
@@ -156,10 +175,13 @@ class ListQueryBuilder
         return $this->addJoin('INNER JOIN', $table, $as, $on);
     }
 
-    public function buildQuery(): ListQuery
+    public function buildQuery(): SqlQuery
     {
-        $listQuery = new ListQuery();
-
-        return $listQuery;
+        return new SqlQuery(
+            select: $this->getSelect(),
+            from: $this->getFromAs(),
+            joins: $this->getJoins(),
+            groupBy: $this->getGroupBy(),
+        );
     }
 }

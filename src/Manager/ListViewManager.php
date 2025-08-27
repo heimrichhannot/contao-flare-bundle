@@ -38,7 +38,7 @@ class ListViewManager
     public function __construct(
         private readonly FilterContextManager    $filterContext,
         private readonly FilterFormManager       $formManager,
-        private readonly ListQueryManager        $listQuery,
+        private readonly ListQueryManager        $listQueryManager,
         private readonly ListItemProviderManager $itemProvider,
         private readonly PaginatorBuilderFactory $paginatorBuilderFactory,
         private readonly RequestStack            $requestStack,
@@ -47,7 +47,7 @@ class ListViewManager
     /**
      * @throws FlareException
      */
-    public function getListQuery(
+    public function getListQueryManager(
         ListModel      $listModel,
         ContentContext $contentContext,
     ) {
@@ -56,7 +56,7 @@ class ListViewManager
             return $this->listQueryCache[$cacheKey];
         }
 
-        $listContext = $this->listQuery->prepare($listModel);
+        $listContext = $this->listQueryManager->prepare($listModel);
 
         $this->listQueryCache[$cacheKey] = $listContext;
 
@@ -199,7 +199,7 @@ class ListViewManager
 
         try
         {
-            $listQuery = $this->getListQuery($listModel, $contentContext);
+            $listQuery = $this->getListQueryManager($listModel, $contentContext);
             $filters = $this->getFilterContextCollection($listModel, $contentContext);
 
             $total = $itemProvider->fetchCount($listQuery, $filters);
@@ -255,7 +255,7 @@ class ListViewManager
 
         try
         {
-            $listQuery      = $this->getListQuery($listModel, $contentContext);
+            $listQuery      = $this->getListQueryManager($listModel, $contentContext);
             $filters        = $this->getFilterContextCollection($listModel, $contentContext);
             $sortDescriptor = $this->getSortDescriptor($listModel, $contentContext, $sortDescriptor);
             $paginator      = $this->getPaginator($listModel, $contentContext, $paginatorConfig);
@@ -287,7 +287,7 @@ class ListViewManager
     public function getEntry(int $id, ListModel $listModel, ContentContext $contentContext): ?array
     {
         $itemProvider = $this->itemProvider->ofListModel($listModel);
-        $listQuery = $this->getListQuery($listModel, $contentContext);
+        $listQuery = $this->getListQueryManager($listModel, $contentContext);
         $filters = $this->getFilterContextCollection($listModel, $contentContext);
 
         return $itemProvider->fetchEntry(id: $id, listQuery: $listQuery, filters: $filters, contentContext: $contentContext);

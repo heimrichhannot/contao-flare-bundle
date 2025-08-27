@@ -4,7 +4,7 @@ namespace HeimrichHannot\FlareBundle\ListItemProvider;
 
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\List\ListQuery;
+use HeimrichHannot\FlareBundle\Dto\SqlQuery;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 
@@ -16,7 +16,7 @@ interface ListItemProviderInterface
     /**
      * @return int Returns the total number of entries matching the given filters.
      */
-    public function fetchCount(ListQuery $listQuery, FilterContextCollection $filters): int;
+    public function fetchCount(SqlQuery $listQuery, FilterContextCollection $filters): int;
 
     /**
      * Fetch entries from the database.
@@ -29,7 +29,7 @@ interface ListItemProviderInterface
      * @return array<int, array> Returns an array of associative arrays, each mapping column names to their values.
      */
     public function fetchEntries(
-        ListQuery               $listQuery,
+        SqlQuery                $listQuery,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
@@ -41,10 +41,10 @@ interface ListItemProviderInterface
      * @return array<string, mixed>|null Returns an associative array mapping column names to their values, or null if not found.
      */
     public function fetchEntry(
-        int $id,
-        ListQuery $listQuery,
+        int                     $id,
+        SqlQuery                $listQuery,
         FilterContextCollection $filters,
-        ContentContext $contentContext,
+        ContentContext          $contentContext,
     ): ?array;
 
     /**
@@ -54,7 +54,7 @@ interface ListItemProviderInterface
      * @return array<int> Returns an array of unique IDs.
      */
     public function fetchIds(
-        ListQuery               $listQuery,
+        SqlQuery                $listQuery,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,

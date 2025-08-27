@@ -9,8 +9,9 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\NotImplementedException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\List\ListQuery;
+use HeimrichHannot\FlareBundle\Dto\SqlQuery;
 use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
+use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
@@ -18,16 +19,11 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class EventsListItemProvider extends AbstractListItemProvider
 {
-    use ListFilterTrait;
-
     public function __construct(
         private readonly Connection               $connection,
         private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly FilterContextManager     $filterContextManager,
-        private readonly ListItemProvider         $listItemProvider,
-    ) {
-        parent::__construct($this->filterContextManager);
-    }
+        private readonly ListQueryManager         $listQueryManager,
+    ) {}
 
     protected function getConnection(): Connection
     {
@@ -43,7 +39,7 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FilterException
      * @throws FlareException
      */
-    public function fetchCount(ListQuery $listQuery, FilterContextCollection $filters): int
+    public function fetchCount(SqlQuery $listQuery, FilterContextCollection $filters): int
     {
         $byDate = $this->fetchEntriesGrouped(
             listQuery: $listQuery,
@@ -65,7 +61,7 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     public function fetchEntries(
-        ListQuery               $listQuery,
+        SqlQuery                $listQuery,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
@@ -128,7 +124,7 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     public function fetchIds(
-        ListQuery               $listQuery,
+        SqlQuery                $listQuery,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
@@ -163,7 +159,7 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     protected function fetchEntriesGrouped(
-        ListQuery               $listQuery,
+        SqlQuery                $listQuery,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?bool                   $reduceSelect = null,
@@ -173,7 +169,7 @@ class EventsListItemProvider extends AbstractListItemProvider
             'endTime'   => 'DESC',
         ]);
 
-        $query = $this->buildFilteredQuery(
+        $query = $this->listQueryManager->populate(
             listQuery: $listQuery,
             filters: $filters,
             order: $sortDescriptor?->toSql(),

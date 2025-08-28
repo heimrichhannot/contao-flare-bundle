@@ -71,9 +71,15 @@ readonly class ListViewResolver implements ListViewResolverInterface
         return new PaginatorConfig(itemsPerPage: 0);
     }
 
+    /**
+     * @throws FlareException
+     */
     public function getSortDescriptor(ListView $dto): ?SortDescriptor
     {
-        return null;
+        return $this->manager->getSortDescriptor(
+            listModel: $dto->getListModel(),
+            contentContext: $dto->getContentContext(),
+        );
     }
 
     /**

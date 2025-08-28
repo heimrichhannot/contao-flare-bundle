@@ -12,7 +12,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Factory\PaginatorBuilderFactory;
-use HeimrichHannot\FlareBundle\List\ListContext;
+use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -30,7 +30,7 @@ class ListViewManager
 {
     protected array $filterContextCache = [];
     protected array $formCache = [];
-    protected array $listQueryCache = [];
+    protected array $listQueryBuilderCache = [];
     protected array $listEntriesCache = [];
     protected array $listSortCache = [];
     protected array $listPaginatorCache = [];
@@ -47,20 +47,20 @@ class ListViewManager
     /**
      * @throws FlareException
      */
-    public function getListQueryManager(
+    public function getListQueryBuilder(
         ListModel      $listModel,
         ContentContext $contentContext,
-    ) {
+    ): ListQueryBuilder {
         $cacheKey = $this->makeCacheKey($listModel, $contentContext);
-        if (isset($this->listQueryCache[$cacheKey])) {
-            return $this->listQueryCache[$cacheKey];
+        if (isset($this->listQueryBuilderCache[$cacheKey])) {
+            return $this->listQueryBuilderCache[$cacheKey];
         }
 
-        $listContext = $this->listQueryManager->prepare($listModel);
+        $listQueryBuilder = $this->listQueryManager->prepare($listModel);
 
-        $this->listQueryCache[$cacheKey] = $listContext;
+        $this->listQueryBuilderCache[$cacheKey] = $listQueryBuilder;
 
-        return $listContext;
+        return $listQueryBuilder;
     }
 
     /**
@@ -145,12 +145,7 @@ class ListViewManager
     public function getSortDescriptor(
         ListModel       $listModel,
         ContentContext  $contentContext,
-        ?SortDescriptor $sortDescriptor = null,
     ): ?SortDescriptor {
-        if ($sortDescriptor instanceof SortDescriptor) {
-            return $sortDescriptor;
-        }
-
         $cacheKey = $this->makeCacheKey($listModel, $contentContext);
         if (isset($this->listSortCache[$cacheKey])) {
             return $this->listSortCache[$cacheKey];
@@ -199,10 +194,10 @@ class ListViewManager
 
         try
         {
-            $listQuery = $this->getListQueryManager($listModel, $contentContext);
+            $listQueryBuilder = $this->getListQueryBuilder($listModel, $contentContext);
             $filters = $this->getFilterContextCollection($listModel, $contentContext);
 
-            $total = $itemProvider->fetchCount($listQuery, $filters);
+            $total = $itemProvider->fetchCount($listQueryBuilder, $filters);
         }
         catch (\Exception $e)
         {
@@ -255,13 +250,12 @@ class ListViewManager
 
         try
         {
-            $listQuery      = $this->getListQueryManager($listModel, $contentContext);
+            $listQuery      = $this->getListQueryBuilder($listModel, $contentContext);
             $filters        = $this->getFilterContextCollection($listModel, $contentContext);
-            $sortDescriptor = $this->getSortDescriptor($listModel, $contentContext, $sortDescriptor);
             $paginator      = $this->getPaginator($listModel, $contentContext, $paginatorConfig);
 
             $entries = $itemProvider->fetchEntries(
-                listQuery: $listQuery,
+                listQueryBuilder: $listQuery,
                 filters: $filters,
                 sortDescriptor: $sortDescriptor,
                 paginator: $paginator,
@@ -287,10 +281,10 @@ class ListViewManager
     public function getEntry(int $id, ListModel $listModel, ContentContext $contentContext): ?array
     {
         $itemProvider = $this->itemProvider->ofListModel($listModel);
-        $listQuery = $this->getListQueryManager($listModel, $contentContext);
+        $listQuery = $this->getListQueryBuilder($listModel, $contentContext);
         $filters = $this->getFilterContextCollection($listModel, $contentContext);
 
-        return $itemProvider->fetchEntry(id: $id, listQuery: $listQuery, filters: $filters, contentContext: $contentContext);
+        return $itemProvider->fetchEntry(id: $id, listQueryBuilder: $listQuery, filters: $filters, contentContext: $contentContext);
     }
 
     /**

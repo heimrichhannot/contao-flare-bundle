@@ -9,40 +9,29 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\NotImplementedException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\Dto\SqlQuery;
-use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
+use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class EventsListItemProvider extends AbstractListItemProvider
 {
     public function __construct(
         private readonly Connection               $connection,
-        private readonly EventDispatcherInterface $eventDispatcher,
         private readonly ListQueryManager         $listQueryManager,
     ) {}
-
-    protected function getConnection(): Connection
-    {
-        return $this->connection;
-    }
-
-    protected function getEventDispatcher(): EventDispatcherInterface
-    {
-        return $this->eventDispatcher;
-    }
 
     /**
      * @throws FilterException
      * @throws FlareException
      */
-    public function fetchCount(SqlQuery $listQuery, FilterContextCollection $filters): int
-    {
+    public function fetchCount(
+        ListQueryBuilder $listQueryBuilder,
+        FilterContextCollection $filters,
+    ): int {
         $byDate = $this->fetchEntriesGrouped(
-            listQuery: $listQuery,
+            listQueryBuilder: $listQueryBuilder,
             filters: $filters,
             reduceSelect: true,
         );
@@ -61,13 +50,13 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     public function fetchEntries(
-        SqlQuery                $listQuery,
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
     ): array {
         $byDate = $this->fetchEntriesGrouped(
-            listQuery: $listQuery,
+            listQueryBuilder: $listQueryBuilder,
             filters: $filters,
             sortDescriptor: $sortDescriptor,
         );
@@ -124,7 +113,7 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     public function fetchIds(
-        SqlQuery                $listQuery,
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
@@ -134,7 +123,7 @@ class EventsListItemProvider extends AbstractListItemProvider
         }
 
         $byDate = $this->fetchEntriesGrouped(
-            listQuery: $listQuery,
+            listQueryBuilder: $listQueryBuilder,
             filters: $filters,
             sortDescriptor: $sortDescriptor,
             reduceSelect: true,
@@ -159,7 +148,7 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     protected function fetchEntriesGrouped(
-        SqlQuery                $listQuery,
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?bool                   $reduceSelect = null,
@@ -170,9 +159,9 @@ class EventsListItemProvider extends AbstractListItemProvider
         ]);
 
         $query = $this->listQueryManager->populate(
-            listQuery: $listQuery,
+            listQueryBuilder: $listQueryBuilder,
             filters: $filters,
-            order: $sortDescriptor?->toSql(),
+            order: $sortDescriptor?->toSql(fn ($col) => $this->connection->quoteIdentifier($col)),
             select: $reduceSelect ? ['id', 'startTime', 'endTime', 'repeatEach', 'repeatEnd'] : null,
         );
 

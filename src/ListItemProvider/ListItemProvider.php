@@ -7,8 +7,7 @@ namespace HeimrichHannot\FlareBundle\ListItemProvider;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\Dto\SqlQuery;
-use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
+use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
@@ -37,13 +36,13 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws \Doctrine\DBAL\Exception
      */
     public function fetchEntries(
-        SqlQuery                $listQuery,
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
     ): array {
         $entries = $this->fetchEntriesOrIds(
-            listQuery: $listQuery,
+            listQueryBuilder: $listQueryBuilder,
             filters: $filters,
             sortDescriptor: $sortDescriptor,
             paginator: $paginator,
@@ -70,13 +69,13 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws \Doctrine\DBAL\Exception
      */
     public function fetchIds(
-        SqlQuery                $listQuery,
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
     ): array {
         return $this->fetchEntriesOrIds(
-            listQuery: $listQuery,
+            listQueryBuilder: $listQueryBuilder,
             filters: $filters,
             sortDescriptor: $sortDescriptor,
             paginator: $paginator,
@@ -89,7 +88,7 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws \Doctrine\DBAL\Exception
      */
     protected function fetchEntriesOrIds(
-        SqlQuery                $listQuery,
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
@@ -98,9 +97,9 @@ class ListItemProvider extends AbstractListItemProvider
         $returnIds ??= false;
 
         $query = $this->listQueryManager->populate(
-            listQuery: $listQuery,
+            listQueryBuilder: $listQueryBuilder,
             filters: $filters,
-            order: $sortDescriptor?->toSql(),
+            order: $sortDescriptor?->toSql(fn ($col) => $this->connection->quoteIdentifier($col)),
             limit: $paginator?->getItemsPerPage() ?: null,
             offset: $paginator?->getOffset() ?: null,
             onlyId: $returnIds,
@@ -128,10 +127,12 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws FilterException
      * @throws \Doctrine\DBAL\Exception
      */
-    public function fetchCount(SqlQuery $listQuery, FilterContextCollection $filters): int
-    {
+    public function fetchCount(
+        ListQueryBuilder $listQueryBuilder,
+        FilterContextCollection $filters
+    ): int {
         $query = $this->listQueryManager->populate(
-            listQuery: $listQuery,
+            listQueryBuilder: $listQueryBuilder,
             filters: $filters,
             isCounting: true
         );

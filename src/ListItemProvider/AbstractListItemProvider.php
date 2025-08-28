@@ -5,7 +5,7 @@ namespace HeimrichHannot\FlareBundle\ListItemProvider;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\Dto\SqlQuery;
+use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use Symfony\Contracts\Service\ServiceSubscriberInterface;
@@ -27,7 +27,7 @@ abstract class AbstractListItemProvider implements ListItemProviderInterface, Se
      */
     public function fetchEntry(
         int                     $id,
-        SqlQuery                $listQuery,
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ContentContext          $contentContext
     ): ?array {
@@ -35,7 +35,9 @@ abstract class AbstractListItemProvider implements ListItemProviderInterface, Se
             return $this->entryCache[$cacheKey];
         }
 
-        $filterContextManager = $this->container->get(FilterContextManager::class);
+        if (!$filterContextManager = $this->container->get(FilterContextManager::class)) {
+            throw new \RuntimeException('FilterContextManager not found');
+        }
 
         $idFilterContext = $filterContextManager->definitionToContext(
             definition: SimpleEquationElement::define('id', SqlEquationOperator::EQUALS, $id),
@@ -45,7 +47,7 @@ abstract class AbstractListItemProvider implements ListItemProviderInterface, Se
 
         $filters->add($idFilterContext);
 
-        $entries = $this->fetchEntries(listQuery: $listQuery, filters: $filters);
+        $entries = $this->fetchEntries(listQueryBuilder: $listQueryBuilder, filters: $filters);
 
         return $this->entryCache[$cacheKey] = $entries[\array_key_first($entries)] ?? null;
     }

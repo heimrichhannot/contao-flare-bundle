@@ -39,7 +39,7 @@ class ListQueryManager
     /**
      * @throws FlareException
      */
-    public function prepare(ListModel $listModel): SqlQuery
+    public function prepare(ListModel $listModel): ListQueryBuilder
     {
         /** @var ListTypeDescriptor $type */
         if (!$type = $this->listTypeRegistry->get($listModel->type)) {
@@ -52,7 +52,7 @@ class ListQueryManager
 
         $builder = new ListQueryBuilder(
             connection: $this->connection,
-            mainFrom: $mainTable,
+            mainTable: $mainTable,
             mainAlias: self::ALIAS_MAIN,
         );
 
@@ -66,14 +66,14 @@ class ListQueryManager
             ListQueryBuilder::class => $builder,
         ]);
 
-        return $builder->buildQuery();
+        return $builder;
     }
 
     /**
      * @throws FilterException
      */
     public function populate(
-        SqlQuery                $listQuery,
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ?string                 $order = null,
         ?int                    $limit = null,
@@ -90,7 +90,10 @@ class ListQueryManager
 
         try
         {
-            $invoked = $this->invokeFilters($filters);
+            $invoked = $this->invokeFilters(
+                listQueryBuilder: $listQueryBuilder,
+                filters: $filters,
+            );
         }
         catch (AbortFilteringException)
         {
@@ -122,7 +125,7 @@ class ListQueryManager
             default => null,
         };
 
-        $finalSQL = $listQuery->sqlify(
+        $finalSQL = $listQueryBuilder->buildQuery()->sqlify(
             select: $altSelect,
             conditions: empty($invoked->conditions)
                 ? '1 = 1'
@@ -140,15 +143,25 @@ class ListQueryManager
      * @throws FilterException
      * @throws AbortFilteringException
      */
-    public function invokeFilters(FilterContextCollection $filters): FilterInvocationDto
-    {
+    public function invokeFilters(
+        ListQueryBuilder $listQueryBuilder,
+        FilterContextCollection $filters
+    ): FilterInvocationDto {
         $invoked = new FilterInvocationDto();
 
-        $asMain = 'main';
+        $relations = $listQueryBuilder->getTables();
 
         foreach ($filters as $i => $filter)
         {
-            $filterQueryBuilder = new FilterQueryBuilder($this->connection, $asMain);
+            $onAlias = $filter->onRelationAlias ?? 'main';
+
+            if (!$table = $listQueryBuilder->getTable($onAlias)) {
+                throw new FilterException('Invalid filter relation alias: ' . $onAlias, method: __METHOD__);
+            }
+
+            $invoked->aliasedTables[$onAlias] = $table;
+
+            $filterQueryBuilder = new FilterQueryBuilder($this->connection, $onAlias);
 
             $status = $this->invokeFilter(filterQueryBuilder: $filterQueryBuilder, filter: $filter);
 

@@ -46,17 +46,16 @@ class EventsListType extends AbstractListType implements ListItemProviderContrac
     }
 
     #[AsListCallback(self::TYPE, 'query.configure')]
-    public function prepareQuery(ListQueryBuilder $builder): void
+    public function configureQuery(ListQueryBuilder $builder): void
     {
         $aliasArchive = 'events_archive';
+
+        $builder->select('*', of: $aliasArchive);
 
         $builder->innerJoin(
             table: 'tl_calendar',
             as: $aliasArchive,
-            on: $builder->expr()->eq(
-                $builder->column('pid'),
-                $builder->column('id', of: $aliasArchive)
-            )
+            on: $builder->makeJoinOn($aliasArchive, joinColumn: 'id', mainColumn: 'pid')
         );
     }
 

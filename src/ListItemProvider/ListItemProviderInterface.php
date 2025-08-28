@@ -4,7 +4,7 @@ namespace HeimrichHannot\FlareBundle\ListItemProvider;
 
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\Dto\SqlQuery;
+use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 
@@ -16,7 +16,10 @@ interface ListItemProviderInterface
     /**
      * @return int Returns the total number of entries matching the given filters.
      */
-    public function fetchCount(SqlQuery $listQuery, FilterContextCollection $filters): int;
+    public function fetchCount(
+        ListQueryBuilder        $listQueryBuilder,
+        FilterContextCollection $filters,
+    ): int;
 
     /**
      * Fetch entries from the database.
@@ -29,7 +32,7 @@ interface ListItemProviderInterface
      * @return array<int, array> Returns an array of associative arrays, each mapping column names to their values.
      */
     public function fetchEntries(
-        SqlQuery                $listQuery,
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
@@ -42,7 +45,7 @@ interface ListItemProviderInterface
      */
     public function fetchEntry(
         int                     $id,
-        SqlQuery                $listQuery,
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ContentContext          $contentContext,
     ): ?array;
@@ -54,7 +57,7 @@ interface ListItemProviderInterface
      * @return array<int> Returns an array of unique IDs.
      */
     public function fetchIds(
-        SqlQuery                $listQuery,
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,

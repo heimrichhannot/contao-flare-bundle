@@ -65,7 +65,7 @@ readonly class ReaderManager
             return null;
         }
 
-        $listQuery = $this->listQuery->prepare($listModel);
+        $listQueryBuilder = $this->listQuery->prepare($listModel);
 
         $collection->add($autoItemFilterContext);
 
@@ -74,7 +74,7 @@ readonly class ReaderManager
         try
         {
             $ids = $itemProvider->fetchIds(
-                listQuery: $listQuery,
+                listQueryBuilder: $listQueryBuilder,
                 filters: $collection
             );
         }

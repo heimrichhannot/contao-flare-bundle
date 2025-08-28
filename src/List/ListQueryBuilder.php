@@ -23,12 +23,18 @@ class ListQueryBuilder
      */
     private array $tables = [];
 
+    /**
+     * @var array<string, bool> $mapTableAliasMandatory Key is the alias, value is true if the table is mandatory.
+     */
+    private array $mapTableAliasMandatory = [];
+
     public function __construct(
         private readonly Connection $connection,
         private readonly string     $mainTable,
         private readonly string     $mainAlias,
     ) {
         $this->tables[$mainAlias] = $mainTable;
+        $this->mapTableAliasMandatory[$mainAlias] = true;
     }
 
     public function expr(): ExpressionBuilder
@@ -56,6 +62,29 @@ class ListQueryBuilder
         return $this->tables[$alias] ?? null;
     }
 
+    public function getMapTableAliasMandatory(): array
+    {
+        return $this->mapTableAliasMandatory;
+    }
+
+    public function getMandatoryTableAliases(): array
+    {
+        return \array_keys(\array_filter($this->mapTableAliasMandatory));
+    }
+
+    public function setTableAliasMandatory(string $alias, bool $mandatory = true): void
+    {
+        $this->mapTableAliasMandatory[$alias] = $mandatory;
+    }
+
+    /**
+     * Returns a quoted column name with an optional table alias.
+     *
+     * @param string      $column  The column name.
+     * @param string|null $of  The table alias of the table to which the column belongs.
+     * @param bool|null   $quoteColumn  Whether to quote the column name.
+     * @return string
+     */
     public function column(string $column, ?string $of = null, ?bool $quoteColumn = null): string
     {
         if (!$column = \trim($column)) {
@@ -76,9 +105,31 @@ class ListQueryBuilder
         return $this->connection->quoteIdentifier($of . '.' . $column);
     }
 
-    public function select(string $column, ?string $of = null, ?string $as = null): static
+    /**
+     * Adds a column to the select clause.
+     *
+     * @param string      $column  The column name.
+     * @param string|null $of  The table alias of the table to which the column belongs.
+     * @param string|null $as  The alias to use for the selected column.
+     * @param bool|null   $allowAsterisk  Whether to allow the use of the asterisk (*) character in the column name.
+     * @return $this
+     */
+    public function select(string $column, ?string $of = null, ?string $as = null, ?bool $allowAsterisk = null): static
     {
-        $as = $as ? $this->connection->quoteIdentifier($as) : null;
+        $allowAsterisk ??= false;
+
+        if (!$allowAsterisk && \str_contains($column, '*')) {
+            throw new \InvalidArgumentException('Cannot use * in ListQueryBuilder::select(...) without explicitly allowing it. Only use * if you know what you are doing.');
+        }
+
+        if ($of) {
+            $this->mapTableAliasMandatory[$of] = true;
+        }
+
+        if ($as) {
+            $as = $this->connection->quoteIdentifier($as);
+        }
+
         return $this->addRawSelect($this->column($column, $of) . ($as ? ' AS ' . $as : ''));
     }
 

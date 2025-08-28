@@ -10,7 +10,6 @@ use HeimrichHannot\FlareBundle\Event\FilterElementInvokingEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Dto\SqlQuery;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
@@ -56,7 +55,7 @@ class ListQueryManager
             mainAlias: self::ALIAS_MAIN,
         );
 
-        $builder->select('*', of: self::ALIAS_MAIN);
+        $builder->select('*', of: self::ALIAS_MAIN, allowAsterisk: true);
         $builder->groupBy('id', self::ALIAS_MAIN);
 
         $callbacks = $this->callbackManager->getListCallbacks($listModel->type, 'query.configure');
@@ -65,6 +64,8 @@ class ListQueryManager
             ListModel::class => $listModel,
             ListQueryBuilder::class => $builder,
         ]);
+
+        $builder->select('id', of: self::ALIAS_MAIN, as: 'id');
 
         return $builder;
     }
@@ -112,20 +113,35 @@ class ListQueryManager
             return ParameterizedSqlQuery::noResult();
         }
 
+        $aliasesUsed = \array_unique(\array_merge(
+            \array_keys($invoked->tablesUsed),
+            $listQueryBuilder->getMapTableAliasMandatory(),
+        ));
+
+        $sqlQuery = $listQueryBuilder->buildQuery()->withFilteredJoins($aliasesUsed);
+
         $altSelect = match (true) {
             $isCounting => [
                 \sprintf(
-                    "COUNT(DISTINCT(%s)) AS %s",
-                    $this->connection->quoteIdentifier(self::ALIAS_MAIN . '.id'),
+                    "COUNT(%s) AS %s",
+                    (\count($sqlQuery->getJoins()) < 1)
+                        ? '*'
+                        : \sprintf('DISTINCT(%s)', $this->connection->quoteIdentifier(self::ALIAS_MAIN . '.id')),
                     $this->connection->quoteIdentifier('count')
                 ),
             ],
-            $onlyId => [\sprintf("%s.id AS id", $this->connection->quoteIdentifier(self::ALIAS_MAIN))],
+            $onlyId => [
+                \sprintf(
+                    "%s AS %s",
+                    $this->connection->quoteIdentifier(self::ALIAS_MAIN . '.id'),
+                    $this->connection->quoteIdentifier('id')
+                )
+            ],
             \is_array($select) => $select,
             default => null,
         };
 
-        $finalSQL = $listQueryBuilder->buildQuery()->sqlify(
+        $finalSQL = $sqlQuery->sqlify(
             select: $altSelect,
             conditions: empty($invoked->conditions)
                 ? '1 = 1'
@@ -149,8 +165,6 @@ class ListQueryManager
     ): FilterInvocationDto {
         $invoked = new FilterInvocationDto();
 
-        $relations = $listQueryBuilder->getTables();
-
         foreach ($filters as $i => $filter)
         {
             $onAlias = $filter->onRelationAlias ?? 'main';
@@ -159,7 +173,7 @@ class ListQueryManager
                 throw new FilterException('Invalid filter relation alias: ' . $onAlias, method: __METHOD__);
             }
 
-            $invoked->aliasedTables[$onAlias] = $table;
+            $invoked->tablesUsed[$onAlias] = $table;
 
             $filterQueryBuilder = new FilterQueryBuilder($this->connection, $onAlias);
 

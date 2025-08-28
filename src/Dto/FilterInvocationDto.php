@@ -8,6 +8,6 @@ class FilterInvocationDto
         public array $conditions = [],
         public array $parameters = [],
         public array $types = [],
-        public array $aliasedTables = [],
+        public array $tablesUsed = [],
     ) {}
 }

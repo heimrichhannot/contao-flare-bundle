@@ -2,18 +2,19 @@
 
 namespace HeimrichHannot\FlareBundle\Dto;
 
-readonly class SqlQuery
+readonly class SqlQuery implements \Stringable
 {
     public function __construct(
-        private array  $select,
-        private string $from,
-        private string $conditions = '1 = 1',
-        private array  $joins = [],
-        private array  $groupBy = [],
-        private array  $having = [],
-        private array  $orderBy = [],
-        private ?int   $limit = null,
-        private ?int   $offset = null,
+        private array   $select,
+        private string  $from,
+        private ?string $fromAlias = null,
+        private string  $conditions = '1 = 1',
+        private array   $joins = [],
+        private array   $groupBy = [],
+        private array   $having = [],
+        private array   $orderBy = [],
+        private ?int    $limit = null,
+        private ?int    $offset = null,
     ) {}
 
     public function getSelect(): array
@@ -24,6 +25,11 @@ readonly class SqlQuery
     public function getFrom(): string
     {
         return $this->from;
+    }
+
+    public function getFromAlias(): string
+    {
+        return $this->fromAlias;
     }
 
     public function getConditions(): string
@@ -61,22 +67,54 @@ readonly class SqlQuery
         return $this->offset;
     }
 
+    public function getTableAliases(): array
+    {
+        $aliases = \array_keys($this->joins);
+        $aliases[] = $this->fromAlias;
+        return $aliases;
+    }
+
+    public function withFilteredJoins(array $keepAliases): self
+    {
+        $joins = [];
+        foreach ($keepAliases as $alias) {
+            if (isset($this->joins[$alias])) {
+                $joins[$alias] = $this->joins[$alias];
+            }
+        }
+
+        return new self(
+            select: $this->select,
+            from: $this->from,
+            fromAlias: $this->fromAlias,
+            conditions: $this->conditions,
+            joins: $joins,
+            groupBy: $this->groupBy,
+            having: $this->having,
+            orderBy: $this->orderBy,
+            limit: $this->limit,
+            offset: $this->offset,
+        );
+    }
+
     public function sqlify(
-        array|string|null $select = null,
-        ?string $from = null,
-        ?string $conditions = null,
-        ?array $joins = null,
+        array|string|null       $select = null,
+        ?string                 $from = null,
+        ?string                 $fromAlias = null,
+        ?string                 $conditions = null,
+        ?array                  $joins = null,
         array|string|false|null $having = null,
         array|string|false|null $groupBy = null,
         array|string|false|null $orderBy = null,
-        ?int $limit = null,
-        ?int $offset = null,
+        ?int                    $limit = null,
+        ?int                    $offset = null,
     ): string {
         $select ??= $this->select;
         $select = (array) $select;
 
         $from ??= $this->from;
-        $conditions ??= $this->conditions;
+        $fromAlias ??= $this->fromAlias;
+        $conditions = ($conditions ?? $this->conditions) ?: '1 = 1';
         $joins ??= $this->joins;
 
         $having ??= $this->having;
@@ -95,13 +133,17 @@ readonly class SqlQuery
             throw new \InvalidArgumentException("Invalid query parameters: select or from is missing.");
         }
 
-        $sql = \sprintf(
-            'SELECT %s FROM %s %s WHERE %s',
-            \implode(', ', $select),
-            $from,
-            \implode(' ', $joins),
-            $conditions,
-        );
+        $sql = \sprintf('SELECT %s FROM %s', \implode(', ', $select), $from);
+
+        if ($fromAlias) {
+            $sql .= \sprintf(' AS %s', $fromAlias);
+        }
+
+        if (!empty($joins)) {
+            $sql .= \sprintf(' %s', \implode(' ', $joins));
+        }
+
+        $sql .= \sprintf(' WHERE %s', $conditions);
 
         if (!empty($having)) {
             $sql .= \sprintf(' HAVING %s', \implode(' AND ', $having));
@@ -123,8 +165,11 @@ readonly class SqlQuery
             $sql .= \sprintf(' OFFSET %d', $offset);
         }
 
-        $sql = \trim($sql);
+        return \trim($sql);
+    }
 
-        return $sql;
+    public function __toString(): string
+    {
+        return $this->sqlify();
     }
 }

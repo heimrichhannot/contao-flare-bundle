@@ -12,15 +12,23 @@ class ListQueryBuilder
     private ?ExpressionBuilder $expr = null;
     private array $select = [];
     private array $groupBy = [];
+
+    /**
+     * @var array<string, string> $joins Key is the alias, value is the SQL join string.
+     */
     private array $joins = [];
+
+    /**
+     * @var array<string, string> $tables Key is the alias, value is the table name.
+     */
     private array $tables = [];
 
     public function __construct(
         private readonly Connection $connection,
-        private readonly string     $mainFrom,
+        private readonly string     $mainTable,
         private readonly string     $mainAlias,
     ) {
-        $this->tables[$mainAlias] = $mainFrom;
+        $this->tables[$mainAlias] = $mainTable;
     }
 
     public function expr(): ExpressionBuilder
@@ -28,23 +36,14 @@ class ListQueryBuilder
         return $this->expr ??= $this->connection->createExpressionBuilder();
     }
 
-    public function getMainAlias(): string
+    public function getMainTable(bool $quoted = false): string
     {
-        return $this->mainAlias;
+        return !$quoted ? $this->mainTable : $this->connection->quoteIdentifier($this->mainTable);
     }
 
-    public function getMainFrom(): string
+    public function getMainAlias(bool $quoted = false): string
     {
-        return $this->mainFrom;
-    }
-
-    public function getFromAs(): string
-    {
-        return \sprintf(
-            '%s AS %s',
-            $this->connection->quoteIdentifier($this->mainFrom),
-            $this->connection->quoteIdentifier($this->mainAlias),
-        );
+        return !$quoted ? $this->mainAlias : $this->connection->quoteIdentifier($this->mainAlias);
     }
 
     public function getTables(): array
@@ -146,11 +145,11 @@ class ListQueryBuilder
             throw new FlareException("Join alias '{$alias}' is already in use.");
         }
 
-        $table = $this->connection->quoteIdentifier($table);
-        $alias = $this->connection->quoteIdentifier($alias);
+        $qTable = $this->connection->quoteIdentifier($table);
+        $qAlias = $this->connection->quoteIdentifier($alias);
 
         $this->tables[$alias] = $table;
-        $this->joins[$alias] = \sprintf('%s %s %s ON %s', $join, $table, $alias, $condition);
+        $this->joins[$alias] = \sprintf('%s %s AS %s ON %s', $join, $qTable, $qAlias, $condition);
 
         return $this;
     }
@@ -175,11 +174,20 @@ class ListQueryBuilder
         return $this->addJoin('INNER JOIN', $table, $as, $on);
     }
 
+    public function makeJoinOn(string $joinAlias, string $joinColumn, string $mainColumn): string
+    {
+        return $this->expr()->eq(
+            $this->column($mainColumn),
+            $this->column($joinColumn, of: $joinAlias),
+        );
+    }
+
     public function buildQuery(): SqlQuery
     {
         return new SqlQuery(
             select: $this->getSelect(),
-            from: $this->getFromAs(),
+            from: $this->getMainTable(true),
+            fromAlias: $this->getMainAlias(true),
             joins: $this->getJoins(),
             groupBy: $this->getGroupBy(),
         );

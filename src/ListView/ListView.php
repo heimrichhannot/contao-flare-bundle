@@ -113,6 +113,11 @@ class ListView
         return $this->readerUrls[$id];
     }
 
+    /**
+     * @see self::getDetailsPageUrl
+     * @param ...$args
+     * @return string|null
+     */
     public function to(...$args): ?string
     {
         return $this->getDetailsPageUrl(...$args);

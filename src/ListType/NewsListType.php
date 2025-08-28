@@ -23,6 +23,7 @@ use HeimrichHannot\FlareBundle\Util\Str;
 class NewsListType implements PresetFiltersContract, ReaderPageMetaContract
 {
     public const TYPE = 'flare_news';
+    public const ALIAS_ARCHIVE = 'news_archive';
 
     public function __construct(
         private readonly HtmlDecoder $htmlDecoder,
@@ -31,14 +32,10 @@ class NewsListType implements PresetFiltersContract, ReaderPageMetaContract
     #[AsListCallback(self::TYPE, 'query.configure')]
     public function prepareQuery(ListQueryBuilder $builder): void
     {
-        $aliasArchive = 'news_archive';
-
-        $builder->select('*', of: $aliasArchive);
-
         $builder->innerJoin(
             table: 'tl_news_archive',
-            as: 'news_archive',
-            on: $builder->makeJoinOn($aliasArchive, 'id', 'pid')
+            as: self::ALIAS_ARCHIVE,
+            on: $builder->makeJoinOn(self::ALIAS_ARCHIVE, 'id', 'pid')
         );
     }
 

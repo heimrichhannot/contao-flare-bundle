@@ -167,15 +167,15 @@ class ListQueryManager
 
         foreach ($filters as $i => $filter)
         {
-            $onAlias = $filter->onRelationAlias ?? 'main';
+            $targetAlias = $filter->targetAlias ?? self::ALIAS_MAIN;
 
-            if (!$table = $listQueryBuilder->getTable($onAlias)) {
-                throw new FilterException('Invalid filter relation alias: ' . $onAlias, method: __METHOD__);
+            if (!$table = $listQueryBuilder->getTable($targetAlias)) {
+                throw new FilterException('Invalid filter relation alias: ' . $targetAlias, method: __METHOD__);
             }
 
-            $invoked->tablesUsed[$onAlias] = $table;
+            $invoked->tablesUsed[$targetAlias] = $table;
 
-            $filterQueryBuilder = new FilterQueryBuilder($this->connection, $onAlias);
+            $filterQueryBuilder = new FilterQueryBuilder($this->connection, $targetAlias);
 
             $status = $this->invokeFilter(filterQueryBuilder: $filterQueryBuilder, filter: $filter);
 

@@ -4,6 +4,7 @@ use Contao\DataContainer;
 use Contao\DC_Table;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
 use HeimrichHannot\FlareBundle\Enum\BoolMode;
+use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
@@ -133,6 +134,21 @@ $dca['fields'] = [
             'tl_class' => 'cbx w50'
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'targetAlias' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => true,
+        'default' => ListQueryManager::ALIAS_MAIN,
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => false,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50',
+            'submitOnChange' => true,
+        ],
+        'sql' => ['type' => 'string', 'length' => 128, 'default' => ListQueryManager::ALIAS_MAIN],
     ],
     'preselect' => [
         'inputType' => 'text',
@@ -588,7 +604,7 @@ $dca['palettes'] = [
         'type', 'usePublished', 'useStart', 'useStop', 'whichPtable', 'formatLabel', 'formatEmptyOption',
         'configureStart', 'configureStop', 'boolMode',
     ],
-    '__prefix__' => '{title_legend},title,type,intrinsic',
+    '__prefix__' => '{title_legend},title,type,intrinsic,targetAlias',
     '__suffix__' => '{publish_legend},published',
 ];
 

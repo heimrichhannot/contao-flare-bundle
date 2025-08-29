@@ -7,6 +7,7 @@ use Contao\DataContainer;
 use Contao\Message;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
+use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
@@ -40,6 +41,11 @@ readonly class ConfigOnLoadCallback
             return;
         }
 
+        $this->scopeMessage($descriptor);
+    }
+
+    public function scopeMessage(FilterElementDescriptor $descriptor): void
+    {
         if ($descriptor->getService() instanceof InScopeContract)
             // If the filter is limited in scope by a dynamic service implementation, make the user aware of this.
         {
@@ -67,7 +73,7 @@ readonly class ConfigOnLoadCallback
         Message::addInfo($this->translator->trans($msgKey, [
             '%scopes%' => \implode(', ', \array_map(
                 fn (string $scope) => $this->translator->trans('filter.scope.' . $scope, [], 'flare'),
-                $descriptor->getScopes()
+                $descriptor->getScopes(),
             )),
         ], 'flare'));
     }

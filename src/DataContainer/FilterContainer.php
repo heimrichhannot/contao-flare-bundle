@@ -4,6 +4,7 @@ namespace HeimrichHannot\FlareBundle\DataContainer;
 
 use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\Manager\FlareCallbackManager;
+use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
@@ -14,6 +15,7 @@ class FilterContainer implements FlareCallbackContainerInterface
 
     public function __construct(
         private readonly FlareCallbackManager $callbacks,
+        private readonly ListQueryManager     $listQueryManager,
     ) {}
 
     /* ============================= *
@@ -51,10 +53,16 @@ class FilterContainer implements FlareCallbackContainerInterface
 
         $callbacks = $this->callbacks->getFilterCallbacks($filterModel->type, $target);
 
+        $listQueryManager = $this->listQueryManager->prepare($listModel);
+        $tables = $listQueryManager->getTables();
+        $targetTable = $listQueryManager->getTable($filterModel->targetAlias) ?: $listModel->dc;
+
         return CallbackHelper::firstReturn($callbacks, [], [
             FilterModel::class => $filterModel,
             ListModel::class  => $listModel,
             DataContainer::class  => $dc,
+            'tables' => $tables,
+            'targetTable' => $targetTable,
         ]) ?? [];
     }
 

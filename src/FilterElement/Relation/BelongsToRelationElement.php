@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\FilterElement;
+namespace HeimrichHannot\FlareBundle\FilterElement\Relation;
 
 use Contao\Message;
 use Contao\StringUtil;
@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 
 #[AsFilterElement(alias: BelongsToRelationElement::TYPE)]

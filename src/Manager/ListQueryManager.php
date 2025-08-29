@@ -28,6 +28,8 @@ class ListQueryManager
     public const FILTER_FAIL = 2;
     public const ALIAS_MAIN = 'main';
 
+    private array $prepCache = [];
+
     public function __construct(
         private readonly Connection               $connection,
         private readonly EventDispatcherInterface $eventDispatcher,
@@ -38,8 +40,14 @@ class ListQueryManager
     /**
      * @throws FlareException
      */
-    public function prepare(ListModel $listModel): ListQueryBuilder
+    public function prepare(ListModel $listModel, ?bool $noCache = null): ListQueryBuilder
     {
+        $doCache = !$noCache;
+
+        if ($doCache && $hit = $this->prepCache[$listModel->id] ?? null) {
+            return clone $hit;
+        }
+
         /** @var ListTypeDescriptor $type */
         if (!$type = $this->listTypeRegistry->get($listModel->type)) {
             throw new FlareException(\sprintf('No list type registered for type "%s".', $listModel->type), method: __METHOD__);
@@ -66,6 +74,10 @@ class ListQueryManager
         ]);
 
         $builder->select('id', of: self::ALIAS_MAIN, as: 'id');
+
+        if ($doCache) {
+            $this->prepCache[$listModel->id] = clone $builder;
+        }
 
         return $builder;
     }
@@ -167,7 +179,9 @@ class ListQueryManager
 
         foreach ($filters as $i => $filter)
         {
-            $targetAlias = $filter->targetAlias ?? self::ALIAS_MAIN;
+            $targetAlias = ($filter->getDescriptor()->isTargeted() && $filter->getFilterModel()->targetAlias)
+                ? $filter->getFilterModel()->targetAlias
+                : self::ALIAS_MAIN;
 
             if (!$table = $listQueryBuilder->getTable($targetAlias)) {
                 throw new FilterException('Invalid filter relation alias: ' . $targetAlias, method: __METHOD__);

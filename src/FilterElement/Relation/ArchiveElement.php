@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\FilterElement;
+namespace HeimrichHannot\FlareBundle\FilterElement\Relation;
 
 use Contao\DataContainer;
 use Contao\Model;

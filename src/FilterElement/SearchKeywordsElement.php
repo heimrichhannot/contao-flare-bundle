@@ -16,7 +16,8 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
     alias: SearchKeywordsElement::TYPE,
     palette: '{filter_legend},columnsGeneric;{form_legend},placeholder',
     formType: TextType::class,
-    scopes: [ContentContext::CONTEXT_LIST]
+    scopes: [ContentContext::CONTEXT_LIST],
+    isTargeted: true,
 )]
 class SearchKeywordsElement implements FormTypeOptionsContract
 {
@@ -34,10 +35,7 @@ class SearchKeywordsElement implements FormTypeOptionsContract
             return;
         }
 
-        $columns = \array_map(
-        /**
-         * @throws FilterException
-         */ fn($column) => $qb->column($column), $columns);
+        $columns = \array_map(static fn ($column) => $qb->column($column), $columns);
 
         if (empty($searchTerms = $this->makeTerms($submittedData))) {
             return;

@@ -9,6 +9,7 @@ use Contao\DataContainer;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
@@ -86,7 +87,29 @@ readonly class FieldsOptionsCallbacks
     #[AsCallback(self::TABLE_NAME, 'fields.columnsGeneric.options')]
     public function getFieldOptions_fieldGeneric(DataContainer $dc): array
     {
-        return DcaHelper::getFieldOptions($dc);
+        /** @var ?FilterModel $filterModel */
+        if (!$filterModel = DcaHelper::modelOf($dc))
+        {
+            return DcaHelper::getFieldOptions($dc);
+        }
+
+        try
+        {
+            $listModel = $filterModel->getRelated('pid');
+        }
+        catch (\Throwable)
+        {
+            return [];
+        }
+
+        if (!$listModel instanceof ListModel) {
+            return [];
+        }
+
+        $table = $this->listQueryManager->prepare($listModel)
+            ->getTable($filterModel->targetAlias ?: ListQueryManager::ALIAS_MAIN);
+
+        return DcaHelper::getFieldOptions($table);
     }
 
     #[AsCallback(self::TABLE_NAME, 'fields.tablePtable.options')]

@@ -21,6 +21,7 @@ class FilterElementDescriptor implements ServiceDescriptorInterface, PaletteCont
         private ?string $formType = null,
         private ?string $method = null,
         private ?array  $scopes = null,
+        private ?bool   $isTargeted = null,
     ) {}
 
     /**
@@ -85,6 +86,16 @@ class FilterElementDescriptor implements ServiceDescriptorInterface, PaletteCont
     public function setScopes(?array $scopes): void
     {
         $this->scopes = $scopes;
+    }
+
+    public function isTargeted(): ?bool
+    {
+        return $this->isTargeted;
+    }
+
+    public function setIsTargeted(?bool $isTargeted): void
+    {
+        $this->isTargeted = $isTargeted;
     }
 
     public function hasFormType(): bool

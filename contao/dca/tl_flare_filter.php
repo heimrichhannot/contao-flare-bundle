@@ -604,7 +604,7 @@ $dca['palettes'] = [
         'type', 'usePublished', 'useStart', 'useStop', 'whichPtable', 'formatLabel', 'formatEmptyOption',
         'configureStart', 'configureStop', 'boolMode',
     ],
-    '__prefix__' => '{title_legend},title,type,intrinsic,targetAlias',
+    '__prefix__' => '{title_legend},title,type,intrinsic',
     '__suffix__' => '{publish_legend},published',
 ];
 

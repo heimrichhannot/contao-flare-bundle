@@ -22,6 +22,7 @@ class AsFilterElement
         ?string $formType = null,
         ?string $method = null,
         ?array  $scopes = null,
+        ?bool   $isTargeted = null,
                 ...$attributes
     ) {
         $attributes['alias'] = $alias;
@@ -29,6 +30,7 @@ class AsFilterElement
         $attributes['formType'] = $formType;
         $attributes['method'] = $method;
         $attributes['scopes'] = $scopes;
+        $attributes['isTargeted'] = $isTargeted;
 
         $this->attributes = $attributes;
     }

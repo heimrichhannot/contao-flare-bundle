@@ -6,8 +6,10 @@ use Contao\Controller;
 use Contao\Message;
 use Doctrine\DBAL\ParameterType;
 use HeimrichHannot\FlareBundle\Contract\Config\InScopeConfig;
+use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
+use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
@@ -22,10 +24,11 @@ use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 
 #[AsFilterElement(
     alias: self::TYPE,
-    palette: '{filter_legend},fieldGeneric,label,boolMode,preselect',
-    formType: CheckboxType::class
+    palette: '{filter_legend},fieldGeneric,preselect',
+    formType: CheckboxType::class,
+    isTargeted: true,
 )]
-class BooleanElement extends AbstractFilterElement implements InScopeContract, FormTypeOptionsContract
+class BooleanElement extends AbstractFilterElement implements InScopeContract, FormTypeOptionsContract, PaletteContract
 {
     public const TYPE = 'flare_bool';
 
@@ -40,20 +43,28 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract, F
             $qb->abort();
         }
 
-        $mode = BoolMode::tryFrom($filterModel->boolMode ?: '') ?? BoolMode::BINARY;
-
-        if ($mode === BoolMode::BINARY) {
-            $boolBinaryChoices = BoolBinaryChoices::tryFrom($filterModel->boolBinaryChoices ?: '')
-                ?? BoolBinaryChoices::NULL_TRUE;
+        if ($filterModel->intrinsic)
+        {
+            $value = (bool) $this->normalizeValue($filterModel->preselect);
         }
+        else
+        {
+            $mode = BoolMode::tryFrom($filterModel->boolMode ?: '') ?? BoolMode::BINARY;
 
-        // todo: refactor
+            if ($mode === BoolMode::BINARY)
+            {
+                $boolBinaryChoices = BoolBinaryChoices::tryFrom($filterModel->boolBinaryChoices ?: '')
+                    ?? BoolBinaryChoices::NULL_TRUE;
+            }
 
-        $value = $this->normalizeValue($context->getSubmittedData(), $boolBinaryChoices ?? null)
-            ?? $this->normalizeValue($filterModel->preselect);
+            // todo: refactor
 
-        if ($value === null) {
-            return;
+            $value = $this->normalizeValue($context->getSubmittedData(), $boolBinaryChoices ?? null)
+                ?? $this->normalizeValue($filterModel->preselect);
+
+            if ($value === null) {
+                return;
+            }
         }
 
         $target = $qb->column($targetField);
@@ -111,6 +122,11 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract, F
             'true' => 'flare.bool_preselect.true',
             'false' => 'flare.bool_preselect.false',
         ];
+
+        if ($filterModel->intrinsic) {
+            unset($field['options']['null']);
+        }
+
         ###< preselect
 
         if ($filterModel->boolMode === BoolMode::TERNARY->value) {
@@ -119,11 +135,11 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract, F
     }
 
     #[AsFilterCallback(self::TYPE, 'fields.fieldGeneric.options')]
-    public function getFieldGenericOptions(ListModel $listModel): array
+    public function getFieldGenericOptions(string $targetTable): array
     {
-        Controller::loadDataContainer($listModel->dc);
+        Controller::loadDataContainer($targetTable);
 
-        if (!isset($GLOBALS['TL_DCA'][$listModel->dc]['fields'])) {
+        if (!isset($GLOBALS['TL_DCA'][$targetTable]['fields'])) {
             return [];
         }
 
@@ -135,10 +151,10 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract, F
             $non => [], // non-checkbox fields
         ];
 
-        foreach ($GLOBALS['TL_DCA'][$listModel->dc]['fields'] as $name => $field)
+        foreach ($GLOBALS['TL_DCA'][$targetTable]['fields'] as $name => $field)
         {
             $group = ('checkbox' === ($field['inputType'] ?? null)) ? $cbx : $non;
-            $options[$group][$name] = $listModel->dc . '.' . $name;
+            $options[$group][$name] = $targetTable . '.' . $name;
         }
 
         \asort($options[$cbx]);
@@ -153,5 +169,14 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract, F
             'required' => false,
             'label' => $context->getFilterModel()->label ?: $context->getFilterModel()->title ?: 'CBX',
         ];
+    }
+
+    public function getPalette(PaletteConfig $config): ?string
+    {
+        if ($config->getFilterModel()->intrinsic) {
+            return null;
+        }
+
+        return '{filter_legend},fieldGeneric,label,boolMode,preselect';
     }
 }

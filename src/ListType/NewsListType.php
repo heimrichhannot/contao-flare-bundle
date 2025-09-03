@@ -3,10 +3,13 @@
 namespace HeimrichHannot\FlareBundle\ListType;
 
 use Contao\CoreBundle\String\HtmlDecoder;
+use Contao\News;
 use Contao\NewsModel;
 use HeimrichHannot\FlareBundle\Contract\Config\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
+use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageSchemaOrgConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\PresetFiltersContract;
+use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageSchemaOrContract;
 use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageMetaContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
@@ -18,7 +21,7 @@ use HeimrichHannot\FlareBundle\Util\Str;
     dataContainer: 'tl_news',
     palette: '{filter_legend},',
 )]
-class NewsListType implements PresetFiltersContract, ReaderPageMetaContract
+class NewsListType implements PresetFiltersContract, ReaderPageMetaContract, ReaderPageSchemaOrContract
 {
     public const TYPE = 'flare_news';
 
@@ -53,5 +56,12 @@ class NewsListType implements PresetFiltersContract, ReaderPageMetaContract
         }
 
         return $pageMeta;
+    }
+
+    public function getReaderPageSchemaOrg(ReaderPageSchemaOrgConfig $config): ?array
+    {
+        /** @var NewsModel $model */
+        $model = $config->model;
+        return News::getSchemaOrgData($model);
     }
 }

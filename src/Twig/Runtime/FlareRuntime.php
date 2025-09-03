@@ -10,12 +10,15 @@ use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
 use Contao\Template;
+use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageSchemaOrgConfig;
+use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageSchemaOrContract;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\ListView\ListView;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
+use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Symfony\Component\Form\FormView;
 use Twig\Extension\RuntimeExtensionInterface;
@@ -26,6 +29,7 @@ class FlareRuntime implements RuntimeExtensionInterface
 
     public function __construct(
         private readonly ListViewBuilderFactory $listViewBuilderFactory,
+        private readonly ListTypeRegistry        $listTypeRegistry,
     ) {}
 
     /**
@@ -166,6 +170,30 @@ class FlareRuntime implements RuntimeExtensionInterface
         }
 
         return [];
+    }
+
+    public function getSchemaOrg(array $context): ?array
+    {
+        $model = $context['model'] ?? null;
+        if (!$model instanceof Model) {
+            return null;
+        }
+
+        $listId = $context['data']['flare_list'] ?? null;
+        if (!$listId) {
+            return null;
+        }
+        $listModel = ListModel::findByPk((int) $listId);
+        if (!$listModel) {
+            return null;
+        }
+
+        $type = $this->listTypeRegistry->get($listModel->type)?->getService();
+        if (!$type || !($type instanceof ReaderPageSchemaOrContract)) {
+            return null;
+        }
+
+        return $type->getReaderPageSchemaOrg(new ReaderPageSchemaOrgConfig($listModel, $model));
     }
 
     /**

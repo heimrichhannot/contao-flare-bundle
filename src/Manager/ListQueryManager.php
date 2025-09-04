@@ -10,6 +10,7 @@ use HeimrichHannot\FlareBundle\Event\FilterElementInvokingEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
@@ -31,10 +32,11 @@ class ListQueryManager
     private array $prepCache = [];
 
     public function __construct(
-        private readonly Connection               $connection,
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly FlareCallbackManager     $callbackManager,
-        private readonly ListTypeRegistry         $listTypeRegistry,
+        private readonly Connection                $connection,
+        private readonly EventDispatcherInterface  $eventDispatcher,
+        private readonly FilterQueryBuilderFactory $filterQueryBuilderFactory,
+        private readonly FlareCallbackManager      $callbackManager,
+        private readonly ListTypeRegistry          $listTypeRegistry,
     ) {}
 
     /**
@@ -189,7 +191,7 @@ class ListQueryManager
 
             $invoked->tablesUsed[$targetAlias] = $table;
 
-            $filterQueryBuilder = new FilterQueryBuilder($this->connection, $targetAlias);
+            $filterQueryBuilder = $this->filterQueryBuilderFactory->create($targetAlias);
 
             $status = $this->invokeFilter(filterQueryBuilder: $filterQueryBuilder, filter: $filter);
 

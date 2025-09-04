@@ -66,7 +66,7 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
                 $qb->expr()->eq($colRecurring, 1),
                 $qb->expr()->lte($colStartTime, ':end'),  // event starts before the end of the range
                 $qb->expr()->or(
-                    $qb->expr()->neq($colRecurrences, 1),
+                    $qb->expr()->eq($colRecurrences, 0),  // 0 = infinite recurrences
                     $qb->expr()->gte($colRepeatEnd, ':start'),
                 ),
             ),

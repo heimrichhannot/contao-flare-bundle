@@ -66,7 +66,7 @@ class ReaderController extends AbstractContentElementController
         try
         {
             /** @var ?ListModel $listModel */
-            $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST) ?? null;
+            $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST);
 
             if (!$listModel instanceof ListModel) {
                 throw new FilterException('No list model found.');
@@ -124,6 +124,7 @@ class ReaderController extends AbstractContentElementController
 
         $template->setData($event->getData() + $template->getData());
 
+        $pageMeta = $event->getPageMeta();
         $this->applyPageMeta($pageMeta);
 
         try

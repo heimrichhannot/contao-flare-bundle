@@ -3,6 +3,7 @@
 namespace HeimrichHannot\FlareBundle\SortDescriptor;
 
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 
 final class SortDescriptor
 {
@@ -68,7 +69,7 @@ final class SortDescriptor
 
             if (\is_string($column) && \is_string($direction))
             {
-                $column = 'main.' . \trim($column);
+                $column = ListQueryManager::ALIAS_MAIN . '.' . \trim($column);
 
                 if (isset($columns[$column])) {
                     throw new FlareException('Duplicate column name found in sort settings: ' . $column, 500);

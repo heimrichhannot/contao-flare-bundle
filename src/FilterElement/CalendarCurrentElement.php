@@ -77,7 +77,7 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
             $colEndTime = $qb->column('endTime');
 
             $or[] = "$colEndTime >= :start AND $colEndTime <= :end";  // event ends in the range
-            $or[] = "$colStartTime <= :start AND $colEndTime >=:end";  // event is within the range
+            $or[] = "$colStartTime <= :start AND $colEndTime >= :end";  // event is within the range
         }
 
         $qb->whereOr(...$or);

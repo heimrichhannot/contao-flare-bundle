@@ -274,11 +274,11 @@ class ListQueryManager
         }
         catch (FilterException $e)
         {
-            $method = $e->getMethod() ?? ($service::class . '::' . $method);
+            $errorMethod = $e->getMethod() ?? ($service::class . '::' . $method);
 
             throw new FilterException(
                 \sprintf('[FLARE] Query denied: %s', $e->getMessage()),
-                code: $e->getCode(), previous: $e, method: $method,
+                code: $e->getCode(), previous: $e, method: $errorMethod,
                 source: \sprintf('tl_flare_filter.id=%s', $filter->getFilterModel()?->id ?: 'unknown'),
             );
         }

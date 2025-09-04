@@ -4,11 +4,11 @@ namespace HeimrichHannot\FlareBundle\FilterElement;
 
 use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Type\DateRangeFilterType;
-use Safe\Exceptions\FilterException;
 
 #[AsFilterElement(
     alias: DateRangeElement::TYPE,
@@ -21,7 +21,6 @@ class DateRangeElement implements FormTypeOptionsContract
 
     /**
      * @throws FilterException
-     * @throws \HeimrichHannot\FlareBundle\Exception\FilterException
      */
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {

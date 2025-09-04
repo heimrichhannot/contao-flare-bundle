@@ -4,11 +4,11 @@ namespace HeimrichHannot\FlareBundle\FilterElement;
 
 use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Type\DateRangeFilterType;
-use Safe\Exceptions\FilterException;
 
 #[AsFilterElement(
     alias: DateRangeElement::TYPE,
@@ -34,13 +34,15 @@ class DateRangeElement implements FormTypeOptionsContract
         $from = $submittedData['from'] ?? null;
         $to = $submittedData['to'] ?? null;
 
+        $colField = $qb->column($field);
+
         if ($from instanceof \DateTimeInterface) {
-            $qb->where($qb->expr()->gte($field, ':from'))
+            $qb->where($qb->expr()->gte($colField, ':from'))
                 ->setParameter('from', $from->getTimestamp());
         }
 
         if ($to instanceof \DateTimeInterface) {
-            $qb->where($qb->expr()->lte($field, ':to'))
+            $qb->where($qb->expr()->lte($colField, ':to'))
                 ->setParameter('to', $to->getTimestamp());
         }
     }

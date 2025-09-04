@@ -3,6 +3,7 @@
 namespace HeimrichHannot\FlareBundle\SortDescriptor;
 
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 
 final class SortDescriptor
 {
@@ -68,7 +69,7 @@ final class SortDescriptor
 
             if (\is_string($column) && \is_string($direction))
             {
-                $column = \trim($column);
+                $column = ListQueryManager::ALIAS_MAIN . '.' . \trim($column);
 
                 if (isset($columns[$column])) {
                     throw new FlareException('Duplicate column name found in sort settings: ' . $column, 500);
@@ -114,21 +115,26 @@ final class SortDescriptor
         return $this;
     }
 
-    public function toSql(): string
+    public function toSql(callable $quoteColumn): string
     {
         if ($this->isEmpty()) {
             return '';
         }
 
-        $parts = array_map(function(Order $o): string {
-            $col = $o->getColumn();
-            if ($this->ignoreCase) {
-                $col = "LOWER(`$col`)";
-            } else {
-                $col = "`$col`";
-            }
-            return "$col {$o->getDirection()}";
-        }, $this->orders);
+        $ignoreCase = $this->ignoreCase;
+
+        $parts = \array_map(
+            static function (Order $o) use ($quoteColumn, $ignoreCase): string {
+                $col = $quoteColumn($o->getColumn());
+
+                if ($ignoreCase) {
+                    $col = "LOWER($col)";
+                }
+
+                return "$col {$o->getDirection()}";
+            },
+            $this->orders
+        );
 
         return implode(', ', $parts);
     }

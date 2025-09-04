@@ -7,22 +7,19 @@ namespace HeimrichHannot\FlareBundle\ListItemProvider;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
+use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
+use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class ListItemProvider extends AbstractListItemProvider
 {
-    use ListFilterTrait;
-
     public function __construct(
         private readonly Connection               $connection,
         private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly FilterContextManager     $filterContextManager,
-    ) {
-        parent::__construct($filterContextManager);
-    }
+        private readonly ListQueryManager         $listQueryManager,
+    ) {}
 
     protected function getConnection(): Connection
     {
@@ -39,11 +36,13 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws \Doctrine\DBAL\Exception
      */
     public function fetchEntries(
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
     ): array {
         $entries = $this->fetchEntriesOrIds(
+            listQueryBuilder: $listQueryBuilder,
             filters: $filters,
             sortDescriptor: $sortDescriptor,
             paginator: $paginator,
@@ -53,7 +52,10 @@ class ListItemProvider extends AbstractListItemProvider
         $table = $filters->getTable();
 
         $entries = \array_combine(
-            \array_map(fn ($id) => "$table.$id", \array_column($entries, 'id')),
+            \array_map(
+                static fn ($id) => \sprintf('%s.%d', $table, $id),
+                \array_column($entries, 'id')
+            ),
             $entries
         );
 
@@ -67,11 +69,13 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws \Doctrine\DBAL\Exception
      */
     public function fetchIds(
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
     ): array {
         return $this->fetchEntriesOrIds(
+            listQueryBuilder: $listQueryBuilder,
             filters: $filters,
             sortDescriptor: $sortDescriptor,
             paginator: $paginator,
@@ -84,6 +88,7 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws \Doctrine\DBAL\Exception
      */
     protected function fetchEntriesOrIds(
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
@@ -91,20 +96,21 @@ class ListItemProvider extends AbstractListItemProvider
     ): array {
         $returnIds ??= false;
 
-        $dto = $this->buildFilteredQuery(
+        $query = $this->listQueryManager->populate(
+            listQueryBuilder: $listQueryBuilder,
             filters: $filters,
-            order: $sortDescriptor?->toSql(),
+            order: $sortDescriptor?->toSql(fn ($col) => $this->connection->quoteIdentifier($col)),
             limit: $paginator?->getItemsPerPage() ?: null,
             offset: $paginator?->getOffset() ?: null,
             onlyId: $returnIds,
         );
 
-        if (!$dto->isAllowed())
+        if (!$query->isAllowed())
         {
             return [];
         }
 
-        $result = $this->connection->executeQuery($dto->getQuery(), $dto->getParams(), $dto->getTypes());
+        $result = $query->execute($this->connection);
 
         if ($returnIds) {
             $entries = \array_unique($result->fetchFirstColumn());
@@ -121,15 +127,21 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws FilterException
      * @throws \Doctrine\DBAL\Exception
      */
-    public function fetchCount(FilterContextCollection $filters): int
-    {
-        $dto = $this->buildFilteredQuery($filters, isCounting: true);
+    public function fetchCount(
+        ListQueryBuilder $listQueryBuilder,
+        FilterContextCollection $filters
+    ): int {
+        $query = $this->listQueryManager->populate(
+            listQueryBuilder: $listQueryBuilder,
+            filters: $filters,
+            isCounting: true
+        );
 
-        if (!$dto->isAllowed()) {
+        if (!$query->isAllowed()) {
             return 0;
         }
 
-        $result = $this->connection->executeQuery($dto->getQuery(), $dto->getParams(), $dto->getTypes());
+        $result = $query->execute($this->connection);
 
         $count = $result->fetchOne() ?: 0;
 

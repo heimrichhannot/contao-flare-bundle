@@ -9,11 +9,13 @@ use HeimrichHannot\FlareBundle\Contract\Config\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageSchemaOrgConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\PresetFiltersContract;
-use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageSchemaOrContract;
+use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageSchemaOrgContract;
 use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageMetaContract;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
+use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Util\Str;
 
 #[AsListType(
@@ -21,22 +23,32 @@ use HeimrichHannot\FlareBundle\Util\Str;
     dataContainer: 'tl_news',
     palette: '{filter_legend},',
 )]
-class NewsListType implements PresetFiltersContract, ReaderPageMetaContract, ReaderPageSchemaOrContract
+class NewsListType implements PresetFiltersContract, ReaderPageMetaContract, ReaderPageSchemaOrgContract
 {
     public const TYPE = 'flare_news';
+    public const ALIAS_ARCHIVE = 'news_archive';
 
     public function __construct(
         private readonly HtmlDecoder $htmlDecoder,
     ) {}
 
+    #[AsListCallback(self::TYPE, 'query.configure')]
+    public function prepareQuery(ListQueryBuilder $builder): void
+    {
+        $builder->innerJoin(
+            table: 'tl_news_archive',
+            as: self::ALIAS_ARCHIVE,
+            on: $builder->makeJoinOn(self::ALIAS_ARCHIVE, 'id', 'pid')
+        );
+    }
+
     public function getPresetFilters(PresetFiltersConfig $config): void
     {
-        // $listModel = $config->getListModel();
-
         $config->add(PublishedElement::define(), true);
     }
 
-    public function getReaderPageMeta(ReaderPageMetaConfig $config): ?ReaderPageMetaDto {
+    public function getReaderPageMeta(ReaderPageMetaConfig $config): ?ReaderPageMetaDto
+    {
         global $objPage;
 
         /** @var NewsModel $model */

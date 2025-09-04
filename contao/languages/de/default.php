@@ -15,8 +15,8 @@ $lang['CTE'][ListViewController::TYPE] = ['FLARE Listenansicht', 'Zeigt eine FLA
 $lang['CTE'][ReaderController::TYPE] = ['FLARE Detailleser', 'Zeigt den Leser zu einer FLARE-Liste an.'];
 
 $flare['filter'] = [
-    FilterElement\ArchiveElement::TYPE => ['Archiv', 'Filtern nach Archiv.'],
-    FilterElement\BelongsToRelationElement::TYPE => ['Relation: Gehört zu', 'Filtern nach zugehörigen Eltern-Entitäten.'],
+    FilterElement\Relation\ArchiveElement::TYPE => ['Archiv', 'Filtern nach Archiv.'],
+    FilterElement\Relation\BelongsToRelationElement::TYPE => ['Relation: Gehört zu', 'Filtern nach zugehörigen Eltern-Entitäten.'],
     FilterElement\BooleanElement::TYPE => ['Boolescher Eigenschaftswert', 'Filtern nach einem Boolean.'],
     FilterElement\CalendarCurrentElement::TYPE => ['Kalender-Zeitfenster', 'Filtern nach aktuellen Events.'],
     FilterElement\DateRangeElement::TYPE => ['Datumsbereich', 'Filtern nach einem Datumsbereich.'],

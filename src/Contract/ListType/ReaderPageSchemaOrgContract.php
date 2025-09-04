@@ -4,7 +4,7 @@ namespace HeimrichHannot\FlareBundle\Contract\ListType;
 
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageSchemaOrgConfig;
 
-interface ReaderPageSchemaOrContract
+interface ReaderPageSchemaOrgContract
 {
     public function getReaderPageSchemaOrg(ReaderPageSchemaOrgConfig $config): ?array;
 }

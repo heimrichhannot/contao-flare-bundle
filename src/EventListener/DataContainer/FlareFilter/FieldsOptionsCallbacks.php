@@ -8,6 +8,9 @@ use Contao\Database;
 use Contao\DataContainer;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
+use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
@@ -27,6 +30,7 @@ readonly class FieldsOptionsCallbacks
         private ContaoFramework       $contaoFramework,
         private FilterContainer       $filterContainer,
         private FilterElementRegistry $filterElementRegistry,
+        private ListQueryManager      $listQueryManager,
         private TranslationManager    $translationManager,
         private TranslatorInterface   $translator,
     ) {}
@@ -83,7 +87,29 @@ readonly class FieldsOptionsCallbacks
     #[AsCallback(self::TABLE_NAME, 'fields.columnsGeneric.options')]
     public function getFieldOptions_fieldGeneric(DataContainer $dc): array
     {
-        return DcaHelper::getFieldOptions($dc);
+        /** @var ?FilterModel $filterModel */
+        if (!$filterModel = DcaHelper::modelOf($dc))
+        {
+            return DcaHelper::getFieldOptions($dc);
+        }
+
+        try
+        {
+            $listModel = $filterModel->getRelated('pid');
+        }
+        catch (\Throwable)
+        {
+            return [];
+        }
+
+        if (!$listModel instanceof ListModel) {
+            return [];
+        }
+
+        $table = $this->listQueryManager->prepare($listModel)
+            ->getTable($filterModel->targetAlias ?: ListQueryManager::ALIAS_MAIN);
+
+        return DcaHelper::getFieldOptions($table);
     }
 
     #[AsCallback(self::TABLE_NAME, 'fields.tablePtable.options')]
@@ -161,6 +187,37 @@ readonly class FieldsOptionsCallbacks
             'custom' => ['date', 'str'],
             ...DateTimeHelper::getTimeSpanOptions(),
         ];
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.targetAlias.options')]
+    public function getOptions_targetAlias(?DataContainer $dc): array
+    {
+        if (!$dc?->id || !$filterModel = DcaHelper::modelOf($dc)) {
+            return [ListQueryManager::ALIAS_MAIN => ListQueryManager::ALIAS_MAIN];
+        }
+
+        try
+        {
+            $listModel = $filterModel->getRelated('pid');
+        }
+        catch (\Throwable)
+        {
+            return [];
+        }
+
+        if (!$listModel instanceof ListModel) {
+            return [];
+        }
+
+        $tables = $this->listQueryManager->prepare($listModel)->getTables();
+        $options = [];
+
+        foreach ($tables as $alias => $table)
+        {
+            $options[$alias] = \sprintf('%s [%s]', $alias, $table);
+        }
+
+        return $options;
     }
 
     public function getFormatOptions(string $field, ?string $prefix = null): array

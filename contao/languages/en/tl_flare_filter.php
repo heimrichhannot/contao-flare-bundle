@@ -9,6 +9,7 @@ $lang['title_legend'] = 'General';
 $lang['title'] = ['Title', 'Please enter a title for this list filter.'];
 $lang['type'] = ['Type', 'Please select the type of the filter.'];
 $lang['intrinsic'] = ['Intrinsic', 'Always apply this filter and hide it from the user.'];
+$lang['targetAlias'] = ['Apply on', 'Please select on which relation this filter should be applied.'];
 ###< title_legend ###
 
 ###> publish_legend ###

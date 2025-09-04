@@ -10,11 +10,10 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 
-#[AsFilterElement(alias: SimpleEquationElement::TYPE)]
+#[AsFilterElement(alias: SimpleEquationElement::TYPE, isTargeted: true)]
 class SimpleEquationElement implements PaletteContract
 {
     public const TYPE = 'flare_equation_simple';
@@ -31,6 +30,8 @@ class SimpleEquationElement implements PaletteContract
         {
             throw new FilterException('Invalid filter configuration.');
         }
+
+        $operand = $qb->column($operand);
 
         $where = match ($op) {
             SqlEquationOperator::EQUALS => $qb->expr()->eq($operand, ':eq_right'),
@@ -58,13 +59,9 @@ class SimpleEquationElement implements PaletteContract
     }
 
     #[AsFilterCallback(self::TYPE, 'fields.equationLeft.options')]
-    public function getEquationLeftOptions(ListModel $listModel): array
+    public function getEquationLeftOptions(string $targetTable): array
     {
-        if (!$listModel->dc) {
-            return [];
-        }
-
-        return DcaHelper::getFieldOptions($listModel->dc);
+        return DcaHelper::getFieldOptions($targetTable);
     }
 
     public function getPalette(PaletteConfig $config): ?string

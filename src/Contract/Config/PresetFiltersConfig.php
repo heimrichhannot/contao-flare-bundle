@@ -33,11 +33,11 @@ class PresetFiltersConfig
         return $this->manualFilterAliases;
     }
 
-    public function add(FilterDefinition $filterDefinition, bool $final = false): static
+    public function add(FilterDefinition $filterDefinition, bool $replaceable = false): static
     {
         $this->filterDefinitions[] = [
             'definition' => $filterDefinition,
-            'final'      => $final,
+            'replaceable' => $replaceable,
         ];
 
         return $this;

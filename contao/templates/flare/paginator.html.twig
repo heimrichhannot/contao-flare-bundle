@@ -1,8 +1,12 @@
 {# @var \HeimrichHannot\FlareBundle\Paginator\Paginator paginator #}
-<nav>
-    <ul>
+<nav class="flare_paginator">
+    <ul class="flare_paginator__list">
         <li class="flare_paginator__item flare_paginator__item--previous{% if not paginator.previousPage %} flare_paginator__item--disabled{% endif %}">
-            <a href="{{ paginator.previous.url|default('#') }}" class="flare_paginator__link flare_paginator__link--page">&#12296;</a>
+            {% if paginator.previous.url|default %}
+                <a href="{{ paginator.previous.url }}" class="flare_paginator__link flare_paginator__link--page">&#12296;</a>
+            {% else %}
+                <del class="flare_paginator__link flare_paginator__link--page">&#12296;</del>
+            {% endif %}
         </li>
         {% for page in paginator.navigation %}
             {# @var \HeimrichHannot\FlareBundle\Paginator\PageItem page #}
@@ -10,12 +14,18 @@
                 {% if page.ellipsis %}
                     <span class="flare_paginator__link flare-paginator__link--ellipsis">&hellip;</span>
                 {% else %}
+                    {% if page.current %}<strong>{% endif %}
                     <a href="{{ page.url }}" class="flare_paginator__link flare_paginator__link--page">{{ page.number }}</a>
+                    {% if page.current %}</strong>{% endif %}
                 {% endif %}
             </li>
         {% endfor %}
         <li class="flare_paginator__item flare_paginator__item--next{% if not paginator.nextPage %} flare_paginator__item--disabled{% endif %}">
-            <a href="{{ paginator.next.url|default('#') }}" class="flare_paginator__link flare_paginator__link--page">&#12297;</a>
+            {% if paginator.next.url|default %}
+                <a href="{{ paginator.next.url }}" class="flare_paginator__link flare_paginator__link--page">&#12297;</a>
+            {% else %}
+                <del class="flare_paginator__link flare_paginator__link--page">&#12297;</del>
+            {% endif %}
         </li>
     </ul>
 </nav>

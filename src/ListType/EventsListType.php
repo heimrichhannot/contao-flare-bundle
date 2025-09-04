@@ -12,9 +12,11 @@ use HeimrichHannot\FlareBundle\Contract\ListType\ListItemProviderContract;
 use HeimrichHannot\FlareBundle\Contract\ListType\PresetFiltersContract;
 use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageMetaContract;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
+use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
 use HeimrichHannot\FlareBundle\ListItemProvider\EventsListItemProvider;
 use HeimrichHannot\FlareBundle\Util\Str;
@@ -41,6 +43,20 @@ class EventsListType extends AbstractListType implements ListItemProviderContrac
         }
 
         return null;
+    }
+
+    #[AsListCallback(self::TYPE, 'query.configure')]
+    public function configureQuery(ListQueryBuilder $builder): void
+    {
+        $aliasArchive = 'events_archive';
+
+        $builder->select('*', of: $aliasArchive);
+
+        $builder->innerJoin(
+            table: 'tl_calendar',
+            as: $aliasArchive,
+            on: $builder->makeJoinOn($aliasArchive, joinColumn: 'id', mainColumn: 'pid')
+        );
     }
 
     public function getPresetFilters(PresetFiltersConfig $config): void

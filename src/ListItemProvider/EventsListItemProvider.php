@@ -4,46 +4,34 @@ namespace HeimrichHannot\FlareBundle\ListItemProvider;
 
 use Contao\StringUtil;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Result as DBALResult;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\NotImplementedException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
+use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
+use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class EventsListItemProvider extends AbstractListItemProvider
 {
-    use ListFilterTrait;
-
     public function __construct(
         private readonly Connection               $connection,
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly FilterContextManager     $filterContextManager,
-        private readonly ListItemProvider         $listItemProvider,
-    ) {
-        parent::__construct($this->filterContextManager);
-    }
-
-    protected function getConnection(): Connection
-    {
-        return $this->connection;
-    }
-
-    protected function getEventDispatcher(): EventDispatcherInterface
-    {
-        return $this->eventDispatcher;
-    }
+        private readonly ListQueryManager         $listQueryManager,
+    ) {}
 
     /**
      * @throws FilterException
      * @throws FlareException
      */
-    public function fetchCount(FilterContextCollection $filters): int
-    {
+    public function fetchCount(
+        ListQueryBuilder $listQueryBuilder,
+        FilterContextCollection $filters,
+    ): int {
         $byDate = $this->fetchEntriesGrouped(
+            listQueryBuilder: $listQueryBuilder,
             filters: $filters,
             reduceSelect: true,
         );
@@ -62,11 +50,13 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     public function fetchEntries(
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
     ): array {
         $byDate = $this->fetchEntriesGrouped(
+            listQueryBuilder: $listQueryBuilder,
             filters: $filters,
             sortDescriptor: $sortDescriptor,
         );
@@ -123,6 +113,7 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     public function fetchIds(
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
@@ -132,6 +123,7 @@ class EventsListItemProvider extends AbstractListItemProvider
         }
 
         $byDate = $this->fetchEntriesGrouped(
+            listQueryBuilder: $listQueryBuilder,
             filters: $filters,
             sortDescriptor: $sortDescriptor,
             reduceSelect: true,
@@ -156,6 +148,7 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     protected function fetchEntriesGrouped(
+        ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
         ?SortDescriptor         $sortDescriptor = null,
         ?bool                   $reduceSelect = null,
@@ -165,20 +158,21 @@ class EventsListItemProvider extends AbstractListItemProvider
             'endTime'   => 'DESC',
         ]);
 
-        $dto = $this->buildFilteredQuery(
+        $query = $this->listQueryManager->populate(
+            listQueryBuilder: $listQueryBuilder,
             filters: $filters,
-            order: $sortDescriptor?->toSql(),
+            order: $sortDescriptor?->toSql(fn ($col) => $this->connection->quoteIdentifier($col)),
             select: $reduceSelect ? ['id', 'startTime', 'endTime', 'repeatEach', 'repeatEnd'] : null,
         );
 
-        if (!$dto->isAllowed())
+        if (!$query->isAllowed())
         {
             return [];
         }
 
         try
         {
-            $result = $this->connection->executeQuery($dto->getQuery(), $dto->getParams(), $dto->getTypes());
+            $result = $query->execute($this->connection);
 
             $entries = $result->fetchAllAssociative();
         }
@@ -186,8 +180,13 @@ class EventsListItemProvider extends AbstractListItemProvider
         {
             throw new FlareException($exception->getMessage(), $exception->getCode(), $exception, method: __METHOD__);
         }
-
-        $result->free();
+        finally
+        {
+            if (isset($result) && $result instanceof DBALResult)
+            {
+                $result->free();
+            }
+        }
 
         /** @var array<string, array> $byDate All entries mapped to each day on which they occur */
         $byDate = [];
@@ -214,7 +213,7 @@ class EventsListItemProvider extends AbstractListItemProvider
         // Sort the entries of each date by start time
         foreach ($byDate as $date => $entries)
         {
-            \usort($entries, function ($a, $b) {
+            \usort($entries, static function ($a, $b) {
                 if (0 === $comp = $a['startTime'] <=> $b['startTime']) {
                     return $a['endTime'] <=> $b['endTime'];
                 }
@@ -226,9 +225,7 @@ class EventsListItemProvider extends AbstractListItemProvider
         }
 
         // Sort the dates so that the earliest date is first
-        \uksort($byDate, function ($a, $b) {
-            return $a <=> $b;
-        });
+        \uksort($byDate, static fn ($a, $b) => $a <=> $b);
 
         return $byDate;
     }

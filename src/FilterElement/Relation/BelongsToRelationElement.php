@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\FilterElement;
+namespace HeimrichHannot\FlareBundle\FilterElement\Relation;
 
 use Contao\Message;
 use Contao\StringUtil;
@@ -11,6 +11,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 
@@ -54,7 +55,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
             throw new FilterException('No whitelisted parents.');
         }
 
-        $qb->where($qb->expr()->in($fieldPid, ":whitelist"))
+        $qb->where($qb->expr()->in($qb->column($fieldPid), ":whitelist"))
             ->setParameter('whitelist', $whitelistParents);
     }
 
@@ -80,6 +81,9 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
         }
 
         $ors = [];
+
+        $colDynamicPtable = $qb->column($fieldDynamicPtable);
+        $colPid = $qb->column($fieldPid);
 
         foreach (\array_values($parentGroups) as $i => $group)
         {
@@ -109,8 +113,8 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
             $gKey_whitelistParents = \sprintf(':g%s_whitelist', $i);
 
             $ors[] = $qb->expr()->and(
-                $qb->expr()->eq($fieldDynamicPtable, $gKey_tablePtable),
-                $qb->expr()->in($fieldPid, $gKey_whitelistParents)
+                $qb->expr()->eq($colDynamicPtable, $gKey_tablePtable),
+                $qb->expr()->in($colPid, $gKey_whitelistParents)
             );
 
             $qb->setParameter($gKey_tablePtable, $g_tablePtable);
@@ -136,13 +140,13 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
         $listModel = $config->getListModel();
         $filterModel = $config->getFilterModel();
 
-        if (!$listModel || !$filterModel) {
+        if (!$filterModel) {
             Message::addError('List model or filter model not found.');
             return '';
         }
 
         if (!$listModel->dc) {
-            Message::addError('Please define a data container on the list model ' . $listModel->getTable());
+            Message::addError(\sprintf('Please define a data container on the list model [ID %d]', $listModel->id));
             return '';
         }
 

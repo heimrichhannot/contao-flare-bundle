@@ -24,6 +24,7 @@ readonly class ReaderManager
         private FilterContextManager    $filterContextManager,
         private HtmlDecoder             $htmlDecoder,
         private ListItemProviderManager $itemProvider,
+        private ListQueryManager        $listQuery,
         private ListTypeRegistry        $listTypeRegistry,
         private FilterElementRegistry   $filterElementRegistry,
     ) {}
@@ -64,13 +65,18 @@ readonly class ReaderManager
             return null;
         }
 
+        $listQueryBuilder = $this->listQuery->prepare($listModel);
+
         $collection->add($autoItemFilterContext);
 
         $itemProvider = $this->itemProvider->ofListModel($listModel);
 
         try
         {
-            $ids = $itemProvider->fetchIds(filters: $collection);
+            $ids = $itemProvider->fetchIds(
+                listQueryBuilder: $listQueryBuilder,
+                filters: $collection
+            );
         }
         catch (\Exception $e)
         {

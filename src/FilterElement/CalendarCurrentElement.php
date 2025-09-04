@@ -7,6 +7,7 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokingEvent;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
@@ -22,6 +23,9 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
 {
     public const TYPE = 'flare_calendar_current';
 
+    /**
+     * @throws FilterException
+     */
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
         $submittedData = $context->getSubmittedData();
@@ -51,18 +55,29 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
             }
         }
 
+        $colStartTime = $qb->column('startTime');
+        $colRepeatEnd = $qb->column('repeatEnd');
+        $colRecurrences = $qb->column('recurrences');
+        $colRecurring = $qb->column('recurring');
+
         $or = [
-            "startTime>=:start AND startTime<=:end",  // event starts in range
+            "$colStartTime >= :start AND $colStartTime <= :end",  // event starts in range
             $qb->expr()->and(  // event is recurring
-                "recurring=1",
-                $qb->expr()->or("recurrences=0", "repeatEnd>=:start"),
-                "startTime<=:end",  // event starts before end of range
+                $qb->expr()->eq($colRecurring, 1),
+                $qb->expr()->lte($colStartTime, ':end'),  // event starts before the end of the range
+                $qb->expr()->or(
+                    $qb->expr()->eq($colRecurrences, 0),  // 0 = infinite recurrences
+                    $qb->expr()->gte($colRepeatEnd, ':start'),
+                ),
             ),
         ];
 
-        if ($filterModel->hasExtendedEvents) {
-            $or[] = "endTime>=:start AND endTime<=:end";  // event ends in range
-            $or[] = "startTime<=:start AND endTime>=:end";  // event is in range
+        if ($filterModel->hasExtendedEvents)
+        {
+            $colEndTime = $qb->column('endTime');
+
+            $or[] = "$colEndTime >= :start AND $colEndTime <= :end";  // event ends in the range
+            $or[] = "$colStartTime <= :start AND $colEndTime >= :end";  // event is within the range
         }
 
         $qb->whereOr(...$or);

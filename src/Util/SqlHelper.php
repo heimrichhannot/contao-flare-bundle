@@ -14,7 +14,6 @@ readonly class SqlHelper
     public function findInSerializedArrayColumn(
         array|int|string $find,
         string           $column,
-        ?callable        $makeColumn = null,
     ): string {
         $escaped = \array_map(static fn($value) => \preg_quote((string) $value, '/'), (array) $find);
         $alternation = \implode('|', $escaped);
@@ -22,7 +21,7 @@ readonly class SqlHelper
 
         return \sprintf(
             'CONVERT(%s USING utf8mb4) REGEXP %s',
-            \is_callable($makeColumn) ? $makeColumn($column) : $this->connection->quoteIdentifier($column),
+            $column,
             $this->connection->quote($pattern),
         );
     }

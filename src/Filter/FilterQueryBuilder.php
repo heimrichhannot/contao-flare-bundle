@@ -9,6 +9,7 @@ use Doctrine\DBAL\Query\Expression\CompositeExpression;
 use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Util\SqlHelper;
 
 class FilterQueryBuilder
 {
@@ -23,6 +24,7 @@ class FilterQueryBuilder
      */
     public function __construct(
         private readonly Connection $connection,
+        private readonly SqlHelper  $sqlHelper,
         private readonly string     $alias,
     ) {}
 
@@ -117,6 +119,11 @@ class FilterQueryBuilder
         $this->conditions[] = $this->expr()->or(...$conditions);
 
         return $this;
+    }
+
+    public function whereInSerialized(array|int|string $find, string $column): static
+    {
+        return $this->where($this->sqlHelper->findInSerializedArrayColumn($find, $this->column($column)));
     }
 
     public function setParameter(string $param, string|int|array $value, ?int $type = null): static

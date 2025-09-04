@@ -11,7 +11,7 @@ use Contao\Model\Collection;
 use Contao\StringUtil;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageSchemaOrgConfig;
-use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageSchemaOrContract;
+use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageSchemaOrgContract;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\ListView\ListView;
@@ -189,7 +189,7 @@ class FlareRuntime implements RuntimeExtensionInterface
         }
 
         $type = $this->listTypeRegistry->get($listModel->type)?->getService();
-        if (!$type || !($type instanceof ReaderPageSchemaOrContract)) {
+        if (!$type || !($type instanceof ReaderPageSchemaOrgContract)) {
             return null;
         }
 

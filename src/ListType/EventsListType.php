@@ -50,8 +50,6 @@ class EventsListType extends AbstractListType implements ListItemProviderContrac
     {
         $aliasArchive = 'events_archive';
 
-        $builder->select('*', of: $aliasArchive);
-
         $builder->innerJoin(
             table: 'tl_calendar',
             as: $aliasArchive,

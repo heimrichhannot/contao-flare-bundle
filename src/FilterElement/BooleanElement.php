@@ -67,17 +67,8 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract, F
             }
         }
 
-        $target = $qb->column($targetField);
-
-        $qb->where($qb->expr()->or(
-            $qb->expr()->eq($target, ':bool'),
-            $qb->expr()->eq($target, ':numeric'),
-            $qb->expr()->eq($target, ':string'),
-        ))
-            ->setParameter('bool', $value, ParameterType::BOOLEAN)
-            ->setParameter('numeric', $value ? 1 : 0, ParameterType::INTEGER)
-            ->setParameter('string', $value ? '1' : '', ParameterType::STRING)
-        ;
+        $qb->where($qb->expr()->eq($qb->column($targetField), ':val'))
+            ->setParameter('val', $value ? '1' : '', ParameterType::STRING);
     }
 
     public function isInScope(InScopeConfig $config): bool

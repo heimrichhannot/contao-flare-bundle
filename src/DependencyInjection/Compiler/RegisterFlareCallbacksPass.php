@@ -21,9 +21,10 @@ class RegisterFlareCallbacksPass implements CompilerPassInterface
         }
 
         $mapTagPrefix = [
-            FlareCallbackDescriptor::TAG => null,
             FlareCallbackDescriptor::TAG_FILTER_CALLBACK => 'filter',
             FlareCallbackDescriptor::TAG_LIST_CALLBACK => 'list',
+            // Keep this tag on the bottom, so its "bare" callbacks are loaded after more specific ones
+            FlareCallbackDescriptor::TAG => null,
         ];
 
         $registry = $container->findDefinition(FlareCallbackRegistry::class);
@@ -37,10 +38,10 @@ class RegisterFlareCallbacksPass implements CompilerPassInterface
                 }
 
                 $definition = $container->findDefinition((string) $reference);
-                $mapTagPrefix = $definition->getTag($tag);
+                $definitionTag = $definition->getTag($tag);
                 $definition->clearTag($tag);
 
-                foreach ($mapTagPrefix as $attributes)
+                foreach ($definitionTag as $attributes)
                 {
                     $namespace = $prefix ? $prefix . '.' : '';
                     $namespace .= $attributes['element'] ?? null;
@@ -64,7 +65,7 @@ class RegisterFlareCallbacksPass implements CompilerPassInterface
         Reference        $reference,
         array            $attributes,
     ): Reference {
-        /** @see \HeimrichHannot\FlareBundle\Registry\Descriptor\FlareCallbackDescriptor::__construct */
+        /** @see FlareCallbackDescriptor::__construct */
         $definition = new Definition(FlareCallbackDescriptor::class, [
             $reference,
             $attributes,

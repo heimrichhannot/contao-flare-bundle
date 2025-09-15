@@ -129,7 +129,7 @@ class ListQueryManager
 
         $aliasesUsed = \array_unique(\array_merge(
             \array_keys($invoked->tablesUsed),
-            $listQueryBuilder->getMapTableAliasMandatory(),
+            $listQueryBuilder->getMandatoryTableAliases(),
         ));
 
         $sqlQuery = $listQueryBuilder->buildQuery()->withFilteredJoins($aliasesUsed);

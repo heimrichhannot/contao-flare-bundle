@@ -40,7 +40,7 @@ abstract class AbstractPriorityServiceDescriptorRegistry
             throw new \InvalidArgumentException('Config must be an instance of ' . $this->getDescriptorClass() . '.');
         }
 
-        $this->elements[$namespace][$key][$priority] = $descriptor;
+        $this->elements[$namespace][$key][$priority][] = $descriptor;
 
         return $this;
     }

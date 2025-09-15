@@ -63,22 +63,22 @@ abstract class AbstractPriorityServiceDescriptorRegistry
      */
     public function has(string $namespace, string $key = null): bool
     {
-        if ($key) {
-            return isset($this->elements[$namespace][$key])
-                && \count(\array_filter(
-                    $this->elements[$namespace][$key],
-                    fn($list) =>\is_array($list) && \count($list) > 0,
-                )) > 0;
+        if (\is_null($key))
+        {
+            return !empty($this->elements[$namespace]);
         }
 
-        return isset($this->elements[$namespace]);
+        return isset($this->elements[$namespace][$key])
+            && \is_array($this->elements[$namespace][$key])
+            && \array_filter($this->elements[$namespace][$key]);
     }
 
     /**
      * Returns a specific set of service configurations by its TNamespace and TKey.
+     *
      * @param TNamespace $namespace
      * @param TKey       $key
-     * @return array<TPrio, TDescriptor[]>|null
+     * @return array<TPrio, TDescriptor[]>|null A priority-sorted array of service configurations.
      */
     public function get(string $namespace, string $key): ?array
     {
@@ -101,14 +101,14 @@ abstract class AbstractPriorityServiceDescriptorRegistry
      */
     public function getSorted(string $namespace, string $key): ?array
     {
-        if (!$elements = $this->get($namespace, $key)) {
+        if (!$prioSorted = $this->get($namespace, $key)) {
             return null;
         }
 
-        \krsort($elements);
+        \krsort($prioSorted);
 
         $return = [];
-        \array_walk_recursive($elements, static function ($element) use (&$return) {
+        \array_walk_recursive($prioSorted, static function ($element) use (&$return) {
             $return[] = $element;
         });
 

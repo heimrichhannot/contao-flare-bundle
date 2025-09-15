@@ -209,11 +209,16 @@ readonly class FieldsOptionsCallbacks
             return [];
         }
 
-        $tables = $this->listQueryManager->prepare($listModel)->getTables();
+        $listQB = $this->listQueryManager->prepare($listModel);
+        $tables = $listQB->getTables();
         $options = [];
 
         foreach ($tables as $alias => $table)
         {
+            if ($listQB->isTableAliasHidden($alias)) {
+                continue;
+            }
+
             $options[$alias] = \sprintf('%s [%s]', $alias, $table);
         }
 

@@ -24,7 +24,14 @@ class ListQueryBuilder
     private array $tables = [];
 
     /**
-     * @var array<string, bool> $mapTableAliasMandatory Key is the alias, value is true if the table is mandatory.
+     * @var array<string, bool> $mapTableAliaseHidden List of table aliases that should not be shown to the user.
+     *   Key is the alias, value is true if the table is hidden.
+     */
+    private array $mapTableAliaseHidden = [];
+
+    /**
+     * @var array<string, bool> $mapTableAliasMandatory Map of table aliases that are mandatory.
+     *   Key is the alias, value is true if the table is mandatory.
      */
     private array $mapTableAliasMandatory = [];
 
@@ -34,6 +41,7 @@ class ListQueryBuilder
         private readonly string     $mainAlias,
     ) {
         $this->tables[$mainAlias] = $mainTable;
+        $this->mapTableAliaseHidden[$mainAlias] = false;
         $this->mapTableAliasMandatory[$mainAlias] = true;
     }
 
@@ -72,9 +80,38 @@ class ListQueryBuilder
         return \array_keys(\array_filter($this->mapTableAliasMandatory));
     }
 
-    public function setTableAliasMandatory(string $alias, bool $mandatory = true): void
+    public function setTableAliasMandatory(string $alias, bool $mandatory = true): static
     {
         $this->mapTableAliasMandatory[$alias] = $mandatory;
+
+        return $this;
+    }
+
+    public function isTableAliasMandatory(string $alias): bool
+    {
+        return $this->mapTableAliasMandatory[$alias] ?? false;
+    }
+
+    public function getMapTableAliaseHidden(): array
+    {
+        return $this->mapTableAliaseHidden;
+    }
+
+    public function getHiddenTableAliases(): array
+    {
+        return \array_keys(\array_filter($this->mapTableAliaseHidden));
+    }
+
+    public function isTableAliasHidden(string $alias): bool
+    {
+        return $this->mapTableAliaseHidden[$alias] ?? false;
+    }
+
+    public function setTableAliasHidden(string $alias, bool $hidden = true): static
+    {
+        $this->mapTableAliaseHidden[$alias] = $hidden;
+
+        return $this;
     }
 
     /**

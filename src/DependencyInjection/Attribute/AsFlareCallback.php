@@ -3,7 +3,7 @@
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Attribute;
 
 /**
- * An A
+ * An attribute that can be used to register a flare callback.
  *
  * @internal
  */

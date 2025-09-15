@@ -53,7 +53,7 @@ class EventsListType extends AbstractListType implements ListItemProviderContrac
         $builder->innerJoin(
             table: 'tl_calendar',
             as: $aliasArchive,
-            on: $builder->makeJoinOn($aliasArchive, joinColumn: 'id', mainColumn: 'pid')
+            on: $builder->makeJoinOn($aliasArchive, joinColumn: 'id', relatedColumn: 'pid')
         );
     }
 

@@ -262,10 +262,14 @@ class ListQueryBuilder
         return $this->addJoin('INNER JOIN', $table, $as, $on);
     }
 
-    public function makeJoinOn(string $joinAlias, string $joinColumn, string $mainColumn): string
-    {
+    public function makeJoinOn(
+        string  $joinAlias,
+        string  $joinColumn,
+        string  $relatedColumn,
+        ?string $relatedAlias = null,
+    ): string {
         return $this->expr()->eq(
-            $this->column($mainColumn),
+            $this->column($relatedColumn, of: $relatedAlias),
             $this->column($joinColumn, of: $joinAlias),
         );
     }

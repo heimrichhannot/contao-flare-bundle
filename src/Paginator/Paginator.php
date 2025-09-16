@@ -285,7 +285,8 @@ readonly class Paginator extends PaginatorConfig
     /**
      * Returns an array of page numbers: The current page padded by the given amount of surrounding pages.
      *
-     * @example ```php
+     * @example Use this method to create a window of page numbers for a pagination component.
+     * ```php
      * $paginator->getCurrentPageNumber() === 5;
      * $paginator->getPageNumberWindow(2) === [3, 4, 5, 6, 7];
      * ```

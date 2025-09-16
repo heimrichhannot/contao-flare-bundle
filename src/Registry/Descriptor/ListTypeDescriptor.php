@@ -12,7 +12,7 @@ class ListTypeDescriptor implements ServiceDescriptorInterface, PaletteContract
     public const TAG = 'huh.flare.list_type';
 
     public function __construct(
-        private         $service,
+        private object  $service,
         private array   $attributes = [],
         private ?string $dataContainer = null,
         private ?string $palette = null,
@@ -28,7 +28,7 @@ class ListTypeDescriptor implements ServiceDescriptorInterface, PaletteContract
         return $this->service;
     }
 
-    public function setService($service): void
+    public function setService(object $service): void
     {
         $this->service = $service;
     }

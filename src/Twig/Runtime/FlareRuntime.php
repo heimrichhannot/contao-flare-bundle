@@ -145,19 +145,22 @@ class FlareRuntime implements RuntimeExtensionInterface
         return $template->enclosure;
     }
 
-    public function getEnclosureFiles(Model|array|string|null $enclosure): array
+    public function getEnclosureFiles(Model|array|string|null $enclosed): array
     {
-        if ($enclosure instanceof Model) {
-            $enclosure = $enclosure->enclosure ?: null;
+        if ($enclosed instanceof Model) {
+            $enclosed = $enclosed->enclosure ?: null;
         }
 
-        if (\is_string($enclosure)) {
-            $enclosure = StringUtil::deserialize($enclosure, true);
+        if (\is_string($enclosed)) {
+            $enclosed = StringUtil::deserialize($enclosed, true);
         }
 
-        if (!$enclosure) {
+        if (!$enclosed || !\is_array($enclosed)) {
             return [];
         }
+
+        /** @var array $enclosure */
+        $enclosure = $enclosed;
 
         $files = FilesModel::findMultipleByUuids(\array_values($enclosure));
 

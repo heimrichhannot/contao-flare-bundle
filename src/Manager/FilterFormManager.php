@@ -55,6 +55,8 @@ readonly class FilterFormManager
                 continue;
             }
 
+            $options = $defaultOptions;
+
             if ($filterElement instanceof FormTypeOptionsContract)
             {
                 try
@@ -80,10 +82,6 @@ readonly class FilterFormManager
                     );
                 }
             }
-            else
-            {
-                $options = $defaultOptions;
-            }
 
             $key = $filter->getFilterModel()->id;
 
@@ -91,7 +89,6 @@ readonly class FilterFormManager
         }
 
         // *Always add submit button in template, not to the form builder!*
-        //
         // if ($builder->count())
         // {
         //     $builder->add('submit', SubmitType::class, [

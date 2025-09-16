@@ -21,7 +21,7 @@ readonly class TranslationManager
 
         /** @noinspection PhpDuplicateMatchArmBodyInspection */
         return match(true) {
-            empty($lang) => $alias,
+            !$lang => $alias,
             \is_array($lang) => (string) ($lang[0] ?? $alias),
             \is_string($lang) => $lang,
             default => $alias,
@@ -36,7 +36,7 @@ readonly class TranslationManager
 
         /** @noinspection PhpDuplicateMatchArmBodyInspection */
         return match(true) {
-            empty($lang) => $alias,
+            !$lang => $alias,
             \is_array($lang) => (string) ($lang[0] ?? $alias),
             \is_string($lang) => $lang,
             default => $alias,

@@ -5,7 +5,7 @@ namespace HeimrichHannot\FlareBundle\Model;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
-use HeimrichHannot\FlareBundle\Util\PtableInferrable;
+use HeimrichHannot\FlareBundle\Util\PtableInferrableInterface;
 
 /**
  * Class ListModel
@@ -28,7 +28,7 @@ use HeimrichHannot\FlareBundle\Util\PtableInferrable;
  * @property string $tablePtable
  * @property string $whichPtable
  */
-class ListModel extends Model implements PtableInferrable
+class ListModel extends Model implements PtableInferrableInterface
 {
     use PtableInferrableTrait;
 

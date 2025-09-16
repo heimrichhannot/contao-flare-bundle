@@ -37,8 +37,8 @@ readonly class ListCallbacks
 
         $typeLabel ??= 'N/A';
 
-        $html = "<div class=\"cte_type $key\">[$typeLabel]</div>";
-        $html .= $title ? "<div><strong>$title</strong></div>" : '';
+        $html = "<div class=\"cte_type {$key}\">[{$typeLabel}]</div>";
+        $html .= $title ? "<div><strong>{$title}</strong></div>" : '';
 
         return $html;
     }

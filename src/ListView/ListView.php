@@ -98,6 +98,13 @@ class ListView
         return $this->models[$id];
     }
 
+    /**
+     * Returns the URL to the details page of the given model.
+     *
+     * @param Model|int|string $id
+     * @return string|null
+     * @mago-expect lint:halstead This method is not complex.
+     */
     public function getDetailsPageUrl(Model|int|string $id): ?string
     {
         if ($id instanceof Model) {
@@ -114,11 +121,13 @@ class ListView
     }
 
     /**
-     * @see self::getDetailsPageUrl
-     * @param ...$args
+     * Alias for {@see self::getDetailsPageUrl}.
+     *
+     * @param Model|int|string ...$args
      * @return string|null
+     * @see self::getDetailsPageUrl
      */
-    public function to(...$args): ?string
+    public function to(Model|int|string ...$args): ?string
     {
         return $this->getDetailsPageUrl(...$args);
     }

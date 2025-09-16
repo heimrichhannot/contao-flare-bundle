@@ -239,10 +239,10 @@ class DcaHelper
                     ?? $model->type;
 
                 $type = \is_array($type) ? ($type[0] ?? $model->type) : $type;
-                $label .= " ($type)";
+                $label .= " ({$type})";
             }
 
-            $label .= " [$model->id]";
+            $label .= " [{$model->id}]";
 
             $options[$model->id] = \trim($label);
         }

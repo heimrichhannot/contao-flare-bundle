@@ -25,13 +25,13 @@ class PtableInferrer
     protected ?string $inferredPtable;
 
     public function __construct(
-        protected PtableInferrable $inferrable,
+        protected PtableInferrableInterface $inferrable,
         protected ListModel        $listModel,
     ) {
         $this->entityTable = $this->listModel->dc;
     }
 
-    public function getInferrable(): PtableInferrable
+    public function getInferrable(): PtableInferrableInterface
     {
         return $this->inferrable;
     }
@@ -56,7 +56,7 @@ class PtableInferrer
         return $this->entityTable;
     }
 
-    public function getDCA()
+    public function getDCA(): ?array
     {
         Controller::loadDataContainer($this->entityTable);
 
@@ -71,7 +71,7 @@ class PtableInferrer
 
         $ptable = $entityDca['config']['ptable'] ?? null;
 
-        if (!empty($ptable) && \is_string($ptable)) {
+        if ($ptable && \is_string($ptable)) {
             return $ptable;
         }
 
@@ -140,7 +140,9 @@ class PtableInferrer
      */
     public function explicit(bool $alwaysInfer = false): ?string
     {
-        if ($alwaysInfer) $this->infer();
+        if ($alwaysInfer) {
+            $this->infer();
+        }
 
         return match ($this->inferrable->getInferWhichPtable()) {
             self::WHICH_PTABLE_DYNAMIC => null,

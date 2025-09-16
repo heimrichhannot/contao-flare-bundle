@@ -89,7 +89,7 @@ readonly class LoadDataContainerListener
             //   without interfering with the callback execution.
             // This is required for the group widget, for example.
 
-            if (!empty($callbacks[$target = "fields.$field.options"]))
+            if (!empty($callbacks[$target = "fields.{$field}.options"]))
                 // bind options callback
             {
                 $definition['options_callback'] = static function (?DataContainer $dc) use ($container, $target) {
@@ -97,7 +97,7 @@ readonly class LoadDataContainerListener
                 };
             }
 
-            if (!empty($callbacks[$target = "fields.$field.load"]))
+            if (!empty($callbacks[$target = "fields.{$field}.load"]))
                 // bind load callback
             {
                 if (!\is_array($definition['load_callback'] ?? null)) {
@@ -109,7 +109,7 @@ readonly class LoadDataContainerListener
                 };
             }
 
-            if (!empty($callbacks[$target = "fields.$field.save"]))
+            if (!empty($callbacks[$target = "fields.{$field}.save"]))
                 // bind save callback
             {
                 if (!\is_array($definition['save_callback'] ?? null)) {

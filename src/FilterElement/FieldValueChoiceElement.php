@@ -57,12 +57,13 @@ class FieldValueChoiceElement implements FormTypeOptionsContract, HydrateFormCon
 
         if (\count($submittedData) < 2)
         {
-            $qb->where("LOWER(TRIM($colField)) = :value")
+            $qb->where("LOWER(TRIM({$colField})) = :value")
                 ->setParameter('value', \reset($submittedData));
         }
+        /** @mago-expect lint:no-else-clause This else clause is fine. */
         else
         {
-            $qb->where("LOWER(TRIM($colField)) IN (:values)")
+            $qb->where("LOWER(TRIM({$colField})) IN (:values)")
                 ->setParameter('values', $submittedData);
         }
     }
@@ -111,7 +112,11 @@ class FieldValueChoiceElement implements FormTypeOptionsContract, HydrateFormCon
         FilterModel    $filterModel,
         ListModel      $listModel
     ): mixed {
-        $dca = &$GLOBALS['TL_DCA'][$dc->table]['fields'][$dc->field];
+        if (!$dc || !($dcTable = $dc->table) || !($dcField = $dc->field)) {
+            return $value;
+        }
+
+        $dca = &$GLOBALS['TL_DCA'][$dcTable]['fields'][$dcField];
         $dca['eval']['submitOnChange'] = true;
 
         return $value;
@@ -124,11 +129,16 @@ class FieldValueChoiceElement implements FormTypeOptionsContract, HydrateFormCon
         FilterModel    $filterModel,
         ListModel      $listModel
     ): mixed {
-        if (!$dc || !($table = $listModel->dc) || !($valueField = $filterModel->fieldGeneric)) {
+        if (!$dc
+            || !($dcTable = $dc->table)
+            || !($dcField = $dc->field)
+            || !($table = $listModel->dc)
+            || !($valueField = $filterModel->fieldGeneric))
+        {
             return $value;
         }
 
-        $dca = &$GLOBALS['TL_DCA'][$dc->table]['fields'][$dc->field];
+        $dca = &$GLOBALS['TL_DCA'][$dcTable]['fields'][$dcField];
 
         $choices = $this->choicesBuilderFactory
             ->createChoicesBuilder()
@@ -139,7 +149,7 @@ class FieldValueChoiceElement implements FormTypeOptionsContract, HydrateFormCon
         $dca['eval']['multiple'] = $filterModel->isMultiple;
         $dca['eval']['chosen'] = true;
         $dca['eval']['includeBlankOption'] = true;
-        $dca['options_callback'] = static fn(DataContainer $dc) => $choices->buildOptions();
+        $dca['options_callback'] = static fn(DataContainer $dc): array => $choices->buildOptions();
 
         foreach ($this->getDistinctValues($table, $valueField) as $option) {
             $choices->add($option, $option);
@@ -162,7 +172,7 @@ class FieldValueChoiceElement implements FormTypeOptionsContract, HydrateFormCon
         $field = $this->connection->quoteIdentifier($field);
 
         $result = $this->connection
-            ->prepare("SELECT DISTINCT $field AS value FROM $table WHERE $field IS NOT NULL ORDER BY $field")
+            ->prepare("SELECT DISTINCT {$field} AS value FROM {$table} WHERE {$field} IS NOT NULL ORDER BY {$field}")
             ->executeQuery();
 
         $values = $result->fetchFirstColumn();

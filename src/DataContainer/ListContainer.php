@@ -124,11 +124,11 @@ class ListContainer implements FlareCallbackContainerInterface
     #[AsCallback(self::TABLE_NAME, 'config.onsubmit')]
     public function onSubmitConfig(DataContainer $dc): void
     {
-        if (!$dc->id || !$row = DcaHelper::rowOf($dc)) {
+        if (!$dc->id || !($row = DcaHelper::rowOf($dc)) || !($type = $row['type'] ?? null)) {
             return;
         }
 
-        if (!$listTypeConfig = $this->listTypeRegistry->get($row['type'] ?: null)) {
+        if (!$listTypeConfig = $this->listTypeRegistry->get($type)) {
             return;
         }
 
@@ -144,14 +144,14 @@ class ListContainer implements FlareCallbackContainerInterface
         $expectedDataContainer ??= $listTypeConfig->getDataContainer() ?? '';
 
         if (!$expectedDataContainer) {
-            throw new BadRequestHttpException('No data container found for list type ' . $row['type']);
+            throw new BadRequestHttpException('No data container found for list type ' . $type);
         }
 
         if ($expectedDataContainer !== ($row['dc'] ?? null))
         {
             $qTable = $this->connection->quoteIdentifier(self::TABLE_NAME);
             $this->connection
-                ->prepare("UPDATE $qTable SET $qTable.`dc` = ? WHERE $qTable.`id` = ?")
+                ->prepare("UPDATE {$qTable} SET {$qTable}.`dc` = ? WHERE {$qTable}.`id` = ?")
                 ->executeStatement([$expectedDataContainer, $dc->id]);
         }
     }
@@ -171,6 +171,6 @@ class ListContainer implements FlareCallbackContainerInterface
 
     public function getListedTableName(DataContainer $dc): ?string
     {
-        return !empty($row = DcaHelper::rowOf($dc)) ? $row['dc'] ?? null : null;
+        return ($row = DcaHelper::rowOf($dc)) ? ($row['dc'] ?? null) : null;
     }
 }

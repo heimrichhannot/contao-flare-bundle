@@ -97,7 +97,7 @@ class EventsListItemProvider extends AbstractListItemProvider
                 // Add the entry to the list
                 $entries[] = $entry;
 
-                $this->entryCache["$table.{$entry['id']}"] ??= $entry;
+                $this->entryCache["{$table}.{$entry['id']}"] ??= $entry;
 
                 if ($limit && \count($entries) >= $limit) {
                     break;

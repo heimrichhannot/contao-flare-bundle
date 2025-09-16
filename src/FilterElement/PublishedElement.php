@@ -45,7 +45,7 @@ class PublishedElement extends AbstractFilterElement
         {
             $startField = $qb->column($filterModel->fieldStart ?: 'start');
 
-            $qb->where("$startField = $epsilon OR $startField = $zero OR $startField <= :start")
+            $qb->where("{$startField} = {$epsilon} OR {$startField} = {$zero} OR {$startField} <= :start")
                 ->setParameter('start', \time());
         }
 
@@ -53,7 +53,7 @@ class PublishedElement extends AbstractFilterElement
         {
             $stopField = $qb->column($filterModel->fieldStop ?: 'stop');
 
-            $qb->where("$stopField = $epsilon OR $stopField = $zero OR $stopField >= :stop")
+            $qb->where("{$stopField} = {$epsilon} OR {$stopField} = {$zero} OR {$stopField} >= :stop")
                 ->setParameter('stop', \time());
         }
     }

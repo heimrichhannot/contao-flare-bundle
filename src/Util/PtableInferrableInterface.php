@@ -2,7 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Util;
 
-interface PtableInferrable
+interface PtableInferrableInterface
 {
     public function getInferFieldPid(): ?string;
     public function getInferWhichPtable(): string;

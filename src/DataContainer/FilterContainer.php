@@ -104,7 +104,9 @@ class FilterContainer implements FlareCallbackContainerInterface
 
     /**
      * @param DataContainer|null $dc
+     * @param bool               $ignoreType
      * @return array{FilterModel, ListModel}|array{null, null}
+     * @mago-expect lint:no-empty-catch-clause It's fine if the models are not found.
      */
     public function getModelsFromDataContainer(?DataContainer $dc, bool $ignoreType = false): array
     {

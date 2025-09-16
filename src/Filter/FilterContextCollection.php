@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
-use HeimrichHannot\FlareBundle\Collection\Collection;
+use HeimrichHannot\FlareBundle\Collection\AbstractCollection;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 /**
  * A type-safe collection specifically for FilterContext objects.
  *
- * @extends Collection<FilterContext>
+ * @extends AbstractCollection<FilterContext>
  */
-class FilterContextCollection extends Collection
+class FilterContextCollection extends AbstractCollection
 {
     protected ListModel $listModel;
     protected ?string $table;

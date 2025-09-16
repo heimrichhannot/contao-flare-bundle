@@ -128,14 +128,14 @@ final class SortDescriptor
                 $col = $quoteColumn($o->getColumn());
 
                 if ($ignoreCase) {
-                    $col = "LOWER($col)";
+                    $col = "LOWER({$col})";
                 }
 
-                return "$col {$o->getDirection()}";
+                return "{$col} {$o->getDirection()}";
             },
             $this->orders
         );
 
-        return implode(', ', $parts);
+        return \implode(', ', $parts);
     }
 }

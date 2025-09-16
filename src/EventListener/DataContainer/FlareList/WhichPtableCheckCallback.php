@@ -13,6 +13,11 @@ use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 #[AsCallback(ListContainer::TABLE_NAME, 'config.onsubmit')]
 readonly class WhichPtableCheckCallback
 {
+    /**
+     * @param DataContainer|null $dc
+     * @return void
+     * @mago-expect lint:no-empty-catch-clause It's fine to skip if an inference exception occurs.
+     */
     public function __invoke(?DataContainer $dc): void
     {
         if (!$dc?->id) {

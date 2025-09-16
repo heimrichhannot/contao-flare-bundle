@@ -15,7 +15,7 @@ class FilterElementDescriptor implements ServiceDescriptorInterface, PaletteCont
 
     /** @see RegisterFilterElementsPass::getFilterElementConfig */
     public function __construct(
-        private         $service,
+        private object  $service,
         private array   $attributes = [],
         private ?string $palette = null,
         private ?string $formType = null,
@@ -33,7 +33,7 @@ class FilterElementDescriptor implements ServiceDescriptorInterface, PaletteCont
         return $this->service;
     }
 
-    public function setService($service): void
+    public function setService(object $service): void
     {
         $this->service = $service;
     }

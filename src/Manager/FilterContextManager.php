@@ -87,6 +87,7 @@ readonly class FilterContextManager
                     continue;
                 }
             }
+            /** @mago-expect lint:no-else-clause This else clause is mandatory. */
             elseif (!$descriptor->isAvailableForContext($context))
             {
                 continue;
@@ -160,7 +161,7 @@ readonly class FilterContextManager
             }
         }
 
-        // todo: overhaul this mechanic
+        // TODO(@ericges): overhaul this mechanic
     }
 
     public function definitionToContext(

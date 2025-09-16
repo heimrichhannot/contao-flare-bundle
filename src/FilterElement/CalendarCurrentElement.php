@@ -61,7 +61,7 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
         $colRecurring = $qb->column('recurring');
 
         $or = [
-            "$colStartTime >= :start AND $colStartTime <= :end",  // event starts in range
+            "{$colStartTime} >= :start AND {$colStartTime} <= :end",  // event starts in range
             $qb->expr()->and(  // event is recurring
                 $qb->expr()->eq($colRecurring, 1),
                 $qb->expr()->lte($colStartTime, ':end'),  // event starts before the end of the range
@@ -76,8 +76,8 @@ class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
         {
             $colEndTime = $qb->column('endTime');
 
-            $or[] = "$colEndTime >= :start AND $colEndTime <= :end";  // event ends in the range
-            $or[] = "$colStartTime <= :start AND $colEndTime >= :end";  // event is within the range
+            $or[] = "{$colEndTime} >= :start AND {$colEndTime} <= :end";  // event ends in the range
+            $or[] = "{$colStartTime} <= :start AND {$colEndTime} >= :end";  // event is within the range
         }
 
         $qb->whereOr(...$or);

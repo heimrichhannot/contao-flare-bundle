@@ -186,7 +186,7 @@ readonly class Str
         $tagName = $headline['tag_name'] ?? $headline['unit'] ?? 'h2';
         $value = $headline['text'] ?? $headline['value'] ?? '';
 
-        return $withTags ? "<$tagName>$value</$tagName>" : $value;
+        return $withTags ? "<{$tagName}>{$value}</{$tagName}>" : $value;
     }
 
     public static function htmlToMeta(

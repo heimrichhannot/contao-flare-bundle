@@ -31,7 +31,7 @@ abstract class AbstractListItemProvider implements ListItemProviderInterface, Se
         FilterContextCollection $filters,
         ContentContext          $contentContext
     ): ?array {
-        if (isset($this->entryCache[$cacheKey = "{$filters->getTable()}.$id"])) {
+        if (isset($this->entryCache[$cacheKey = "{$filters->getTable()}.{$id}"])) {
             return $this->entryCache[$cacheKey];
         }
 

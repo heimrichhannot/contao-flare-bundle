@@ -73,9 +73,15 @@ class FilterContextBuilder
             $filterModel->{$prop} = $value;
         }
 
-        $alias = $this->filterElementAlias
-            ?: ($this->filterElementDescriptor?->getAttributes()['alias'] ?? null)
-            ?: ('_auto_' . Str::random(8, Str::CHARS_ALPHA_LOWER));
+        $alias = $this->filterElementAlias;
+
+        if (!$alias) {
+            $alias = $this->filterElementDescriptor?->getAttributes()['alias'] ?? null;
+        }
+
+        if (!$alias) {
+            $alias = '_auto_' . Str::random(8, Str::CHARS_ALPHA_LOWER);
+        }
 
         $config = $this->filterElementDescriptor ?? new FilterElementDescriptor($this->filterElement, ['alias' => $alias]);
 

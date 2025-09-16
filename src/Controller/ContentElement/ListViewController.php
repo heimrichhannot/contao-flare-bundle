@@ -27,7 +27,7 @@ use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsContentElement(ListViewController::TYPE, category: 'includes', template: 'content_element/flare_listview')]
-class ListViewController extends AbstractContentElementController
+final class ListViewController extends AbstractContentElementController
 {
     public const TYPE = 'flare_listview';
 
@@ -143,18 +143,17 @@ class ListViewController extends AbstractContentElementController
             return new Response($e->getMessage());
         }
 
-        if (($headline = StringUtil::deserialize($model->headline, true)) && !empty($headline['value'])) {
-            $unit = !empty($headline['unit']) ? $headline['unit'] : 'h2';
+        if (($headline = StringUtil::deserialize($model->headline, true)) && isset($headline['value'])) {
+            $unit = ($headline['unit'] ?? null) ?: 'h2';
             $hl = \sprintf('<%s>%s</%s>', $unit, $headline['value'], $unit);
         }
 
-        return new Response(
-            ($hl ?? '') . \sprintf(
-                '%s <span class="tl_gray">[%s, %s]</span>',
-                $listModel->title,
-                $this->translationManager->listModel($listModel),
-                $listModel->dc
-            )
-        );
+        return new Response(\sprintf(
+            '%s%s <span class="tl_gray">[%s, %s]</span>',
+            $hl ?? '',
+            $listModel->title,
+            $this->translationManager->listModel($listModel),
+            $listModel->dc
+        ));
     }
 }

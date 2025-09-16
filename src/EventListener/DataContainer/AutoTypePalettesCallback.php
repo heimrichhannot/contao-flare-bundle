@@ -143,7 +143,7 @@ readonly class AutoTypePalettesCallback
         {
             $event = new PaletteEvent($paletteConfigFactory(), $palette);
 
-            $this->eventDispatcher->dispatch($event, "flare.$target.palette");
+            $this->eventDispatcher->dispatch($event, "flare.{$target}.palette");
 
             $palette = $event->getPalette();
             $paletteConfig = $event->getPaletteConfig();

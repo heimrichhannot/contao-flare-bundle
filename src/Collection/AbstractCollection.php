@@ -21,7 +21,7 @@ use UnexpectedValueException;
  * @implements Countable
  * @implements Serializable
  */
-abstract class Collection implements IteratorAggregate, Countable, Serializable
+abstract class AbstractCollection implements IteratorAggregate, Countable, Serializable
 {
     /**
      * @var array<int, T> Stored items in the collection

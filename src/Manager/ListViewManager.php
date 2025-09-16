@@ -84,7 +84,7 @@ class ListViewManager
         }
 
         if (!$listModel->published) {
-            throw new FilterException("List model not published [ID $listModel->id]", source: __METHOD__);
+            throw new FilterException("List model not published [ID {$listModel->id}]", source: __METHOD__);
         }
 
         if (!$filters = $this->filterContext->collect($listModel, $contentContext)) {
@@ -372,7 +372,7 @@ class ListViewManager
      *
      * @return string The cache key.
      */
-    public function makeCacheKey(ListModel $listModel, ContentContext $context, ...$args): string
+    public function makeCacheKey(ListModel $listModel, ContentContext $context, mixed ...$args): string
     {
         $args = \array_filter($args);
         $parts = [$listModel->id, $context->getUniqueId(), ...$args];

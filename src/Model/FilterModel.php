@@ -5,12 +5,12 @@ namespace HeimrichHannot\FlareBundle\Model;
 use Contao\Model;
 use Contao\Model\Collection;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
-use HeimrichHannot\FlareBundle\Util\PtableInferrable;
+use HeimrichHannot\FlareBundle\Util\PtableInferrableInterface;
 
 /**
  * Class FilterModel
  */
-class FilterModel extends Model implements PtableInferrable
+class FilterModel extends Model implements PtableInferrableInterface
 {
     use DocumentsFilterModelTrait, PtableInferrableTrait;
 

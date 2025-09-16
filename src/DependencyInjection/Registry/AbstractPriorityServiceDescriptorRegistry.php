@@ -65,7 +65,9 @@ abstract class AbstractPriorityServiceDescriptorRegistry
     {
         if (\is_null($key))
         {
-            return !empty($this->elements[$namespace]);
+            return isset($this->elements[$namespace])
+                && \is_array($this->elements[$namespace])
+                && \array_filter($this->elements[$namespace]);
         }
 
         return isset($this->elements[$namespace][$key])
@@ -108,9 +110,12 @@ abstract class AbstractPriorityServiceDescriptorRegistry
         \krsort($prioSorted);
 
         $return = [];
-        \array_walk_recursive($prioSorted, static function ($element) use (&$return) {
-            $return[] = $element;
-        });
+        \array_walk_recursive(
+            $prioSorted,
+            static function (ServiceDescriptorInterface $element) use (&$return): void {
+                $return[] = $element;
+            }
+        );
 
         return $return;
     }

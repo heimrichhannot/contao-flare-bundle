@@ -19,13 +19,19 @@ excludes = ["src/Model"]
 [linter.rules]
 ambiguous-function-call = { enabled = false }
 excessive-parameter-list = { enabled = false }
-halstead = { effort-threshold = 7000 }
+halstead = { enabled = false, effort-threshold = 7000 }
 interface-name = { enabled = false }
 literal-named-argument = { enabled = false }
 no-assign-in-condition = { enabled = false }
 no-global = { enabled = false }
+no-hash-comment = { enabled = false }
 no-shorthand-ternary = { enabled = false }
+tagged-todo = { enabled = false }
 too-many-methods = { threshold = 20 }
+
+cyclomatic-complexity = { enabled = false }
+kan-defect = { enabled = false }
+no-boolean-flag-parameter = { enabled = false }
 
 [analyzer]
 find-unused-definitions = true

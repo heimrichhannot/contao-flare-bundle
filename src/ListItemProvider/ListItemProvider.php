@@ -99,7 +99,7 @@ class ListItemProvider extends AbstractListItemProvider
         $query = $this->listQueryManager->populate(
             listQueryBuilder: $listQueryBuilder,
             filters: $filters,
-            order: $sortDescriptor?->toSql(fn ($col) => $this->connection->quoteIdentifier($col)),
+            order: $sortDescriptor?->toSql(fn(string $col): string => $this->connection->quoteIdentifier($col)),
             limit: $paginator?->getItemsPerPage() ?: null,
             offset: $paginator?->getOffset() ?: null,
             onlyId: $returnIds,

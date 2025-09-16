@@ -264,7 +264,7 @@ class FilterQueryBuilder
 
         $sql = \preg_replace_callback(
             '/:([A-Za-z0-9_]+)\b/',
-            function ($matches) use ($prefix, &$parameters, &$types)
+            function (array $matches) use ($prefix, &$parameters, &$types): string
             {
                 $paramName = $matches[1];
 

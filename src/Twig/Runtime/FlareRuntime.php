@@ -112,7 +112,7 @@ class FlareRuntime implements RuntimeExtensionInterface
         $table = $model->getTable();
         $id = $model->id;
 
-        $text = Template::once(static function () use ($table, $id) {
+        $text = Template::once(static function () use ($table, $id): string {
             if (!$elm = ContentModel::findPublishedByPidAndTable($id, $table))
             {
                 return '';
@@ -131,7 +131,7 @@ class FlareRuntime implements RuntimeExtensionInterface
         return $this->getCallableWrapper($text);
     }
 
-    public function getEnclosure(Model|array $entity, ?string $field = null)
+    public function getEnclosure(Model|array $entity, ?string $field = null): array
     {
         if ($entity instanceof Model) {
             $entity = $entity->row();

@@ -68,7 +68,7 @@ class ArrayFieldChoice implements FormTypeOptionsContract, PaletteContract
         $dca['eval']['multiple'] = $filterModel->isMultiple;
         $dca['eval']['chosen'] = true;
         $dca['eval']['includeBlankOption'] = true;
-        $dca['options_callback'] = static fn(DataContainer $dc) => $choices->buildOptions();
+        $dca['options_callback'] = static fn(DataContainer $dc): array => $choices->buildOptions();
 
         foreach ($this->getDistinctValues($table, $valueField) as $option) {
             $choices->add($option, $option);

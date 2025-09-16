@@ -49,15 +49,15 @@ enum SqlEquationOperator: string
 
         if (!$includeIn)
         {
-            $cases = \array_filter($cases, static fn($case) => !\in_array($case, [
+            $cases = \array_filter($cases, static fn(SqlEquationOperator $case): bool => !\in_array($case, [
                 SqlEquationOperator::IN,
                 SqlEquationOperator::NOT_IN
-            ]));
+            ], strict: true));
         }
 
         return \array_combine(
-            \array_map(static fn($case) => $case->value, $cases),
-            \array_map(static fn($case) => $case->getOperator(), $cases)
+            \array_map(static fn(SqlEquationOperator $case): string => $case->value, $cases),
+            \array_map(static fn(SqlEquationOperator $case): string => $case->getOperator(), $cases)
         );
     }
 

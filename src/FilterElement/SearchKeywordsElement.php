@@ -35,19 +35,22 @@ class SearchKeywordsElement implements FormTypeOptionsContract
             return;
         }
 
-        $columns = \array_map(static fn ($column) => $qb->column($column), $columns);
+        $columns = \array_map($qb->column(...), $columns);
 
         if (empty($searchTerms = $this->makeTerms($submittedData))) {
             return;
         }
 
         $and = [];
-        foreach (\array_values($searchTerms) as $i => $term) {
+        foreach (\array_values($searchTerms) as $i => $term)
+        {
             $param = ':term_' . $i;
+
             $and[] = $qb->expr()->or(...\array_map(
-                static fn($column) => $qb->expr()->like($column, $param),
+                static fn(string $column): string => $qb->expr()->like($column, $param),
                 $columns
             ));
+
             $qb->setParameter($param, '%' . $term . '%');
         }
 

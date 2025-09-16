@@ -55,7 +55,7 @@ readonly class FieldsOptionsCallbacks
     {
         return DcaHelper::getFieldOptions(
             $dc,
-            static fn(string $table, string $field, array $definition) =>
+            static fn(string $table, string $field, array $definition): bool =>
                 ($definition['inputType'] ?? null) === 'checkbox',
         );
     }
@@ -66,7 +66,7 @@ readonly class FieldsOptionsCallbacks
     {
         return DcaHelper::getFieldOptions(
             $dc,
-            static fn(string $table, string $field, array $definition) =>
+            static fn(string $table, string $field, array $definition): bool =>
                 ($definition['inputType'] ?? null) === 'text' && ($definition['eval']['rgxp'] ?? null) === 'datim',
         );
     }
@@ -121,7 +121,7 @@ readonly class FieldsOptionsCallbacks
             return [];
         }
 
-        $tables = \array_filter($tables, static fn(string $table) => $db->tableExists($table));
+        $tables = \array_filter($tables, $db->tableExists(...));
         return \array_combine($tables, $tables) ?: [];
     }
 

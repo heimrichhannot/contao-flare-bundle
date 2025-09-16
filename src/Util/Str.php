@@ -74,8 +74,9 @@ readonly class Str
         callable|false|null $filter = null,
         ?callable           $format = null
     ): string {
+        /** @mago-expect lint:no-boolean-literal-comparison We have to check for false specifically. */
         if ($filter !== false) {
-            $pieces = \array_filter($pieces, $filter ?? static fn ($piece) => (bool) $piece);
+            $pieces = \array_filter($pieces, $filter);
         }
 
         if ($format) {
@@ -91,13 +92,13 @@ readonly class Str
             return static::alphaNum(static::snakeCase($alias));
         }
 
-        $alias = \explode('\\', $alias);
+        $arrAlias = \explode('\\', $alias);
 
-        $class = \array_pop($alias);
-        $vendor = \array_shift($alias);
-        $bundle = \array_shift($alias);
+        $class = \array_pop($arrAlias);
+        $vendor = \array_shift($arrAlias);
+        $bundle = \array_shift($arrAlias);
 
-        if (empty($vendor) || empty($class)) {
+        if (!$vendor || !$class) {
             throw new \InvalidArgumentException('Invalid alias format.');
         }
 
@@ -106,8 +107,8 @@ readonly class Str
 
         return static::implode(
             '__',
-            \array_map(static fn ($piece) => static::snakeCase($piece), [$vendor, $bundle, $class]),
-            format: static fn ($piece) => static::alphaNum($piece)
+            \array_map(static::snakeCase(...), [$vendor, $bundle, $class]),
+            format: static::alphaNum(...)
         );
     }
 
@@ -116,10 +117,11 @@ readonly class Str
      *
      * @param string ...$palettes
      */
-    public static function mergePalettes(...$palettes): string
+    public static function mergePalettes(string ...$palettes): string
     {
-        \array_walk($palettes, static fn ($palette) => \trim((string) $palette, ";, \n\r\t\v\0"));
-        return \implode(';', \array_filter($palettes, static fn ($palette) => (bool) $palette));
+        $palettes = \array_filter($palettes);
+        \array_walk($palettes, static fn (string $palette): string => \trim($palette, ";, \n\r\t\v\0"));
+        return \implode(';', \array_filter($palettes));
     }
 
     public static function isValidSqlName(?string $db_or_col_name): bool
@@ -142,10 +144,13 @@ readonly class Str
         }
 
         if (\is_array($value)) {
-            return '['.static::implode(',', \array_map(static fn ($v) => static::force($v), \iterator_to_array($value))).']';
+            return \sprintf(
+                '[%s]',
+                static::implode(',', \array_map(static::force(...), \iterator_to_array($value)))
+            );
         }
 
-        if (\is_object($value) && method_exists($value, '__toString')) {
+        if (\is_object($value) && \method_exists($value, '__toString')) {
             return (string) $value;
         }
 
@@ -156,7 +161,7 @@ readonly class Str
         return \gettype($value);
     }
 
-    public static function random($length = 10, ?string $chars = null): string
+    public static function random(int $length = 10, ?string $chars = null): string
     {
         $chars ??= '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $max = \mb_strlen($chars, '8bit') - 1;
@@ -194,9 +199,11 @@ readonly class Str
         ?int   $charLimit = null,
         int    $flags = \ENT_QUOTES | \ENT_HTML5,
     ): string {
+        $trim = \function_exists('mb_trim') ? \mb_trim(...) : \trim(...);
+
         $text = \preg_replace('/(\r\n|\n|\r){2,}/', "\n", $text);
 
-        $text = \mb_trim(\strip_tags($text));
+        $text = $trim(\strip_tags($text));
         $text = \preg_replace('/\s+/', ' ', $text);
         $text = \html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
@@ -205,11 +212,13 @@ readonly class Str
             $text = \mb_substr($text, 0, $charLimit);
 
             $lastSpace = \mb_strrpos($text, ' ');
+
+            /** @mago-expect lint:no-boolean-literal-comparison We have to check for false specifically. */
             if ($lastSpace !== false) {
                 $text = \mb_substr($text, 0, $lastSpace);
             }
         }
 
-        return \htmlentities(\mb_trim($text), $flags, 'UTF-8');
+        return \htmlentities($trim($text), $flags, 'UTF-8');
     }
 }

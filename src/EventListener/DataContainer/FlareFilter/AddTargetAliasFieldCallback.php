@@ -14,8 +14,7 @@ use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 
 /**
  * Callback class that adds a targetAlias field to the filter palette when the filter type declares isTargeted.
- * 
- * Required to load before {@see AutoTypePalettesCallback}, hence the priority.
+ * > Required to load before {@see AutoTypePalettesCallback}, hence the priority.
  *
  * @internal For internal use only. Do not call this class or its methods directly.
  */

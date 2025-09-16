@@ -2,6 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
+use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
@@ -16,6 +17,10 @@ class PublishedElement extends AbstractFilterElement
 {
     const TYPE = 'flare_published';
 
+    public function __construct(
+        private readonly Connection $connection,
+    ) {}
+
     /**
      * @throws FilterException
      */
@@ -27,17 +32,20 @@ class PublishedElement extends AbstractFilterElement
         {
             $publishedField = $qb->column($filterModel->fieldPublished ?: 'published');
             $invertPublished = $filterModel->invertPublished ?? false;
-            $operator = $invertPublished ? '!=' : '=';
+            $operator = $invertPublished ? 'neq' : 'eq';
 
-            // "published = 1" or "published != 1"
-            $qb->where("$publishedField $operator :one", ['one' => 1]);
+            // "published = '1'" or "published != '1'"
+            $qb->where($qb->expr()->{$operator}($publishedField, $this->connection->quote(1)));
         }
+
+        $epsilon = $this->connection->quote('');
+        $zero = $this->connection->quote(0);
 
         if ($filterModel->useStart ?? true)
         {
             $startField = $qb->column($filterModel->fieldStart ?: 'start');
 
-            $qb->where("$startField = \"\" OR $startField = 0 OR $startField <= :start")
+            $qb->where("$startField = $epsilon OR $startField = $zero OR $startField <= :start")
                 ->setParameter('start', \time());
         }
 
@@ -45,7 +53,7 @@ class PublishedElement extends AbstractFilterElement
         {
             $stopField = $qb->column($filterModel->fieldStop ?: 'stop');
 
-            $qb->where("$stopField = \"\" OR $stopField = 0 OR $stopField >= :stop")
+            $qb->where("$stopField = $epsilon OR $stopField = $zero OR $stopField >= :stop")
                 ->setParameter('stop', \time());
         }
     }

@@ -5,6 +5,7 @@
     "license": "LGPL-3.0-or-later",
     "require": {
         "php": "^8.2",
+        "ext-mbstring": "*",
         "contao/core-bundle": "^4.13 || ^5.0",
         "doctrine/dbal": "^2.13 || ^3.0",
         "mvo/contao-group-widget": "^1.5",

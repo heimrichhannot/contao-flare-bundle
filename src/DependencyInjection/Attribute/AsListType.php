@@ -11,7 +11,7 @@ class AsListType
         ?string           $alias = null,
         string|array|null $dataContainer = null,
         string|null       $palette = null,
-                          ...$attributes
+        mixed             ...$attributes
     ) {
         $attributes['alias'] = $alias;
         $attributes['dataContainer'] = $dataContainer;

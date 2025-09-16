@@ -23,7 +23,7 @@ class AsFilterElement
         ?string $method = null,
         ?array  $scopes = null,
         ?bool   $isTargeted = null,
-                ...$attributes
+        mixed   ...$attributes
     ) {
         $attributes['alias'] = $alias;
         $attributes['palette'] = $palette;

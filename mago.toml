@@ -1,0 +1,36 @@
+# Welcome to Mago!
+# For full documentation, see https://mago.carthage.software/tools/overview
+php-version = "8.2"
+
+[source]
+paths = ["src/", "tests/"]
+includes = ["vendor"]
+excludes = ["src/Form/ChoicesBuilder.php"]
+
+[formatter]
+print-width = 120
+tab-width = 4
+use-tabs = false
+
+[linter]
+integrations = ["symfony", "phpunit"]
+excludes = ["src/Model"]
+
+[linter.rules]
+ambiguous-function-call = { enabled = false }
+excessive-parameter-list = { enabled = false }
+halstead = { effort-threshold = 7000 }
+interface-name = { enabled = false }
+literal-named-argument = { enabled = false }
+no-assign-in-condition = { enabled = false }
+no-global = { enabled = false }
+no-shorthand-ternary = { enabled = false }
+too-many-methods = { threshold = 20 }
+
+[analyzer]
+find-unused-definitions = true
+find-unused-expressions = false
+analyze-dead-code = false
+check-throws = true
+allow-possibly-undefined-array-keys = false
+perform-heuristic-checks = true

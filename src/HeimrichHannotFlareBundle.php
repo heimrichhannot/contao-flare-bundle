@@ -1,8 +1,10 @@
 <?php
 
-/*
- * @copyright Copyright (c) 2025, Heimrich & Hannot GmbH
- * @license LGPL-3.0-or-later
+/**
+ * @package   Heimrich & Hannot Flare Bundle
+ * @author    Eric Gesemann (@ericges) <e.gesemann@heimrich-hannot.de>
+ * @copyright 2025, Heimrich & Hannot GmbH
+ * @license   LGPL-3.0-or-later
  */
 
 namespace HeimrichHannot\FlareBundle;
@@ -14,7 +16,7 @@ use Symfony\Component\HttpKernel\Bundle\Bundle;
 class HeimrichHannotFlareBundle extends Bundle
 {
     /**
-     * @{inheritdoc}
+     * {@inheritdoc}
      */
     public function getPath(): string
     {
@@ -32,8 +34,7 @@ class HeimrichHannotFlareBundle extends Bundle
 
     public function getContainerExtension(): ?ExtensionInterface
     {
-        $this->extension ??= $this->createContainerExtension() ?: null;
-        return $this->extension;
+        return $this->extension ??= $this->createContainerExtension();
     }
 
     public function build(ContainerBuilder $container): void

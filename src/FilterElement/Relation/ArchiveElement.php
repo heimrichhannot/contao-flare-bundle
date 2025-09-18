@@ -43,12 +43,14 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
         $filterModel = $context->getFilterModel();
         $inferrer = new PtableInferrer($filterModel, $context->getListModel());
 
-        if (!$filterModel->isMultiple && \is_scalar($submitted)) {
+        if ($submitted && !\is_array($submitted)) {
             $submitted = [$submitted];
         }
 
-        if (\is_array($submitted)) {
-            $submitted = \array_filter($submitted, static fn($v) => $v && \is_scalar($v));
+        foreach ($submitted as $value) {
+            if (!$value instanceof Model) {
+                $qb->abort();
+            }
         }
 
         if ($inferrer->getDcaMainPtable())
@@ -57,12 +59,12 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
                 throw new FilterException('No whitelisted parents defined.');
             }
 
-            if (\is_array($submitted) and !$filterModel->hasEmptyOption || !empty($submitted))
-                // we expect $submitted to be an array of parent ids
+            if ($submitted && (!$filterModel->hasEmptyOption || \count($submitted) > 0))
+                // we expect $submitted to be an array of parent models
                 // if empty option is enabled, empty array is allowed
             {
                 $whitelist = \array_map('intval', $whitelist);
-                $submitted = \array_map('intval', $submitted);
+                $submitted = \array_map(static fn ($model) => $model->id, $submitted);
                 $whitelist = \array_intersect($whitelist, $submitted);
 
                 if (empty($whitelist))
@@ -86,7 +88,11 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
                 $submittedGroup = [];
                 foreach ($submitted as $value)
                 {
-                    if (!\str_contains($value, '.')) {  // skip invalid values
+                    if ($value instanceof Model) {
+                        $submittedGroup[$value::getTable()][] = $value->id;
+                    }
+
+                    if (!\is_string($value) || !\str_contains($value, '.')) {  // skip invalid values
                         continue;
                     }
 
@@ -258,8 +264,13 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
                 return $value;
             }
 
-            foreach ($parents as $parent) {
-                $choices->add($parent->id, $parent);
+            foreach ($parents as $parent)
+            {
+                if (!$parent instanceof Model) {
+                    continue;
+                }
+
+                $choices->add(\sprintf('%s.%s', $ptable, $parent->id), $parent);
             }
 
             return $value;
@@ -284,8 +295,13 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
                     continue;
                 }
 
-                foreach ($parents as $parent) {
-                    $choices->add(\sprintf('%s.%s', $table, $parent?->id), $parent);
+                foreach ($parents as $parent)
+                {
+                    if (!$parent instanceof Model) {
+                        continue;
+                    }
+
+                    $choices->add(\sprintf('%s.%s', $table, $parent->id), $parent);
                 }
             }
         }
@@ -318,7 +334,35 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
         if ($preselect = StringUtil::deserialize($filterModel->preselect ?: null))
         {
-            $field->setData($preselect);
+            $data = [];
+
+            foreach ($preselect as $entity)
+            {
+                if ($entity instanceof Model) {
+                    $data[] = $entity;
+                    continue;
+                }
+
+                if (!\is_string($entity) || !\str_contains($entity, '.')) {
+                    continue;
+                }
+
+                [$table, $id] = \explode('.', $entity, 2);
+
+                if (!$modelClass = Model::getClassFromTable($table)) {
+                    continue;
+                }
+
+                if (!\class_exists($modelClass)) {
+                    continue;
+                }
+
+                if ($model = $modelClass::findByPk($id)) {
+                    $data[] = $model;
+                }
+            }
+
+            $field->setData($data);
         }
     }
 }

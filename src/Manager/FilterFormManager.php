@@ -67,6 +67,7 @@ readonly class FilterFormManager
                     $choicesOptions = $choicesBuilder->isEnabled() ? [
                         'choices' => $choicesBuilder->buildChoices(),
                         'choice_label' => $choicesBuilder->buildChoiceLabelCallback(),
+                        'choice_value' => $choicesBuilder->buildChoiceValueCallback(),
                     ] : [];
 
                     $options = \array_merge($defaultOptions, $choicesOptions, $generatedOptions);

@@ -5,7 +5,7 @@ php-version = "8.2"
 [source]
 paths = ["src/", "tests/"]
 includes = ["vendor"]
-excludes = ["src/Form/ChoicesBuilder.php"]
+excludes = []
 
 [formatter]
 print-width = 120

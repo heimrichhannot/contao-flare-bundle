@@ -11,8 +11,10 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ChoicesBuilder
 {
-    /** @var array<Model|LabelableInterface|string> $choices */
+    /** @var array<string, Model|LabelableInterface|string> $choices */
     private array $choices = [];
+    /** @var array<string, callable|string|null> $choiceValues */
+    private array $choiceValues = [];
     private array $groups = [];
     private array $choiceGroupMap = [];
     private string $modelSuffix = '';
@@ -27,47 +29,46 @@ class ChoicesBuilder
         private readonly ParameterBagInterface $parameterBag,
     ) {}
 
-    /**
-     * @param string|null $label Setting a label will override the default label for all choices. Null to use the
-     *     default labels.
-     * @param string|null $class_or_table Setting a model class or table will override the default label for the
-     *     given model. Provide null to use the default labels.
-     * @return $this Fluent interface
-     */
-    public function setLabel(?string $label, ?string $class_or_table = null): self
+    public function setLabelForTable(?string $label, string $table): self
     {
-        if ($class_or_table !== null && \class_exists($class_or_table))
-        {
-            if (!\is_subclass_of($class_or_table, Model::class))
-            {
-                // In Contao < 5.0, "tl_article" is a valid class, but not a subclass of Model.
-                //   Hence, we need to check if it's a table name from which a Model class can be derived.
-                $class_or_table = Model::getClassFromTable($class_or_table);
-
-                // Then check again if the class is a subclass of Model.
-                if (!$class_or_table || !\class_exists($class_or_table) || !\is_subclass_of($class_or_table, Model::class))
-                {
-                    throw new \InvalidArgumentException(
-                        \sprintf('Class "%s" must be a subclass of "%s".', $class_or_table, Model::class)
-                    );
-                }
-            }
-
-            $class_or_table = $class_or_table::getTable();
+        if (!$class = Model::getClassFromTable($table)) {
+            throw new \InvalidArgumentException(\sprintf('Table "%s" does not exist.', $table));
         }
 
-        if ($class_or_table === null)
-        {
-            $this->label = $label;
+        $this->mapTypeLabel[$class] = $label;
+
+        return $this;
+    }
+
+    public function setLabelForModel(?string $label, Model $model): self
+    {
+        $this->mapTypeLabel[$model::class] = $label;
+
+        return $this;
+    }
+
+    public function setLabelForClass(?string $label, string $class): self
+    {
+        if (!$class) {
+            throw new \InvalidArgumentException('Class name must not be empty.');
         }
-        elseif ($label === null)
-        {
-            unset($this->mapTypeLabel[$class_or_table]);
+
+        if (!\class_exists($class)) {
+            throw new \InvalidArgumentException(\sprintf('Class "%s" does not exist.', $class));
         }
-        else
-        {
-            $this->mapTypeLabel[$class_or_table] = $label;
+
+        if (!\is_subclass_of($class, Model::class)) {
+            throw new \InvalidArgumentException(\sprintf('Class "%s" must be a subclass of "%s".', $class, Model::class));
         }
+
+        $this->mapTypeLabel[$class] = $label;
+
+        return $this;
+    }
+
+    public function setLabel(?string $label): self
+    {
+        $this->label = $label;
 
         return $this;
     }
@@ -78,14 +79,19 @@ class ChoicesBuilder
     }
 
     public function add(
-        string                          $key,
-        Model|LabelableInterface|string $value,
+        string                          $alias,
+        Model|LabelableInterface|string $choice,
+        string|null                     $value = null,
         string|null                     $group = null,
     ): static {
-        $this->choices[$key] = $value;
+        $this->choices[$alias] = $choice;
 
-        if ($group !== null) {
-            $this->choiceGroupMap[$key] = $group;
+        if (!\is_null($value)) {
+            $this->choiceValues[$alias] = $value;
+        }
+
+        if (!\is_null($group)) {
+            $this->choiceGroupMap[$alias] = $group;
         }
 
         return $this;
@@ -170,14 +176,36 @@ class ChoicesBuilder
 
     public function buildChoices(): array
     {
-        $keys = \array_keys($this->choices);
-
         $choices = [];
-        if ($this->emptyOption) {
+
+        if ($this->emptyOption)
+        {
             $choices['__flare_empty__'] = '__flare_empty__';
         }
 
-        return \array_merge($choices, \array_combine($keys, $keys) ?: []);
+        foreach ($this->choices as $alias => $choice)
+        {
+            $choices['c_' . $alias] = $choice;
+        }
+
+        return $choices;
+    }
+
+    public function buildChoiceValueCallback(): callable
+    {
+        return function (mixed $choice): string {
+            if ($choice === '__flare_empty__')
+            {
+                return '';
+            }
+
+            if (false === $alias = \array_search($choice, $this->choices, true))
+            {
+                return '';
+            }
+
+            return (string) ($this->choiceValues[$alias] ?? $alias);
+        };
     }
 
     public function buildChoiceLabelCallback(): callable
@@ -188,13 +216,7 @@ class ChoicesBuilder
                 return $this->buildChoiceLabel($this->emptyOptionLabel, '', '');
             }
 
-            $obj = match (true) {
-                \is_object($choice) => $choice,
-                \is_string($choice), \is_numeric($choice) => $this->getChoice($key) ?? $choice,
-                default => null,
-            };
-
-            return $this->buildChoiceLabel($obj, $key, $value);
+            return $this->buildChoiceLabel($choice, $key, $value);
         };
     }
 
@@ -218,17 +240,15 @@ class ChoicesBuilder
             return $this->translator->trans($choice, $params, 'flare_form');
         }
 
-        $label = $this->label ?? null;
+        $label = $this->label;
 
-        if ($choice instanceof Model) {
-            $label = $this->tryGetModelLabel($choice::class) ?? $label;
+        if (\is_object($choice))
+        {
+            $label = $this->tryGetTypeLabel($choice::class) ?? $label;
         }
 
-        if (is_object($choice) && isset($this->mapTypeLabel[$choice::class])) {
-            $label = $this->mapTypeLabel[$choice::class] ?? $label;
-        }
-
-        if (!$label && $choice instanceof Model) {
+        if (!$label && $choice instanceof Model)
+        {
             $label = (string) $choice->id;
         }
 
@@ -237,8 +257,8 @@ class ChoicesBuilder
             $params['%@table%'] = $choice::getTable();
             $params['%@name%'] = $this->translator->trans('table.' . $choice::getTable(), [], 'flare_form');
 
-            foreach ($choice->row() as $field => $value) {
-                $params['%' . $field . '%'] = $value;
+            foreach ($choice->row() as $field => $v) {
+                $params['%' . $field . '%'] = $v;
             }
 
             if ($this->getModelSuffix()) {
@@ -262,25 +282,45 @@ class ChoicesBuilder
         $options = [];
 
         if ($this->emptyOption) {
-            $options[''] = $this->buildChoiceLabel($this->emptyOptionLabel, '', '', '');
+            $options[''] = $this->buildChoiceLabel($this->emptyOptionLabel, '', '');
         }
 
         $labelFactory = $this->buildChoiceLabelCallback();
 
-        foreach ($this->choices as $key => $value) {
-            $options[$key] = $labelFactory($value, $key, $value);
+        foreach ($this->choices as $alias => $choice)
+        {
+            $value = $this->choiceValues[$alias] ?? $choice;
+            $options[$alias] = $labelFactory($choice, $alias, $value);
         }
 
         return $options;
     }
 
-    private function tryGetModelLabel($class): ?string
+    /**
+     * @param class-string $type
+     */
+    private function tryGetTypeLabel(string $type): ?string
     {
-        if (isset($this->mapTypeLabel[$class])) {
-            return $this->mapTypeLabel[$class];
+        if (isset($this->mapTypeLabel[$type])) {
+            return $this->mapTypeLabel[$type];
         }
 
         $defaults = $this->parameterBag->get('huh_flare.format_label_defaults') ?? [];
-        return $defaults[$class] ?? null;
+        $table = $this->tryGetTableFromClass($type);
+
+        return $defaults[$type] ?? $defaults[$table] ?? null;
+    }
+
+    private function tryGetTableFromClass(string $class): ?string
+    {
+        if (!\class_exists($class)) {
+            return null;
+        }
+
+        if (!\is_subclass_of($class, Model::class)) {
+            return null;
+        }
+
+        return $class::getTable();
     }
 }

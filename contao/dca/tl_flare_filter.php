@@ -177,7 +177,7 @@ $dca['fields'] = [
         'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
         'inputType' => 'checkbox',
         'eval' => [
-            'submitOnChange' => false,
+            'submitOnChange' => true,
             'tl_class' => 'cbx w50'
         ],
         'sql' => ['type' => 'boolean', 'default' => false],

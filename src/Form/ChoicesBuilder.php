@@ -234,7 +234,7 @@ class ChoicesBuilder
 
         if (\is_null($choice))
         {
-            return $this->translator->trans('empty_option.dash', $params, 'flare_form');
+            return $this->translator->trans('empty_option.ndash', $params, 'flare_form') ?: '-';
         }
 
         if (\is_string($choice))

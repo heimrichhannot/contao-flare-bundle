@@ -19,7 +19,8 @@ empty_option:
     select_all: "Alle auswählen"
     unknown: "Unbekannt"
     yes: "Ja"
-    dash: "–"
+    ndash: "–"
+    mdash: "—"
 
 table:
     tl_article: "Artikel"

@@ -49,7 +49,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
         foreach ($submitted ?? [] as $value)
         {
-            if ($value === '__flare_empty__') {
+            if ($value === ChoicesBuilder::EMPTY_CHOICE) {
                 return;
             }
 
@@ -157,13 +157,24 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
         $filterModel = $context->getFilterModel();
         $inferrer = new PtableInferrer($filterModel, $context->getListModel());
 
-        $choices->enable()->setEmptyOption((bool) $filterModel->hasEmptyOption);
+        $choices->enable();
+
+        if ($filterModel->hasEmptyOption)
+        {
+            $emptyOptionLabel = ($filterModel->formatEmptyOption === 'custom')
+                ? $filterModel->formatEmptyOptionCustom
+                : $filterModel->formatEmptyOption;
+
+            $choices->setEmptyOption($emptyOptionLabel ?: true);
+        }
 
         if ($ptable = $inferrer->getDcaMainPtable())
         {
             $label = ($filterModel->formatLabel === 'custom')
-                ? ($filterModel->formatLabelCustom)
-                : ($filterModel->formatLabel ?: null);
+                ? $filterModel->formatLabelCustom
+                : $filterModel->formatLabel;
+
+            $label = $label ?: null;
 
             $choices->setLabel($label);
 

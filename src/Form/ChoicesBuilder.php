@@ -11,6 +11,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ChoicesBuilder
 {
+    public const EMPTY_CHOICE = '__flare_empty__';
+
     /** @var array<string, Model|LabelableInterface|string> $choices */
     private array $choices = [];
     /** @var array<string, callable|string|null> $choiceValues */
@@ -180,7 +182,7 @@ class ChoicesBuilder
 
         if ($this->emptyOption)
         {
-            $choices['__flare_empty__'] = '__flare_empty__';
+            $choices[self::EMPTY_CHOICE] = self::EMPTY_CHOICE;
         }
 
         foreach ($this->choices as $alias => $choice)
@@ -194,7 +196,7 @@ class ChoicesBuilder
     public function buildChoiceValueCallback(): callable
     {
         return function (mixed $choice): string {
-            if ($choice === '__flare_empty__')
+            if ($choice === self::EMPTY_CHOICE)
             {
                 return '';
             }
@@ -211,7 +213,7 @@ class ChoicesBuilder
     public function buildChoiceLabelCallback(): callable
     {
         return function (mixed $choice, string $key, mixed $value): TranslatableMessage|string {
-            if ($key === '__flare_empty__')
+            if ($key === self::EMPTY_CHOICE)
             {
                 return $this->buildChoiceLabel($this->emptyOptionLabel, '', '');
             }

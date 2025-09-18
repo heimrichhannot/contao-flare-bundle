@@ -47,7 +47,12 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
             $submitted = [$submitted];
         }
 
-        foreach ($submitted ?? [] as $value) {
+        foreach ($submitted ?? [] as $value)
+        {
+            if ($value === '__flare_empty__') {
+                return;
+            }
+
             if (!$value instanceof Model) {
                 $qb->abort();
             }

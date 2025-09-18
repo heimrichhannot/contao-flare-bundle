@@ -83,7 +83,7 @@ readonly class ReaderManager
             throw new FlareException('Error fetching entries for auto_item.', previous: $e, source: __METHOD__);
         }
 
-        if (empty($ids)) {
+        if (!$ids) {
             return null;
         }
 

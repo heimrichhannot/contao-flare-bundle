@@ -39,7 +39,8 @@ class RegisterListTypesPass implements CompilerPassInterface
 
             foreach ($tags as $attributes)
             {
-                $alias = $attributes['alias'] = $this->getListTypeAlias($definition, $attributes);
+                $alias = $this->getListTypeAlias($definition, $attributes);
+                $attributes['alias'] = $alias;
 
                 $serviceId = 'huh.flare.list_type.' . $alias;
 
@@ -79,10 +80,8 @@ class RegisterListTypesPass implements CompilerPassInterface
 
     protected function getListTypeAlias(Definition $definition, array $attributes): string
     {
-        if (!empty($attributes['alias']))
+        if ($alias = (string) ($attributes['alias'] ?? ''))
         {
-            $alias = (string) $attributes['alias'];
-
             if ($alias === 'default') {
                 throw new \InvalidArgumentException('The list type alias "default" is a reserved keyword.');
             }

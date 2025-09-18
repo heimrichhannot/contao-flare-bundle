@@ -69,10 +69,10 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
                 // if empty option is enabled, empty array is allowed
             {
                 $whitelist = \array_map('intval', $whitelist);
-                $submitted = \array_map(static fn ($model) => $model->id, $submitted);
+                $submitted = \array_map(static fn (Model $model): int => (int) $model->id, $submitted);
                 $whitelist = \array_intersect($whitelist, $submitted);
 
-                if (empty($whitelist))
+                if (!$whitelist)
                 {
                     $qb->abort();
                 }
@@ -86,11 +86,15 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
         if ($inferrer->isDcaDynamicPtable())
         {
-            if ((\is_array($submitted) && !$filterModel->hasEmptyOption) || !empty($submitted))
+            $submittedGroup = null;
+            $submitted = \array_filter((array) $submitted);
+
+            if ($submitted || $filterModel->hasEmptyOption)
                 // we expect $submitted to be an array of values formatted {table}.{id}
                 // if hasEmptyOption is enabled, an empty array is allowed
             {
                 $submittedGroup = [];
+
                 foreach ($submitted as $value)
                 {
                     if ($value instanceof Model) {
@@ -107,7 +111,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
                 }
             }
 
-            $this->filterDynamicPtableField($qb, $filterModel, 'ptable', 'pid', $submittedGroup ?? null);
+            $this->filterDynamicPtableField($qb, $filterModel, 'ptable', 'pid', $submittedGroup);
             return;
         }
 
@@ -128,6 +132,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
         {
             $palettes[] = '{archive_legend},whitelistParents,formatLabel';
         }
+        /** @mago-expect lint:no-else-clause This else clause is fine. */
         elseif ($inferrer->isDcaDynamicPtable())
         {
             $palettes[] = '{archive_legend},groupWhitelistParents';
@@ -146,7 +151,11 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
             $palettes[] = $palette;
         }
 
-        return empty($palettes) ? null : Str::mergePalettes(...$palettes);
+        if (!$palettes) {
+            return null;
+        }
+
+        return Str::mergePalettes(...$palettes);
     }
 
     /**
@@ -227,9 +236,10 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
                 $formatLabel = $group['formatLabel'] ?? null;
                 $formatLabel = ($formatLabel === 'custom')
                     ? ($group['formatLabelCustom'] ?? null)
-                    : ($formatLabel ?: null);
+                    : $formatLabel;
+                $formatLabel = $formatLabel ?: null;
 
-                $choices->setLabel($formatLabel, $table);
+                $choices->setLabelForTable($formatLabel, $table);
             }
 
             if (!$choices->count())
@@ -272,7 +282,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
         $dca['eval']['multiple'] = $filterModel->isMultiple;
         $dca['eval']['chosen'] = true;
         $dca['eval']['includeBlankOption'] = true;
-        $dca['options_callback'] = static fn(DataContainer $dc) => $choices->buildOptions();
+        $dca['options_callback'] = static fn (DataContainer $dc): array => $choices->buildOptions();
 
         if ($ptable = $inferrer->getDcaMainPtable())
         {

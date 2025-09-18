@@ -53,7 +53,7 @@ class ListItemProvider extends AbstractListItemProvider
 
         $entries = \array_combine(
             \array_map(
-                static fn ($id) => \sprintf('%s.%d', $table, $id),
+                static fn (string $id): string => \sprintf('%s.%d', $table, $id),
                 \array_column($entries, 'id')
             ),
             $entries
@@ -99,7 +99,7 @@ class ListItemProvider extends AbstractListItemProvider
         $query = $this->listQueryManager->populate(
             listQueryBuilder: $listQueryBuilder,
             filters: $filters,
-            order: $sortDescriptor?->toSql(fn(string $col): string => $this->connection->quoteIdentifier($col)),
+            order: $sortDescriptor?->toSql($this->connection->quoteIdentifier(...)),
             limit: $paginator?->getItemsPerPage() ?: null,
             offset: $paginator?->getOffset() ?: null,
             onlyId: $returnIds,
@@ -112,11 +112,9 @@ class ListItemProvider extends AbstractListItemProvider
 
         $result = $query->execute($this->connection);
 
-        if ($returnIds) {
-            $entries = \array_unique($result->fetchFirstColumn());
-        } else {
-            $entries = $result->fetchAllAssociative();
-        }
+        $entries = $returnIds
+            ? \array_unique($result->fetchFirstColumn())
+            : $result->fetchAllAssociative();
 
         $result->free();
 

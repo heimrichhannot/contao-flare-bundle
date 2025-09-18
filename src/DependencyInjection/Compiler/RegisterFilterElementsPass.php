@@ -38,7 +38,8 @@ class RegisterFilterElementsPass implements CompilerPassInterface
 
             foreach ($tags as $attributes)
             {
-                $alias = $attributes['alias'] = $this->getFilterElementAlias($definition, $attributes);
+                $alias = $this->getFilterElementAlias($definition, $attributes);
+                $attributes['alias'] = $alias;
 
                 $serviceId = 'huh.flare.filter_element.' . $alias;
 
@@ -80,10 +81,8 @@ class RegisterFilterElementsPass implements CompilerPassInterface
 
     protected function getFilterElementAlias(Definition $definition, array $attributes): string
     {
-        if (!empty($attributes['alias']))
+        if ($alias = (string) ($attributes['alias'] ?? null))
         {
-            $alias = (string) $attributes['alias'];
-
             if ($alias === 'default') {
                 throw new \InvalidArgumentException('The filter element alias "default" is a reserved keyword.');
             }

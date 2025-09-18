@@ -132,8 +132,8 @@ class EventsListItemProvider extends AbstractListItemProvider
         $ids = [];
         foreach ($byDate as $entriesOnDate) {
             foreach ($entriesOnDate as $entry) {
-                if (!empty($entry['id'])) {
-                    $ids[] = $entry['id'];
+                if ($id = $entry['id'] ?? null) {
+                    $ids[] = $id;
                 }
             }
         }
@@ -161,7 +161,7 @@ class EventsListItemProvider extends AbstractListItemProvider
         $query = $this->listQueryManager->populate(
             listQueryBuilder: $listQueryBuilder,
             filters: $filters,
-            order: $sortDescriptor?->toSql(fn ($col) => $this->connection->quoteIdentifier($col)),
+            order: $sortDescriptor?->toSql($this->connection->quoteIdentifier(...)),
             select: $reduceSelect ? ['id', 'startTime', 'endTime', 'repeatEach', 'repeatEnd'] : null,
         );
 
@@ -213,7 +213,7 @@ class EventsListItemProvider extends AbstractListItemProvider
         // Sort the entries of each date by start time
         foreach ($byDate as $date => $entries)
         {
-            \usort($entries, static function ($a, $b) {
+            \usort($entries, static function (array $a, array $b): int {
                 if (0 === $comp = $a['startTime'] <=> $b['startTime']) {
                     return $a['endTime'] <=> $b['endTime'];
                 }
@@ -225,7 +225,7 @@ class EventsListItemProvider extends AbstractListItemProvider
         }
 
         // Sort the dates so that the earliest date is first
-        \uksort($byDate, static fn ($a, $b) => $a <=> $b);
+        \uksort($byDate, static fn (string $a, string $b): int => $a <=> $b);
 
         return $byDate;
     }
@@ -275,11 +275,18 @@ class EventsListItemProvider extends AbstractListItemProvider
             default => null,
         };
 
-        if (\in_array($unit, ['week', 'weeks'], true)) {
+        if (\in_array($unit, ['week', 'weeks'], true))
+        {
             $repeatInterval->d = $value * 7;
-        } elseif ($prop) {
+        }
+        /** @mago-expect lint:no-else-clause This is the most straightforward way to handle the different units. */
+        elseif ($prop)
+        {
             $repeatInterval->{$prop} = $value;
-        } else {
+        }
+        /** @mago-expect lint:no-else-clause This is fine. */
+        else
+        {
             return;
         }
 

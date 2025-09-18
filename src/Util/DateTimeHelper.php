@@ -54,18 +54,24 @@ class DateTimeHelper
 
     private static array $timeSpanMap;
 
+    /**
+     * Get the configured time zone or the system default.
+     *
+     * @mago-expect lint:no-nested-ternary The config fallback chain has to test for truthiness.
+     */
     public static function getTimeZone(): \DateTimeZone
     {
-        if (isset(self::$timeZone)) {
-            return self::$timeZone;
-        }
-
-        return self::$timeZone = new \DateTimeZone(Config::get('timeZone') ?: \date_default_timezone_get() ?: 'UTC');
+        return self::$timeZone ??= new \DateTimeZone(
+            Config::get('timeZone') ?: \date_default_timezone_get() ?: 'UTC'
+        );
     }
 
+    /**
+     * Get all time span options as a flat array.
+     */
     public static function getTimeSpanOptions(): array
     {
-        return \array_map(static fn ($timeSpanOptions) => \array_keys($timeSpanOptions), self::TIME_SPANS);
+        return \array_map('\array_keys', self::TIME_SPANS);
     }
 
     public static function getTimeSpanMap(): array

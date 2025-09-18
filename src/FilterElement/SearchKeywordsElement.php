@@ -37,7 +37,7 @@ class SearchKeywordsElement implements FormTypeOptionsContract
 
         $columns = \array_map($qb->column(...), $columns);
 
-        if (empty($searchTerms = $this->makeTerms($submittedData))) {
+        if (!$searchTerms = $this->makeTerms($submittedData)) {
             return;
         }
 

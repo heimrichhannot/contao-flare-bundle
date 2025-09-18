@@ -270,6 +270,7 @@ readonly class Paginator extends PaginatorConfig
                 {
                     yield $this->getPageItem($prevPage + 1, isFiller: true);
                 }
+                /** @mago-expect lint:no-else-clause This else clause is fine. */
                 elseif ($gap > 1)
                     // Multiple gap pages, show ellipsis
                 {

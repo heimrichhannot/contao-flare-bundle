@@ -247,14 +247,21 @@ class MyCustomElement implements FormTypeOptionsContract, HydrateFormContract, P
              *   of the model instance.
              *
              * **Sensible default labels are already defined for the most common models.**
+             * 
+             * You might as well specify Symfony translation labels scoped to 'flare_form'.
              */
             ->setLabel('%title%')  // Define the default label for all passed model instances.
             /**
              * When setting labels, you MAY also specify the model class or table name to apply
              *   the label to all instances of that class or respective table. This way, you can
              *   add choices of multiple models to the same field.
+             * 
+             * Use respectively: 
+             *   - {@see ChoicesBuilder::setLabelForTable()}
+             *   - {@see ChoicesBuilder::setLabelForClass()}
+             *   - {@see ChoicesBuilder::setLabelForModel()}
              */
-            ->setLabel('%id% - %title%', 'tl_news');
+            ->setLabelForTable('%id% - %title%', 'tl_news');
 
         // ... this is all you need to do to add choices to a choice field. The respecive choice
         //     callback options for the Symfony FormType are created and applied automatically.

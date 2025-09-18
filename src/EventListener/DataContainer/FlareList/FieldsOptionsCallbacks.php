@@ -71,7 +71,7 @@ readonly class FieldsOptionsCallbacks
     #[AsCallback(self::TABLE_NAME, 'fields.fieldAutoItem.options')]
     public function getFieldAutoItemOptions(?DataContainer $dc = null): array
     {
-        if (empty($row = DcaHelper::rowOf($dc)) || empty($table = $row['dc'])) {
+        if (!($row = DcaHelper::rowOf($dc)) || !($table = $row['dc'])) {
             return ['alias' => 'alias', 'id' => 'id'];
         }
 
@@ -128,7 +128,7 @@ readonly class FieldsOptionsCallbacks
             return [];
         }
 
-        $tables = \array_filter($tables, static fn(string $table) => $db->tableExists($table));
+        $tables = \array_filter($tables, $db->tableExists(...));
         return \array_combine($tables, $tables) ?: [];
     }
 }

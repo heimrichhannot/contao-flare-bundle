@@ -52,9 +52,7 @@ readonly class LoadDataContainerListener
             'tl_flare_list' => 'list.',
         };
 
-        $callbacks = $this->registry->getNamespace($prefix . $model->type) ?? [];
-
-        if (empty($callbacks)) {
+        if (!$callbacks = $this->registry->getNamespace($prefix . $model->type)) {
             return;
         }
 
@@ -67,11 +65,12 @@ readonly class LoadDataContainerListener
             return;
         }
 
-        if (!empty($callbacks[$target = 'config.onload'])) {
+        /** @mago-expect lint:no-empty This is the most straightforward way to check if the callback should be bound. */
+        if (!empty($callbacks[$target = 'config.onload']))
             // bind onload callback
-            $GLOBALS['TL_DCA'][$table]['config']['onload_callback'][] = static function (DataContainer $dc) use ($container, $target) {
-                $container->handleConfigOnLoad($dc, $target);
-            };
+        {
+            $GLOBALS['TL_DCA'][$table]['config']['onload_callback'][] =
+                static fn (DataContainer $dc): null => $container->handleConfigOnLoad($dc, $target);
         }
 
         $exclude = \array_fill_keys(['id', 'pid', 'tstamp', 'sorting', 'type', 'published', 'intrinsic'], true);
@@ -89,14 +88,15 @@ readonly class LoadDataContainerListener
             //   without interfering with the callback execution.
             // This is required for the group widget, for example.
 
+            /** @mago-expect lint:no-empty This is the most straightforward way to check if the callback should be bound. */
             if (!empty($callbacks[$target = "fields.{$field}.options"]))
                 // bind options callback
             {
-                $definition['options_callback'] = static function (?DataContainer $dc) use ($container, $target) {
-                    return $container->handleFieldOptions($dc, $target);
-                };
+                $definition['options_callback'] =
+                    static fn (?DataContainer $dc): array => $container->handleFieldOptions($dc, $target);
             }
 
+            /** @mago-expect lint:no-empty This is the most straightforward way to check if the callback should be bound. */
             if (!empty($callbacks[$target = "fields.{$field}.load"]))
                 // bind load callback
             {
@@ -104,11 +104,11 @@ readonly class LoadDataContainerListener
                     $definition['load_callback'] = [];
                 }
 
-                $definition['load_callback'][] = static function (mixed $value, ?DataContainer $dc) use ($container, $target) {
-                    return $container->handleLoadField($value, $dc, $target);
-                };
+                $definition['load_callback'][] =
+                    static fn (mixed $value, ?DataContainer $dc): mixed => $container->handleLoadField($value, $dc, $target);
             }
 
+            /** @mago-expect lint:no-empty This is the most straightforward way to check if the callback should be bound. */
             if (!empty($callbacks[$target = "fields.{$field}.save"]))
                 // bind save callback
             {
@@ -116,9 +116,8 @@ readonly class LoadDataContainerListener
                     $definition['save_callback'] = [];
                 }
 
-                $definition['save_callback'][] = static function (mixed $value, ?DataContainer $dc) use ($container, $target, $model) {
-                    return $container->handleSaveField($value, $dc, $target);
-                };
+                $definition['save_callback'][] =
+                    static fn (mixed $value, ?DataContainer $dc): mixed => $container->handleSaveField($value, $dc, $target);
             }
         }
     }

@@ -101,7 +101,7 @@ class FilterQueryBuilder
 
     public function whereAnd(string|CompositeExpression ...$conditions): static
     {
-        if (empty($conditions)) {
+        if (!$conditions) {
             return $this;
         }
 
@@ -112,7 +112,7 @@ class FilterQueryBuilder
 
     public function whereOr(string|CompositeExpression ...$conditions): static
     {
-        if (empty($conditions)) {
+        if (!$conditions) {
             return $this;
         }
 
@@ -136,7 +136,7 @@ class FilterQueryBuilder
             ));
         }
 
-        if (\is_array($value) && empty($value)) {
+        if (\is_array($value) && !$value) {
             throw new \InvalidArgumentException(\sprintf(
                 'Invalid parameter value for "%s": arrays must not be empty.', $param,
             ));
@@ -183,7 +183,7 @@ class FilterQueryBuilder
             return ParameterType::STRING;
         }
 
-        if (\is_array($value) && !empty($value))
+        if (\is_array($value) && $value)
         {
             $allInt = true;
             $allStr = true;
@@ -241,7 +241,7 @@ class FilterQueryBuilder
 
     public function build(?string $prefix): FilterQuery
     {
-        if (empty($this->conditions)) {
+        if (!$this->conditions) {
             return new FilterQuery('', [], []);
         }
 

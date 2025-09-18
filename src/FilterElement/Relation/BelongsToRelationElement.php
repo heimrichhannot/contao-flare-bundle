@@ -105,7 +105,9 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
                 $g_whitelistParents = \array_intersect($g_whitelistParents, $submittedWhitelist);
             }
 
-            if (empty($g_whitelistParents)) {
+            $g_whitelistParents = \array_values(\array_filter($g_whitelistParents));
+
+            if (!$g_whitelistParents) {
                 continue;
             }
 
@@ -121,7 +123,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
             $qb->setParameter($gKey_whitelistParents, $g_whitelistParents);
         }
 
-        if (empty($ors))
+        if (\count($ors) < 1)
         {
             $qb->abort();
         }
@@ -180,6 +182,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
         {
             $palette .= ';{archive_legend},groupWhitelistParents';
         }
+        /** @mago-expect lint:no-else-clause This else clause is fine. */
         elseif ($ptable ?? null)
         {
             $palette .= ',whitelistParents';

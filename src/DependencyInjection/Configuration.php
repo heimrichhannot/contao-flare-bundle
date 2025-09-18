@@ -18,7 +18,7 @@ class Configuration implements ConfigurationInterface
                     ->useAttributeAsKey('key')
                     ->prototype('scalar')->end()
                     ?->validate()
-                        ->ifTrue(function ($value) {
+                        ->ifTrue(static function (array $value): bool {
                             foreach ($value as $k => $v) {
                                 if (!\is_string($k) || !\is_string($v) || !\str_starts_with($k, 'tl_')) {
                                     return true;

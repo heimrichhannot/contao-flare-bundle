@@ -115,14 +115,22 @@ class ListQueryManager
             return ParameterizedSqlQuery::noResult();
         }
 
-        if (\is_array($select) && !empty($select))
+        if (\is_array($select) && !$select)
         {
-            $select = \array_unique(\array_map(function ($column) {
+            $select = \array_unique(\array_filter(\array_map(function (string $column): ?string {
+                if (!$column = \trim($column)) {
+                    return null;
+                }
+
+                if (!Str::isValidSqlName($column)) {
+                    return null;
+                }
+
                 return $this->connection->quoteIdentifier(self::ALIAS_MAIN . '.' . $column);
-            }, $select));
+            }, $select)));
         }
 
-        if (\is_array($select) && empty($select))
+        if (\is_array($select) && !$select)
         {
             return ParameterizedSqlQuery::noResult();
         }
@@ -157,9 +165,9 @@ class ListQueryManager
 
         $finalSQL = $sqlQuery->sqlify(
             select: $altSelect,
-            conditions: empty($invoked->conditions)
-                ? '1 = 1'
-                : $this->connection->createExpressionBuilder()->and(...$invoked->conditions),
+            conditions: $invoked->conditions
+                ? $this->connection->createExpressionBuilder()->and(...$invoked->conditions)
+                : '1 = 1',
             groupBy: $isCounting ? false : null,
             orderBy: $isCounting ? null : $order,
             limit: $isCounting ? null : $limit,
@@ -208,9 +216,8 @@ class ListQueryManager
             }
 
             $filterQuery = $filterQueryBuilder->build((string) $i);
-            $sql = $filterQuery->getSql();
 
-            if (empty($sql))
+            if (!$sql = $filterQuery->getSql())
             {
                 continue;
             }

@@ -59,7 +59,7 @@ readonly class ConfigOnLoadCallback
             return;
         }
 
-        if (empty($descriptor->getScopes()))
+        if (!$descriptor->getScopes())
             // If the filter is limited in scope, but the scope is empty, signal a misconfiguration.
         {
             Message::addInfo($this->translator->trans('filter.limited_scope.disqualified', [], 'flare'));
@@ -72,7 +72,7 @@ readonly class ConfigOnLoadCallback
 
         Message::addInfo($this->translator->trans($msgKey, [
             '%scopes%' => \implode(', ', \array_map(
-                fn (string $scope) => $this->translator->trans('filter.scope.' . $scope, [], 'flare'),
+                fn (string $scope): string => $this->translator->trans('filter.scope.' . $scope, [], 'flare'),
                 $descriptor->getScopes(),
             )),
         ], 'flare'));

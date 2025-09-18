@@ -83,6 +83,7 @@ class DcaHelper
         {
             $table = $dc_or_table;
         }
+        /** @mago-expect lint:no-else-clause This else clause is fine. */
         elseif (!$table = static::getListDCTableFromDataContainer($dc_or_table))
         {
             return $default;
@@ -103,6 +104,7 @@ class DcaHelper
         {
             $table = $dc_or_table;
         }
+        /** @mago-expect lint:no-else-clause This else clause is fine. */
         elseif (!$table = static::getListDCTableFromDataContainer($dc_or_table))
         {
             return [];
@@ -166,7 +168,7 @@ class DcaHelper
             return true;
         }
 
-        $normalizeType = static fn(string $type) => match($type) {
+        $normalizeType = static fn (string $type): string => match($type) {
             'int', 'integer' => 'integer',
             'bool', 'boolean' => 'boolean',
             'text', 'varchar', 'char', 'json', 'jsonb', 'string' => 'string',
@@ -203,7 +205,7 @@ class DcaHelper
 
         $fields = $GLOBALS['TL_DCA'][$table]['fields'] ?? [];
 
-        if (empty($labelFields) && $label = \array_intersect_key($fields, \array_flip(['title', 'name', 'headline']))) {
+        if (!$labelFields && $label = \array_intersect_key($fields, \array_flip(['title', 'name', 'headline']))) {
             $labelFields = \array_keys($label);
         }
 

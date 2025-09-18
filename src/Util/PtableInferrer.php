@@ -58,6 +58,10 @@ class PtableInferrer
 
     public function getDCA(): ?array
     {
+        if (!$this->entityTable) {
+            return null;
+        }
+
         Controller::loadDataContainer($this->entityTable);
 
         return $GLOBALS['TL_DCA'][$this->entityTable] ?? null;

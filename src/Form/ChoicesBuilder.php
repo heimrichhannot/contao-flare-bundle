@@ -246,7 +246,9 @@ class ChoicesBuilder
 
         if (\is_object($choice))
         {
-            $label = $this->tryGetTypeLabel($choice::class) ?? $label;
+            $label = $this->tryGetTypeLabel($choice::class)
+                ?? $this->label
+                ?: $this->tryGetDefaultTypeLabel($choice::class);
         }
 
         if (!$label && $choice instanceof Model)
@@ -303,16 +305,26 @@ class ChoicesBuilder
      */
     private function tryGetTypeLabel(string $type): ?string
     {
-        if (isset($this->mapTypeLabel[$type])) {
-            return $this->mapTypeLabel[$type];
+        return $this->mapTypeLabel[$type] ?? null;
+    }
+
+    /**
+     * @param class-string $type
+     */
+    private function tryGetDefaultTypeLabel(string $type): ?string
+    {
+        if (!$table = $this->tryGetTableFromClass($type)) {
+            return null;
         }
 
         $defaults = $this->parameterBag->get('huh_flare.format_label_defaults') ?? [];
-        $table = $this->tryGetTableFromClass($type);
 
         return $defaults[$type] ?? $defaults[$table] ?? null;
     }
 
+    /**
+     * @param class-string $class
+     */
     private function tryGetTableFromClass(string $class): ?string
     {
         if (!\class_exists($class)) {

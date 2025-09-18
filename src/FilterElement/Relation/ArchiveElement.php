@@ -348,7 +348,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
     {
         $filterModel = $context->getFilterModel();
 
-        if ($preselect = StringUtil::deserialize($filterModel->preselect ?: null))
+        if ($preselect = StringUtil::deserialize($filterModel->preselect ?: null, true))
         {
             $data = [];
 

@@ -47,6 +47,7 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract, F
         {
             $value = (bool) $this->normalizeValue($filterModel->preselect);
         }
+        /** @mago-expect lint:no-else-clause This else clause is fine. */
         else
         {
             $mode = BoolMode::tryFrom($filterModel->boolMode ?: '') ?? BoolMode::BINARY;
@@ -156,6 +157,7 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract, F
 
     public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
     {
+        /** @mago-expect lint:no-nested-ternary This is fine. Just be clear that the ternary operator is intentional. */
         return [
             'required' => false,
             'label' => $context->getFilterModel()->label ?: $context->getFilterModel()->title ?: 'CBX',

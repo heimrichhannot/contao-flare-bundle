@@ -15,7 +15,7 @@ readonly class SqlHelper
         array|int|string $find,
         string           $column,
     ): string {
-        $escaped = \array_map(static fn($value) => \preg_quote((string) $value, '/'), (array) $find);
+        $escaped = \array_map(static fn (string $value): string => \preg_quote((string) $value, '/'), (array) $find);
         $alternation = \implode('|', $escaped);
         $pattern = \sprintf('[{;]i:[0-9]+;(s:[0-9]+:"|i:)(%s)"?;(i:[0-9]+;|\})', $alternation);
 

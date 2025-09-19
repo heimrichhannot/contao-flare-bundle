@@ -18,14 +18,10 @@ readonly class RequestListener
     {
         $request = $event->getRequest();
 
-        if ($this->scopeMatcher->isBackendRequest($request))
-        {
-            $this->addBackendAssets();
-        }
-        else
-        {
-            $this->addFrontendAssets();
-        }
+        $this->scopeMatcher->isBackendRequest($request)
+            ? $this->addBackendAssets()
+            : $this->addFrontendAssets()
+        ;
     }
 
     protected function addBackendAssets(): void

@@ -95,15 +95,14 @@ class PaginatorBuilder
 
     public function build(): Paginator
     {
-        $lastPage = $this->itemsPerPage > 0 ? (int) \ceil($this->totalItems / $this->itemsPerPage) : 1;
-        if ($this->currentPage < 0) {
-            $currentPage = \max(1, $lastPage + $this->currentPage);
-        } else {
-            $currentPage = \max(1, \min($this->currentPage, $lastPage));
-        }
+        $lastPage = ($this->itemsPerPage > 0) ? (int) \ceil($this->totalItems / $this->itemsPerPage) : 1;
+        $currentPage = (int) \max(1, ($this->currentPage < 0)
+            ? ($lastPage + $this->currentPage)
+            : \min($this->currentPage, $lastPage)
+        );
 
         $firstItemNumber = ($currentPage - 1) * $this->itemsPerPage + 1;
-        $lastItemNumber = \max(\min($currentPage * $this->itemsPerPage, $this->totalItems), $firstItemNumber);
+        $lastItemNumber = (int) \max(\min($currentPage * $this->itemsPerPage, $this->totalItems), $firstItemNumber);
 
         $previousPage = $currentPage > 1 ? $currentPage - 1 : null;
         $nextPage = $currentPage < $lastPage ? $currentPage + 1 : null;

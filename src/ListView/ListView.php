@@ -103,7 +103,7 @@ class ListView
      *
      * @param Model|int|string $id
      * @return string|null
-     * @mago-expect lint:halstead This method is not complex.
+     * #mago-expect lint:halstead This method is not complex.
      */
     public function getDetailsPageUrl(Model|int|string $id): ?string
     {

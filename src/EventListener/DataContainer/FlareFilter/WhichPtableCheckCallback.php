@@ -40,6 +40,7 @@ readonly class WhichPtableCheckCallback
                 $filterModel->whichPtable_disableAutoOption();
             }
         }
+        /** @mago-expect lint:no-empty-catch-clause It's fine to skip if an inference exception occurs.' */
         catch (InferenceException) {}
     }
 }

@@ -51,7 +51,7 @@ readonly class AutoTypePalettesCallback
             default => null,
         };
 
-        if (empty($alias) || !($descriptor instanceof ServiceDescriptorInterface)) {
+        if (!isset($alias) || !$alias || !($descriptor instanceof ServiceDescriptorInterface)) {
             return;
         }
 
@@ -94,16 +94,14 @@ readonly class AutoTypePalettesCallback
         $prefix = $dcaPalettes['__prefix__'] ?? '';
         $suffix = $dcaPalettes['__suffix__'] ?? '';
 
-        $paletteConfigFactory = static function () use ($alias, $dc, &$prefix, &$suffix, $listModel, $filterModel) {
-            return new PaletteConfig(
-                alias: $alias,
-                dataContainer: $dc,
-                prefix: "" . $prefix,
-                suffix: "" . $suffix,
-                listModel: $listModel,
-                filterModel: $filterModel,
-            );
-        };
+        $paletteConfigFactory = static fn (): PaletteConfig => new PaletteConfig(
+            alias: $alias,
+            dataContainer: $dc,
+            prefix: $prefix,
+            suffix: $suffix,
+            listModel: $listModel,
+            filterModel: $filterModel,
+        );
 
         $service = $descriptor->getService();
 

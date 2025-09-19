@@ -20,12 +20,10 @@ readonly class PaginatorUrlProvider
         ?array  $routeParams = null,
         ?string $queryPrefix = null,
     ): callable {
-        return function (int $page) use ($routeName, $routeParams, $queryPrefix) {
-            return $this->urlGenerator->generate(
-                $routeName,
-                \array_merge($routeParams, [Paginator::pageParam($queryPrefix) => $page]),
-            );
-        };
+        return fn (int $page): string => $this->urlGenerator->generate(
+            $routeName,
+            \array_merge($routeParams, [Paginator::pageParam($queryPrefix) => $page]),
+        );
     }
 
     /**
@@ -50,7 +48,7 @@ readonly class PaginatorUrlProvider
             // Merge query parameters, excluding the page parameter
             $queryParams = \array_filter(
                 $request->query->all(),
-                static fn(string $key) => $key !== $pageParam,
+                static fn (string $key): bool => $key !== $pageParam,
                 \ARRAY_FILTER_USE_KEY,
             );
 

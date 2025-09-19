@@ -118,12 +118,15 @@ readonly class SqlQuery implements \Stringable
         $joins ??= $this->joins;
 
         $having ??= $this->having;
+        /** @mago-expect lint:no-boolean-literal-comparison This can be false explicitly to disable it. */
         $having = $having === false ? null : (array) $having;
 
         $groupBy ??= $this->groupBy;
+        /** @mago-expect lint:no-boolean-literal-comparison This can be false explicitly to disable it. */
         $groupBy = $groupBy === false ? null : (array) $groupBy;
 
         $orderBy ??= $this->orderBy;
+        /** @mago-expect lint:no-boolean-literal-comparison This can be false explicitly to disable it. */
         $orderBy = $orderBy === false ? null : (array) $orderBy;
 
         $limit ??= $this->limit;
@@ -139,21 +142,21 @@ readonly class SqlQuery implements \Stringable
             $sql .= \sprintf(' AS %s', $fromAlias);
         }
 
-        if (!empty($joins)) {
+        if ($joins) {
             $sql .= \sprintf(' %s', \implode(' ', $joins));
         }
 
         $sql .= \sprintf(' WHERE %s', $conditions);
 
-        if (!empty($having)) {
+        if ($having) {
             $sql .= \sprintf(' HAVING %s', \implode(' AND ', $having));
         }
 
-        if (!empty($groupBy)) {
+        if ($groupBy) {
             $sql .= \sprintf(' GROUP BY %s', \implode(', ', $groupBy));
         }
 
-        if (!empty($orderBy)) {
+        if ($orderBy) {
             $sql .= \sprintf(' ORDER BY %s', \implode(', ', $orderBy));
         }
 

@@ -18,6 +18,7 @@ use Contao\ManagerPlugin\Routing\RoutingPluginInterface;
 use HeimrichHannot\FlareBundle\HeimrichHannotFlareBundle;
 use Symfony\Component\Config\Loader\LoaderResolverInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\Routing\RouteCollection;
 
 class Plugin implements BundlePluginInterface, RoutingPluginInterface
 {
@@ -35,7 +36,7 @@ class Plugin implements BundlePluginInterface, RoutingPluginInterface
      * {@inheritdoc}
      * @throws \Exception
      */
-    public function getRouteCollection(LoaderResolverInterface $resolver, KernelInterface $kernel)
+    public function getRouteCollection(LoaderResolverInterface $resolver, KernelInterface $kernel): ?RouteCollection
     {
         return $resolver->resolve($routes = '@HeimrichHannotFlareBundle/config/routes.yaml')->load($routes);
     }

@@ -76,6 +76,7 @@ class EventsListType extends AbstractListType implements ListItemProviderContrac
 
         $pageMeta = new ReaderPageMetaDto();
 
+        /** @mago-expect lint:no-nested-ternary This is a fine fallback chain. */
         $pageMeta->setTitle($this->htmlDecoder->inputEncodedToPlainText(
             $model->pageTitle ?: $model->title ?: $objPage->title
         ));

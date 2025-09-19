@@ -157,7 +157,10 @@ readonly class FieldsLoadAndSaveCallbacks
         $mode = $model->{$configuredBy} ?? 'date';
 
         if ($mode === 'date') {
-            return \is_numeric($value) ? $value : (\strtotime($value) ?: '');
+            return (string) match (true) {
+                \is_numeric($value) => $value,
+                default => \strtotime($value) ?: ''
+            };
         }
 
         $eval = &$GLOBALS['TL_DCA'][self::TABLE_NAME]['fields'][$dc->field]['eval'];

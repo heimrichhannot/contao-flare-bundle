@@ -201,7 +201,7 @@ class ChoicesBuilder
                 return '';
             }
 
-            if (false === $alias = \array_search($choice, $this->choices, true))
+            if (!$alias = \array_search($choice, $this->choices, true))
             {
                 return '';
             }

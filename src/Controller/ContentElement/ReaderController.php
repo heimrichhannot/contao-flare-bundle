@@ -31,7 +31,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Twig\Error\RuntimeError;
 
 #[AsContentElement(ReaderController::TYPE, category: 'includes', template: 'content_element/flare_reader')]
-class ReaderController extends AbstractContentElementController
+final class ReaderController extends AbstractContentElementController
 {
     public const TYPE = 'flare_reader';
 
@@ -176,18 +176,20 @@ class ReaderController extends AbstractContentElementController
             return new Response($e->getMessage());
         }
 
-        if (($headline = StringUtil::deserialize($model->headline, true)) && !empty($headline['value'])) {
-            $unit = !empty($headline['unit']) ? $headline['unit'] : 'h2';
-            $hl = \sprintf('<%s>%s</%s>', $unit, $headline['value'], $unit);
+        $headline = StringUtil::deserialize($model->headline, true);
+
+        if ($value = $headline['value'] ?? null)
+        {
+            $unit = $headline['unit'] ?? 'h2';
+            $hl = \sprintf('<%s>%s</%s>', $unit, $value, $unit);
         }
 
-        return new Response(
-            ($hl ?? '') . \sprintf(
-                '%s <span class="tl_gray">[%s, %s]</span>',
-                $listModel->title,
-                $this->translator->listModel($listModel),
-                $listModel->dc,
-            ),
-        );
+        return new Response(\sprintf(
+            '%s%s <span class="tl_gray">[%s, %s]</span>',
+            $hl ?? '',
+            $listModel->title,
+            $this->translator->listModel($listModel),
+            $listModel->dc,
+        ));
     }
 }

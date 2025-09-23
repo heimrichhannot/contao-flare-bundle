@@ -18,12 +18,8 @@ use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Util\Str;
 
-#[AsListType(
-    alias: self::TYPE,
-    dataContainer: 'tl_news',
-    palette: '{filter_legend},',
-)]
-class NewsListType implements PresetFiltersContract, ReaderPageMetaContract, ReaderPageSchemaOrgContract
+#[AsListType(alias: self::TYPE, dataContainer: 'tl_news', palette: '{filter_legend},')]
+class NewsListType extends AbstractListType implements PresetFiltersContract, ReaderPageMetaContract, ReaderPageSchemaOrgContract
 {
     public const TYPE = 'flare_news';
     public const ALIAS_ARCHIVE = 'news_archive';

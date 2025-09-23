@@ -19,7 +19,7 @@ use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 use HeimrichHannot\FlareBundle\Util\Str;
 
 #[AsListType(alias: self::TYPE, palette: self::DEFAULT_PALETTE)]
-class GenericDataContainerListType implements DataContainerContract, ReaderPageMetaContract, PaletteContract
+class GenericDataContainerListType extends AbstractListType implements DataContainerContract, ReaderPageMetaContract, PaletteContract
 {
     public const TYPE = 'flare_generic_dc';
     public const DEFAULT_PALETTE = '{data_container_legend},dc,fieldAutoItem;{parent_legend},hasParent;{meta_legend},metaTitleFormat,metaDescriptionFormat,metaRobotsFormat';

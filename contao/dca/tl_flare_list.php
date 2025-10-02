@@ -98,6 +98,7 @@ $dca['fields'] = [
             'includeBlankOption' => true,
             'submitOnChange' => true,
             'tl_class' => 'w50',
+            'chosen' => true,
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],

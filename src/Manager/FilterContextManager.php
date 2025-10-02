@@ -140,11 +140,9 @@ readonly class FilterContextManager
         );
 
         CallbackHelper::call(
-            $callbacks,
-            [   // mandatory
-                PresetFiltersConfig::class => $presetConfig,
-            ],
+            $callbacks, [],
             [   // parameters to auto-resolve
+                PresetFiltersConfig::class => $presetConfig,
                 ListModel::class => $listModel,
                 ContentContext::class => $context,
                 'listType' => $listType,

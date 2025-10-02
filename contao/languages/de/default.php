@@ -20,6 +20,7 @@ $flare['filter'] = [
     FilterElement\BooleanElement::TYPE => ['Boolescher Eigenschaftswert', 'Filtern nach einem Boolean.'],
     FilterElement\CalendarCurrentElement::TYPE => ['Kalender-Zeitfenster', 'Filtern nach aktuellen Events.'],
     FilterElement\DateRangeElement::TYPE => ['Datumsbereich', 'Filtern nach einem Datumsbereich.'],
+    FilterElement\DcaSelectField::TYPE => ['DCA-Feld Optionsauswahl', 'Filtern nach einem ausgewählten DCA-Feld.'],
     FilterElement\PublishedElement::TYPE => ['Veröffentlicht', 'Nur veröffentlichte Elemente anzeigen.'],
     FilterElement\SimpleEquationElement::TYPE => ['Einfache Gleichung', 'Filtern, ob ein Feld einer einfachen Gleichung entspricht.'],
     FilterElement\SearchKeywordsElement::TYPE => ['Stichwortsuche', 'Filtern nach Freitexteingabe.'],

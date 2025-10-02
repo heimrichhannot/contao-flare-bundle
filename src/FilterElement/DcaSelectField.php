@@ -4,13 +4,14 @@ namespace HeimrichHannot\FlareBundle\FilterElement;
 
 use Contao\Controller;
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\Contract\Config\InScopeConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
@@ -21,11 +22,10 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormInterface;
 
 #[AsFilterElement(
-    alias: DcaSelectField::TYPE,
+    alias: self::TYPE,
     formType: ChoiceType::class,
-    scopes: [ContentContext::CONTEXT_LIST]
 )]
-class DcaSelectField implements FormTypeOptionsContract, HydrateFormContract, PaletteContract
+class DcaSelectField implements FormTypeOptionsContract, HydrateFormContract, PaletteContract, InScopeContract
 {
     public const TYPE = 'flare_dcaSelectField';
 
@@ -38,13 +38,68 @@ class DcaSelectField implements FormTypeOptionsContract, HydrateFormContract, Pa
             return;
         }
 
+        $submittedData = \array_values((array) $submittedData);
+
+        if (!\count($submittedData)) {
+            return;
+        }
+
         if (!$targetField = $context->getFilterModel()->fieldGeneric)
         {
             $qb->abort();
         }
 
-        $qb->where($qb->expr()->eq($qb->column($targetField), ':value'))
-            ->setParameter('value', $submittedData);
+        if (!$options = $this->getOptions($context->getListModel(), $context->getFilterModel()) ?? [])
+        {
+            $qb->abort();
+        }
+
+        if (\count($submittedData) === 1)
+        {
+            if (!$value = \array_search($submittedData[0], $options, true))
+            {
+                $qb->abort();
+            }
+
+            $qb->where($qb->expr()->eq($qb->column($targetField), ':value'))
+                ->setParameter('value', $value);
+
+            return;
+        }
+
+        if (\count(\array_unique($options)) !== \count($options))
+            // options are not unique, cannot flip
+        {
+            throw new FilterException(\sprintf(
+                'The options for the DCA select field %s.%s must be unique.',
+                $context->getListModel()->dc,
+                $targetField,
+            ));
+        }
+
+        $options = \array_flip($options);
+        $validOptions = [];
+
+        foreach ($submittedData as $value)
+        {
+            if ($key = $options[$value] ?? null) {
+                $validOptions[] = $key;
+            }
+        }
+
+        if (!\count($validOptions))
+            // of the submitted values, none is valid
+        {
+            $qb->abort();
+        }
+
+        $qb->where($qb->expr()->in($qb->column($targetField), ':values'))
+            ->setParameter('values', $validOptions);
+    }
+
+    public function isInScope(InScopeConfig $config): bool
+    {
+        return $config->getFilterModel()->intrinsic || $config->getContentContext()->isList();
     }
 
     public function getPalette(PaletteConfig $config): ?string
@@ -88,23 +143,16 @@ class DcaSelectField implements FormTypeOptionsContract, HydrateFormContract, Pa
             $return['label'] = $filterModel->label;
         }
 
-        $optionsField = $this->getOptionsField($listModel, $filterModel) ?? [];
-        $reference = $optionsField['reference'] ?? [];
+        $options = $this->getOptions($listModel, $filterModel);
 
-        if (!$options = $optionsField['options'] ?? null) {
+        if (\is_null($options)) {
             return $return;
-        }
-
-        if (\array_is_list($options))
-        {
-            $options = \array_combine($options, $options);
         }
 
         $choices->enable();
 
         foreach ($options as $value => $label)
         {
-            $label = $reference[$value] ?? $label;
             $choices->add($value, $label);
         }
 
@@ -173,6 +221,31 @@ class DcaSelectField implements FormTypeOptionsContract, HydrateFormContract, Pa
         $preselectField['eval']['multiple'] = (bool) $filterModel->isMultiple;
 
         return $field['options'] ?? [];
+    }
+
+    public function getOptions(ListModel $listModel, FilterModel $filterModel): ?array
+    {
+        $optionsField = $this->getOptionsField($listModel, $filterModel) ?? [];
+        $reference = $optionsField['reference'] ?? [];
+
+        if (!$options = $optionsField['options'] ?? null) {
+            return null;
+        }
+
+        if (\array_is_list($options))
+        {
+            $options = \array_combine($options, $options);
+        }
+
+        if ($reference)
+        {
+            foreach ($options as $k => $v)
+            {
+                $options[$k] = $reference[$v] ?? $reference[$k] ?? $v;
+            }
+        }
+
+        return $options;
     }
 
     public function getOptionsField(ListModel $listModel, FilterModel $filterModel): ?array

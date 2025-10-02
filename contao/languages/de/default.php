@@ -11,8 +11,8 @@ $lang = &$GLOBALS['TL_LANG'];
 $flare = &$lang['FLARE'];
 $err = &$lang['ERR']['flare'];
 
-$lang['CTE'][ListViewController::TYPE] = ['FLARE Listenansicht', 'Zeigt eine FLARE-Liste an.'];
-$lang['CTE'][ReaderController::TYPE] = ['FLARE Detailleser', 'Zeigt den Leser zu einer FLARE-Liste an.'];
+$lang['CTE'][ListViewController::TYPE] = ['Listenansicht [FLARE]', 'Zeigt eine FLARE-Liste an.'];
+$lang['CTE'][ReaderController::TYPE] = ['Detailleser [FLARE]', 'Zeigt den Leser zu einer FLARE-Liste an.'];
 
 $flare['filter'] = [
     FilterElement\Relation\ArchiveElement::TYPE => ['Archiv', 'Filtern nach Archiv.'],

@@ -7,18 +7,18 @@ namespace HeimrichHannot\FlareBundle\Manager;
 use Contao\Controller;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Contract\Config\InScopeConfig;
-use HeimrichHannot\FlareBundle\Contract\Config\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
-use HeimrichHannot\FlareBundle\Contract\ListType\PresetFiltersContract;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Factory\FilterContextBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
+use HeimrichHannot\FlareBundle\List\PresetFiltersConfig;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
-use HeimrichHannot\FlareBundle\Model\FilterModel;
-use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 
 /**
  * Class FilterContextManager
@@ -28,9 +28,10 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 readonly class FilterContextManager
 {
     public function __construct(
+        private FlareCallbackManager        $callbackManager,
         private FilterContextBuilderFactory $contextBuilderFactory,
-        private FilterElementRegistry $filterElementRegistry,
-        private ListTypeRegistry $listTypeRegistry,
+        private FilterElementRegistry       $filterElementRegistry,
+        private ListTypeRegistry            $listTypeRegistry,
     ) {}
 
     /**
@@ -125,7 +126,9 @@ readonly class FilterContextManager
         object                  $listType,
         array                   $manualFilters,
     ): void {
-        if (!$listType instanceof PresetFiltersContract) {
+        $callbacks = $this->callbackManager->getListCallbacks(who: $listModel->type, what: 'list.preset_filters');
+
+        if (!$callbacks) {
             return;
         }
 
@@ -136,7 +139,17 @@ readonly class FilterContextManager
             manualFilterAliases: $manualFilters,
         );
 
-        $listType->getPresetFilters($presetConfig);
+        CallbackHelper::call(
+            $callbacks,
+            [   // mandatory
+                PresetFiltersConfig::class => $presetConfig,
+            ],
+            [   // parameters to auto-resolve
+                ListModel::class => $listModel,
+                ContentContext::class => $context,
+                'listType' => $listType,
+            ]
+        );
 
         $filterDefinitions = $presetConfig->getFilterDefinitions();
 

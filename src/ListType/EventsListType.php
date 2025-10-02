@@ -6,23 +6,20 @@ use Contao\CalendarEventsModel;
 use Contao\CoreBundle\String\HtmlDecoder;
 use HeimrichHannot\FlareBundle\Contract\Config\ListItemProviderConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use HeimrichHannot\FlareBundle\Contract\Config\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\ListItemProviderContract;
-use HeimrichHannot\FlareBundle\Contract\ListType\PresetFiltersContract;
-use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageMetaContract;
-use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
+use HeimrichHannot\FlareBundle\List\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
 use HeimrichHannot\FlareBundle\ListItemProvider\EventsListItemProvider;
 use HeimrichHannot\FlareBundle\Util\Str;
 
 #[AsListType(self::TYPE, dataContainer: 'tl_calendar_events')]
-class EventsListType extends AbstractListType implements ListItemProviderContract, PaletteContract, PresetFiltersContract, ReaderPageMetaContract
+class EventsListType extends AbstractListType implements ListItemProviderContract
 {
     public const TYPE = 'flare_events';
 
@@ -57,6 +54,7 @@ class EventsListType extends AbstractListType implements ListItemProviderContrac
         );
     }
 
+    #[AsListCallback(self::TYPE, 'list.preset_filters')]
     public function getPresetFilters(PresetFiltersConfig $config): void
     {
         $config->add(PublishedElement::define(), true);

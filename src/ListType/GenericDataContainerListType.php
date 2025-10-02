@@ -9,9 +9,7 @@ use Contao\DataContainer;
 use Contao\Message;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
-use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageMetaContract;
 use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
-use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
@@ -19,10 +17,13 @@ use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 use HeimrichHannot\FlareBundle\Util\Str;
 
 #[AsListType(alias: self::TYPE, palette: self::DEFAULT_PALETTE)]
-class GenericDataContainerListType extends AbstractListType implements DataContainerContract, ReaderPageMetaContract, PaletteContract
+class GenericDataContainerListType extends AbstractListType implements DataContainerContract
 {
     public const TYPE = 'flare_generic_dc';
-    public const DEFAULT_PALETTE = '{data_container_legend},dc,fieldAutoItem;{parent_legend},hasParent;{meta_legend},metaTitleFormat,metaDescriptionFormat,metaRobotsFormat';
+    public const DEFAULT_PALETTE = <<<'PALETTE'
+        {data_container_legend},dc,fieldAutoItem;{parent_legend},hasParent;
+        {meta_legend},metaTitleFormat,metaDescriptionFormat,metaRobotsFormat
+        PALETTE;
 
     public function __construct(
         private readonly HtmlDecoder       $htmlDecoder,

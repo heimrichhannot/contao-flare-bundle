@@ -5,21 +5,18 @@ namespace HeimrichHannot\FlareBundle\ListType;
 use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\News;
 use Contao\NewsModel;
-use HeimrichHannot\FlareBundle\Contract\Config\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageSchemaOrgConfig;
-use HeimrichHannot\FlareBundle\Contract\ListType\PresetFiltersContract;
-use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageSchemaOrgContract;
-use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageMetaContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
+use HeimrichHannot\FlareBundle\List\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\Util\Str;
 
 #[AsListType(alias: self::TYPE, dataContainer: 'tl_news', palette: '{filter_legend},')]
-class NewsListType extends AbstractListType implements PresetFiltersContract, ReaderPageMetaContract, ReaderPageSchemaOrgContract
+class NewsListType extends AbstractListType
 {
     public const TYPE = 'flare_news';
     public const ALIAS_ARCHIVE = 'news_archive';
@@ -38,6 +35,7 @@ class NewsListType extends AbstractListType implements PresetFiltersContract, Re
         );
     }
 
+    #[AsListCallback(self::TYPE, 'list.preset_filters')]
     public function getPresetFilters(PresetFiltersConfig $config): void
     {
         $config->add(PublishedElement::define(), true);
@@ -53,13 +51,18 @@ class NewsListType extends AbstractListType implements PresetFiltersContract, Re
 
         $pageMeta = new ReaderPageMetaDto();
 
-        $pageMeta->setTitle(Str::getHeadline(
-            $model->headline
-                ? $this->htmlDecoder->inputEncodedToPlainText($model->headline)
-                : $contentModel->headline
-        ) ?: $this->htmlDecoder->inputEncodedToPlainText($objPage->title));
+        $headline = $model->headline
+            ? $this->htmlDecoder->inputEncodedToPlainText($model->headline)
+            : $contentModel->headline;
 
-        if ($teaser = $model->teaser ? $this->htmlDecoder->inputEncodedToPlainText($model->teaser) : null) {
+        $title = Str::getHeadline($headline) ?: $this->htmlDecoder->inputEncodedToPlainText($objPage->title);
+        $pageMeta->setTitle($title);
+
+        $teaser = $model->teaser
+            ? $this->htmlDecoder->inputEncodedToPlainText($model->teaser)
+            : null;
+
+        if ($teaser) {
             $pageMeta->setDescription(Str::htmlToMeta($teaser, 250));
         }
 

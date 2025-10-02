@@ -35,7 +35,7 @@ class NewsListType extends AbstractListType
         );
     }
 
-    #[AsListCallback(self::TYPE, 'list.preset_filters')]
+    #[AsListCallback(self::TYPE, 'preset_filters')]
     public function getPresetFilters(PresetFiltersConfig $config): void
     {
         $config->add(PublishedElement::define(), true);

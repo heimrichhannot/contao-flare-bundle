@@ -54,7 +54,7 @@ class EventsListType extends AbstractListType implements ListItemProviderContrac
         );
     }
 
-    #[AsListCallback(self::TYPE, 'list.preset_filters')]
+    #[AsListCallback(self::TYPE, 'preset_filters')]
     public function getPresetFilters(PresetFiltersConfig $config): void
     {
         $config->add(PublishedElement::define(), true);

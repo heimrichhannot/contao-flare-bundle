@@ -126,7 +126,7 @@ readonly class FilterContextManager
         object                  $listType,
         array                   $manualFilters,
     ): void {
-        $callbacks = $this->callbackManager->getListCallbacks(who: $listModel->type, what: 'list.preset_filters');
+        $callbacks = $this->callbackManager->getListCallbacks(who: $listModel->type, what: 'preset_filters');
 
         if (!$callbacks) {
             return;

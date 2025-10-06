@@ -40,6 +40,7 @@ readonly class FilterFormManager
         ];
 
         foreach ($filters->getIterator() as $filter)
+            // Apply only non-intrinsic, published filters with a valid type
         {
             $formType = $filter->getDescriptor()->getFormType();
             $filterElement = $filter->getDescriptor()->getService();

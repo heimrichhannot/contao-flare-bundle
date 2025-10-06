@@ -37,10 +37,15 @@ readonly class AddTargetAliasFieldCallback
             return;
         }
 
-        /** @var FilterElementDescriptor $descriptor */
-        $descriptor = $this->filterElementRegistry->get($filterModel?->type);
+        if (!$filterModel->type) {
+            return;
+        }
 
-        if (!$filterModel?->type || !$descriptor->isTargeted()) {
+        if (!$descriptor = $this->filterElementRegistry->get($filterModel->type)) {
+            return;
+        }
+
+        if (!$descriptor->isTargeted()) {
             return;
         }
 

@@ -7,6 +7,7 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Database;
 use Contao\DataContainer;
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\Contract\IsSupportedContract;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -40,8 +41,15 @@ readonly class FieldsOptionsCallbacks
     {
         $options = [];
 
-        foreach ($this->filterElementRegistry->all() as $alias => $filterElement)
+        foreach ($this->filterElementRegistry->all() as $alias => $filterElementDescriptor)
         {
+            $filterElement = $filterElementDescriptor->getService();
+
+            if ($filterElement instanceof IsSupportedContract && !$filterElement->isSupported())
+            {
+                continue;
+            }
+
             $options[$alias] = $this->translationManager->filterElement($alias);
         }
 

@@ -24,7 +24,7 @@ use Symfony\Component\Form\FormInterface;
     palette: '{filter_legend},fieldGeneric,isMultiple,preselect',
     formType: ChoiceType::class,
 )]
-class FieldValueChoiceElement implements FormTypeOptionsContract, HydrateFormContract
+class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFormContract
 {
     public const TYPE = 'flare_fieldValueChoice';
 

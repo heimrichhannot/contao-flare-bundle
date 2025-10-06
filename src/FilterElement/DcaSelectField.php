@@ -3,13 +3,13 @@
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
 use Contao\Controller;
+use Contao\DataContainer;
 use Contao\StringUtil;
+use Contao\System;
 use HeimrichHannot\FlareBundle\Contract\Config\InScopeConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
-use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
@@ -25,7 +25,7 @@ use Symfony\Component\Form\FormInterface;
     alias: self::TYPE,
     formType: ChoiceType::class,
 )]
-class DcaSelectField implements FormTypeOptionsContract, HydrateFormContract, PaletteContract, InScopeContract
+class DcaSelectField extends AbstractFilterElement implements HydrateFormContract, InScopeContract
 {
     public const TYPE = 'flare_dcaSelectField';
 
@@ -226,9 +226,10 @@ class DcaSelectField implements FormTypeOptionsContract, HydrateFormContract, Pa
     public function getOptions(ListModel $listModel, FilterModel $filterModel): ?array
     {
         $optionsField = $this->getOptionsField($listModel, $filterModel) ?? [];
-        $reference = $optionsField['reference'] ?? [];
+        $options = $this->tryGetOptionsFromField($listModel, $optionsField);
 
-        if (!$options = $optionsField['options'] ?? null) {
+        if (!\is_array($options))
+        {
             return null;
         }
 
@@ -237,7 +238,7 @@ class DcaSelectField implements FormTypeOptionsContract, HydrateFormContract, Pa
             $options = \array_combine($options, $options);
         }
 
-        if ($reference)
+        if ($reference = $optionsField['reference'] ?? [])
         {
             foreach ($options as $k => $v)
             {
@@ -250,8 +251,82 @@ class DcaSelectField implements FormTypeOptionsContract, HydrateFormContract, Pa
 
     public function getOptionsField(ListModel $listModel, FilterModel $filterModel): ?array
     {
+        Controller::loadLanguageFile($listModel->dc);
         Controller::loadDataContainer($listModel->dc);
 
         return $GLOBALS['TL_DCA'][$listModel->dc]['fields'][$filterModel->fieldGeneric] ?? null;
+    }
+
+    protected function tryGetOptionsFromField(ListModel $listModel, array $optionsField): ?array
+    {
+        if (\is_array($options = $optionsField['options'] ?? null))
+        {
+            return $options;
+        }
+
+        if ($optionsCallback = $optionsField['options_callback'] ?? null)
+        {
+            $dataContainer = $this->mockDataContainerObject($listModel->dc);
+
+            if (\is_string($optionsCallback) && \str_contains($optionsCallback, '::'))
+            {
+                [$class, $method] = \explode('::', $optionsCallback, 2);
+                $optionsCallback = [$class, $method];
+            }
+
+            if (\is_array($optionsCallback) && \count($optionsCallback) === 2)
+            {
+                $class = $optionsCallback[0] ?? null;
+                $method = $optionsCallback[1] ?? null;
+
+                if (!\class_exists($class) || !\method_exists($class, $method)) {
+                    return null;
+                }
+
+                if (!$service = System::importStatic($class)) {
+                    return null;
+                }
+
+                $options = $service->{$method}($dataContainer);
+            }
+
+            if (!\is_array($optionsCallback) && \is_callable($optionsCallback))
+            {
+                $options = $optionsCallback($dataContainer);
+            }
+        }
+
+        if (!\is_array($options)) {
+            return null;
+        }
+
+        return $options;
+    }
+
+    protected function mockDataContainerObject(string $table): DataContainer
+    {
+        return new class($table) extends DataContainer {
+            /**
+             * @noinspection MagicMethodsValidityInspection
+             * @noinspection PhpMissingParentConstructorInspection
+             */
+            public function __construct(string $table)
+            {
+                if ($table)
+                {
+                    $this->strTable = $table;
+                }
+            }
+
+            public function getPalette(): string
+            {
+                return '';
+            }
+
+            protected function save($varValue): void
+            {
+                // do nothing
+            }
+        };
     }
 }

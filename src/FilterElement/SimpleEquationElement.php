@@ -14,7 +14,7 @@ use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 
 #[AsFilterElement(alias: SimpleEquationElement::TYPE, isTargeted: true)]
-class SimpleEquationElement implements PaletteContract
+class SimpleEquationElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_equation_simple';
 

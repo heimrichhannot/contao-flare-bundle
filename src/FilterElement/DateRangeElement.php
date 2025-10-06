@@ -15,7 +15,7 @@ use HeimrichHannot\FlareBundle\Form\Type\DateRangeFilterType;
     palette: 'fieldGeneric',
     formType: DateRangeFilterType::class,
 )]
-class DateRangeElement implements FormTypeOptionsContract
+class DateRangeElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_dateRange';
 

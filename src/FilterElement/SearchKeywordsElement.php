@@ -19,7 +19,7 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
     scopes: [ContentContext::CONTEXT_LIST],
     isTargeted: true,
 )]
-class SearchKeywordsElement implements FormTypeOptionsContract
+class SearchKeywordsElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_search_keywords';
 

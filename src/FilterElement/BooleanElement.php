@@ -28,7 +28,7 @@ use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
     formType: CheckboxType::class,
     isTargeted: true,
 )]
-class BooleanElement extends AbstractFilterElement implements InScopeContract, FormTypeOptionsContract, PaletteContract
+class BooleanElement extends AbstractFilterElement implements InScopeContract
 {
     public const TYPE = 'flare_bool';
 

@@ -19,7 +19,7 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
     alias: CalendarCurrentElement::TYPE,
     formType: DateRangeFilterType::class,
 )]
-class CalendarCurrentElement implements FormTypeOptionsContract, PaletteContract
+class CalendarCurrentElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_calendar_current';
 

@@ -15,7 +15,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 )]
 class PublishedElement extends AbstractFilterElement
 {
-    const TYPE = 'flare_published';
+    public const TYPE = 'flare_published';
 
     public function __construct(
         private readonly Connection $connection,

@@ -249,8 +249,12 @@ readonly class Paginator extends PaginatorConfig
 
         // Define all page sets
         $windowPages = $this->getPageNumberWindow($windowPadding);
-        $leftFramePages = \range(1, \min($maxFramePages, $this->lastPage));
-        $rightFramePages = \range(\max(1, $this->lastPage - $maxFramePages + 1), $this->lastPage);
+        $leftFramePages = $maxFramePages === 0
+            ? []
+            : \range(1, \min($maxFramePages, $this->lastPage));
+        $rightFramePages = $maxFramePages === 0
+            ? []
+            : \range(\max(1, $this->lastPage - $maxFramePages + 1), $this->lastPage);
 
         // Create a set of all pages that should be visible
         $visiblePages = \array_unique(\array_merge($leftFramePages, $windowPages, $rightFramePages));

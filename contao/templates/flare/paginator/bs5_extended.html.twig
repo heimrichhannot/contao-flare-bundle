@@ -1,0 +1,63 @@
+{# @var \HeimrichHannot\FlareBundle\Paginator\Paginator paginator #}
+{# i18n-friendly labels (override via template vars if needed) #}
+{% set navLabel           = navLabel|default('Pagination') %}
+{% set prevLabel          = prevLabel|default('Previous page') %}
+{% set nextLabel          = nextLabel|default('Next page') %}
+{% set pageLabelTpl       = pageLabel|default('Page %page%') %}
+{% set ellipsisLabel      = ellipsisLabel|default('Ellipsis; more pages') %}
+{% set showDisabledBounds = (showDisabledBounds is defined) ? showDisabledBounds : true %}
+{% set navigation         = navigation ?? paginator.navigation %}
+
+<nav aria-label="{{ navLabel }}"{% if navClass|default(false) %} class="{{ navClass }}"{% endif %}>
+    <ul class="pagination{% if paginationClass|default(false) %} {{ paginationClass }}{% endif %}">
+        {# Previous #}
+        {% if paginator.previousPage %}
+            <li class="page-item">
+                <a href="{{ paginator.previous.url }}" class="page-link" rel="prev" aria-label="{{ prevLabel }}">
+                    <span aria-hidden="true">{{ prevContent|default('‹')|raw }}</span>
+                </a>
+            </li>
+        {% elseif showDisabledBounds %}
+            <li class="page-item disabled">
+                <span class="page-link" aria-disabled="true" tabindex="-1">
+                    <span aria-hidden="true">{{ prevContent|default('‹')|raw }}</span>
+                </span>
+            </li>
+        {% endif %}
+
+        {# Page numbers / ellipsis #}
+        {% for page in navigation %}
+            {# @var \HeimrichHannot\FlareBundle\Paginator\PageItem page #}
+            {% set pageLabel = pageLabelTpl|replace({'%page%': page.number}) %}
+
+            {% if page.ellipsis %}
+                <li class="page-item disabled" aria-hidden="true">
+                    <span class="page-link" role="separator" aria-label="{{ ellipsisLabel }}">…</span>
+                </li>
+            {% elseif page.current %}
+                <li class="page-item active" aria-current="page">
+                    <span class="page-link" aria-label="{{ pageLabel }}">{{ page.number }}</span>
+                </li>
+            {% else %}
+                <li class="page-item">
+                    <a href="{{ page.url }}" class="page-link" aria-label="{{ pageLabel }}">{{ page.number }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        {# Next #}
+        {% if paginator.nextPage %}
+            <li class="page-item">
+                <a href="{{ paginator.next.url }}" class="page-link" rel="next" aria-label="{{ nextLabel }}">
+                    <span aria-hidden="true">{{ nextContent|default('›')|raw }}</span>
+                </a>
+            </li>
+        {% elseif showDisabledBounds %}
+            <li class="page-item disabled">
+                <span class="page-link" aria-disabled="true" tabindex="-1">
+                    <span aria-hidden="true">{{ nextContent|default('›')|raw }}</span>
+                </span>
+            </li>
+        {% endif %}
+    </ul>
+</nav>

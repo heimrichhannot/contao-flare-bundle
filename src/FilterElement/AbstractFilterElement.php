@@ -23,7 +23,7 @@ abstract class AbstractFilterElement implements FormTypeOptionsContract, IsSuppo
      * @return array
      * @api Creates default form type options based on default filter model fields and the given config.
      */
-    public function createDefaultOptions(
+    public function defaultFormTypeOptions(
         FilterContext $context,
         array         $config = [],
     ): array {

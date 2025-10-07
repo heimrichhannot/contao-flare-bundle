@@ -7,6 +7,7 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\IsSupportedContract;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 
 abstract class AbstractFilterElement implements FormTypeOptionsContract, IsSupportedContract, PaletteContract
@@ -59,5 +60,10 @@ abstract class AbstractFilterElement implements FormTypeOptionsContract, IsSuppo
     public function getPalette(PaletteConfig $config): ?string
     {
         return null;
+    }
+
+    public static function define(): FilterDefinition
+    {
+        throw new \LogicException('Not implemented.');
     }
 }

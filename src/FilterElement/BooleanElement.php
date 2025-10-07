@@ -7,19 +7,17 @@ use Contao\Message;
 use Doctrine\DBAL\ParameterType;
 use HeimrichHannot\FlareBundle\Contract\Config\InScopeConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
-use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
 use HeimrichHannot\FlareBundle\Enum\BoolMode;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
-use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 
 #[AsFilterElement(
@@ -171,5 +169,21 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract
         }
 
         return '{filter_legend},fieldGeneric,label,boolMode,preselect';
+    }
+
+    public static function define(
+        ?string $targetField = null,
+        ?bool $expectedValue = null,
+    ): FilterDefinition {
+        $definition = new FilterDefinition(
+            alias: static::TYPE,
+            title: 'Boolean',
+            intrinsic: true,
+        );
+
+        $definition->fieldGeneric = $targetField;
+        $definition->preselect = (bool) $expectedValue;
+
+        return $definition;
     }
 }

@@ -2,9 +2,9 @@
 
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
+use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
@@ -76,15 +76,19 @@ class SimpleEquationElement extends AbstractFilterElement
     }
 
     public static function define(
-        string              $equationLeft,
-        SqlEquationOperator $equationOperator,
-        mixed               $equationRight = null,
+        ?string              $equationLeft = null,
+        ?SqlEquationOperator $equationOperator = null,
+        mixed                $equationRight = null,
     ): FilterDefinition {
         $definition = new FilterDefinition(
             alias: static::TYPE,
             title: 'Simple Equation',
             intrinsic: true,
         );
+
+        if (!$equationLeft || !$equationOperator || (!$equationOperator->isUnary() && $equationRight === null)) {
+            throw new FlareException('Invalid filter definition for SimpleEquationElement.');
+        }
 
         $definition->equationLeft = $equationLeft;
         $definition->equationOperator = $equationOperator->value;

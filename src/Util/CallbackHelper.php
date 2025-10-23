@@ -78,8 +78,12 @@ class CallbackHelper
 
     public static function tryGetProperty(object $obj, string $prop, mixed $default = null): mixed
     {
-        if (\method_exists($obj, 'get' . \ucfirst($prop))) {
-            return $obj->{'get' . \ucfirst($prop)}();
+        try {
+            if (\method_exists($obj, 'get' . \ucfirst($prop))) {
+                return $obj->{'get' . \ucfirst($prop)}();
+            }
+        } catch (\Throwable) {
+            // Ignore exceptions from getter methods
         }
 
         if (\property_exists($obj, $prop) || \method_exists($obj, '__get')) {

@@ -5,6 +5,7 @@ namespace HeimrichHannot\FlareBundle\Event;
 use Contao\ContentModel;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\ListView\ListView;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use Symfony\Contracts\EventDispatcher\Event;
@@ -15,6 +16,7 @@ class ListViewBuiltEvent extends Event
         private readonly ContentContext $contentContext,
         private readonly ContentModel $contentModel,
         private readonly ListModel $listModel,
+        private readonly ListView $listView,
         private readonly PaginatorConfig $paginatorConfig,
         private Template $template,
         private array $data = [],
@@ -33,6 +35,11 @@ class ListViewBuiltEvent extends Event
     public function getListModel(): ListModel
     {
         return $this->listModel;
+    }
+
+    public function getListView(): ListView
+    {
+        return $this->listView;
     }
 
     public function getPaginatorConfig(): PaginatorConfig

@@ -116,20 +116,26 @@ final class ListViewController extends AbstractContentElementController
 
         $this->responseTagger->addTags(['contao.db.' . $listModel->dc]);
 
-        $data = ['flare' => $listView];
-
         $event = new ListViewBuiltEvent(
             contentContext: $contentContext,
             contentModel: $contentModel,
             listModel: $listModel,
+            listView: $listView,
             paginatorConfig: $paginatorConfig,
             template: $template,
-            data: $data
+            data: ['flare' => $listView],
         );
 
         $this->eventDispatcher->dispatch($event, 'flare.list_view.built');
 
-        $template->setData($event->getData() + $template->getData());
+        // merge the data from the event listener with the template data, prioritizing the event listener data
+        $data = $event->getData() + $template->getData();
+
+        // ensure that the list view dto is always available in the template,
+        // in case it was accidentally removed by an event listener
+        $data['flare'] ??= $event->getListView();
+
+        $template->setData($data);
 
         return $template->getResponse();
     }

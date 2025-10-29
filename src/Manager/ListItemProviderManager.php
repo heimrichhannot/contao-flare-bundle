@@ -12,7 +12,7 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 readonly class ListItemProviderManager
 {
     public function __construct(
-        private ListItemProvider $defaultItemProvider,
+        private ListItemProviderInterface $defaultItemProvider,
         private ListTypeRegistry $listTypeRegistry,
     ) {}
 

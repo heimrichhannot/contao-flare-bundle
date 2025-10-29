@@ -15,6 +15,9 @@ services:
             - ../src/Paginator/*.php
             - ../src/Registry/Descriptor
 
+    HeimrichHannot\FlareBundle\ListItemProvider\ListItemProvider: ~
+    HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface: '@HeimrichHannot\FlareBundle\ListItemProvider\ListItemProvider'
+
     HeimrichHannot\FlareBundle\Manager\TemplateManager:
         bind:
             $finderFactory: '@contao.twig.finder_factory'

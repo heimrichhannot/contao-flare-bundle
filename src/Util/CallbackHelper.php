@@ -78,15 +78,23 @@ class CallbackHelper
 
     public static function tryGetProperty(object $obj, string $prop, mixed $default = null): mixed
     {
-        try {
-            if (\method_exists($obj, 'get' . \ucfirst($prop))) {
-                return $obj->{'get' . \ucfirst($prop)}();
+        try
+        {
+            $getMethod = 'get' . \ucfirst($prop);
+
+            if (\method_exists($obj, $getMethod))
+            {
+                return $obj->{$getMethod}();
             }
-        } catch (\Throwable) {
+        }
+        /** @mago-expect lint:no-empty-catch-clause This is intentional. */
+        catch (\Throwable)
+        {
             // Ignore exceptions from getter methods
         }
 
-        if (\property_exists($obj, $prop) || \method_exists($obj, '__get')) {
+        if (\property_exists($obj, $prop) || \method_exists($obj, '__get'))
+        {
             return $obj->{$prop};
         }
 

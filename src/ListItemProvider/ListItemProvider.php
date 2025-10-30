@@ -12,7 +12,7 @@ use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class ListItemProvider extends AbstractListItemProvider
 {

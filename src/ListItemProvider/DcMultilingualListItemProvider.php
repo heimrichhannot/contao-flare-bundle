@@ -36,9 +36,6 @@ class DcMultilingualListItemProvider extends ListItemProvider
         FilterContextCollection $filters,
         ContentContext $contentContext,
     ): int {
-
-
-
         $table = $filters->getTable();
 
         $onlyTranslated = (
@@ -46,9 +43,9 @@ class DcMultilingualListItemProvider extends ListItemProvider
             && $this->getFallbackLanguage($table) !== $GLOBALS['TL_LANGUAGE']
         );
 
-        if ($onlyTranslated) {
-            $this->applyMcQueries($listQueryBuilder, $filters, $contentContext, $GLOBALS['TL_LANGUAGE']);
+        $this->applyMlQueries($listQueryBuilder, $filters, $contentContext, $GLOBALS['TL_LANGUAGE']);
 
+        if ($onlyTranslated) {
             $filterDefinition = SimpleEquationElement::define(
                 equationLeft: $this->getPidColumn($table),
                 equationOperator: SqlEquationOperator::GREATER_THAN,
@@ -77,7 +74,7 @@ class DcMultilingualListItemProvider extends ListItemProvider
         return parent::fetchCount($listQueryBuilder, $filters, $contentContext);
     }
 
-    private function applyMcQueries(
+    private function applyMlQueries(
         ListQueryBuilder $listQueryBuilder,
         FilterContextCollection $filters,
         ContentContext $contentContext,

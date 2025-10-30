@@ -14,118 +14,17 @@ use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
-use HeimrichHannot\FlareBundle\Paginator\Paginator;
-use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
-use Terminal42\DcMultilingualBundle\QueryBuilder\MultilingualQueryBuilderFactoryInterface;
 
-class DcMultilingualListItemProvider extends AbstractListItemProvider
+class DcMultilingualListItemProvider extends ListItemProvider
 {
     public function __construct(
-        private readonly Connection               $connection,
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly ListQueryManager         $listQueryManager,
+        Connection               $connection,
+        EventDispatcherInterface $eventDispatcher,
+        ListQueryManager         $listQueryManager,
         private readonly FilterContextManager $filterContextManager,
-
-    ) {}
-
-    protected function getConnection(): Connection
-    {
-        return $this->connection;
-    }
-
-    protected function getEventDispatcher(): EventDispatcherInterface
-    {
-        return $this->eventDispatcher;
-    }
-
-    /**
-     * @throws FilterException
-     * @throws \Doctrine\DBAL\Exception
-     */
-    public function fetchEntries(
-        ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ?SortDescriptor         $sortDescriptor = null,
-        ?Paginator              $paginator = null,
-    ): array {
-        $table = $filters->getTable();
-        $entries = $this->fetchEntriesOrIds(
-            listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
-            sortDescriptor: $sortDescriptor,
-            paginator: $paginator,
-            returnIds: false,
-        );
-
-        $entries = \array_combine(
-            \array_map(
-                static fn (string $id): string => \sprintf('%s.%d', $table, $id),
-                \array_column($entries, 'id')
-            ),
-            $entries
-        );
-
-        $this->entryCache += $entries;
-
-        return $entries;
-    }
-
-    /**
-     * @throws FilterException
-     * @throws \Doctrine\DBAL\Exception
-     */
-    public function fetchIds(
-        ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ?SortDescriptor         $sortDescriptor = null,
-        ?Paginator              $paginator = null,
-    ): array {
-        return $this->fetchEntriesOrIds(
-            listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
-            sortDescriptor: $sortDescriptor,
-            paginator: $paginator,
-            returnIds: true,
-        );
-    }
-
-    /**
-     * @throws FilterException
-     * @throws \Doctrine\DBAL\Exception
-     */
-    protected function fetchEntriesOrIds(
-        ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ?SortDescriptor         $sortDescriptor = null,
-        ?Paginator              $paginator = null,
-        ?bool                   $returnIds = null,
-    ): array {
-        $returnIds ??= false;
-
-        $query = $this->listQueryManager->populate(
-            listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
-            order: $sortDescriptor?->toSql($this->connection->quoteIdentifier(...)),
-            limit: $paginator?->getItemsPerPage() ?: null,
-            offset: $paginator?->getOffset() ?: null,
-            onlyId: $returnIds,
-        );
-
-        if (!$query->isAllowed())
-        {
-            return [];
-        }
-
-        $result = $query->execute($this->connection);
-
-        $entries = $returnIds
-            ? \array_unique($result->fetchFirstColumn())
-            : $result->fetchAllAssociative();
-
-        $result->free();
-
-        return $entries;
+    ) {
+        parent::__construct($connection, $eventDispatcher, $listQueryManager);
     }
 
     /**
@@ -137,6 +36,8 @@ class DcMultilingualListItemProvider extends AbstractListItemProvider
         FilterContextCollection $filters,
         ContentContext $contentContext,
     ): int {
+
+
 
         $table = $filters->getTable();
 
@@ -173,23 +74,7 @@ class DcMultilingualListItemProvider extends AbstractListItemProvider
 
         }
 
-        $query = $this->listQueryManager->populate(
-            listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
-            isCounting: true
-        );
-
-        if (!$query->isAllowed()) {
-            return 0;
-        }
-
-        $result = $query->execute($this->connection);
-
-        $count = $result->fetchOne() ?: 0;
-
-        $result->free();
-
-        return $count;
+        return parent::fetchCount($listQueryBuilder, $filters, $contentContext);
     }
 
     private function applyMcQueries(
@@ -258,11 +143,6 @@ class DcMultilingualListItemProvider extends AbstractListItemProvider
         return array_intersect($tableColumns, array_keys($extractor->getFields()));
     }
 
-    /**
-     * Get the fields that are translatable.
-     *
-     * @return array
-     */
     private function getTranslatableFields(string $table): array
     {
         Controller::loadDataContainer($table);

@@ -200,6 +200,11 @@ class ListQueryBuilder
         return $this->groupBy;
     }
 
+    public function setGroupBy(array $groupBy): void
+    {
+        $this->groupBy = $groupBy;
+    }
+
     public function getJoins(): array
     {
         return $this->joins;

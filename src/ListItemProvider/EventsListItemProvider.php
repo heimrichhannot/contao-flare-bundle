@@ -5,6 +5,7 @@ namespace HeimrichHannot\FlareBundle\ListItemProvider;
 use Contao\StringUtil;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Result as DBALResult;
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\NotImplementedException;
@@ -29,6 +30,7 @@ class EventsListItemProvider extends AbstractListItemProvider
     public function fetchCount(
         ListQueryBuilder $listQueryBuilder,
         FilterContextCollection $filters,
+        ContentContext $contentContext,
     ): int {
         $byDate = $this->fetchEntriesGrouped(
             listQueryBuilder: $listQueryBuilder,

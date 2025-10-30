@@ -265,6 +265,16 @@ $dca['fields'] = [
         'eval' => ['maxlength' => 255, 'tl_class' => 'w50'],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
+    'dcmultilingual_display' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'options' => ['all', 'translated'],
+        'default' => 'all',
+        'eval' => [
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(16) NOT NULL default ''",
+    ],
 ];
 
 ###> contao/comments-bundle support

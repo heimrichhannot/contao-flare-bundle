@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\ListItemProvider;
 
 use Doctrine\DBAL\Connection;
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
@@ -122,12 +123,16 @@ class ListItemProvider extends AbstractListItemProvider
     }
 
     /**
+     * @param ListQueryBuilder $listQueryBuilder
+     * @param FilterContextCollection $filters
+     * @param ContentContext $contentContext
      * @throws FilterException
      * @throws \Doctrine\DBAL\Exception
      */
     public function fetchCount(
         ListQueryBuilder $listQueryBuilder,
-        FilterContextCollection $filters
+        FilterContextCollection $filters,
+        ContentContext $contentContext
     ): int {
         $query = $this->listQueryManager->populate(
             listQueryBuilder: $listQueryBuilder,

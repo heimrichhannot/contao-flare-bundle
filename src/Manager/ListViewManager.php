@@ -202,7 +202,7 @@ class ListViewManager
             $listQueryBuilder = $this->getListQueryBuilder($listModel, $contentContext);
             $filters = $this->getFilterContextCollection($listModel, $contentContext);
 
-            $total = $itemProvider->fetchCount($listQueryBuilder, $filters);
+            $total = $itemProvider->fetchCount($listQueryBuilder, $filters, $contentContext);
         }
         catch (\Exception $e)
         {

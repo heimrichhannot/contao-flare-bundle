@@ -19,6 +19,7 @@ interface ListItemProviderInterface
     public function fetchCount(
         ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
+        ContentContext         $contentContext,
     ): int;
 
     /**

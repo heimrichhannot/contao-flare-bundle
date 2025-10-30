@@ -12,10 +12,10 @@ use HeimrichHannot\FlareBundle\Manager\ListViewManager;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Symfony\Component\Form\FormInterface;
 
-readonly class ListViewResolver implements ListViewResolverInterface
+class ListViewResolver implements ListViewResolverInterface
 {
     public function __construct(
-        private ListViewManager $manager,
+        protected readonly ListViewManager $manager,
     ) {}
 
     /**

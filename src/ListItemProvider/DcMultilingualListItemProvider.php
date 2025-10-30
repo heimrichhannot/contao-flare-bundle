@@ -14,6 +14,8 @@ use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
+use HeimrichHannot\FlareBundle\Paginator\Paginator;
+use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class DcMultilingualListItemProvider extends ListItemProvider
@@ -43,7 +45,7 @@ class DcMultilingualListItemProvider extends ListItemProvider
             && $this->getFallbackLanguage($table) !== $GLOBALS['TL_LANGUAGE']
         );
 
-        $this->applyMlQueries($listQueryBuilder, $filters, $contentContext, $GLOBALS['TL_LANGUAGE']);
+        $this->applyMlQueriesIfNecessary($listQueryBuilder, $filters, $GLOBALS['TL_LANGUAGE']);
 
         if ($onlyTranslated) {
             $filterDefinition = SimpleEquationElement::define(
@@ -74,13 +76,24 @@ class DcMultilingualListItemProvider extends ListItemProvider
         return parent::fetchCount($listQueryBuilder, $filters, $contentContext);
     }
 
-    private function applyMlQueries(
+    protected function fetchEntriesOrIds(ListQueryBuilder $listQueryBuilder, FilterContextCollection $filters, ?SortDescriptor $sortDescriptor = null, ?Paginator $paginator = null, ?bool $returnIds = null): array
+    {
+
+        $this->applyMlQueriesIfNecessary($listQueryBuilder, $filters, $GLOBALS['TL_LANGUAGE']);
+        return parent::fetchEntriesOrIds($listQueryBuilder, $filters, $sortDescriptor, $paginator, $returnIds);
+    }
+
+
+    private function applyMlQueriesIfNecessary(
         ListQueryBuilder $listQueryBuilder,
         FilterContextCollection $filters,
-        ContentContext $contentContext,
         string $language,
     ): void
     {
+        if (in_array('translation', $listQueryBuilder->getMandatoryTableAliases(), true)) {
+            return;
+        }
+
         $table = $filters->getTable();
         $langColumnName = $this->getLangColumn($table);
         $pidColumnName = $this->getPidColumn($table);

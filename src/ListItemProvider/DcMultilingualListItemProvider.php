@@ -78,8 +78,27 @@ class DcMultilingualListItemProvider extends ListItemProvider
 
     protected function fetchEntriesOrIds(ListQueryBuilder $listQueryBuilder, FilterContextCollection $filters, ?SortDescriptor $sortDescriptor = null, ?Paginator $paginator = null, ?bool $returnIds = null): array
     {
+        $table = $filters->getTable();
+        if ($this->getFallbackLanguage($table) !== $GLOBALS['TL_LANGUAGE']) {
+            $this->applyMlQueriesIfNecessary($listQueryBuilder, $filters, $GLOBALS['TL_LANGUAGE']);
 
-        $this->applyMlQueriesIfNecessary($listQueryBuilder, $filters, $GLOBALS['TL_LANGUAGE']);
+            $translatableFields = $this->getTranslatableFields($table);
+
+            // use the translated alias for auto_item retrieval if the alias field is translatable
+            foreach ($filters->values() as $filterContext) {
+                if ('_flare_auto_item' !== $filterContext->getFilterAlias()) {
+                    continue;
+                }
+                if (!in_array($filters->getListModel()->getAutoItemField(), $translatableFields)) {
+                    continue;
+                }
+
+                $filterContext->getDescriptor()->setIsTargeted(true);
+                $filterContext->getFilterModel()->targetAlias = 'translation';
+                break;
+            }
+        }
+
         return parent::fetchEntriesOrIds($listQueryBuilder, $filters, $sortDescriptor, $paginator, $returnIds);
     }
 

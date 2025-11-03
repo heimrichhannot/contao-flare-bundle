@@ -6,11 +6,13 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
+use HeimrichHannot\FlareBundle\Event\ListFieldOptionsEvent;
 use HeimrichHannot\FlareBundle\Registry\FlareCallbackRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class ListContainer implements FlareCallbackContainerInterface
@@ -19,9 +21,10 @@ class ListContainer implements FlareCallbackContainerInterface
     public const CALLBACK_PREFIX = 'list';
 
     public function __construct(
-        private readonly Connection              $connection,
-        private readonly FlareCallbackRegistry   $callbackRegistry,
-        private readonly ListTypeRegistry        $listTypeRegistry,
+        private readonly Connection               $connection,
+        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly FlareCallbackRegistry    $callbackRegistry,
+        private readonly ListTypeRegistry         $listTypeRegistry,
     ) {}
 
     /* ============================= *
@@ -55,14 +58,14 @@ class ListContainer implements FlareCallbackContainerInterface
             return [];
         }
 
-        $namespace = static::CALLBACK_PREFIX . '.' . $listModel->type;
+        $event = new ListFieldOptionsEvent(
+            dataContainer: $dc,
+            listModel: $listModel,
+        );
 
-        $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
+        $this->eventDispatcher->dispatch($event, $target);
 
-        return CallbackHelper::firstReturn($callbacks, [], [
-            ListModel::class  => $listModel,
-            DataContainer::class  => $dc,
-        ]) ?? [];
+        return $event->getOptions();
     }
 
     /**

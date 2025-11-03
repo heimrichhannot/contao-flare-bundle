@@ -3,19 +3,22 @@
 namespace HeimrichHannot\FlareBundle\DataContainer;
 
 use Contao\DataContainer;
+use HeimrichHannot\FlareBundle\Event\FilterFieldOptionsEvent;
 use HeimrichHannot\FlareBundle\Manager\FlareCallbackManager;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class FilterContainer implements FlareCallbackContainerInterface
 {
     public const TABLE_NAME = 'tl_flare_filter';
 
     public function __construct(
-        private readonly FlareCallbackManager $callbacks,
-        private readonly ListQueryManager     $listQueryManager,
+        private readonly FlareCallbackManager     $callbacks,
+        private readonly ListQueryManager         $listQueryManager,
+        private readonly EventDispatcherInterface $eventDispatcher,
     ) {}
 
     /* ============================= *
@@ -51,19 +54,21 @@ class FilterContainer implements FlareCallbackContainerInterface
             return [];
         }
 
-        $callbacks = $this->callbacks->getFilterCallbacks($filterModel->type, $target);
-
         $listQueryManager = $this->listQueryManager->prepare($listModel);
         $tables = $listQueryManager->getTables();
         $targetTable = $listQueryManager->getTable($filterModel->targetAlias) ?: $listModel->dc;
 
-        return CallbackHelper::firstReturn($callbacks, [], [
-            FilterModel::class => $filterModel,
-            ListModel::class  => $listModel,
-            DataContainer::class  => $dc,
-            'tables' => $tables,
-            'targetTable' => $targetTable,
-        ]) ?? [];
+        $event = new FilterFieldOptionsEvent(
+            dataContainer: $dc,
+            filterModel: $filterModel,
+            listModel: $listModel,
+            tables: $tables,
+            targetTable: $targetTable,
+        );
+
+        $this->eventDispatcher->dispatch($event, $target);
+
+        return $event->getOptions();
     }
 
     /**

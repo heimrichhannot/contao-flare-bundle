@@ -2,6 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
+use HeimrichHannot\FlareBundle\Event\FilterFieldOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
@@ -12,6 +13,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsFilterElement(alias: SimpleEquationElement::TYPE, isTargeted: true)]
 class SimpleEquationElement extends AbstractFilterElement
@@ -58,10 +60,16 @@ class SimpleEquationElement extends AbstractFilterElement
         }
     }
 
-    #[AsFilterCallback(self::TYPE, 'fields.equationLeft.options')]
-    public function getEquationLeftOptions(string $targetTable): array
+    // #[AsFilterCallback(self::TYPE, 'fields.equationLeft.options')]
+    // public function getEquationLeftOptions(string $targetTable): array
+    // {
+    //     return DcaHelper::getFieldOptions($targetTable);
+    // }
+
+    #[AsEventListener('flare.filter.' . self::TYPE . '.fields.equationLeft.options')]
+    public function getEquationLeftOptionsEvent(FilterFieldOptionsEvent $event): void
     {
-        return DcaHelper::getFieldOptions($targetTable);
+        $event->setOptions(DcaHelper::getFieldOptions($event->targetTable));
     }
 
     public function getPalette(PaletteConfig $config): ?string

@@ -48,11 +48,11 @@ readonly class LoadDataContainerListener
         }
 
         $prefix = match ($table) {
-            'tl_flare_filter' => 'filter.',
-            'tl_flare_list' => 'list.',
+            'tl_flare_filter' => 'filter',
+            'tl_flare_list' => 'list',
         };
 
-        if (!$callbacks = $this->registry->getNamespace($prefix . $model->type)) {
+        if (!$callbacks = $this->registry->getNamespace("{$prefix}.{$model->type}")) {
             return;
         }
 
@@ -88,15 +88,11 @@ readonly class LoadDataContainerListener
             //   without interfering with the callback execution.
             // This is required for the group widget, for example.
 
-            /** @mago-expect lint:no-empty This is the most straightforward way to check if the callback should be bound. */
-            if (!empty($callbacks[$target = "fields.{$field}.options"]))
-                // bind options callback
-            {
-                $definition['options_callback'] =
-                    static fn (?DataContainer $dc): array => $container->handleFieldOptions($dc, $target);
-            }
+            $eventPrefix = "flare.{$prefix}.fields.{$field}";
 
-            /** @mago-expect lint:no-empty This is the most straightforward way to check if the callback should be bound. */
+            $definition['options_callback'] =
+                static fn (?DataContainer $dc): array => $container->handleFieldOptions($dc, "$eventPrefix.options");
+
             if (!empty($callbacks[$target = "fields.{$field}.load"]))
                 // bind load callback
             {
@@ -108,7 +104,6 @@ readonly class LoadDataContainerListener
                     static fn (mixed $value, ?DataContainer $dc): mixed => $container->handleLoadField($value, $dc, $target);
             }
 
-            /** @mago-expect lint:no-empty This is the most straightforward way to check if the callback should be bound. */
             if (!empty($callbacks[$target = "fields.{$field}.save"]))
                 // bind save callback
             {

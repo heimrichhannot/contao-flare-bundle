@@ -22,6 +22,10 @@ services:
         bind:
             $finderFactory: '@contao.twig.finder_factory'
 
+    HeimrichHannot\FlareBundle\EventListener\MultilingualListener:
+      calls:
+        - setFactory: ['@?Terminal42\DcMultilingualBundle\QueryBuilder\MultilingualQueryBuilderFactoryInterface']
+
 #    bind:
 #      $projectDir: '%kernel.project_dir%'
 #      $csrfTokenName: '%contao.csrf_token_name%'

@@ -16,6 +16,7 @@ use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
+use HeimrichHannot\FlareBundle\Util\DcMultilingualHelper;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class DcMultilingualListItemProvider extends ListItemProvider
@@ -49,7 +50,7 @@ class DcMultilingualListItemProvider extends ListItemProvider
 
         if ($onlyTranslated) {
             $filterDefinition = SimpleEquationElement::define(
-                equationLeft: $this->getPidColumn($table),
+                equationLeft: DcMultilingualHelper::getPidColumn($table),
                 equationOperator: SqlEquationOperator::GREATER_THAN,
                 equationRight: '0'
             );
@@ -63,7 +64,7 @@ class DcMultilingualListItemProvider extends ListItemProvider
         } else {
             $filters->add($this->filterContextManager->definitionToContext(
                 SimpleEquationElement::define(
-                    equationLeft: $this->getPidColumn($table),
+                    equationLeft: DcMultilingualHelper::getPidColumn($table),
                     equationOperator: SqlEquationOperator::EQUALS,
                     equationRight: '0'
                 ),
@@ -115,7 +116,7 @@ class DcMultilingualListItemProvider extends ListItemProvider
 
         $table = $filters->getTable();
         $langColumnName = $this->getLangColumn($table);
-        $pidColumnName = $this->getPidColumn($table);
+        $pidColumnName = DcMultilingualHelper::getPidColumn($table);
         $regularFields = $this->getRegularFields($table);
         $translatableFields = $this->getTranslatableFields($table);
 
@@ -144,12 +145,6 @@ class DcMultilingualListItemProvider extends ListItemProvider
         );
         $listQueryBuilder->setTableAliasMandatory('translation');
         $listQueryBuilder->setGroupBy([]);
-    }
-
-    private function getPidColumn(string $table): string
-    {
-        Controller::loadDataContainer($table);
-        return $GLOBALS['TL_DCA'][$table]['config']['langPid'] ?? 'langPid';
     }
 
     private function getLangColumn(string $table): string

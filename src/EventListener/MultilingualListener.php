@@ -60,7 +60,7 @@ class MultilingualListener
         }
 
         Controller::loadDataContainer($table);
-        if (($GLOBALS['TL_DCA']['tl_news']['config']['dataContainer'] ?? '') !== Driver::class) {
+        if (($GLOBALS['TL_DCA'][$table]['config']['dataContainer'] ?? '') !== Driver::class) {
             return;
         }
 

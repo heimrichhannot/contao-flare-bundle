@@ -54,6 +54,9 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
             $qb->abort();
         }
 
+        $dcaOptionsField = $this->getOptionsField($context->getListModel(), $context->getFilterModel()) ?? [];
+        $isMultiple = $dcaOptionsField['eval']['multiple'] ?? false;
+
         if (\count($submittedData) === 1)
         {
             if (!$value = \array_search($submittedData[0], $options, true))
@@ -61,8 +64,15 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
                 $qb->abort();
             }
 
-            $qb->where($qb->expr()->eq($qb->column($targetField), ':value'))
-                ->setParameter('value', $value);
+            if ($isMultiple)
+            {
+                $qb->whereInSerialized($value, $targetField);
+            }
+            else
+            {
+                $qb->where($qb->expr()->eq($qb->column($targetField), ':value'))
+                    ->setParameter('value', $value);
+            }
 
             return;
         }
@@ -93,8 +103,15 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
             $qb->abort();
         }
 
-        $qb->where($qb->expr()->in($qb->column($targetField), ':values'))
-            ->setParameter('values', $validOptions);
+        if ($isMultiple)
+        {
+            $qb->whereInSerialized($validOptions, $targetField);
+        }
+        else
+        {
+            $qb->where($qb->expr()->in($qb->column($targetField), ':values'))
+                ->setParameter('values', $validOptions);
+        }
     }
 
     public function isInScope(InScopeConfig $config): bool

@@ -14,7 +14,7 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 
 #[AsFilterElement(
     alias: SearchKeywordsElement::TYPE,
-    palette: '{filter_legend},columnsGeneric;{form_legend},placeholder',
+    palette: '{filter_legend},columnsGeneric;{form_legend},label,placeholder',
     formType: TextType::class,
     scopes: [ContentContext::CONTEXT_LIST],
     isTargeted: true,
@@ -83,7 +83,13 @@ class SearchKeywordsElement extends AbstractFilterElement
             'required' => false,
         ];
 
-        if ($placeholder = $context->getFilterModel()?->placeholder) {
+        $filterModel = $context->getFilterModel();
+
+        if ($label = $filterModel->label) {
+            $options['label'] = $label;
+        }
+
+        if ($placeholder = $filterModel->placeholder) {
             $options['attr']['placeholder'] = $placeholder;
         }
 

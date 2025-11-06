@@ -11,6 +11,7 @@ empty_option:
     all: "Alle"
     empty: "Leer"
     no: "Nein"
+    yes: "Ja"
     no_selection: "Keine Auswahl"
     none: "Keine"
     nothing: "Nichts"
@@ -18,9 +19,9 @@ empty_option:
     select: "Auswählen"
     select_all: "Alle auswählen"
     unknown: "Unbekannt"
-    yes: "Ja"
     ndash: "–"
     mdash: "—"
+    epsilon: ""
 
 table:
     tl_article: "Artikel"

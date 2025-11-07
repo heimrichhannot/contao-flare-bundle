@@ -43,14 +43,20 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
             return;
         }
 
-        $filterModel = $context->getFilterModel();
-        $submittedData = \array_filter((array) $context->getSubmittedData());
-
-        if (!($field = $filterModel->fieldGeneric) || !\count($submittedData)) {
+        if (!($field = $context->getFilterModel()->fieldGeneric)) {
             return;
         }
 
+        $submittedData = \array_filter((array) $context->getSubmittedData());
         $submittedData = \array_map('strtolower', \array_map('trim', $submittedData));
+        $submittedData = \array_filter(
+            $submittedData,
+            static fn(string $value): bool => $value !== '' && $value !== ChoicesBuilder::EMPTY_CHOICE,
+        );
+
+        if (!\count($submittedData)) {
+            return;
+        }
 
         $colField = $qb->column($field);
 

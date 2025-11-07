@@ -43,48 +43,87 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
             return;
         }
 
-        if (!($field = $context->getFilterModel()->fieldGeneric)) {
+        $filterModel = $context->getFilterModel();
+
+        if (!($field = $filterModel->fieldGeneric)) {
             return;
         }
 
-        $submittedData = \array_filter((array) $context->getSubmittedData());
+        $data = match ((bool) $filterModel->intrinsic)
+        {
+            true => $this->extractPreselectData($filterModel),
+            false => $this->extractSubmittedData((array) $context->getSubmittedData())
+                ?? $this->extractPreselectData($filterModel),
+        };
+
+        if (!$data) {
+            return;
+        }
+
+        $colField = $qb->column($field);
+
+        if (\count($data) < 2)
+        {
+            $qb->where("LOWER(TRIM({$colField})) = :value")
+                ->setParameter('value', \reset($data));
+        }
+        /** @mago-expect lint:no-else-clause This else clause is fine. */
+        else
+        {
+            $qb->where("LOWER(TRIM({$colField})) IN (:values)")
+                ->setParameter('values', $data);
+        }
+    }
+
+    public function extractPreselectData(FilterModel $filterModel): ?array
+    {
+        if (!$preselect = $filterModel->preselect) {
+            return null;
+        }
+
+        if (\is_array($preselect)) {
+            return $preselect;
+        }
+
+        if ($filterModel->isMultiple
+            || (\is_string($preselect) && \preg_match('/^a:\d+:\{.*}$/', $preselect)))
+        {
+            return StringUtil::deserialize($preselect, true);
+        }
+
+        return [$preselect];
+    }
+
+    public function extractSubmittedData(array $submittedData): ?array
+    {
+        $submittedData = \array_filter($submittedData);
         $submittedData = \array_map('strtolower', \array_map('trim', $submittedData));
         $submittedData = \array_filter(
             $submittedData,
             static fn(string $value): bool => $value !== '' && $value !== ChoicesBuilder::EMPTY_CHOICE,
         );
 
-        if (!\count($submittedData)) {
-            return;
+        if (!$submittedData) {
+            return null;
         }
 
-        $colField = $qb->column($field);
-
-        if (\count($submittedData) < 2)
-        {
-            $qb->where("LOWER(TRIM({$colField})) = :value")
-                ->setParameter('value', \reset($submittedData));
-        }
-        /** @mago-expect lint:no-else-clause This else clause is fine. */
-        else
-        {
-            $qb->where("LOWER(TRIM({$colField})) IN (:values)")
-                ->setParameter('values', $submittedData);
-        }
+        return $submittedData;
     }
 
     public function hydrateForm(FilterContext $context, FormInterface $field): void
     {
-        $filterModel = $context->getFilterModel();
-
-        if (!$preselect = $filterModel->preselect) {
+        if ($field->isSubmitted()) {
             return;
         }
 
-        if ($filterModel->isMultiple)
-        {
-            $preselect = StringUtil::deserialize($preselect, true);
+        $filterModel = $context->getFilterModel();
 
+        if (!$preselect = $this->extractPreselectData($filterModel)) {
+            return;
+        }
+
+        if (!$filterModel->isMultiple) {
+            $preselect = \reset($preselect);
         }
 
         $field->setData($preselect);
@@ -173,15 +212,16 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
             return [];
         }
 
-        $table = $this->connection->quoteIdentifier($table);
-        $field = $this->connection->quoteIdentifier($field);
+        $qTable = $this->connection->quoteIdentifier($table);
+        $qField = $this->connection->quoteIdentifier($field);
 
-        $result = $this->connection
-            ->prepare("SELECT DISTINCT {$field} AS value FROM {$table} WHERE {$field} IS NOT NULL ORDER BY {$field}")
-            ->executeQuery();
+        $sql = "SELECT DISTINCT {$qField} AS value FROM {$qTable} WHERE {$qField} IS NOT NULL ORDER BY {$qField}";
 
-        $values = $result->fetchFirstColumn();
+        $values = \array_values(\array_filter(
+            $this->connection->fetchFirstColumn($sql),
+            static fn (mixed $v): bool => (!\is_string($v) || \trim($v) !== '')
+        ));
 
-        return $this->valueCache[$table][$field] = \array_filter($values);
+        return $this->valueCache[$table][$field] = $values;
     }
 }

@@ -27,6 +27,7 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Error\RuntimeError;
 
@@ -43,6 +44,7 @@ final class ReaderController extends AbstractContentElementController
         private readonly ResponseContextAccessor  $responseContextAccessor,
         private readonly ScopeMatcher             $scopeMatcher,
         private readonly TranslationManager       $translator,
+        private readonly RequestStack $requestStack,
     ) {}
 
     /**
@@ -90,6 +92,12 @@ final class ReaderController extends AbstractContentElementController
             }
 
             $errData[$model->getTable() . '.id'] = $model->id;
+
+            $this->requestStack->getMainRequest()?->attributes->set('flare_reader', [
+                'table' => $model::getTable(),
+                'id' => $model->id,
+                'list_id' => $listModel->id,
+            ]);
 
             $this->entityCacheTags->tagWith($model);
 

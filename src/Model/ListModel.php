@@ -16,6 +16,7 @@ use HeimrichHannot\FlareBundle\Util\PtableInferrableInterface;
  * @property bool $published
  * @property string $dc
  * @property bool $comments_enabled
+ * @property bool $comments_sendNativeEmails
  * @property string $fieldAutoItem
  * @property string $jumpToReader
  * @property array  $sortSettings

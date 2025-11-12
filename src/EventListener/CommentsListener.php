@@ -52,16 +52,19 @@ readonly class CommentsListener
 
         $notifies = [];
 
-        if ($archiveModel->notify !== 'notify_author'
-            && isset($GLOBALS['TL_ADMIN_EMAIL']))
+        if ($listModel->comments_sendNativeEmails)
         {
-            $notifies[] = $GLOBALS['TL_ADMIN_EMAIL'];
-        }
+            if ($archiveModel->notify !== 'notify_author'
+                && isset($GLOBALS['TL_ADMIN_EMAIL']))
+            {
+                $notifies[] = $GLOBALS['TL_ADMIN_EMAIL'];
+            }
 
-        if ($archiveModel->notify !== 'notify_admin'
-            && $authorEmail = (UserModel::findById($newsModel->author ?: 0)?->email))
-        {
-            $notifies[] = $authorEmail;
+            if ($archiveModel->notify !== 'notify_admin'
+                && $authorEmail = (UserModel::findById($newsModel->author ?: 0)?->email))
+            {
+                $notifies[] = $authorEmail;
+            }
         }
 
         $config = new \stdClass();

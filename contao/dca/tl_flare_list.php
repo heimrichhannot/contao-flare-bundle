@@ -277,6 +277,13 @@ $dca['fields']['comments_enabled'] = [
     'eval' => ['doNotCopy' => true, 'tl_class' => 'w50'],
     'sql' => ['type' => 'boolean', 'default' => false],
 ];
+$dca['fields']['comments_sendNativeEmails'] = [
+    'exclude' => true,
+    'default' => true,
+    'inputType' => 'checkbox',
+    'eval' => ['doNotCopy' => true, 'tl_class' => 'w50'],
+    'sql' => ['type' => 'boolean', 'default' => true],
+];
 ###< contao/comments-bundle support
 
 $dca['palettes'] = [
@@ -291,4 +298,5 @@ $dca['subpalettes'] = [
     'whichPtable_auto' => '',
     'whichPtable_dynamic' => 'fieldPtable',
     'whichPtable_static' => 'tablePtable',
+    'comments_enabled' => 'comments_sendNativeEmails',
 ];

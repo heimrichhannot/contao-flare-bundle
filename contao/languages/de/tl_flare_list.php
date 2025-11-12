@@ -57,4 +57,5 @@ $lang['whichPtable_options'] = [
 ###> comments_legend ###
 $lang['comments_legend'] = 'Kommentareinstellungen';
 $lang['comments_enabled'] = ['Kommentare aktivieren', 'Aktivieren Sie die Kommentarfunktion für Einträge dieser Liste.'];
+$lang['comments_sendNativeEmails'] = ['Standard-Benachrichtigungen versenden', 'Versendet die konfigurierten E-Mail-Benachrichtigungen von Contao Comments.'];
 ###< comments_legend ###

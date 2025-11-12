@@ -108,11 +108,15 @@ readonly class CommentsListener
             return;
         }
 
-        $event->setPalette(PaletteManipulator::create()
+        $pm = PaletteManipulator::create()
             ->addLegend('comments_legend')
-            ->addField('comments_enabled','comments_legend', PaletteManipulator::POSITION_APPEND)
-            ->applyToString($event->getPalette()),
-        );
+            ->addField('comments_enabled', 'comments_legend', PaletteManipulator::POSITION_APPEND);
+
+        if ($event->getPaletteConfig()->getListModel()->comments_enabled) {
+            $pm->addField('comments_sendNativeEmails', 'comments_legend', PaletteManipulator::POSITION_APPEND);
+        }
+
+        $event->setPalette($pm->applyToString($event->getPalette()));
     }
 
     /**

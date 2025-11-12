@@ -274,7 +274,7 @@ $dca['fields']['comments_enabled'] = [
     'exclude' => true,
     'default' => false,
     'inputType' => 'checkbox',
-    'eval' => ['doNotCopy' => true, 'tl_class' => 'w50'],
+    'eval' => ['doNotCopy' => true, 'tl_class' => 'clr w50', 'submitOnChange' => true],
     'sql' => ['type' => 'boolean', 'default' => false],
 ];
 $dca['fields']['comments_sendNativeEmails'] = [
@@ -298,5 +298,4 @@ $dca['subpalettes'] = [
     'whichPtable_auto' => '',
     'whichPtable_dynamic' => 'fieldPtable',
     'whichPtable_static' => 'tablePtable',
-    'comments_enabled' => 'comments_sendNativeEmails',
 ];

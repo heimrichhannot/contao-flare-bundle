@@ -20,7 +20,8 @@ $dca['config'] = [
     'sql' => [
         'keys' => [
             'id' => 'primary',
-            'pid,published' => 'index'
+            'pid,published' => 'index',
+            'pid,formAlias' => 'unique',
         ],
     ],
 ];
@@ -112,6 +113,20 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
+    'formAlias' => [
+        'exclude' => true,
+        'search' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
+        'inputType' => 'text',
+        'eval' => [
+            'mandatory' => false,
+            'maxlength' => 128,
+            'tl_class' => 'w50',
+            'doNotCopy' => true,
+            'rgxp' => 'alias',
+        ],
+        'sql' => ['type' => 'string', 'length' => 128, 'default' => '', 'notnull' => true],
+    ],
     'published' => [
         'exclude' => true,
         'toggle' => true,
@@ -131,7 +146,7 @@ $dca['fields'] = [
         'inputType' => 'checkbox',
         'eval' => [
             'submitOnChange' => true,
-            'tl_class' => 'cbx w50'
+            'tl_class' => 'cbx m12 w50',
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
@@ -605,7 +620,7 @@ $dca['palettes'] = [
         'configureStart', 'configureStop', 'boolMode',
     ],
     '__prefix__' => '{title_legend},title,type,intrinsic',
-    '__suffix__' => '{publish_legend},published',
+    '__suffix__' => '{expert_legend:hide},formAlias;{publish_legend},published',
 ];
 
 $dca['palettes']['default'] = Str::mergePalettes($dca['palettes']['__prefix__'], $dca['palettes']['__suffix__']);

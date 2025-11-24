@@ -16,3 +16,8 @@ $lang['targetAlias'] = ['Apply on', 'Please select on which relation this filter
 $lang['publish_legend'] = 'Publish';
 $lang['published'] = ['Published', 'Whether the filter is active.'];
 ###< publish_legend ###
+
+###> expert_legend ###
+$lang['expert_legend'] = 'Expert settings';
+$lang['formAlias'] = ['Form field alias', 'Enter an alias for this filter\'s form field.'];
+###< expert_legend ###

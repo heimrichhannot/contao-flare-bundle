@@ -85,9 +85,11 @@ readonly class FilterFormManager
                 }
             }
 
-            $key = $filter->getFilterModel()->id;
+            if (!$key = \trim((string) $filter->getFilterModel()->formAlias)) {
+                $key = (string) $filter->getFilterModel()->id;
+            }
 
-            $builder->add((string) $key, $formType, $options);
+            $builder->add($key, $formType, $options);
         }
 
         // *Always add submit button in template, not to the form builder!*

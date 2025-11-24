@@ -81,3 +81,8 @@ $lang['equationOperator'] = ['Operator', 'Operator der Gleichung aus.'];
 $lang['equationLeft'] = ['Linker Operand', 'Bitte wählen Sie den linken Operanden für die Gleichung aus.'];
 $lang['equationRight'] = ['Rechter Operand', 'Bitte wählen Sie den rechten Operanden für die Gleichung aus.'];
 ###< flare_simple_equation_legend ###
+
+###> expert_legend ###
+$lang['expert_legend'] = 'Experten-Einstellungen';
+$lang['formAlias'] = ['Formularfeld-Alias', 'Geben Sie einen Alias für das Formularfeld dieses Filters ein.'];
+###< expert_legend ###

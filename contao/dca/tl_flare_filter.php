@@ -21,7 +21,8 @@ $dca['config'] = [
         'keys' => [
             'id' => 'primary',
             'pid,published' => 'index',
-            'pid,formAlias' => 'unique',
+            'formAlias' => 'index',
+            'pid,formAlias' => 'index',
         ],
     ],
 ];

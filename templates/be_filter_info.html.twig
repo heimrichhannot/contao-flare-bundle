@@ -1,0 +1,38 @@
+{% trans_default_domain 'flare' %}
+
+<div class="cte_type {{ is_published ? 'published' : 'unpublished' }}" style='margin-bottom: .5rem'>[{{ type_label }}]</div>
+<div style="display: flex; align-items: center; gap: .5rem">
+    <div>
+        {% if is_intrinsic|default %}
+            <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 class="lucide-hat-glasses-icon">
+                <title>{{ 'filter.info.intrinsic.yes'|trans }}</title>
+                <path d="M14 18a2 2 0 0 0-4 0"></path>
+                <path d="m19 11-2.11-6.657a2 2 0 0 0-2.752-1.148l-1.276.61A2 2 0 0 1 12 4H8.5a2 2 0 0 0-1.925 1.456L5 11"></path>
+                <path d="M2 11h20"></path>
+                <circle cx="17" cy="18" r="3"></circle>
+                <circle cx="7" cy="18" r="3"></circle>
+            </svg>
+        {% else %}
+            <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 class="lucide-text-cursor-input-icon">
+                <title>{{ 'filter.info.intrinsic.no'|trans }}</title>
+                <path d="M12 20h-1a2 2 0 0 1-2-2 2 2 0 0 1-2 2H6"></path>
+                <path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7"></path>
+                <path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1"></path>
+                <path d="M6 4h1a2 2 0 0 1 2 2 2 2 0 0 1 2-2h1"></path>
+                <path d="M9 6v12"></path>
+            </svg>
+        {% endif %}
+    </div>
+    <div style="display: flex; align-items: baseline; gap: 1rem">
+        {% if form_alias|default %}
+            <code>{{ form_alias }}</code>
+        {% endif %}
+        {% if title|default %}
+            <strong>{{ title }}</strong>
+        {% endif %}
+    </div>
+</div>

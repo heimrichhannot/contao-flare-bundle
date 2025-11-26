@@ -35,15 +35,21 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
         $filterModel = $context->getFilterModel();
+        $listModel = $context->getListModel();
+
+        $options = $this->getOptions($listModel, $filterModel) ?? [];
 
         if ($filterModel->intrinsic)
         {
-            if (!$preselect = $this->getPreselectValue($filterModel)) {
+            if (!$preselect = $this->getPreselectValue($filterModel))
+            {
                 return;
             }
 
-            $preselectOptions = $this->getPreselectOptions($context->getListModel(), $filterModel);
-            $selected = $preselectOptions[$preselect] ?? null;
+            if (!$selected = $options[$preselect] ?? null)
+            {
+                $qb->abort();
+            }
         }
 
         if (!$selected ??= $context->getSubmittedData())
@@ -53,21 +59,22 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
 
         $selected = \array_values((array) $selected);
 
-        if (!\count($selected)) {
+        if (!\count($selected))
+        {
             return;
         }
 
-        if (!$targetField = $context->getFilterModel()->fieldGeneric)
+        if (!$targetField = $filterModel->fieldGeneric)
         {
             $qb->abort();
         }
 
-        if (!$options = $this->getOptions($context->getListModel(), $context->getFilterModel()) ?? [])
+        if (!$options)
         {
             $qb->abort();
         }
 
-        $dcaOptionsField = $this->getOptionsField($context->getListModel(), $context->getFilterModel()) ?? [];
+        $dcaOptionsField = $this->getOptionsField($context->getListModel(), $filterModel) ?? [];
         $isMultiple = $dcaOptionsField['eval']['multiple'] ?? false;
 
         if (\count($selected) === 1)
@@ -253,21 +260,7 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
         $preselectField['reference'] = $field['reference'] ?? [];
         $preselectField['eval']['multiple'] = (bool) $filterModel->isMultiple;
 
-        $options = $field['options'] ?? [];
-
-        $optionsCallback = $field['options_callback'] ?? null;
-        if ($optionsCallback && \is_array($optionsCallback) && \count($optionsCallback) === 2)
-        {
-            $optionsCallback = \array_values($optionsCallback);
-            $dataContainer = $this->mockDataContainerObject($listModel->dc);
-            $options = System::importStatic($optionsCallback[0])->{$optionsCallback[1]}($dataContainer);
-        }
-
-        if (!\is_array($options)) {
-            return [];
-        }
-
-        return $options;
+        return $this->tryGetOptionsFromField($listModel, $field) ?? [];
     }
 
     public function getOptions(ListModel $listModel, FilterModel $filterModel): ?array

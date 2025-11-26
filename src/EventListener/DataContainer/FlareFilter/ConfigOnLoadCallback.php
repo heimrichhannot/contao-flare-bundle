@@ -11,6 +11,7 @@ use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsCallback(FilterContainer::TABLE_NAME, 'config.onload')]
@@ -18,7 +19,8 @@ readonly class ConfigOnLoadCallback
 {
     public function __construct(
         private FilterElementRegistry $filterElementRegistry,
-        private TranslatorInterface $translator,
+        private RequestStack          $requestStack,
+        private TranslatorInterface   $translator,
     ) {}
 
     /**
@@ -29,6 +31,14 @@ readonly class ConfigOnLoadCallback
      */
     public function __invoke(?DataContainer $dc = null): void
     {
+        if (!$dc || !$dc->id) {
+            return;
+        }
+
+        if ($this->requestStack->getCurrentRequest()?->get('act') !== 'edit') {
+            return;
+        }
+
         if (!$filterModel = DcaHelper::modelOf($dc)) {
             return;
         }

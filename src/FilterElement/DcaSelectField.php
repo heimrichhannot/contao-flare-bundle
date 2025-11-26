@@ -237,7 +237,21 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
         $preselectField['reference'] = $field['reference'] ?? [];
         $preselectField['eval']['multiple'] = (bool) $filterModel->isMultiple;
 
-        return $field['options'] ?? [];
+        $options = $field['options'] ?? [];
+
+        $optionsCallback = $field['options_callback'] ?? null;
+        if ($optionsCallback && \is_array($optionsCallback) && \count($optionsCallback) === 2)
+        {
+            $optionsCallback = \array_values($optionsCallback);
+            $dataContainer = $this->mockDataContainerObject($listModel->dc);
+            $options = System::importStatic($optionsCallback[0])->{$optionsCallback[1]}($dataContainer);
+        }
+
+        if (!\is_array($options)) {
+            return [];
+        }
+
+        return $options;
     }
 
     public function getOptions(ListModel $listModel, FilterModel $filterModel): ?array

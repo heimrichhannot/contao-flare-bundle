@@ -1,8 +1,8 @@
 {% trans_default_domain 'flare' %}
 
 <div class="cte_type {{ is_published ? 'published' : 'unpublished' }}" style='margin-bottom: .5rem'>[{{ type_label }}]</div>
-<div style="display: flex; align-items: center; gap: .5rem">
-    <div>
+<div style="display: flex; align-items: center; gap: .5rem; --flare-filter-info-opacity: {{ is_intrinsic|default(false) ? '0.5' : '1' }};">
+    <div style="opacity: var(--flare-filter-info-opacity)">
         {% if is_intrinsic|default %}
             <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -29,7 +29,7 @@
     </div>
     <div style="display: flex; align-items: baseline; gap: 1rem">
         {% if form_alias|default %}
-            <code>{{ form_alias }}</code>
+            <code style="opacity: var(--flare-filter-info-opacity)">{{ form_alias }}</code>
         {% endif %}
         {% if title|default %}
             <strong>{{ title }}</strong>

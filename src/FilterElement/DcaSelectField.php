@@ -34,13 +34,26 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
      */
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
-        if (!$submittedData = $context->getSubmittedData()) {
+        $filterModel = $context->getFilterModel();
+
+        if ($filterModel->intrinsic)
+        {
+            if (!$preselect = $this->getPreselectValue($filterModel)) {
+                return;
+            }
+
+            $preselectOptions = $this->getPreselectOptions($context->getListModel(), $filterModel);
+            $selected = $preselectOptions[$preselect] ?? null;
+        }
+
+        if (!$selected ??= $context->getSubmittedData())
+        {
             return;
         }
 
-        $submittedData = \array_values((array) $submittedData);
+        $selected = \array_values((array) $selected);
 
-        if (!\count($submittedData)) {
+        if (!\count($selected)) {
             return;
         }
 
@@ -57,9 +70,9 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
         $dcaOptionsField = $this->getOptionsField($context->getListModel(), $context->getFilterModel()) ?? [];
         $isMultiple = $dcaOptionsField['eval']['multiple'] ?? false;
 
-        if (\count($submittedData) === 1)
+        if (\count($selected) === 1)
         {
-            if (!$value = \array_search($submittedData[0], $options, true))
+            if (!$value = \array_search($selected[0], $options, true))
             {
                 $qb->abort();
             }
@@ -90,7 +103,7 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
         $options = \array_flip($options);
         $validOptions = [];
 
-        foreach ($submittedData as $value)
+        foreach ($selected as $value)
         {
             if ($key = $options[$value] ?? null) {
                 $validOptions[] = $key;
@@ -130,13 +143,16 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
         return $palette;
     }
 
+    public function getPreselectValue(FilterModel $filterModel): mixed
+    {
+        return $filterModel->isMultiple
+            ? StringUtil::deserialize($filterModel->preselect ?: null)
+            : $filterModel->preselect;
+    }
+
     public function hydrateForm(FilterContext $context, FormInterface $field): void
     {
-        $filterModel = $context->getFilterModel();
-
-        if ($preselect = $filterModel->isMultiple
-            ? StringUtil::deserialize($filterModel->preselect ?: null)
-            : $filterModel->preselect)
+        if ($preselect = $this->getPreselectValue($context->getFilterModel()))
         {
             $field->setData($preselect);
         }

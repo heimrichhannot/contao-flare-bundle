@@ -6,12 +6,16 @@ use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\SortDescriptor\Order;
+use HeimrichHannot\FlareBundle\Util\BeActionsHelper;
 use HeimrichHannot\FlareBundle\Util\Str;
 
-$dca = &$GLOBALS['TL_DCA'][$table = ListModel::getTable()];
+$table = ListModel::getTable();
+$filterTable = FilterModel::getTable();
+
+$dca = &$GLOBALS['TL_DCA'][$table];
 
 $dca['config'] = [
-    'ctable' => [FilterModel::getTable()],
+    'ctable' => [$filterTable],
     'dataContainer' => DC_Table::class,
     'enableVersioning' => true,
     'switchToEdit' => true,
@@ -43,14 +47,8 @@ $dca['list'] = [
         ],
     ],
     'operations' => [
-        'children' => [
-            'href' => 'table=' . FilterModel::getTable(),
-            'icon' => 'edit.svg',
-        ],
-        'edit' => [
-            'href' => 'act=edit',
-            'icon' => 'header.svg',
-        ],
+        ...BeActionsHelper::operation(BeActionsHelper::OP_EDIT),
+        ...BeActionsHelper::operation(BeActionsHelper::OP_CHILDREN, $filterTable),
         'copy' => [
             'href' => 'act=copy',
             'icon' => 'copy.svg',

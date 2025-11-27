@@ -8,6 +8,7 @@ use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
+use HeimrichHannot\FlareBundle\Util\BeActionsHelper;
 use HeimrichHannot\FlareBundle\Util\Str;
 
 $dca = &$GLOBALS['TL_DCA'][$table = FilterModel::getTable()];
@@ -47,10 +48,7 @@ $dca['list'] = [
         ],
     ],
     'operations' => [
-        'edit' => [
-            'href' => 'act=edit',
-            'icon' => 'edit.svg',
-        ],
+        ...BeActionsHelper::operation(BeActionsHelper::OP_EDIT),
         'copy' => [
             'href' => 'act=copy&amp;mode=copy',
             'icon' => 'copy.svg',

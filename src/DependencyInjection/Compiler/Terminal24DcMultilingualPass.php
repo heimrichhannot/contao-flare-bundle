@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
-use HeimrichHannot\FlareBundle\EventListener\Integration\MultilingualListener;
+use HeimrichHannot\FlareBundle\EventListener\Integration\Terminal42ChangelanguageListener;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
@@ -14,7 +14,7 @@ class Terminal24DcMultilingualPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container): void
     {
-        if (!$container->hasDefinition(MultilingualListener::class)) {
+        if (!$container->hasDefinition(Terminal42ChangelanguageListener::class)) {
             return;
         }
 
@@ -25,7 +25,7 @@ class Terminal24DcMultilingualPass implements CompilerPassInterface
         }
 
         $container
-            ->getDefinition(MultilingualListener::class)
+            ->getDefinition(Terminal42ChangelanguageListener::class)
             ->addMethodCall('setMultilingualQueryBuilderFactory', [new Reference($factoryServiceId)]);
     }
 }

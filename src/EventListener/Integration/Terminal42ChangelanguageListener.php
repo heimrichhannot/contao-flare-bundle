@@ -15,7 +15,7 @@ use Terminal42\ChangeLanguage\PageFinder;
 use Terminal42\DcMultilingualBundle\Driver;
 use Terminal42\DcMultilingualBundle\QueryBuilder\MultilingualQueryBuilderFactoryInterface;
 
-class MultilingualListener
+class Terminal42ChangelanguageListener
 {
     private ?MultilingualQueryBuilderFactoryInterface $queryBuilderFactory;
     private ?PageFinder $pageFinder;

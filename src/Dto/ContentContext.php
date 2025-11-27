@@ -17,6 +17,7 @@ class ContentContext
         private readonly string        $context,
         private readonly ?ContentModel $contentModel = null,
         private readonly ?string       $formName = null,
+        private readonly ?int          $actionPage = null,
     ) {}
 
     public function getContext(): string
@@ -32,6 +33,11 @@ class ContentContext
     public function getFormName(): ?string
     {
         return $this->formName;
+    }
+
+    public function getActionPage(): ?int
+    {
+        return $this->actionPage;
     }
 
     public function getUniqueId(): string

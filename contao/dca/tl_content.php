@@ -49,13 +49,31 @@ $dca['fields'][$itemsPerPage = ContentContainer::FIELD_ITEMS_PER_PAGE] = [
     'sql' => "int(10) unsigned NOT NULL default 0",
 ];
 
+$dca['fields'][$jumpTo = ContentContainer::FIELD_JUMP_TO] = [
+    'inputType' => 'pageTree',
+    'foreignKey' => 'tl_page.title',
+    'eval' => [
+        'mandatory' => false,
+        'fieldType' => 'radio',
+        'tl_class' => 'w50'
+    ],
+    'sql' => [
+        'type' => 'integer',
+        'unsigned' => true,
+        'length' => 10,
+        'notnull' => false,
+        'default' => null,
+    ],
+    'relation' => ['type' => 'hasOne', 'load' => 'lazy'],
+];
+
 $commonPaletteEnd = '{template_legend:hide},customTpl;'
     . '{protected_legend:hide},protected;'
     . '{expert_legend:hide},guests,cssID;'
     . '{invisible_legend:hide},invisible,start,stop';
 
 $dca['palettes'][ListViewController::TYPE] = '{type_legend},type,headline;'
-    . "{flare_list_legend},$list,$formName,$itemsPerPage;"
+    . "{flare_list_legend},$list,$formName,$itemsPerPage,$jumpTo;"
     . $commonPaletteEnd;
 
 $dca['palettes'][ReaderController::TYPE] = '{type_legend},type,headline;'

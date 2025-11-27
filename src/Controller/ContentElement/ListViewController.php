@@ -93,6 +93,7 @@ final class ListViewController extends AbstractContentElementController
                 context: ContentContext::CONTEXT_LIST,
                 contentModel: $contentModel,
                 formName: $contentModel->flare_formName ?: null,
+                actionPage: ((int) $contentModel->flare_jumpTo) ?: null,
             );
 
             $paginatorConfig = new PaginatorConfig(

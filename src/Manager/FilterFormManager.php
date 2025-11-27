@@ -23,16 +23,22 @@ readonly class FilterFormManager
     /**
      * @throws FilterException If the form could not be built
      */
-    public function buildForm(FilterContextCollection $filters, string $name): FormInterface
+    public function buildForm(FilterContextCollection $filters, string $name, ?string $action = null): FormInterface
     {
-        $builder = $this->formFactory->createNamedBuilder($name, FormType::class, null, [
+        $formOptions = [
             'method'             => 'GET',
             'csrf_protection'    => false,
             'translation_domain' => 'flare_form',
             'attr' => [
                 'data-flare-keep-query' => 'true',
             ],
-        ]);
+        ];
+
+        if ($action) {
+            $formOptions['action'] = $action;
+        }
+
+        $builder = $this->formFactory->createNamedBuilder($name, FormType::class, null, $formOptions);
 
         $defaultOptions = [
             'inherit_data' => false,

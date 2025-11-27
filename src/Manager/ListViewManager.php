@@ -119,8 +119,13 @@ class ListViewManager
 
         $filters = $this->getFilterContextCollection($listModel, $contentContext);
         $formName = $this->makeFormName($listModel, $contentContext);
+        $formAction = $this->getFormAction($listModel, $contentContext);
 
-        $form = $this->formManager->buildForm($filters, $formName);
+        $form = $this->formManager->buildForm(
+            filters: $filters,
+            name: $formName,
+            action: $formAction,
+        );
         $form->handleRequest($request);
 
         $this->formManager->hydrateForm($filters, $form);
@@ -361,6 +366,19 @@ class ListViewManager
         }
 
         return $page->getAbsoluteUrl('/' . $autoItem);
+    }
+
+    public function getFormAction(ListModel $listModel, ContentContext $contentContext): ?string
+    {
+        if (!$jumpTo = $contentContext->getActionPage()) {
+            return null;
+        }
+
+        if (!$pageModel = PageModel::findByPk($jumpTo)) {
+            return null;
+        }
+
+        return $pageModel->getAbsoluteUrl();
     }
 
     /**

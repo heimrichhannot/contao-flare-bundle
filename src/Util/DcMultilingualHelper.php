@@ -8,6 +8,14 @@ use Contao\DcaExtractor;
 
 class DcMultilingualHelper
 {
+    public const DISPLAY_MULTILINGUAL = 'multi';
+    public const DISPLAY_LOCALIZED = 'localized';
+    public const DISPLAY_DEFAULT = self::DISPLAY_MULTILINGUAL;
+    public const DISPLAY_OPTIONS = [
+        self::DISPLAY_MULTILINGUAL,
+        self::DISPLAY_LOCALIZED,
+    ];
+
     public static function getPidColumn(string $table): string
     {
         Controller::loadDataContainer($table);

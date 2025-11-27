@@ -9,7 +9,7 @@ use Doctrine\DBAL\Query\QueryBuilder;
 use HeimrichHannot\FlareBundle\Event\CreateListViewBuilderEvent;
 use HeimrichHannot\FlareBundle\ListView\Resolver\MultilingualListViewResolver;
 use HeimrichHannot\FlareBundle\Manager\ListViewManager;
-use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Manager\RequestManager;
 use HeimrichHannot\FlareBundle\Util\DcMultilingualHelper;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -23,9 +23,9 @@ class MultilingualListener
 
     public function __construct(
         private readonly ListViewManager $listViewManager,
-        private readonly RequestStack $requestStack,
-    ) {
-    }
+        private readonly RequestManager  $requestManager,
+        private readonly RequestStack    $requestStack,
+    ) {}
 
     #[AsEventListener]
     public function onCreateListViewBuilderEvent(CreateListViewBuilderEvent $event): void
@@ -38,7 +38,7 @@ class MultilingualListener
     }
 
     #[AsHook('changelanguageNavigation')]
-    public function onChangelanguageNavigation(ChangelanguageNavigationEvent $event): void
+    public function onChangeLanguageNavigation(ChangelanguageNavigationEvent $event): void
     {
         if (!isset($this->queryBuilderFactory)) {
             return;
@@ -48,19 +48,25 @@ class MultilingualListener
             return;
         }
 
-        $request = $this->requestStack->getCurrentRequest();
-        if (!($attributes = $request->attributes->get('flare_reader'))) {
+        if (!$request = $this->requestStack->getCurrentRequest()) {
             return;
         }
 
-        $table = $attributes['table'];
-        $listModel = ListModel::findByPk((int)$attributes['list_id']);
-        if (!$listModel || $listModel->dc !== $table) {
+        if (!$attribute = $this->requestManager->getReader()) {
+            return;
+        }
+
+        $table = $attribute->getModel()::getTable();
+        $listModel = $attribute->getListModel();
+
+        if ($listModel->dc !== $table) {
             return;
         }
 
         Controller::loadDataContainer($table);
-        if (($GLOBALS['TL_DCA'][$table]['config']['dataContainer'] ?? '') !== Driver::class) {
+
+        $dcDriver = $GLOBALS['TL_DCA'][$table]['config']['dataContainer'] ?? null;
+        if ($dcDriver !== Driver::class) {
             return;
         }
 

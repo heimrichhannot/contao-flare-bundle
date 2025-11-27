@@ -4,44 +4,49 @@ namespace HeimrichHannot\FlareBundle\ListType;
 
 use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\CoreBundle\String\SimpleTokenParser;
+use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\Contract\Config\ListItemProviderConfig;
-use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
+use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
 use HeimrichHannot\FlareBundle\Contract\ListType\ListItemProviderContract;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
-use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
-use HeimrichHannot\FlareBundle\List\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\ListItemProvider\DcMultilingualListItemProvider;
 use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
+use HeimrichHannot\FlareBundle\ListType\Trait\GenericReaderPageMetaTrait;
 
-#[AsListType(alias: self::TYPE, palette: DcMultilingualListType::DEFAULT_PALETTE)]
-class DcMultilingualListType extends GenericDataContainerListType implements ListItemProviderContract
+#[AsListType(alias: self::TYPE, palette: self::DEFAULT_PALETTE)]
+class DcMultilingualListType extends AbstractListType implements DataContainerContract, ListItemProviderContract
 {
+    use GenericReaderPageMetaTrait;
+
     public const TYPE = 'flare_generic_dc_multilingual';
     public const DEFAULT_PALETTE = <<<'PALETTE'
-        {data_container_legend},dc,fieldAutoItem,dcmultilingual_display;{parent_legend},hasParent;
+        {data_container_legend},dc,fieldAutoItem,dcMultilingual_display;{parent_legend},hasParent;
         {meta_legend},metaTitleFormat,metaDescriptionFormat,metaRobotsFormat
         PALETTE;
 
     public function __construct(
-        HtmlDecoder $htmlDecoder,
-        SimpleTokenParser $simpleTokenParser,
-        private readonly DcMultilingualListItemProvider $provider
-    )
+        private readonly DcMultilingualListItemProvider $itemProvider,
+        private readonly HtmlDecoder                    $htmlDecoder,
+        private readonly SimpleTokenParser              $simpleTokenParser,
+    ) {}
+
+    protected function getHtmlDecoder(): HtmlDecoder
     {
-        parent::__construct($htmlDecoder, $simpleTokenParser);
+        return $this->htmlDecoder;
     }
 
-
-    public function getListItemProvider(ListItemProviderConfig $config): ?ListItemProviderInterface
+    protected function getSimpleTokenParser(): SimpleTokenParser
     {
-        return $this->provider;
+        return $this->simpleTokenParser;
     }
 
-    public function getPalette(PaletteConfig $config): ?string
+    public function getDataContainerName(array $row, DataContainer $dc): string
     {
-        return null;
+        return $row['dc'] ?? '';
     }
 
-
+    public function getListItemProvider(?ListItemProviderConfig $config = null): ?ListItemProviderInterface
+    {
+        return $this->itemProvider;
+    }
 }

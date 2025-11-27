@@ -35,11 +35,7 @@ abstract class AbstractListItemProvider implements ListItemProviderInterface, Se
             return $this->entryCache[$cacheKey];
         }
 
-        if (!$filterContextManager = $this->container->get(FilterContextManager::class)) {
-            throw new \RuntimeException('FilterContextManager not found');
-        }
-
-        $idFilterContext = $filterContextManager->definitionToContext(
+        $idFilterContext = $this->getFilterContextManager()->definitionToContext(
             definition: SimpleEquationElement::define('id', SqlEquationOperator::EQUALS, $id),
             listModel: $filters->getListModel(),
             contentContext: $contentContext,
@@ -50,6 +46,12 @@ abstract class AbstractListItemProvider implements ListItemProviderInterface, Se
         $entries = $this->fetchEntries(listQueryBuilder: $listQueryBuilder, filters: $filters);
 
         return $this->entryCache[$cacheKey] = $entries[\array_key_first($entries)] ?? null;
+    }
+
+    protected function getFilterContextManager(): FilterContextManager
+    {
+        return $this->container->get(FilterContextManager::class)
+            ?? throw new \RuntimeException('FilterContextManager not found');
     }
 
     public static function getSubscribedServices(): array

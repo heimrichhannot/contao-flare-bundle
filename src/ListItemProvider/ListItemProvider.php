@@ -16,22 +16,6 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class ListItemProvider extends AbstractListItemProvider
 {
-    public function __construct(
-        private readonly Connection               $connection,
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly ListQueryManager         $listQueryManager,
-    ) {}
-
-    protected function getConnection(): Connection
-    {
-        return $this->connection;
-    }
-
-    protected function getEventDispatcher(): EventDispatcherInterface
-    {
-        return $this->eventDispatcher;
-    }
-
     /**
      * @throws FilterException
      * @throws \Doctrine\DBAL\Exception
@@ -97,10 +81,10 @@ class ListItemProvider extends AbstractListItemProvider
     ): array {
         $returnIds ??= false;
 
-        $query = $this->listQueryManager->populate(
+        $query = $this->getListQueryManager()->populate(
             listQueryBuilder: $listQueryBuilder,
             filters: $filters,
-            order: $sortDescriptor?->toSql($this->connection->quoteIdentifier(...)),
+            order: $sortDescriptor?->toSql($this->getConnection()->quoteIdentifier(...)),
             limit: $paginator?->getItemsPerPage() ?: null,
             offset: $paginator?->getOffset() ?: null,
             onlyId: $returnIds,
@@ -111,7 +95,7 @@ class ListItemProvider extends AbstractListItemProvider
             return [];
         }
 
-        $result = $query->execute($this->connection);
+        $result = $query->execute($this->getConnection());
 
         $entries = $returnIds
             ? \array_unique($result->fetchFirstColumn())
@@ -134,7 +118,7 @@ class ListItemProvider extends AbstractListItemProvider
         FilterContextCollection $filters,
         ContentContext $contentContext
     ): int {
-        $query = $this->listQueryManager->populate(
+        $query = $this->getListQueryManager()->populate(
             listQueryBuilder: $listQueryBuilder,
             filters: $filters,
             isCounting: true
@@ -144,12 +128,41 @@ class ListItemProvider extends AbstractListItemProvider
             return 0;
         }
 
-        $result = $query->execute($this->connection);
+        $result = $query->execute($this->getConnection());
 
         $count = $result->fetchOne() ?: 0;
 
         $result->free();
 
         return $count;
+    }
+
+    protected function getConnection(): Connection
+    {
+        return $this->container->get(Connection::class)
+            ?? throw new \RuntimeException('Connection not found');
+    }
+
+    protected function getEventDispatcher(): EventDispatcherInterface
+    {
+        return $this->container->get(EventDispatcherInterface::class)
+            ?? throw new \RuntimeException('EventDispatcherInterface not found');
+    }
+
+    protected function getListQueryManager(): ListQueryManager
+    {
+        return $this->container->get(ListQueryManager::class)
+            ?? throw new \RuntimeException('ListQueryManager not found');
+    }
+
+    public static function getSubscribedServices(): array
+    {
+        $services = parent::getSubscribedServices();
+
+        $services[] = Connection::class;
+        $services[] = EventDispatcherInterface::class;
+        $services[] = ListQueryManager::class;
+
+        return $services;
     }
 }

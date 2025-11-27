@@ -5,31 +5,18 @@ namespace HeimrichHannot\FlareBundle\ListItemProvider;
 use Contao\Controller;
 use Contao\Database;
 use Contao\DcaExtractor;
-use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
-use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
-use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Util\DcMultilingualHelper;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class DcMultilingualListItemProvider extends ListItemProvider
 {
-    public function __construct(
-        Connection               $connection,
-        EventDispatcherInterface $eventDispatcher,
-        ListQueryManager         $listQueryManager,
-        private readonly FilterContextManager $filterContextManager,
-    ) {
-        parent::__construct($connection, $eventDispatcher, $listQueryManager);
-    }
-
     /**
      * @throws FilterException
      * @throws \Doctrine\DBAL\Exception
@@ -41,14 +28,15 @@ class DcMultilingualListItemProvider extends ListItemProvider
     ): int {
         $table = $filters->getTable();
 
-        $onlyTranslated = (
-            'translated' === $filters->getListModel()->dcmultilingual_display
+        $localized = (
+            $filters->getListModel()->dcMultilingual_display === DcMultilingualHelper::DISPLAY_LOCALIZED
             && $this->getFallbackLanguage($table) !== $GLOBALS['TL_LANGUAGE']
         );
 
         $this->applyMlQueriesIfNecessary($listQueryBuilder, $filters, $GLOBALS['TL_LANGUAGE']);
 
-        if ($onlyTranslated) {
+        if ($localized)
+        {
             $filterDefinition = SimpleEquationElement::define(
                 equationLeft: DcMultilingualHelper::getPidColumn($table),
                 equationOperator: SqlEquationOperator::GREATER_THAN,
@@ -56,13 +44,15 @@ class DcMultilingualListItemProvider extends ListItemProvider
             );
             $filterDefinition->targetAlias = 'translation';
 
-            $filters->add($this->filterContextManager->definitionToContext(
+            $filters->add($this->getFilterContextManager()->definitionToContext(
                 $filterDefinition,
                 $filters->getListModel(),
                 $contentContext,
             ));
-        } else {
-            $filters->add($this->filterContextManager->definitionToContext(
+        }
+        else
+        {
+            $filters->add($this->getFilterContextManager()->definitionToContext(
                 SimpleEquationElement::define(
                     equationLeft: DcMultilingualHelper::getPidColumn($table),
                     equationOperator: SqlEquationOperator::EQUALS,
@@ -80,7 +70,9 @@ class DcMultilingualListItemProvider extends ListItemProvider
     protected function fetchEntriesOrIds(ListQueryBuilder $listQueryBuilder, FilterContextCollection $filters, ?SortDescriptor $sortDescriptor = null, ?Paginator $paginator = null, ?bool $returnIds = null): array
     {
         $table = $filters->getTable();
-        if ($this->getFallbackLanguage($table) !== $GLOBALS['TL_LANGUAGE']) {
+
+        if ($this->getFallbackLanguage($table) !== $GLOBALS['TL_LANGUAGE'])
+        {
             $this->applyMlQueriesIfNecessary($listQueryBuilder, $filters, $GLOBALS['TL_LANGUAGE']);
 
             $translatableFields = $this->getTranslatableFields($table);

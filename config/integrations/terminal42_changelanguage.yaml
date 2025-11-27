@@ -1,2 +1,2 @@
 services:
-    HeimrichHannot\FlareBundle\EventListener\Integration\MultilingualListener: ~
+    HeimrichHannot\FlareBundle\EventListener\Integration\Terminal42ChangelanguageListener: ~

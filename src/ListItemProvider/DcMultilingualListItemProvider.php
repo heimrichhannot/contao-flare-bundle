@@ -67,8 +67,13 @@ class DcMultilingualListItemProvider extends ListItemProvider
         return parent::fetchCount($listQueryBuilder, $filters, $contentContext);
     }
 
-    protected function fetchEntriesOrIds(ListQueryBuilder $listQueryBuilder, FilterContextCollection $filters, ?SortDescriptor $sortDescriptor = null, ?Paginator $paginator = null, ?bool $returnIds = null): array
-    {
+    protected function fetchEntriesOrIds(
+        ListQueryBuilder        $listQueryBuilder,
+        FilterContextCollection $filters,
+        ?SortDescriptor         $sortDescriptor = null,
+        ?Paginator              $paginator = null,
+        ?bool                   $returnIds = null
+    ): array {
         $table = $filters->getTable();
 
         if ($this->getFallbackLanguage($table) !== $GLOBALS['TL_LANGUAGE'])

@@ -16,8 +16,11 @@ readonly class ListViewBuilderFactory
 
     public function create(): ListViewBuilder
     {
-        $event = $this->dispatcher->dispatch(new CreateListViewBuilderEvent());
+        $event = $this->dispatcher->dispatch(
+            event: new CreateListViewBuilderEvent(defaultResolver: $this->resolver),
+            eventName: 'flare.list_view.create_builder',
+        );
 
-        return new ListViewBuilder($event->getResolver($this->resolver));
+        return new ListViewBuilder($event->getResolver());
     }
 }

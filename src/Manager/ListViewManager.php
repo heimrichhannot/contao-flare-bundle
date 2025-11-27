@@ -8,6 +8,7 @@ use Contao\Model;
 use Contao\PageModel;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Event\ListViewDetailsPageUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
@@ -20,13 +21,14 @@ use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Class ListViewManager
  *
  * Manages the list view, including filters, forms, pagination, sort-order, and entries.
  */
-class ListViewManager
+final class ListViewManager
 {
     protected array $filterContextCache = [];
     protected array $formCache = [];
@@ -36,12 +38,13 @@ class ListViewManager
     protected array $listPaginatorCache = [];
 
     public function __construct(
-        private readonly FilterContextManager    $filterContext,
-        private readonly FilterFormManager       $formManager,
-        private readonly ListQueryManager        $listQueryManager,
-        private readonly ListItemProviderManager $itemProvider,
-        private readonly PaginatorBuilderFactory $paginatorBuilderFactory,
-        private readonly RequestStack            $requestStack,
+        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly FilterContextManager     $filterContext,
+        private readonly FilterFormManager        $formManager,
+        private readonly ListQueryManager         $listQueryManager,
+        private readonly ListItemProviderManager  $itemProvider,
+        private readonly PaginatorBuilderFactory  $paginatorBuilderFactory,
+        private readonly RequestStack             $requestStack,
     ) {}
 
     /**
@@ -355,7 +358,11 @@ class ListViewManager
         }
 
         $autoItemField = $listModel->getAutoItemField();
-        $model = $this->getModel(id: $id, listModel: $listModel, contentContext: $contentContext);
+        $model = $this->getModel(
+            id: $id,
+            listModel: $listModel,
+            contentContext: $contentContext
+        );
 
         if (!$autoItem = CallbackHelper::tryGetProperty($model, $autoItemField)) {
             return null;
@@ -365,7 +372,21 @@ class ListViewManager
             throw new FlareException(\sprintf('Details page not found [ID %s]', $pageId), source: __METHOD__);
         }
 
-        return $page->getAbsoluteUrl('/' . $autoItem);
+        $url = $page->getAbsoluteUrl('/' . $autoItem);
+
+        $event = $this->eventDispatcher->dispatch(
+            event: new ListViewDetailsPageUrlGeneratedEvent(
+                listModel: $listModel,
+                contentContext: $contentContext,
+                model: $model,
+                autoItem: $autoItem,
+                page: $page,
+                url: $url,
+            ),
+            eventName: 'flare.list_view.details_page_url.generated',
+        );
+
+        return $event->getUrl();
     }
 
     public function getFormAction(ListModel $listModel, ContentContext $contentContext): ?string

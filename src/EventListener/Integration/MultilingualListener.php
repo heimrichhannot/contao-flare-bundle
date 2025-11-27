@@ -1,40 +1,61 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\EventListener;
+namespace HeimrichHannot\FlareBundle\EventListener\Integration;
 
-use Composer\InstalledVersions;
 use Contao\Controller;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use Doctrine\DBAL\Query\QueryBuilder;
-use HeimrichHannot\FlareBundle\Event\CreateListViewBuilderEvent;
-use HeimrichHannot\FlareBundle\ListView\Resolver\MultilingualListViewResolver;
-use HeimrichHannot\FlareBundle\Manager\ListViewManager;
+use HeimrichHannot\FlareBundle\Event\ListViewDetailsPageUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Manager\RequestManager;
 use HeimrichHannot\FlareBundle\Util\DcMultilingualHelper;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Terminal42\ChangeLanguage\Event\ChangelanguageNavigationEvent;
+use Terminal42\ChangeLanguage\PageFinder;
 use Terminal42\DcMultilingualBundle\Driver;
 use Terminal42\DcMultilingualBundle\QueryBuilder\MultilingualQueryBuilderFactoryInterface;
 
 class MultilingualListener
 {
-    private MultilingualQueryBuilderFactoryInterface $queryBuilderFactory;
+    private ?MultilingualQueryBuilderFactoryInterface $queryBuilderFactory;
+    private ?PageFinder $pageFinder;
 
     public function __construct(
-        private readonly ListViewManager $listViewManager,
-        private readonly RequestManager  $requestManager,
-        private readonly RequestStack    $requestStack,
+        private readonly RequestManager $requestManager,
+        private readonly RequestStack   $requestStack,
     ) {}
 
-    #[AsEventListener]
-    public function onCreateListViewBuilderEvent(CreateListViewBuilderEvent $event): void
+    /**
+     * Called by the Dependency Injection container to inject the factory.
+     */
+    public function setMultilingualQueryBuilderFactory(
+        ?MultilingualQueryBuilderFactoryInterface $queryBuilderFactory,
+    ): void {
+        $this->queryBuilderFactory = $queryBuilderFactory;
+    }
+    
+    #[AsEventListener(priority: 220)]
+    public function onListViewDetailsPageUrlGenerated(ListViewDetailsPageUrlGeneratedEvent $event): void
     {
-        if (!InstalledVersions::isInstalled('terminal42/contao-changelanguage')) {
+        if (!$pageFinder = $this->getPageFinder()) {
             return;
         }
 
-        $event->setResolver(new MultilingualListViewResolver($this->listViewManager));
+        $page = $pageFinder->findAssociatedForLanguage($event->getPage(), $GLOBALS['TL_LANGUAGE']);
+        $url = $page->getAbsoluteUrl('/' . $event->getAutoItem());
+
+        $event->setPage($page);
+        $event->setUrl($url);
+    }
+
+    private function getPageFinder(): ?PageFinder
+    {
+        if (!isset($this->pageFinder))
+        {
+            $this->pageFinder = \class_exists(PageFinder::class) ? new PageFinder() : null;
+        }
+
+        return $this->pageFinder;
     }
 
     #[AsHook('changelanguageNavigation')]
@@ -71,10 +92,12 @@ class MultilingualListener
         }
 
         $aliasColumnName = $listModel->getAutoItemField();
+
         $row = $this->createQueryBuilder($table, $GLOBALS['TL_LANGUAGE'])
             ->andWhere("($table.$aliasColumnName = :autoitem OR translation.$aliasColumnName = :autoitem)")
             ->setParameter('autoitem', $request->attributes->get('auto_item'))
-            ->executeQuery()->fetchAssociative();
+            ->executeQuery()
+            ->fetchAssociative();
 
         if (false === $row) {
             return;
@@ -101,11 +124,6 @@ class MultilingualListener
         }
 
         $event->getUrlParameterBag()->setUrlAttribute('auto_item', $translated['alias'] ?? false);
-    }
-
-    public function setFactory(MultilingualQueryBuilderFactoryInterface $queryBuilderFactory): void
-    {
-        $this->queryBuilderFactory = $queryBuilderFactory;
     }
 
     private function createQueryBuilder(string $table, string $language): QueryBuilder

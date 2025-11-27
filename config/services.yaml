@@ -11,6 +11,7 @@ services:
         exclude:
             - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Dto,Event,Filter,Model,SortDescriptor}
             - ../src/**/*{Builder,Collection}.php
+            - ../src/EventListener/Integration
             - ../src/ListView/*.php
             - ../src/Paginator/*.php
             - ../src/Registry/Descriptor
@@ -21,10 +22,6 @@ services:
     HeimrichHannot\FlareBundle\Manager\TemplateManager:
         bind:
             $finderFactory: '@contao.twig.finder_factory'
-
-    HeimrichHannot\FlareBundle\EventListener\MultilingualListener:
-      calls:
-        - setFactory: ['@?Terminal42\DcMultilingualBundle\QueryBuilder\MultilingualQueryBuilderFactoryInterface']
 
 #    bind:
 #      $projectDir: '%kernel.project_dir%'

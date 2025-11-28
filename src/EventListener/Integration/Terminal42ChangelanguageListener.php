@@ -5,6 +5,7 @@ namespace HeimrichHannot\FlareBundle\EventListener\Integration;
 use Contao\Controller;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use Contao\PageModel;
+use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
 use HeimrichHannot\FlareBundle\Event\ListViewDetailsPageUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Manager\RequestManager;
@@ -21,9 +22,9 @@ class Terminal42ChangelanguageListener
     private ?MultilingualQueryBuilderFactoryInterface $queryBuilderFactory;
     private ?PageFinder $pageFinder;
     private array $pageFinderCache = [];
-    private string $language;
 
     public function __construct(
+        private readonly Connection     $connection,
         private readonly RequestManager $requestManager,
         private readonly RequestStack   $requestStack,
     ) {}
@@ -59,7 +60,7 @@ class Terminal42ChangelanguageListener
 
     private function findPageForLanguage(PageModel $page): ?PageModel
     {
-        $lang = $this->getLanguage();
+        $lang = DcMultilingualHelper::getLanguage();
 
         $key = "{$lang}.{$page->id}";
 
@@ -69,14 +70,6 @@ class Terminal42ChangelanguageListener
         }
 
         return $this->pageFinderCache[$key];
-    }
-
-    private function getLanguage(): string
-    {
-        return $this->language ??= (
-            $GLOBALS['TL_LANGUAGE']
-            ?? throw new \RuntimeException('TL_LANGUAGE is not set.')
-        );
     }
 
     private function getPageFinder(): ?PageFinder
@@ -104,12 +97,12 @@ class Terminal42ChangelanguageListener
             return;
         }
 
-        if (!$attribute = $this->requestManager->getReader()) {
+        if (!$reader = $this->requestManager->getReader()) {
             return;
         }
 
-        $table = $attribute->getModel()::getTable();
-        $listModel = $attribute->getListModel();
+        $table = $reader->getModel()::getTable();
+        $listModel = $reader->getListModel();
 
         if ($listModel->dc !== $table) {
             return;
@@ -123,9 +116,13 @@ class Terminal42ChangelanguageListener
         }
 
         $aliasColumnName = $listModel->getAutoItemField();
+        $qTable = $this->connection->quoteIdentifier($table);
+        $qAliasColumnName = $this->connection->quoteIdentifier($aliasColumnName);
 
-        $row = $this->createQueryBuilder($table, $this->getLanguage())
-            ->andWhere("($table.$aliasColumnName = :autoitem OR translation.$aliasColumnName = :autoitem)")
+        $lang = DcMultilingualHelper::getLanguage();
+
+        $row = $this->createQueryBuilder($table, $lang)
+            ->andWhere("({$qTable}.{$qAliasColumnName} = :autoitem OR translation.{$qAliasColumnName} = :autoitem)")
             ->setParameter('autoitem', $request->attributes->get('auto_item'))
             ->executeQuery()
             ->fetchAssociative();
@@ -145,8 +142,10 @@ class Terminal42ChangelanguageListener
             $language = '';
         }
 
+        $qPidColumn = $this->connection->quoteIdentifier($pidColumn);
+
         $translated = $this->createQueryBuilder($table, $language)
-            ->andWhere("$table.id = :id OR translation.langPid = :id")
+            ->andWhere("{$qTable}.id = :id OR translation.{$qPidColumn} = :id")
             ->setParameter('id', $id)
             ->executeQuery()->fetchAssociative();
 

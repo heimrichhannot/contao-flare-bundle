@@ -364,7 +364,7 @@ final class ListViewManager
             contentContext: $contentContext
         );
 
-        if (!$autoItem = CallbackHelper::tryGetProperty($model, $autoItemField)) {
+        if (!$autoItem = (string) CallbackHelper::tryGetProperty($model, $autoItemField)) {
             return null;
         }
 

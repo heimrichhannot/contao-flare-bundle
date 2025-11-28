@@ -16,6 +16,16 @@ class DcMultilingualHelper
         self::DISPLAY_LOCALIZED,
     ];
 
+    private static ?string $language = null;
+
+    public static function getLanguage()
+    {
+        return self::$language ??= (
+            $GLOBALS['TL_LANGUAGE']
+            ?? throw new \RuntimeException('TL_LANGUAGE is not set.')
+        );
+    }
+
     public static function getPidColumn(string $table): string
     {
         Controller::loadDataContainer($table);

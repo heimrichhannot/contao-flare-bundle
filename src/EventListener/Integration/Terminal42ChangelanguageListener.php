@@ -58,16 +58,18 @@ class Terminal42ChangelanguageListener
 
     private function findPageForLanguage(PageModel $page): ?PageModel
     {
-        if (!isset($this->pageFinderCache[$page->id]))
-        {
-            if (!$pageFinder = $this->getPageFinder()) {
-                return null;
-            }
-
-            $this->pageFinderCache[$page->id] = $pageFinder->findAssociatedForLanguage($page, $GLOBALS['TL_LANGUAGE']);
+        if (!$lang = $GLOBALS['TL_LANGUAGE'] ?? '') {
+            throw new \RuntimeException('TL_LANGUAGE is not set.');
         }
 
-        return $this->pageFinderCache[$page->id];
+        $key = "{$lang}.{$page->id}";
+
+        if (!isset($this->pageFinderCache[$key]))
+        {
+            $this->pageFinderCache[$key] = $this->getPageFinder()?->findAssociatedForLanguage($page, $lang);
+        }
+
+        return $this->pageFinderCache[$key];
     }
 
     private function getPageFinder(): ?PageFinder

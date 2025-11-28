@@ -4,6 +4,7 @@ namespace HeimrichHannot\FlareBundle\EventListener\Integration;
 
 use Contao\Controller;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
+use Contao\PageModel;
 use Doctrine\DBAL\Query\QueryBuilder;
 use HeimrichHannot\FlareBundle\Event\ListViewDetailsPageUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Manager\RequestManager;
@@ -19,6 +20,7 @@ class Terminal42ChangelanguageListener
 {
     private ?MultilingualQueryBuilderFactoryInterface $queryBuilderFactory;
     private ?PageFinder $pageFinder;
+    private array $pageFinderCache = [];
 
     public function __construct(
         private readonly RequestManager $requestManager,
@@ -37,15 +39,35 @@ class Terminal42ChangelanguageListener
     #[AsEventListener(priority: 220)]
     public function onListViewDetailsPageUrlGenerated(ListViewDetailsPageUrlGeneratedEvent $event): void
     {
-        if (!$pageFinder = $this->getPageFinder()) {
+        $eventPage = $event->getPage();
+
+        if (!$langPage = $this->findPageForLanguage($eventPage)) {
             return;
         }
 
-        $page = $pageFinder->findAssociatedForLanguage($event->getPage(), $GLOBALS['TL_LANGUAGE']);
-        $url = $page->getAbsoluteUrl('/' . $event->getAutoItem());
+        /** @noinspection PhpCastIsUnnecessaryInspection */
+        if ((int) $langPage->id === (int) $eventPage->id) {
+            return;
+        }
 
-        $event->setPage($page);
+        $url = $langPage->getAbsoluteUrl('/' . $event->getAutoItem());
+
+        $event->setPage($langPage);
         $event->setUrl($url);
+    }
+
+    private function findPageForLanguage(PageModel $page): ?PageModel
+    {
+        if (!isset($this->pageFinderCache[$page->id]))
+        {
+            if (!$pageFinder = $this->getPageFinder()) {
+                return null;
+            }
+
+            $this->pageFinderCache[$page->id] = $pageFinder->findAssociatedForLanguage($page, $GLOBALS['TL_LANGUAGE']);
+        }
+
+        return $this->pageFinderCache[$page->id];
     }
 
     private function getPageFinder(): ?PageFinder

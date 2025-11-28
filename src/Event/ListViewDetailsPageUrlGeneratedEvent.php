@@ -18,6 +18,11 @@ class ListViewDetailsPageUrlGeneratedEvent
         private string $url,
     ) {}
 
+    public function getEventName(): string
+    {
+        return 'flare.list_view.details_page_url.generated';
+    }
+
     public function getListModel(): ListModel
     {
         return $this->listModel;

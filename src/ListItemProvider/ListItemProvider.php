@@ -116,7 +116,6 @@ class ListItemProvider extends AbstractListItemProvider
     public function fetchCount(
         ListQueryBuilder $listQueryBuilder,
         FilterContextCollection $filters,
-        ContentContext $contentContext
     ): int {
         $query = $this->getListQueryManager()->populate(
             listQueryBuilder: $listQueryBuilder,

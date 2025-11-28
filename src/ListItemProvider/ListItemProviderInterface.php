@@ -2,7 +2,6 @@
 
 namespace HeimrichHannot\FlareBundle\ListItemProvider;
 
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
@@ -19,7 +18,6 @@ interface ListItemProviderInterface
     public function fetchCount(
         ListQueryBuilder        $listQueryBuilder,
         FilterContextCollection $filters,
-        ContentContext         $contentContext,
     ): int;
 
     /**
@@ -38,18 +36,6 @@ interface ListItemProviderInterface
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
     ): array;
-
-    /**
-     * Return the one entity's row of the given id.
-     *
-     * @return array<string, mixed>|null Returns an associative array mapping column names to their values, or null if not found.
-     */
-    public function fetchEntry(
-        int                     $id,
-        ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ContentContext          $contentContext,
-    ): ?array;
 
     /**
      * Fetch the IDs of entries from the database.

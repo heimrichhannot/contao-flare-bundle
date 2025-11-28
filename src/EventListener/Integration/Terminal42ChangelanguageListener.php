@@ -7,7 +7,16 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use Contao\PageModel;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
+use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
+use HeimrichHannot\FlareBundle\Event\AbstractFetchEvent;
 use HeimrichHannot\FlareBundle\Event\ListViewDetailsPageUrlGeneratedEvent;
+use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
+use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
+use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
+use HeimrichHannot\FlareBundle\ListType\DcMultilingualListType;
+use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
 use HeimrichHannot\FlareBundle\Manager\RequestManager;
 use HeimrichHannot\FlareBundle\Util\DcMultilingualHelper;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
@@ -24,9 +33,10 @@ class Terminal42ChangelanguageListener
     private array $pageFinderCache = [];
 
     public function __construct(
-        private readonly Connection     $connection,
-        private readonly RequestManager $requestManager,
-        private readonly RequestStack   $requestStack,
+        private readonly Connection           $connection,
+        private readonly FilterContextManager $filterContextManager,
+        private readonly RequestManager       $requestManager,
+        private readonly RequestStack         $requestStack,
     ) {}
 
     /**
@@ -36,6 +46,139 @@ class Terminal42ChangelanguageListener
         ?MultilingualQueryBuilderFactoryInterface $queryBuilderFactory,
     ): void {
         $this->queryBuilderFactory = $queryBuilderFactory;
+    }
+
+    #[AsEventListener('flare.list.' . DcMultilingualListType::TYPE . '.fetch.entries')]
+    #[AsEventListener('flare.list.' . DcMultilingualListType::TYPE . '.fetch.ids')]
+    public function fetchEntriesOrIds(AbstractFetchEvent $event): void
+    {
+        $filters = $event->getFilters();
+        $table = $filters->getTable();
+        $lang = DcMultilingualHelper::getLanguage();
+        $langFallback = DcMultilingualHelper::getLanguageFallback($table);
+
+        if ($lang === $langFallback) {
+            return;
+        }
+
+        $listQueryBuilder = $event->getListQueryBuilder();
+
+        $this->applyMlQueriesIfNecessary($listQueryBuilder, $filters, $lang);
+
+        if (!$event->getAutoItem()) {
+            return;
+        }
+
+        // use the translated alias for auto_item retrieval if the alias field is translatable
+        $translatableFields = DcMultilingualHelper::getTranslatableFields($table);
+
+        if (!\in_array($filters->getListModel()->getAutoItemField(), $translatableFields, true)) {
+            return;
+        }
+
+        $autoItemFilter = \array_filter(
+            $filters->values(),
+            static fn (FilterContext $filterContext): bool => $filterContext->getFilterAlias() === '_flare_auto_item'
+        );
+
+        if (!\count($autoItemFilter)) {
+            return;
+        }
+
+        $autoItemFilter = \current($autoItemFilter);
+        $autoItemFilter->getDescriptor()->setIsTargeted(true);
+        $autoItemFilter->getFilterModel()->targetAlias = 'translation';
+    }
+    
+    #[AsEventListener('flare.list.' . DcMultilingualListType::TYPE . '.fetch.count')]
+    public function listViewFetchCountEvent(FetchCountEvent $event): void
+    {
+        $filters = $event->getFilters();
+        $listQueryBuilder = $event->getListQueryBuilder();
+        $contentContext = $event->getContentContext();
+        $table = $filters->getTable();
+        $lang = DcMultilingualHelper::getLanguage();
+        $langFallback = DcMultilingualHelper::getLanguageFallback($table);
+
+        $localized = (
+            $filters->getListModel()->dcMultilingual_display === DcMultilingualHelper::DISPLAY_LOCALIZED
+            && $lang !== $langFallback
+        );
+
+        $this->applyMlQueriesIfNecessary($listQueryBuilder, $filters, $lang);
+
+        if ($localized)
+        {
+            $filterDefinition = SimpleEquationElement::define(
+                equationLeft: DcMultilingualHelper::getPidColumn($table),
+                equationOperator: SqlEquationOperator::GREATER_THAN,
+                equationRight: '0'
+            );
+            $filterDefinition->targetAlias = 'translation';
+
+            $filters->add($this->filterContextManager->definitionToContext(
+                $filterDefinition,
+                $filters->getListModel(),
+                $contentContext,
+            ));
+        }
+        else
+        {
+            $filters->add($this->filterContextManager->definitionToContext(
+                SimpleEquationElement::define(
+                    equationLeft: DcMultilingualHelper::getPidColumn($table),
+                    equationOperator: SqlEquationOperator::EQUALS,
+                    equationRight: '0'
+                ),
+                $filters->getListModel(),
+                $contentContext,
+            ));
+        }
+    }
+
+    private function applyMlQueriesIfNecessary(
+        ListQueryBuilder $listQueryBuilder,
+        FilterContextCollection $filters,
+        string $language,
+    ): void
+    {
+        if (in_array('translation', $listQueryBuilder->getMandatoryTableAliases(), true)) {
+            return;
+        }
+
+        $table = $filters->getTable();
+        $langColumnName = DcMultilingualHelper::getLangColumn($table);
+        $pidColumnName = DcMultilingualHelper::getPidColumn($table);
+        $regularFields = DcMultilingualHelper::getRegularFields($table);
+        $translatableFields = DcMultilingualHelper::getTranslatableFields($table);
+
+        // Always translate system columns
+        $systemColumns = ['id', $langColumnName, $pidColumnName];
+
+        $qMain = $listQueryBuilder->getMainAlias(quoted: true);
+
+        foreach ($systemColumns as $field) {
+            $listQueryBuilder->addRawSelect("IFNULL(translation.$field, $qMain.$field) AS $field");
+        }
+
+        // Regular fields
+        foreach (array_diff($regularFields, $translatableFields, $systemColumns) as $field) {
+            $listQueryBuilder->addRawSelect("$qMain.$field");
+        }
+
+        // Translatable fields
+        foreach (array_intersect($translatableFields, $regularFields) as $field) {
+            $listQueryBuilder->addRawSelect("IFNULL(translation.$field, $qMain.$field) AS $field");
+        }
+
+        $listQueryBuilder->addJoin(
+            'LEFT OUTER JOIN',
+            $table,
+            'translation',
+            "$qMain.id=translation.$pidColumnName AND translation.$langColumnName='$language'"
+        );
+        $listQueryBuilder->setTableAliasMandatory('translation');
+        $listQueryBuilder->setGroupBy([]);
     }
     
     #[AsEventListener(priority: 220)]
@@ -137,7 +280,7 @@ class Terminal42ChangelanguageListener
         $targetRoot = $event->getNavigationItem()->getRootPage();
         $language = $targetRoot->rootLanguage;
 
-        $fallbackLang = DcMultilingualHelper::getFallbackLanguage($table);
+        $fallbackLang = DcMultilingualHelper::getLanguageFallback($table);
         if (null !== $fallbackLang && $fallbackLang === $language) {
             $language = '';
         }
@@ -147,7 +290,8 @@ class Terminal42ChangelanguageListener
         $translated = $this->createQueryBuilder($table, $language)
             ->andWhere("{$qTable}.id = :id OR translation.{$qPidColumn} = :id")
             ->setParameter('id', $id)
-            ->executeQuery()->fetchAssociative();
+            ->executeQuery()
+            ->fetchAssociative();
 
         if (false === $translated) {
             return;

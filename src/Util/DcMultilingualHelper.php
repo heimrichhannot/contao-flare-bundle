@@ -38,7 +38,7 @@ class DcMultilingualHelper
         return $GLOBALS['TL_DCA'][$table]['config']['langColumnName'] ?? 'language';
     }
 
-    public static function getFallbackLanguage(string $table): string|null
+    public static function getLanguageFallback(string $table): string|null
     {
         Controller::loadDataContainer($table);
         return $GLOBALS['TL_DCA'][$table]['config']['fallbackLang'] ?? null;
@@ -49,7 +49,7 @@ class DcMultilingualHelper
         $extractor = DcaExtractor::getInstance($table);
         $tableColumns = Database::getInstance()->getFieldNames($table);
 
-        return array_intersect($tableColumns, array_keys($extractor->getFields()));
+        return \array_intersect($tableColumns, \array_keys($extractor->getFields()));
     }
 
     public static function getTranslatableFields(string $table): array

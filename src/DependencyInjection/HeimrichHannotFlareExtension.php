@@ -2,6 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection;
 
+use Composer\InstalledVersions;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFlareCallback;
@@ -26,6 +27,14 @@ class HeimrichHannotFlareExtension extends Extension implements PrependExtension
     {
         $loader = new YamlFileLoader($container, new FileLocator(\dirname(__DIR__) . '/../config'));
         $loader->load('services.yaml');
+
+        if (InstalledVersions::isInstalled('contao/comments-bundle')) {
+            $loader->load('integrations/contao_comments.yaml');
+        }
+
+        if (InstalledVersions::isInstalled('terminal42/contao-changelanguage')) {
+            $loader->load('integrations/terminal42_changelanguage.yaml');
+        }
 
         $configuration = new Configuration();
         $flareConfig = $this->processConfiguration($configuration, $configs);

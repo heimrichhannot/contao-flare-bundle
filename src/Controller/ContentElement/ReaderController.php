@@ -18,10 +18,12 @@ use Contao\Template;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
+use HeimrichHannot\FlareBundle\Dto\ReaderRequestAttribute;
 use HeimrichHannot\FlareBundle\Event\ReaderBuiltEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Manager\ReaderManager;
+use HeimrichHannot\FlareBundle\Manager\RequestManager;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -40,6 +42,7 @@ final class ReaderController extends AbstractContentElementController
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly LoggerInterface          $logger,
         private readonly ReaderManager            $readerManager,
+        private readonly RequestManager           $requestManager,
         private readonly ResponseContextAccessor  $responseContextAccessor,
         private readonly ScopeMatcher             $scopeMatcher,
         private readonly TranslationManager       $translator,
@@ -89,8 +92,9 @@ final class ReaderController extends AbstractContentElementController
                 throw $this->createNotFoundException('No model found.');
             }
 
-            $errData[$model->getTable() . '.id'] = $model->id;
+            $errData[$model::getTable() . '.id'] = $model->id;
 
+            $this->requestManager->setReader(new ReaderRequestAttribute($model, $listModel));
             $this->entityCacheTags->tagWith($model);
 
             $pageMeta = $this->readerManager->getPageMeta(
@@ -131,6 +135,7 @@ final class ReaderController extends AbstractContentElementController
         {
             return $template->getResponse();
         }
+        /** @noinspection PhpRedundantCatchClauseInspection */
         catch (RuntimeError $e)
         {
             $previous = $e;

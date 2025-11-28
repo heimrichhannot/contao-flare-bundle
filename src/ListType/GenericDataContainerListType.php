@@ -8,17 +8,17 @@ use Contao\CoreBundle\String\SimpleTokenParser;
 use Contao\DataContainer;
 use Contao\Message;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
-use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
+use HeimrichHannot\FlareBundle\ListType\Trait\GenericReaderPageMetaTrait;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
-use HeimrichHannot\FlareBundle\Util\Str;
 
 #[AsListType(alias: self::TYPE, palette: self::DEFAULT_PALETTE)]
 class GenericDataContainerListType extends AbstractListType implements DataContainerContract
 {
+    use GenericReaderPageMetaTrait;
+
     public const TYPE = 'flare_generic_dc';
     public const DEFAULT_PALETTE = <<<'PALETTE'
         {data_container_legend},dc,fieldAutoItem;{parent_legend},hasParent;
@@ -30,63 +30,19 @@ class GenericDataContainerListType extends AbstractListType implements DataConta
         private readonly SimpleTokenParser $simpleTokenParser,
     ) {}
 
+    protected function getHtmlDecoder(): HtmlDecoder
+    {
+        return $this->htmlDecoder;
+    }
+
+    protected function getSimpleTokenParser(): SimpleTokenParser
+    {
+        return $this->simpleTokenParser;
+    }
+
     public function getDataContainerName(array $row, DataContainer $dc): string
     {
         return $row['dc'] ?? '';
-    }
-
-    public function getReaderPageMeta(ReaderPageMetaConfig $config): ?ReaderPageMetaDto
-    {
-        $listModel = $config->getListModel();
-        $contentModel = $config->getContentModel();
-        $model = $config->getModel();
-
-        $pageMeta = new ReaderPageMetaDto();
-
-        $tokens = [];
-
-        foreach ($listModel->row() as $key => $value) {
-            if (\is_scalar($value)) {
-                $tokens['list.' . $key] = $value;
-            }
-        }
-
-        foreach ($contentModel->row() as $key => $value) {
-            if (\is_scalar($value)) {
-                $tokens['ce.' . $key] = $value;
-            }
-        }
-
-        foreach ($model->row() as $key => $value) {
-            if (\is_scalar($value)) {
-                $tokens[$key] = $value;
-            }
-        }
-
-        if ($titleFormat = $listModel->metaTitleFormat)
-        {
-            $titleFormat = $this->htmlDecoder->inputEncodedToPlainText($titleFormat);
-            $title = $this->simpleTokenParser->parse($titleFormat, $tokens, allowHtml: false);
-            $title = $this->htmlDecoder->inputEncodedToPlainText($title);
-            $pageMeta->setTitle(Str::htmlToMeta($title, flags: \ENT_QUOTES));
-        }
-
-        if ($descriptionFormat = $listModel->metaDescriptionFormat)
-        {
-            $descriptionFormat = $this->htmlDecoder->inputEncodedToPlainText($descriptionFormat);
-            $description = $this->simpleTokenParser->parse($descriptionFormat, $tokens, allowHtml: false);
-            $description = $this->htmlDecoder->inputEncodedToPlainText($description);
-            $pageMeta->setDescription(Str::htmlToMeta($description));
-        }
-
-        if ($robotsFormat = $listModel->metaRobotsFormat)
-        {
-            $robotsFormat = $this->htmlDecoder->inputEncodedToPlainText($robotsFormat);
-            $robots = $this->simpleTokenParser->parse($robotsFormat, $tokens, allowHtml: false);
-            $pageMeta->setRobots($robots);
-        }
-
-        return $pageMeta;
     }
 
     public function getPalette(PaletteConfig $config): ?string

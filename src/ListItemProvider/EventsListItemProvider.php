@@ -18,8 +18,8 @@ use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 class EventsListItemProvider extends AbstractListItemProvider
 {
     public function __construct(
-        private readonly Connection               $connection,
-        private readonly ListQueryManager         $listQueryManager,
+        private readonly Connection       $connection,
+        private readonly ListQueryManager $listQueryManager,
     ) {}
 
     /**

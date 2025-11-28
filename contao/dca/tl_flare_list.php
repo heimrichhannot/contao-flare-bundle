@@ -7,6 +7,7 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\SortDescriptor\Order;
 use HeimrichHannot\FlareBundle\Util\BeActionsHelper;
+use HeimrichHannot\FlareBundle\Util\DcMultilingualHelper;
 use HeimrichHannot\FlareBundle\Util\Str;
 
 $table = ListModel::getTable();
@@ -264,6 +265,16 @@ $dca['fields'] = [
         'filter' => false,
         'eval' => ['maxlength' => 255, 'tl_class' => 'w50'],
         'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'dcMultilingual_display' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'options' => DcMultilingualHelper::DISPLAY_OPTIONS,
+        'default' => DcMultilingualHelper::DISPLAY_DEFAULT,
+        'eval' => [
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(16) NOT NULL default ''",
     ],
 ];
 

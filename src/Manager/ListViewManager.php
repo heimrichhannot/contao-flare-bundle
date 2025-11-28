@@ -8,25 +8,33 @@ use Contao\Model;
 use Contao\PageModel;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Dto\FetchSingleEntryConfig;
+use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
+use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
+use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
+use HeimrichHannot\FlareBundle\Event\ListViewDetailsPageUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Factory\PaginatorBuilderFactory;
+use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Class ListViewManager
  *
  * Manages the list view, including filters, forms, pagination, sort-order, and entries.
  */
-class ListViewManager
+final class ListViewManager
 {
     protected array $filterContextCache = [];
     protected array $formCache = [];
@@ -36,12 +44,14 @@ class ListViewManager
     protected array $listPaginatorCache = [];
 
     public function __construct(
-        private readonly FilterContextManager    $filterContext,
-        private readonly FilterFormManager       $formManager,
-        private readonly ListQueryManager        $listQueryManager,
-        private readonly ListItemProviderManager $itemProvider,
-        private readonly PaginatorBuilderFactory $paginatorBuilderFactory,
-        private readonly RequestStack            $requestStack,
+        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly FilterContextManager     $filterContextManager,
+        private readonly FilterElementRegistry    $filterElementRegistry,
+        private readonly FilterFormManager        $formManager,
+        private readonly ListQueryManager         $listQueryManager,
+        private readonly ListItemProviderManager  $itemProvider,
+        private readonly PaginatorBuilderFactory  $paginatorBuilderFactory,
+        private readonly RequestStack             $requestStack,
     ) {}
 
     /**
@@ -77,8 +87,9 @@ class ListViewManager
     public function getFilterContextCollection(
         ListModel      $listModel,
         ContentContext $contentContext,
+        ?int           $entryId = null,
     ): FilterContextCollection {
-        $cacheKey = $this->makeCacheKey($listModel, $contentContext);
+        $cacheKey = $this->makeCacheKey($listModel, $contentContext, $entryId ? "entry_{$entryId}" : '');
         if (isset($this->filterContextCache[$cacheKey])) {
             return $this->filterContextCache[$cacheKey];
         }
@@ -87,7 +98,7 @@ class ListViewManager
             throw new FilterException("List model not published [ID {$listModel->id}]", source: __METHOD__);
         }
 
-        if (!$filters = $this->filterContext->collect($listModel, $contentContext)) {
+        if (!$filters = $this->filterContextManager->collect($listModel, $contentContext)) {
             throw new FilterException("List model setup incomplete [ID {$listModel->id}]", source: __METHOD__);
         }
 
@@ -202,6 +213,25 @@ class ListViewManager
             $listQueryBuilder = $this->getListQueryBuilder($listModel, $contentContext);
             $filters = $this->getFilterContextCollection($listModel, $contentContext);
 
+            $event = new FetchCountEvent(
+                listModel: $listModel,
+                contentContext: $contentContext,
+                itemProvider: $itemProvider,
+                listQueryBuilder: $listQueryBuilder,
+                filters: $filters,
+                form: $form,
+                paginatorConfig: $paginatorConfig,
+            );
+
+            $event = $this->eventDispatcher->dispatch(
+                event: $event,
+                eventName: $event->getEventName(),
+            );
+
+            $itemProvider = $event->getItemProvider();
+            $listQueryBuilder = $event->getListQueryBuilder();
+            $filters = $event->getFilters();
+
             $total = $itemProvider->fetchCount($listQueryBuilder, $filters);
         }
         catch (\Exception $e)
@@ -255,12 +285,32 @@ class ListViewManager
 
         try
         {
-            $listQuery      = $this->getListQueryBuilder($listModel, $contentContext);
-            $filters        = $this->getFilterContextCollection($listModel, $contentContext);
-            $paginator      = $this->getPaginator($listModel, $contentContext, $paginatorConfig);
+            $listQueryBuilder = $this->getListQueryBuilder($listModel, $contentContext);
+            $filters          = $this->getFilterContextCollection($listModel, $contentContext);
+            $paginator        = $this->getPaginator($listModel, $contentContext, $paginatorConfig);
+
+            $event = new FetchListEntriesEvent(
+                listModel: $listModel,
+                contentContext: $contentContext,
+                itemProvider: $itemProvider,
+                listQueryBuilder: $listQueryBuilder,
+                filters: $filters,
+                form: $form,
+                paginatorConfig: $paginator,
+                sortDescriptor: $sortDescriptor,
+            );
+
+            $event = $this->eventDispatcher->dispatch(
+                event: $event,
+                eventName: $event->getEventName(),
+            );
+
+            $itemProvider = $event->getItemProvider();
+            $listQueryBuilder = $event->getListQueryBuilder();
+            $filters = $event->getFilters();
 
             $entries = $itemProvider->fetchEntries(
-                listQueryBuilder: $listQuery,
+                listQueryBuilder: $listQueryBuilder,
                 filters: $filters,
                 sortDescriptor: $sortDescriptor,
                 paginator: $paginator,
@@ -286,10 +336,56 @@ class ListViewManager
     public function getEntry(int $id, ListModel $listModel, ContentContext $contentContext): ?array
     {
         $itemProvider = $this->itemProvider->ofListModel($listModel);
-        $listQuery = $this->getListQueryBuilder($listModel, $contentContext);
-        $filters = $this->getFilterContextCollection($listModel, $contentContext);
+        $listQueryBuilder = $this->getListQueryBuilder($listModel, $contentContext);
+        $filters = $this->getFilterContextCollection($listModel, $contentContext, $id);
 
-        return $itemProvider->fetchEntry(id: $id, listQueryBuilder: $listQuery, filters: $filters, contentContext: $contentContext);
+        $idDefinition = SimpleEquationElement::define(
+            equationLeft: 'id',
+            equationOperator: SqlEquationOperator::EQUALS,
+            equationRight: $id,
+        )->setAlias('_flare_id', $ogAlias);
+
+        $idFilterContext = $this->filterContextManager->definitionToContext(
+            definition: $idDefinition,
+            listModel: $filters->getListModel(),
+            contentContext: $contentContext,
+            descriptor: $this->filterElementRegistry->get($ogAlias),
+        );
+
+        /**
+         * @noinspection PhpParenthesesCanBeOmittedForNewCallInspection
+         * @noinspection RedundantSuppression
+         */
+        $event = (new FetchListEntriesEvent(
+            listModel: $listModel,
+            contentContext: $contentContext,
+            itemProvider: $itemProvider,
+            listQueryBuilder: $listQueryBuilder,
+            filters: $filters,
+        ))->withSingleEntryConfig(new FetchSingleEntryConfig($id, $idFilterContext));
+
+        /** @var FetchListEntriesEvent $event */
+        $event = $this->eventDispatcher->dispatch(
+            event: $event,
+            eventName: $event->getEventName(),
+        );
+
+        $itemProvider = $event->getItemProvider();
+        $listQueryBuilder = $event->getListQueryBuilder();
+        $filters = $event->getFilters();
+
+        if (!$idFilterContext = $event->getSingleEntryConfig()?->idFilterContext) {
+            return null;
+        }
+
+        $filters->add($idFilterContext);
+
+        $entries = $itemProvider->fetchEntries(
+            listQueryBuilder: $listQueryBuilder,
+            filters: $filters,
+        );
+
+        return \reset($entries) ?: null;
     }
 
     /**
@@ -355,9 +451,13 @@ class ListViewManager
         }
 
         $autoItemField = $listModel->getAutoItemField();
-        $model = $this->getModel(id: $id, listModel: $listModel, contentContext: $contentContext);
+        $model = $this->getModel(
+            id: $id,
+            listModel: $listModel,
+            contentContext: $contentContext
+        );
 
-        if (!$autoItem = CallbackHelper::tryGetProperty($model, $autoItemField)) {
+        if (!$autoItem = (string) CallbackHelper::tryGetProperty($model, $autoItemField)) {
             return null;
         }
 
@@ -365,7 +465,23 @@ class ListViewManager
             throw new FlareException(\sprintf('Details page not found [ID %s]', $pageId), source: __METHOD__);
         }
 
-        return $page->getAbsoluteUrl('/' . $autoItem);
+        $url = $page->getAbsoluteUrl('/' . $autoItem);
+
+        $event = new ListViewDetailsPageUrlGeneratedEvent(
+            listModel: $listModel,
+            contentContext: $contentContext,
+            model: $model,
+            autoItem: $autoItem,
+            page: $page,
+            url: $url,
+        );
+
+        $event = $this->eventDispatcher->dispatch(
+            event: $event,
+            eventName: $event->getEventName(),
+        );
+
+        return $event->getUrl();
     }
 
     public function getFormAction(ListModel $listModel, ContentContext $contentContext): ?string

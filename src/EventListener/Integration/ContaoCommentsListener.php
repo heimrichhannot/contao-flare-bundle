@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\EventListener;
+namespace HeimrichHannot\FlareBundle\EventListener\Integration;
 
 use Contao\Comments;
 use Contao\CoreBundle\DataContainer\PaletteManipulator;
@@ -18,7 +18,7 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\RequestStack;
 
-readonly class CommentsListener
+readonly class ContaoCommentsListener
 {
     public function __construct(
         private RequestStack $requestStack,
@@ -32,7 +32,7 @@ readonly class CommentsListener
     {
         /** @var ListModel $listModel */
         $listModel = $event->getListModel();
-        if (!$listModel->comments_enabled || !\class_exists(Comments::class)) {
+        if (!$listModel->comments_enabled) {
             return;
         }
 
@@ -81,7 +81,7 @@ readonly class CommentsListener
         (new Comments())->addCommentsToTemplate(
             objTemplate: $template,
             objConfig: $config,
-            strSource: $newsModel->getTable(),
+            strSource: $newsModel::getTable(),
             intParent: $newsModel->id,
             varNotifies: $notifies,
         );
@@ -104,10 +104,6 @@ readonly class CommentsListener
             return;
         }
 
-        if (!\class_exists(Comments::class)) {
-            return;
-        }
-
         $pm = PaletteManipulator::create()
             ->addLegend('comments_legend')
             ->addField('comments_enabled', 'comments_legend', PaletteManipulator::POSITION_APPEND);
@@ -126,10 +122,6 @@ readonly class CommentsListener
     public function onFlareReaderLoad(?DataContainer $dc = null): void
     {
         if ($dc === null || !$dc->id || $this->requestStack->getCurrentRequest()->query->get('act') !== 'edit') {
-            return;
-        }
-
-        if (!\class_exists(Comments::class)) {
             return;
         }
 

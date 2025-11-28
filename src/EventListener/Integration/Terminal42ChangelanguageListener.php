@@ -9,9 +9,10 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Event\AbstractFetchEvent;
+use HeimrichHannot\FlareBundle\Event\FetchAutoItemEvent;
+use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
 use HeimrichHannot\FlareBundle\Event\ListViewDetailsPageUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
@@ -48,26 +49,29 @@ class Terminal42ChangelanguageListener
         $this->queryBuilderFactory = $queryBuilderFactory;
     }
 
-    #[AsEventListener('flare.list.' . DcMultilingualListType::TYPE . '.fetch.entries')]
-    #[AsEventListener('flare.list.' . DcMultilingualListType::TYPE . '.fetch.ids')]
-    public function fetchEntriesOrIds(AbstractFetchEvent $event): void
+    #[AsEventListener('flare.fetch_auto_item')]
+    public function fetchAutoItem(FetchAutoItemEvent $event): void
     {
+        if ($event->getListModel()->type !== DcMultilingualListType::TYPE) {
+            return;
+        }
+
+        if ($this->isFallbackLanguage($event)) {
+            return;
+        }
+
+        $this->applyMlQueriesIfNecessary(
+            $event->getListQueryBuilder(),
+            $event->getFilters(),
+            DcMultilingualHelper::getLanguage(),
+        );
+
+        if (!$autoItemFilterContext = $event->getAutoItemFilterContext()) {
+            return;
+        }
+
         $filters = $event->getFilters();
         $table = $filters->getTable();
-        $lang = DcMultilingualHelper::getLanguage();
-        $langFallback = DcMultilingualHelper::getLanguageFallback($table);
-
-        if ($lang === $langFallback) {
-            return;
-        }
-
-        $listQueryBuilder = $event->getListQueryBuilder();
-
-        $this->applyMlQueriesIfNecessary($listQueryBuilder, $filters, $lang);
-
-        if (!$event->getAutoItem()) {
-            return;
-        }
 
         // use the translated alias for auto_item retrieval if the alias field is translatable
         $translatableFields = DcMultilingualHelper::getTranslatableFields($table);
@@ -76,38 +80,51 @@ class Terminal42ChangelanguageListener
             return;
         }
 
-        $autoItemFilter = \array_filter(
-            $filters->values(),
-            static fn (FilterContext $filterContext): bool => $filterContext->getFilterAlias() === '_flare_auto_item'
-        );
+        // todo: probably should not set entire service as targeted
 
-        if (!\count($autoItemFilter)) {
+        $autoItemFilterContext->getDescriptor()->setIsTargeted(true);
+        $autoItemFilterContext->getFilterModel()->targetAlias = 'translation';
+    }
+
+    #[AsEventListener('flare.list.' . DcMultilingualListType::TYPE . '.fetch_entries')]
+    public function fetchEntries(FetchListEntriesEvent $event): void
+    {
+        if ($this->isFallbackLanguage($event)) {
             return;
         }
 
-        $autoItemFilter = \current($autoItemFilter);
-        $autoItemFilter->getDescriptor()->setIsTargeted(true);
-        $autoItemFilter->getFilterModel()->targetAlias = 'translation';
+        $this->applyMlQueriesIfNecessary(
+            $event->getListQueryBuilder(),
+            $event->getFilters(),
+            DcMultilingualHelper::getLanguage(),
+        );
     }
-    
-    #[AsEventListener('flare.list.' . DcMultilingualListType::TYPE . '.fetch.count')]
-    public function listViewFetchCountEvent(FetchCountEvent $event): void
+
+    private function isFallbackLanguage(AbstractFetchEvent $event): bool
     {
         $filters = $event->getFilters();
-        $listQueryBuilder = $event->getListQueryBuilder();
-        $contentContext = $event->getContentContext();
         $table = $filters->getTable();
         $lang = DcMultilingualHelper::getLanguage();
         $langFallback = DcMultilingualHelper::getLanguageFallback($table);
 
-        $localized = (
-            $filters->getListModel()->dcMultilingual_display === DcMultilingualHelper::DISPLAY_LOCALIZED
-            && $lang !== $langFallback
-        );
+        return $lang === $langFallback;
+    }
+    
+    #[AsEventListener('flare.list.' . DcMultilingualListType::TYPE . '.fetch_count')]
+    public function listViewFetchCountEvent(FetchCountEvent $event): void
+    {
+        $filters = $event->getFilters();
+        $table = $filters->getTable();
+        $lang = DcMultilingualHelper::getLanguage();
+        $langFallback = DcMultilingualHelper::getLanguageFallback($table);
 
-        $this->applyMlQueriesIfNecessary($listQueryBuilder, $filters, $lang);
+        $this->applyMlQueriesIfNecessary($event->getListQueryBuilder(), $filters, $lang);
 
-        if ($localized)
+        $contentContext = $event->getContentContext();
+
+        if (($lang !== $langFallback)
+            && ($filters->getListModel()->dcMultilingual_display === DcMultilingualHelper::DISPLAY_LOCALIZED))
+            // localized list view
         {
             $filterDefinition = SimpleEquationElement::define(
                 equationLeft: DcMultilingualHelper::getPidColumn($table),
@@ -115,25 +132,21 @@ class Terminal42ChangelanguageListener
                 equationRight: '0'
             );
             $filterDefinition->targetAlias = 'translation';
-
-            $filters->add($this->filterContextManager->definitionToContext(
-                $filterDefinition,
-                $filters->getListModel(),
-                $contentContext,
-            ));
         }
         else
         {
-            $filters->add($this->filterContextManager->definitionToContext(
-                SimpleEquationElement::define(
-                    equationLeft: DcMultilingualHelper::getPidColumn($table),
-                    equationOperator: SqlEquationOperator::EQUALS,
-                    equationRight: '0'
-                ),
-                $filters->getListModel(),
-                $contentContext,
-            ));
+            $filterDefinition = SimpleEquationElement::define(
+                equationLeft: DcMultilingualHelper::getPidColumn($table),
+                equationOperator: SqlEquationOperator::EQUALS,
+                equationRight: '0'
+            );
         }
+
+        $filters->add($this->filterContextManager->definitionToContext(
+            definition: $filterDefinition,
+            listModel: $filters->getListModel(),
+            contentContext: $contentContext,
+        ));
     }
 
     private function applyMlQueriesIfNecessary(

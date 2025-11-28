@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageMetaContract;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
-use HeimrichHannot\FlareBundle\Event\FetchIdsEvent;
+use HeimrichHannot\FlareBundle\Event\FetchAutoItemEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
@@ -51,6 +51,10 @@ readonly class ReaderManager
             throw new FlareException(\sprintf('Model class does not exist: "%s"', $modelClass), source: __METHOD__);
         }
 
+        $itemProvider = $this->itemProvider->ofListModel($listModel);
+        $listQueryBuilder = $this->listQuery->prepare($listModel);
+
+        ###> define auto_item filter context ###
         $autoItemDefinition = SimpleEquationElement::define(
             equationLeft: $listModel->getAutoItemField(),
             equationOperator: SqlEquationOperator::EQUALS,
@@ -63,37 +67,35 @@ readonly class ReaderManager
             contentContext: $contentContext,
             descriptor: $this->filterElementRegistry->get($ogAlias),
         );
+        ###< define auto_item filter context ###
 
-        if (!$autoItemFilterContext) {
+        $event = new FetchAutoItemEvent(
+            autoItem: $autoItem,
+            autoItemFilterContext: $autoItemFilterContext,
+            listModel: $listModel,
+            contentContext: $contentContext,
+            itemProvider: $itemProvider,
+            listQueryBuilder: $listQueryBuilder,
+            filters: $filters,
+        );
+
+        $event = $this->eventDispatcher->dispatch(
+            event: $event,
+            eventName: $event->getEventName(),
+        );
+
+        if (!$autoItemFilterContext = $event->getAutoItemFilterContext()) {
             return null;
         }
 
-        $filters->add($autoItemFilterContext);
+        $itemProvider = $event->getItemProvider();
+        $listQueryBuilder = $event->getListQueryBuilder();
+        $filters = $event->getFilters();
 
-        $itemProvider = $this->itemProvider->ofListModel($listModel);
+        $filters->add($autoItemFilterContext);
 
         try
         {
-            $listQueryBuilder = $this->listQuery->prepare($listModel);
-
-            $event = new FetchIdsEvent(
-                listModel: $listModel,
-                contentContext: $contentContext,
-                itemProvider: $itemProvider,
-                listQueryBuilder: $listQueryBuilder,
-                filters: $filters,
-                autoItem: $autoItem,
-            );
-
-            $event = $this->eventDispatcher->dispatch(
-                event: $event,
-                eventName: $event->getEventName(),
-            );
-
-            $itemProvider = $event->getItemProvider();
-            $listQueryBuilder = $event->getListQueryBuilder();
-            $filters = $event->getFilters();
-
             $ids = $itemProvider->fetchIds(
                 listQueryBuilder: $listQueryBuilder,
                 filters: $filters

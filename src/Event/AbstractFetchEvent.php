@@ -3,7 +3,6 @@
 namespace HeimrichHannot\FlareBundle\Event;
 
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
-use HeimrichHannot\FlareBundle\Enum\FetchSubject;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
@@ -15,8 +14,6 @@ use Symfony\Contracts\EventDispatcher\Event;
 
 abstract class AbstractFetchEvent extends Event
 {
-    abstract public function subject(): FetchSubject;
-
     abstract public function getEventName(): string;
 
     public function __construct(
@@ -28,7 +25,6 @@ abstract class AbstractFetchEvent extends Event
         private readonly ?FormInterface   $form = null,
         private readonly ?PaginatorConfig $paginatorConfig = null,
         private readonly ?SortDescriptor  $sortDescriptor = null,
-        private readonly string|int|null  $autoItem = null,
     ) {}
 
     public function getListModel(): ListModel
@@ -84,10 +80,5 @@ abstract class AbstractFetchEvent extends Event
     public function getSortDescriptor(): ?SortDescriptor
     {
         return $this->sortDescriptor;
-    }
-
-    public function getAutoItem(): int|string|null
-    {
-        return $this->autoItem;
     }
 }

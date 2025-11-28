@@ -8,9 +8,10 @@ use Contao\Model;
 use Contao\PageModel;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Dto\FetchSingleEntryConfig;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
-use HeimrichHannot\FlareBundle\Event\FetchEntriesEvent;
+use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
 use HeimrichHannot\FlareBundle\Event\ListViewDetailsPageUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -18,10 +19,10 @@ use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Factory\PaginatorBuilderFactory;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
-use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use Symfony\Component\Form\FormInterface;
@@ -45,6 +46,7 @@ final class ListViewManager
     public function __construct(
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly FilterContextManager     $filterContextManager,
+        private readonly FilterElementRegistry    $filterElementRegistry,
         private readonly FilterFormManager        $formManager,
         private readonly ListQueryManager         $listQueryManager,
         private readonly ListItemProviderManager  $itemProvider,
@@ -85,8 +87,9 @@ final class ListViewManager
     public function getFilterContextCollection(
         ListModel      $listModel,
         ContentContext $contentContext,
+        ?int           $entryId = null,
     ): FilterContextCollection {
-        $cacheKey = $this->makeCacheKey($listModel, $contentContext);
+        $cacheKey = $this->makeCacheKey($listModel, $contentContext, $entryId ? "entry_{$entryId}" : '');
         if (isset($this->filterContextCache[$cacheKey])) {
             return $this->filterContextCache[$cacheKey];
         }
@@ -229,7 +232,7 @@ final class ListViewManager
             $listQueryBuilder = $event->getListQueryBuilder();
             $filters = $event->getFilters();
 
-            $total = $itemProvider->fetchCount($listQueryBuilder, $filters, $contentContext);
+            $total = $itemProvider->fetchCount($listQueryBuilder, $filters);
         }
         catch (\Exception $e)
         {
@@ -286,7 +289,7 @@ final class ListViewManager
             $filters          = $this->getFilterContextCollection($listModel, $contentContext);
             $paginator        = $this->getPaginator($listModel, $contentContext, $paginatorConfig);
 
-            $event = new FetchEntriesEvent(
+            $event = new FetchListEntriesEvent(
                 listModel: $listModel,
                 contentContext: $contentContext,
                 itemProvider: $itemProvider,
@@ -334,33 +337,48 @@ final class ListViewManager
     {
         $itemProvider = $this->itemProvider->ofListModel($listModel);
         $listQueryBuilder = $this->getListQueryBuilder($listModel, $contentContext);
-        $filters = $this->getFilterContextCollection($listModel, $contentContext);
+        $filters = $this->getFilterContextCollection($listModel, $contentContext, $id);
+
+        $idDefinition = SimpleEquationElement::define(
+            equationLeft: 'id',
+            equationOperator: SqlEquationOperator::EQUALS,
+            equationRight: $id,
+        )->setAlias('_flare_id', $ogAlias);
 
         $idFilterContext = $this->filterContextManager->definitionToContext(
-            definition: SimpleEquationElement::define('id', SqlEquationOperator::EQUALS, $id),
+            definition: $idDefinition,
             listModel: $filters->getListModel(),
             contentContext: $contentContext,
+            descriptor: $this->filterElementRegistry->get($ogAlias),
         );
 
-        $filters->add($idFilterContext);
-
-        $event = (new FetchEntriesEvent(
+        /**
+         * @noinspection PhpParenthesesCanBeOmittedForNewCallInspection
+         * @noinspection RedundantSuppression
+         */
+        $event = (new FetchListEntriesEvent(
             listModel: $listModel,
             contentContext: $contentContext,
             itemProvider: $itemProvider,
             listQueryBuilder: $listQueryBuilder,
             filters: $filters,
-        ))->withSingleEntryId($id);
+        ))->withSingleEntryConfig(new FetchSingleEntryConfig($id, $idFilterContext));
 
+        /** @var FetchListEntriesEvent $event */
         $event = $this->eventDispatcher->dispatch(
             event: $event,
             eventName: $event->getEventName(),
         );
 
-        /** @var ListItemProviderInterface $itemProvider */
         $itemProvider = $event->getItemProvider();
         $listQueryBuilder = $event->getListQueryBuilder();
         $filters = $event->getFilters();
+
+        if (!$idFilterContext = $event->getSingleEntryConfig()?->idFilterContext) {
+            return null;
+        }
+
+        $filters->add($idFilterContext);
 
         $entries = $itemProvider->fetchEntries(
             listQueryBuilder: $listQueryBuilder,

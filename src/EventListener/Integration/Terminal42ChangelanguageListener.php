@@ -21,6 +21,7 @@ class Terminal42ChangelanguageListener
     private ?MultilingualQueryBuilderFactoryInterface $queryBuilderFactory;
     private ?PageFinder $pageFinder;
     private array $pageFinderCache = [];
+    private string $language;
 
     public function __construct(
         private readonly RequestManager $requestManager,
@@ -58,9 +59,7 @@ class Terminal42ChangelanguageListener
 
     private function findPageForLanguage(PageModel $page): ?PageModel
     {
-        if (!$lang = $GLOBALS['TL_LANGUAGE'] ?? '') {
-            throw new \RuntimeException('TL_LANGUAGE is not set.');
-        }
+        $lang = $this->getLanguage();
 
         $key = "{$lang}.{$page->id}";
 
@@ -70,6 +69,14 @@ class Terminal42ChangelanguageListener
         }
 
         return $this->pageFinderCache[$key];
+    }
+
+    private function getLanguage(): string
+    {
+        return $this->language ??= (
+            $GLOBALS['TL_LANGUAGE']
+            ?? throw new \RuntimeException('TL_LANGUAGE is not set.')
+        );
     }
 
     private function getPageFinder(): ?PageFinder
@@ -117,7 +124,7 @@ class Terminal42ChangelanguageListener
 
         $aliasColumnName = $listModel->getAutoItemField();
 
-        $row = $this->createQueryBuilder($table, $GLOBALS['TL_LANGUAGE'])
+        $row = $this->createQueryBuilder($table, $this->getLanguage())
             ->andWhere("($table.$aliasColumnName = :autoitem OR translation.$aliasColumnName = :autoitem)")
             ->setParameter('autoitem', $request->attributes->get('auto_item'))
             ->executeQuery()

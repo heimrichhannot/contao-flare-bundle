@@ -36,17 +36,13 @@ class ListItemProvider extends AbstractListItemProvider
 
         $table = $filters->getTable();
 
-        $entries = \array_combine(
+        return \array_combine(
             \array_map(
                 static fn (string $id): string => \sprintf('%s.%d', $table, $id),
                 \array_column($entries, 'id')
             ),
             $entries
         );
-
-        $this->entryCache += $entries;
-
-        return $entries;
     }
 
     /**

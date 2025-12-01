@@ -121,9 +121,11 @@ class Terminal42ChangelanguageListener
         $this->applyMlQueriesIfNecessary($event->getListQueryBuilder(), $filters, $lang);
 
         $contentContext = $event->getContentContext();
+        
+        $dcMultilingualDisplay = $event->getContentContext()->getContentModel()->flare_dcMultilingualDisplay
+            ?: $filters->getListModel()->dcMultilingual_display;
 
-        if (($lang !== $langFallback)
-            && ($filters->getListModel()->dcMultilingual_display === DcMultilingualHelper::DISPLAY_LOCALIZED))
+        if ($lang !== $langFallback && $dcMultilingualDisplay === DcMultilingualHelper::DISPLAY_LOCALIZED)
             // localized list view
         {
             $filterDefinition = SimpleEquationElement::define(

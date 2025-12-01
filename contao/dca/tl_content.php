@@ -72,11 +72,11 @@ $dca['fields'][$dcMultilingualDisplay = ContentContainer::FIELD_DC_MULTILINGUAL_
     'inputType' => 'select',
     'exclude' => true,
     'options' => DcMultilingualHelper::DISPLAY_OPTIONS,
-    'default' => DcMultilingualHelper::DISPLAY_DEFAULT,
+    'default' => null,
     'eval' => [
         'tl_class' => 'w50',
     ],
-    'sql' => "varchar(16) NOT NULL default ''",
+    'sql' => "varchar(16) NULL default NULL",
 ];
 
 $commonPaletteEnd = '{template_legend:hide},customTpl;'

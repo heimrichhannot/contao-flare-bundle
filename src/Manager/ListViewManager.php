@@ -7,6 +7,7 @@ namespace HeimrichHannot\FlareBundle\Manager;
 use Contao\Model;
 use Contao\PageModel;
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Dto\FetchSingleEntryConfig;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
@@ -36,6 +37,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  */
 final class ListViewManager
 {
+    protected array $entryCache = [];
     protected array $filterContextCache = [];
     protected array $formCache = [];
     protected array $listQueryBuilderCache = [];
@@ -130,7 +132,7 @@ final class ListViewManager
 
         $filters = $this->getFilterContextCollection($listModel, $contentContext);
         $formName = $this->makeFormName($listModel, $contentContext);
-        $formAction = $this->getFormAction($listModel, $contentContext);
+        $formAction = $this->getFormAction($contentContext);
 
         $form = $this->formManager->buildForm(
             filters: $filters,
@@ -315,6 +317,8 @@ final class ListViewManager
                 sortDescriptor: $sortDescriptor,
                 paginator: $paginator,
             );
+
+            $this->cacheEntries($listModel, $contentContext, $entries);
         }
         catch (FlareException $e)
         {
@@ -330,11 +334,30 @@ final class ListViewManager
         return $entries;
     }
 
+    protected function cacheEntries(ListModel $listModel, ContentContext $contentContext, array $rows): void
+    {
+        foreach ($rows as $row)
+        {
+            if (!$id = (int) ($row['id'] ?? 0)) {
+                continue;
+            }
+
+            $cacheKey = $this->makeCacheKey($listModel, $contentContext, "entry.{$id}");
+
+            $this->entryCache[$cacheKey] = $row;
+        }
+    }
+
     /**
      * @throws FlareException
      */
     public function getEntry(int $id, ListModel $listModel, ContentContext $contentContext): ?array
     {
+        $cacheKey = $this->makeCacheKey($listModel, $contentContext, "entry.{$id}");
+        if (isset($this->entryCache[$cacheKey])) {
+            return $this->entryCache[$cacheKey];
+        }
+
         $itemProvider = $this->itemProvider->ofListModel($listModel);
         $listQueryBuilder = $this->getListQueryBuilder($listModel, $contentContext);
         $filters = $this->getFilterContextCollection($listModel, $contentContext, $id);
@@ -385,7 +408,9 @@ final class ListViewManager
             filters: $filters,
         );
 
-        return \reset($entries) ?: null;
+        $entry = \reset($entries) ?: null;
+
+        return $this->entryCache[$cacheKey] = $entry;
     }
 
     /**
@@ -484,7 +509,7 @@ final class ListViewManager
         return $event->getUrl();
     }
 
-    public function getFormAction(ListModel $listModel, ContentContext $contentContext): ?string
+    public function getFormAction(ContentContext $contentContext): ?string
     {
         if (!$jumpTo = $contentContext->getActionPage()) {
             return null;
@@ -506,10 +531,11 @@ final class ListViewManager
      *
      * @return string The cache key.
      */
-    public function makeCacheKey(ListModel $listModel, ContentContext $context, mixed ...$args): string
+    public function makeCacheKey(ListModel $listModel, ?ContentContext $context, mixed ...$args): string
     {
         $args = \array_filter($args);
-        $parts = [$listModel->id, $context->getUniqueId(), ...$args];
+        $parts = [ListContainer::TABLE_NAME . '.' . $listModel->id, $context?->getUniqueId(), ...$args];
+        $parts = \array_filter($parts);
         return \implode('@', $parts);
     }
 

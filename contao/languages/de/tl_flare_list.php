@@ -19,6 +19,7 @@ $lang['published'] = ['Veröffentlicht', 'Ob Inhaltselemente mit dieser Liste ge
 $lang['data_container_legend'] = 'DC-Einstellungen';
 $lang['dc'] = ['Data-Container', 'Bitte wählen Sie den Data-Container, auf dessen Einträgen die Liste basieren soll.'];
 $lang['fieldAutoItem'] = ['Auto-Item-Feld', 'Bitte wählen Sie das Feld aus, das als Auto-Item verwendet werden soll.'];
+$lang['dcMultilingual_display'] = ['Mehrsprachige darstellung', 'Bitte wählen Sie, wie mehrsprachige Einträge in der Liste dargestellt werden sollen.'];
 ###< data_container_legend ###
 
 ###> flare_defaults_legend ###

@@ -19,17 +19,17 @@ use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Dto\ReaderRequestAttribute;
-use HeimrichHannot\FlareBundle\Event\ReaderBuiltEvent;
+use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Manager\ReaderManager;
 use HeimrichHannot\FlareBundle\Manager\RequestManager;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Twig\Error\RuntimeError;
 
 #[AsContentElement(ReaderController::TYPE, category: 'includes', template: 'content_element/flare_reader')]
@@ -112,21 +112,19 @@ final class ReaderController extends AbstractContentElementController
             throw new InternalServerErrorHttpException($e->getMessage(), $e);
         }
 
-        $data = ['model' => $model];
-
-        $event = new ReaderBuiltEvent(
+        $event = new ReaderRenderEvent(
             contentContext: $contentContext,
             contentModel: $contentModel,
             displayModel: $model,
             listModel: $listModel,
             pageMeta: $pageMeta,
             template: $template,
-            data: $data,
         );
+        $event = $this->eventDispatcher->dispatch(event: $event, eventName: $event->getEventName());
 
-        $this->eventDispatcher->dispatch($event, 'flare.reader.built');
-
-        $template->setData($event->getData() + $template->getData());
+        $data = $template->getData();
+        $data['model'] ??= $event->getDisplayModel();
+        $template->setData($data);
 
         $pageMeta = $event->getPageMeta();
         $this->applyPageMeta($pageMeta);
@@ -176,7 +174,7 @@ final class ReaderController extends AbstractContentElementController
     {
         try {
             /** @var ?ListModel $listModel */
-            $listModel = $model->getRelated(ContentContainer::FIELD_LIST) ?? null;
+            $listModel = $model->getRelated(ContentContainer::FIELD_LIST);
         } catch (\Exception $e) {
             return new Response($e->getMessage());
         }

@@ -2,7 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Factory;
 
-use HeimrichHannot\FlareBundle\Event\CreateListViewBuilderEvent;
+use HeimrichHannot\FlareBundle\Event\ListViewCreateBuilderEvent;
 use HeimrichHannot\FlareBundle\ListView\ListViewBuilder;
 use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolver;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -10,17 +10,18 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 readonly class ListViewBuilderFactory
 {
     public function __construct(
-        private ListViewResolver $resolver,
         private EventDispatcherInterface $dispatcher,
+        private ListViewResolver         $resolver,
     ) {}
 
     public function create(): ListViewBuilder
     {
-        $event = $this->dispatcher->dispatch(
-            event: new CreateListViewBuilderEvent(defaultResolver: $this->resolver),
-            eventName: 'flare.list_view.create_builder',
-        );
+        $event = new ListViewCreateBuilderEvent(defaultResolver: $this->resolver);
+        $event = $this->dispatcher->dispatch(event: $event, eventName: $event->getEventName());
 
-        return new ListViewBuilder($event->getResolver());
+        return new ListViewBuilder(
+            eventDispatcher: $this->dispatcher,
+            listViewResolver: $event->getResolver(),
+        );
     }
 }

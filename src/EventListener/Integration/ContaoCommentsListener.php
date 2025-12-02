@@ -12,7 +12,7 @@ use Contao\NewsModel;
 use Contao\UserModel;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Event\PaletteEvent;
-use HeimrichHannot\FlareBundle\Event\ReaderBuiltEvent;
+use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\Model\ContentModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
@@ -27,8 +27,8 @@ readonly class ContaoCommentsListener
     /**
      * Attach comments to the reader content element template data.
      */
-    #[AsEventListener('flare.reader.built')]
-    public function onReaderBuilt(ReaderBuiltEvent $event): void
+    #[AsEventListener('flare.reader.render')]
+    public function onReaderBuilt(ReaderRenderEvent $event): void
     {
         /** @var ListModel $listModel */
         $listModel = $event->getListModel();
@@ -88,9 +88,10 @@ readonly class ContaoCommentsListener
 
         if ($commentsData = $template->getData())
         {
-            $data = $event->getData();
+            $template = $event->getTemplate();
+            $data = $template->getData();
             $data['comments'] = $commentsData;
-            $event->setData($data);
+            $template->setData($data);
         }
     }
 

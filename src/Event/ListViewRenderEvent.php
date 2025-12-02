@@ -10,17 +10,21 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class ListViewBuiltEvent extends Event
+class ListViewRenderEvent extends Event
 {
     public function __construct(
-        private readonly ContentContext $contentContext,
-        private readonly ContentModel $contentModel,
-        private readonly ListModel $listModel,
-        private readonly ListView $listView,
+        private readonly ContentContext  $contentContext,
+        private readonly ContentModel    $contentModel,
+        private readonly ListModel       $listModel,
+        private readonly ListView        $listView,
         private readonly PaginatorConfig $paginatorConfig,
-        private Template $template,
-        private array $data = [],
+        private Template                 $template,
     ) {}
+
+    public function getEventName(): string
+    {
+        return 'flare.list_view.render';
+    }
 
     public function getContentContext(): ContentContext
     {
@@ -55,15 +59,5 @@ class ListViewBuiltEvent extends Event
     public function setTemplate(Template $template): void
     {
         $this->template = $template;
-    }
-
-    public function getData(): array
-    {
-        return $this->data;
-    }
-
-    public function setData(array $data): void
-    {
-        $this->data = $data;
     }
 }

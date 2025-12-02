@@ -53,6 +53,58 @@ Each filter element type specifies its own configuration options. The following 
 - A filter that has intrinsic unchecked is shown in the form and can be used by the user to filter the list view.
 - Some filters can only be intrinsic, e.g. the "published" filter. Under the hood, these filters do not specify a Symfony FormType.
 
+## Events
+
+FLARE dispatches several events that can be used to modify the behavior of the filter and list types.
+
+> Flare's event namespace is `HeimrichHannot\FlareBundle\Event`;
+
+### Item Retrieval
+
+FLARE dispatches events when retrieving items from the database.
+
+| Event Name                             | Event Class             | Description                                                                                    |
+|----------------------------------------|-------------------------|------------------------------------------------------------------------------------------------|
+| `flare.fetch_auto_item`                | `FetchAutoItemEvent`    | Dispatched when retrieving an `auto_item` from the database, e.g., when a reader is displayed. |
+| `flare.list.<list_type>.fetch_count`   | `FetchCountEvent`       | Dispatched when retrieving the total count of items that belong to a list.                     |
+| `flare.list.<list_type>.fetch_entries` | `FetchListEntriesEvent` | Dispatched when retrieving the sorted and paginated items that belong to a list.               |
+
+### Filter Element
+
+Flare dispatches events when filter elements are being invoked.
+
+| Event Name                                     | Event Class                  | Description                                          |
+|------------------------------------------------|------------------------------|------------------------------------------------------|
+| `flare.filter_element.<filter_alias>.invoking` | `FilterElementInvokingEvent` | Dispatched before a filter element is being invoked. |
+| `flare.filter_element.<filter_alias>.invoked`  | `FilterElementInvokedEvent`  | Dispatched after a filter element has been invoked.  |
+
+### List View
+
+Flare dispatches events when a list view is built and rendered.
+
+| Event Name                                   | Event Class                            | Description                                             |
+|----------------------------------------------|----------------------------------------|---------------------------------------------------------|
+| `flare.list_view.create_builder`             | `ListViewCreateBuilder`                | Dispatched when creating a list view builder.           |
+| `flare.list_view.build`                      | `ListViewBuildEvent`                   | Dispatched when building the list view.                 |
+| `flare.list_view.render`                     | `ListViewRenderEvent`                  | Dispatched when rendering the list view.                |
+| `flare.list_view.details_page_url.generated` | `ListViewDetailsPageUrlGeneratedEvent` | Dispatched when generating each URL to the detail page. |
+
+### Details Reader
+
+Flare dispatches events when a details reader is rendered.
+
+| Event Name            | Event Class         | Description                         |
+|-----------------------|---------------------|-------------------------------------|
+| `flare.reader.render` | `ReaderRenderEvent` | Dispatched when rendering a reader. |
+
+### Palette Manipulation
+
+Flare dispatches events when a list configuration's or filter element's palette is being assembled.
+
+| Event Name             | Event Class    | Description                                         |
+|------------------------|----------------|-----------------------------------------------------|
+| `flare.list.palette`   | `PaletteEvent` | Dispatched when assembling the palette of a list.   |
+| `flare.filter.palette` | `PaletteEvent` | Dispatched when assembling the palette of a filter. |
 
 ## Extending FLARE
 

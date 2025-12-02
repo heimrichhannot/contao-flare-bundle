@@ -57,7 +57,8 @@ Each filter element type specifies its own configuration options. The following 
 
 FLARE dispatches several events that can be used to modify the behavior of the filter and list types.
 
-> Flare's event namespace is `HeimrichHannot\FlareBundle\Event`;
+> [!NOTE]
+> Flare's event namespace is `HeimrichHannot\FlareBundle\Event`.
 
 ### Item Retrieval
 

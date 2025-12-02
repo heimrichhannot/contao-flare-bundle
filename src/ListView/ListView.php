@@ -4,7 +4,6 @@ namespace HeimrichHannot\FlareBundle\ListView;
 
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
-use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolverInterface;
@@ -13,6 +12,12 @@ use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Symfony\Component\Form\FormInterface;
 
+/**
+ * Represents a list view, providing access to entries, form components,
+ * pagination, and sorting mechanisms.
+ *
+ * Meant to be used in Twig templates.
+ */
 class ListView
 {
     private iterable $entries;
@@ -32,16 +37,31 @@ class ListView
         private ?SortDescriptor                    $sortDescriptor = null,
     ) {}
 
+    /**
+     * Returns the content context for this list view.
+     *
+     * @api Use in twig templates to access the content context of a list.
+     */
     public function getContentContext(): ContentContext
     {
         return $this->contentContext;
     }
 
+    /**
+     * Returns the list model for this list view.
+     *
+     * @api Use in twig templates to access the list model of a list.
+     */
     public function getListModel(): ListModel
     {
         return $this->listModel;
     }
 
+    /**
+     * Returns the entries for this list view.
+     *
+     * @api Use in twig templates to access the entries of a list.
+     */
     public function getEntries(): iterable
     {
         if (!isset($this->entries)) {
@@ -51,6 +71,11 @@ class ListView
         return $this->entries;
     }
 
+    /**
+     * Returns the form component for this list view.
+     *
+     * @api Use in twig templates to access the form of a list.
+     */
     public function getFormComponent(): FormInterface
     {
         if (!isset($this->formComponent)) {
@@ -60,6 +85,11 @@ class ListView
         return $this->formComponent;
     }
 
+    /**
+     * Returns the paginator for this list view.
+     *
+     * @api Use in twig templates to access the paginator of a list.
+     */
     public function getPaginator(): Paginator
     {
         if (!isset($this->paginator)) {
@@ -69,6 +99,11 @@ class ListView
         return $this->paginator;
     }
 
+    /**
+     * Returns the paginator configuration for this list view.
+     *
+     * @api Use in twig templates to access the paginator configuration of a list.
+     */
     public function getPaginatorConfig(): PaginatorConfig
     {
         if (!isset($this->paginatorConfig)) {
@@ -78,6 +113,11 @@ class ListView
         return $this->paginatorConfig;
     }
 
+    /**
+     * Returns the sort descriptor for this list view.
+     *
+     * @api Use in twig templates to access the sort descriptor of a list.
+     */
     public function getSortDescriptor(): ?SortDescriptor
     {
         if (!isset($this->sortDescriptor)) {
@@ -87,6 +127,11 @@ class ListView
         return $this->sortDescriptor;
     }
 
+    /**
+     * Returns the model for the given ID.
+     *
+     * @api Use in twig templates to access the model of a list entry.
+     */
     public function getModel(int|string $id): Model
     {
         $id = (int) $id;

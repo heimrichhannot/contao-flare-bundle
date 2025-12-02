@@ -5,20 +5,23 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\ListItemProvider;
 
 use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use Doctrine\DBAL\Exception as DBALException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class ListItemProvider extends AbstractListItemProvider
 {
     /**
+     * {@inheritDoc}
+     *
+     * @return array<int, array> Returns an array of associative arrays, each mapping column names to their values.
+     *
+     * @throws DBALException
      * @throws FilterException
-     * @throws \Doctrine\DBAL\Exception
      */
     public function fetchEntries(
         ListQueryBuilder        $listQueryBuilder,
@@ -46,8 +49,12 @@ class ListItemProvider extends AbstractListItemProvider
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * @return array<int> The IDs of all entries matching the given filters.
+     *
+     * @throws DBALException
      * @throws FilterException
-     * @throws \Doctrine\DBAL\Exception
      */
     public function fetchIds(
         ListQueryBuilder        $listQueryBuilder,
@@ -65,8 +72,10 @@ class ListItemProvider extends AbstractListItemProvider
     }
 
     /**
+     * Unified method to fetch entries or IDs specifically for this provider.
+     *
+     * @throws DBALException
      * @throws FilterException
-     * @throws \Doctrine\DBAL\Exception
      */
     protected function fetchEntriesOrIds(
         ListQueryBuilder        $listQueryBuilder,
@@ -103,11 +112,12 @@ class ListItemProvider extends AbstractListItemProvider
     }
 
     /**
-     * @param ListQueryBuilder $listQueryBuilder
-     * @param FilterContextCollection $filters
-     * @param ContentContext $contentContext
+     * {@inheritDoc}
+     *
+     * @return int The total number of entries matching the given filters.
+     *
+     * @throws DBALException
      * @throws FilterException
-     * @throws \Doctrine\DBAL\Exception
      */
     public function fetchCount(
         ListQueryBuilder $listQueryBuilder,
@@ -132,18 +142,18 @@ class ListItemProvider extends AbstractListItemProvider
         return $count;
     }
 
+    /**
+     * Returns the Doctrine DBAL connection from the service container.
+     */
     protected function getConnection(): Connection
     {
         return $this->container->get(Connection::class)
             ?? throw new \RuntimeException('Connection not found');
     }
 
-    protected function getEventDispatcher(): EventDispatcherInterface
-    {
-        return $this->container->get(EventDispatcherInterface::class)
-            ?? throw new \RuntimeException('EventDispatcherInterface not found');
-    }
-
+    /**
+     * Returns the ListQueryManager from the service container.
+     */
     protected function getListQueryManager(): ListQueryManager
     {
         return $this->container->get(ListQueryManager::class)
@@ -155,7 +165,6 @@ class ListItemProvider extends AbstractListItemProvider
         $services = parent::getSubscribedServices();
 
         $services[] = Connection::class;
-        $services[] = EventDispatcherInterface::class;
         $services[] = ListQueryManager::class;
 
         return $services;

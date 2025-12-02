@@ -23,6 +23,10 @@ class EventsListItemProvider extends AbstractListItemProvider
     ) {}
 
     /**
+     * {@inheritDoc}
+     *
+     * @return int The total number of entries matching the given filters.
+     *
      * @throws FilterException
      * @throws FlareException
      */
@@ -46,6 +50,10 @@ class EventsListItemProvider extends AbstractListItemProvider
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * @return array<int, array> Returns an array of associative arrays, each mapping column names to their values.
+     *
      * @throws FilterException
      * @throws FlareException
      */
@@ -109,6 +117,10 @@ class EventsListItemProvider extends AbstractListItemProvider
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * @return array<int> The IDs of all entries matching the given filters.
+     *
      * @throws FilterException
      * @throws FlareException
      */
@@ -133,7 +145,7 @@ class EventsListItemProvider extends AbstractListItemProvider
         foreach ($byDate as $entriesOnDate) {
             foreach ($entriesOnDate as $entry) {
                 if ($id = $entry['id'] ?? null) {
-                    $ids[] = $id;
+                    $ids[] = (int) $id;
                 }
             }
         }

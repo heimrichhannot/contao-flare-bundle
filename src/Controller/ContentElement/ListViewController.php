@@ -12,18 +12,18 @@ use Contao\Template;
 use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
-use HeimrichHannot\FlareBundle\Event\ListViewBuiltEvent;
+use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsContentElement(ListViewController::TYPE, category: 'includes', template: 'content_element/flare_listview')]
@@ -117,25 +117,18 @@ final class ListViewController extends AbstractContentElementController
 
         $this->responseTagger->addTags(['contao.db.' . $listModel->dc]);
 
-        $event = new ListViewBuiltEvent(
+        $event = new ListViewRenderEvent(
             contentContext: $contentContext,
             contentModel: $contentModel,
             listModel: $listModel,
             listView: $listView,
             paginatorConfig: $paginatorConfig,
             template: $template,
-            data: ['flare' => $listView],
         );
+        $this->eventDispatcher->dispatch(event: $event, eventName: $event->getEventName());
 
-        $this->eventDispatcher->dispatch($event, 'flare.list_view.built');
-
-        // merge the data from the event listener with the template data, prioritizing the event listener data
-        $data = $event->getData() + $template->getData();
-
-        // ensure that the list view dto is always available in the template,
-        // in case it was accidentally removed by an event listener
+        $data = $template->getData();
         $data['flare'] ??= $event->getListView();
-
         $template->setData($data);
 
         return $template->getResponse();

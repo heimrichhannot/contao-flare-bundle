@@ -4,6 +4,7 @@ use HeimrichHannot\FlareBundle\Controller\ContentElement\ListViewController;
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ReaderController;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Util\DcMultilingualHelper;
 
 $dca = &$GLOBALS['TL_DCA']['tl_content'];
 
@@ -65,6 +66,17 @@ $dca['fields'][$jumpTo = ContentContainer::FIELD_JUMP_TO] = [
         'default' => null,
     ],
     'relation' => ['type' => 'hasOne', 'load' => 'lazy'],
+];
+
+$dca['fields'][$dcMultilingualDisplay = ContentContainer::FIELD_DC_MULTILINGUAL_DISPLAY] = [
+    'inputType' => 'select',
+    'exclude' => true,
+    'options' => DcMultilingualHelper::DISPLAY_OPTIONS,
+    'default' => null,
+    'eval' => [
+        'tl_class' => 'w50',
+    ],
+    'sql' => "varchar(16) NULL default NULL",
 ];
 
 $commonPaletteEnd = '{template_legend:hide},customTpl;'

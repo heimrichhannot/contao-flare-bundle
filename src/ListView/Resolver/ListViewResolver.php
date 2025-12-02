@@ -11,19 +11,19 @@ use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Manager\ListViewManager;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Contracts\Service\ServiceSubscriberInterface;
+use Symfony\Contracts\Service\ServiceSubscriberTrait;
 
-readonly class ListViewResolver implements ListViewResolverInterface
+class ListViewResolver implements ListViewResolverInterface, ServiceSubscriberInterface
 {
-    public function __construct(
-        private ListViewManager $manager,
-    ) {}
+    use ServiceSubscriberTrait;
 
     /**
      * @throws FlareException
      */
     public function getEntries(ListView $dto): array
     {
-        return $this->manager->getEntries(
+        return $this->getListViewManager()->getEntries(
             listModel: $dto->getListModel(),
             contentContext: $dto->getContentContext(),
             paginatorConfig: $dto->getPaginatorConfig(),
@@ -36,7 +36,7 @@ readonly class ListViewResolver implements ListViewResolverInterface
      */
     public function getModel(ListView $dto, int $id): Model
     {
-        return $this->manager->getModel(
+        return $this->getListViewManager()->getModel(
             id: $id,
             listModel: $dto->getListModel(),
             contentContext: $dto->getContentContext(),
@@ -48,7 +48,7 @@ readonly class ListViewResolver implements ListViewResolverInterface
      */
     public function getForm(ListView $dto): FormInterface
     {
-        return $this->manager->getForm(
+        return $this->getListViewManager()->getForm(
             listModel: $dto->getListModel(),
             contentContext: $dto->getContentContext(),
         );
@@ -59,7 +59,7 @@ readonly class ListViewResolver implements ListViewResolverInterface
      */
     public function getPaginator(ListView $dto): Paginator
     {
-        return $this->manager->getPaginator(
+        return $this->getListViewManager()->getPaginator(
             listModel: $dto->getListModel(),
             contentContext: $dto->getContentContext(),
             paginatorConfig: $dto->getPaginatorConfig(),
@@ -76,7 +76,7 @@ readonly class ListViewResolver implements ListViewResolverInterface
      */
     public function getSortDescriptor(ListView $dto): ?SortDescriptor
     {
-        return $this->manager->getSortDescriptor(
+        return $this->getListViewManager()->getSortDescriptor(
             listModel: $dto->getListModel(),
             contentContext: $dto->getContentContext(),
         );
@@ -87,10 +87,23 @@ readonly class ListViewResolver implements ListViewResolverInterface
      */
     public function getDetailsPageUrl(ListView $dto, int $id): ?string
     {
-        return $this->manager->getDetailsPageUrl(
+        return $this->getListViewManager()->getDetailsPageUrl(
             id: $id,
             listModel: $dto->getListModel(),
             contentContext: $dto->getContentContext(),
         );
+    }
+
+    protected function getListViewManager(): ListViewManager
+    {
+        return $this->container->get(ListViewManager::class)
+            ?? throw new \RuntimeException('ListViewManager not found');
+    }
+
+    public static function getSubscribedServices(): array
+    {
+        return [
+            ListViewManager::class,
+        ];
     }
 }

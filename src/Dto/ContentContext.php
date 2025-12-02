@@ -47,7 +47,7 @@ class ContentContext
         }
 
         if ($contentModel = $this->getContentModel()) {
-            return $this->uniqueId = $this->getContext() . '.' . $contentModel::class . '.' . $contentModel->id;
+            return $this->uniqueId = 'context.' . $this->getContext() . ';' . $contentModel::class . '.' . $contentModel->id;
         }
 
         try {
@@ -56,7 +56,7 @@ class ContentContext
             $random = \md5(\uniqid('', true));
         }
 
-        return $this->uniqueId = $this->getContext() . '.flare.' . $random;
+        return $this->uniqueId = 'context.' . $this->getContext() . ';flare.' . $random;
     }
 
     /**

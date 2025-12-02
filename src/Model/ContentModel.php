@@ -9,6 +9,7 @@ use Contao\ContentModel as ContaoContentModel;
  *
  * @proxy Contao\ContentModel
  *
+ * @property string $flare_dcMultilingualDisplay
  * @property string $flare_formName
  * @property int    $flare_itemsPerPage
  * @property ?int   $flare_jumpTo

@@ -3,13 +3,14 @@
 namespace HeimrichHannot\FlareBundle\Event;
 
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use Symfony\Contracts\EventDispatcher\Event;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 
-class PaletteEvent extends Event
+class PaletteEvent extends AbstractFlareEvent
 {
     public function __construct(
         private PaletteConfig $paletteConfig,
-        private ?string $palette,
+        private ?string       $palette,
     ) {}
 
     public function getPaletteConfig(): PaletteConfig
@@ -34,5 +35,14 @@ class PaletteEvent extends Event
         $this->palette = $palette;
 
         return $this;
+    }
+
+    public function getEventName(): string
+    {
+        return match ($this->getPaletteConfig()->getDataContainer()->table) {
+            FilterModel::getTable() => 'flare.filter.palette',
+            ListModel::getTable() => 'flare.list.palette',
+            default => static::class,
+        };
     }
 }

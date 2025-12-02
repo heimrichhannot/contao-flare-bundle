@@ -8,18 +8,16 @@ use Contao\Template;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use Symfony\Contracts\EventDispatcher\Event;
 
-class ReaderBuiltEvent extends Event
+class ReaderRenderEvent extends AbstractFlareEvent
 {
     public function __construct(
-        private readonly ContentContext    $contentContext,
-        private readonly ContentModel      $contentModel,
-        private readonly Model             $displayModel,
-        private readonly ListModel         $listModel,
-        private ReaderPageMetaDto          $pageMeta,
-        private Template                   $template,
-        private array                      $data = [],
+        private readonly ContentContext $contentContext,
+        private readonly ContentModel   $contentModel,
+        private readonly Model          $displayModel,
+        private readonly ListModel      $listModel,
+        private ReaderPageMetaDto       $pageMeta,
+        private Template                $template,
     ) {}
 
     public function getContentContext(): ContentContext
@@ -66,15 +64,8 @@ class ReaderBuiltEvent extends Event
         return $this;
     }
 
-    public function getData(): array
+    public function getEventName(): string
     {
-        return $this->data;
-    }
-
-    public function setData(array $data): self
-    {
-        $this->data = $data;
-
-        return $this;
+        return 'flare.reader.render';
     }
 }

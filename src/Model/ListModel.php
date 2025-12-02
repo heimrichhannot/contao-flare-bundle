@@ -28,6 +28,7 @@ use HeimrichHannot\FlareBundle\Util\PtableInferrableInterface;
  * @property string $fieldPtable
  * @property string $tablePtable
  * @property string $whichPtable
+ * @property string dcMultilingual_display
  */
 class ListModel extends Model implements PtableInferrableInterface
 {

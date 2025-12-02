@@ -17,8 +17,8 @@ use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\Str;
-use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 #[AsCallback(table: FilterContainer::TABLE_NAME, target: 'config.onload', priority: 101)]
 #[AsCallback(table: ListContainer::TABLE_NAME, target: 'config.onload', priority: 101)]
@@ -35,7 +35,7 @@ readonly class AutoTypePalettesCallback
     {
         $request = $this->requestStack->getCurrentRequest();
 
-        if (!$dc?->id || $request?->query->get('act') !== 'edit') {
+        if (!$dc || !$dc->id || $request?->query->get('act') !== 'edit') {
             return;
         }
 
@@ -89,12 +89,7 @@ readonly class AutoTypePalettesCallback
             return;
         }
 
-        $dcaPalettes = &$GLOBALS['TL_DCA'][$table]['palettes'];
-
-        $prefix = $dcaPalettes['__prefix__'] ?? '';
-        $suffix = $dcaPalettes['__suffix__'] ?? '';
-
-        $paletteConfigFactory = static fn (): PaletteConfig => new PaletteConfig(
+        $paletteConfigFactory = static fn (string $prefix, string $suffix): PaletteConfig => new PaletteConfig(
             alias: $alias,
             dataContainer: $dc,
             prefix: $prefix,
@@ -103,12 +98,16 @@ readonly class AutoTypePalettesCallback
             filterModel: $filterModel,
         );
 
+        $dcaPalettes = &$GLOBALS['TL_DCA'][$table]['palettes'];
+        $prefix = $dcaPalettes['__prefix__'] ?? '';
+        $suffix = $dcaPalettes['__suffix__'] ?? '';
+
         $service = $descriptor->getService();
 
         if ($service instanceof PaletteContract)
             // If the service implements PaletteContract, use its getPalette method.
         {
-            $paletteConfig = $paletteConfigFactory();
+            $paletteConfig = $paletteConfigFactory($prefix, $suffix);
 
             $palette = $service->getPalette($paletteConfig);
 
@@ -119,7 +118,7 @@ readonly class AutoTypePalettesCallback
         if (!isset($palette) && $descriptor instanceof PaletteContract)
             // Grab the default palette specified in the AsListType or AsFilterElement attributes.
         {
-            $paletteConfig = $paletteConfigFactory();
+            $paletteConfig = $paletteConfigFactory($prefix, $suffix);
 
             $palette = $descriptor->getPalette($paletteConfig);
 
@@ -127,27 +126,17 @@ readonly class AutoTypePalettesCallback
             $suffix = $paletteConfig->getSuffix();
         }
 
+        ###> <editor-fold desc="###> Trigger PaletteEvent <###">
+
         $palette ??= null;
 
-        ###> <editor-fold desc="###> Trigger PaletteBuiltEvent <###">
+        $event = new PaletteEvent($paletteConfigFactory($prefix, $suffix), $palette);
+        $event = $this->eventDispatcher->dispatch(event: $event, eventName: $event->getEventName());
 
-        $target = match (Model::getClassFromTable($dc->table)) {
-            FilterModel::class => 'filter',
-            ListModel::class => 'list',
-            default => null,
-        };
-
-        if ($target)
-        {
-            $event = new PaletteEvent($paletteConfigFactory(), $palette);
-
-            $this->eventDispatcher->dispatch($event, "flare.{$target}.palette");
-
-            $palette = $event->getPalette();
-            $paletteConfig = $event->getPaletteConfig();
-            $prefix = $paletteConfig->getPrefix();
-            $suffix = $paletteConfig->getSuffix();
-        }
+        $palette = $event->getPalette();
+        $paletteConfig = $event->getPaletteConfig();
+        $prefix = $paletteConfig->getPrefix();
+        $suffix = $paletteConfig->getSuffix();
 
         ###< </editor-fold>
 

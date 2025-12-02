@@ -3,9 +3,8 @@
 namespace HeimrichHannot\FlareBundle\Event;
 
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use Symfony\Contracts\EventDispatcher\Event;
 
-class FilterElementInvokingEvent extends Event
+class FilterElementInvokingEvent extends AbstractFlareEvent
 {
     public function __construct(
         private readonly FilterContext $filter,
@@ -36,5 +35,10 @@ class FilterElementInvokingEvent extends Event
     public function setShouldInvoke(bool $shouldInvoke): void
     {
         $this->shouldInvoke = $shouldInvoke;
+    }
+
+    public function getEventName(): string
+    {
+        return "flare.filter_element.{$this->getFilter()->getFilterAlias()}.invoking";
     }
 }

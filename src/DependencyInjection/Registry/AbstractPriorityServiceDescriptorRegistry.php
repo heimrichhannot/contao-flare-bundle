@@ -61,7 +61,7 @@ abstract class AbstractPriorityServiceDescriptorRegistry
      * @param TNamespace $namespace
      * @param ?TKey      $key
      */
-    public function has(string $namespace, string $key = null): bool
+    public function has(string $namespace, ?string $key = null): bool
     {
         if (\is_null($key))
         {

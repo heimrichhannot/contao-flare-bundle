@@ -5,35 +5,23 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\ListItemProvider;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Exception as DBALException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class ListItemProvider extends AbstractListItemProvider
 {
-    public function __construct(
-        private readonly Connection               $connection,
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly ListQueryManager         $listQueryManager,
-    ) {}
-
-    protected function getConnection(): Connection
-    {
-        return $this->connection;
-    }
-
-    protected function getEventDispatcher(): EventDispatcherInterface
-    {
-        return $this->eventDispatcher;
-    }
-
     /**
+     * {@inheritDoc}
+     *
+     * @return array<int, array> Returns an array of associative arrays, each mapping column names to their values.
+     *
+     * @throws DBALException
      * @throws FilterException
-     * @throws \Doctrine\DBAL\Exception
      */
     public function fetchEntries(
         ListQueryBuilder        $listQueryBuilder,
@@ -51,22 +39,22 @@ class ListItemProvider extends AbstractListItemProvider
 
         $table = $filters->getTable();
 
-        $entries = \array_combine(
+        return \array_combine(
             \array_map(
                 static fn (string $id): string => \sprintf('%s.%d', $table, $id),
                 \array_column($entries, 'id')
             ),
             $entries
         );
-
-        $this->entryCache += $entries;
-
-        return $entries;
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * @return array<int> The IDs of all entries matching the given filters.
+     *
+     * @throws DBALException
      * @throws FilterException
-     * @throws \Doctrine\DBAL\Exception
      */
     public function fetchIds(
         ListQueryBuilder        $listQueryBuilder,
@@ -84,8 +72,10 @@ class ListItemProvider extends AbstractListItemProvider
     }
 
     /**
+     * Unified method to fetch entries or IDs specifically for this provider.
+     *
+     * @throws DBALException
      * @throws FilterException
-     * @throws \Doctrine\DBAL\Exception
      */
     protected function fetchEntriesOrIds(
         ListQueryBuilder        $listQueryBuilder,
@@ -96,10 +86,10 @@ class ListItemProvider extends AbstractListItemProvider
     ): array {
         $returnIds ??= false;
 
-        $query = $this->listQueryManager->populate(
+        $query = $this->getListQueryManager()->populate(
             listQueryBuilder: $listQueryBuilder,
             filters: $filters,
-            order: $sortDescriptor?->toSql($this->connection->quoteIdentifier(...)),
+            order: $sortDescriptor?->toSql($this->getConnection()->quoteIdentifier(...)),
             limit: $paginator?->getItemsPerPage() ?: null,
             offset: $paginator?->getOffset() ?: null,
             onlyId: $returnIds,
@@ -110,7 +100,7 @@ class ListItemProvider extends AbstractListItemProvider
             return [];
         }
 
-        $result = $query->execute($this->connection);
+        $result = $query->execute($this->getConnection());
 
         $entries = $returnIds
             ? \array_unique($result->fetchFirstColumn())
@@ -122,14 +112,18 @@ class ListItemProvider extends AbstractListItemProvider
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * @return int The total number of entries matching the given filters.
+     *
+     * @throws DBALException
      * @throws FilterException
-     * @throws \Doctrine\DBAL\Exception
      */
     public function fetchCount(
         ListQueryBuilder $listQueryBuilder,
-        FilterContextCollection $filters
+        FilterContextCollection $filters,
     ): int {
-        $query = $this->listQueryManager->populate(
+        $query = $this->getListQueryManager()->populate(
             listQueryBuilder: $listQueryBuilder,
             filters: $filters,
             isCounting: true
@@ -139,12 +133,40 @@ class ListItemProvider extends AbstractListItemProvider
             return 0;
         }
 
-        $result = $query->execute($this->connection);
+        $result = $query->execute($this->getConnection());
 
         $count = $result->fetchOne() ?: 0;
 
         $result->free();
 
         return $count;
+    }
+
+    /**
+     * Returns the Doctrine DBAL connection from the service container.
+     */
+    protected function getConnection(): Connection
+    {
+        return $this->container->get(Connection::class)
+            ?? throw new \RuntimeException('Connection not found');
+    }
+
+    /**
+     * Returns the ListQueryManager from the service container.
+     */
+    protected function getListQueryManager(): ListQueryManager
+    {
+        return $this->container->get(ListQueryManager::class)
+            ?? throw new \RuntimeException('ListQueryManager not found');
+    }
+
+    public static function getSubscribedServices(): array
+    {
+        $services = parent::getSubscribedServices();
+
+        $services[] = Connection::class;
+        $services[] = ListQueryManager::class;
+
+        return $services;
     }
 }

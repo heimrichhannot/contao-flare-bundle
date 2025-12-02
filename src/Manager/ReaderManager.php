@@ -11,22 +11,25 @@ use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageMetaContract;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
+use HeimrichHannot\FlareBundle\Event\FetchAutoItemEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class ReaderManager
 {
     public function __construct(
-        private FilterContextManager    $filterContextManager,
-        private HtmlDecoder             $htmlDecoder,
-        private ListItemProviderManager $itemProvider,
-        private ListQueryManager        $listQuery,
-        private ListTypeRegistry        $listTypeRegistry,
-        private FilterElementRegistry   $filterElementRegistry,
+        private EventDispatcherInterface $eventDispatcher,
+        private FilterContextManager     $filterContextManager,
+        private HtmlDecoder              $htmlDecoder,
+        private ListItemProviderManager  $itemProvider,
+        private ListQueryManager         $listQuery,
+        private ListTypeRegistry         $listTypeRegistry,
+        private FilterElementRegistry    $filterElementRegistry,
     ) {}
 
     /**
@@ -38,7 +41,7 @@ readonly class ReaderManager
         ContentContext $contentContext,
     ): ?Model {
         if (!($table = $listModel->dc)
-            || !($collection = $this->filterContextManager->collect($listModel, $contentContext)))
+            || !($filters = $this->filterContextManager->collect($listModel, $contentContext)))
         {
             return null;
         }
@@ -48,6 +51,10 @@ readonly class ReaderManager
             throw new FlareException(\sprintf('Model class does not exist: "%s"', $modelClass), source: __METHOD__);
         }
 
+        $itemProvider = $this->itemProvider->ofListModel($listModel);
+        $listQueryBuilder = $this->listQuery->prepare($listModel);
+
+        ###> define auto_item filter context ###
         $autoItemDefinition = SimpleEquationElement::define(
             equationLeft: $listModel->getAutoItemField(),
             equationOperator: SqlEquationOperator::EQUALS,
@@ -60,22 +67,38 @@ readonly class ReaderManager
             contentContext: $contentContext,
             descriptor: $this->filterElementRegistry->get($ogAlias),
         );
+        ###< define auto_item filter context ###
 
-        if (!$autoItemFilterContext) {
+        $event = new FetchAutoItemEvent(
+            autoItem: $autoItem,
+            autoItemFilterContext: $autoItemFilterContext,
+            listModel: $listModel,
+            contentContext: $contentContext,
+            itemProvider: $itemProvider,
+            listQueryBuilder: $listQueryBuilder,
+            filters: $filters,
+        );
+
+        $event = $this->eventDispatcher->dispatch(
+            event: $event,
+            eventName: $event->getEventName(),
+        );
+
+        if (!$autoItemFilterContext = $event->getAutoItemFilterContext()) {
             return null;
         }
 
-        $listQueryBuilder = $this->listQuery->prepare($listModel);
+        $itemProvider = $event->getItemProvider();
+        $listQueryBuilder = $event->getListQueryBuilder();
+        $filters = $event->getFilters();
 
-        $collection->add($autoItemFilterContext);
-
-        $itemProvider = $this->itemProvider->ofListModel($listModel);
+        $filters->add($autoItemFilterContext);
 
         try
         {
             $ids = $itemProvider->fetchIds(
                 listQueryBuilder: $listQueryBuilder,
-                filters: $collection
+                filters: $filters
             );
         }
         catch (\Exception $e)

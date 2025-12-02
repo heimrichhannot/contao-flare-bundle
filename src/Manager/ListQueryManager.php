@@ -259,11 +259,7 @@ class ListQueryManager
         if ($dispatchEvent ?? true)
         {
             $event = new FilterElementInvokingEvent($filter, $callback, true);
-
-            $this->eventDispatcher->dispatch(
-                $event,
-                "flare.filter_element.{$filter->getFilterAlias()}.invoking"
-            );
+            $event = $this->eventDispatcher->dispatch(event: $event, eventName: $event->getEventName());
 
             $shouldInvoke = $event->shouldInvoke();
             $callback = $event->getCallback();
@@ -295,10 +291,7 @@ class ListQueryManager
         if ($dispatchEvent ?? true)
         {
             $event = new FilterElementInvokedEvent($filter, $filterQueryBuilder, $method);
-            $this->eventDispatcher->dispatch(
-                $event,
-                "flare.filter_element.{$filter->getFilterAlias()}.invoked"
-            );
+            $this->eventDispatcher->dispatch(event: $event, eventName: $event->getEventName());
         }
 
         return self::FILTER_OK;

@@ -68,48 +68,69 @@ This way you can implement listeners for both the generic event and the aliased 
 
 FLARE dispatches events when retrieving items from the database.
 
-| Event Name                             | Event Class             | Description                                                                                    |
-|----------------------------------------|-------------------------|------------------------------------------------------------------------------------------------|
-|                                        | `FetchAutoItemEvent`    | Dispatched when retrieving an `auto_item` from the database, e.g., when a reader is displayed. |
-| `flare.list.<list_type>.fetch_count`   | `FetchCountEvent`       | Dispatched when retrieving the total count of items that belong to a list.                     |
-| `flare.list.<list_type>.fetch_entries` | `FetchListEntriesEvent` | Dispatched when retrieving the sorted and paginated items that belong to a list.               |
+#### `FetchAutoItemEvent`
+Dispatched when retrieving an `auto_item` from the database, e.g., when a reader is displayed.
+
+#### `FetchCountEvent`
+_Alias: `flare.list.<list_type>.fetch_count`_
+
+Dispatched when retrieving the total count of items that belong to a list.
+
+#### `FetchListEntriesEvent`
+_Alias: `flare.list.<list_type>.fetch_entries`_
+
+Dispatched when retrieving the sorted and paginated items that belong to a list.
 
 ### Filter Element
 
 Flare dispatches events when filter elements are being invoked.
 
-| Event Name                                     | Event Class                  | Description                                          |
-|------------------------------------------------|------------------------------|------------------------------------------------------|
-| `flare.filter_element.<filter_alias>.invoking` | `FilterElementInvokingEvent` | Dispatched before a filter element is being invoked. |
-| `flare.filter_element.<filter_alias>.invoked`  | `FilterElementInvokedEvent`  | Dispatched after a filter element has been invoked.  |
+#### `FilterElementInvokingEvent`
+_Alias: `flare.filter_element.<filter_alias>.invoking`_
+
+Dispatched before a filter element is being invoked.
+
+#### `FilterElementInvokedEvent`
+_Alias: `flare.filter_element.<filter_alias>.invoked`_
+
+Dispatched after a filter element has been invoked.
 
 ### List View
 
 Flare dispatches events when a list view is built and rendered.
 
-| Event Class                            | Description                                             |
-|----------------------------------------|---------------------------------------------------------|
-| `ListViewCreateBuilder`                | Dispatched when creating a list view builder.           |
-| `ListViewBuildEvent`                   | Dispatched when building the list view.                 |
-| `ListViewRenderEvent`                  | Dispatched when rendering the list view.                |
-| `ListViewDetailsPageUrlGeneratedEvent` | Dispatched when generating each URL to the detail page. |
+#### `ListViewCreateBuilder`
+Dispatched when creating a list view builder.
+
+#### `ListViewBuildEvent`
+Dispatched when building the list view.
+
+#### `ListViewRenderEvent`
+Dispatched when rendering the list view.
+
+#### `ListViewDetailsPageUrlGeneratedEvent`
+Dispatched when generating each URL to the detail page.
 
 ### Details Reader
 
 Flare dispatches events when a details reader is rendered.
 
-| Event Class         | Description                         |
-|---------------------|-------------------------------------|
-| `ReaderRenderEvent` | Dispatched when rendering a reader. |
+#### `ReaderRenderEvent`
+Dispatched when rendering a reader.
 
 ### Palette Manipulation
 
 Flare dispatches events when a list configuration's or filter element's palette is being assembled.
 
-| Event Name             | Event Class    | Description                                         |
-|------------------------|----------------|-----------------------------------------------------|
-| `flare.list.palette`   | `PaletteEvent` | Dispatched when assembling the palette of a list.   |
-| `flare.filter.palette` | `PaletteEvent` | Dispatched when assembling the palette of a filter. |
+#### `PaletteEvent`
+_Alias: `flare.list.palette`_
+
+Dispatched when assembling the palette of a list.
+
+#### `PaletteEvent`
+_Alias: `flare.filter.palette`_
+
+Dispatched when assembling the palette of a filter.
 
 ## Extending FLARE
 

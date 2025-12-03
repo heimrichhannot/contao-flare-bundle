@@ -1,2 +1,6 @@
 services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
     HeimrichHannot\FlareBundle\EventListener\Integration\ContaoCommentsListener: ~

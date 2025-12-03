@@ -1,2 +1,8 @@
 services:
-    HeimrichHannot\FlareBundle\EventListener\Integration\Terminal42ChangelanguageListener: ~
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    HeimrichHannot\FlareBundle\EventListener\Integration\Terminal42ChangelanguageListener:
+        calls:
+            - setMultilingualQueryBuilderFactory: [ '@?Terminal42\DcMultilingualBundle\QueryBuilder\MultilingualQueryBuilderFactoryInterface' ]

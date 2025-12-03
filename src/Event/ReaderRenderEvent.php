@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
-class ReaderRenderEvent extends AbstractFlareEvent
+class ReaderRenderEvent extends AbstractTemplateRenderEvent
 {
     public function __construct(
         private readonly ContentContext $contentContext,
@@ -62,10 +62,5 @@ class ReaderRenderEvent extends AbstractFlareEvent
         $this->template = $template;
 
         return $this;
-    }
-
-    public function getEventName(): string
-    {
-        return 'flare.reader.render';
     }
 }

@@ -3,8 +3,9 @@
 namespace HeimrichHannot\FlareBundle\Event;
 
 use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolverInterface;
+use Symfony\Contracts\EventDispatcher\Event;
 
-class ListViewCreateBuilderEvent extends AbstractFlareEvent
+class ListViewCreateBuilderEvent extends Event
 {
     private ?ListViewResolverInterface $resolver = null;
 
@@ -20,10 +21,5 @@ class ListViewCreateBuilderEvent extends AbstractFlareEvent
     public function getResolver(): ?ListViewResolverInterface
     {
         return $this->resolver ?? $this->defaultResolver;
-    }
-
-    public function getEventName(): string
-    {
-        return 'flare.list_view.create_builder';
     }
 }

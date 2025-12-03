@@ -4,7 +4,7 @@ namespace HeimrichHannot\FlareBundle\Event;
 
 use HeimrichHannot\FlareBundle\Dto\FetchSingleEntryConfig;
 
-class FetchListEntriesEvent extends AbstractFetchEvent
+class FetchListEntriesEvent extends AbstractFetchEvent implements FlareDynamicEventInterface
 {
     private ?FetchSingleEntryConfig $singleEntryConfig = null;
 

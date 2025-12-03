@@ -8,9 +8,8 @@ use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\ListView\ListView;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
-use Symfony\Contracts\EventDispatcher\Event;
 
-class ListViewRenderEvent extends Event
+class ListViewRenderEvent extends AbstractTemplateRenderEvent
 {
     public function __construct(
         private readonly ContentContext  $contentContext,
@@ -20,11 +19,6 @@ class ListViewRenderEvent extends Event
         private readonly PaginatorConfig $paginatorConfig,
         private Template                 $template,
     ) {}
-
-    public function getEventName(): string
-    {
-        return 'flare.list_view.render';
-    }
 
     public function getContentContext(): ContentContext
     {

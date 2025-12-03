@@ -12,24 +12,24 @@ use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageMetaContract;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Event\FetchAutoItemEvent;
+use HeimrichHannot\FlareBundle\EventDispatcher\DynamicEventDispatcher;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class ReaderManager
 {
     public function __construct(
-        private EventDispatcherInterface $eventDispatcher,
-        private FilterContextManager     $filterContextManager,
-        private HtmlDecoder              $htmlDecoder,
-        private ListItemProviderManager  $itemProvider,
-        private ListQueryManager         $listQuery,
-        private ListTypeRegistry         $listTypeRegistry,
-        private FilterElementRegistry    $filterElementRegistry,
+        private DynamicEventDispatcher  $eventDispatcher,
+        private FilterContextManager    $filterContextManager,
+        private HtmlDecoder             $htmlDecoder,
+        private ListItemProviderManager $itemProvider,
+        private ListQueryManager        $listQuery,
+        private ListTypeRegistry        $listTypeRegistry,
+        private FilterElementRegistry   $filterElementRegistry,
     ) {}
 
     /**
@@ -69,19 +69,16 @@ readonly class ReaderManager
         );
         ###< define auto_item filter context ###
 
-        $event = new FetchAutoItemEvent(
-            autoItem: $autoItem,
-            autoItemFilterContext: $autoItemFilterContext,
-            listModel: $listModel,
-            contentContext: $contentContext,
-            itemProvider: $itemProvider,
-            listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
-        );
-
         $event = $this->eventDispatcher->dispatch(
-            event: $event,
-            eventName: $event->getEventName(),
+            new FetchAutoItemEvent(
+                autoItem: $autoItem,
+                autoItemFilterContext: $autoItemFilterContext,
+                listModel: $listModel,
+                contentContext: $contentContext,
+                itemProvider: $itemProvider,
+                listQueryBuilder: $listQueryBuilder,
+                filters: $filters,
+            )
         );
 
         if (!$autoItemFilterContext = $event->getAutoItemFilterContext()) {

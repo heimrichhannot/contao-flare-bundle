@@ -4,12 +4,12 @@ namespace HeimrichHannot\FlareBundle\ListView;
 
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Event\ListViewBuildEvent;
+use HeimrichHannot\FlareBundle\EventDispatcher\DynamicEventDispatcher;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolverInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class ListViewBuilder
 {
@@ -19,8 +19,8 @@ class ListViewBuilder
     private ?SortDescriptor $sortDescriptor = null;
 
     public function __construct(
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private ListViewResolverInterface         $listViewResolver,
+        private readonly DynamicEventDispatcher $eventDispatcher,
+        private ListViewResolverInterface       $listViewResolver,
     ) {}
 
     /** @api Get the content context for the list view being built. */
@@ -97,8 +97,7 @@ class ListViewBuilder
      */
     public function build(): ListView
     {
-        $event = new ListViewBuildEvent(builder: $this);
-        $event = $this->eventDispatcher->dispatch(event: $event, eventName: $event->getEventName());
+        $event = $this->eventDispatcher->dispatch(new ListViewBuildEvent(builder: $this));
 
         // While the event interface should prevent builder modification,
         // we retrieve it here to maintain implementation independence.

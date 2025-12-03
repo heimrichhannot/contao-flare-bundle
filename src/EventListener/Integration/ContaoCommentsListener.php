@@ -27,10 +27,9 @@ readonly class ContaoCommentsListener
     /**
      * Attach comments to the reader content element template data.
      */
-    #[AsEventListener('flare.reader.render')]
+    #[AsEventListener]
     public function onReaderBuilt(ReaderRenderEvent $event): void
     {
-        /** @var ListModel $listModel */
         $listModel = $event->getListModel();
         if (!$listModel->comments_enabled) {
             return;
@@ -76,22 +75,19 @@ readonly class ContaoCommentsListener
         $config->bbcode = $archiveModel->bbcode;
         $config->moderate = $archiveModel->moderate;
 
-        $template = new FrontendTemplate();
+        $commentsTemplate = new FrontendTemplate();
 
         (new Comments())->addCommentsToTemplate(
-            objTemplate: $template,
+            objTemplate: $commentsTemplate,
             objConfig: $config,
             strSource: $newsModel::getTable(),
             intParent: $newsModel->id,
             varNotifies: $notifies,
         );
 
-        if ($commentsData = $template->getData())
+        if ($commentsData = $commentsTemplate->getData())
         {
-            $template = $event->getTemplate();
-            $data = $template->getData();
-            $data['comments'] = $commentsData;
-            $template->setData($data);
+            $event->set('comments', $commentsData);
         }
     }
 

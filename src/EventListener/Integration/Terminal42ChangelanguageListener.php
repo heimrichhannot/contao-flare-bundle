@@ -49,7 +49,7 @@ class Terminal42ChangelanguageListener
         $this->queryBuilderFactory = $queryBuilderFactory;
     }
 
-    #[AsEventListener('flare.fetch_auto_item')]
+    #[AsEventListener]
     public function fetchAutoItem(FetchAutoItemEvent $event): void
     {
         if ($event->getListModel()->type !== DcMultilingualListType::TYPE) {

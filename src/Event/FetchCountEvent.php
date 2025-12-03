@@ -2,7 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Event;
 
-class FetchCountEvent extends AbstractFetchEvent
+class FetchCountEvent extends AbstractFetchEvent implements FlareDynamicEventInterface
 {
     public function getEventName(): string
     {

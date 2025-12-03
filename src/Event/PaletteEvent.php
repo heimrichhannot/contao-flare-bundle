@@ -5,8 +5,9 @@ namespace HeimrichHannot\FlareBundle\Event;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use Symfony\Contracts\EventDispatcher\Event;
 
-class PaletteEvent extends AbstractFlareEvent
+class PaletteEvent extends Event implements FlareDynamicEventInterface
 {
     public function __construct(
         private PaletteConfig $paletteConfig,

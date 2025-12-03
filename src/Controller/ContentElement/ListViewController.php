@@ -13,6 +13,7 @@ use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
+use HeimrichHannot\FlareBundle\EventDispatcher\DynamicEventDispatcher;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
@@ -23,7 +24,6 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsContentElement(ListViewController::TYPE, category: 'includes', template: 'content_element/flare_listview')]
@@ -32,14 +32,14 @@ final class ListViewController extends AbstractContentElementController
     public const TYPE = 'flare_listview';
 
     public function __construct(
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly KernelInterface          $kernel,
-        private readonly ListViewBuilderFactory   $listViewBuilderFactory,
-        private readonly LoggerInterface          $logger,
-        private readonly ScopeMatcher             $scopeMatcher,
-        private readonly SymfonyResponseTagger    $responseTagger,
-        private readonly TranslationManager       $translationManager,
-        private readonly TranslatorInterface      $translator,
+        private readonly DynamicEventDispatcher $eventDispatcher,
+        private readonly KernelInterface        $kernel,
+        private readonly ListViewBuilderFactory $listViewBuilderFactory,
+        private readonly LoggerInterface        $logger,
+        private readonly ScopeMatcher           $scopeMatcher,
+        private readonly SymfonyResponseTagger  $responseTagger,
+        private readonly TranslationManager     $translationManager,
+        private readonly TranslatorInterface    $translator,
     ) {}
 
     /**
@@ -117,15 +117,16 @@ final class ListViewController extends AbstractContentElementController
 
         $this->responseTagger->addTags(['contao.db.' . $listModel->dc]);
 
-        $event = new ListViewRenderEvent(
-            contentContext: $contentContext,
-            contentModel: $contentModel,
-            listModel: $listModel,
-            listView: $listView,
-            paginatorConfig: $paginatorConfig,
-            template: $template,
+        $event = $this->eventDispatcher->dispatch(
+            new ListViewRenderEvent(
+                contentContext: $contentContext,
+                contentModel: $contentModel,
+                listModel: $listModel,
+                listView: $listView,
+                paginatorConfig: $paginatorConfig,
+                template: $template,
+            )
         );
-        $this->eventDispatcher->dispatch(event: $event, eventName: $event->getEventName());
 
         $data = $template->getData();
         $data['flare'] ??= $event->getListView();

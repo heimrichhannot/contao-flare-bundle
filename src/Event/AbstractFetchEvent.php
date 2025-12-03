@@ -10,8 +10,9 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Contracts\EventDispatcher\Event;
 
-abstract class AbstractFetchEvent extends AbstractFlareEvent
+abstract class AbstractFetchEvent extends Event
 {
     public function __construct(
         private readonly ListModel        $listModel,

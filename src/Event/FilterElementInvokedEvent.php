@@ -4,8 +4,9 @@ namespace HeimrichHannot\FlareBundle\Event;
 
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
+use Symfony\Contracts\EventDispatcher\Event;
 
-class FilterElementInvokedEvent extends AbstractFlareEvent
+class FilterElementInvokedEvent extends Event implements FlareDynamicEventInterface
 {
     public function __construct(
         private readonly FilterContext      $filter,

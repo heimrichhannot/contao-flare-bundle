@@ -33,9 +33,4 @@ class FetchAutoItemEvent extends AbstractFetchEvent
     {
         $this->autoItemFilterContext = $autoItemFilterContext;
     }
-
-    public function getEventName(): string
-    {
-        return "flare.fetch_auto_item";
-    }
 }

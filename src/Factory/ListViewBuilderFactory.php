@@ -3,21 +3,20 @@
 namespace HeimrichHannot\FlareBundle\Factory;
 
 use HeimrichHannot\FlareBundle\Event\ListViewCreateBuilderEvent;
+use HeimrichHannot\FlareBundle\EventDispatcher\DynamicEventDispatcher;
 use HeimrichHannot\FlareBundle\ListView\ListViewBuilder;
 use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolver;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class ListViewBuilderFactory
 {
     public function __construct(
-        private EventDispatcherInterface $dispatcher,
-        private ListViewResolver         $resolver,
+        private DynamicEventDispatcher $dispatcher,
+        private ListViewResolver       $resolver,
     ) {}
 
     public function create(): ListViewBuilder
     {
-        $event = new ListViewCreateBuilderEvent(defaultResolver: $this->resolver);
-        $event = $this->dispatcher->dispatch(event: $event, eventName: $event->getEventName());
+        $event = $this->dispatcher->dispatch(new ListViewCreateBuilderEvent(defaultResolver: $this->resolver));
 
         return new ListViewBuilder(
             eventDispatcher: $this->dispatcher,

@@ -6,8 +6,9 @@ use Contao\Model;
 use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use Symfony\Contracts\EventDispatcher\Event;
 
-class ListViewDetailsPageUrlGeneratedEvent
+class ListViewDetailsPageUrlGeneratedEvent extends Event
 {
     public function __construct(
         private readonly ListModel $listModel,
@@ -17,11 +18,6 @@ class ListViewDetailsPageUrlGeneratedEvent
         private PageModel $page,
         private string $url,
     ) {}
-
-    public function getEventName(): string
-    {
-        return 'flare.list_view.details_page_url.generated';
-    }
 
     public function getListModel(): ListModel
     {

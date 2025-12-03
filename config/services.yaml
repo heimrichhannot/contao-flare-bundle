@@ -16,6 +16,10 @@ services:
             - ../src/Paginator/*.php
             - ../src/Registry/Descriptor
 
+    HeimrichHannot\FlareBundle\EventDispatcher\DynamicEventDispatcher:
+        arguments:
+            $inner: '@event_dispatcher'
+
     HeimrichHannot\FlareBundle\ListItemProvider\ListItemProvider: ~
     HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface: '@HeimrichHannot\FlareBundle\ListItemProvider\ListItemProvider'
 

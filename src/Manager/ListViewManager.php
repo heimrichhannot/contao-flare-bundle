@@ -14,6 +14,7 @@ use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
 use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
 use HeimrichHannot\FlareBundle\Event\ListViewDetailsPageUrlGeneratedEvent;
+use HeimrichHannot\FlareBundle\EventDispatcher\DynamicEventDispatcher;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
@@ -28,7 +29,6 @@ use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Class ListViewManager
@@ -46,14 +46,14 @@ final class ListViewManager
     protected array $listPaginatorCache = [];
 
     public function __construct(
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly FilterContextManager     $filterContextManager,
-        private readonly FilterElementRegistry    $filterElementRegistry,
-        private readonly FilterFormManager        $formManager,
-        private readonly ListQueryManager         $listQueryManager,
-        private readonly ListItemProviderManager  $itemProvider,
-        private readonly PaginatorBuilderFactory  $paginatorBuilderFactory,
-        private readonly RequestStack             $requestStack,
+        private readonly DynamicEventDispatcher  $eventDispatcher,
+        private readonly FilterContextManager    $filterContextManager,
+        private readonly FilterElementRegistry   $filterElementRegistry,
+        private readonly FilterFormManager       $formManager,
+        private readonly ListQueryManager        $listQueryManager,
+        private readonly ListItemProviderManager $itemProvider,
+        private readonly PaginatorBuilderFactory $paginatorBuilderFactory,
+        private readonly RequestStack            $requestStack,
     ) {}
 
     /**
@@ -215,19 +215,16 @@ final class ListViewManager
             $listQueryBuilder = $this->getListQueryBuilder($listModel, $contentContext);
             $filters = $this->getFilterContextCollection($listModel, $contentContext);
 
-            $event = new FetchCountEvent(
-                listModel: $listModel,
-                contentContext: $contentContext,
-                itemProvider: $itemProvider,
-                listQueryBuilder: $listQueryBuilder,
-                filters: $filters,
-                form: $form,
-                paginatorConfig: $paginatorConfig,
-            );
-
             $event = $this->eventDispatcher->dispatch(
-                event: $event,
-                eventName: $event->getEventName(),
+                new FetchCountEvent(
+                    listModel: $listModel,
+                    contentContext: $contentContext,
+                    itemProvider: $itemProvider,
+                    listQueryBuilder: $listQueryBuilder,
+                    filters: $filters,
+                    form: $form,
+                    paginatorConfig: $paginatorConfig,
+                )
             );
 
             $itemProvider = $event->getItemProvider();
@@ -291,20 +288,17 @@ final class ListViewManager
             $filters          = $this->getFilterContextCollection($listModel, $contentContext);
             $paginator        = $this->getPaginator($listModel, $contentContext, $paginatorConfig);
 
-            $event = new FetchListEntriesEvent(
-                listModel: $listModel,
-                contentContext: $contentContext,
-                itemProvider: $itemProvider,
-                listQueryBuilder: $listQueryBuilder,
-                filters: $filters,
-                form: $form,
-                paginatorConfig: $paginator,
-                sortDescriptor: $sortDescriptor,
-            );
-
             $event = $this->eventDispatcher->dispatch(
-                event: $event,
-                eventName: $event->getEventName(),
+                new FetchListEntriesEvent(
+                    listModel: $listModel,
+                    contentContext: $contentContext,
+                    itemProvider: $itemProvider,
+                    listQueryBuilder: $listQueryBuilder,
+                    filters: $filters,
+                    form: $form,
+                    paginatorConfig: $paginator,
+                    sortDescriptor: $sortDescriptor,
+                )
             );
 
             $itemProvider = $event->getItemProvider();
@@ -378,19 +372,16 @@ final class ListViewManager
         /**
          * @noinspection PhpParenthesesCanBeOmittedForNewCallInspection
          * @noinspection RedundantSuppression
+         * @var FetchListEntriesEvent $event
          */
-        $event = (new FetchListEntriesEvent(
-            listModel: $listModel,
-            contentContext: $contentContext,
-            itemProvider: $itemProvider,
-            listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
-        ))->withSingleEntryConfig(new FetchSingleEntryConfig($id, $idFilterContext));
-
-        /** @var FetchListEntriesEvent $event */
         $event = $this->eventDispatcher->dispatch(
-            event: $event,
-            eventName: $event->getEventName(),
+            (new FetchListEntriesEvent(
+                listModel: $listModel,
+                contentContext: $contentContext,
+                itemProvider: $itemProvider,
+                listQueryBuilder: $listQueryBuilder,
+                filters: $filters,
+            ))->withSingleEntryConfig(new FetchSingleEntryConfig($id, $idFilterContext))
         );
 
         $itemProvider = $event->getItemProvider();
@@ -492,18 +483,15 @@ final class ListViewManager
 
         $url = $page->getAbsoluteUrl('/' . $autoItem);
 
-        $event = new ListViewDetailsPageUrlGeneratedEvent(
-            listModel: $listModel,
-            contentContext: $contentContext,
-            model: $model,
-            autoItem: $autoItem,
-            page: $page,
-            url: $url,
-        );
-
         $event = $this->eventDispatcher->dispatch(
-            event: $event,
-            eventName: $event->getEventName(),
+            new ListViewDetailsPageUrlGeneratedEvent(
+                listModel: $listModel,
+                contentContext: $contentContext,
+                model: $model,
+                autoItem: $autoItem,
+                page: $page,
+                url: $url,
+            )
         );
 
         return $event->getUrl();

@@ -20,6 +20,7 @@ use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Dto\ReaderRequestAttribute;
 use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
+use HeimrichHannot\FlareBundle\EventDispatcher\DynamicEventDispatcher;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Manager\ReaderManager;
@@ -29,7 +30,6 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Twig\Error\RuntimeError;
 
 #[AsContentElement(ReaderController::TYPE, category: 'includes', template: 'content_element/flare_reader')]
@@ -38,14 +38,14 @@ final class ReaderController extends AbstractContentElementController
     public const TYPE = 'flare_reader';
 
     public function __construct(
-        private readonly EntityCacheTags          $entityCacheTags,
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly LoggerInterface          $logger,
-        private readonly ReaderManager            $readerManager,
-        private readonly RequestManager           $requestManager,
-        private readonly ResponseContextAccessor  $responseContextAccessor,
-        private readonly ScopeMatcher             $scopeMatcher,
-        private readonly TranslationManager       $translator,
+        private readonly DynamicEventDispatcher  $eventDispatcher,
+        private readonly EntityCacheTags         $entityCacheTags,
+        private readonly LoggerInterface         $logger,
+        private readonly ReaderManager           $readerManager,
+        private readonly RequestManager          $requestManager,
+        private readonly ResponseContextAccessor $responseContextAccessor,
+        private readonly ScopeMatcher            $scopeMatcher,
+        private readonly TranslationManager      $translator,
     ) {}
 
     /**
@@ -112,15 +112,16 @@ final class ReaderController extends AbstractContentElementController
             throw new InternalServerErrorHttpException($e->getMessage(), $e);
         }
 
-        $event = new ReaderRenderEvent(
-            contentContext: $contentContext,
-            contentModel: $contentModel,
-            displayModel: $model,
-            listModel: $listModel,
-            pageMeta: $pageMeta,
-            template: $template,
+        $event = $this->eventDispatcher->dispatch(
+            new ReaderRenderEvent(
+                contentContext: $contentContext,
+                contentModel: $contentModel,
+                displayModel: $model,
+                listModel: $listModel,
+                pageMeta: $pageMeta,
+                template: $template,
+            )
         );
-        $event = $this->eventDispatcher->dispatch(event: $event, eventName: $event->getEventName());
 
         $data = $template->getData();
         $data['model'] ??= $event->getDisplayModel();

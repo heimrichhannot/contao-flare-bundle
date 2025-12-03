@@ -11,6 +11,7 @@ use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ServiceDescriptorInterface;
 use HeimrichHannot\FlareBundle\Event\PaletteEvent;
+use HeimrichHannot\FlareBundle\EventDispatcher\DynamicEventDispatcher;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
@@ -18,17 +19,16 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 #[AsCallback(table: FilterContainer::TABLE_NAME, target: 'config.onload', priority: 101)]
 #[AsCallback(table: ListContainer::TABLE_NAME, target: 'config.onload', priority: 101)]
 readonly class AutoTypePalettesCallback
 {
     public function __construct(
-        private EventDispatcherInterface $eventDispatcher,
-        private FilterElementRegistry    $filterElementRegistry,
-        private ListTypeRegistry         $listTypeRegistry,
-        private RequestStack             $requestStack,
+        private DynamicEventDispatcher $eventDispatcher,
+        private FilterElementRegistry  $filterElementRegistry,
+        private ListTypeRegistry       $listTypeRegistry,
+        private RequestStack           $requestStack,
     ) {}
 
     public function __invoke(?DataContainer $dc = null): void
@@ -130,8 +130,7 @@ readonly class AutoTypePalettesCallback
 
         $palette ??= null;
 
-        $event = new PaletteEvent($paletteConfigFactory($prefix, $suffix), $palette);
-        $event = $this->eventDispatcher->dispatch(event: $event, eventName: $event->getEventName());
+        $event = $this->eventDispatcher->dispatch(new PaletteEvent($paletteConfigFactory($prefix, $suffix), $palette));
 
         $palette = $event->getPalette();
         $paletteConfig = $event->getPaletteConfig();

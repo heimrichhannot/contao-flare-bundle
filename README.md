@@ -60,13 +60,17 @@ FLARE dispatches several events that can be used to modify the behavior of the f
 > [!NOTE]
 > Flare's event namespace is `HeimrichHannot\FlareBundle\Event`.
 
+Some events have an aliased name, allowing event listeners to target them more specifically.
+These events are dispatched twice: once using their generic event class name, and again using their specific aliased name.
+This way you can implement listeners for both the generic event and the aliased event depending on your needs.
+
 ### Item Retrieval
 
 FLARE dispatches events when retrieving items from the database.
 
 | Event Name                             | Event Class             | Description                                                                                    |
 |----------------------------------------|-------------------------|------------------------------------------------------------------------------------------------|
-| `flare.fetch_auto_item`                | `FetchAutoItemEvent`    | Dispatched when retrieving an `auto_item` from the database, e.g., when a reader is displayed. |
+|                                        | `FetchAutoItemEvent`    | Dispatched when retrieving an `auto_item` from the database, e.g., when a reader is displayed. |
 | `flare.list.<list_type>.fetch_count`   | `FetchCountEvent`       | Dispatched when retrieving the total count of items that belong to a list.                     |
 | `flare.list.<list_type>.fetch_entries` | `FetchListEntriesEvent` | Dispatched when retrieving the sorted and paginated items that belong to a list.               |
 
@@ -83,20 +87,20 @@ Flare dispatches events when filter elements are being invoked.
 
 Flare dispatches events when a list view is built and rendered.
 
-| Event Name                                   | Event Class                            | Description                                             |
-|----------------------------------------------|----------------------------------------|---------------------------------------------------------|
-| `flare.list_view.create_builder`             | `ListViewCreateBuilder`                | Dispatched when creating a list view builder.           |
-| `flare.list_view.build`                      | `ListViewBuildEvent`                   | Dispatched when building the list view.                 |
-| `flare.list_view.render`                     | `ListViewRenderEvent`                  | Dispatched when rendering the list view.                |
-| `flare.list_view.details_page_url.generated` | `ListViewDetailsPageUrlGeneratedEvent` | Dispatched when generating each URL to the detail page. |
+| Event Class                            | Description                                             |
+|----------------------------------------|---------------------------------------------------------|
+| `ListViewCreateBuilder`                | Dispatched when creating a list view builder.           |
+| `ListViewBuildEvent`                   | Dispatched when building the list view.                 |
+| `ListViewRenderEvent`                  | Dispatched when rendering the list view.                |
+| `ListViewDetailsPageUrlGeneratedEvent` | Dispatched when generating each URL to the detail page. |
 
 ### Details Reader
 
 Flare dispatches events when a details reader is rendered.
 
-| Event Name            | Event Class         | Description                         |
-|-----------------------|---------------------|-------------------------------------|
-| `flare.reader.render` | `ReaderRenderEvent` | Dispatched when rendering a reader. |
+| Event Class         | Description                         |
+|---------------------|-------------------------------------|
+| `ReaderRenderEvent` | Dispatched when rendering a reader. |
 
 ### Palette Manipulation
 

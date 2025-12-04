@@ -7,6 +7,7 @@ use Contao\DataContainer;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Twig\Environment as TwigEnvironment;
 
 /**
@@ -38,7 +39,7 @@ readonly class ListCallbacks
         }
         $typeLabel ??= 'N/A';
 
-        $formAlias = ($row['formAlias'] ?? null) ?: ($row['id'] ?? null);
+        $formAlias = FilterModel::generateFormName($row);
 
         return $this->twig->render('@HeimrichHannotFlare/be_filter_info.html.twig', [
             'row' => $row,

@@ -91,11 +91,9 @@ readonly class FilterFormManager
                 }
             }
 
-            if (!$key = \trim((string) $filter->getFilterModel()->formAlias)) {
-                $key = (string) $filter->getFilterModel()->id;
-            }
+            $childName = $filter->getFilterModel()->getFormName();
 
-            $builder->add($key, $formType, $options);
+            $builder->add($childName, $formType, $options);
         }
 
         // *Always add submit button in template, not to the form builder!*
@@ -130,12 +128,14 @@ readonly class FilterFormManager
                 continue;
             }
 
-            if (!$form->has((string) $filterModel->id))
+            $filterName = $filterModel->getFormName();
+
+            if (!$form->has($filterName))
             {
                 continue;
             }
 
-            $field = $form->get((string) $filterModel->id);
+            $field = $form->get($filterName);
 
             $filterElement->hydrateForm($filter, $field);
         }
@@ -162,12 +162,14 @@ readonly class FilterFormManager
                 continue;
             }
 
-            if (!$form->has((string) $filterModel->id))
+            $filterName = $filterModel->getFormName();
+
+            if (!$form->has($filterName))
             {
                 continue;
             }
 
-            $field = $form->get((string) $filterModel->id);
+            $field = $form->get($filterName);
 
             $data = $field->getData();
 

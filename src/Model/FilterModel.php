@@ -16,6 +16,13 @@ class FilterModel extends Model implements PtableInferrableInterface
 
     protected static $strTable = FilterContainer::TABLE_NAME;
 
+    private string $_formName;
+
+    public function getFormName(): string
+    {
+        return $this->_formName ??= static::generateFormName($this);
+    }
+
     public static function findByPid(int $pid, ?bool $published = null): Collection
     {
         $result = $published !== null
@@ -31,5 +38,25 @@ class FilterModel extends Model implements PtableInferrableInterface
         }
 
         return $result;
+    }
+
+    public static function generateFormName(FilterModel|array $model_or_row): string
+    {
+        if (\is_array($model_or_row))
+        {
+            $formAlias = $model_or_row['formAlias'] ?? null;
+            $formId = $model_or_row['id'] ?? null;
+        }
+        else
+        {
+            $formAlias = $model_or_row->formAlias;
+            $formId = $model_or_row->id;
+        }
+
+        return \preg_replace(
+            '/[^A-Za-z0-9\-._]/',
+            '',
+            \trim((string) $formAlias) ?: (string) $formId
+        );
     }
 }

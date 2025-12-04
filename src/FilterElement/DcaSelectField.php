@@ -159,10 +159,49 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
 
     public function hydrateForm(FilterContext $context, FormInterface $field): void
     {
-        if ($preselect = $this->getPreselectValue($context->getFilterModel()))
-        {
-            $field->setData($preselect);
+        if ($field->isSubmitted()) {
+            return;
         }
+
+        $filterModel = $context->getFilterModel();
+        $listModel = $context->getListModel();
+
+        if (!$preselect = $this->getPreselectValue($filterModel)) {
+            return;
+        }
+
+        $options = $this->getOptions($listModel, $filterModel) ?? [];
+
+        if (!\is_array($preselect))
+        {
+            if (!\is_scalar($preselect)) {
+                $field->setData($preselect);
+                return;
+            }
+
+            if (!$option = $options[$preselect] ?? null) {
+                return;
+            }
+
+            $field->setData($option);
+            return;
+        }
+
+        $data = [];
+
+        foreach ($preselect as $value)
+        {
+            if (!\is_scalar($value)) {
+                $data[] = $value;
+                continue;
+            }
+
+            if ($option = $options[$value] ?? null) {
+                $data[] = $option;
+            }
+        }
+
+        $field->setData($data);
     }
 
     public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array

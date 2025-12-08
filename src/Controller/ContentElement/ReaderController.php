@@ -68,27 +68,17 @@ final class ReaderController extends AbstractContentElementController
 
         try
         {
-            /** @var ?ListModel $listModel */
-            $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST);
+            $content = $this->readerManager->evalContent(
+                contentModel: $contentModel,
+                autoItem: $autoItem,
+            );
 
-            if (!$listModel instanceof ListModel) {
-                throw new FilterException('No list model found.');
-            }
+            $listModel = $content->listModel;
+            $contentContext = $content->contentContext;
 
             $errData['tl_flare_list.id'] = $listModel->id;
 
-            $contentContext = new ContentContext(
-                context: ContentContext::CONTEXT_READER,
-                contentModel: $contentModel,
-            );
-
-            $model = $this->readerManager->getModelByAutoItem(
-                autoItem: $autoItem,
-                listModel: $listModel,
-                contentContext: $contentContext,
-            );
-
-            if (!isset($model)) {
+            if (!$model = $content->model) {
                 throw $this->createNotFoundException('No model found.');
             }
 

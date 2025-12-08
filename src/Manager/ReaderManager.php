@@ -6,10 +6,13 @@ namespace HeimrichHannot\FlareBundle\Manager;
 
 use Contao\ContentModel;
 use Contao\CoreBundle\String\HtmlDecoder;
+use Contao\Input;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageMetaContract;
+use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Dto\ReaderContentDto;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Event\FetchAutoItemEvent;
 use HeimrichHannot\FlareBundle\EventDispatcher\DynamicEventDispatcher;
@@ -33,13 +36,52 @@ readonly class ReaderManager
     ) {}
 
     /**
+     * @throws FlareException If there is no valid list model or the auto_item is defunct for the given list model.
+     */
+    public function evalContent(ContentModel $contentModel, ?string $autoItem = null): ReaderContentDto
+    {
+        $autoItem ??= Input::findGet('auto_item');
+
+        $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST);
+
+        if (!$listModel instanceof ListModel) {
+            throw new FlareException(
+                \sprintf('No list model found for content model with id %s.', $contentModel->id),
+                source: __METHOD__,
+            );
+        }
+
+        $contentContext = new ContentContext(
+            context: ContentContext::CONTEXT_READER,
+            contentModel: $contentModel,
+        );
+
+        $model = $this->getModelByAutoItem(
+            autoItem: $autoItem,
+            listModel: $listModel,
+            contentContext: $contentContext,
+        );
+
+        return new ReaderContentDto(
+            autoItem: $autoItem,
+            contentContext: $contentContext,
+            listModel: $listModel,
+            model: $model ?: null,
+        );
+    }
+
+    /**
      * @throws FlareException
      */
     public function getModelByAutoItem(
-        string|int     $autoItem,
-        ListModel      $listModel,
-        ContentContext $contentContext,
+        string|int|null $autoItem,
+        ListModel       $listModel,
+        ContentContext  $contentContext,
     ): ?Model {
+        if (\is_null($autoItem)) {
+            return null;
+        }
+
         if (!($table = $listModel->dc)
             || !($filters = $this->filterContextManager->collect($listModel, $contentContext)))
         {

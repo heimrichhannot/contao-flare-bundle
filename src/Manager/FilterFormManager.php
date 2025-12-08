@@ -9,6 +9,7 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilderFactory;
+use Symfony\Component\Form\Exception\OutOfBoundsException;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
@@ -141,6 +142,9 @@ readonly class FilterFormManager
         }
     }
 
+    /**
+     * @throws FilterException If the form does not contain the filter field.
+     */
     public function hydrateFilterElements(FilterContextCollection $filters, FormInterface $form): void
     {
         if ($form->isSubmitted() && !$form->isValid()) {
@@ -169,14 +173,21 @@ readonly class FilterFormManager
                 continue;
             }
 
-            $field = $form->get($filterName);
-
-            $data = $field->getData();
-
-            if (isset($data))
+            try
             {
-                $filter->setSubmittedData($data);
+                $field = $form->get($filterName);
             }
+            catch (OutOfBoundsException $exception)
+            {
+                throw new FilterException(
+                    message: 'Filter form does not contain field: ' . $filterName,
+                    previous: $exception,
+                    method: __METHOD__,
+                    source: \sprintf('tl_flare_filter.id=%s', $filterModel->id)
+                );
+            }
+
+            $filter->setFormField($field);
         }
     }
 }

@@ -7,6 +7,7 @@ use HeimrichHannot\FlareBundle\Factory\FilterContextBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
+use Symfony\Component\Form\FormInterface;
 
 class FilterContext
 {
@@ -20,7 +21,7 @@ class FilterContext
         private readonly FilterElementDescriptor $filterElementDescriptor,
         private readonly string                  $filterElementAlias,
         private readonly string                  $table,
-        private mixed                            $submittedData = null,
+        private ?FormInterface                   $formField = null,
     ) {}
 
     public function getContentContext(): ContentContext
@@ -53,13 +54,29 @@ class FilterContext
         return $this->table;
     }
 
-    public function getSubmittedData(): mixed
+    public function getFormField(): ?FormInterface
     {
-        return $this->submittedData;
+        return $this->formField;
     }
 
-    public function setSubmittedData(mixed $submittedData): void
+    public function setFormField(?FormInterface $formField): void
     {
-        $this->submittedData = $submittedData;
+        $this->formField = $formField;
+    }
+
+    /**
+     * Get the submitted data from the form field.
+     */
+    public function getFormData(): mixed
+    {
+        return $this->getFormField()?->getData();
+    }
+
+    /**
+     * @deprecated Use {@see self::getFormData()} instead.
+     */
+    public function getSubmittedData(): mixed
+    {
+        return $this->getFormData();
     }
 }

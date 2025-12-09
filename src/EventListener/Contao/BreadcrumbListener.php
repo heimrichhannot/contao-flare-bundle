@@ -7,6 +7,7 @@ use Contao\ContentModel;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use Contao\Module;
 use Doctrine\DBAL\Connection;
+use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ReaderController;
 use HeimrichHannot\FlareBundle\Manager\ReaderManager;
 
@@ -56,12 +57,12 @@ readonly class BreadcrumbListener
         try
         {
             $content = $this->readerManager->evalContent($contentModel);
-            $pageMeta = $this->readerManager->getPageMeta(
+            $pageMeta = $this->readerManager->getPageMeta(new ReaderPageMetaConfig(
                 listModel: $content->listModel,
                 model: $content->model,
                 contentContext: $content->contentContext,
                 contentModel: $contentModel,
-            );
+            ));
 
             $title = $pageMeta->getTitle();
             $item = &$items[\count($items) - 1];

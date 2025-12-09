@@ -165,22 +165,19 @@ readonly class ReaderManager
     /**
      * @throws FlareException If no list type config is registered for the given list model type.
      */
-    public function getPageMeta(
-        ListModel         $listModel,
-        Model             $model,
-        ContentContext    $contentContext,
-        ContentModel      $contentModel,
-    ): ReaderPageMetaDto {
-        if (!$listTypeConfig = $this->listTypeRegistry->get($listModel->type))
+    public function getPageMeta(ReaderPageMetaConfig $config): ReaderPageMetaDto
+    {
+        $listType = $config->getListModel()->type;
+
+        if (!$listTypeConfig = $this->listTypeRegistry->get($listType))
         {
-            throw new FlareException(\sprintf('No list type config registered for type "%s".', $listModel->type), source: __METHOD__);
+            throw new FlareException(\sprintf('No list type config registered for type "%s".', $listType), source: __METHOD__);
         }
 
         $service = $listTypeConfig->getService();
 
         if ($service instanceof ReaderPageMetaContract)
         {
-            $config = new ReaderPageMetaConfig($listModel, $model, $contentContext, $contentModel);
             $pageMeta = $service->getReaderPageMeta($config);
         }
 

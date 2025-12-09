@@ -15,13 +15,12 @@ use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Input;
 use Contao\StringUtil;
 use Contao\Template;
+use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Dto\ReaderRequestAttribute;
 use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\EventDispatcher\DynamicEventDispatcher;
-use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Manager\ReaderManager;
 use HeimrichHannot\FlareBundle\Manager\RequestManager;
@@ -87,12 +86,12 @@ final class ReaderController extends AbstractContentElementController
             $this->requestManager->setReader(new ReaderRequestAttribute($model, $listModel));
             $this->entityCacheTags->tagWith($model);
 
-            $pageMeta = $this->readerManager->getPageMeta(
+            $pageMeta = $this->readerManager->getPageMeta(new ReaderPageMetaConfig(
                 listModel: $listModel,
                 model: $model,
                 contentContext: $contentContext,
                 contentModel: $contentModel,
-            );
+            ));
         }
         catch (FlareException $e)
         {

@@ -21,7 +21,7 @@ readonly class BreadcrumbListener
 
     public function __invoke(array $items, Module $module): array
     {
-        if (!$pageId = $this->tryGetFlareReaderPageId($items)) {
+        if (!$pageId = $this->tryGetReaderPageId($items)) {
             return $items;
         }
 
@@ -73,7 +73,7 @@ readonly class BreadcrumbListener
                 $item['link'] = $title;
             }
         }
-        catch (\Throwable $exception)
+        catch (\Throwable)
         {
             // ignore
         }
@@ -81,7 +81,7 @@ readonly class BreadcrumbListener
         return $items;
     }
 
-    public function tryGetFlareReaderPageId(array $items): ?int
+    public function tryGetReaderPageId(array $items): ?int
     {
         if (\count($items) < 2) {
             return null;

@@ -20,15 +20,17 @@ Requires **Contao ^4.13 or ^5.0** and **PHP ^8.2**.
 ## Features
 
 - Filter and list entities (e.g. news, events, or any generic data-container)
-- Filter forms created and displayed using Symfony FormTypes
-- Pagination included (not based on Contao's pagination, this one is actually good!)
-- Individual detail views (readers) using the Contao standard auto_item feature
-- Customizable filter and list templates
-- Batteries-included: Comes with a set of predefined filter and list types
-- Extensible with custom filter and list types
 - Ease of use:
-  - Only one place to manage list and filter configurations
-  - Only two content elements (a list view with filter, and a reader)
+    - Only one place to manage list and filter configurations
+    - Only two content elements (a list view with filter, and a reader)
+- Filter forms created and displayed using [Symfony Forms](https://symfony.com/doc/6.4/forms.html)
+- Pagination included (not based on Contao's pagination, this one is actually good!)
+- Individual detail views (readers) using the Contao standard `auto_item` feature
+- Batteries-included: Comes with a set of predefined filter and list types
+- Customizable filter and list templates
+- Extensible with custom filter and list types
+- Integration with [terminal42/contao-DC_Multilingual](https://github.com/terminal42/contao-DC_Multilingual)
+  and [terminal42/contao-changelanguage](https://github.com/terminal42/contao-changelanguage), respectively
 - No modules, no worries!
 
 

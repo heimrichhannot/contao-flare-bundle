@@ -52,7 +52,7 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
             }
         }
 
-        if (!$selected ??= $context->getSubmittedData())
+        if (!$selected ??= $context->getFormData())
         {
             return;
         }

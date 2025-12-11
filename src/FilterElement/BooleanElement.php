@@ -58,7 +58,7 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract
 
             // todo: refactor
 
-            $value = $this->normalizeValue($context->getSubmittedData(), $boolBinaryChoices ?? null)
+            $value = $this->normalizeValue($context->getFormData(), $boolBinaryChoices ?? null)
                 ?? $this->normalizeValue($filterModel->preselect);
 
             if ($value === null) {

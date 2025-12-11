@@ -26,7 +26,7 @@ class CalendarCurrentElement extends AbstractFilterElement
      */
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
-        $submittedData = $context->getSubmittedData();
+        $submittedData = $context->getFormData();
         $filterModel = $context->getFilterModel();
 
         $start = \strtotime($filterModel->startAt) ?: 0;

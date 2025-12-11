@@ -52,7 +52,7 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         $data = match ((bool) $filterModel->intrinsic)
         {
             true => $this->extractPreselectData($filterModel),
-            false => $this->extractSubmittedData((array) $context->getSubmittedData())
+            false => $this->extractSubmittedData((array) $context->getFormData())
                 ?? $this->extractPreselectData($filterModel),
         };
 

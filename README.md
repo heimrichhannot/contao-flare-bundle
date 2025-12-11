@@ -5,6 +5,7 @@ This Contao CMS extension streamlines the filtering and listing of entities on t
 > [!NOTE]
 > Flare is a work in progress and is not yet feature-complete. We are actively working on it and will release updates regularly.
 
+
 ## Installation
 
 Install the bundle via Composer:
@@ -15,6 +16,7 @@ composer require heimrichhannot/contao-flare-bundle
 
 Requires **Contao ^4.13 or ^5.0** and **PHP ^8.2**.
 
+
 ## Features
 
 - Filter and list entities (e.g. news, events, or any generic data-container)
@@ -23,21 +25,21 @@ Requires **Contao ^4.13 or ^5.0** and **PHP ^8.2**.
 - Individual detail views (readers) using the Contao standard auto_item feature
 - Customizable filter and list templates
 - Batteries-included: Comes with a set of predefined filter and list types
-- Easy to extend with custom filter and list types
-- Easy to use: Only one place to manage list and filter configurations
-- Easy to use: Only two content elements (a filter and list view and a reader)
+- Extensible with custom filter and list types
+- Ease of use:
+  - Only one place to manage list and filter configurations
+  - Only two content elements (a list view with filter, and a reader)
 - No modules, no worries!
 
 
 ## Usage
 
 1. Create a new list configuration in the Contao backend under "Layout" &rarr; "Lists&emsp;FLARE"
-2. Each list is an archive of filter elements
-3. Add filters as child elements to the list configuration
-4. Add a list view content element to a page and select the list configuration
-5. Add a reader content element to a separate page and select the list configuration
-6. Select the reader page in the list configuration
-7. Profit!
+2. Each list is an archive of filter elements: add filters as children to the list configuration
+3. Add a list view content element to a page and select the list configuration
+4. Add a reader content element to a separate page and select the list configuration
+5. Select the reader page in the list configuration
+6. Profit!
 
 
 ### Filter Configuration
@@ -52,6 +54,7 @@ Each filter element type specifies its own configuration options. The following 
 - Each filter has an "intrinsic" option, which means that the filter is always applied to the list view and not visible in the form shown to the user.
 - A filter that has intrinsic unchecked is shown in the form and can be used by the user to filter the list view.
 - Some filters can only be intrinsic, e.g. the "published" filter. Under the hood, these filters do not specify a Symfony FormType.
+
 
 ## Events
 
@@ -131,6 +134,7 @@ Dispatched when assembling the palette of a list.
 _Alias: `flare.filter.palette`_
 
 Dispatched when assembling the palette of a filter.
+
 
 ## Extending FLARE
 

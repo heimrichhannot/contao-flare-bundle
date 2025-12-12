@@ -1,0 +1,27 @@
+reader:
+    default_template:
+        warning: Default template selected
+        description: Please create/select a custom template for this FLARE reader.
+
+list:
+    default_template:
+        warning: Default template selected
+        description: Please create/select a custom template for this FLARE list.
+
+filter:
+    limited_scope:
+        single: "This filter is strictly applicable to: %scopes%"
+        multiple: "This filter is applicable to: %scopes%"
+        dynamic: "The scope of this filter is dynamically determined based on this configuration."
+        disqualified: "This filter is not applicable as the scope is undefined."
+
+    scope:
+        list: List view
+        reader: Detail reader
+        twig: Twig template
+
+    info:
+        alias: Alias
+        intrinsic:
+            yes: Filter is intrinsic
+            no: Filter is not intrinsic

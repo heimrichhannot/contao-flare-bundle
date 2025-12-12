@@ -1,12 +1,12 @@
 reader:
     default_template:
-        warning: Default template selected
-        description: Please create/select a custom template for this FLARE reader.
+        warning: "Default template selected"
+        description: "Please create/select a custom template for this FLARE reader."
 
 list:
     default_template:
-        warning: Default template selected
-        description: Please create/select a custom template for this FLARE list.
+        warning: "Default template selected"
+        description: "Please create/select a custom template for this FLARE list."
 
 filter:
     limited_scope:
@@ -21,7 +21,7 @@ filter:
         twig: "twig template"
 
     info:
-        alias: Alias
+        alias: "Alias"
         intrinsic:
-            yes: This filter is intrinsic
-            no: This filter ist not intrinsic
+            yes: "This filter is intrinsic"
+            no: "This filter ist not intrinsic"

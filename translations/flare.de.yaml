@@ -1,12 +1,12 @@
 reader:
     default_template:
-        warning: Standard-Template ausgewählt
-        description: Bitte erstellen/wählen Sie ein benutzerdefiniertes Template für diesen FLARE-Reader.
+        warning: "Standard-Template ausgewählt"
+        description: "Bitte erstellen/wählen Sie ein benutzerdefiniertes Template für diesen FLARE-Reader."
 
 list:
     default_template:
-        warning: Standard-Template ausgewählt
-        description: Bitte erstellen/wählen Sie ein benutzerdefiniertes Template für diese FLARE-Liste.
+        warning: "Standard-Template ausgewählt"
+        description: "Bitte erstellen/wählen Sie ein benutzerdefiniertes Template für diese FLARE-Liste."
 
 filter:
     limited_scope:
@@ -16,12 +16,12 @@ filter:
         disqualified: "Dieser Filter ist nicht anwendbar, da der Geltungsbereich nicht definiert ist."
 
     scope:
-        list: Listenansicht
-        reader: Detailleser
-        twig: Twig-Template
+        list: "Listenansicht"
+        reader: "Detailleser"
+        twig: "Twig-Template"
 
     info:
-        alias: Alias
+        alias: "Alias"
         intrinsic:
-            yes: Dieser Filter ist intrinsisch
-            no: Dieser Filter ist nicht intrinsisch
+            yes: "Dieser Filter ist intrinsisch"
+            no: "Dieser Filter ist nicht intrinsisch"

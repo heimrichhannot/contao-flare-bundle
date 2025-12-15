@@ -40,7 +40,11 @@ readonly class ReaderManager
      */
     public function evalContent(ContentModel $contentModel, ?string $autoItem = null): ReaderContentDto
     {
-        $autoItem ??= Input::findGet('auto_item');
+        $autoItem ??= (
+            \method_exists(Input::class, 'findGet')
+                ? Input::findGet('auto_item')
+                : Input::get('auto_item', false, true)
+        );
 
         $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST);
 

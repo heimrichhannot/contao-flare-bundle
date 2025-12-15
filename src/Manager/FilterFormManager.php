@@ -6,6 +6,8 @@ namespace HeimrichHannot\FlareBundle\Manager;
 
 use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
+use HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent;
+use HeimrichHannot\FlareBundle\Event\FilterFormChildOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilderFactory;
@@ -13,12 +15,14 @@ use Symfony\Component\Form\Exception\OutOfBoundsException;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class FilterFormManager
 {
     public function __construct(
-        private ChoicesBuilderFactory $choicesBuilderFactory,
-        private FormFactoryInterface  $formFactory,
+        private ChoicesBuilderFactory    $choicesBuilderFactory,
+        private EventDispatcherInterface $eventDispatcher,
+        private FormFactoryInterface     $formFactory,
     ) {}
 
     /**
@@ -94,6 +98,17 @@ readonly class FilterFormManager
 
             $childName = $filter->getFilterModel()->getFormName();
 
+            /** @var FilterFormChildOptionsEvent $event */
+            $event = $this->eventDispatcher->dispatch(new FilterFormChildOptionsEvent(
+                filterContext: $filter,
+                filterContextCollection: $filters,
+                parentFormName: $name,
+                formName: $childName,
+                options: $options,
+            ));
+
+            $options = $event->options;
+
             $builder->add($childName, $formType, $options);
         }
 
@@ -104,6 +119,14 @@ readonly class FilterFormManager
         //         'label' => 'submit',
         //     ]);
         // }
+
+        $event = $this->eventDispatcher->dispatch(new FilterFormBuildEvent(
+            filters: $filters,
+            formName: $name,
+            formBuilder: $builder,
+        ));
+
+        $builder = $event->formBuilder;
 
         return $builder->getForm();
     }

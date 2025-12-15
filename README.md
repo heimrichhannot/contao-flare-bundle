@@ -69,6 +69,20 @@ Some events have an aliased name, allowing event listeners to target them more s
 These events are dispatched twice: once using their generic event class name, and again using their specific aliased name.
 This way you can implement listeners for both the generic event and the aliased event depending on your needs.
 
+### Form Generation
+
+FLARE dispatches events when generating the filter form.
+
+#### `FilterFormBuildEvent`
+Dispatched when building the filter form, after all filter elements have been assembled.
+
+#### `FilterFormChildOptionsEvent`
+Dispatched when assembling the options for each filter element's child form field.
+
+> [!NOTE]
+> These are the options passed to the Symfony Form type (the third argument of `$builder->add()`), not “Contao field
+> options”. Selectable items are configured via `choices` (and related) options.
+
 ### Item Retrieval
 
 FLARE dispatches events when retrieving items from the database.

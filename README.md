@@ -74,9 +74,13 @@ This way you can implement listeners for both the generic event and the aliased 
 FLARE dispatches events when generating the filter form.
 
 #### `FilterFormBuildEvent`
+_Alias: `flare.form.<form_name>.build`_
+
 Dispatched when building the filter form, after all filter elements have been assembled.
 
 #### `FilterFormChildOptionsEvent`
+_Alias: `flare.form.<parent_form_name>.child.<child_form_name>.options`_
+
 Dispatched when assembling the options for each filter element's child form field.
 
 > [!NOTE]

@@ -4,7 +4,7 @@ namespace HeimrichHannot\FlareBundle\Event;
 
 use HeimrichHannot\FlareBundle\Dto\FetchSingleEntryConfig;
 
-class FetchListEntriesEvent extends AbstractFetchEvent implements FlareDynamicEventInterface
+class FetchListEntriesEvent extends AbstractFetchEvent
 {
     private ?FetchSingleEntryConfig $singleEntryConfig = null;
 
@@ -23,10 +23,5 @@ class FetchListEntriesEvent extends AbstractFetchEvent implements FlareDynamicEv
         $clone = clone $this;
         $clone->singleEntryConfig = $singleEntryConfig;
         return $clone;
-    }
-
-    public function getEventName(): string
-    {
-        return "flare.list.{$this->getListModel()->type}.fetch_entries";
     }
 }

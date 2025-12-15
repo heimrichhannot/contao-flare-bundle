@@ -94,13 +94,9 @@ readonly class ContaoCommentsListener
     /**
      * Attach the comments_enabled field to the flare_news palette.
      */
-    #[AsEventListener('flare.list.palette')]
+    #[AsEventListener('flare.list.flare_news.palette')]
     public function onListPalette(PaletteEvent $event): void
     {
-        if ($event->getPaletteConfig()->getAlias() !== 'flare_news') {
-            return;
-        }
-
         $pm = PaletteManipulator::create()
             ->addLegend('comments_legend')
             ->addField('comments_enabled', 'comments_legend', PaletteManipulator::POSITION_APPEND);

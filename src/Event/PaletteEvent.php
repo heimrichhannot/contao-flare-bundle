@@ -3,16 +3,21 @@
 namespace HeimrichHannot\FlareBundle\Event;
 
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use HeimrichHannot\FlareBundle\Model\FilterModel;
-use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Enum\PaletteContainer;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class PaletteEvent extends Event implements FlareDynamicEventInterface
+class PaletteEvent extends Event
 {
     public function __construct(
-        private PaletteConfig $paletteConfig,
-        private ?string       $palette,
+        private readonly PaletteContainer $paletteContainer,
+        private PaletteConfig             $paletteConfig,
+        private ?string                   $palette,
     ) {}
+
+    public function getPaletteContainer(): PaletteContainer
+    {
+        return $this->paletteContainer;
+    }
 
     public function getPaletteConfig(): PaletteConfig
     {
@@ -36,14 +41,5 @@ class PaletteEvent extends Event implements FlareDynamicEventInterface
         $this->palette = $palette;
 
         return $this;
-    }
-
-    public function getEventName(): string
-    {
-        return match ($this->getPaletteConfig()->getDataContainer()->table) {
-            FilterModel::getTable() => 'flare.filter.palette',
-            ListModel::getTable() => 'flare.list.palette',
-            default => static::class,
-        };
     }
 }

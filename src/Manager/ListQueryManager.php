@@ -7,7 +7,6 @@ use HeimrichHannot\FlareBundle\Dto\FilterInvocationDto;
 use HeimrichHannot\FlareBundle\Dto\ParameterizedSqlQuery;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokedEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokingEvent;
-use HeimrichHannot\FlareBundle\EventDispatcher\DynamicEventDispatcher;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -21,6 +20,7 @@ use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use HeimrichHannot\FlareBundle\Util\Str;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class ListQueryManager
 {
@@ -33,7 +33,7 @@ class ListQueryManager
 
     public function __construct(
         private readonly Connection                $connection,
-        private readonly DynamicEventDispatcher    $eventDispatcher,
+        private readonly EventDispatcherInterface  $eventDispatcher,
         private readonly FilterQueryBuilderFactory $filterQueryBuilderFactory,
         private readonly FlareCallbackManager      $callbackManager,
         private readonly ListTypeRegistry          $listTypeRegistry,

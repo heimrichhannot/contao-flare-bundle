@@ -4,12 +4,12 @@ namespace HeimrichHannot\FlareBundle\ListView;
 
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Event\ListViewBuildEvent;
-use HeimrichHannot\FlareBundle\EventDispatcher\DynamicEventDispatcher;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolverInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class ListViewBuilder
 {
@@ -19,8 +19,8 @@ class ListViewBuilder
     private ?SortDescriptor $sortDescriptor = null;
 
     public function __construct(
-        private readonly DynamicEventDispatcher $eventDispatcher,
-        private ListViewResolverInterface       $listViewResolver,
+        private readonly EventDispatcherInterface $eventDispatcher,
+        private ListViewResolverInterface         $listViewResolver,
     ) {}
 
     /** @api Get the content context for the list view being built. */

@@ -146,14 +146,10 @@ Dispatched when rendering a reader.
 Flare dispatches events when a list configuration's or filter element's palette is being assembled.
 
 #### `PaletteEvent`
-_Alias: `flare.list.palette`_
+* _Alias: `flare.list.<list_type>.palette`_
+* _Alias: `flare.filter_element.<filter_alias>.palette`_
 
-Dispatched when assembling the palette of a list.
-
-#### `PaletteEvent`
-_Alias: `flare.filter.palette`_
-
-Dispatched when assembling the palette of a filter.
+Dispatched when assembling the palette of a list or filter.
 
 
 ## Extending FLARE

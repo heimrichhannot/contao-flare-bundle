@@ -6,7 +6,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class FilterElementInvokedEvent extends Event implements FlareDynamicEventInterface
+class FilterElementInvokedEvent extends Event
 {
     public function __construct(
         private readonly FilterContext      $filter,
@@ -27,10 +27,5 @@ class FilterElementInvokedEvent extends Event implements FlareDynamicEventInterf
     public function getFilter(): FilterContext
     {
         return $this->filter;
-    }
-
-    public function getEventName(): string
-    {
-        return "flare.filter_element.{$this->getFilter()->getFilterAlias()}.invoked";
     }
 }

@@ -2,29 +2,29 @@
 
 namespace HeimrichHannot\FlareBundle\EventListener\NamedDispatch;
 
-use HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent;
-use HeimrichHannot\FlareBundle\Event\FilterFormChildOptionsEvent;
+use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
+use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
-readonly class FilterFormListener
+readonly class FetchListener
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
     ) {}
 
     #[AsEventListener(priority: -200)]
-    public function onFilterFormBuildEvent(FilterFormBuildEvent $event): void
+    public function onFetchCountEvent(FetchCountEvent $event): void
     {
-        $eventName = "flare.form.{$event->formName}.build";
+        $eventName = "flare.list.{$event->getListModel()->type}.fetch_count";
 
         $this->eventDispatcher->dispatch(event: $event, eventName: $eventName);
     }
 
     #[AsEventListener(priority: -200)]
-    public function onFilterFormChildOptionsEvent(FilterFormChildOptionsEvent $event): void
+    public function onFetchListEntriesEvent(FetchListEntriesEvent $event): void
     {
-        $eventName = "flare.form.{$event->parentFormName}.child.{$event->formName}.options";
+        $eventName = "flare.list.{$event->getListModel()->type}.fetch_entries";
 
         $this->eventDispatcher->dispatch(event: $event, eventName: $eventName);
     }

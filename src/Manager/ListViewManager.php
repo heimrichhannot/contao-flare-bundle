@@ -14,7 +14,6 @@ use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
 use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
 use HeimrichHannot\FlareBundle\Event\ListViewDetailsPageUrlGeneratedEvent;
-use HeimrichHannot\FlareBundle\EventDispatcher\DynamicEventDispatcher;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
@@ -29,6 +28,7 @@ use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Class ListViewManager
@@ -46,14 +46,14 @@ final class ListViewManager
     protected array $listPaginatorCache = [];
 
     public function __construct(
-        private readonly DynamicEventDispatcher  $eventDispatcher,
-        private readonly FilterContextManager    $filterContextManager,
-        private readonly FilterElementRegistry   $filterElementRegistry,
-        private readonly FilterFormManager       $formManager,
-        private readonly ListQueryManager        $listQueryManager,
-        private readonly ListItemProviderManager $itemProvider,
-        private readonly PaginatorBuilderFactory $paginatorBuilderFactory,
-        private readonly RequestStack            $requestStack,
+        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly FilterContextManager     $filterContextManager,
+        private readonly FilterElementRegistry    $filterElementRegistry,
+        private readonly FilterFormManager        $formManager,
+        private readonly ListQueryManager         $listQueryManager,
+        private readonly ListItemProviderManager  $itemProvider,
+        private readonly PaginatorBuilderFactory  $paginatorBuilderFactory,
+        private readonly RequestStack             $requestStack,
     ) {}
 
     /**

@@ -5,13 +5,12 @@ namespace HeimrichHannot\FlareBundle\EventListener\DataContainer;
 use Contao\Controller;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
-use Contao\Model;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ServiceDescriptorInterface;
+use HeimrichHannot\FlareBundle\Enum\PaletteContainer;
 use HeimrichHannot\FlareBundle\Event\PaletteEvent;
-use HeimrichHannot\FlareBundle\EventDispatcher\DynamicEventDispatcher;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
@@ -19,19 +18,30 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
-#[AsCallback(table: FilterContainer::TABLE_NAME, target: 'config.onload', priority: 101)]
-#[AsCallback(table: ListContainer::TABLE_NAME, target: 'config.onload', priority: 101)]
 readonly class AutoTypePalettesCallback
 {
     public function __construct(
-        private DynamicEventDispatcher $eventDispatcher,
-        private FilterElementRegistry  $filterElementRegistry,
-        private ListTypeRegistry       $listTypeRegistry,
-        private RequestStack           $requestStack,
+        private EventDispatcherInterface $eventDispatcher,
+        private FilterElementRegistry    $filterElementRegistry,
+        private ListTypeRegistry         $listTypeRegistry,
+        private RequestStack             $requestStack,
     ) {}
 
-    public function __invoke(?DataContainer $dc = null): void
+    #[AsCallback(table: FilterContainer::TABLE_NAME, target: 'config.onload', priority: 101)]
+    public function onFilterContainerConfigLoad(?DataContainer $dc = null): void
+    {
+        $this->onConfigLoad(PaletteContainer::FILTER, $dc);
+    }
+
+    #[AsCallback(table: ListContainer::TABLE_NAME, target: 'config.onload', priority: 101)]
+    public function onListContainerConfigLoad(?DataContainer $dc = null): void
+    {
+        $this->onConfigLoad(PaletteContainer::LIST, $dc);
+    }
+
+    public function onConfigLoad(PaletteContainer $container, ?DataContainer $dc = null): void
     {
         $request = $this->requestStack->getCurrentRequest();
 
@@ -39,38 +49,35 @@ readonly class AutoTypePalettesCallback
             return;
         }
 
-        [$listModel, $filterModel] = $this->getModelsFromDC($dc);
+        [$listModel, $filterModel] = $this->getModelsFromDC($container, $dc);
 
         if (!$listModel instanceof ListModel) {
             return;
         }
 
-        $descriptor = match (Model::getClassFromTable($dc->table)) {
-            FilterModel::class => $this->filterElementRegistry->get($alias = $filterModel?->type),
-            ListModel::class => $this->listTypeRegistry->get($alias = $listModel->type),
-            default => null,
+        $descriptor = match ($container) {
+            PaletteContainer::FILTER => $this->filterElementRegistry->get($alias = $filterModel?->type),
+            PaletteContainer::LIST => $this->listTypeRegistry->get($alias = $listModel->type),
         };
 
         if (!isset($alias) || !$alias || !($descriptor instanceof ServiceDescriptorInterface)) {
             return;
         }
 
-        $this->applyPalette($dc, $alias, $descriptor, $listModel, $filterModel);
+        $this->applyPalette($container, $dc, $alias, $descriptor, $listModel, $filterModel);
     }
 
-    protected function getModelsFromDC(DataContainer $dc): array
+    protected function getModelsFromDC(PaletteContainer $container, DataContainer $dc): array
     {
         Controller::loadDataContainer(FilterContainer::TABLE_NAME);
         Controller::loadDataContainer(ListContainer::TABLE_NAME);
 
-        $clsModel = Model::getClassFromTable($dc->table);
-
-        switch ($clsModel) {
-            case FilterModel::class:
+        switch ($container) {
+            case PaletteContainer::FILTER:
                 $filterModel = FilterModel::findByPk($dc->id);
                 $listModel = ListModel::findByPk($filterModel?->pid ?: null);
                 break;
-            case ListModel::class:
+            case PaletteContainer::LIST:
                 $listModel = ListModel::findByPk($dc->id);
                 break;
         }
@@ -79,6 +86,7 @@ readonly class AutoTypePalettesCallback
     }
 
     protected function applyPalette(
+        PaletteContainer           $container,
         DataContainer              $dc,
         string                     $alias,
         ServiceDescriptorInterface $descriptor,
@@ -130,7 +138,11 @@ readonly class AutoTypePalettesCallback
 
         $palette ??= null;
 
-        $event = $this->eventDispatcher->dispatch(new PaletteEvent($paletteConfigFactory($prefix, $suffix), $palette));
+        $event = $this->eventDispatcher->dispatch(new PaletteEvent(
+            paletteContainer: $container,
+            paletteConfig: $paletteConfigFactory($prefix, $suffix),
+            palette: $palette,
+        ));
 
         $palette = $event->getPalette();
         $paletteConfig = $event->getPaletteConfig();

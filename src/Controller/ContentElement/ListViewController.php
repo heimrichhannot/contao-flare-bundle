@@ -13,7 +13,6 @@ use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
-use HeimrichHannot\FlareBundle\EventDispatcher\DynamicEventDispatcher;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
@@ -24,6 +23,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsContentElement(ListViewController::TYPE, category: 'includes', template: 'content_element/flare_listview')]
@@ -32,14 +32,14 @@ final class ListViewController extends AbstractContentElementController
     public const TYPE = 'flare_listview';
 
     public function __construct(
-        private readonly DynamicEventDispatcher $eventDispatcher,
-        private readonly KernelInterface        $kernel,
-        private readonly ListViewBuilderFactory $listViewBuilderFactory,
-        private readonly LoggerInterface        $logger,
-        private readonly ScopeMatcher           $scopeMatcher,
-        private readonly SymfonyResponseTagger  $responseTagger,
-        private readonly TranslationManager     $translationManager,
-        private readonly TranslatorInterface    $translator,
+        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly KernelInterface          $kernel,
+        private readonly ListViewBuilderFactory   $listViewBuilderFactory,
+        private readonly LoggerInterface          $logger,
+        private readonly ScopeMatcher             $scopeMatcher,
+        private readonly SymfonyResponseTagger    $responseTagger,
+        private readonly TranslationManager       $translationManager,
+        private readonly TranslatorInterface      $translator,
     ) {}
 
     /**

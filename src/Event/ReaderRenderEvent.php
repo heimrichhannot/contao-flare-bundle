@@ -7,6 +7,7 @@ use Contao\Model;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
+use HeimrichHannot\FlareBundle\ListView\ListView;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 class ReaderRenderEvent extends AbstractTemplateRenderEvent
@@ -16,6 +17,7 @@ class ReaderRenderEvent extends AbstractTemplateRenderEvent
         private readonly ContentModel   $contentModel,
         private readonly Model          $displayModel,
         private readonly ListModel      $listModel,
+        private readonly ListView       $listView,
         private ReaderPageMetaDto       $pageMeta,
         private Template                $template,
     ) {}
@@ -43,6 +45,11 @@ class ReaderRenderEvent extends AbstractTemplateRenderEvent
     public function getPageMeta(): ReaderPageMetaDto
     {
         return $this->pageMeta;
+    }
+
+    public function getListView(): ListView
+    {
+        return $this->listView;
     }
 
     public function setPageMeta(ReaderPageMetaDto $pageMeta): self

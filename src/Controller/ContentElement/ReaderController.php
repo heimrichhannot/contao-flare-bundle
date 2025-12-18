@@ -21,6 +21,7 @@ use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Dto\ReaderRequestAttribute;
 use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Manager\ReaderManager;
 use HeimrichHannot\FlareBundle\Manager\RequestManager;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
@@ -39,6 +40,7 @@ final class ReaderController extends AbstractContentElementController
     public function __construct(
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly EntityCacheTags          $entityCacheTags,
+        private readonly ListViewBuilderFactory   $listViewBuilderFactory,
         private readonly LoggerInterface          $logger,
         private readonly ReaderManager            $readerManager,
         private readonly RequestManager           $requestManager,
@@ -92,6 +94,11 @@ final class ReaderController extends AbstractContentElementController
                 contentContext: $contentContext,
                 contentModel: $contentModel,
             ));
+
+            $listView = $this->listViewBuilderFactory->create()
+                ->setContentContext($contentContext)
+                ->setListModel($listModel)
+                ->build();
         }
         catch (FlareException $e)
         {
@@ -107,12 +114,14 @@ final class ReaderController extends AbstractContentElementController
                 contentModel: $contentModel,
                 displayModel: $model,
                 listModel: $listModel,
+                listView: $listView,
                 pageMeta: $pageMeta,
                 template: $template,
             )
         );
 
         $data = $template->getData();
+        $data['flare'] ??= $event->getListView();
         $data['model'] ??= $event->getDisplayModel();
         $template->setData($data);
 

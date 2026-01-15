@@ -88,7 +88,7 @@ final class SortDescriptor
         return new self([Order::of($property, $direction)]);
     }
 
-    public function and(string $property, string $direction = Order::ASC): self
+    public function next(string $property, string $direction = Order::ASC): self
     {
         $this->orders[] = Order::of($property, $direction);
         return $this;
@@ -115,19 +115,21 @@ final class SortDescriptor
         return $this;
     }
 
-    public function toSql(callable $quoteColumn): string
+    public function toSql(?callable $quoteColumn = null): string
     {
         if ($this->isEmpty()) {
             return '';
         }
 
-        $ignoreCase = $this->ignoreCase;
-
         $parts = \array_map(
-            static function (Order $o) use ($quoteColumn, $ignoreCase): string {
-                $col = $quoteColumn($o->getColumn());
+            function (Order $o) use ($quoteColumn): string {
+                if ($quoteColumn) {
+                    $col = $quoteColumn($o->getColumn());
+                } else {
+                    $col = $o->getColumn();
+                }
 
-                if ($ignoreCase) {
+                if ($this->ignoreCase) {
                     $col = "LOWER({$col})";
                 }
 

@@ -7,6 +7,7 @@
         "php": "^8.2",
         "ext-mbstring": "*",
         "contao/core-bundle": "^4.13 || ^5.0",
+        "composer/semver": "^3.4",
         "doctrine/dbal": "^2.13 || ^3.0",
         "mvo/contao-group-widget": "^1.5",
         "psr/log": "^1.0 || ^2.0 || ^3.0",

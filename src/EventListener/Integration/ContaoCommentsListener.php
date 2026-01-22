@@ -35,13 +35,20 @@ readonly class ContaoCommentsListener
             return;
         }
 
-        /** @var NewsModel $newsModel */
-        if (!$newsModel = $event->getDisplayModel()) {
+        if (!\class_exists(NewsModel::class)
+            || !\class_exists(NewsArchiveModel::class)
+            || !\class_exists(Comments::class)) {
             return;
         }
 
-        /** @var NewsArchiveModel $archiveModel */
-        if (!$archiveModel = $newsModel->getRelated('pid')) {
+        /** @var NewsModel $newsModel */
+        $newsModel = $event->getDisplayModel();
+        if (!$newsModel instanceof NewsModel) {
+            return;
+        }
+
+        $archiveModel = $newsModel->getRelated('pid');
+        if (!$archiveModel instanceof NewsArchiveModel) {
             return;
         }
 

@@ -13,6 +13,8 @@
         flare.paginator
     #}
 
+    {% block content_start %}{% endblock %}
+
     {% block filter %}
 
         {% set form = flare_form(flare) %}
@@ -61,5 +63,7 @@
         {# @var \HeimrichHannot\FlareBundle\Paginator\Paginator paginator #}
         {{ include('@Contao/flare/paginator.html.twig', { paginator: flare.paginator }) }}
     {% endblock %}
+
+    {% block content_end %}{% endblock %}
 
 {% endblock %}

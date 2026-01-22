@@ -24,8 +24,7 @@ class ListViewResolver implements ListViewResolverInterface, ServiceSubscriberIn
     public function getEntries(ListView $dto): array
     {
         return $this->getListViewManager()->getEntries(
-            listModel: $dto->getListModel(),
-            contentContext: $dto->getContentContext(),
+            listDefinition: $dto->getListDefinition(),
             paginatorConfig: $dto->getPaginatorConfig(),
             sortDescriptor: $dto->getSortDescriptor(),
         );
@@ -38,8 +37,7 @@ class ListViewResolver implements ListViewResolverInterface, ServiceSubscriberIn
     {
         return $this->getListViewManager()->getModel(
             id: $id,
-            listModel: $dto->getListModel(),
-            contentContext: $dto->getContentContext(),
+            listDefinition: $dto->getListDefinition(),
         );
     }
 
@@ -49,8 +47,7 @@ class ListViewResolver implements ListViewResolverInterface, ServiceSubscriberIn
     public function getForm(ListView $dto): FormInterface
     {
         return $this->getListViewManager()->getForm(
-            listModel: $dto->getListModel(),
-            contentContext: $dto->getContentContext(),
+            listDefinition: $dto->getListDefinition(),
         );
     }
 
@@ -60,8 +57,7 @@ class ListViewResolver implements ListViewResolverInterface, ServiceSubscriberIn
     public function getPaginator(ListView $dto): Paginator
     {
         return $this->getListViewManager()->getPaginator(
-            listModel: $dto->getListModel(),
-            contentContext: $dto->getContentContext(),
+            listDefinition: $dto->getListDefinition(),
             paginatorConfig: $dto->getPaginatorConfig(),
         );
     }
@@ -77,8 +73,7 @@ class ListViewResolver implements ListViewResolverInterface, ServiceSubscriberIn
     public function getSortDescriptor(ListView $dto): ?SortDescriptor
     {
         return $this->getListViewManager()->getSortDescriptor(
-            listModel: $dto->getListModel(),
-            contentContext: $dto->getContentContext(),
+            listDefinition: $dto->getListDefinition(),
         );
     }
 

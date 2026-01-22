@@ -11,6 +11,8 @@ use HeimrichHannot\FlareBundle\Event\FilterFormChildOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilderFactory;
+use HeimrichHannot\FlareBundle\List\ListDefinition;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use Symfony\Component\Form\Exception\OutOfBoundsException;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -22,14 +24,18 @@ readonly class FilterFormManager
     public function __construct(
         private ChoicesBuilderFactory    $choicesBuilderFactory,
         private EventDispatcherInterface $eventDispatcher,
+        private FilterElementRegistry    $filterElementRegistry,
         private FormFactoryInterface     $formFactory,
     ) {}
 
     /**
      * @throws FilterException If the form could not be built
      */
-    public function buildForm(FilterContextCollection $filters, string $name, ?string $action = null): FormInterface
+    public function buildForm(ListDefinition $listDefinition): FormInterface
     {
+        $name = $listDefinition->getFilterFormName();
+        $filters = $listDefinition->getFilters();
+
         $formOptions = [
             'method'             => 'GET',
             'csrf_protection'    => false,
@@ -39,7 +45,7 @@ readonly class FilterFormManager
             ],
         ];
 
-        if ($action) {
+        if ($action = $listDefinition->getFormAction()) {
             $formOptions['action'] = $action;
         }
 
@@ -131,68 +137,34 @@ readonly class FilterFormManager
         return $builder->getForm();
     }
 
-    public function hydrateForm(FilterContextCollection $filters, FormInterface $form): void
+    /**
+     * @throws FilterException If the form does not contain the filter field.
+     */
+    public function hydrateForm(FormInterface $form, ListDefinition $listDefinition): void
     {
         if ($form->isSubmitted()) {
             return;
         }
 
-        foreach ($filters->getIterator() as $filter)
+        foreach ($listDefinition->getFilters()->getIterator() as $filterDefinition)
         {
-            $filterElement = $filter->getDescriptor()->getService();
-            $filterModel = $filter->getFilterModel();
-
-            if (!$filterModel || !$filterElement instanceof HydrateFormContract)
-            {
+            if (!$filterElement = $this->filterElementRegistry->get($filterDefinition->getType())?->getService()) {
                 continue;
             }
 
-            if (!$filterModel->published || !$filterModel->type || $filterModel->intrinsic)
-            {
+            if (!$filterElement instanceof HydrateFormContract) {
                 continue;
             }
 
-            $filterName = $filterModel->getFormName();
-
-            if (!$form->has($filterName))
-            {
+            if ($filterDefinition->isIntrinsic()) {
                 continue;
             }
 
-            $field = $form->get($filterName);
-
-            $filterElement->hydrateForm($filter, $field);
-        }
-    }
-
-    /**
-     * @throws FilterException If the form does not contain the filter field.
-     */
-    public function hydrateFilterElements(FilterContextCollection $filters, FormInterface $form): void
-    {
-        if ($form->isSubmitted() && !$form->isValid()) {
-            return;
-        }
-
-        foreach ($filters->getIterator() as $filter)
-        {
-            $filterElement = $filter->getDescriptor()->getService();
-            $filterModel = $filter->getFilterModel();
-
-            if (!$filterElement || !$filterModel)
-            {
-                continue;
+            if (!$filterName = $filterDefinition->getFilterFormFieldName()) {
+                throw new FilterException(message: 'Non-intrinsic filter must provide a form field name.');
             }
 
-            if (!$filterModel->published || !$filterModel->type || $filterModel->intrinsic)
-            {
-                continue;
-            }
-
-            $filterName = $filterModel->getFormName();
-
-            if (!$form->has($filterName))
-            {
+            if (!$form->has($filterName)) {
                 continue;
             }
 
@@ -202,15 +174,67 @@ readonly class FilterFormManager
             }
             catch (OutOfBoundsException $exception)
             {
+                $filerModel = $filterDefinition->getSourceFilterModel();
+
                 throw new FilterException(
                     message: 'Filter form does not contain field: ' . $filterName,
                     previous: $exception,
                     method: __METHOD__,
-                    source: \sprintf('tl_flare_filter.id=%s', $filterModel->id)
+                    source: $filerModel ? \sprintf('tl_flare_filter.id=%s', $filerModel->id) : 'filter inlined'
                 );
             }
 
-            $filter->setFormField($field);
+            $filterElement->hydrateForm($listDefinition, $filterDefinition, $field);
         }
+    }
+
+    /**
+     * @throws FilterException If the form does not contain the filter field.
+     */
+    public function hydrateFilterElements(FormInterface $form, ListDefinition $listDefinition): void
+    {
+        if ($form->isSubmitted() && !$form->isValid()) {
+            return;
+        }
+
+        foreach ($listDefinition->getFilters()->getIterator() as $filter)
+        {
+            if (!$filterElement = $this->filterElementRegistry->get($filter->getType())?->getService()) {
+                continue;
+            }
+
+            if ($filter->isIntrinsic()) {
+                continue;
+            }
+
+            if (!$filterName = $filter->getFilterFormFieldName()) {
+                throw new FilterException(message: 'Non-intrinsic filter must provide a form field name.');
+            }
+
+            if (!$form->has($filterName)) {
+                continue;
+            }
+
+            try
+            {
+                $field = $form->get($filterName);
+            }
+            catch (OutOfBoundsException $exception)
+            {
+                $filerModel = $filter->getSourceFilterModel();
+
+                throw new FilterException(
+                    message: 'Filter form does not contain field: ' . $filterName,
+                    previous: $exception,
+                    method: __METHOD__,
+                    source: $filerModel ? \sprintf('tl_flare_filter.id=%s', $filerModel->id) : 'filter inlined'
+                );
+            }
+
+            // $filter->setFormField($field);
+        }
+
+        // todo(@ericges): This should not be required: When the filter form is available, each field can be
+        //             retrieved from the form itself by its name. Consider a helper method in AbstractFilterElement.
     }
 }

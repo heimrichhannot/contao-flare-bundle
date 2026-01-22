@@ -10,6 +10,7 @@ use Contao\Database;
 use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Util\DcaFieldFilter;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
@@ -37,9 +38,9 @@ readonly class FieldsOptionsCallbacks
     {
         $options = [];
 
-        foreach ($this->listTypeRegistry->all() as $alias => $listTypeConfig)
+        foreach ($this->listTypeRegistry->all() as $type => $listTypeConfig)
         {
-            $options[$alias] = $this->translationManager->listModel($alias);
+            $options[$type] = $this->translationManager->listModel($type);
         }
 
         return $options;
@@ -130,5 +131,23 @@ readonly class FieldsOptionsCallbacks
 
         $tables = \array_filter($tables, $db->tableExists(...));
         return \array_combine($tables, $tables) ?: [];
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.filterSourceLists.options')]
+    public function getFieldOptions_filterSourceLists(DataContainer $dc): array
+    {
+        if (!$dc->id) {
+            return [];
+        }
+
+        if (!$lists = ListModel::findAll()) {
+            return [];
+        }
+
+        $options = $lists->fetchEach('title');
+
+        unset($options[(int) $dc->id], $options[(string) $dc->id]);
+
+        return $options;
     }
 }

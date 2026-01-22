@@ -2,16 +2,16 @@
 
 namespace HeimrichHannot\FlareBundle\Contract\Config;
 
-use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\List\ListDefinition;
 
 readonly class ListItemProviderConfig
 {
     public function __construct(
-        private ListModel $listModel,
+        private ListDefinition $listDefinition,
     ) {}
 
-    public function getListModel(): ListModel
+    public function getListDefinition(): ListDefinition
     {
-        return $this->listModel;
+        return $this->listDefinition;
     }
 }

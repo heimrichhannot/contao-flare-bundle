@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 class PaletteConfig
 {
     public function __construct(
-        private readonly string        $alias,
+        private readonly string        $type,
         private readonly DataContainer $dataContainer,
         private string                 $prefix,
         private string                 $suffix,
@@ -17,9 +17,17 @@ class PaletteConfig
         private readonly ?FilterModel  $filterModel,
     ) {}
 
+    /**
+     * @deprecated Use {@see getType()} instead
+     */
     public function getAlias(): string
     {
-        return $this->alias;
+        return $this->getType();
+    }
+
+    public function getType(): string
+    {
+        return $this->type;
     }
 
     public function getDataContainer(): DataContainer

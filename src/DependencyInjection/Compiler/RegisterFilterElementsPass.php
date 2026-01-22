@@ -38,10 +38,10 @@ class RegisterFilterElementsPass implements CompilerPassInterface
 
             foreach ($tags as $attributes)
             {
-                $alias = $this->getFilterElementAlias($definition, $attributes);
-                $attributes['alias'] = $alias;
+                $type = $this->getFilterElementType($definition, $attributes);
+                $attributes['type'] = $type;
 
-                $serviceId = 'huh.flare.filter_element.' . $alias;
+                $serviceId = 'huh.flare.filter_element.' . $type;
 
                 $childDefinition = new ChildDefinition((string) $reference);
                 $childDefinition->setPublic(true);
@@ -49,7 +49,7 @@ class RegisterFilterElementsPass implements CompilerPassInterface
                 $config = $this->getFilterElementConfig($container, $reference, $attributes);
 
                 /** @see FilterElementRegistry::add() */
-                $registry->addMethodCall('add', [$alias, $config]);
+                $registry->addMethodCall('add', [$type, $config]);
 
                 $childDefinition->setTags($definition->getTags());
                 $container->setDefinition($serviceId, $childDefinition);
@@ -79,15 +79,15 @@ class RegisterFilterElementsPass implements CompilerPassInterface
         return new Reference($serviceId);
     }
 
-    protected function getFilterElementAlias(Definition $definition, array $attributes): string
+    protected function getFilterElementType(Definition $definition, array $attributes): string
     {
-        if ($alias = (string) ($attributes['alias'] ?? null))
+        if ($type = (string) ($attributes['type'] ?? null))
         {
-            if ($alias === 'default') {
-                throw new \InvalidArgumentException('The filter element alias "default" is a reserved keyword.');
+            if ($type === 'default') {
+                throw new \InvalidArgumentException('The filter element type "default" is a reserved keyword.');
             }
 
-            return $alias;
+            return $type;
         }
 
         $className = $definition->getClass();

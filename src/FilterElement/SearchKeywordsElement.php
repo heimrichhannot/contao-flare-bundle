@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 
 #[AsFilterElement(
-    alias: SearchKeywordsElement::TYPE,
+    type: self::TYPE,
     palette: '{filter_legend},columnsGeneric;{form_legend},label,placeholder',
     formType: TextType::class,
     scopes: [ContentContext::CONTEXT_LIST],

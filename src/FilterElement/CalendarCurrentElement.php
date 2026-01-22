@@ -14,7 +14,7 @@ use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsFilterElement(
-    alias: CalendarCurrentElement::TYPE,
+    type: self::TYPE,
     formType: DateRangeFilterType::class,
 )]
 class CalendarCurrentElement extends AbstractFilterElement

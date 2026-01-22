@@ -98,7 +98,7 @@ readonly class FilterContextManager
                 ->setContentContext($context)
                 ->setListModel($listModel)
                 ->setFilterModel($filterModel)
-                ->setFilterElementAlias($filterElementAlias)
+                ->setFilterElementType($filterElementAlias)
                 ->setFilterElementDescriptor($descriptor)
                 ->build();
 
@@ -136,7 +136,7 @@ readonly class FilterContextManager
 
         $presetConfig = new PresetFiltersConfig(
             listModel: $listModel,
-            manualFilterAliases: $manualFilters,
+            manualFilterTypes: $manualFilters,
         );
 
         CallbackHelper::call(
@@ -155,7 +155,7 @@ readonly class FilterContextManager
         {
             ['definition' => $definition, 'replaceable' => $replaceable] = $arrDefinition;
 
-            if ($replaceable && \in_array($definition->getAlias(), $manualFilters, true))
+            if ($replaceable && \in_array($definition->getType(), $manualFilters, true))
                 // skip if the filter is replaceable and already added, i.e., when the filter was replaced
             {
                 continue;
@@ -181,19 +181,16 @@ readonly class FilterContextManager
         ContentContext           $contentContext,
         ?FilterElementDescriptor $descriptor = null,
     ): ?FilterContext {
-        if (!$descriptor ??= $this->filterElementRegistry->get($definition->getAlias())) {
+        if (!$descriptor ??= $this->filterElementRegistry->get($definition->getType())) {
             return null;
         }
-
-        $filterModel = new FilterModel();
-        $filterModel->setRow($definition->getRow());
 
         return $this->contextBuilderFactory->create()
             ->setContentContext($contentContext)
             ->setListModel($listModel)
-            ->setFilterModel($filterModel)
+            ->setFilterDefinition($definition)
             ->setFilterElementDescriptor($descriptor)
-            ->setFilterElementAlias($definition->getAlias())
+            ->setFilterElementType($definition->getType())
             ->build();
     }
 }

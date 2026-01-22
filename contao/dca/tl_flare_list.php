@@ -122,6 +122,15 @@ $dca['fields'] = [
         'exclude' => true,
         'sql' => "varchar(128) NOT NULL default ''",
     ],
+    'filterSourceLists' => [
+        'inputType' => 'checkbox',
+        'exclude' => true,
+        'filter' => true,
+        'eval' => ['tl_class' => 'clr w100', 'multiple' => true],
+        'foreignKey' => \sprintf('%s.title', $table),
+        'relation' => ['type' => 'belongsToMany', 'load' => 'eager'],
+        'sql' => ['type' => 'blob', 'notnull' => false],
+    ],
     'fieldAutoItem' => [
         'inputType' => 'select',
         'exclude' => true,
@@ -298,7 +307,7 @@ $dca['fields']['comments_sendNativeEmails'] = [
 $dca['palettes'] = [
     '__selector__' => ['type', 'whichPtable'],
     '__prefix__' => '{title_legend},title,type',
-    '__suffix__' => '{flare_defaults_legend},sortSettings;{flare_reader_legend},jumpToReader;{publish_legend},published',
+    '__suffix__' => '{flare_defaults_legend},sortSettings;{flare_reader_legend},jumpToReader;{advanced_legend:hide},filterSourceLists;{publish_legend},published',
 ];
 
 $dca['palettes']['default'] = Str::mergePalettes($dca['palettes']['__prefix__'], $dca['palettes']['__suffix__']);

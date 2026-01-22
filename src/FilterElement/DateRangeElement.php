@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Type\DateRangeFilterType;
 
 #[AsFilterElement(
-    alias: DateRangeElement::TYPE,
+    type: self::TYPE,
     palette: 'fieldGeneric',
     formType: DateRangeFilterType::class,
 )]

@@ -16,11 +16,11 @@ class PresetFiltersConfig
 
     /**
      * @param ListModel     $listModel
-     * @param array<string> $manualFilterAliases
+     * @param array<string> $manualFilterTypes
      */
     public function __construct(
         private readonly ListModel $listModel,
-        private readonly array     $manualFilterAliases,
+        private readonly array     $manualFilterTypes,
     ) {}
 
     public function getListModel(): ListModel
@@ -28,9 +28,9 @@ class PresetFiltersConfig
         return $this->listModel;
     }
 
-    public function getManualFilterAliases(): array
+    public function getManualFilterTypes(): array
     {
-        return $this->manualFilterAliases;
+        return $this->manualFilterTypes;
     }
 
     public function add(FilterDefinition $filterDefinition, bool $replaceable = false): static

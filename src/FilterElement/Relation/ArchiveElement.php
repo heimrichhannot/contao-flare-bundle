@@ -25,7 +25,7 @@ use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormInterface;
 
-#[AsFilterElement(alias: ArchiveElement::TYPE, formType: ChoiceType::class)]
+#[AsFilterElement(type: self::TYPE, formType: ChoiceType::class)]
 class ArchiveElement extends BelongsToRelationElement implements FormTypeOptionsContract, HydrateFormContract, PaletteContract
 {
     public const TYPE = 'flare_archive';
@@ -39,7 +39,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
      */
     public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
     {
-        $submitted = $context->getSubmittedData();
+        $submitted = $context->getFormData();
         $filterModel = $context->getFilterModel();
         $inferrer = new PtableInferrer($filterModel, $context->getListModel());
 

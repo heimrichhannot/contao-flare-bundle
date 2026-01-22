@@ -53,7 +53,12 @@ $lang['whichPtable_options'] = [
     'dynamic' => 'Spalte mit dynamischer Elterntabelle festlegen',
     'static' => 'Statische Elterntabelle festlegen',
 ];
-###< relations_legend
+###< parent_legend
+
+###> advanced_legend
+$lang['advanced_legend'] = 'Erweiterte Einstellungen';
+$lang['filterSourceLists'] = ['Andere Listen als Filterquellen', 'Geben Sie Listen an, derer Filter zusätzlich bezogen werden sollen. Sie können die Filter individuell überschreiben.'];
+###< advanced_legend
 
 ###> comments_legend ###
 $lang['comments_legend'] = 'Kommentareinstellungen';

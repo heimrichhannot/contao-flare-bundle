@@ -16,6 +16,9 @@ use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
+use HeimrichHannot\FlareBundle\List\ListDefinition;
+use HeimrichHannot\FlareBundle\List\ListDefinitionBuilder;
+use HeimrichHannot\FlareBundle\List\ListDefinitionBuilderFactory;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -34,6 +37,7 @@ final class ListViewController extends AbstractContentElementController
     public function __construct(
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly KernelInterface          $kernel,
+        private readonly ListDefinitionBuilderFactory $listDefinitionBuilderFactory,
         private readonly ListViewBuilderFactory   $listViewBuilderFactory,
         private readonly LoggerInterface          $logger,
         private readonly ScopeMatcher             $scopeMatcher,
@@ -89,10 +93,12 @@ final class ListViewController extends AbstractContentElementController
 
         try
         {
+            $filterFormName = $contentModel->flare_formName ?: 'fl' . $listModel->id;
+
             $contentContext = new ContentContext(
                 context: ContentContext::CONTEXT_LIST,
                 contentModel: $contentModel,
-                formName: $contentModel->flare_formName ?: null,
+                formName: $filterFormName,
                 actionPage: ((int) $contentModel->flare_jumpTo) ?: null,
             );
 
@@ -100,9 +106,15 @@ final class ListViewController extends AbstractContentElementController
                 itemsPerPage: (int) ($contentModel->flare_itemsPerPage ?: 0)
             );
 
+            $listDefinition = $this->listDefinitionBuilderFactory->create()
+                ->setListModel($listModel)
+                ->setFilterFormName($filterFormName)
+                ->autoCollectFilters()
+                ->build();
+
             $listView = $this->listViewBuilderFactory->create()
                 ->setContentContext($contentContext)
-                ->setListModel($listModel)
+                ->setListDefinition($listDefinition)
                 ->setPaginatorConfig($paginatorConfig)
                 ->setSortDescriptor(null)
                 ->build();

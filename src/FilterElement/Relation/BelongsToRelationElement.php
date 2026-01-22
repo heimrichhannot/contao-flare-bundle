@@ -15,7 +15,7 @@ use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 
-#[AsFilterElement(alias: BelongsToRelationElement::TYPE)]
+#[AsFilterElement(type: self::TYPE)]
 class BelongsToRelationElement extends AbstractFilterElement implements PaletteContract
 {
     const TYPE = 'flare_relation_belongsTo';

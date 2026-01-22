@@ -4,6 +4,8 @@ namespace HeimrichHannot\FlareBundle\Event;
 
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
+use HeimrichHannot\FlareBundle\Filter\FilterDefinitionCollection;
+use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -15,24 +17,18 @@ use Symfony\Contracts\EventDispatcher\Event;
 abstract class AbstractFetchEvent extends Event
 {
     public function __construct(
-        private readonly ListModel        $listModel,
-        private readonly ContentContext   $contentContext,
-        private ListItemProviderInterface $itemProvider,
-        private ListQueryBuilder          $listQueryBuilder,
-        private FilterContextCollection   $filters,
-        private readonly ?FormInterface   $form = null,
-        private readonly ?PaginatorConfig $paginatorConfig = null,
-        private readonly ?SortDescriptor  $sortDescriptor = null,
+        private readonly ListDefinition    $listDefinition,
+        private ListItemProviderInterface  $itemProvider,
+        private ListQueryBuilder           $listQueryBuilder,
+        private FilterDefinitionCollection $filters,
+        private readonly ?FormInterface    $form = null,
+        private readonly ?PaginatorConfig  $paginatorConfig = null,
+        private readonly ?SortDescriptor   $sortDescriptor = null,
     ) {}
 
-    public function getListModel(): ListModel
+    public function getListDefinition(): ListDefinition
     {
-        return $this->listModel;
-    }
-
-    public function getContentContext(): ContentContext
-    {
-        return $this->contentContext;
+        return $this->listDefinition;
     }
 
     public function getPaginatorConfig(): PaginatorConfig
@@ -65,12 +61,12 @@ abstract class AbstractFetchEvent extends Event
         $this->listQueryBuilder = $listQueryBuilder;
     }
 
-    public function getFilters(): FilterContextCollection
+    public function getFilters(): FilterDefinitionCollection
     {
         return $this->filters;
     }
 
-    public function setFilters(FilterContextCollection $filters): void
+    public function setFilters(FilterDefinitionCollection $filters): void
     {
         $this->filters = $filters;
     }

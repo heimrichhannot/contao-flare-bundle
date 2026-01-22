@@ -231,7 +231,7 @@ class MyCustomElement implements FormTypeOptionsContract, HydrateFormContract, P
          *
          * @var mixed $submittedData
          */
-        $submittedData = $context->getSubmittedData();
+        $submittedData = $context->getFormData();
 
         /**
           * {@see \HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder} to see how it works,

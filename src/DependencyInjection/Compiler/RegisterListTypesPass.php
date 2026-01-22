@@ -39,10 +39,10 @@ class RegisterListTypesPass implements CompilerPassInterface
 
             foreach ($tags as $attributes)
             {
-                $alias = $this->getListTypeAlias($definition, $attributes);
-                $attributes['alias'] = $alias;
+                $type = $this->getListTypeName($definition, $attributes);
+                $attributes['type'] = $type;
 
-                $serviceId = 'huh.flare.list_type.' . $alias;
+                $serviceId = 'huh.flare.list_type.' . $type;
 
                 $childDefinition = new ChildDefinition((string) $reference);
                 $childDefinition->setPublic(true);
@@ -50,7 +50,7 @@ class RegisterListTypesPass implements CompilerPassInterface
                 $config = $this->getListTypeConfig($container, $reference, $attributes);
 
                 /** @see FilterElementRegistry::add() */
-                $registry->addMethodCall('add', [$alias, $config]);
+                $registry->addMethodCall('add', [$type, $config]);
 
                 $childDefinition->setTags($definition->getTags());
                 $container->setDefinition($serviceId, $childDefinition);
@@ -78,15 +78,15 @@ class RegisterListTypesPass implements CompilerPassInterface
         return new Reference($serviceId);
     }
 
-    protected function getListTypeAlias(Definition $definition, array $attributes): string
+    protected function getListTypeName(Definition $definition, array $attributes): string
     {
-        if ($alias = (string) ($attributes['alias'] ?? ''))
+        if ($type = (string) ($attributes['type'] ?? ''))
         {
-            if ($alias === 'default') {
-                throw new \InvalidArgumentException('The list type alias "default" is a reserved keyword.');
+            if ($type === 'default') {
+                throw new \InvalidArgumentException('The list type name "default" is a reserved keyword.');
             }
 
-            return $alias;
+            return $type;
         }
 
         $className = $definition->getClass();

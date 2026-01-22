@@ -15,7 +15,7 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 /*#[AsFilterElement(
-    alias: ArrayFieldChoice::TYPE,
+    type: ArrayFieldChoice::TYPE,
     palette: '{filter_legend},fieldGeneric,isMultiple,preselect',
     formType: ChoiceType::class,
 )]*/ // todo: continue work

@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 
 #[AsFilterElement(
-    alias: PublishedElement::TYPE,
+    type: self::TYPE,
     palette: '{filter_legend},usePublished,useStart,useStop'
 )]
 class PublishedElement extends AbstractFilterElement
@@ -70,7 +70,7 @@ class PublishedElement extends AbstractFilterElement
         $invertPublished ??= false;
 
         $definition = new FilterDefinition(
-            alias: static::TYPE,
+            type: static::TYPE,
             title: 'Is Published',
             intrinsic: true,
         );

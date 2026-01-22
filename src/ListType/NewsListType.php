@@ -15,7 +15,7 @@ use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\List\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\Util\Str;
 
-#[AsListType(alias: self::TYPE, dataContainer: 'tl_news', palette: '{filter_legend},')]
+#[AsListType(type: self::TYPE, dataContainer: 'tl_news', palette: '{filter_legend},')]
 class NewsListType extends AbstractListType
 {
     public const TYPE = 'flare_news';

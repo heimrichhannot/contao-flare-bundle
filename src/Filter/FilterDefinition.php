@@ -3,27 +3,31 @@
 namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\Model\DocumentsFilterModelTrait;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Trait\DynamicPropertiesTrait;
 
 class FilterDefinition
 {
     use DocumentsFilterModelTrait;
+    use DynamicPropertiesTrait;
 
     public function __construct(
-        private string $alias,
-        private string $title,
-        private bool   $intrinsic,
-        private array  $properties = [],
+        private string       $type,
+        private string       $title,
+        private bool         $intrinsic,
+        private ?FilterModel $sourceFilterModel = null,
+        private ?string      $filterFormFieldName = null,
     ) {}
 
-    public function getAlias(): string
+    public function getType(): string
     {
-        return $this->alias;
+        return $this->type;
     }
 
-    public function setAlias(string $alias, ?string &$og = null): static
+    public function setType(string $type, ?string &$og = null): static
     {
-        $og = $this->alias;
-        $this->alias = $alias;
+        $og = $this->type;
+        $this->type = $type;
         return $this;
     }
 
@@ -49,61 +53,88 @@ class FilterDefinition
         return $this;
     }
 
-    public function getProperties(): array
+    public function getSourceFilterModel(): ?FilterModel
     {
-        return $this->properties;
+        return $this->sourceFilterModel;
     }
 
-    public function getProperty(string $key, mixed $default = null): mixed
+    public function setSourceFilterModel(?FilterModel $sourceFilterModel): static
     {
-        return $this->properties[$key] ?? $default;
+        $this->sourceFilterModel = $sourceFilterModel;
+        return $this;
     }
 
-    public function hasProperty(string $key): bool
+    public function getFilterFormFieldName(): ?string
     {
-        return \array_key_exists($key, $this->properties);
+        return $this->filterFormFieldName;
     }
 
-    public function setProperties(array $properties): void
+    public function setFilterFormFieldName(?string $filterFormFieldName): static
     {
-        $this->properties = $properties;
+        $this->filterFormFieldName = $filterFormFieldName;
+        return $this;
     }
 
     public function __isset(string $name): bool
     {
         return match ($name) {
-            'alias', 'elementAlias', 'type', 'title', 'intrinsic' => true,
-            default => $this->hasProperty($name) && $this->getProperty($name) !== null,
+            'type', 'title', 'intrinsic' => true,
+            default => $this->issetProperty($name),
         };
     }
 
-    public function __set(string $key, mixed $value): void
+    public function __set(string $name, mixed $value): void
     {
-        match ($key) {
-            'alias', 'elementAlias', 'type' => $this->setAlias($value),
+        match ($name) {
+            'type' => $this->setType($value),
             'title' => $this->setTitle($value),
             'intrinsic' => $this->setIntrinsic($value),
-            default => $this->properties[$key] = $value,
+            default => $this->setProperty($name, $value),
         };
     }
 
-    public function __get(string $key): mixed
+    public function __get(string $name): mixed
     {
-        return match ($key) {
-            'alias', 'elementAlias', 'type' => $this->getAlias(),
+        return match ($name) {
+            'type' => $this->getType(),
             'title' => $this->getTitle(),
             'intrinsic' => $this->isIntrinsic(),
-            default => $this->getProperty($key),
+            default => $this->getProperty($name),
         };
     }
 
     public function getRow(): array
     {
-        return \array_merge($this->properties, [
+        return \array_merge($this->getProperties(), [
             'title' => $this->title,
-            'type' => $this->alias,
-            'published' => true,
+            'type' => $this->type,
             'intrinsic' => $this->intrinsic,
         ]);
+    }
+
+    public function hash(): string
+    {
+        return \sha1(\serialize([
+            'row' => $this->getRow(),
+            'list' => $this->getSourceFilterModel() ? [
+                $this->getSourceFilterModel()->id,
+                $this->getSourceFilterModel()->type,
+            ] : null,
+        ]));
+    }
+
+    public static function fromFilterModel(FilterModel $filterModel): static
+    {
+        $self = new static(
+            type: $filterModel->type,
+            title: $filterModel->title,
+            intrinsic: $filterModel->intrinsic,
+            sourceFilterModel: $filterModel,
+            filterFormFieldName: $filterModel->getFormName(),
+        );
+
+        $self->setProperties($filterModel->row());
+
+        return $self;
     }
 }

@@ -11,8 +11,9 @@ use HeimrichHannot\FlareBundle\Util\Str;
 class FilterContextBuilder
 {
     private ContentContext $contentContext;
+    private ?FilterDefinition $filterDefinition = null;
     private object $filterElement;
-    private ?string $filterElementAlias = null;
+    private ?string $filterElementType = null;
     private ?FilterElementDescriptor $filterElementDescriptor = null;
     private ?FilterModel $filterModel = null;
     private array $filterModelProperties = [];
@@ -26,15 +27,26 @@ class FilterContextBuilder
         return $this;
     }
 
+    public function setFilterDefinition(?FilterDefinition $filterDefinition): static
+    {
+        $this->filterDefinition = $filterDefinition;
+        return $this;
+    }
+
+    public function getFilterDefinition(): ?FilterDefinition
+    {
+        return $this->filterDefinition;
+    }
+
     public function setFilterElement(object $filterElement): static
     {
         $this->filterElement = $filterElement;
         return $this;
     }
 
-    public function setFilterElementAlias(?string $alias): static
+    public function setFilterElementType(?string $alias): static
     {
-        $this->filterElementAlias = $alias;
+        $this->filterElementType = $alias;
         return $this;
     }
 
@@ -44,8 +56,14 @@ class FilterContextBuilder
         return $this;
     }
 
+    /**
+     * @param FilterModel $filterModel
+     * @return $this
+     * @deprecated Use {@see setFilterDefinition()} instead.
+     */
     public function setFilterModel(FilterModel $filterModel): static
     {
+        // todo(@ericges): remove all usages of this method
         $this->filterModel = $filterModel;
         return $this;
     }
@@ -73,24 +91,24 @@ class FilterContextBuilder
             $filterModel->{$prop} = $value;
         }
 
-        $alias = $this->filterElementAlias;
+        $type = $this->filterElementType;
 
-        if (!$alias) {
-            $alias = $this->filterElementDescriptor?->getAttributes()['alias'] ?? null;
+        if (!$type) {
+            $type = $this->filterElementDescriptor?->getAttributes()['type'] ?? null;
         }
 
-        if (!$alias) {
-            $alias = '_auto_' . Str::random(8, Str::CHARS_ALPHA_LOWER);
+        if (!$type) {
+            $type = '_auto_' . Str::random(8, Str::CHARS_ALPHA_LOWER);
         }
 
-        $config = $this->filterElementDescriptor ?? new FilterElementDescriptor($this->filterElement, ['alias' => $alias]);
+        $config = $this->filterElementDescriptor ?? new FilterElementDescriptor($this->filterElement, ['type' => $type]);
 
         return new FilterContext(
             contentContext: $this->contentContext,
             listModel: $this->listModel,
             filterModel: $filterModel,
             filterElementDescriptor: $config,
-            filterElementAlias: $alias,
+            filterElementType: $type,
             table: $table,
         );
     }

@@ -21,7 +21,7 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 
 #[AsFilterElement(
-    alias: self::TYPE,
+    type: self::TYPE,
     palette: '{filter_legend},fieldGeneric,preselect',
     formType: CheckboxType::class,
     isTargeted: true,
@@ -176,7 +176,7 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract
         ?bool $expectedValue = null,
     ): FilterDefinition {
         $definition = new FilterDefinition(
-            alias: static::TYPE,
+            type: static::TYPE,
             title: 'Boolean',
             intrinsic: true,
         );

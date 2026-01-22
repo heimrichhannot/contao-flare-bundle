@@ -14,6 +14,7 @@ use HeimrichHannot\FlareBundle\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
@@ -42,20 +43,20 @@ class ListQueryManager
     /**
      * @throws FlareException
      */
-    public function prepare(ListModel $listModel, ?bool $noCache = null): ListQueryBuilder
+    public function prepare(ListDefinition $list, ?bool $noCache = null): ListQueryBuilder
     {
         $doCache = !$noCache;
 
-        if ($doCache && $hit = $this->prepCache[$listModel->id] ?? null) {
+        if ($doCache && $hit = $this->prepCache[$list->id] ?? null) {
             return clone $hit;
         }
 
         /** @var ListTypeDescriptor $type */
-        if (!$type = $this->listTypeRegistry->get($listModel->type)) {
-            throw new FlareException(\sprintf('No list type registered for type "%s".', $listModel->type), method: __METHOD__);
+        if (!$type = $this->listTypeRegistry->get($list->type)) {
+            throw new FlareException(\sprintf('No list type registered for type "%s".', $list->type), method: __METHOD__);
         }
 
-        if (!$mainTable = $listModel->dc ?? $type->getDataContainer()) {
+        if (!$mainTable = $list->dc ?? $type->getDataContainer()) {
             throw new FlareException('No data container table set.', method: __METHOD__);
         }
 
@@ -68,17 +69,18 @@ class ListQueryManager
         $builder->select('*', of: self::ALIAS_MAIN, allowAsterisk: true);
         $builder->groupBy('id', self::ALIAS_MAIN);
 
-        $callbacks = $this->callbackManager->getListCallbacks($listModel->type, 'query.configure');
+        $callbacks = $this->callbackManager->getListCallbacks($list->type, 'query.configure');
 
         CallbackHelper::call($callbacks, [], [
-            ListModel::class => $listModel,
+            ListModel::class => null, // todo(@ericges): Replace callback with event
+            ListDefinition::class => $list,
             ListQueryBuilder::class => $builder,
         ]);
 
         $builder->select('id', of: self::ALIAS_MAIN, as: 'id');
 
         if ($doCache) {
-            $this->prepCache[$listModel->id] = clone $builder;
+            $this->prepCache[$list->id] = clone $builder;
         }
 
         return $builder;

@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 
-#[AsFilterElement(alias: SimpleEquationElement::TYPE, isTargeted: true)]
+#[AsFilterElement(type: self::TYPE, isTargeted: true)]
 class SimpleEquationElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_equation_simple';
@@ -81,7 +81,7 @@ class SimpleEquationElement extends AbstractFilterElement
         mixed                $equationRight = null,
     ): FilterDefinition {
         $definition = new FilterDefinition(
-            alias: static::TYPE,
+            type: static::TYPE,
             title: 'Simple Equation',
             intrinsic: true,
         );

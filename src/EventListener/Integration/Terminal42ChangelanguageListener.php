@@ -52,7 +52,9 @@ class Terminal42ChangelanguageListener
     #[AsEventListener]
     public function fetchAutoItem(FetchAutoItemEvent $event): void
     {
-        if ($event->getListModel()->type !== DcMultilingualListType::TYPE) {
+        $list = $event->getListDefinition();
+
+        if ($list->type !== DcMultilingualListType::TYPE) {
             return;
         }
 
@@ -60,9 +62,11 @@ class Terminal42ChangelanguageListener
             return;
         }
 
+        $table = $list->dc;
+
         $this->applyMlQueriesIfNecessary(
             $event->getListQueryBuilder(),
-            $event->getFilters(),
+            $table,
             DcMultilingualHelper::getLanguage(),
         );
 
@@ -70,13 +74,10 @@ class Terminal42ChangelanguageListener
             return;
         }
 
-        $filters = $event->getFilters();
-        $table = $filters->getTable();
-
         // use the translated alias for auto_item retrieval if the alias field is translatable
         $translatableFields = DcMultilingualHelper::getTranslatableFields($table);
 
-        if (!\in_array($filters->getListModel()->getAutoItemField(), $translatableFields, true)) {
+        if (!\in_array($list->getAutoItemField(), $translatableFields, true)) {
             return;
         }
 
@@ -153,7 +154,7 @@ class Terminal42ChangelanguageListener
 
     private function applyMlQueriesIfNecessary(
         ListQueryBuilder $listQueryBuilder,
-        FilterContextCollection $filters,
+        string $table,
         string $language,
     ): void
     {
@@ -161,7 +162,6 @@ class Terminal42ChangelanguageListener
             return;
         }
 
-        $table = $filters->getTable();
         $langColumnName = DcMultilingualHelper::getLangColumn($table);
         $pidColumnName = DcMultilingualHelper::getPidColumn($table);
         $regularFields = DcMultilingualHelper::getRegularFields($table);

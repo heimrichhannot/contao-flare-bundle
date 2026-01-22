@@ -11,11 +11,11 @@ readonly class TranslationManager
         // private readonly TranslatorInterface $translator,
     ) {}
 
-    public function listModel(ListModel|string $listModel_or_alias): string
+    public function listModel(ListModel|string $listModel_or_type): string
     {
         Controller::loadLanguageFile('default');
 
-        $alias = (string) ($listModel_or_alias instanceof ListModel ? $listModel_or_alias->type : $listModel_or_alias);
+        $alias = (string) ($listModel_or_type instanceof ListModel ? $listModel_or_type->type : $listModel_or_type);
 
         $lang = $GLOBALS['TL_LANG']['FLARE']['list'][$alias] ?? null;
 

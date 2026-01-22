@@ -5,6 +5,9 @@ namespace HeimrichHannot\FlareBundle\ListView;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
+use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
+use HeimrichHannot\FlareBundle\Filter\FilterDefinitionCollection;
+use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolverInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -31,7 +34,7 @@ class ListView
      */
     public function __construct(
         private readonly ContentContext            $contentContext,
-        private readonly ListModel                 $listModel,
+        private readonly ListDefinition            $listDefinition,
         private readonly ListViewResolverInterface $resolver,
         private ?PaginatorConfig                   $paginatorConfig = null,
         private ?SortDescriptor                    $sortDescriptor = null,
@@ -48,13 +51,35 @@ class ListView
     }
 
     /**
-     * Returns the list model for this list view.
+     * Returns the list definition for this list view.
      *
-     * @api Use in twig templates to access the list model of a list.
+     * @api Use in twig templates to access the list definition of a list.
      */
-    public function getListModel(): ListModel
+    public function getListDefinition(): ListDefinition
     {
-        return $this->listModel;
+        return $this->listDefinition;
+    }
+
+    /**
+     * Returns the source list model for this list view.
+     *
+     * @api Use in twig templates to access the source list model of a list, if provided.
+     */
+    public function getListModel(): ?ListModel
+    {
+        return $this->getListDefinition()->getSourceListModel();
+    }
+
+    public function getFilters(): FilterDefinitionCollection
+    {
+        return $this->getListDefinition()->getFilters();
+    }
+
+    public function addFilterDefinition(FilterDefinition $filterDefinition): static
+    {
+        // todo(@ericges): Add more methods to ease filter definition management on this class
+        $this->getListDefinition()->getFilters()->add($filterDefinition);
+        return $this;
     }
 
     /**

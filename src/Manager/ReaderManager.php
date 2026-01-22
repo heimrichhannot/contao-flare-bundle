@@ -97,7 +97,7 @@ readonly class ReaderManager
             throw new FlareException(\sprintf('Model class does not exist: "%s"', $modelClass), source: __METHOD__);
         }
 
-        $itemProvider = $this->itemProvider->ofListModel($listModel);
+        $itemProvider = $this->itemProvider->ofList($listModel);
         $listQueryBuilder = $this->listQuery->prepare($listModel);
 
         ###> define auto_item filter context ###
@@ -105,7 +105,7 @@ readonly class ReaderManager
             equationLeft: $listModel->getAutoItemField(),
             equationOperator: SqlEquationOperator::EQUALS,
             equationRight: $autoItem,
-        )->setAlias('_flare_auto_item', $ogAlias);
+        )->setType('_flare_auto_item', $ogAlias);
 
         $autoItemFilterContext = $this->filterContextManager->definitionToContext(
             definition: $autoItemDefinition,

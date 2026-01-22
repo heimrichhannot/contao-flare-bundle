@@ -14,18 +14,20 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
+use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormInterface;
 
 #[AsFilterElement(
-    alias: self::TYPE,
+    type: self::TYPE,
     formType: ChoiceType::class,
 )]
-class DcaSelectField extends AbstractFilterElement implements HydrateFormContract, InScopeContract
+class DcaSelectFieldElement extends AbstractFilterElement implements HydrateFormContract, InScopeContract
 {
     public const TYPE = 'flare_dcaSelectField';
 
@@ -150,27 +152,24 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
         return $palette;
     }
 
-    public function getPreselectValue(FilterModel $filterModel): mixed
+    public function getPreselectValue(FilterDefinition $filter): mixed
     {
-        return $filterModel->isMultiple
-            ? StringUtil::deserialize($filterModel->preselect ?: null)
-            : $filterModel->preselect;
+        return $filter->isMultiple
+            ? StringUtil::deserialize($filter->preselect ?: null)
+            : $filter->preselect;
     }
 
-    public function hydrateForm(FilterContext $context, FormInterface $field): void
+    public function hydrateForm(ListDefinition $list, FilterDefinition $filter, FormInterface $field): void
     {
         if ($field->isSubmitted()) {
             return;
         }
 
-        $filterModel = $context->getFilterModel();
-        $listModel = $context->getListModel();
-
-        if (!$preselect = $this->getPreselectValue($filterModel)) {
+        if (!$preselect = $this->getPreselectValue($filter)) {
             return;
         }
 
-        $options = $this->getOptions($listModel, $filterModel) ?? [];
+        $options = $this->getOptions($list, $filter) ?? [];
 
         if (!\is_array($preselect))
         {
@@ -302,10 +301,10 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
         return $this->tryGetOptionsFromField($listModel, $field) ?? [];
     }
 
-    public function getOptions(ListModel $listModel, FilterModel $filterModel): ?array
+    public function getOptions(ListDefinition $list, FilterDefinition $filter): ?array
     {
-        $optionsField = $this->getOptionsField($listModel, $filterModel) ?? [];
-        $options = $this->tryGetOptionsFromField($listModel, $optionsField);
+        $optionsField = $this->getOptionsField($list, $filter) ?? [];
+        $options = $this->tryGetOptionsFromField($list, $optionsField);
 
         if (!\is_array($options))
         {
@@ -328,15 +327,15 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
         return $options;
     }
 
-    public function getOptionsField(ListModel $listModel, FilterModel $filterModel): ?array
+    public function getOptionsField(ListDefinition $list, FilterDefinition $filter): ?array
     {
-        Controller::loadLanguageFile($listModel->dc);
-        Controller::loadDataContainer($listModel->dc);
+        Controller::loadLanguageFile($list->dc);
+        Controller::loadDataContainer($list->dc);
 
-        return $GLOBALS['TL_DCA'][$listModel->dc]['fields'][$filterModel->fieldGeneric] ?? null;
+        return $GLOBALS['TL_DCA'][$list->dc]['fields'][$filter->fieldGeneric] ?? null;
     }
 
-    protected function tryGetOptionsFromField(ListModel $listModel, array $optionsField): ?array
+    protected function tryGetOptionsFromField(ListDefinition $list, array $optionsField): ?array
     {
         if (\is_array($options = $optionsField['options'] ?? null))
         {
@@ -345,7 +344,7 @@ class DcaSelectField extends AbstractFilterElement implements HydrateFormContrac
 
         if ($optionsCallback = $optionsField['options_callback'] ?? null)
         {
-            $dataContainer = $this->mockDataContainerObject($listModel->dc);
+            $dataContainer = $this->mockDataContainerObject($list->dc);
 
             if (\is_string($optionsCallback) && \str_contains($optionsCallback, '::'))
             {

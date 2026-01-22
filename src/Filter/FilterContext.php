@@ -19,7 +19,7 @@ class FilterContext
         private readonly ListModel               $listModel,
         private readonly FilterModel             $filterModel,
         private readonly FilterElementDescriptor $filterElementDescriptor,
-        private readonly string                  $filterElementAlias,
+        private readonly string                  $filterElementType,
         private readonly string                  $table,
         private ?FormInterface                   $formField = null,
     ) {}
@@ -44,9 +44,9 @@ class FilterContext
         return $this->filterElementDescriptor;
     }
 
-    public function getFilterAlias(): string
+    public function getFilterType(): string
     {
-        return $this->filterElementAlias;
+        return $this->filterElementType;
     }
 
     public function getTable(): string

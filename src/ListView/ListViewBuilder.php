@@ -5,6 +5,7 @@ namespace HeimrichHannot\FlareBundle\ListView;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Event\ListViewBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolverInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -14,6 +15,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 class ListViewBuilder
 {
     private ContentContext $contentContext;
+    private ListDefinition $listDefinition;
     private ListModel $listModel;
     private ?PaginatorConfig $paginatorConfig = null;
     private ?SortDescriptor $sortDescriptor = null;
@@ -36,20 +38,42 @@ class ListViewBuilder
         return $this;
     }
 
-    /** @api Get the list model for the list view being built. */
+    /**
+     * @api Get the list definition for the list view being built.
+     */
+    public function getListDefinition(): ?ListDefinition
+    {
+        return $this->listDefinition ?? null;
+    }
+
+    /**
+     * @api Set the list definition for the list view being built.
+     */
+    public function setListDefinition(ListDefinition $listDefinition): static
+    {
+        $this->listDefinition = $listDefinition;
+        return $this;
+    }
+
+    /**
+     * @api Get the list model for the list view being built.
+     * @deprecated Use {@see self::getListDefinition()} instead.
+     */
     public function getListModel(): ?ListModel
     {
         return $this->listModel ?? null;
     }
 
-    /** @api Set the list model for the list view being built. */
+    /**
+     * @api Set the list model for the list view being built.
+     * @deprecated Use {@see self::setListDefinition()} instead.
+     */
     public function setListModel(ListModel $listModel): static
     {
         $this->listModel = $listModel;
         return $this;
     }
 
-    /** @api Get the paginator configuration for the list view being built. */
     public function getPaginatorConfig(): ?PaginatorConfig
     {
         return $this->paginatorConfig;
@@ -107,13 +131,13 @@ class ListViewBuilder
             throw new FlareException('No content context provided.');
         }
 
-        if (!$builder->getListModel()) {
+        if (!$builder->getListDefinition()) {
             throw new FlareException('No list model provided.');
         }
 
         return new ListView(
             contentContext: $builder->getContentContext(),
-            listModel: $builder->getListModel(),
+            listDefinition: $builder->getListDefinition(),
             resolver: $builder->getListViewResolver(),
             paginatorConfig: $builder->getPaginatorConfig(),
             sortDescriptor: $builder->getSortDescriptor(),

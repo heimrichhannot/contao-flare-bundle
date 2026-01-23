@@ -5,7 +5,6 @@ namespace HeimrichHannot\FlareBundle\List;
 use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinitionCollection;
 use HeimrichHannot\FlareBundle\Model\DocumentsListModelTrait;
-use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Trait\AutoItemFieldGetterTrait;
 use HeimrichHannot\FlareBundle\Trait\DynamicPropertiesTrait;
 
@@ -21,7 +20,7 @@ class ListDefinition
     public function __construct(
         public readonly string      $type,
         public readonly string      $dc,
-        private ?ListModel          $sourceListModel = null,
+        private ?ListDataSource     $dataSource = null,
         ?FilterDefinitionCollection $filters = null,
         ?string                     $filterFormName = null,
         private ?int                $filterFormActionPageId = null,
@@ -30,14 +29,14 @@ class ListDefinition
         $this->filterFormName = $filterFormName ?? 'flare';
     }
 
-    public function getSourceListModel(): ?ListModel
+    public function getDataSource(): ?ListDataSource
     {
-        return $this->sourceListModel;
+        return $this->dataSource;
     }
 
-    public function setSourceListModel(?ListModel $sourceListModel): static
+    public function setDataSource(?ListDataSource $dataSource): static
     {
-        $this->sourceListModel = $sourceListModel;
+        $this->dataSource = $dataSource;
         return $this;
     }
 
@@ -92,10 +91,10 @@ class ListDefinition
             $this->filters->hash(),
             $this->filterFormName,
             $this->filterFormActionPageId,
-            'model' => $this->sourceListModel ? [
-                $this->sourceListModel->id,
-                $this->sourceListModel->type,
-                $this->sourceListModel->dc,
+            'model' => $this->dataSource ? [
+                $this->dataSource->id,
+                $this->dataSource->type,
+                $this->dataSource->dc,
             ] : null,
         ]));
     }

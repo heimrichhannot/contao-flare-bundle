@@ -2,55 +2,26 @@
 
 namespace HeimrichHannot\FlareBundle\List;
 
-use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
+use HeimrichHannot\FlareBundle\Filter\Collector\FilterCollectors;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinitionCollection;
-use HeimrichHannot\FlareBundle\Manager\FilterDefinitionManager;
-use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 
 class ListDefinitionBuilder
 {
-    private FilterDefinitionCollection $filters;
-    private ListModel $listModel;
+    private ListDataSource $dataSource;
     private string $filterFormName;
 
     public function __construct(
-        private readonly FilterDefinitionManager $filterDefinitionManager,
-    ) {
-        $this->filters = new FilterDefinitionCollection();
+        private readonly FilterCollectors $collectors,
+    ) {}
+
+    public function getDataSource(): ListDataSource
+    {
+        return $this->dataSource;
     }
 
-    public function getFilters(): FilterDefinitionCollection
+    public function setDataSource(ListDataSource $dataSource): static
     {
-        return $this->filters;
-    }
-
-    public function setFilters(FilterDefinitionCollection $filters): static
-    {
-        $this->filters = $filters;
-        return $this;
-    }
-
-    public function autoCollectFilters(): static
-    {
-        $this->filters = $this->filterDefinitionManager->collectListModelFilterDefinitions($this->listModel);
-        return $this;
-    }
-
-    public function addFilter(FilterDefinition $filterDefinition): static
-    {
-        $this->filters->add($filterDefinition);
-        return $this;
-    }
-
-    public function getListModel(): ListModel
-    {
-        return $this->listModel;
-    }
-
-    public function setListModel(ListModel $listModel): static
-    {
-        $this->listModel = $listModel;
+        $this->dataSource = $dataSource;
         return $this;
     }
 
@@ -65,20 +36,43 @@ class ListDefinitionBuilder
         return $this;
     }
 
+    private function autoCollectFilters(): ?FilterDefinitionCollection
+    {
+        if (!$collector = $this->collectors->match($this->dataSource)) {
+            return null;
+        }
+
+        $collection = $collector->collect($this->dataSource);
+
+        // $event = $this->eventDispatcher->dispatch(
+        //     new ListFiltersCollectedEvent(
+        //         filters: $collection,
+        //         listModel: $listModel,
+        //     )
+        // ); todo(@ericges): dispatch this event somewhere?
+
+        return $collection;
+    }
+
     public function build(): ListDefinition
     {
-        if (!isset($this->listModel)) {
-            throw new \RuntimeException('List model not set.');
+        if (!isset($this->dataSource)) {
+            throw new \RuntimeException('Dat source not set.');
+        }
+
+        if (!isset($this->filterFormName)) {
+            throw new \RuntimeException('Filter form name not set.');
         }
 
         $listDefinition = new ListDefinition(
-            type: $this->listModel->type,
-            dc: $this->listModel->dc,
-            sourceListModel: $this->listModel,
-            filterFormName: $this->filterFormName ?? 'fl' . $this->listModel->id,
+            type: $this->dataSource->getListType(),
+            dc: $this->dataSource->getListTable(),
+            dataSource: $this->dataSource,
+            filters: $this->autoCollectFilters(),
+            filterFormName: $this->filterFormName,
         );
 
-        $listDefinition->setProperties($this->listModel->row());
+        $listDefinition->setProperties($this->dataSource->getListData());
 
         return $listDefinition;
     }

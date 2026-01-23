@@ -112,7 +112,7 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         return $submittedData;
     }
 
-    public function hydrateForm(ListDefinition $list, FilterDefinition $filter, FormInterface $field): void
+    public function hydrateForm(FormInterface $field, ListDefinition $list, FilterDefinition $filter): void
     {
         if ($field->isSubmitted()) {
             return;

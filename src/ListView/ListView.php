@@ -7,6 +7,7 @@ use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinitionCollection;
+use HeimrichHannot\FlareBundle\List\ListDataSource;
 use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolverInterface;
@@ -65,9 +66,10 @@ class ListView
      *
      * @api Use in twig templates to access the source list model of a list, if provided.
      */
-    public function getListModel(): ?ListModel
+    public function getListModel(): ?ListDataSource
     {
-        return $this->getListDefinition()->getSourceListModel();
+        // todo: refactor
+        return $this->getListDefinition()->getDataSource();
     }
 
     public function getFilters(): FilterDefinitionCollection

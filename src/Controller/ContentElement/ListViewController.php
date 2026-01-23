@@ -16,8 +16,6 @@ use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
-use HeimrichHannot\FlareBundle\List\ListDefinitionBuilder;
 use HeimrichHannot\FlareBundle\List\ListDefinitionBuilderFactory;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
@@ -107,9 +105,8 @@ final class ListViewController extends AbstractContentElementController
             );
 
             $listDefinition = $this->listDefinitionBuilderFactory->create()
-                ->setListModel($listModel)
+                ->setDataSource($listModel)
                 ->setFilterFormName($filterFormName)
-                ->autoCollectFilters()
                 ->build();
 
             $listView = $this->listViewBuilderFactory->create()

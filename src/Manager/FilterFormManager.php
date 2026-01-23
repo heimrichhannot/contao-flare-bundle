@@ -56,20 +56,22 @@ readonly class FilterFormManager
             'label'        => false,
         ];
 
-        foreach ($filters->getIterator() as $filter)
+        foreach ($filters->getIterator() as $filterDescriptor)
             // Apply only non-intrinsic, published filters with a valid type
         {
-            $formType = $filter->getDescriptor()->getFormType();
-            $filterElement = $filter->getDescriptor()->getService();
-            $filterModel = $filter->getFilterModel();
-
-            if (!$formType || !$filterElement || !$filterModel)
-            {
+            if (!$filterDescriptor->getType() || $filterDescriptor->isIntrinsic()) {
                 continue;
             }
 
-            if (!$filterModel->published || !$filterModel->type || $filterModel->intrinsic)
-            {
+            if (!$filterElementDescriptor = $this->filterElementRegistry->get($filterDescriptor->getType())) {
+                continue;
+            }
+
+            if (!$formType = $filterElementDescriptor->getFormType()) {
+                continue;
+            }
+
+            if (!$filterElement = $filterElementDescriptor->getService()) {
                 continue;
             }
 
@@ -80,7 +82,7 @@ readonly class FilterFormManager
                 try
                 {
                     $choicesBuilder = $this->choicesBuilderFactory->createChoicesBuilder();
-                    $generatedOptions = $filterElement->getFormTypeOptions($filter, $choicesBuilder);
+                    $generatedOptions = $filterElement->getFormTypeOptions($filterDescriptor, $choicesBuilder);
 
                     $choicesOptions = $choicesBuilder->isEnabled() ? [
                         'choices' => $choicesBuilder->buildChoices(),
@@ -97,16 +99,18 @@ readonly class FilterFormManager
                     throw new FilterException(
                         \sprintf('[FLARE] Form denied: %s', $e->getMessage()),
                         code: $e->getCode(), previous: $e, method: $method,
-                        source: \sprintf('tl_flare_filter.id=%s', $filterModel->id)
+                        source: $filterDescriptor->getSourceFilterModel()
+                            ? \sprintf('tl_flare_filter.id=%s', $filterDescriptor->getSourceFilterModel()->id)
+                            : 'filter inlined'
                     );
                 }
             }
 
-            $childName = $filter->getFilterModel()->getFormName();
+            $childName = $filterDescriptor->getFilterFormFieldName();
 
             /** @var FilterFormChildOptionsEvent $event */
             $event = $this->eventDispatcher->dispatch(new FilterFormChildOptionsEvent(
-                filterContext: $filter,
+                filterContext: $filterDescriptor,
                 filterContextCollection: $filters,
                 parentFormName: $name,
                 formName: $childName,
@@ -184,7 +188,7 @@ readonly class FilterFormManager
                 );
             }
 
-            $filterElement->hydrateForm($listDefinition, $filterDefinition, $field);
+            $filterElement->hydrateForm($field, $listDefinition, $filterDefinition);
         }
     }
 

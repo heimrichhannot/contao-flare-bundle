@@ -159,7 +159,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
             : $filter->preselect;
     }
 
-    public function hydrateForm(ListDefinition $list, FilterDefinition $filter, FormInterface $field): void
+    public function hydrateForm(FormInterface $field, ListDefinition $list, FilterDefinition $filter): void
     {
         if ($field->isSubmitted()) {
             return;

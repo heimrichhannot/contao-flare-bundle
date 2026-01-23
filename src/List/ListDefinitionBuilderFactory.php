@@ -2,16 +2,16 @@
 
 namespace HeimrichHannot\FlareBundle\List;
 
-use HeimrichHannot\FlareBundle\Manager\FilterDefinitionManager;
+use HeimrichHannot\FlareBundle\Filter\Collector\FilterCollectors;
 
 readonly class ListDefinitionBuilderFactory
 {
     public function __construct(
-        private FilterDefinitionManager $filterDefinitionManager,
+        private FilterCollectors $collectors,
     ) {}
 
     public function create(): ListDefinitionBuilder
     {
-        return new ListDefinitionBuilder($this->filterDefinitionManager);
+        return new ListDefinitionBuilder($this->collectors);
     }
 }

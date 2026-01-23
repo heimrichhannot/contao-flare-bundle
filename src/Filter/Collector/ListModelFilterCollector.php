@@ -1,40 +1,47 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\Manager;
+namespace HeimrichHannot\FlareBundle\Filter\Collector;
 
 use Contao\Controller;
-use HeimrichHannot\FlareBundle\Event\ListFiltersCollectedEvent;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinitionCollection;
+use HeimrichHannot\FlareBundle\List\ListDataSource;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
-readonly class FilterDefinitionManager
+readonly class ListModelFilterCollector implements FilterCollectorInterface
 {
     public function __construct(
-        private EventDispatcherInterface $eventDispatcher,
         private ListTypeRegistry $listTypeRegistry,
     ) {}
 
-    public function collectListModelFilterDefinitions(ListModel $listModel): ?FilterDefinitionCollection
+    public function supports(ListDataSource $dataSource): bool
     {
-        if (!$listModel->id || !$table = $listModel->dc) {
+        return $dataSource instanceof ListModel;
+    }
+
+    public function collect(ListDataSource $dataSource): ?FilterDefinitionCollection
+    {
+        if (!$dataSource instanceof ListModel) {
+            throw new \InvalidArgumentException('The given data source is not a list model.');
+        }
+
+        if (!$dataSource->id || !$table = $dataSource->getTable()) {
             return null;
         }
 
-        if (!$this->listTypeRegistry->get($listModel->type)?->getService()) {
+        if (!$this->listTypeRegistry->get($dataSource->getListType())?->getService()) {
             return null;
         }
 
         Controller::loadDataContainer($table);
 
         /** @noinspection ProperNullCoalescingOperatorUsageInspection */
-        $filterModels = FilterModel::findByPid($listModel->id, published: true) ?? [];
+        $filterModels = FilterModel::findByPid($dataSource->id, published: true) ?? [];
         $collection = new FilterDefinitionCollection();
 
-        $addedFilters = [];
+        // $addedFilters = [];
 
         foreach ($filterModels as $filterModel)
             // Collect filters defined in the backend
@@ -43,12 +50,11 @@ readonly class FilterDefinitionManager
                 continue;
             }
 
-            $addedFilters[] = $filterModel->type;
-
             $filterDefinition = FilterDefinition::fromFilterModel($filterModel);
 
             $collection->add($filterDefinition);
 
+            // $addedFilters[] = $filterModel->type;
             // $filterElementAlias = $filterModel->type;
             // if (!$descriptor = $this->filterElementRegistry->get($filterElementAlias)) {
             //     continue;
@@ -59,7 +65,7 @@ readonly class FilterDefinitionManager
             // {
             //     $inScopeConfig = new InScopeConfig(
             //         contentContext: $context,
-            //         listModel: $listModel,
+            //         listModel: $dataSource,
             //         filterModel: $filterModel,
             //         descriptor: $descriptor,
             //     );
@@ -76,14 +82,6 @@ readonly class FilterDefinitionManager
             //                   This logic has to be moved to when the filters are invoked contextually.
         }
 
-        /** @var ListFiltersCollectedEvent $event */
-        $event = $this->eventDispatcher->dispatch(
-            new ListFiltersCollectedEvent(
-                filters: $collection,
-                listModel: $listModel,
-            )
-        );
-
-        return $event->filters;
+        return $collection;
     }
 }

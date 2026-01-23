@@ -20,11 +20,9 @@ use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Factory\PaginatorBuilderFactory;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\List\ListDefinition;
-use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use Symfony\Component\Form\FormInterface;
@@ -49,7 +47,6 @@ final class ListViewManager
     public function __construct(
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly FilterContextManager     $filterContextManager,
-        private readonly FilterElementRegistry    $filterElementRegistry,
         private readonly FilterFormManager        $formManager,
         private readonly ListQueryManager         $listQueryManager,
         private readonly ListItemProviderManager  $itemProvider,

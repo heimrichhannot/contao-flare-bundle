@@ -9,9 +9,10 @@ services:
     HeimrichHannot\FlareBundle\:
         resource: ../src
         exclude:
-            - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Dto,Event,Filter,Model,SortDescriptor}
+            - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Dto,Event,Model,SortDescriptor}
             - ../src/**/*{Builder,Collection}.php
             - ../src/EventListener/Integration
+            - ../src/Filter/*.php
             - ../src/ListView/*.php
             - ../src/Paginator/*.php
             - ../src/Registry/Descriptor

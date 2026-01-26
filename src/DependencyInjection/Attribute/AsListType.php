@@ -13,7 +13,7 @@ class AsListType
         string|null       $palette = null,
         mixed             ...$attributes
     ) {
-        $attributes['type'] = $type;
+        $attributes['type'] = $type ?? $attributes['alias'] ?? null;
         $attributes['dataContainer'] = $dataContainer;
         $attributes['palette'] = $palette;
 

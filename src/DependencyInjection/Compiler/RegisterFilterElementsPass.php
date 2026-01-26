@@ -84,7 +84,7 @@ class RegisterFilterElementsPass implements CompilerPassInterface
         if ($type = (string) ($attributes['type'] ?? null))
         {
             if ($type === 'default') {
-                throw new \InvalidArgumentException('The filter element type "default" is a reserved keyword.');
+                throw new \InvalidArgumentException('The filter element type "default" is reserved and cannot be used. Choose a different type name.');
             }
 
             return $type;

@@ -17,7 +17,7 @@ class AsFilterElement
      * @param ?string[]                        $scopes  Where the filter should be applied, e.g. 'list', 'reader'.
      */
     public function __construct(
-        string  $type,
+        ?string  $type = null,
         ?string $palette = null,
         ?string $formType = null,
         ?string $method = null,
@@ -25,7 +25,7 @@ class AsFilterElement
         ?bool   $isTargeted = null,
         mixed   ...$attributes
     ) {
-        $attributes['type'] = $type;
+        $attributes['type'] = $type ?? $attributes['alias'] ?? null;
         $attributes['palette'] = $palette;
         $attributes['formType'] = $formType;
         $attributes['method'] = $method;

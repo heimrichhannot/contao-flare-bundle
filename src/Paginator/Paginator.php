@@ -11,20 +11,22 @@ readonly class Paginator extends PaginatorConfig
      * @param \Closure(int): string $urlGenerator A closure that generates the URL for a given page number.
      */
     public function __construct(
-        private int      $currentPage,
-        private int      $itemsPerPage,
-        private int      $totalItems,
-        private int      $lastPage,
-        private ?int     $previousPage,
-        private ?int     $nextPage,
-        private int      $firstItemNumber,
-        private int      $lastItemNumber,
-        private bool     $hasNextPage,
-        private bool     $hasPreviousPage,
-        private \Closure $urlGenerator,
-        private ?string  $queryPrefix = null,
+        int                $currentPage,
+        int                $itemsPerPage,
+        protected int      $totalItems,
+        protected int      $lastPage,
+        protected ?int     $previousPage,
+        protected ?int     $nextPage,
+        protected int      $firstItemNumber,
+        protected int      $lastItemNumber,
+        protected bool     $hasNextPage,
+        protected bool     $hasPreviousPage,
+        protected \Closure $urlGenerator,
     ) {
-        parent::__construct($itemsPerPage);
+        parent::__construct(
+            currentPage: $currentPage,
+            itemsPerPage: $itemsPerPage,
+        );
     }
 
     /**
@@ -328,15 +330,6 @@ readonly class Paginator extends PaginatorConfig
     public function getPageUrl(int $page): string
     {
         return ($this->urlGenerator)($page);
-    }
-
-    /**
-     * Get the page parameter name for the current context.
-     * @api
-     */
-    public function getPageParameter(): string
-    {
-        return self::pageParam($this->queryPrefix);
     }
 
     /**

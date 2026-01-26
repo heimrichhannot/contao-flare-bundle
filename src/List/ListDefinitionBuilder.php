@@ -8,7 +8,6 @@ use HeimrichHannot\FlareBundle\Filter\FilterDefinitionCollection;
 class ListDefinitionBuilder
 {
     private ListDataSource $dataSource;
-    private string $filterFormName;
 
     public function __construct(
         private readonly FilterCollectors $collectors,
@@ -22,17 +21,6 @@ class ListDefinitionBuilder
     public function setDataSource(ListDataSource $dataSource): static
     {
         $this->dataSource = $dataSource;
-        return $this;
-    }
-
-    public function getFilterFormName(): ?string
-    {
-        return $this->filterFormName;
-    }
-
-    public function setFilterFormName(?string $filterFormName): static
-    {
-        $this->filterFormName = $filterFormName;
         return $this;
     }
 
@@ -60,16 +48,11 @@ class ListDefinitionBuilder
             throw new \RuntimeException('Dat source not set.');
         }
 
-        if (!isset($this->filterFormName)) {
-            throw new \RuntimeException('Filter form name not set.');
-        }
-
         $listDefinition = new ListDefinition(
             type: $this->dataSource->getListType(),
             dc: $this->dataSource->getListTable(),
             dataSource: $this->dataSource,
             filters: $this->autoCollectFilters(),
-            filterFormName: $this->filterFormName,
         );
 
         $listDefinition->setProperties($this->dataSource->getListData());

@@ -25,8 +25,7 @@ class ListViewResolver implements ListViewResolverInterface, ServiceSubscriberIn
     {
         return $this->getListViewManager()->getEntries(
             listDefinition: $dto->getListDefinition(),
-            paginatorConfig: $dto->getPaginatorConfig(),
-            sortDescriptor: $dto->getSortDescriptor(),
+            contentContext: $dto->getContentContext(),
         );
     }
 
@@ -64,7 +63,7 @@ class ListViewResolver implements ListViewResolverInterface, ServiceSubscriberIn
 
     public function getPaginatorConfig(ListView $dto): PaginatorConfig
     {
-        return new PaginatorConfig(itemsPerPage: 0);
+        return $dto->getPaginatorConfig();
     }
 
     /**
@@ -84,7 +83,7 @@ class ListViewResolver implements ListViewResolverInterface, ServiceSubscriberIn
     {
         return $this->getListViewManager()->getDetailsPageUrl(
             id: $id,
-            listModel: $dto->getListModel(),
+            listModel: $dto->getListDefinition()->getDataSource(),
             contentContext: $dto->getContentContext(),
         );
     }

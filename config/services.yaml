@@ -15,6 +15,7 @@ services:
             - ../src/Filter/*.php
             - ../src/ListView/*.php
             - ../src/Paginator/*.php
+            - ../src/Projector/Projection
             - ../src/Registry/Descriptor
 
     HeimrichHannot\FlareBundle\ListItemProvider\ListItemProvider: ~

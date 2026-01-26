@@ -87,9 +87,9 @@ class CalendarCurrentElement extends AbstractFilterElement
     #[AsEventListener('flare.filter_element.' . self::TYPE . '.invoking')]
     public function onInvoking(FilterElementInvokingEvent $event): void
     {
-        $filterModel = $event->getFilter()->getFilterModel();
+        $filterDefinition = $event->getFilterDefinition();
 
-        if (!$filterModel->isLimited && $event->getFilter()->getContentContext()->isReader()) {
+        if (!$filterDefinition->isLimited && $event->getFilterDefinition()->getContentContext()->isReader()) {
             $event->setShouldInvoke(false);
         }
     }

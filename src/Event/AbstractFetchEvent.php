@@ -5,6 +5,7 @@ namespace HeimrichHannot\FlareBundle\Event;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinitionCollection;
+use HeimrichHannot\FlareBundle\List\ListContext;
 use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
@@ -17,28 +18,20 @@ use Symfony\Contracts\EventDispatcher\Event;
 abstract class AbstractFetchEvent extends Event
 {
     public function __construct(
+        private readonly ListContext       $listContext,
         private readonly ListDefinition    $listDefinition,
         private ListItemProviderInterface  $itemProvider,
         private ListQueryBuilder           $listQueryBuilder,
-        private FilterDefinitionCollection $filters,
-        private readonly ?FormInterface    $form = null,
-        private readonly ?PaginatorConfig  $paginatorConfig = null,
-        private readonly ?SortDescriptor   $sortDescriptor = null,
     ) {}
+
+    public function getListContext(): ListContext
+    {
+        return $this->listContext;
+    }
 
     public function getListDefinition(): ListDefinition
     {
         return $this->listDefinition;
-    }
-
-    public function getPaginatorConfig(): PaginatorConfig
-    {
-        return $this->paginatorConfig;
-    }
-
-    public function getForm(): FormInterface
-    {
-        return $this->form;
     }
 
     public function getItemProvider(): ListItemProviderInterface
@@ -61,18 +54,9 @@ abstract class AbstractFetchEvent extends Event
         $this->listQueryBuilder = $listQueryBuilder;
     }
 
+    /** @deprecated use {@see self::getListDefinition()->getFilters()} instead} */
     public function getFilters(): FilterDefinitionCollection
     {
-        return $this->filters;
-    }
-
-    public function setFilters(FilterDefinitionCollection $filters): void
-    {
-        $this->filters = $filters;
-    }
-
-    public function getSortDescriptor(): ?SortDescriptor
-    {
-        return $this->sortDescriptor;
+        return $this->getListDefinition()->getFilters();
     }
 }

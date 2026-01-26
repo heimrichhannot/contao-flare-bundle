@@ -3,6 +3,8 @@
 namespace HeimrichHannot\FlareBundle\Dto;
 
 use Contao\ContentModel;
+use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
+use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Random\RandomException;
 
 class ContentContext
@@ -14,10 +16,12 @@ class ContentContext
     private string $uniqueId;
 
     public function __construct(
-        private readonly string        $context,
-        private readonly ?ContentModel $contentModel = null,
-        private readonly ?string       $formName = null,
-        private readonly ?int          $actionPage = null,
+        private string           $context,
+        private ?ContentModel    $contentModel = null,
+        private ?string          $formName = null,
+        private ?int             $actionPage = null,
+        private ?PaginatorConfig $paginatorConfig = null,
+        private ?SortDescriptor  $sortDescriptor = null,
     ) {}
 
     public function getContext(): string
@@ -25,9 +29,21 @@ class ContentContext
         return $this->context;
     }
 
+    public function setContext(string $context): static
+    {
+        $this->context = $context;
+        return $this;
+    }
+
     public function getContentModel(): ?ContentModel
     {
         return $this->contentModel;
+    }
+
+    public function setContentModel(?ContentModel $contentModel): static
+    {
+        $this->contentModel = $contentModel;
+        return $this;
     }
 
     public function getFormName(): ?string
@@ -35,9 +51,47 @@ class ContentContext
         return $this->formName;
     }
 
+    public function setFormName(?string $formName): static
+    {
+        $this->formName = $formName;
+        return $this;
+    }
+
     public function getActionPage(): ?int
     {
         return $this->actionPage;
+    }
+
+    public function setActionPage(?int $actionPage): static
+    {
+        $this->actionPage = $actionPage;
+        return $this;
+    }
+
+    /** @deprecated  */
+    public function getPaginatorConfig(): PaginatorConfig
+    {
+        return $this->paginatorConfig ?? new PaginatorConfig();
+    }
+
+    /** @deprecated  */
+    public function setPaginatorConfig(?PaginatorConfig $paginatorConfig): static
+    {
+        $this->paginatorConfig = $paginatorConfig;
+        return $this;
+    }
+
+    /** @deprecated  */
+    public function getSortDescriptor(): ?SortDescriptor
+    {
+        return $this->sortDescriptor;
+    }
+
+    /** @deprecated */
+    public function setSortDescriptor(?SortDescriptor $sortDescriptor): static
+    {
+        $this->sortDescriptor = $sortDescriptor;
+        return $this;
     }
 
     public function getUniqueId(): string
@@ -84,5 +138,10 @@ class ContentContext
     public function isTwig(): bool
     {
         return $this->getContext() === self::CONTEXT_TWIG;
+    }
+
+    public static function create(string $context): static
+    {
+        return new static($context);
     }
 }

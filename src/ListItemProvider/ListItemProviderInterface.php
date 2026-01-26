@@ -3,6 +3,8 @@
 namespace HeimrichHannot\FlareBundle\ListItemProvider;
 
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
+use HeimrichHannot\FlareBundle\List\ListContext;
+use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
@@ -19,8 +21,9 @@ interface ListItemProviderInterface
      * @return int Returns the total number of entries matching the given filters.
      */
     public function fetchCount(
-        ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
+        ListQueryBuilder $listQueryBuilder,
+        ListDefinition   $listDefinition,
+        ListContext      $listContext,
     ): int;
 
     /**

@@ -17,6 +17,7 @@ class FilterDefinition
         private bool         $intrinsic,
         private ?FilterModel $sourceFilterModel = null,
         private ?string      $filterFormFieldName = null,
+        private ?string      $targetAlias = null,
     ) {}
 
     public function getType(): string
@@ -75,10 +76,21 @@ class FilterDefinition
         return $this;
     }
 
+    public function setTargetAlias(?string $targetAlias): static
+    {
+        $this->targetAlias = $targetAlias;
+        return $this;
+    }
+
+    public function getTargetAlias(): ?string
+    {
+        return $this->targetAlias;
+    }
+
     public function __isset(string $name): bool
     {
         return match ($name) {
-            'type', 'title', 'intrinsic' => true,
+            'type', 'title', 'intrinsic', 'targetAlias', 'target_alias' => true,
             default => $this->issetProperty($name),
         };
     }
@@ -89,6 +101,7 @@ class FilterDefinition
             'type' => $this->setType($value),
             'title' => $this->setTitle($value),
             'intrinsic' => $this->setIntrinsic($value),
+            'targetAlias', 'target_alias' => $this->setTargetAlias($value),
             default => $this->setProperty($name, $value),
         };
     }
@@ -99,6 +112,7 @@ class FilterDefinition
             'type' => $this->getType(),
             'title' => $this->getTitle(),
             'intrinsic' => $this->isIntrinsic(),
+            'targetAlias', 'target_alias' => $this->getTargetAlias(),
             default => $this->getProperty($name),
         };
     }
@@ -109,6 +123,7 @@ class FilterDefinition
             'title' => $this->title,
             'type' => $this->type,
             'intrinsic' => $this->intrinsic,
+            'targetAlias' => $this->targetAlias,
         ]);
     }
 
@@ -131,6 +146,7 @@ class FilterDefinition
             intrinsic: $filterModel->intrinsic,
             sourceFilterModel: $filterModel,
             filterFormFieldName: $filterModel->getFormName(),
+            targetAlias: $filterModel->targetAlias,
         );
 
         $self->setProperties($filterModel->row());

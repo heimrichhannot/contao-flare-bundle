@@ -6,8 +6,11 @@ namespace HeimrichHannot\FlareBundle\ListItemProvider;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DBALException;
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
+use HeimrichHannot\FlareBundle\List\ListContext;
+use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
@@ -58,7 +61,7 @@ class ListItemProvider extends AbstractListItemProvider
      */
     public function fetchIds(
         ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
+        ContentContext          $contentContext,
         ?SortDescriptor         $sortDescriptor = null,
         ?Paginator              $paginator = null,
     ): array {
@@ -78,17 +81,19 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws FilterException
      */
     protected function fetchEntriesOrIds(
-        ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ?SortDescriptor         $sortDescriptor = null,
-        ?Paginator              $paginator = null,
-        ?bool                   $returnIds = null,
+        ListQueryBuilder $listQueryBuilder,
+        ListDefinition   $listDefinition,
+        ContentContext   $contentContext,
+        ?SortDescriptor  $sortDescriptor = null,
+        ?Paginator       $paginator = null,
+        ?bool            $returnIds = null,
     ): array {
         $returnIds ??= false;
 
         $query = $this->getListQueryManager()->populate(
             listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
+            listDefinition: $listDefinition,
+            contentContext: $contentContext,
             order: $sortDescriptor?->toSql($this->getConnection()->quoteIdentifier(...)),
             limit: $paginator?->getItemsPerPage() ?: null,
             offset: $paginator?->getOffset() ?: null,
@@ -121,11 +126,13 @@ class ListItemProvider extends AbstractListItemProvider
      */
     public function fetchCount(
         ListQueryBuilder $listQueryBuilder,
-        FilterContextCollection $filters,
+        ListDefinition   $listDefinition,
+        ListContext      $listContext,
     ): int {
         $query = $this->getListQueryManager()->populate(
             listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
+            listDefinition: $listDefinition,
+            listContext: $listContext,
             isCounting: true
         );
 

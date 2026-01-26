@@ -4,6 +4,7 @@ namespace HeimrichHannot\FlareBundle\Manager;
 
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\ListType\PrepareListQueryInterface;
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Dto\FilterInvocationDto;
 use HeimrichHannot\FlareBundle\Dto\ParameterizedSqlQuery;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokedEvent;
@@ -15,10 +16,13 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
+use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\List\ListContext;
 use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -35,6 +39,7 @@ class ListQueryManager
     public function __construct(
         private readonly Connection                $connection,
         private readonly EventDispatcherInterface  $eventDispatcher,
+        private readonly FilterElementRegistry     $filterElementRegistry,
         private readonly FilterQueryBuilderFactory $filterQueryBuilderFactory,
         private readonly ListTypeRegistry          $listTypeRegistry,
     ) {}
@@ -69,10 +74,7 @@ class ListQueryManager
         $builder->select('*', of: self::ALIAS_MAIN, allowAsterisk: true);
         $builder->groupBy('id', self::ALIAS_MAIN);
 
-        $event = new ListQueryPrepareEvent(
-            listDefinition: $list,
-            listQueryBuilder: $builder
-        );
+        $event = new ListQueryPrepareEvent(listDefinition: $list, listQueryBuilder: $builder);
 
         $listType = $listTypeDescriptor->getService();
         if ($listType instanceof PrepareListQueryInterface) {
@@ -97,18 +99,19 @@ class ListQueryManager
      * @throws FilterException
      */
     public function populate(
-        ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ?string                 $order = null,
-        ?int                    $limit = null,
-        ?int                    $offset = null,
-        bool                    $isCounting = false,
-        bool                    $onlyId = false,
-        ?array                  $select = null,
+        ListQueryBuilder $listQueryBuilder,
+        ListDefinition   $listDefinition,
+        ListContext      $listContext,
+        ?string          $order = null,
+        ?int             $limit = null,
+        ?int             $offset = null,
+        bool             $isCounting = false,
+        bool             $onlyId = false,
+        ?array           $select = null,
     ): ParameterizedSqlQuery {
-        if (!Str::isValidSqlName($filters->getTable())) {
+        if (!Str::isValidSqlName($table = $listDefinition->dc)) {
             throw new FilterException(
-                \sprintf('[FLARE] Invalid table name: %s', $filters->getTable()), method: __METHOD__,
+                \sprintf('[FLARE] Invalid table name: %s', $table), method: __METHOD__,
             );
         }
 
@@ -116,7 +119,8 @@ class ListQueryManager
         {
             $invoked = $this->invokeFilters(
                 listQueryBuilder: $listQueryBuilder,
-                filters: $filters,
+                listDefinition: $listDefinition,
+                listContext: $listContext,
             );
         }
         catch (AbortFilteringException)
@@ -166,7 +170,7 @@ class ListQueryManager
                     "%s AS %s",
                     $this->connection->quoteIdentifier(self::ALIAS_MAIN . '.id'),
                     $this->connection->quoteIdentifier('id')
-                )
+                ),
             ],
             \is_array($select) => $select,
             default => null,
@@ -192,14 +196,23 @@ class ListQueryManager
      */
     public function invokeFilters(
         ListQueryBuilder $listQueryBuilder,
-        FilterContextCollection $filters
+        ListDefinition   $listDefinition,
+        ListContext      $listContext,
     ): FilterInvocationDto {
         $invoked = new FilterInvocationDto();
 
-        foreach ($filters as $i => $filter)
+        /**
+         * @var int $i
+         * @var FilterDefinition $filter
+         */
+        foreach ($listDefinition->getFilters() as $i => $filter)
         {
-            $targetAlias = ($filter->getDescriptor()->isTargeted() && $filter->getFilterModel()->targetAlias)
-                ? $filter->getFilterModel()->targetAlias
+            if (!$filterElementDescriptor = $this->filterElementRegistry->get($filter->getType())) {
+                continue;
+            }
+
+            $targetAlias = ($filterElementDescriptor->isTargeted() && $filter->getTargetAlias())
+                ? $filter->getTargetAlias()
                 : self::ALIAS_MAIN;
 
             if (!$table = $listQueryBuilder->getTable($targetAlias)) {
@@ -210,7 +223,12 @@ class ListQueryManager
 
             $filterQueryBuilder = $this->filterQueryBuilderFactory->create($targetAlias);
 
-            $status = $this->invokeFilter(filterQueryBuilder: $filterQueryBuilder, filter: $filter);
+            $status = $this->invokeFilter(
+                filterQueryBuilder: $filterQueryBuilder,
+                listDefinition: $listDefinition,
+                filterDefinition: $filter,
+                contentContext: $contentContext,
+            );
 
             if ($status === self::FILTER_SKIP)
             {
@@ -250,10 +268,14 @@ class ListQueryManager
      */
     public function invokeFilter(
         FilterQueryBuilder $filterQueryBuilder,
-        FilterContext      $filter,
+        ListDefinition     $listDefinition,
+        FilterDefinition   $filterDefinition,
+        ContentContext     $contentContext,
         ?bool              $dispatchEvent = null,
     ): int {
-        $config = $filter->getDescriptor();
+        if (!$config = $this->filterElementRegistry->get($filterDefinition->getType())) {
+            return self::FILTER_SKIP;
+        }
 
         $service = $config->getService();
         $method = $config->getMethod() ?? '__invoke';
@@ -267,7 +289,13 @@ class ListQueryManager
 
         if ($dispatchEvent ?? true)
         {
-            $event = $this->eventDispatcher->dispatch(new FilterElementInvokingEvent($filter, $callback, true));
+            $event = $this->eventDispatcher->dispatch(new FilterElementInvokingEvent(
+                $listDefinition,
+                $filterDefinition,
+                $contentContext,
+                callback: $callback,
+                shouldInvoke: true,
+            ));
 
             $shouldInvoke = $event->shouldInvoke();
             $callback = $event->getCallback();
@@ -279,7 +307,7 @@ class ListQueryManager
 
         try
         {
-            $callback($filter, $filterQueryBuilder);
+            $callback($filterDefinition, $filterQueryBuilder);
         }
         catch (AbortFilteringException)
         {
@@ -292,13 +320,13 @@ class ListQueryManager
             throw new FilterException(
                 \sprintf('[FLARE] Query denied: %s', $e->getMessage()),
                 code: $e->getCode(), previous: $e, method: $errorMethod,
-                source: \sprintf('tl_flare_filter.id=%s', $filter->getFilterModel()?->id ?: 'unknown'),
+                source: \sprintf('tl_flare_filter.id=%s', $filterDefinition->getFilterModel()?->id ?: 'unknown'),
             );
         }
 
         if ($dispatchEvent ?? true)
         {
-            $this->eventDispatcher->dispatch(new FilterElementInvokedEvent($filter, $filterQueryBuilder, $method));
+            $this->eventDispatcher->dispatch(new FilterElementInvokedEvent($filterDefinition, $filterQueryBuilder, $method));
         }
 
         return self::FILTER_OK;

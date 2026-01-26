@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Manager;
 
+use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
@@ -11,6 +12,7 @@ use HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent;
 use HeimrichHannot\FlareBundle\Event\FilterFormChildOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
+use HeimrichHannot\FlareBundle\List\ListContext;
 use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use Symfony\Component\Form\Exception\OutOfBoundsException;
@@ -30,9 +32,9 @@ readonly class FilterFormManager
     /**
      * @throws FilterException If the form could not be built
      */
-    public function buildForm(ListDefinition $listDefinition): FormInterface
+    public function buildForm(ListContext $listContext, ListDefinition $listDefinition): FormInterface
     {
-        $name = $listDefinition->getFilterFormName();
+        $name = $listContext->get('form.name', 'flare');
         $filters = $listDefinition->getFilters();
 
         $formOptions = [
@@ -44,7 +46,7 @@ readonly class FilterFormManager
             ],
         ];
 
-        if ($action = $listDefinition->getFormAction()) {
+        if ($action = $this->getFormAction($listContext)) {
             $formOptions['action'] = $action;
         }
 
@@ -79,7 +81,7 @@ readonly class FilterFormManager
             $builder->add($childName, $formType, $options);
         }
 
-        /**
+        /*
          * **Always add submit buttons in templates, not in the form builder!**
          *
          * ```php
@@ -100,6 +102,23 @@ readonly class FilterFormManager
         $builder = $formBuildEvent->formBuilder;
 
         return $builder->getForm();
+    }
+
+    public function getFormAction(ListContext $listContext): ?string
+    {
+        if (!$jumpTo = $listContext->get('form.action_page')) {
+            return null;
+        }
+
+        if (!\is_numeric($jumpTo)) {
+            return null;
+        }
+
+        if (!$pageModel = PageModel::findByPk((int) $jumpTo)) {
+            return null;
+        }
+
+        return $pageModel->getAbsoluteUrl();
     }
 
     /**

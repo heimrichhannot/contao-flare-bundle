@@ -11,15 +11,19 @@ use Contao\StringUtil;
 use Contao\Template;
 use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
+use HeimrichHannot\FlareBundle\Factory\PaginatorBuilderFactory;
+use HeimrichHannot\FlareBundle\List\ListContextBuilderFactory;
 use HeimrichHannot\FlareBundle\List\ListDefinitionBuilderFactory;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
-use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
+use HeimrichHannot\FlareBundle\Projector\InteractiveProjector;
+use HeimrichHannot\FlareBundle\Projector\Projectors;
+use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -33,15 +37,18 @@ final class ListViewController extends AbstractContentElementController
     public const TYPE = 'flare_listview';
 
     public function __construct(
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly KernelInterface          $kernel,
+        private readonly EventDispatcherInterface     $eventDispatcher,
+        private readonly KernelInterface              $kernel,
+        private readonly ListContextBuilderFactory    $listContextBuilderFactory,
         private readonly ListDefinitionBuilderFactory $listDefinitionBuilderFactory,
-        private readonly ListViewBuilderFactory   $listViewBuilderFactory,
-        private readonly LoggerInterface          $logger,
-        private readonly ScopeMatcher             $scopeMatcher,
-        private readonly SymfonyResponseTagger    $responseTagger,
-        private readonly TranslationManager       $translationManager,
-        private readonly TranslatorInterface      $translator,
+        private readonly ListViewBuilderFactory       $listViewBuilderFactory,
+        private readonly LoggerInterface              $logger,
+        private readonly Projectors                   $projectors,
+        private readonly ScopeMatcher                 $scopeMatcher,
+        private readonly SymfonyResponseTagger        $responseTagger,
+        private readonly TranslationManager           $translationManager,
+        private readonly TranslatorInterface          $translator,
+        private readonly PaginatorBuilderFactory      $paginatorBuilder,
     ) {}
 
     /**
@@ -93,28 +100,43 @@ final class ListViewController extends AbstractContentElementController
         {
             $filterFormName = $contentModel->flare_formName ?: 'fl' . $listModel->id;
 
-            $contentContext = new ContentContext(
-                context: ContentContext::CONTEXT_LIST,
-                contentModel: $contentModel,
-                formName: $filterFormName,
-                actionPage: ((int) $contentModel->flare_jumpTo) ?: null,
-            );
+            $paginatorConfig = $this->paginatorBuilder->create()
+                ->fromConfig(new PaginatorConfig(
+                    itemsPerPage: (int) ($contentModel->flare_itemsPerPage ?: 0),
+                ))
+                ->queryPrefix($filterFormName)
+                ->handleRequest($request)
+                ->buildConfig();
 
-            $paginatorConfig = new PaginatorConfig(
-                itemsPerPage: (int) ($contentModel->flare_itemsPerPage ?: 0)
-            );
+            $sortDescriptor = $this->getSortDescriptor($listModel);
+
+            $listContext = $this->listContextBuilderFactory->create()
+                ->setContext(InteractiveProjector::getContext())
+                ->setPaginatorConfig($paginatorConfig)
+                ->setSortDescriptor($sortDescriptor)
+                ->setContentModel($contentModel)
+                ->set('form.action_page', (int) $contentModel->flare_jumpTo)
+                ->set('form.name', $filterFormName)
+                ->build();
 
             $listDefinition = $this->listDefinitionBuilderFactory->create()
                 ->setDataSource($listModel)
-                ->setFilterFormName($filterFormName)
                 ->build();
 
+            if (!$projector = $this->projectors->get($listContext->context)) {
+                throw new FlareException("List context '{$listContext->context}' has not projector registered.");
+            }
+
+            $projection = $projector->project($listContext, $listDefinition);
+
+            /*
             $listView = $this->listViewBuilderFactory->create()
                 ->setContentContext($contentContext)
                 ->setListDefinition($listDefinition)
                 ->setPaginatorConfig($paginatorConfig)
                 ->setSortDescriptor(null)
                 ->build();
+            */
         }
         catch (FlareException $e)
         {
@@ -128,11 +150,8 @@ final class ListViewController extends AbstractContentElementController
 
         $event = $this->eventDispatcher->dispatch(
             new ListViewRenderEvent(
-                contentContext: $contentContext,
-                contentModel: $contentModel,
+                listContext: $listContext,
                 listModel: $listModel,
-                listView: $listView,
-                paginatorConfig: $paginatorConfig,
                 template: $template,
             )
         );
@@ -165,5 +184,26 @@ final class ListViewController extends AbstractContentElementController
             $this->translationManager->listModel($listModel),
             $listModel->dc
         ));
+    }
+
+    /**
+     * Get the sort descriptor for a given list model.
+     *
+     * @return SortDescriptor|null The sort descriptor, or null if none is found.
+     *
+     * @throws FlareException bubbling from {@see SortDescriptor::fromSettings()}
+     */
+    public function getSortDescriptor(ListModel $listModel): ?SortDescriptor
+    {
+        if (!$listModel->sortSettings) {
+            return null;
+        }
+
+        $sortSettings = StringUtil::deserialize($listModel->sortSettings);
+        if (!$sortSettings || !\is_array($sortSettings)) {
+            return null;
+        }
+
+        return SortDescriptor::fromSettings($sortSettings);
     }
 }

@@ -2,20 +2,34 @@
 
 namespace HeimrichHannot\FlareBundle\Event;
 
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
+use HeimrichHannot\FlareBundle\List\ListDefinition;
 use Symfony\Contracts\EventDispatcher\Event;
 
 class FilterElementInvokingEvent extends Event
 {
     public function __construct(
-        private readonly FilterContext $filter,
-        private \Closure               $callback,
-        private bool                   $shouldInvoke,
+        private readonly ListDefinition   $listDefinition,
+        private readonly FilterDefinition $filterDefinition,
+        private readonly ContentContext   $contentContext,
+        private \Closure                  $callback,
+        private bool                      $shouldInvoke,
     ) {}
 
-    public function getFilter(): FilterContext
+    public function getListDefinition(): ListDefinition
     {
-        return $this->filter;
+        return $this->listDefinition;
+    }
+
+    public function getFilterDefinition(): FilterDefinition
+    {
+        return $this->filterDefinition;
+    }
+
+    public function getContentContext(): ContentContext
+    {
+        return $this->contentContext;
     }
 
     public function getCallback(): callable

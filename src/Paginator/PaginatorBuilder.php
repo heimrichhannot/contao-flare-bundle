@@ -25,6 +25,7 @@ class PaginatorBuilder
     public function fromConfig(PaginatorConfig $config): static
     {
         $this->itemsPerPage = $config->getItemsPerPage();
+        $this->currentPage = $config->getCurrentPage();
         return $this;
     }
 
@@ -119,7 +120,14 @@ class PaginatorBuilder
             hasNextPage: $currentPage < $lastPage,
             hasPreviousPage: $currentPage > 1,
             urlGenerator: $this->makeUrlGenerator(),
-            queryPrefix: $this->queryPrefix,
+        );
+    }
+
+    public function buildConfig(): PaginatorConfig
+    {
+        return new PaginatorConfig(
+            currentPage: $this->currentPage,
+            itemsPerPage: $this->itemsPerPage,
         );
     }
 
@@ -137,7 +145,6 @@ class PaginatorBuilder
             hasNextPage: false,
             hasPreviousPage: false,
             urlGenerator: $this->makeUrlGenerator(),
-            queryPrefix: $this->queryPrefix,
         );
     }
 }

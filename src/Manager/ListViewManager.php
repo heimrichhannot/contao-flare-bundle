@@ -47,11 +47,8 @@ final class ListViewManager
     public function __construct(
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly FilterContextManager     $filterContextManager,
-        private readonly FilterFormManager        $formManager,
         private readonly ListQueryManager         $listQueryManager,
         private readonly ListItemProviderManager  $itemProvider,
-        private readonly PaginatorBuilderFactory  $paginatorBuilderFactory,
-        private readonly RequestStack             $requestStack,
     ) {}
 
     /**
@@ -89,38 +86,6 @@ final class ListViewManager
     }
 
     /**
-     * Get the form for a given list model and form name.
-     *
-     * @param ListModel      $listModel The list model.
-     * @param ContentContext $contentContext The content context.
-     *
-     * @return FormInterface The form.
-     *
-     * @throws FilterException If the request is not available.
-     */
-    public function getForm(ListDefinition $listDefinition): FormInterface
-    {
-        $cacheKey = $listDefinition->hash();
-        if (isset($this->formCache[$cacheKey])) {
-            return $this->formCache[$cacheKey];
-        }
-
-        if (!$request = $this->requestStack->getCurrentRequest()) {
-            throw new FilterException('Request not available', source: __METHOD__);
-        }
-
-        $form = $this->formManager->buildForm($listDefinition);
-        $form->handleRequest($request);
-
-        $this->formManager->hydrateForm($form, $listDefinition);
-        // $this->formManager->hydrateFilterElements($form, $listDefinition);
-
-        $this->formCache[$cacheKey] = $form;
-
-        return $form;
-    }
-
-    /**
      * Get the sort descriptor for a given list model and form name.
      *
      * @return SortDescriptor|null The sort descriptor, or null if none is found.
@@ -141,71 +106,6 @@ final class ListViewManager
         return SortDescriptor::fromSettings($sortSettings);
     }
 
-    /**
-     * Get the paginator for a given list model, form name, and paginator configuration.
-     *
-     * @param ListModel       $listModel       The list model.
-     * @param ContentContext  $contentContext  The content context.
-     * @param PaginatorConfig $paginatorConfig The paginator configuration.
-     *
-     * @return Paginator The paginator.
-     *
-     * @throws FlareException If an error occurs while fetching the total count of entries or building the paginator.
-     */
-    public function getPaginator(
-        ListDefinition $listDefinition,
-        PaginatorConfig $paginatorConfig,
-    ): Paginator {
-        $form = $this->getForm($listDefinition);
-
-        if ($form->isSubmitted() && !$form->isValid()) {
-            return $this->paginatorBuilderFactory->create()->buildEmpty();
-        }
-
-        $cacheKey = $listDefinition->hash() . '.' . $paginatorConfig;
-        if (isset($this->listPaginatorCache[$cacheKey])) {
-            return $this->listPaginatorCache[$cacheKey];
-        }
-
-        $itemProvider = $this->itemProvider->ofList($listDefinition);
-
-        try
-        {
-            $listQueryBuilder = $this->listQueryManager->prepare($listDefinition);
-            $filters = clone $listDefinition->getFilters();
-
-            $event = $this->eventDispatcher->dispatch(
-                new FetchCountEvent(
-                    listDefinition: $listDefinition,
-                    itemProvider: $itemProvider,
-                    listQueryBuilder: $listQueryBuilder,
-                    filters: $filters,
-                    form: $form,
-                    paginatorConfig: $paginatorConfig,
-                )
-            );
-
-            $itemProvider = $event->getItemProvider();
-            $listQueryBuilder = $event->getListQueryBuilder();
-            $filters = $event->getFilters();
-
-            $total = $itemProvider->fetchCount($listQueryBuilder, $filters);
-        }
-        catch (\Exception $e)
-        {
-            throw new FlareException($e->getMessage(), $e->getCode(), $e);
-        }
-
-        $formName = $listDefinition->getFilterFormName();
-
-        return $this->listPaginatorCache[$cacheKey] = $this->paginatorBuilderFactory
-            ->create()
-            ->fromConfig($paginatorConfig)
-            ->queryPrefix($formName)
-            ->handleRequest()
-            ->totalItems($total)
-            ->build();
-    }
 
     /**
      * Get the entries for a given list model, form name, and optional paginator configuration.
@@ -220,9 +120,8 @@ final class ListViewManager
      * @throws FlareException If an error occurs while fetching the entries.
      */
     public function getEntries(
-        ListDefinition  $listDefinition,
-        PaginatorConfig $paginatorConfig,
-        ?SortDescriptor $sortDescriptor = null,
+        ListDefinition $listDefinition,
+        ContentContext $contentContext,
     ): array {
         $form = $this->getForm($listDefinition);
 
@@ -230,6 +129,8 @@ final class ListViewManager
         {
             return [];
         }
+
+        $paginatorConfig = $contentContext->getPaginatorConfig();
 
         $cacheKey = $listDefinition->hash() . '.' . $paginatorConfig;
         if (isset($this->listEntriesCache[$cacheKey])) {

@@ -5,13 +5,9 @@ namespace HeimrichHannot\FlareBundle\ListView;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
-use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
-use HeimrichHannot\FlareBundle\Filter\FilterDefinitionCollection;
-use HeimrichHannot\FlareBundle\List\ListDataSource;
 use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolverInterface;
-use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Symfony\Component\Form\FormInterface;
@@ -26,9 +22,11 @@ class ListView
 {
     private iterable $entries;
     private FormInterface $formComponent;
-    private Paginator $paginator;
     private array $models = [];
+    private Paginator $paginator;
+    private ?PaginatorConfig $paginatorConfig = null;
     private array $readerUrls = [];
+    private ?SortDescriptor $sortDescriptor = null;
 
     /**
      * @internal Use {@see ListViewBuilder} (inject {@see ListViewBuilderFactory}) to create a new instance.
@@ -37,8 +35,6 @@ class ListView
         private readonly ContentContext            $contentContext,
         private readonly ListDefinition            $listDefinition,
         private readonly ListViewResolverInterface $resolver,
-        private ?PaginatorConfig                   $paginatorConfig = null,
-        private ?SortDescriptor                    $sortDescriptor = null,
     ) {}
 
     /**
@@ -59,29 +55,6 @@ class ListView
     public function getListDefinition(): ListDefinition
     {
         return $this->listDefinition;
-    }
-
-    /**
-     * Returns the source list model for this list view.
-     *
-     * @api Use in twig templates to access the source list model of a list, if provided.
-     */
-    public function getListModel(): ?ListDataSource
-    {
-        // todo: refactor
-        return $this->getListDefinition()->getDataSource();
-    }
-
-    public function getFilters(): FilterDefinitionCollection
-    {
-        return $this->getListDefinition()->getFilters();
-    }
-
-    public function addFilterDefinition(FilterDefinition $filterDefinition): static
-    {
-        // todo(@ericges): Add more methods to ease filter definition management on this class
-        $this->getListDefinition()->getFilters()->add($filterDefinition);
-        return $this;
     }
 
     /**

@@ -3,10 +3,12 @@
 namespace HeimrichHannot\FlareBundle\Manager;
 
 use Doctrine\DBAL\Connection;
+use HeimrichHannot\FlareBundle\Contract\ListType\PrepareListQueryInterface;
 use HeimrichHannot\FlareBundle\Dto\FilterInvocationDto;
 use HeimrichHannot\FlareBundle\Dto\ParameterizedSqlQuery;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokedEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokingEvent;
+use HeimrichHannot\FlareBundle\Event\ListQueryPrepareEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -16,10 +18,8 @@ use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
-use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
-use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -36,7 +36,6 @@ class ListQueryManager
         private readonly Connection                $connection,
         private readonly EventDispatcherInterface  $eventDispatcher,
         private readonly FilterQueryBuilderFactory $filterQueryBuilderFactory,
-        private readonly FlareCallbackManager      $callbackManager,
         private readonly ListTypeRegistry          $listTypeRegistry,
     ) {}
 
@@ -47,16 +46,17 @@ class ListQueryManager
     {
         $doCache = !$noCache;
 
-        if ($doCache && $hit = $this->prepCache[$list->id] ?? null) {
+        $cacheKey = $list->hash();
+        if ($doCache && $hit = $this->prepCache[$cacheKey] ?? null) {
             return clone $hit;
         }
 
-        /** @var ListTypeDescriptor $type */
-        if (!$type = $this->listTypeRegistry->get($list->type)) {
+        /** @var ListTypeDescriptor $listTypeDescriptor */
+        if (!($listTypeDescriptor = $this->listTypeRegistry->get($list->type)) instanceof ListTypeDescriptor) {
             throw new FlareException(\sprintf('No list type registered for type "%s".', $list->type), method: __METHOD__);
         }
 
-        if (!$mainTable = $list->dc ?? $type->getDataContainer()) {
+        if (!$mainTable = $list->dc ?? $listTypeDescriptor->getDataContainer()) {
             throw new FlareException('No data container table set.', method: __METHOD__);
         }
 
@@ -69,18 +69,25 @@ class ListQueryManager
         $builder->select('*', of: self::ALIAS_MAIN, allowAsterisk: true);
         $builder->groupBy('id', self::ALIAS_MAIN);
 
-        $callbacks = $this->callbackManager->getListCallbacks($list->type, 'query.configure');
+        $event = new ListQueryPrepareEvent(
+            listDefinition: $list,
+            listQueryBuilder: $builder
+        );
 
-        CallbackHelper::call($callbacks, [], [
-            ListModel::class => null, // todo(@ericges): Replace callback with event
-            ListDefinition::class => $list,
-            ListQueryBuilder::class => $builder,
-        ]);
+        $listType = $listTypeDescriptor->getService();
+        if ($listType instanceof PrepareListQueryInterface) {
+            $listType->onListQueryPrepareEvent($event);
+        }
+
+        /** @var ListQueryPrepareEvent $event */
+        $event = $this->eventDispatcher->dispatch($event);
+
+        $builder = $event->getListQueryBuilder();
 
         $builder->select('id', of: self::ALIAS_MAIN, as: 'id');
 
         if ($doCache) {
-            $this->prepCache[$list->id] = clone $builder;
+            $this->prepCache[$cacheKey] = clone $builder;
         }
 
         return $builder;

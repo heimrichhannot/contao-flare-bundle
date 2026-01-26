@@ -11,8 +11,8 @@ use HeimrichHannot\FlareBundle\Contract\ListType\ListItemProviderContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
+use HeimrichHannot\FlareBundle\Event\ListQueryPrepareEvent;
 use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
-use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\List\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
 use HeimrichHannot\FlareBundle\ListItemProvider\EventsListItemProvider;
@@ -42,10 +42,11 @@ class EventsListType extends AbstractListType implements ListItemProviderContrac
         return null;
     }
 
-    #[AsListCallback(self::TYPE, 'query.configure')]
-    public function configureQuery(ListQueryBuilder $builder): void
+    public function onListQueryPrepareEvent(ListQueryPrepareEvent $event): void
     {
         $aliasArchive = 'events_archive';
+
+        $builder = $event->getListQueryBuilder();
 
         $builder->innerJoin(
             table: 'tl_calendar',

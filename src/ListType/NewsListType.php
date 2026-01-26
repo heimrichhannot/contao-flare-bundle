@@ -10,8 +10,8 @@ use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageSchemaOrgConfig;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
+use HeimrichHannot\FlareBundle\Event\ListQueryPrepareEvent;
 use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
-use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\List\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\Util\Str;
 
@@ -25,9 +25,10 @@ class NewsListType extends AbstractListType
         private readonly HtmlDecoder $htmlDecoder,
     ) {}
 
-    #[AsListCallback(self::TYPE, 'query.configure')]
-    public function prepareQuery(ListQueryBuilder $builder): void
+    public function onListQueryPrepareEvent(ListQueryPrepareEvent $event): void
     {
+        $builder = $event->getListQueryBuilder();
+
         $builder->innerJoin(
             table: 'tl_news_archive',
             as: self::ALIAS_ARCHIVE,

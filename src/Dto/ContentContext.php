@@ -35,6 +35,11 @@ class ContentContext
         return $this->formName;
     }
 
+    public function getActionPage(): ?int
+    {
+        return $this->actionPage;
+    }
+
     public function getUniqueId(): string
     {
         if (isset($this->uniqueId)) {

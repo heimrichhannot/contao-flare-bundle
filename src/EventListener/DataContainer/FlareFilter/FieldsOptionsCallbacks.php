@@ -142,7 +142,7 @@ readonly class FieldsOptionsCallbacks
             return [];
         }
 
-        $inferrer = new PtableInferrer($filterModel, $listModel);
+        $inferrer = new PtableInferrer($filterModel, $listModel->dc);
 
         if ($ptable = $inferrer->getDcaMainPtable())
         {

@@ -60,7 +60,7 @@ class GenericDataContainerListType extends AbstractListType implements DataConta
 
         $table = $listModel->dc;
 
-        $inferrer = new PtableInferrer($listModel, $listModel);
+        $inferrer = new PtableInferrer($listModel, $listModel->dc);
 
         try
         {

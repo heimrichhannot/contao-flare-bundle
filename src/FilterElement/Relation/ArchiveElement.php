@@ -13,6 +13,7 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
@@ -43,7 +44,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
     {
         $submitted = $context->getFormData();
         $filterModel = $context->getFilterModel();
-        $inferrer = new PtableInferrer($filterModel, $context->getListModel());
+        $inferrer = new PtableInferrer($filterModel, $context->getListModel()->dc);
 
         if ($submitted && !\is_array($submitted)) {
             $submitted = [$submitted];
@@ -68,7 +69,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
             if ($submitted && (!$filterModel->hasEmptyOption || \count($submitted) > 0))
                 // we expect $submitted to be an array of parent models
-                // if empty option is enabled, empty array is allowed
+                // if the empty option is enabled, an empty array is allowed
             {
                 $whitelist = \array_map('intval', $whitelist);
                 $submitted = \array_map(static fn (Model $model): int => (int) $model->id, $submitted);
@@ -126,7 +127,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
             return null;
         }
 
-        $inferrer = new PtableInferrer($filterModel, $config->getListModel());
+        $inferrer = new PtableInferrer($filterModel, $config->getListModel()->dc);
 
         $palettes = [];
 
@@ -163,33 +164,38 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
     /**
      * @throws FilterException
      */
-    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
+    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void
     {
-        $filterModel = $context->getFilterModel();
-        $inferrer = new PtableInferrer($filterModel, $context->getListModel());
+        $filter = $event->filterDefinition;
 
-        $choices->enable();
+        if (!$filterModel = $filter->getSourceFilterModel()) {
+            return;
+        }
 
-        if ($filterModel->hasEmptyOption)
+        $inferrer = new PtableInferrer($filterModel, $event->listDefinition->dc);
+
+        $choices = $event->getChoicesBuilder()->enable();
+
+        if ($filter->hasEmptyOption)
         {
-            $emptyOptionLabel = ($filterModel->formatEmptyOption === 'custom')
-                ? $filterModel->formatEmptyOptionCustom
-                : $filterModel->formatEmptyOption;
+            $emptyOptionLabel = ($filter->formatEmptyOption === 'custom')
+                ? $filter->formatEmptyOptionCustom
+                : $filter->formatEmptyOption;
 
             $choices->setEmptyOption($emptyOptionLabel ?: true);
         }
 
         if ($ptable = $inferrer->getDcaMainPtable())
         {
-            $label = ($filterModel->formatLabel === 'custom')
-                ? $filterModel->formatLabelCustom
-                : $filterModel->formatLabel;
+            $label = ($filter->formatLabel === 'custom')
+                ? $filter->formatLabelCustom
+                : $filter->formatLabel;
 
             $label = $label ?: null;
 
             $choices->setLabel($label);
 
-            $parents = $this->getParentsFromWhitelistBlob($ptable, $filterModel->whitelistParents);
+            $parents = $this->getParentsFromWhitelistBlob($ptable, $filter->whitelistParents);
 
             if (!$parents) {
                 throw new FilterException('No whitelisted parents defined or parent table class invalid.');
@@ -200,65 +206,68 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
                 $choices->add($parent->id, $parent);
             }
 
-            return [
-                'required' => $filterModel->isMandatory,
-                'multiple' => $filterModel->isMultiple,
-                'expanded' => $filterModel->isExpanded,
-            ];
+            $event->options['required'] = (bool) $filter->isMandatory;
+            $event->options['multiple'] = (bool) $filter->isMultiple;
+            $event->options['expanded'] = (bool) $filter->isExpanded;
+
+            return;
         }
 
-        if ($inferrer->isDcaDynamicPtable())
+        if (!$inferrer->isDcaDynamicPtable())
+            // no valid ptable available
         {
-            if (!$groupWhitelist = StringUtil::deserialize($filterModel->groupWhitelistParents)) {
-                throw new FilterException('No whitelisted parents defined.');
-            }
-
-            foreach ($groupWhitelist as $group)
-            {
-                $table = $group['tablePtable'] ?? null;
-                $whitelistParents = $group['whitelistParents'] ?? null;
-
-                if (!$table || !$whitelist = StringUtil::deserialize($whitelistParents)) {
-                    continue;
-                }
-
-                $pClass = Model::getClassFromTable($table);
-
-                if (!\class_exists($pClass)) {
-                    throw new FilterException(\sprintf('Invalid parent table class "%s" of table "%s".', $pClass, $table));
-                }
-
-                $parents = $pClass::findMultipleByIds($whitelist);
-
-                foreach ($parents as $parent)
-                {
-                    $choices->add(\sprintf('%s.%s', $table, $parent->id), $parent);
-                }
-
-                $formatLabel = $group['formatLabel'] ?? null;
-                $formatLabel = ($formatLabel === 'custom')
-                    ? ($group['formatLabelCustom'] ?? null)
-                    : $formatLabel;
-                $formatLabel = $formatLabel ?: null;
-
-                $choices->setLabelForTable($formatLabel, $table);
-            }
-
-            if (!$choices->count())
-            {
-                throw new FilterException('No valid whitelisted parents defined.');
-            }
-
-            $choices->setModelSuffix('(%@name%)');
-
-            return [
-                'required' => $filterModel->isMandatory,
-                'multiple' => $filterModel->isMultiple,
-                'expanded' => $filterModel->isExpanded,
-            ];
+            throw new FilterException('No valid ptable found.');
         }
 
-        throw new FilterException('No valid ptable found.');
+        /**
+         * ## We are dealing with a _dynamic ptable_ henceforth.
+         */
+
+        if (!$groupWhitelist = StringUtil::deserialize($filter->groupWhitelistParents))
+        {
+            throw new FilterException('No whitelisted parents defined.');
+        }
+
+        foreach ($groupWhitelist as $group)
+        {
+            $table = $group['tablePtable'] ?? null;
+            $whitelistParents = $group['whitelistParents'] ?? null;
+
+            if (!$table || !$whitelist = StringUtil::deserialize($whitelistParents)) {
+                continue;
+            }
+
+            $pClass = Model::getClassFromTable($table);
+
+            if (!\class_exists($pClass)) {
+                throw new FilterException(\sprintf('Invalid parent table class "%s" of table "%s".', $pClass, $table));
+            }
+
+            $parents = $pClass::findMultipleByIds($whitelist);
+
+            foreach ($parents as $parent)
+            {
+                $choices->add(\sprintf('%s.%s', $table, $parent->id), $parent);
+            }
+
+            $formatLabel = $group['formatLabel'] ?? null;
+            $formatLabel = ($formatLabel === 'custom')
+                ? ($group['formatLabelCustom'] ?? null)
+                : $formatLabel;
+            $formatLabel = $formatLabel ?: null;
+
+            $choices->setLabelForTable($formatLabel, $table);
+        }
+
+        if (!$choices->count()) {
+            throw new FilterException('No valid whitelisted parents defined.');
+        }
+
+        $choices->setModelSuffix('(%@name%)');
+
+        $event->options['required'] = (bool) $filter->isMandatory;
+        $event->options['multiple'] = (bool) $filter->isMultiple;
+        $event->options['expanded'] = (bool) $filter->isExpanded;
     }
 
     #[AsFilterCallback(self::TYPE, 'fields.preselect.load')]
@@ -274,7 +283,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
         $dca = &$GLOBALS['TL_DCA'][$dc->table]['fields'][$dc->field];
 
-        $inferrer = new PtableInferrer($filterModel, $listModel);
+        $inferrer = new PtableInferrer($filterModel, $listModel->dc);
         $choices = $this->choicesBuilderFactory
             ->createChoicesBuilder()
             ->setModelSuffix('[%id%]')

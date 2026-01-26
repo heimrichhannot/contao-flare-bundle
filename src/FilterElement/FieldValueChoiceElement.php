@@ -8,6 +8,7 @@ use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
@@ -129,13 +130,14 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         $field->setData($preselect);
     }
 
-    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
+    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void
     {
-        $filterModel = $context->getFilterModel();
-        $choices->enable()->setEmptyOption(!$filterModel->isMultiple);
+        $choices = $event->getChoicesBuilder()
+            ->enable()
+            ->setEmptyOption(!$event->filterDefinition->isMultiple);
 
-        $table = $context->getTable();
-        $field = $filterModel->fieldGeneric ?: '';
+        $table = $event->listDefinition->dc;
+        $field = $event->filterDefinition->fieldGeneric ?: '';
 
         $values = $this->getDistinctValues($table, $field);
 
@@ -143,10 +145,8 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
             $choices->add((string) $value, (string) $value);
         }
 
-        return [
-            'multiple' => (bool) $context->getFilterModel()->isMultiple,
-            'required' => false,
-        ];
+        $event->options['multiple'] = (bool) $event->filterDefinition->isMultiple;
+        $event->options['required'] = false;
     }
 
     #[AsFilterCallback(self::TYPE, 'fields.isMultiple.load')]

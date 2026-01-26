@@ -31,7 +31,7 @@ readonly class WhichPtableCheckCallback
 
         try
         {
-            $inferrer = new PtableInferrer($filterModel, $listModel);
+            $inferrer = new PtableInferrer($filterModel, $listModel->dc);
 
             $inferrer->infer();
 

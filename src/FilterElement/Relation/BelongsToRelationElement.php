@@ -33,7 +33,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
             throw new FilterException('No parent field defined.');
         }
 
-        $inferrer = new PtableInferrer($filterModel, $listModel);
+        $inferrer = new PtableInferrer($filterModel, $listModel->dc);
 
         try
         {
@@ -154,7 +154,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
 
         $palette = '{filter_legend},fieldPid,whichPtable';
 
-        $inferrer = new PtableInferrer($filterModel, $listModel);
+        $inferrer = new PtableInferrer($filterModel, $listModel->dc);
         $table = $inferrer->getEntityTable();
         $fieldPid = $inferrer->getPidField();
 

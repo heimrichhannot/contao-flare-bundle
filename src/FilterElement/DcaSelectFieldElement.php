@@ -12,11 +12,11 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -203,38 +203,31 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
         $field->setData($data);
     }
 
-    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
+    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void
     {
-        $listModel = $context->getListModel();
-        $filterModel = $context->getFilterModel();
+        $list = $event->listDefinition;
+        $filter = $event->filterDefinition;
 
-        $emptyPlaceholder = $filterModel->isMandatory ? 'empty_option.prompt' : 'empty_option.no_selection';
+        $emptyPlaceholder = $filter->isMandatory ? 'empty_option.prompt' : 'empty_option.no_selection';
 
-        $return = [
-            'multiple' => (bool) $filterModel->isMultiple,
-            'expanded' => (bool) $filterModel->isExpanded,
-            'required' => (bool) $filterModel->isMandatory,
-            'placeholder' => $filterModel->placeholder ?: $emptyPlaceholder,
-        ];
+        $event->options['multiple'] = (bool) $filter->isMultiple;
+        $event->options['expanded'] = (bool) $filter->isExpanded;
+        $event->options['required'] = (bool) $filter->isMandatory;
+        $event->options['placeholder'] = $filter->placeholder ?: $emptyPlaceholder;
 
-        if ($filterModel->label) {
-            $return['label'] = $filterModel->label;
+        if ($filter->label) {
+            $event->options['label'] = $filter->label;
         }
 
-        $options = $this->getOptions($listModel, $filterModel);
-
-        if (\is_null($options)) {
-            return $return;
+        if (\is_null($options = $this->getOptions($list, $filter))) {
+            return;
         }
 
-        $choices->enable();
+        $choices = $event->getChoicesBuilder()->enable();
 
-        foreach ($options as $value => $label)
-        {
+        foreach ($options as $value => $label) {
             $choices->add($value, $label);
         }
-
-        return $return;
     }
 
     #[AsFilterCallback(self::TYPE, 'config.onload')]

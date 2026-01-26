@@ -6,11 +6,11 @@ namespace HeimrichHannot\FlareBundle\Manager;
 
 use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent;
 use HeimrichHannot\FlareBundle\Event\FilterFormChildOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\Form\ChoicesBuilderFactory;
+use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use Symfony\Component\Form\Exception\OutOfBoundsException;
@@ -22,7 +22,6 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 readonly class FilterFormManager
 {
     public function __construct(
-        private ChoicesBuilderFactory    $choicesBuilderFactory,
         private EventDispatcherInterface $eventDispatcher,
         private FilterElementRegistry    $filterElementRegistry,
         private FormFactoryInterface     $formFactory,
@@ -51,94 +50,102 @@ readonly class FilterFormManager
 
         $builder = $this->formFactory->createNamedBuilder($name, FormType::class, null, $formOptions);
 
-        $defaultOptions = [
-            'inherit_data' => false,
-            'label'        => false,
-        ];
-
-        foreach ($filters->getIterator() as $filterDescriptor)
+        foreach ($filters->getIterator() as $filterDefinition)
             // Apply only non-intrinsic, published filters with a valid type
         {
-            if (!$filterDescriptor->getType() || $filterDescriptor->isIntrinsic()) {
+            if (!$filterDefinition->getType() || $filterDefinition->isIntrinsic()) {
                 continue;
             }
 
-            if (!$filterElementDescriptor = $this->filterElementRegistry->get($filterDescriptor->getType())) {
+            if (!$formType = $this->filterElementRegistry->get($filterDefinition->getType())?->getFormType()) {
                 continue;
             }
 
-            if (!$formType = $filterElementDescriptor->getFormType()) {
-                continue;
-            }
+            $options = $this->getFilterElementOptions($listDefinition, $filterDefinition);
 
-            if (!$filterElement = $filterElementDescriptor->getService()) {
-                continue;
-            }
+            $childName = $filterDefinition->getFilterFormFieldName();
 
-            $options = $defaultOptions;
-
-            if ($filterElement instanceof FormTypeOptionsContract)
-            {
-                try
-                {
-                    $choicesBuilder = $this->choicesBuilderFactory->createChoicesBuilder();
-                    $generatedOptions = $filterElement->getFormTypeOptions($filterDescriptor, $choicesBuilder);
-
-                    $choicesOptions = $choicesBuilder->isEnabled() ? [
-                        'choices' => $choicesBuilder->buildChoices(),
-                        'choice_label' => $choicesBuilder->buildChoiceLabelCallback(),
-                        'choice_value' => $choicesBuilder->buildChoiceValueCallback(),
-                    ] : [];
-
-                    $options = \array_merge($defaultOptions, $choicesOptions, $generatedOptions);
-                }
-                catch (FilterException $e)
-                {
-                    $method = $e->getMethod() ?? ($filterElement::class . '::getFormTypeOptions');
-
-                    throw new FilterException(
-                        \sprintf('[FLARE] Form denied: %s', $e->getMessage()),
-                        code: $e->getCode(), previous: $e, method: $method,
-                        source: $filterDescriptor->getSourceFilterModel()
-                            ? \sprintf('tl_flare_filter.id=%s', $filterDescriptor->getSourceFilterModel()->id)
-                            : 'filter inlined'
-                    );
-                }
-            }
-
-            $childName = $filterDescriptor->getFilterFormFieldName();
-
-            /** @var FilterFormChildOptionsEvent $event */
-            $event = $this->eventDispatcher->dispatch(new FilterFormChildOptionsEvent(
-                filterContext: $filterDescriptor,
-                filterContextCollection: $filters,
+            /** @var FilterFormChildOptionsEvent $childOptionsEvent */
+            $childOptionsEvent = $this->eventDispatcher->dispatch(new FilterFormChildOptionsEvent(
+                listDefinition: $listDefinition,
+                filterDefinition: $filterDefinition,
                 parentFormName: $name,
                 formName: $childName,
                 options: $options,
             ));
 
-            $options = $event->options;
+            $options = $childOptionsEvent->options;
 
             $builder->add($childName, $formType, $options);
         }
 
-        // *Always add submit button in template, not to the form builder!*
-        // if ($builder->count())
-        // {
-        //     $builder->add('submit', SubmitType::class, [
-        //         'label' => 'submit',
-        //     ]);
-        // }
+        /**
+         * **Always add submit buttons in templates, not in the form builder!**
+         *
+         * ```php
+         *  if ($builder->count()) {
+         *      $builder->add('submit', SubmitType::class, [
+         *      'label' => 'submit',
+         *  ]);
+         * ```
+         */
 
-        $event = $this->eventDispatcher->dispatch(new FilterFormBuildEvent(
-            filters: $filters,
+        /** @var FilterFormBuildEvent $formBuildEvent */
+        $formBuildEvent = $this->eventDispatcher->dispatch(new FilterFormBuildEvent(
+            listDefinition: $listDefinition,
             formName: $name,
             formBuilder: $builder,
         ));
 
-        $builder = $event->formBuilder;
+        $builder = $formBuildEvent->formBuilder;
 
         return $builder->getForm();
+    }
+
+    /**
+     * @param ListDefinition $listDefinition
+     * @param FilterDefinition $filterDefinition
+     * @return array
+     * @throws FilterException
+     */
+    private function getFilterElementOptions(ListDefinition $listDefinition, FilterDefinition $filterDefinition): array
+    {
+        $formTypeOptionsEvent = new FilterElementFormTypeOptionsEvent(
+            listDefinition: $listDefinition,
+            filterDefinition: $filterDefinition,
+            options: [],
+        );
+
+        $filterElement = $this->filterElementRegistry->get($filterDefinition->getType())?->getService();
+        if ($filterElement instanceof FormTypeOptionsContract)
+        {
+            $filterElement->onFormTypeOptionsEvent($formTypeOptionsEvent);
+        }
+
+        /** @var FilterElementFormTypeOptionsEvent $formTypeOptionsEvent */
+        $formTypeOptionsEvent = $this->eventDispatcher->dispatch($formTypeOptionsEvent);
+
+        if ($formTypeOptionsEvent->isChoicesBuilderEnabled())
+        {
+            $choicesBuilder = $formTypeOptionsEvent->getChoicesBuilder();
+
+            $choicesOptions = [
+                'choices' => $choicesBuilder->buildChoices(),
+                'choice_label' => $choicesBuilder->buildChoiceLabelCallback(),
+                'choice_value' => $choicesBuilder->buildChoiceValueCallback(),
+            ];
+        }
+
+        $defaultOptions = [
+            'inherit_data' => false,
+            'label'        => false,
+        ];
+
+        return \array_merge(
+            $defaultOptions,
+            $choicesOptions ?? [],
+            $formTypeOptionsEvent->options,
+        );
     }
 
     /**

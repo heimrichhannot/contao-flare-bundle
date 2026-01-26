@@ -12,11 +12,11 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
 use HeimrichHannot\FlareBundle\Enum\BoolMode;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 
@@ -153,13 +153,12 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract
         return $options;
     }
 
-    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
+    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void
     {
+        $filter = $event->filterDefinition;
         /** @mago-expect lint:no-nested-ternary This is fine. Just be clear that the ternary operator is intentional. */
-        return [
-            'required' => false,
-            'label' => $context->getFilterModel()->label ?: $context->getFilterModel()->title ?: 'CBX',
-        ];
+        $event->options['label'] = $filter->label ?: $filter->getTitle() ?: 'CBX';
+        $event->options['required'] = false;
     }
 
     public function getPalette(PaletteConfig $config): ?string

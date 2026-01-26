@@ -4,7 +4,6 @@ namespace HeimrichHannot\FlareBundle\Util;
 
 use Contao\Controller;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
-use HeimrichHannot\FlareBundle\Model\ListModel;
 
 class PtableInferrer
 {
@@ -20,25 +19,17 @@ class PtableInferrer
 
     protected bool $autoInferable = true;
     protected bool $autoDynamicPtable = false;
-    protected string $entityTable;
     protected bool $inferred = false;
     protected ?string $inferredPtable;
 
     public function __construct(
         protected PtableInferrableInterface $inferrable,
-        protected ListModel        $listModel,
-    ) {
-        $this->entityTable = $this->listModel->dc;
-    }
+        protected string                    $entityTable,
+    ) {}
 
     public function getInferrable(): PtableInferrableInterface
     {
         return $this->inferrable;
-    }
-
-    public function getListModel(): ListModel
-    {
-        return $this->listModel;
     }
 
     public function isAutoInferable(): bool

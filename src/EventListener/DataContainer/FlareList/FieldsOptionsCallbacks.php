@@ -132,22 +132,4 @@ readonly class FieldsOptionsCallbacks
         $tables = \array_filter($tables, $db->tableExists(...));
         return \array_combine($tables, $tables) ?: [];
     }
-
-    #[AsCallback(self::TABLE_NAME, 'fields.filterSourceLists.options')]
-    public function getFieldOptions_filterSourceLists(DataContainer $dc): array
-    {
-        if (!$dc->id) {
-            return [];
-        }
-
-        if (!$lists = ListModel::findAll()) {
-            return [];
-        }
-
-        $options = $lists->fetchEach('title');
-
-        unset($options[(int) $dc->id], $options[(string) $dc->id]);
-
-        return $options;
-    }
 }

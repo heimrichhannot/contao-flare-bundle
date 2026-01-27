@@ -2,6 +2,9 @@
 
 namespace HeimrichHannot\FlareBundle\Projector;
 
+use HeimrichHannot\FlareBundle\List\ListContext;
+use HeimrichHannot\FlareBundle\List\ListDefinition;
+use HeimrichHannot\FlareBundle\Projector\Projection\ProjectionInterface;
 use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
 
 class Projectors
@@ -10,16 +13,23 @@ class Projectors
 
     public function __construct(
         #[TaggedIterator('flare.projector', defaultIndexMethod: 'getContext')]
-        private readonly iterable $projectorsIterable,
+        private readonly iterable $contextIterable,
+        #[TaggedIterator('flare.projector', defaultIndexMethod: 'getProjectionClass')]
+        private readonly iterable $projectionIterable,
     ) {}
 
     private function resolve(): array
     {
         if (!isset($this->projectors))
         {
-            foreach ($this->projectorsIterable as $type => $service)
+            foreach ($this->contextIterable as $type => $service)
             {
                 $this->projectors[$type] = $service;
+            }
+
+            foreach ($this->projectionIterable as $class => $service)
+            {
+                $this->projectors[$class] = $service;
             }
         }
 
@@ -31,6 +41,11 @@ class Projectors
         return $this->resolve();
     }
 
+    /**
+     * @template T of ProjectionInterface
+     * @param string|class-string<T> $type
+     * @return ProjectorInterface<T>|null
+     */
     public function get(string $type): ?ProjectorInterface
     {
         if (!$type) {
@@ -45,8 +60,22 @@ class Projectors
         return isset($this->resolve()[$type]);
     }
 
-    public function types(): array
-    {
-        return \array_keys($this->resolve());
+    /**
+     * @template T of ProjectionInterface
+     * @param class-string<T> $projectionClass
+     * @return T|null
+     */
+    public function project(
+        string         $projectionClass,
+        ListContext    $listContext,
+        ListDefinition $listDefinition,
+    ): ?ProjectionInterface {
+        $projection = $this->get($projectionClass)?->project($listContext, $listDefinition);
+
+        if (!$projection instanceof $projectionClass) {
+            return null;
+        }
+
+        return $projection;
     }
 }

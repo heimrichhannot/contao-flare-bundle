@@ -15,6 +15,11 @@ abstract class AbstractProjector implements ProjectorInterface
     abstract public static function getContext(): string;
 
     /**
+     * {@inheritdoc}
+     */
+    abstract public static function getProjectionClass(): string;
+
+    /**
      * Checks if the projector supports the given list context.
      * May be used to overhaul projector logic in a future version. Until then, this method is final.
      */
@@ -28,9 +33,9 @@ abstract class AbstractProjector implements ProjectorInterface
      *
      * @throws FlareException Thrown if the projector does not support the provided list context and configuration.
      */
-    final public function project(ListContext $context, ListDefinition $config): ProjectionInterface
+    final public function project(ListContext $listContext, ListDefinition $listDefinition): ProjectionInterface
     {
-        if (!$this->supports($context, $config))
+        if (!$this->supports($listContext, $listDefinition))
         {
             throw new FlareException(\sprintf(
                 'Projector "%s" does not support list context',
@@ -38,16 +43,16 @@ abstract class AbstractProjector implements ProjectorInterface
             ));
         }
 
-        return $this->execute($context, $config);
+        return $this->execute(clone $listContext, clone $listDefinition);
     }
 
     /**
      * Executes the projection logic for the given list context and list definition.
      *
-     * @param ListContext $context The context of the list in which the projection is executed.
+     * @param ListContext $listContext The context of the list in which the projection is executed.
      * @param ListDefinition $listDefinition The configuration of the list on which the projection is executed.
      *
      * @return ProjectionInterface The result of the executed projection.
      */
-    abstract protected function execute(ListContext $context, ListDefinition $listDefinition): ProjectionInterface;
+    abstract protected function execute(ListContext $listContext, ListDefinition $listDefinition): ProjectionInterface;
 }

@@ -2,48 +2,48 @@
 
 namespace HeimrichHannot\FlareBundle\ListView;
 
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Event\ListViewBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\List\ListContext;
 use HeimrichHannot\FlareBundle\List\ListDefinition;
+use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolver;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
-use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolverInterface;
-use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Projector\Projection\InteractiveProjection;
+use HeimrichHannot\FlareBundle\Projector\Projection\ValidationProjection;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class ListViewBuilder
 {
-    private ContentContext $contentContext;
+    private ListContext $listContext;
     private ListDefinition $listDefinition;
-    private ListModel $listModel;
+    private InteractiveProjection $interactiveProjection;
+    private ValidationProjection $validationProjection;
     private ?PaginatorConfig $paginatorConfig = null;
     private ?SortDescriptor $sortDescriptor = null;
 
     public function __construct(
         private readonly EventDispatcherInterface $eventDispatcher,
-        private ListViewResolverInterface         $listViewResolver,
+        private ListViewResolver                  $listViewResolver,
     ) {}
 
-    /** @api Get the content context for the list view being built. */
-    public function getContentContext(): ?ContentContext
+    public function getListContext(): ListContext
     {
-        return $this->contentContext ?? null;
+        return $this->listContext;
     }
 
-    /* @api Set the content context for the list view being built. */
-    public function setContentContext(ContentContext $contentContext): static
+    public function setListContext(ListContext $listContext): static
     {
-        $this->contentContext = $contentContext;
+        $this->listContext = $listContext;
         return $this;
     }
 
     /**
      * @api Get the list definition for the list view being built.
      */
-    public function getListDefinition(): ?ListDefinition
+    public function getListDefinition(): ListDefinition
     {
-        return $this->listDefinition ?? null;
+        return $this->listDefinition;
     }
 
     /**
@@ -55,22 +55,25 @@ class ListViewBuilder
         return $this;
     }
 
-    /**
-     * @api Get the list model for the list view being built.
-     * @deprecated Use {@see self::getListDefinition()} instead.
-     */
-    public function getListModel(): ?ListModel
+    public function getInteractiveProjection(): InteractiveProjection
     {
-        return $this->listModel ?? null;
+        return $this->interactiveProjection;
     }
 
-    /**
-     * @api Set the list model for the list view being built.
-     * @deprecated Use {@see self::setListDefinition()} instead.
-     */
-    public function setListModel(ListModel $listModel): static
+    public function setInteractiveProjection(InteractiveProjection $interactiveProjection): static
     {
-        $this->listModel = $listModel;
+        $this->interactiveProjection = $interactiveProjection;
+        return $this;
+    }
+
+    public function getValidationProjection(): ValidationProjection
+    {
+        return $this->validationProjection;
+    }
+
+    public function setValidationProjection(ValidationProjection $validationProjection): static
+    {
+        $this->validationProjection = $validationProjection;
         return $this;
     }
 
@@ -103,13 +106,13 @@ class ListViewBuilder
     }
 
     /** @api Get the list view resolver for the list view being built. */
-    public function getListViewResolver(): ListViewResolverInterface
+    public function getListViewResolver(): ListViewResolver
     {
         return $this->listViewResolver;
     }
 
     /** @api Set the list view resolver for the list view being built. */
-    public function setListViewResolver(ListViewResolverInterface $listViewResolver): void
+    public function setListViewResolver(ListViewResolver $listViewResolver): void
     {
         $this->listViewResolver = $listViewResolver;
     }
@@ -125,22 +128,31 @@ class ListViewBuilder
 
         // While the event interface should prevent builder modification,
         // we retrieve it here to maintain implementation independence.
+        /** @var ListViewBuilder $builder */
         $builder = $event->getBuilder();
 
-        if (!$builder->getContentContext()) {
+        if (!isset($builder->listContext)) {
             throw new FlareException('No content context provided.');
         }
 
-        if (!$builder->getListDefinition()) {
+        if (!isset($builder->listDefinition)) {
             throw new FlareException('No list model provided.');
         }
 
+        if (!isset($builder->interactiveProjection)) {
+            throw new FlareException('No interactive projection provided.');
+        }
+
+        if (!isset($builder->validationProjection)) {
+            throw new FlareException('No validation projection provided.');
+        }
+
         return new ListView(
-            contentContext: $builder->getContentContext(),
+            listContext: $builder->getListContext(),
             listDefinition: $builder->getListDefinition(),
             resolver: $builder->getListViewResolver(),
-            paginatorConfig: $builder->getPaginatorConfig(),
-            sortDescriptor: $builder->getSortDescriptor(),
+            interactiveProjection: $builder->getInteractiveProjection(),
+            validationProjection: $builder->getValidationProjection(),
         );
     }
 }

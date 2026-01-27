@@ -2,79 +2,59 @@
 
 namespace HeimrichHannot\FlareBundle\Projector\Projection;
 
-use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
-use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Factory\PaginatorBuilderFactory;
-use HeimrichHannot\FlareBundle\List\ListContext;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
-use HeimrichHannot\FlareBundle\Manager\FilterFormManager;
-use HeimrichHannot\FlareBundle\Manager\ListItemProviderManager;
-use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
+use Contao\Model;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
+use HeimrichHannot\FlareBundle\Trait\FetchModelsTrait;
 use Symfony\Component\Form\FormInterface;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class InteractiveProjection implements ProjectionInterface
 {
-    private FormInterface $form;
-    private Paginator $paginator;
+    use FetchModelsTrait;
 
+    private array $entries;
+    private array $models;
+
+    /**
+     * @param Closure(): array $fetchEntries Function to fetch entries lazily.
+     * @param FormInterface $form Form to render.
+     * @param Paginator $paginator Paginator to render.
+     * @param int $totalItems Total number of items.
+     */
     public function __construct(
-        private readonly AggregationProjection    $aggregationProjection,
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly FilterFormManager        $formManager,
-        private readonly ListContext              $listContext,
-        private readonly ListDefinition           $listDefinition,
-        private readonly ListItemProviderManager  $itemProvider,
-        private readonly ListQueryManager         $listQueryManager,
-        private readonly PaginatorBuilderFactory  $paginatorBuilderFactory,
-        private readonly Request                  $request,
+        private readonly \Closure      $fetchEntries,
+        private readonly FormInterface $form,
+        private readonly Paginator     $paginator,
+        private readonly string        $table,
+        private readonly int           $totalItems,
     ) {}
 
     public function getForm(): FormInterface
     {
-        if (isset($this->form)) {
-            return $this->form;
-        }
-
-        $form = $this->formManager->buildForm($this->listContext, $this->listDefinition);
-        $form->handleRequest($this->request);
-
-        $this->formManager->hydrateForm($form, $this->listDefinition);
-        // $this->formManager->hydrateFilterElements($form, $listDefinition);
-
-        return $this->form = $form;
+        return $this->form;
     }
 
     public function getPaginator(): Paginator
     {
-        if (isset($this->paginator)) {
-            return $this->paginator;
-        }
-
-        $form = $this->getForm();
-
-        if ($form->isSubmitted() && !$form->isValid()) {
-            return $this->paginatorBuilderFactory->create()->buildEmpty();
-        }
-
-        return $this->paginator = $this->paginatorBuilderFactory
-            ->create()
-            ->fromConfig($this->listContext->paginatorConfig)
-            ->queryPrefix($form->getName())
-            ->handleRequest()
-            ->totalItems($this->getCount())
-            ->build();
+        return $this->paginator;
     }
 
     public function getCount(): int
     {
-        return $this->aggregationProjection->getCount();
+        return $this->totalItems;
     }
 
     public function getEntries(): array
     {
-        // todo
+        return $this->entries ??= ($this->fetchEntries)();
+    }
+
+    public function getModels(): array
+    {
+        return $this->models ??= $this->fetchModels($this->table, $this->getEntries());
+    }
+
+    public function getModel(int $id): ?Model
+    {
+        return $this->getModels()[$id] ?? null;
     }
 }

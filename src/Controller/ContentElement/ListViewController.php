@@ -22,6 +22,8 @@ use HeimrichHannot\FlareBundle\List\ListDefinitionBuilderFactory;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
+use HeimrichHannot\FlareBundle\Projector\Projection\InteractiveProjection;
+use HeimrichHannot\FlareBundle\Projector\Projection\ValidationProjection;
 use HeimrichHannot\FlareBundle\Projector\Projectors;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Psr\Log\LoggerInterface;
@@ -100,18 +102,12 @@ final class ListViewController extends AbstractContentElementController
         {
             $filterFormName = $contentModel->flare_formName ?: 'fl' . $listModel->id;
 
-            $paginatorConfig = $this->paginatorBuilder->create()
-                ->fromConfig(new PaginatorConfig(
-                    itemsPerPage: (int) ($contentModel->flare_itemsPerPage ?: 0),
-                ))
-                ->queryPrefix($filterFormName)
-                ->handleRequest($request)
-                ->buildConfig();
-
             $sortDescriptor = $this->getSortDescriptor($listModel);
 
             $listContext = $this->listContextBuilderFactory->create()
-                ->setPaginatorConfig($paginatorConfig)
+                ->setPaginatorConfig(new PaginatorConfig(
+                    itemsPerPage: (int) ($contentModel->flare_itemsPerPage ?: 0),
+                ))
                 ->setSortDescriptor($sortDescriptor)
                 ->setContentModel($contentModel)
                 ->set('form.action_page', (int) $contentModel->flare_jumpTo)
@@ -122,20 +118,32 @@ final class ListViewController extends AbstractContentElementController
                 ->setDataSource($listModel)
                 ->build();
 
-            if (!$projector = $this->projectors->get($context = ListContext::INTERACTIVE)) {
-                throw new FlareException("List context '{$context}' has no projector registered.");
+            $interactiveProjection = $this->projectors->project(
+                projectionClass: InteractiveProjection::class,
+                listContext: $listContext,
+                listDefinition: $listDefinition
+            );
+
+            if (!$interactiveProjection instanceof InteractiveProjection) {
+                throw new FlareException("Could not project list context 'interactive'.");
             }
 
-            $projection = $projector->project($listContext, $listDefinition);
+            $validationProjection = $this->projectors->project(
+                projectionClass: ValidationProjection::class,
+                listContext: $listContext,
+                listDefinition: $listDefinition
+            );
 
-            /*
+            if (!$validationProjection instanceof ValidationProjection) {
+                throw new FlareException("Could not project list context 'validation'.");
+            }
+
             $listView = $this->listViewBuilderFactory->create()
-                ->setContentContext($contentContext)
+                ->setListContext($listContext)
                 ->setListDefinition($listDefinition)
-                ->setPaginatorConfig($paginatorConfig)
-                ->setSortDescriptor(null)
+                ->setInteractiveProjection($interactiveProjection)
+                ->setValidationProjection($validationProjection)
                 ->build();
-            */
         }
         catch (FlareException $e)
         {
@@ -149,8 +157,11 @@ final class ListViewController extends AbstractContentElementController
 
         $event = $this->eventDispatcher->dispatch(
             new ListViewRenderEvent(
+                contentModel: $contentModel,
                 listContext: $listContext,
+                listDefinition: $listDefinition,
                 listModel: $listModel,
+                listView: $listView,
                 template: $template,
             )
         );

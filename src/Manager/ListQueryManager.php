@@ -270,7 +270,7 @@ class ListQueryManager
         FilterQueryBuilder $filterQueryBuilder,
         ListDefinition     $listDefinition,
         FilterDefinition   $filterDefinition,
-        ContentContext     $contentContext,
+        ListContext        $listContext,
         ?bool              $dispatchEvent = null,
     ): int {
         if (!$config = $this->filterElementRegistry->get($filterDefinition->getType())) {

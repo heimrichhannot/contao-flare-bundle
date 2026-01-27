@@ -2,6 +2,6 @@
 
 namespace HeimrichHannot\FlareBundle\Projector\Projection;
 
-interface ProjectionInterface
+class ExportProjection implements ProjectionInterface
 {
 }

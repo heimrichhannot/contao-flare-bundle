@@ -10,9 +10,9 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 class PaginatorBuilder
 {
-    private int $currentPage = 1;
-    private int $itemsPerPage = 0;
-    private int $totalItems = 0;
+    private ?int $currentPage = null;
+    private ?int $itemsPerPage = null;
+    private ?int $totalItems = null;
     private ?string $queryPrefix = null;
     private ?string $routeName = null;
     private ?array $routeParams = null;
@@ -25,7 +25,7 @@ class PaginatorBuilder
     public function fromConfig(PaginatorConfig $config): static
     {
         $this->itemsPerPage = $config->getItemsPerPage();
-        $this->currentPage = $config->getCurrentPage();
+        $this->currentPage = $config->getCurrentPageNumber();
         return $this;
     }
 
@@ -96,29 +96,23 @@ class PaginatorBuilder
 
     public function build(): Paginator
     {
-        $lastPage = ($this->itemsPerPage > 0) ? (int) \ceil($this->totalItems / $this->itemsPerPage) : 1;
-        $currentPage = (int) \max(1, ($this->currentPage < 0)
-            ? ($lastPage + $this->currentPage)
-            : \min($this->currentPage, $lastPage)
-        );
+        $itemsPerPage = $this->itemsPerPage ?? 0;
+        $totalItems = $this->totalItems ?? -1;
 
-        $firstItemNumber = ($currentPage - 1) * $this->itemsPerPage + 1;
-        $lastItemNumber = (int) \max(\min($currentPage * $this->itemsPerPage, $this->totalItems), $firstItemNumber);
+        $lastPage = ($itemsPerPage > 0 && $totalItems > -1)
+            ? (int) \ceil($totalItems / $itemsPerPage)
+            : null;
 
-        $previousPage = $currentPage > 1 ? $currentPage - 1 : null;
-        $nextPage = $currentPage < $lastPage ? $currentPage + 1 : null;
+        $currentPage = $this->currentPage;
+
+        if (!\is_null($this->currentPage) && !\is_null($lastPage)) {
+            $currentPage = (int) \max(1, \min($lastPage, $this->currentPage));
+        }
 
         return new Paginator(
+            itemsPerPage: $itemsPerPage,
             currentPage: $currentPage,
-            itemsPerPage: $this->itemsPerPage,
-            totalItems: $this->totalItems,
-            lastPage: $lastPage,
-            previousPage: $previousPage,
-            nextPage: $nextPage,
-            firstItemNumber: $firstItemNumber,
-            lastItemNumber: $lastItemNumber,
-            hasNextPage: $currentPage < $lastPage,
-            hasPreviousPage: $currentPage > 1,
+            totalItems: $totalItems,
             urlGenerator: $this->makeUrlGenerator(),
         );
     }
@@ -126,24 +120,18 @@ class PaginatorBuilder
     public function buildConfig(): PaginatorConfig
     {
         return new PaginatorConfig(
-            currentPage: $this->currentPage,
             itemsPerPage: $this->itemsPerPage,
+            currentPage: $this->currentPage,
+            totalItems: $this->totalItems,
         );
     }
 
     public function buildEmpty(): Paginator
     {
         return new Paginator(
-            currentPage: 1,
             itemsPerPage: 10,
+            currentPage: 1,
             totalItems: 0,
-            lastPage: 0,
-            previousPage: null,
-            nextPage: null,
-            firstItemNumber: 0,
-            lastItemNumber: 0,
-            hasNextPage: false,
-            hasPreviousPage: false,
             urlGenerator: $this->makeUrlGenerator(),
         );
     }

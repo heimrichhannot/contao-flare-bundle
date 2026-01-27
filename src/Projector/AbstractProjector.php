@@ -20,7 +20,7 @@ abstract class AbstractProjector implements ProjectorInterface
      */
     final public function supports(ListContext $context, ListDefinition $listDefinition): bool
     {
-        return $context->context === static::getContext();
+        return true;
     }
 
     /**
@@ -33,9 +33,8 @@ abstract class AbstractProjector implements ProjectorInterface
         if (!$this->supports($context, $config))
         {
             throw new FlareException(\sprintf(
-                'Projector "%s" does not support list context "%s"',
+                'Projector "%s" does not support list context',
                 static::class,
-                $context->context
             ));
         }
 

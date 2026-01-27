@@ -7,11 +7,10 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Result as DBALResult;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Exception\NotImplementedException;
-use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
+use HeimrichHannot\FlareBundle\List\ListContext;
+use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
-use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 
@@ -32,11 +31,13 @@ class EventsListItemProvider extends AbstractListItemProvider
      */
     public function fetchCount(
         ListQueryBuilder $listQueryBuilder,
-        FilterContextCollection $filters,
+        ListDefinition   $listDefinition,
+        ListContext      $listContext,
     ): int {
         $byDate = $this->fetchEntriesGrouped(
             listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
+            listDefinition: $listDefinition,
+            listContext: $listContext,
             reduceSelect: true,
         );
 
@@ -59,21 +60,20 @@ class EventsListItemProvider extends AbstractListItemProvider
      */
     public function fetchEntries(
         ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ?SortDescriptor         $sortDescriptor = null,
-        ?Paginator              $paginator = null,
+        ListDefinition          $listDefinition,
+        ListContext             $listContext,
     ): array {
         $byDate = $this->fetchEntriesGrouped(
             listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
-            sortDescriptor: $sortDescriptor,
+            listDefinition: $listDefinition,
+            listContext: $listContext,
         );
 
-        $table = $filters->getTable();
+        $table = $listDefinition->dc;
 
         // Now, we need to flatten the array and sort it by date while respecting the paginator
-        $limit = $paginator?->getItemsPerPage() ?: null;
-        $targetOffset = \max(0, ($paginator?->getFirstItemNumber() ?? 1) - 1);
+        $limit = $listContext->paginatorConfig?->getItemsPerPage() ?: null;
+        $targetOffset = \max(0, ($listContext->paginatorConfig?->getFirstItemNumber() ?? 1) - 1);
         $currentOffset = 0;
         $entries = [];
 
@@ -126,18 +126,13 @@ class EventsListItemProvider extends AbstractListItemProvider
      */
     public function fetchIds(
         ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ?SortDescriptor         $sortDescriptor = null,
-        ?Paginator              $paginator = null,
+        ListDefinition          $listDefinition,
+        ListContext             $listContext,
     ): array {
-        if ($paginator) {
-            throw new NotImplementedException('Pagination is not yet supported for fetching IDs of an events list.', method: __METHOD__);
-        }
-
         $byDate = $this->fetchEntriesGrouped(
             listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
-            sortDescriptor: $sortDescriptor,
+            listDefinition: $listDefinition,
+            listContext: $listContext,
             reduceSelect: true,
         );
 
@@ -161,19 +156,22 @@ class EventsListItemProvider extends AbstractListItemProvider
      */
     protected function fetchEntriesGrouped(
         ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ?SortDescriptor         $sortDescriptor = null,
+        ListDefinition          $listDefinition,
+        ListContext             $listContext,
         ?bool                   $reduceSelect = null,
     ): array {
-        $sortDescriptor ??= SortDescriptor::fromMap([
+        $sortDescriptor = $listContext->sortDescriptor ?? SortDescriptor::fromMap([
             'startTime' => 'ASC',
             'endTime'   => 'DESC',
         ]);
 
+        $callQuote = $this->connection->quoteIdentifier(...);
+
         $query = $this->listQueryManager->populate(
             listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
-            order: $sortDescriptor?->toSql($this->connection->quoteIdentifier(...)),
+            listDefinition: $listDefinition,
+            listContext: $listContext,
+            order: $sortDescriptor?->toSql($callQuote),
             select: $reduceSelect ? ['id', 'startTime', 'endTime', 'repeatEach', 'repeatEnd'] : null,
         );
 

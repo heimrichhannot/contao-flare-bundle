@@ -27,20 +27,18 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws FilterException
      */
     public function fetchEntries(
-        ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ?SortDescriptor         $sortDescriptor = null,
-        ?Paginator              $paginator = null,
+        ListQueryBuilder $listQueryBuilder,
+        ListDefinition   $listDefinition,
+        ListContext      $listContext,
     ): array {
         $entries = $this->fetchEntriesOrIds(
             listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
-            sortDescriptor: $sortDescriptor,
-            paginator: $paginator,
+            listDefinition: $listDefinition,
+            listContext: $listContext,
             returnIds: false,
         );
 
-        $table = $filters->getTable();
+        $table = $listDefinition->dc;
 
         return \array_combine(
             \array_map(
@@ -60,16 +58,14 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws FilterException
      */
     public function fetchIds(
-        ListQueryBuilder        $listQueryBuilder,
-        ContentContext          $contentContext,
-        ?SortDescriptor         $sortDescriptor = null,
-        ?Paginator              $paginator = null,
+        ListQueryBuilder $listQueryBuilder,
+        ListDefinition   $listDefinition,
+        ListContext      $listContext,
     ): array {
         return $this->fetchEntriesOrIds(
             listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
-            sortDescriptor: $sortDescriptor,
-            paginator: $paginator,
+            listDefinition: $listDefinition,
+            listContext: $listContext,
             returnIds: true,
         );
     }
@@ -83,20 +79,20 @@ class ListItemProvider extends AbstractListItemProvider
     protected function fetchEntriesOrIds(
         ListQueryBuilder $listQueryBuilder,
         ListDefinition   $listDefinition,
-        ContentContext   $contentContext,
-        ?SortDescriptor  $sortDescriptor = null,
-        ?Paginator       $paginator = null,
+        ListContext      $listContext,
         ?bool            $returnIds = null,
     ): array {
         $returnIds ??= false;
 
+        $callQuote = $this->getConnection()->quoteIdentifier(...);
+
         $query = $this->getListQueryManager()->populate(
             listQueryBuilder: $listQueryBuilder,
             listDefinition: $listDefinition,
-            contentContext: $contentContext,
-            order: $sortDescriptor?->toSql($this->getConnection()->quoteIdentifier(...)),
-            limit: $paginator?->getItemsPerPage() ?: null,
-            offset: $paginator?->getOffset() ?: null,
+            listContext: $listContext,
+            order: $listContext->sortDescriptor?->toSql($callQuote),
+            limit: $listContext->paginatorConfig?->getItemsPerPage() ?: null,
+            offset: $listContext->paginatorConfig?->getOffset() ?: null,
             onlyId: $returnIds,
         );
 

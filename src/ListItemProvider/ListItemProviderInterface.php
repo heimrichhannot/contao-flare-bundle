@@ -2,12 +2,9 @@
 
 namespace HeimrichHannot\FlareBundle\ListItemProvider;
 
-use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\List\ListContext;
 use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
-use HeimrichHannot\FlareBundle\Paginator\Paginator;
-use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 
 /**
  * Interface required for list item providers.
@@ -40,10 +37,9 @@ interface ListItemProviderInterface
      * @return array<int, array> Returns an array of associative arrays, each mapping column names to their values.
      */
     public function fetchEntries(
-        ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ?SortDescriptor         $sortDescriptor = null,
-        ?Paginator              $paginator = null,
+        ListQueryBuilder $listQueryBuilder,
+        ListDefinition   $listDefinition,
+        ListContext      $listContext,
     ): array;
 
     /**
@@ -56,9 +52,8 @@ interface ListItemProviderInterface
      * @return array<int> Returns an array of unique IDs.
      */
     public function fetchIds(
-        ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ?SortDescriptor         $sortDescriptor = null,
-        ?Paginator              $paginator = null,
+        ListQueryBuilder $listQueryBuilder,
+        ListDefinition   $listDefinition,
+        ListContext      $listContext,
     ): array;
 }

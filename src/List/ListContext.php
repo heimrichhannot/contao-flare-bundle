@@ -8,8 +8,12 @@ use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 
 readonly class ListContext
 {
+    public const AGGREGATION = 'aggregation';
+    public const EXPORT = 'export';
+    public const INTERACTIVE = 'interactive';
+    public const VALIDATION = 'validation';
+
     public function __construct(
-        public string           $context,
         public ?PaginatorConfig $paginatorConfig,
         public ?SortDescriptor  $sortDescriptor,
         public ?ContentModel    $contentModel,

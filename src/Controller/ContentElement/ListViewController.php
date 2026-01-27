@@ -16,12 +16,12 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Factory\PaginatorBuilderFactory;
+use HeimrichHannot\FlareBundle\List\ListContext;
 use HeimrichHannot\FlareBundle\List\ListContextBuilderFactory;
 use HeimrichHannot\FlareBundle\List\ListDefinitionBuilderFactory;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
-use HeimrichHannot\FlareBundle\Projector\InteractiveProjector;
 use HeimrichHannot\FlareBundle\Projector\Projectors;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use Psr\Log\LoggerInterface;
@@ -111,7 +111,6 @@ final class ListViewController extends AbstractContentElementController
             $sortDescriptor = $this->getSortDescriptor($listModel);
 
             $listContext = $this->listContextBuilderFactory->create()
-                ->setContext(InteractiveProjector::getContext())
                 ->setPaginatorConfig($paginatorConfig)
                 ->setSortDescriptor($sortDescriptor)
                 ->setContentModel($contentModel)
@@ -123,8 +122,8 @@ final class ListViewController extends AbstractContentElementController
                 ->setDataSource($listModel)
                 ->build();
 
-            if (!$projector = $this->projectors->get($listContext->context)) {
-                throw new FlareException("List context '{$listContext->context}' has not projector registered.");
+            if (!$projector = $this->projectors->get($context = ListContext::INTERACTIVE)) {
+                throw new FlareException("List context '{$context}' has no projector registered.");
             }
 
             $projection = $projector->project($listContext, $listDefinition);

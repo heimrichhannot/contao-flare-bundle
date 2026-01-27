@@ -2,7 +2,6 @@
 
 namespace HeimrichHannot\FlareBundle\Projector;
 
-use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Factory\PaginatorBuilderFactory;
@@ -20,7 +19,7 @@ class InteractiveProjector extends AbstractProjector
 {
     public static function getContext(): string
     {
-        return 'interactive';
+        return ListContext::INTERACTIVE;
     }
 
     public function __construct(

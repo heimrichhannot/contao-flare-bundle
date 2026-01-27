@@ -19,7 +19,7 @@ class AggregationProjector extends AbstractProjector
 
     public static function getContext(): string
     {
-        return 'aggregation';
+        return ListContext::AGGREGATION;
     }
 
     protected function execute(ListContext $context, ListDefinition $listDefinition): AggregationProjection

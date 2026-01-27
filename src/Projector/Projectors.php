@@ -9,7 +9,7 @@ class Projectors
     private array $projectors;
 
     public function __construct(
-        #[TaggedIterator('flare.projector', defaultIndexMethod: 'getType')]
+        #[TaggedIterator('flare.projector', defaultIndexMethod: 'getContext')]
         private readonly iterable $projectorsIterable,
     ) {}
 

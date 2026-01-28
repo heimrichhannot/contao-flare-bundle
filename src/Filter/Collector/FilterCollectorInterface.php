@@ -3,13 +3,13 @@
 namespace HeimrichHannot\FlareBundle\Filter\Collector;
 
 use HeimrichHannot\FlareBundle\Filter\FilterDefinitionCollection;
-use HeimrichHannot\FlareBundle\List\ListDataSource;
+use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
 #[AutoconfigureTag('flare.filter_collector')]
 interface FilterCollectorInterface
 {
-    public function supports(ListDataSource $dataSource): bool;
+    public function supports(ListDataSourceInterface $dataSource): bool;
 
-    public function collect(ListDataSource $dataSource): ?FilterDefinitionCollection;
+    public function collect(ListDataSourceInterface $dataSource): ?FilterDefinitionCollection;
 }

@@ -1,8 +1,8 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\Projector\Projection;
+namespace HeimrichHannot\FlareBundle\View;
 
-class AggregationProjection implements ProjectionInterface
+class AggregationView implements ViewInterface
 {
     private int $count;
 

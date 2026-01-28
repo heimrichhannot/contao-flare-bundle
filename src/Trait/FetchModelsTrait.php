@@ -35,7 +35,7 @@ trait FetchModelsTrait
         return $model;
     }
 
-    public function fetchModels(string $table, array $entries): array
+    public function registerModelsFromEntries(string $table, array $entries): array
     {
         $modelClass = Model::getClassFromTable($table);
         if (!\class_exists($modelClass)) {

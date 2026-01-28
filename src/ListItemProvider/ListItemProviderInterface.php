@@ -2,9 +2,9 @@
 
 namespace HeimrichHannot\FlareBundle\ListItemProvider;
 
-use HeimrichHannot\FlareBundle\List\ListContext;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
+use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 /**
  * Interface required for list item providers.
@@ -18,9 +18,9 @@ interface ListItemProviderInterface
      * @return int Returns the total number of entries matching the given filters.
      */
     public function fetchCount(
-        ListQueryBuilder $listQueryBuilder,
-        ListDefinition   $listDefinition,
-        ListContext      $listContext,
+        ListQueryBuilder       $listQueryBuilder,
+        ListSpecification      $listDefinition,
+        ContextConfigInterface $contextConfig,
     ): int;
 
     /**
@@ -37,9 +37,9 @@ interface ListItemProviderInterface
      * @return array<int, array> Returns an array of associative arrays, each mapping column names to their values.
      */
     public function fetchEntries(
-        ListQueryBuilder $listQueryBuilder,
-        ListDefinition   $listDefinition,
-        ListContext      $listContext,
+        ListQueryBuilder       $listQueryBuilder,
+        ListSpecification      $listDefinition,
+        ContextConfigInterface $contextConfig,
     ): array;
 
     /**
@@ -52,8 +52,8 @@ interface ListItemProviderInterface
      * @return array<int> Returns an array of unique IDs.
      */
     public function fetchIds(
-        ListQueryBuilder $listQueryBuilder,
-        ListDefinition   $listDefinition,
-        ListContext      $listContext,
+        ListQueryBuilder       $listQueryBuilder,
+        ListSpecification      $listDefinition,
+        ContextConfigInterface $contextConfig,
     ): array;
 }

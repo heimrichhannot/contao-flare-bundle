@@ -4,14 +4,14 @@ namespace HeimrichHannot\FlareBundle\Model;
 
 use Contao\Model;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
-use HeimrichHannot\FlareBundle\List\ListDataSource;
+use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
 use HeimrichHannot\FlareBundle\Trait\AutoItemFieldGetterTrait;
 use HeimrichHannot\FlareBundle\Util\PtableInferrableInterface;
 
 /**
  * Class ListModel
  */
-class ListModel extends Model implements PtableInferrableInterface, ListDataSource
+class ListModel extends Model implements PtableInferrableInterface, ListDataSourceInterface
 {
     use AutoItemFieldGetterTrait;
     use DocumentsListModelTrait;

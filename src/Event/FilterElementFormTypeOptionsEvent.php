@@ -5,7 +5,7 @@ namespace HeimrichHannot\FlareBundle\Event;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilderFactory;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Contracts\EventDispatcher\Event;
 use Symfony\Contracts\Service\ServiceSubscriberInterface;
 use Symfony\Contracts\Service\ServiceSubscriberTrait;
@@ -17,9 +17,9 @@ class FilterElementFormTypeOptionsEvent extends Event implements ServiceSubscrib
     private ?ChoicesBuilder $choicesBuilder;
 
     public function __construct(
-        public readonly ListDefinition   $listDefinition,
-        public readonly FilterDefinition $filterDefinition,
-        public array                     $options,
+        public readonly ListSpecification $listDefinition,
+        public readonly FilterDefinition  $filterDefinition,
+        public array                      $options,
     ) {}
 
     public function getChoicesBuilder(): ChoicesBuilder

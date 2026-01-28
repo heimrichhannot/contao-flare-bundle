@@ -6,15 +6,11 @@ namespace HeimrichHannot\FlareBundle\ListItemProvider;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DBALException;
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\List\ListContext;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
-use HeimrichHannot\FlareBundle\Paginator\Paginator;
-use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 class ListItemProvider extends AbstractListItemProvider
 {
@@ -27,14 +23,14 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws FilterException
      */
     public function fetchEntries(
-        ListQueryBuilder $listQueryBuilder,
-        ListDefinition   $listDefinition,
-        ListContext      $listContext,
+        ListQueryBuilder       $listQueryBuilder,
+        ListSpecification      $listDefinition,
+        ContextConfigInterface $contextConfig,
     ): array {
         $entries = $this->fetchEntriesOrIds(
             listQueryBuilder: $listQueryBuilder,
             listDefinition: $listDefinition,
-            listContext: $listContext,
+            contextConfig: $contextConfig,
             returnIds: false,
         );
 
@@ -58,14 +54,14 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws FilterException
      */
     public function fetchIds(
-        ListQueryBuilder $listQueryBuilder,
-        ListDefinition   $listDefinition,
-        ListContext      $listContext,
+        ListQueryBuilder       $listQueryBuilder,
+        ListSpecification      $listDefinition,
+        ContextConfigInterface $contextConfig,
     ): array {
         return $this->fetchEntriesOrIds(
             listQueryBuilder: $listQueryBuilder,
             listDefinition: $listDefinition,
-            listContext: $listContext,
+            contextConfig: $contextConfig,
             returnIds: true,
         );
     }
@@ -77,22 +73,17 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws FilterException
      */
     protected function fetchEntriesOrIds(
-        ListQueryBuilder $listQueryBuilder,
-        ListDefinition   $listDefinition,
-        ListContext      $listContext,
-        ?bool            $returnIds = null,
+        ListQueryBuilder       $listQueryBuilder,
+        ListSpecification      $listDefinition,
+        ContextConfigInterface $contextConfig,
+        ?bool                  $returnIds = null,
     ): array {
         $returnIds ??= false;
-
-        $callQuote = $this->getConnection()->quoteIdentifier(...);
 
         $query = $this->getListQueryManager()->populate(
             listQueryBuilder: $listQueryBuilder,
             listDefinition: $listDefinition,
-            listContext: $listContext,
-            order: $listContext->sortDescriptor?->toSql($callQuote),
-            limit: $listContext->paginatorConfig?->getItemsPerPage() ?: null,
-            offset: $listContext->paginatorConfig?->getOffset() ?: null,
+            contextConfig: $contextConfig,
             onlyId: $returnIds,
         );
 
@@ -121,15 +112,15 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws FilterException
      */
     public function fetchCount(
-        ListQueryBuilder $listQueryBuilder,
-        ListDefinition   $listDefinition,
-        ListContext      $listContext,
+        ListQueryBuilder       $listQueryBuilder,
+        ListSpecification      $listDefinition,
+        ContextConfigInterface $contextConfig,
     ): int {
         $query = $this->getListQueryManager()->populate(
             listQueryBuilder: $listQueryBuilder,
             listDefinition: $listDefinition,
-            listContext: $listContext,
-            isCounting: true
+            contextConfig: $contextConfig,
+            isCounting: true,
         );
 
         if (!$query->isAllowed()) {

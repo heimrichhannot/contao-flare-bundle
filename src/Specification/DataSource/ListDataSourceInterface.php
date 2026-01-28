@@ -1,8 +1,8 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\List;
+namespace HeimrichHannot\FlareBundle\Specification\DataSource;
 
-interface ListDataSource
+interface ListDataSourceInterface
 {
     public function getListType(): string;
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Manager;
 
 use Contao\PageModel;
+use HeimrichHannot\FlareBundle\Context\Interface\FormContextInterface;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
@@ -12,9 +13,8 @@ use HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent;
 use HeimrichHannot\FlareBundle\Event\FilterFormChildOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
-use HeimrichHannot\FlareBundle\List\ListContext;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\Exception\OutOfBoundsException;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -32,10 +32,10 @@ readonly class FilterFormManager
     /**
      * @throws FilterException If the form could not be built
      */
-    public function buildForm(ListContext $listContext, ListDefinition $listDefinition): FormInterface
+    public function buildForm(ListSpecification $listSpecification, FormContextInterface $context): FormInterface
     {
-        $name = $listContext->get('form.name', 'flare');
-        $filters = $listDefinition->getFilters();
+        $name = $context->getFormName();
+        $filters = $listSpecification->getFilters();
 
         $formOptions = [
             'method'             => 'GET',
@@ -46,7 +46,7 @@ readonly class FilterFormManager
             ],
         ];
 
-        if ($action = $this->getFormAction($listContext)) {
+        if ($action = $this->getFormAction($context)) {
             $formOptions['action'] = $action;
         }
 
@@ -63,13 +63,13 @@ readonly class FilterFormManager
                 continue;
             }
 
-            $options = $this->getFilterElementOptions($listDefinition, $filterDefinition);
+            $options = $this->getFilterElementOptions($listSpecification, $filterDefinition);
 
             $childName = $filterDefinition->getFilterFormFieldName();
 
             /** @var FilterFormChildOptionsEvent $childOptionsEvent */
             $childOptionsEvent = $this->eventDispatcher->dispatch(new FilterFormChildOptionsEvent(
-                listDefinition: $listDefinition,
+                listSpecification: $listSpecification,
                 filterDefinition: $filterDefinition,
                 parentFormName: $name,
                 formName: $childName,
@@ -94,7 +94,7 @@ readonly class FilterFormManager
 
         /** @var FilterFormBuildEvent $formBuildEvent */
         $formBuildEvent = $this->eventDispatcher->dispatch(new FilterFormBuildEvent(
-            listDefinition: $listDefinition,
+            listSpecification: $listSpecification,
             formName: $name,
             formBuilder: $builder,
         ));
@@ -104,17 +104,13 @@ readonly class FilterFormManager
         return $builder->getForm();
     }
 
-    public function getFormAction(ListContext $listContext): ?string
+    public function getFormAction(FormContextInterface $config): ?string
     {
-        if (!$jumpTo = $listContext->get('form.action_page')) {
+        if (!$jumpTo = $config->getFormActionPage()) {
             return null;
         }
 
-        if (!\is_numeric($jumpTo)) {
-            return null;
-        }
-
-        if (!$pageModel = PageModel::findByPk((int) $jumpTo)) {
+        if (!$pageModel = PageModel::findByPk($jumpTo)) {
             return null;
         }
 
@@ -122,15 +118,17 @@ readonly class FilterFormManager
     }
 
     /**
-     * @param ListDefinition $listDefinition
+     * @param ListSpecification $listSpecification
      * @param FilterDefinition $filterDefinition
      * @return array
      * @throws FilterException
      */
-    private function getFilterElementOptions(ListDefinition $listDefinition, FilterDefinition $filterDefinition): array
-    {
+    private function getFilterElementOptions(
+        ListSpecification $listSpecification,
+        FilterDefinition  $filterDefinition,
+    ): array {
         $formTypeOptionsEvent = new FilterElementFormTypeOptionsEvent(
-            listDefinition: $listDefinition,
+            listDefinition: $listSpecification,
             filterDefinition: $filterDefinition,
             options: [],
         );
@@ -170,13 +168,13 @@ readonly class FilterFormManager
     /**
      * @throws FilterException If the form does not contain the filter field.
      */
-    public function hydrateForm(FormInterface $form, ListDefinition $listDefinition): void
+    public function hydrateForm(FormInterface $form, ListSpecification $listSpecification): void
     {
         if ($form->isSubmitted()) {
             return;
         }
 
-        foreach ($listDefinition->getFilters()->getIterator() as $filterDefinition)
+        foreach ($listSpecification->getFilters()->getIterator() as $filterDefinition)
         {
             if (!$filterElement = $this->filterElementRegistry->get($filterDefinition->getType())?->getService()) {
                 continue;
@@ -214,20 +212,20 @@ readonly class FilterFormManager
                 );
             }
 
-            $filterElement->hydrateForm($field, $listDefinition, $filterDefinition);
+            $filterElement->hydrateForm($field, $listSpecification, $filterDefinition);
         }
     }
 
     /**
      * @throws FilterException If the form does not contain the filter field.
      */
-    public function hydrateFilterElements(FormInterface $form, ListDefinition $listDefinition): void
+    public function hydrateFilterElements(FormInterface $form, ListSpecification $listSpecification): void
     {
         if ($form->isSubmitted() && !$form->isValid()) {
             return;
         }
 
-        foreach ($listDefinition->getFilters()->getIterator() as $filter)
+        foreach ($listSpecification->getFilters()->getIterator() as $filter)
         {
             if (!$filterElement = $this->filterElementRegistry->get($filter->getType())?->getService()) {
                 continue;

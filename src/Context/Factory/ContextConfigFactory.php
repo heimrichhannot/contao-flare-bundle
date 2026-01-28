@@ -1,13 +1,16 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\Projector;
+namespace HeimrichHannot\FlareBundle\Context\Factory;
 
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-readonly class ConfigFactory
+/**
+ * Factory class for creating and validating context objects from serialized data.
+ */
+readonly class ContextConfigFactory
 {
     public function __construct(
         private SerializerInterface $serializer,
@@ -23,17 +26,16 @@ readonly class ConfigFactory
      */
     public function create(string $className, array $data): object
     {
-        // 1. array -> object (hydration)
-        // Allow non-strict types (i.e., string "1" for int 1).
-        // The validator will handle the type mismatch.
+        // hydrate object from the array
         $object = $this->serializer->denormalize($data, $className, null, [
+            // Allow non-strict types (i.e., string "1" for int 1). The validator will handle type mismatches.
             AbstractObjectNormalizer::DISABLE_TYPE_ENFORCEMENT => true,
         ]);
 
-        // 2. object validation
+        // validate object
         $violations = $this->validator->validate($object);
 
-        if (count($violations) > 0) {
+        if ($violations->count()) {
             throw new ValidationFailedException($object, $violations);
         }
 

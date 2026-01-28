@@ -1,14 +1,14 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\List;
+namespace HeimrichHannot\FlareBundle\Specification;
 
-use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinitionCollection;
 use HeimrichHannot\FlareBundle\Model\DocumentsListModelTrait;
+use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
 use HeimrichHannot\FlareBundle\Trait\AutoItemFieldGetterTrait;
 use HeimrichHannot\FlareBundle\Trait\DynamicPropertiesTrait;
 
-class ListDefinition
+class ListSpecification
 {
     use AutoItemFieldGetterTrait;
     use DocumentsListModelTrait;
@@ -17,20 +17,20 @@ class ListDefinition
     public FilterDefinitionCollection $filters;
 
     public function __construct(
-        public readonly string      $type,
-        public readonly string      $dc,
-        private ?ListDataSource     $dataSource = null,
-        ?FilterDefinitionCollection $filters = null,
+        public readonly string           $type,
+        public readonly string           $dc,
+        private ?ListDataSourceInterface $dataSource = null,
+        ?FilterDefinitionCollection      $filters = null,
     ) {
         $this->filters = $filters ?? new FilterDefinitionCollection();
     }
 
-    public function getDataSource(): ?ListDataSource
+    public function getDataSource(): ?ListDataSourceInterface
     {
         return $this->dataSource;
     }
 
-    public function setDataSource(?ListDataSource $dataSource): static
+    public function setDataSource(?ListDataSourceInterface $dataSource): static
     {
         $this->dataSource = $dataSource;
         return $this;

@@ -2,102 +2,100 @@
 
 namespace HeimrichHannot\FlareBundle\Projector;
 
+use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
+use HeimrichHannot\FlareBundle\Context\Factory\AggregationConfigFactory;
+use HeimrichHannot\FlareBundle\Context\InteractiveConfig;
+use HeimrichHannot\FlareBundle\Context\Interface\PaginatedContextInterface;
 use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Factory\PaginatorBuilderFactory;
-use HeimrichHannot\FlareBundle\List\ListContext;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\Manager\FilterFormManager;
 use HeimrichHannot\FlareBundle\Manager\ListItemProviderManager;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
-use HeimrichHannot\FlareBundle\Projector\Projection\AggregationProjection;
-use HeimrichHannot\FlareBundle\Projector\Projection\InteractiveProjection;
+use HeimrichHannot\FlareBundle\View\AggregationView;
+use HeimrichHannot\FlareBundle\View\InteractiveView;
+use HeimrichHannot\FlareBundle\Projector\Registry\ProjectorRegistry;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
- * @implements ProjectorInterface<InteractiveProjection>
+ * @implements ProjectorInterface<InteractiveView>
  */
 class InteractiveProjector extends AbstractProjector
 {
-    public static function getContext(): string
-    {
-        return ListContext::INTERACTIVE;
-    }
-
-    public static function getProjectionClass(): string
-    {
-        return InteractiveProjection::class;
-    }
-
     public function __construct(
+        private readonly AggregationConfigFactory $aggregationConfigFactory,
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly FilterFormManager        $filterFormManager,
-        private readonly RequestStack             $requestStack,
-        private readonly ListItemProviderManager  $itemProvider,
+        private readonly ListItemProviderManager  $listItemProviderManager,
         private readonly ListQueryManager         $listQueryManager,
         private readonly PaginatorBuilderFactory  $paginatorBuilderFactory,
-        private readonly Projectors               $projectors,
+        private readonly ProjectorRegistry        $projectorRegistry,
+        private readonly RequestStack             $requestStack,
     ) {}
 
-    protected function execute(ListContext $listContext, ListDefinition $listDefinition): InteractiveProjection
+    public function supports(ContextConfigInterface $config): bool
     {
-        $form = $this->getForm($listContext, $listDefinition);
-        $totalItems = $this->getAggregationProjection($listContext, $listDefinition)->getCount();
-        $paginator = $this->getPaginator($form, $listContext, $totalItems);
+        return $config instanceof InteractiveConfig;
+    }
+
+    public function project(ListSpecification $spec, ContextConfigInterface $config): InteractiveView
+    {
+        \assert($config instanceof InteractiveConfig);
+
+        $form = $this->getForm($spec, $config);
+        $totalItems = $this->getAggregationProjection($spec, $config)->getCount();
+        $paginator = $this->getPaginator($form, $config, $totalItems);
 
         // Override list context to include the proper paginator config
-        $listContext = $listContext->with(paginatorConfig: $paginator);
+        $config = $config->with(paginatorConfig: $paginator);
 
-        $fetchEntries = function () use ($form, $listContext, $listDefinition): array {
-            return $this->fetchEntries($form, $listContext, $listDefinition);
+        $fetchEntries = function () use ($spec, $config, $form): array {
+            return $this->fetchEntries($spec, $config, $form);
         };
 
-        return new InteractiveProjection(
+        return new InteractiveView(
             fetchEntries: $fetchEntries,
             form: $form,
             paginator: $paginator,
-            table: $listDefinition->dc,
+            table: $spec->dc,
             totalItems: $totalItems,
         );
     }
 
-    public function getForm(ListContext $listContext, ListDefinition $listDefinition): FormInterface
+    public function getForm(ListSpecification $spec, InteractiveConfig $config): FormInterface
     {
         if (!$request = $this->requestStack->getCurrentRequest()) {
             throw new FilterException('Request not available', source: __METHOD__);
         }
 
-        $form = $this->filterFormManager->buildForm($listContext, $listDefinition);
+        $form = $this->filterFormManager->buildForm($spec, $config);
         $form->handleRequest($request);
 
-        $this->filterFormManager->hydrateForm($form, $listDefinition);
+        $this->filterFormManager->hydrateForm($form, $spec);
         // $this->filterFormManager->hydrateFilterElements($form, $listDefinition);
 
         return $form;
     }
 
     private function getAggregationProjection(
-        ListContext    $listContext,
-        ListDefinition $listDefinition
-    ): AggregationProjection {
-        $projection = $this->projectors->project(
-            projectionClass: AggregationProjection::class,
-            listContext: $listContext,
-            listDefinition: $listDefinition
-        );
+        ListSpecification $spec,
+        InteractiveConfig $interactiveConfig
+    ): AggregationView {
+        $aggregationConfig = $this->aggregationConfigFactory->createFromConfig($interactiveConfig);
+        $projector = $this->projectorRegistry->getProjectorFor($aggregationConfig);
+        $projection = $projector->project($spec, $aggregationConfig);
 
-        if (!$projection instanceof AggregationProjection) {
-            throw new FlareException('Aggregation projection not available', source: __METHOD__);
-        }
+        \assert($projection instanceof AggregationView);
 
         return $projection;
     }
 
-    public function getPaginator(FormInterface $form, ListContext $listContext, int $totalItems): Paginator
+    public function getPaginator(FormInterface $form, PaginatedContextInterface $context, int $totalItems): Paginator
     {
         if ($form->isSubmitted() && !$form->isValid()) {
             return $this->paginatorBuilderFactory->create()->buildEmpty();
@@ -105,14 +103,14 @@ class InteractiveProjector extends AbstractProjector
 
         return $this->paginatorBuilderFactory
             ->create()
-            ->fromConfig($listContext->paginatorConfig)
+            ->fromConfig($context->getPaginatorConfig())
             ->queryPrefix($form->getName())
             ->handleRequest()
             ->totalItems($totalItems)
             ->build();
     }
 
-    public function fetchEntries(FormInterface $form, ListContext $listContext, ListDefinition $listDefinition)
+    public function fetchEntries(ListSpecification $spec, InteractiveConfig $config, FormInterface $form): array
     {
         try
         {
@@ -120,13 +118,13 @@ class InteractiveProjector extends AbstractProjector
                 return [];
             }
 
-            $itemProvider = $this->itemProvider->ofList($listDefinition);
-            $listQueryBuilder = $this->listQueryManager->prepare($listDefinition);
+            $itemProvider = $this->listItemProviderManager->ofList($spec);
+            $listQueryBuilder = $this->listQueryManager->prepare($spec);
 
             $event = $this->eventDispatcher->dispatch(
                 new FetchListEntriesEvent(
-                    listContext: $listContext,
-                    listDefinition: $listDefinition,
+                    contextConfig: $config,
+                    listSpecification: $spec,
                     itemProvider: $itemProvider,
                     listQueryBuilder: $listQueryBuilder,
                 )
@@ -137,8 +135,8 @@ class InteractiveProjector extends AbstractProjector
 
             return $itemProvider->fetchEntries(
                 listQueryBuilder: $listQueryBuilder,
-                listDefinition: $listDefinition,
-                listContext: $listContext,
+                listDefinition: $spec,
+                contextConfig: $config,
             );
         }
         catch (FlareException $e)

@@ -1,44 +1,32 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Projector;
 
-use HeimrichHannot\FlareBundle\List\ListContext;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
-use HeimrichHannot\FlareBundle\Projector\Projection\ProjectionInterface;
+use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
+use HeimrichHannot\FlareBundle\View\ViewInterface;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
 /**
- * @template T of ProjectionInterface
- * @phpstan-template T of ProjectionInterface
- * @psalm-template T of ProjectionInterface
+ * @template TProjection of ViewInterface
+ * @template TConfig of ContextConfigInterface
  */
 #[AutoconfigureTag('flare.projector')]
 interface ProjectorInterface
 {
     /**
-     * Gets the context as a string.
-     *
-     * @return string The context string.
+     * Checks if this projector supports the given context configuration.
      */
-    public static function getContext(): string;
+    public function supports(ContextConfigInterface $config): bool;
 
     /**
-     * Gets the projection class for this projector.
-     * @return class-string<T> The projection class.
+     * Projects a list specification into a result based on the context config.
+     *
+     * @param ListSpecification $spec
+     * @param TConfig $config
+     * @return TProjection
      */
-    public static function getProjectionClass(): string;
-
-    /**
-     * Projects a list context and definition into a projection interface.
-     *
-     * Throws exceptions if the projection fails.
-     *
-     * @param ListContext $listContext The list-context to be projected.
-     * @param ListDefinition $listDefinition The configuration for the projection.
-     *
-     * @return T The resulting projection interface.
-     * @phpstan-return T The resulting projection interface.
-     * @psalm-return T The resulting projection interface.
-     */
-    public function project(ListContext $listContext, ListDefinition $listDefinition): ProjectionInterface;
+    public function project(ListSpecification $spec, ContextConfigInterface $config): ViewInterface;
 }

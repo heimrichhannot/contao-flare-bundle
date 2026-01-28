@@ -2,59 +2,66 @@
 
 namespace HeimrichHannot\FlareBundle\Projector;
 
+use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
+use HeimrichHannot\FlareBundle\Context\ValidationConfig;
 use HeimrichHannot\FlareBundle\Dto\FetchSingleEntryConfig;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
-use HeimrichHannot\FlareBundle\List\ListContext;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\Manager\ListItemProviderManager;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
-use HeimrichHannot\FlareBundle\Projector\Projection\ValidationProjection;
+use HeimrichHannot\FlareBundle\View\ValidationView;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
- * @implements ProjectorInterface<ValidationProjection>
+ * @implements ProjectorInterface<ValidationView>
  */
 class ValidationProjector extends AbstractProjector
 {
-    public static function getContext(): string
-    {
-        return ListContext::VALIDATION;
-    }
-
-    public static function getProjectionClass(): string
-    {
-        return ValidationProjection::class;
-    }
-
     public function __construct(
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly ListItemProviderManager  $itemProviderManager,
         private readonly ListQueryManager         $listQueryManager
     ) {}
 
-    protected function execute(ListContext $listContext, ListDefinition $listDefinition): ValidationProjection
+    public function supports(ContextConfigInterface $config): bool
     {
-        return new ValidationProjection(
-            fetchEntry: function (int $id) use ($listContext, $listDefinition): ?array {
-                return $this->fetchEntry($id, $listContext, $listDefinition);
+        return $config instanceof ValidationConfig;
+    }
+
+    public function project(ListSpecification $spec, ContextConfigInterface $config): ValidationView
+    {
+        \assert($config instanceof ValidationConfig);
+
+        return new ValidationView(
+            fetchEntry: function (int $id) use ($spec, $config): ?array {
+                return $this->fetchEntry($id, $spec, $config);
             },
-            table: $listDefinition->dc,
-            entries: $listContext->get('validation.entries'),
+            table: $spec->dc,
         );
     }
 
-    public function fetchEntry(int $id, ListContext $listContext, ListDefinition $listDefinition): ?array
+    public function fetchEntry(int $id, ListSpecification $spec, ValidationConfig $config): ?array
     {
-        $itemProvider = $this->itemProviderManager->ofList($listDefinition);
-        $listQueryBuilder = $this->listQueryManager->prepare($listDefinition);
+        // Fast lane cache check
+        if ($hit = $config->getEntryCache()[$id] ?? null) {
+            return $hit;
+        }
+
+        // IMPORTANT: clone the spec to not modify the original, i.e., when adding the id filter
+        $spec = clone $spec;
 
         $idDefinition = SimpleEquationElement::define(
             equationLeft: 'id',
             equationOperator: SqlEquationOperator::EQUALS,
             equationRight: $id,
-        )->setType('_flare_id', $ogAlias);
+        );
+
+        $spec->filters->add($idDefinition);
+
+        $listQueryBuilder = $this->listQueryManager->prepare($spec);
+        $itemProvider = $this->itemProviderManager->ofList($spec);
 
         /**
          * @noinspection PhpParenthesesCanBeOmittedForNewCallInspection
@@ -63,23 +70,20 @@ class ValidationProjector extends AbstractProjector
          */
         $event = $this->eventDispatcher->dispatch(
             (new FetchListEntriesEvent(
-                listContext: $listContext,
-                listDefinition: $listDefinition,
+                contextConfig: $config,
+                listSpecification: $spec,
                 itemProvider: $itemProvider,
                 listQueryBuilder: $listQueryBuilder,
             ))->withSingleEntryConfig(new FetchSingleEntryConfig($id, $idDefinition))
         );
-
-        $idDefinition = $event->getSingleEntryConfig()->idFilterDefinition ?? $idDefinition;
-        $listDefinition->filters->add($idDefinition);
 
         $itemProvider = $event->getItemProvider();
         $listQueryBuilder = $event->getListQueryBuilder();
 
         $entries = $itemProvider->fetchEntries(
             listQueryBuilder: $listQueryBuilder,
-            listDefinition: $listDefinition,
-            listContext: $listContext,
+            listDefinition: $spec,
+            contextConfig: $config,
         );
 
         return \reset($entries) ?: null;

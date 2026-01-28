@@ -13,7 +13,6 @@ use HeimrichHannot\FlareBundle\Event\FetchAutoItemEvent;
 use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
 use HeimrichHannot\FlareBundle\Event\ListViewDetailsPageUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
-use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\ListType\DcMultilingualListType;
@@ -52,7 +51,7 @@ class Terminal42ChangelanguageListener
     #[AsEventListener]
     public function fetchAutoItem(FetchAutoItemEvent $event): void
     {
-        $list = $event->getListDefinition();
+        $list = $event->getListSpecification();
 
         if ($list->type !== DcMultilingualListType::TYPE) {
             return;

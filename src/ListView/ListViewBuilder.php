@@ -2,23 +2,21 @@
 
 namespace HeimrichHannot\FlareBundle\ListView;
 
+use HeimrichHannot\FlareBundle\Context\InteractiveConfig;
 use HeimrichHannot\FlareBundle\Event\ListViewBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\List\ListContext;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolver;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
-use HeimrichHannot\FlareBundle\Projector\Projection\InteractiveProjection;
-use HeimrichHannot\FlareBundle\Projector\Projection\ValidationProjection;
+use HeimrichHannot\FlareBundle\View\InteractiveView;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class ListViewBuilder
 {
-    private ListContext $listContext;
-    private ListDefinition $listDefinition;
-    private InteractiveProjection $interactiveProjection;
-    private ValidationProjection $validationProjection;
+    private InteractiveConfig $interactiveConfig;
+    private ListSpecification $listDefinition;
+    private InteractiveView $interactiveView;
     private ?PaginatorConfig $paginatorConfig = null;
     private ?SortDescriptor $sortDescriptor = null;
 
@@ -27,21 +25,21 @@ class ListViewBuilder
         private ListViewResolver                  $listViewResolver,
     ) {}
 
-    public function getListContext(): ListContext
+    public function getInteractiveConfig(): InteractiveConfig
     {
-        return $this->listContext;
+        return $this->interactiveConfig;
     }
 
-    public function setListContext(ListContext $listContext): static
+    public function setInteractiveConfig(InteractiveConfig $interactiveConfig): static
     {
-        $this->listContext = $listContext;
+        $this->interactiveConfig = $interactiveConfig;
         return $this;
     }
 
     /**
      * @api Get the list definition for the list view being built.
      */
-    public function getListDefinition(): ListDefinition
+    public function getListDefinition(): ListSpecification
     {
         return $this->listDefinition;
     }
@@ -49,31 +47,20 @@ class ListViewBuilder
     /**
      * @api Set the list definition for the list view being built.
      */
-    public function setListDefinition(ListDefinition $listDefinition): static
+    public function setListDefinition(ListSpecification $listDefinition): static
     {
         $this->listDefinition = $listDefinition;
         return $this;
     }
 
-    public function getInteractiveProjection(): InteractiveProjection
+    public function getInteractiveView(): InteractiveView
     {
-        return $this->interactiveProjection;
+        return $this->interactiveView;
     }
 
-    public function setInteractiveProjection(InteractiveProjection $interactiveProjection): static
+    public function setInteractiveView(InteractiveView $interactiveView): static
     {
-        $this->interactiveProjection = $interactiveProjection;
-        return $this;
-    }
-
-    public function getValidationProjection(): ValidationProjection
-    {
-        return $this->validationProjection;
-    }
-
-    public function setValidationProjection(ValidationProjection $validationProjection): static
-    {
-        $this->validationProjection = $validationProjection;
+        $this->interactiveView = $interactiveView;
         return $this;
     }
 
@@ -131,7 +118,7 @@ class ListViewBuilder
         /** @var ListViewBuilder $builder */
         $builder = $event->getBuilder();
 
-        if (!isset($builder->listContext)) {
+        if (!isset($builder->interactiveConfig)) {
             throw new FlareException('No content context provided.');
         }
 
@@ -139,20 +126,15 @@ class ListViewBuilder
             throw new FlareException('No list model provided.');
         }
 
-        if (!isset($builder->interactiveProjection)) {
+        if (!isset($builder->interactiveView)) {
             throw new FlareException('No interactive projection provided.');
         }
 
-        if (!isset($builder->validationProjection)) {
-            throw new FlareException('No validation projection provided.');
-        }
-
         return new ListView(
-            listContext: $builder->getListContext(),
-            listDefinition: $builder->getListDefinition(),
+            interactiveConfig: $builder->getInteractiveConfig(),
+            listSpecification: $builder->getListDefinition(),
             resolver: $builder->getListViewResolver(),
-            interactiveProjection: $builder->getInteractiveProjection(),
-            validationProjection: $builder->getValidationProjection(),
+            interactiveProjection: $builder->getInteractiveView(),
         );
     }
 }

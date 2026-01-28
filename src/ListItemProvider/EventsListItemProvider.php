@@ -5,13 +5,14 @@ namespace HeimrichHannot\FlareBundle\ListItemProvider;
 use Contao\StringUtil;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Result as DBALResult;
+use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
+use HeimrichHannot\FlareBundle\Context\Interface\PaginatedContextInterface;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\List\ListContext;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 
 class EventsListItemProvider extends AbstractListItemProvider
@@ -30,14 +31,14 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     public function fetchCount(
-        ListQueryBuilder $listQueryBuilder,
-        ListDefinition   $listDefinition,
-        ListContext      $listContext,
+        ListQueryBuilder       $listQueryBuilder,
+        ListSpecification      $listDefinition,
+        ContextConfigInterface $contextConfig,
     ): int {
         $byDate = $this->fetchEntriesGrouped(
             listQueryBuilder: $listQueryBuilder,
             listDefinition: $listDefinition,
-            listContext: $listContext,
+            contextConfig: $contextConfig,
             reduceSelect: true,
         );
 
@@ -59,21 +60,25 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     public function fetchEntries(
-        ListQueryBuilder        $listQueryBuilder,
-        ListDefinition          $listDefinition,
-        ListContext             $listContext,
+        ListQueryBuilder       $listQueryBuilder,
+        ListSpecification      $listDefinition,
+        ContextConfigInterface $contextConfig,
     ): array {
         $byDate = $this->fetchEntriesGrouped(
             listQueryBuilder: $listQueryBuilder,
             listDefinition: $listDefinition,
-            listContext: $listContext,
+            contextConfig: $contextConfig,
         );
 
         $table = $listDefinition->dc;
 
+        $paginatorConfig = $contextConfig instanceof PaginatedContextInterface
+            ? $contextConfig->getPaginatorConfig()
+            : null;
+
         // Now, we need to flatten the array and sort it by date while respecting the paginator
-        $limit = $listContext->paginatorConfig?->getItemsPerPage() ?: null;
-        $targetOffset = \max(0, ($listContext->paginatorConfig?->getFirstItemNumber() ?? 1) - 1);
+        $limit = $paginatorConfig?->getItemsPerPage() ?: null;
+        $targetOffset = \max(0, ($paginatorConfig?->getFirstItemNumber() ?? 1) - 1);
         $currentOffset = 0;
         $entries = [];
 
@@ -125,14 +130,14 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     public function fetchIds(
-        ListQueryBuilder        $listQueryBuilder,
-        ListDefinition          $listDefinition,
-        ListContext             $listContext,
+        ListQueryBuilder       $listQueryBuilder,
+        ListSpecification      $listDefinition,
+        ContextConfigInterface $contextConfig,
     ): array {
         $byDate = $this->fetchEntriesGrouped(
             listQueryBuilder: $listQueryBuilder,
             listDefinition: $listDefinition,
-            listContext: $listContext,
+            contextConfig: $contextConfig,
             reduceSelect: true,
         );
 
@@ -155,23 +160,22 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     protected function fetchEntriesGrouped(
-        ListQueryBuilder        $listQueryBuilder,
-        ListDefinition          $listDefinition,
-        ListContext             $listContext,
-        ?bool                   $reduceSelect = null,
+        ListQueryBuilder       $listQueryBuilder,
+        ListSpecification      $listDefinition,
+        ContextConfigInterface $contextConfig,
+        ?bool                  $reduceSelect = null,
     ): array {
-        $sortDescriptor = $listContext->sortDescriptor ?? SortDescriptor::fromMap([
+        $sortDescriptor = $contextConfig->sortDescriptor ?? SortDescriptor::fromMap([
             'startTime' => 'ASC',
             'endTime'   => 'DESC',
         ]);
 
-        $callQuote = $this->connection->quoteIdentifier(...);
+        // todo: assign sortDescriptor to context in some kind of hook beforehand
 
         $query = $this->listQueryManager->populate(
             listQueryBuilder: $listQueryBuilder,
             listDefinition: $listDefinition,
-            listContext: $listContext,
-            order: $sortDescriptor?->toSql($callQuote),
+            contextConfig: $contextConfig,
             select: $reduceSelect ? ['id', 'startTime', 'endTime', 'repeatEach', 'repeatEnd'] : null,
         );
 

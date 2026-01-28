@@ -1,13 +1,13 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\Projector\Projection;
+namespace HeimrichHannot\FlareBundle\View;
 
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Trait\FetchModelsTrait;
 use Symfony\Component\Form\FormInterface;
 
-class InteractiveProjection implements ProjectionInterface
+class InteractiveView implements ViewInterface
 {
     use FetchModelsTrait;
 
@@ -50,11 +50,16 @@ class InteractiveProjection implements ProjectionInterface
 
     public function getModels(): array
     {
-        return $this->models ??= $this->fetchModels($this->table, $this->getEntries());
+        return $this->models ??= $this->registerModelsFromEntries($this->table, $this->getEntries());
     }
 
     public function getModel(int $id): ?Model
     {
         return $this->getModels()[$id] ?? null;
+    }
+
+    public function isEntriesLoaded(): bool
+    {
+        return isset($this->entries);
     }
 }

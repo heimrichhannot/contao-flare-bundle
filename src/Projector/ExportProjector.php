@@ -2,27 +2,23 @@
 
 namespace HeimrichHannot\FlareBundle\Projector;
 
-use HeimrichHannot\FlareBundle\List\ListContext;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
-use HeimrichHannot\FlareBundle\Projector\Projection\ExportProjection;
+use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
+use HeimrichHannot\FlareBundle\View\ExportView;
+use HeimrichHannot\FlareBundle\View\ViewInterface;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 /**
- * @implements ProjectorInterface<ExportProjection>
+ * @implements ProjectorInterface<ExportView>
  */
 class ExportProjector extends AbstractProjector
 {
-    public static function getContext(): string
+    public function supports(ContextConfigInterface $config): bool
     {
-        return ListContext::EXPORT;
+        return false;
     }
 
-    public static function getProjectionClass(): string
+    public function project(ListSpecification $spec, ContextConfigInterface $config): ViewInterface
     {
-        return ExportProjection::class;
-    }
-
-    protected function execute(ListContext $listContext, ListDefinition $listDefinition): ExportProjection
-    {
-        // TODO: Implement execute() method.
+        throw new \RuntimeException('Not implemented.');
     }
 }

@@ -15,9 +15,9 @@ use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilderFactory;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormInterface;
 
@@ -113,7 +113,7 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         return $submittedData;
     }
 
-    public function hydrateForm(FormInterface $field, ListDefinition $list, FilterDefinition $filter): void
+    public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void
     {
         if ($field->isSubmitted()) {
             return;
@@ -154,7 +154,7 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         mixed          $value,
         ?DataContainer $dc,
         FilterModel    $filterModel,
-        ListModel      $listModel
+        ListModel $listModel
     ): mixed {
         if (!$dc || !($dcTable = $dc->table) || !($dcField = $dc->field)) {
             return $value;
@@ -171,7 +171,7 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         mixed          $value,
         ?DataContainer $dc,
         FilterModel    $filterModel,
-        ListModel      $listModel
+        ListModel $listModel
     ): mixed {
         if (!$dc
             || !($dcTable = $dc->table)

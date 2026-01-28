@@ -3,10 +3,10 @@
 namespace HeimrichHannot\FlareBundle\Contract\FilterElement;
 
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\FormInterface;
 
 interface HydrateFormContract
 {
-    public function hydrateForm(FormInterface $field, ListDefinition $list, FilterDefinition $filter): void;
+    public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void;
 }

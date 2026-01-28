@@ -5,10 +5,10 @@ namespace HeimrichHannot\FlareBundle\Filter\Collector;
 use Contao\Controller;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinitionCollection;
-use HeimrichHannot\FlareBundle\List\ListDataSource;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
 
 readonly class ListModelFilterCollector implements FilterCollectorInterface
 {
@@ -16,12 +16,12 @@ readonly class ListModelFilterCollector implements FilterCollectorInterface
         private ListTypeRegistry $listTypeRegistry,
     ) {}
 
-    public function supports(ListDataSource $dataSource): bool
+    public function supports(ListDataSourceInterface $dataSource): bool
     {
         return $dataSource instanceof ListModel;
     }
 
-    public function collect(ListDataSource $dataSource): ?FilterDefinitionCollection
+    public function collect(ListDataSourceInterface $dataSource): ?FilterDefinitionCollection
     {
         if (!$dataSource instanceof ListModel) {
             throw new \InvalidArgumentException('The given data source is not a list model.');

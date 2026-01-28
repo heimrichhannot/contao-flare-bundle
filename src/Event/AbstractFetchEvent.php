@@ -2,36 +2,30 @@
 
 namespace HeimrichHannot\FlareBundle\Event;
 
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
-use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
+use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinitionCollection;
-use HeimrichHannot\FlareBundle\List\ListContext;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
-use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
-use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
-use Symfony\Component\Form\FormInterface;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Contracts\EventDispatcher\Event;
 
 abstract class AbstractFetchEvent extends Event
 {
     public function __construct(
-        private readonly ListContext       $listContext,
-        private readonly ListDefinition    $listDefinition,
-        private ListItemProviderInterface  $itemProvider,
-        private ListQueryBuilder           $listQueryBuilder,
+        private readonly ContextConfigInterface $contextConfig,
+        private readonly ListSpecification      $listSpecification,
+        private ListItemProviderInterface       $itemProvider,
+        private ListQueryBuilder                $listQueryBuilder,
     ) {}
 
-    public function getListContext(): ListContext
+    public function getContextConfig(): ContextConfigInterface
     {
-        return $this->listContext;
+        return $this->contextConfig;
     }
 
-    public function getListDefinition(): ListDefinition
+    public function getListSpecification(): ListSpecification
     {
-        return $this->listDefinition;
+        return $this->listSpecification;
     }
 
     public function getItemProvider(): ListItemProviderInterface
@@ -54,9 +48,9 @@ abstract class AbstractFetchEvent extends Event
         $this->listQueryBuilder = $listQueryBuilder;
     }
 
-    /** @deprecated use {@see self::getListDefinition()->getFilters()} instead} */
+    /** @deprecated use {@see self::getListSpecification()->getFilters()} instead} */
     public function getFilters(): FilterDefinitionCollection
     {
-        return $this->getListDefinition()->getFilters();
+        return $this->getListSpecification()->getFilters();
     }
 }

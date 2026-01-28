@@ -1,11 +1,11 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\Projector\Projection;
+namespace HeimrichHannot\FlareBundle\View;
 
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Trait\FetchModelsTrait;
 
-class ValidationProjection implements ProjectionInterface
+class ValidationView implements ViewInterface
 {
     use FetchModelsTrait;
 
@@ -19,10 +19,7 @@ class ValidationProjection implements ProjectionInterface
     public function __construct(
         private readonly \Closure $fetchEntry,
         private readonly string   $table,
-        ?array                    $entries = null,
-    ) {
-        $this->entries = $entries ?? [];
-    }
+    ) {}
 
     public function getEntry(int $id): ?array
     {

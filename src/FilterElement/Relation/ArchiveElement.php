@@ -20,9 +20,9 @@ use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilderFactory;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -275,7 +275,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
         mixed          $value,
         ?DataContainer $dc,
         FilterModel    $filterModel,
-        ListModel      $listModel
+        ListModel $listModel
     ): mixed {
         if (!$dc) {
             return [];
@@ -365,7 +365,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
         return $pClass::findMultipleByIds($whitelist);
     }
 
-    public function hydrateForm(FormInterface $field, ListDefinition $list, FilterDefinition $filter): void
+    public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void
     {
         if ($preselect = StringUtil::deserialize($filter->preselect ?: null, true))
         {

@@ -3,13 +3,12 @@
 namespace HeimrichHannot\FlareBundle\ListView;
 
 use Contao\Model;
+use HeimrichHannot\FlareBundle\Context\InteractiveConfig;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
-use HeimrichHannot\FlareBundle\List\ListContext;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolver;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
-use HeimrichHannot\FlareBundle\Projector\Projection\InteractiveProjection;
-use HeimrichHannot\FlareBundle\Projector\Projection\ValidationProjection;
+use HeimrichHannot\FlareBundle\View\InteractiveView;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\FormInterface;
 
 /**
@@ -20,18 +19,16 @@ use Symfony\Component\Form\FormInterface;
  */
 class ListView
 {
-    private array $models = [];
     private array $readerUrls = [];
 
     /**
      * @internal Use {@see ListViewBuilder} (inject {@see ListViewBuilderFactory}) to create a new instance.
      */
     public function __construct(
-        private readonly ListContext               $listContext,
-        private readonly ListDefinition            $listDefinition,
-        private readonly ListViewResolver          $resolver,
-        private readonly InteractiveProjection     $interactiveProjection,
-        private readonly ValidationProjection      $validationProjection,
+        private readonly InteractiveConfig $interactiveConfig,
+        private readonly ListSpecification $listSpecification,
+        private readonly ListViewResolver  $resolver,
+        private readonly InteractiveView   $interactiveProjection,
     ) {}
 
     /**
@@ -39,9 +36,9 @@ class ListView
      *
      * @api Use in twig templates to access the list context of a list.
      */
-    public function getListContext(): ListContext
+    public function getInteractiveConfig(): InteractiveConfig
     {
-        return $this->listContext;
+        return $this->interactiveConfig;
     }
 
     /**
@@ -49,9 +46,19 @@ class ListView
      *
      * @api Use in twig templates to access the list definition of a list.
      */
-    public function getListDefinition(): ListDefinition
+    public function getListSpecification(): ListSpecification
     {
-        return $this->listDefinition;
+        return $this->listSpecification;
+    }
+
+    /**
+     * Returns the interactive list projection for this list view.
+     *
+     * @api Use in twig templates to access the interactive projection of a list.
+     */
+    public function getInteractiveProjection(): InteractiveView
+    {
+        return $this->interactiveProjection;
     }
 
     /**
@@ -62,6 +69,16 @@ class ListView
     public function getEntries(): iterable
     {
         return $this->interactiveProjection->getEntries();
+    }
+
+    /**
+     * Returns the models for the entries of this list view.
+     *
+     * @api Use in twig templates to access the models of a list.
+     */
+    public function getModels(): iterable
+    {
+        return $this->interactiveProjection->getModels();
     }
 
     /**
@@ -91,8 +108,7 @@ class ListView
      */
     public function getModel(int|string $id): Model
     {
-        return $this->interactiveProjection->getModel((int) $id)
-            ?? $this->validationProjection->getModel((int) $id);
+        return $this->interactiveProjection->getModel((int) $id);
     }
 
     /**

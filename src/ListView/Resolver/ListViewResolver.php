@@ -19,7 +19,7 @@ class ListViewResolver implements ServiceSubscriberInterface
     {
         return $this->getListViewManager()->getDetailsPageUrl(
             id: $id,
-            listModel: $dto->getListDefinition()->getDataSource(),
+            listModel: $dto->getListSpecification()->getDataSource(),
             contentContext: $dto->getContentContext(),
         );
     }

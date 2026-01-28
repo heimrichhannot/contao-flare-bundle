@@ -17,9 +17,9 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormInterface;
 
@@ -159,7 +159,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
             : $filter->preselect;
     }
 
-    public function hydrateForm(FormInterface $field, ListDefinition $list, FilterDefinition $filter): void
+    public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void
     {
         if ($field->isSubmitted()) {
             return;
@@ -294,7 +294,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
         return $this->tryGetOptionsFromField($listModel, $field) ?? [];
     }
 
-    public function getOptions(ListDefinition $list, FilterDefinition $filter): ?array
+    public function getOptions(ListSpecification $list, FilterDefinition $filter): ?array
     {
         $optionsField = $this->getOptionsField($list, $filter) ?? [];
         $options = $this->tryGetOptionsFromField($list, $optionsField);
@@ -320,7 +320,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
         return $options;
     }
 
-    public function getOptionsField(ListDefinition $list, FilterDefinition $filter): ?array
+    public function getOptionsField(ListSpecification $list, FilterDefinition $filter): ?array
     {
         Controller::loadLanguageFile($list->dc);
         Controller::loadDataContainer($list->dc);
@@ -328,7 +328,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
         return $GLOBALS['TL_DCA'][$list->dc]['fields'][$filter->fieldGeneric] ?? null;
     }
 
-    protected function tryGetOptionsFromField(ListDefinition $list, array $optionsField): ?array
+    protected function tryGetOptionsFromField(ListSpecification $list, array $optionsField): ?array
     {
         if (\is_array($options = $optionsField['options'] ?? null))
         {

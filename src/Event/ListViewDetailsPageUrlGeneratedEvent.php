@@ -11,12 +11,12 @@ use Symfony\Contracts\EventDispatcher\Event;
 class ListViewDetailsPageUrlGeneratedEvent extends Event
 {
     public function __construct(
-        private readonly ListModel $listModel,
+        private readonly ListModel      $listModel,
         private readonly ContentContext $contentContext,
-        private readonly Model $model,
-        private string $autoItem,
-        private PageModel $page,
-        private string $url,
+        private readonly Model          $model,
+        private string                  $autoItem,
+        private PageModel               $page,
+        private string                  $url,
     ) {}
 
     public function getListModel(): ListModel

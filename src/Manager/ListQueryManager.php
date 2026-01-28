@@ -3,8 +3,10 @@
 namespace HeimrichHannot\FlareBundle\Manager;
 
 use Doctrine\DBAL\Connection;
+use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
+use HeimrichHannot\FlareBundle\Context\Interface\PaginatedContextInterface;
+use HeimrichHannot\FlareBundle\Context\Interface\SortableContextInterface;
 use HeimrichHannot\FlareBundle\Contract\ListType\PrepareListQueryInterface;
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Dto\FilterInvocationDto;
 use HeimrichHannot\FlareBundle\Dto\ParameterizedSqlQuery;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokedEvent;
@@ -14,16 +16,13 @@ use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Factory\FilterQueryBuilderFactory;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\List\ListContext;
-use HeimrichHannot\FlareBundle\List\ListDefinition;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -47,7 +46,7 @@ class ListQueryManager
     /**
      * @throws FlareException
      */
-    public function prepare(ListDefinition $list, ?bool $noCache = null): ListQueryBuilder
+    public function prepare(ListSpecification $list, ?bool $noCache = null): ListQueryBuilder
     {
         $doCache = !$noCache;
 
@@ -99,15 +98,12 @@ class ListQueryManager
      * @throws FilterException
      */
     public function populate(
-        ListQueryBuilder $listQueryBuilder,
-        ListDefinition   $listDefinition,
-        ListContext      $listContext,
-        ?string          $order = null,
-        ?int             $limit = null,
-        ?int             $offset = null,
-        bool             $isCounting = false,
-        bool             $onlyId = false,
-        ?array           $select = null,
+        ListQueryBuilder       $listQueryBuilder,
+        ListSpecification      $listDefinition,
+        ContextConfigInterface $contextConfig,
+        bool                   $isCounting = false,
+        bool                   $onlyId = false,
+        ?array                 $select = null,
     ): ParameterizedSqlQuery {
         if (!Str::isValidSqlName($table = $listDefinition->dc)) {
             throw new FilterException(
@@ -115,12 +111,28 @@ class ListQueryManager
             );
         }
 
+        $order = null;
+        $limit = null;
+        $offset = null;
+
+        if ($contextConfig instanceof SortableContextInterface)
+        {
+            $order = $contextConfig->getSortDescriptor()?->toSql($this->connection->quoteIdentifier(...));
+        }
+
+        if ($contextConfig instanceof PaginatedContextInterface)
+        {
+            $paginator = $contextConfig->getPaginatorConfig();
+            $limit = $paginator->getItemsPerPage();
+            $offset = $paginator->getOffset();
+        }
+
         try
         {
             $invoked = $this->invokeFilters(
                 listQueryBuilder: $listQueryBuilder,
-                listDefinition: $listDefinition,
-                listContext: $listContext,
+                listSpecification: $listDefinition,
+                contextConfig: $contextConfig,
             );
         }
         catch (AbortFilteringException)
@@ -195,9 +207,9 @@ class ListQueryManager
      * @throws AbortFilteringException
      */
     public function invokeFilters(
-        ListQueryBuilder $listQueryBuilder,
-        ListDefinition   $listDefinition,
-        ListContext      $listContext,
+        ListQueryBuilder       $listQueryBuilder,
+        ListSpecification      $listSpecification,
+        ContextConfigInterface $contextConfig,
     ): FilterInvocationDto {
         $invoked = new FilterInvocationDto();
 
@@ -205,7 +217,7 @@ class ListQueryManager
          * @var int $i
          * @var FilterDefinition $filter
          */
-        foreach ($listDefinition->getFilters() as $i => $filter)
+        foreach ($listSpecification->getFilters() as $i => $filter)
         {
             if (!$filterElementDescriptor = $this->filterElementRegistry->get($filter->getType())) {
                 continue;
@@ -225,9 +237,9 @@ class ListQueryManager
 
             $status = $this->invokeFilter(
                 filterQueryBuilder: $filterQueryBuilder,
-                listDefinition: $listDefinition,
+                listSpecification: $listSpecification,
                 filterDefinition: $filter,
-                contentContext: $contentContext,
+                contextConfig: $contextConfig,
             );
 
             if ($status === self::FILTER_SKIP)
@@ -267,11 +279,11 @@ class ListQueryManager
      * @throws FilterException
      */
     public function invokeFilter(
-        FilterQueryBuilder $filterQueryBuilder,
-        ListDefinition     $listDefinition,
-        FilterDefinition   $filterDefinition,
-        ListContext        $listContext,
-        ?bool              $dispatchEvent = null,
+        FilterQueryBuilder     $filterQueryBuilder,
+        ListSpecification      $listSpecification,
+        FilterDefinition       $filterDefinition,
+        ContextConfigInterface $contextConfig,
+        ?bool                  $dispatchEvent = null,
     ): int {
         if (!$config = $this->filterElementRegistry->get($filterDefinition->getType())) {
             return self::FILTER_SKIP;
@@ -290,9 +302,9 @@ class ListQueryManager
         if ($dispatchEvent ?? true)
         {
             $event = $this->eventDispatcher->dispatch(new FilterElementInvokingEvent(
-                $listDefinition,
-                $filterDefinition,
-                $contentContext,
+                listSpecification: $listSpecification,
+                filterDefinition: $filterDefinition,
+                contextConfig: $contextConfig,
                 callback: $callback,
                 shouldInvoke: true,
             ));

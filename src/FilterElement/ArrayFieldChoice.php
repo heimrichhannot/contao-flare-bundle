@@ -47,7 +47,7 @@ class ArrayFieldChoice implements FormTypeOptionsContract, PaletteContract
         mixed          $value,
         ?DataContainer $dc,
         FilterModel    $filterModel,
-        ListModel      $listModel
+        ListModel $listModel
     ): mixed {
         if (!($table = $listModel->dc) || !($valueField = $filterModel->fieldGeneric)) {
             return $value;

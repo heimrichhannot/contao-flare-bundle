@@ -2,7 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Filter\Collector;
 
-use HeimrichHannot\FlareBundle\List\ListDataSource;
+use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
 use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
 
 class FilterCollectors
@@ -29,7 +29,7 @@ class FilterCollectors
         return $this->resolve();
     }
 
-    public function match(ListDataSource $dataSource): ?FilterCollectorInterface
+    public function match(ListDataSourceInterface $dataSource): ?FilterCollectorInterface
     {
         foreach ($this->resolve() as $collector)
         {

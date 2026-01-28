@@ -8,6 +8,7 @@ use HeimrichHannot\FlareBundle\Dto\FetchSingleEntryConfig;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
+use HeimrichHannot\FlareBundle\Generator\ReaderPageUrlGenerator;
 use HeimrichHannot\FlareBundle\Manager\ListItemProviderManager;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\View\ValidationView;
@@ -22,7 +23,8 @@ class ValidationProjector extends AbstractProjector
     public function __construct(
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly ListItemProviderManager  $itemProviderManager,
-        private readonly ListQueryManager         $listQueryManager
+        private readonly ListQueryManager         $listQueryManager,
+        private readonly ReaderPageUrlGenerator   $readerPageUrlGenerator
     ) {}
 
     public function supports(ContextConfigInterface $config): bool
@@ -34,10 +36,13 @@ class ValidationProjector extends AbstractProjector
     {
         \assert($config instanceof ValidationConfig);
 
+        $readerUrlGenerator = $this->readerPageUrlGenerator->createCallable($config);
+
         return new ValidationView(
             fetchEntry: function (int $id) use ($spec, $config): ?array {
                 return $this->fetchEntry($id, $spec, $config);
             },
+            readerUrlGenerator: $readerUrlGenerator,
             table: $spec->dc,
         );
     }

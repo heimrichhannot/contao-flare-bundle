@@ -4,17 +4,31 @@ namespace HeimrichHannot\FlareBundle\Context\Factory;
 
 use HeimrichHannot\FlareBundle\Context\ValidationConfig;
 use HeimrichHannot\FlareBundle\View\InteractiveView;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class ValidationConfigFactory
+readonly class ValidationConfigFactory
 {
-    public function createFromInteractiveProjection(InteractiveView $interactiveProjection): ValidationConfig
+    public function __construct(
+        private ValidatorInterface $validator,
+    ) {}
+
+    public function createFromInteractiveView(InteractiveView $interactiveView): ValidationConfig
     {
-        return new ValidationConfig(
-            entryCache: function () use ($interactiveProjection): ?array {
-                return $interactiveProjection->isEntriesLoaded()
-                    ? $interactiveProjection->getEntries()
+        $config = new ValidationConfig(
+            entryCache: function () use ($interactiveView): ?array {
+                return $interactiveView->issetEntries()
+                    ? $interactiveView->getEntries()
                     : null;
             },
         );
+
+        $violations = $this->validator->validate($interactiveView);
+
+        if ($violations->count()) {
+            throw new ValidationFailedException($config, $violations);
+        }
+
+        return $config;
     }
 }

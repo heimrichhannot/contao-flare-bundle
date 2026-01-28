@@ -5,13 +5,16 @@ namespace HeimrichHannot\FlareBundle\ListView;
 use HeimrichHannot\FlareBundle\Context\InteractiveConfig;
 use HeimrichHannot\FlareBundle\Event\ListViewBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolver;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\View\InteractiveView;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
+/**
+ * @todo(@ericges): Remove in 0.1.0
+ * @deprecated Use {@see InteractiveView} instead.
+ */
 class ListViewBuilder
 {
     private InteractiveConfig $interactiveConfig;
@@ -22,7 +25,6 @@ class ListViewBuilder
 
     public function __construct(
         private readonly EventDispatcherInterface $eventDispatcher,
-        private ListViewResolver                  $listViewResolver,
     ) {}
 
     public function getInteractiveConfig(): InteractiveConfig
@@ -92,18 +94,6 @@ class ListViewBuilder
         return $this;
     }
 
-    /** @api Get the list view resolver for the list view being built. */
-    public function getListViewResolver(): ListViewResolver
-    {
-        return $this->listViewResolver;
-    }
-
-    /** @api Set the list view resolver for the list view being built. */
-    public function setListViewResolver(ListViewResolver $listViewResolver): void
-    {
-        $this->listViewResolver = $listViewResolver;
-    }
-
     /**
      * Builds a list view DTO.
      *
@@ -133,7 +123,6 @@ class ListViewBuilder
         return new ListView(
             interactiveConfig: $builder->getInteractiveConfig(),
             listSpecification: $builder->getListDefinition(),
-            resolver: $builder->getListViewResolver(),
             interactiveProjection: $builder->getInteractiveView(),
         );
     }

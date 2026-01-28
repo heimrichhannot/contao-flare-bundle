@@ -15,7 +15,6 @@ use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\View\InteractiveView;
@@ -38,7 +37,6 @@ final class ListViewController extends AbstractContentElementController
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly InteractiveConfigFactory $interactiveConfigFactory,
         private readonly KernelInterface          $kernel,
-        private readonly ListViewBuilderFactory   $listViewBuilderFactory,
         private readonly LoggerInterface          $logger,
         private readonly ScopeMatcher             $scopeMatcher,
         private readonly SymfonyResponseTagger    $responseTagger,
@@ -111,12 +109,6 @@ final class ListViewController extends AbstractContentElementController
              * $validationProjector = $this->projectorRegistry->getProjectorFor($validationConfig);
              * $validationView = $validationProjector->project(spec: $listSpec, config: $validationConfig);
              * \assert($validationView instanceof ValidationView); */
-
-            $listView = $this->listViewBuilderFactory->create()
-                ->setInteractiveConfig($interactiveConfig)
-                ->setListDefinition($listSpec)
-                ->setInteractiveView($interactiveView)
-                ->build();
         }
         catch (ValidationFailedException $e)
         {
@@ -135,16 +127,20 @@ final class ListViewController extends AbstractContentElementController
         $event = $this->eventDispatcher->dispatch(
             new ListViewRenderEvent(
                 contentModel: $contentModel,
+                interactiveView: $interactiveView,
                 listSpecification: $listSpec,
                 listModel: $listModel,
-                listView: $listView,
                 template: $template,
             )
         );
 
         $data = $template->getData();
-        // todo: rename to `flare_list` and inject interactiveView instead of ListView
-        $data['flare'] ??= $event->getListView();
+        $data['flare_list'] ??= $event->getInteractiveView();
+        /**
+         * @todo(@ericges): Remove in 0.1.0
+         * @deprecated Use 'flare_list' instead.
+         */
+        $data['flare'] = $data['flare_list'];
         $template->setData($data);
 
         return $template->getResponse();

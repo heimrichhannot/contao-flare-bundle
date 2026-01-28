@@ -67,7 +67,7 @@ Diese Trennung spiegelt sich direkt in der Namespace-Struktur wider (Specificati
 
 Das System liefert vier spezialisierte Standard-Implementierungen für `ContextConfig` und die dazugehörigen Projektionen.
 
-1. Interactive (Frontend-Listen)
+### 1. Interactive (Frontend-Listen)
 - Konfig: `InteractiveConfig`
 - Ziel: Klassische Darstellung von Daten im Browser (HTML).
 - Besonderheit: Verarbeitet Request-Daten (GET) automatisch.
@@ -77,21 +77,21 @@ Das System liefert vier spezialisierte Standard-Implementierungen für `ContextC
     - Handhabt Sortierung durch User-Input.
 - Ergebnis (`InteractiveView`): Liefert Methoden für `getEntries()` (Iterierbare Entities), `getPagination()` (Metadaten) und `getFormComponent()` (für Twig).
 
-2. Aggregation (Zählung & Statistik)
+### 2. Aggregation (Zählung & Statistik)
 - Konfig: `AggregationConfig`
 - Ziel: Effiziente Ermittlung der Gesamtmenge ohne Laden der eigentlichen Daten.
 - Besonderheit: Performance-optimiert (führt `COUNT` Queries aus, kein Entity-Hydrating).
 - Features: Ignoriert Paginierung und Sortierung, wendet aber alle Filter-Kriterien der Specification an.
 - Ergebnis (`AggregationView`): Liefert primär `getCount()`.
 
-3. Validation (Prüfung & Auswahl)
+### 3. Validation (Prüfung & Auswahl)
 - Konfig: `ValidationConfig`
 - Ziel: Überprüfung, ob spezifische IDs oder Werte unter den aktuellen Filterbedingungen "sichtbar" bzw. gültig sind.
 - Besonderheit: Wird oft intern genutzt, um z. B. Foreign-Key Constraints zu prüfen oder "White-lists" zu generieren.
 - Features: Akzeptiert eine Liste von IDs ("Candidates"), um die Ergebnismenge darauf zu beschränken.
 - Ergebnis (`ValidationView`): Liefert `isValid(id)` (Boolean) oder `getModel(id)` für valide Kandidaten.
 
-4. Export (Daten-Download)
+### 4. Export (Daten-Download)
 - Konfig: `ExportConfig`
 - Ziel: Ausgabe aller Daten (oder einer großen Teilmenge) für externe Weiterverarbeitung (CSV, XML, JSON).
 - Besonderheit: Deaktiviert standardmäßig die Paginierung (Limit = 0).

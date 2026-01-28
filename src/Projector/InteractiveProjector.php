@@ -10,14 +10,15 @@ use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Factory\PaginatorBuilderFactory;
+use HeimrichHannot\FlareBundle\Generator\ReaderPageUrlGenerator;
 use HeimrichHannot\FlareBundle\Manager\FilterFormManager;
 use HeimrichHannot\FlareBundle\Manager\ListItemProviderManager;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
-use HeimrichHannot\FlareBundle\View\AggregationView;
-use HeimrichHannot\FlareBundle\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Projector\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\View\AggregationView;
+use HeimrichHannot\FlareBundle\View\InteractiveView;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -36,6 +37,7 @@ class InteractiveProjector extends AbstractProjector
         private readonly PaginatorBuilderFactory  $paginatorBuilderFactory,
         private readonly ProjectorRegistry        $projectorRegistry,
         private readonly RequestStack             $requestStack,
+        private readonly ReaderPageUrlGenerator   $readerPageUrlGenerator,
     ) {}
 
     public function supports(ContextConfigInterface $config): bool
@@ -58,10 +60,13 @@ class InteractiveProjector extends AbstractProjector
             return $this->fetchEntries($spec, $config, $form);
         };
 
+        $readerUrlGenerator = $this->readerPageUrlGenerator->createCallable($config);
+
         return new InteractiveView(
             fetchEntries: $fetchEntries,
             form: $form,
             paginator: $paginator,
+            readerUrlGenerator: $readerUrlGenerator,
             table: $spec->dc,
             totalItems: $totalItems,
         );

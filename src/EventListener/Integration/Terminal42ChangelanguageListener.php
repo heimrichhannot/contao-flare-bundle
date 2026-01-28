@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Event\AbstractFetchEvent;
 use HeimrichHannot\FlareBundle\Event\FetchAutoItemEvent;
 use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
-use HeimrichHannot\FlareBundle\Event\ListViewDetailsPageUrlGeneratedEvent;
+use HeimrichHannot\FlareBundle\Event\DetailsPageUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
@@ -196,7 +196,7 @@ class Terminal42ChangelanguageListener
     }
     
     #[AsEventListener(priority: 220)]
-    public function onListViewDetailsPageUrlGenerated(ListViewDetailsPageUrlGeneratedEvent $event): void
+    public function onListViewDetailsPageUrlGenerated(DetailsPageUrlGeneratedEvent $event): void
     {
         $eventPage = $event->getPage();
 

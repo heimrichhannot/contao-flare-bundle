@@ -1,13 +1,18 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\Trait;
+namespace HeimrichHannot\FlareBundle\View\Trait;
 
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 
-trait FetchModelsTrait
+trait HandlesModelsTrait
 {
-    public function fetchModel(string $table, int $id, callable $getEntry): Model
+    /**
+     * @param callable(int $id): array $getEntry
+     * @return Model|null Return null if the entry does not exist.
+     * @throws FlareException
+     */
+    public function fetchModel(string $table, int $id, callable $getEntry): ?Model
     {
         $registry = Model\Registry::getInstance();
         if ($model = $registry->fetch($table, $id))
@@ -22,7 +27,7 @@ trait FetchModelsTrait
         }
 
         if (!$row = $getEntry($id)) {
-            throw new FlareException('Invalid entry id.', source: __METHOD__);
+            return null;
         }
 
         $model = new $modelClass($row);

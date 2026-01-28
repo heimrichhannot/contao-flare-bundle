@@ -5,7 +5,6 @@ namespace HeimrichHannot\FlareBundle\ListView;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Context\InteractiveConfig;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
-use HeimrichHannot\FlareBundle\ListView\Resolver\ListViewResolver;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
@@ -16,6 +15,8 @@ use Symfony\Component\Form\FormInterface;
  * pagination, and sorting mechanisms.
  *
  * Meant to be used in Twig templates.
+ * @todo(@ericges): Remove in 0.1.0
+ * @deprecated Use {@see InteractiveView} instead.
  */
 class ListView
 {
@@ -27,7 +28,6 @@ class ListView
     public function __construct(
         private readonly InteractiveConfig $interactiveConfig,
         private readonly ListSpecification $listSpecification,
-        private readonly ListViewResolver  $resolver,
         private readonly InteractiveView   $interactiveProjection,
     ) {}
 
@@ -116,32 +116,9 @@ class ListView
      *
      * @param Model|int|string $id
      * @return string|null
-     * #mago-expect lint:halstead This method is not complex.
-     */
-    public function getDetailsPageUrl(Model|int|string $id): ?string
-    {
-        if ($id instanceof Model) {
-            $id = $id->id;
-        }
-
-        $id = (int) $id;
-
-        if (!isset($this->readerUrls[$id])) {
-            $this->readerUrls[$id] = $this->resolver->getDetailsPageUrl($this, $id);
-        }
-
-        return $this->readerUrls[$id];
-    }
-
-    /**
-     * Alias for {@see self::getDetailsPageUrl}.
-     *
-     * @param Model|int|string ...$args
-     * @return string|null
-     * @see self::getDetailsPageUrl
      */
     public function to(Model|int|string ...$args): ?string
     {
-        return $this->getDetailsPageUrl(...$args);
+        return $this->interactiveProjection->to(...$args);
     }
 }

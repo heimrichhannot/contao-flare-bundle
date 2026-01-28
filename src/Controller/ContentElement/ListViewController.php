@@ -15,13 +15,13 @@ use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
-use HeimrichHannot\FlareBundle\Factory\PaginatorBuilderFactory;
-use HeimrichHannot\FlareBundle\List\ListContext;
 use HeimrichHannot\FlareBundle\List\ListContextBuilderFactory;
 use HeimrichHannot\FlareBundle\List\ListDefinitionBuilderFactory;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
+use HeimrichHannot\FlareBundle\Projector\Config\InteractiveConfig;
+use HeimrichHannot\FlareBundle\Projector\ConfigFactory;
 use HeimrichHannot\FlareBundle\Projector\Projection\InteractiveProjection;
 use HeimrichHannot\FlareBundle\Projector\Projection\ValidationProjection;
 use HeimrichHannot\FlareBundle\Projector\Projectors;
@@ -30,6 +30,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -39,6 +40,7 @@ final class ListViewController extends AbstractContentElementController
     public const TYPE = 'flare_listview';
 
     public function __construct(
+        private readonly ConfigFactory                $config,
         private readonly EventDispatcherInterface     $eventDispatcher,
         private readonly KernelInterface              $kernel,
         private readonly ListContextBuilderFactory    $listContextBuilderFactory,
@@ -50,7 +52,6 @@ final class ListViewController extends AbstractContentElementController
         private readonly SymfonyResponseTagger        $responseTagger,
         private readonly TranslationManager           $translationManager,
         private readonly TranslatorInterface          $translator,
-        private readonly PaginatorBuilderFactory      $paginatorBuilder,
     ) {}
 
     /**
@@ -102,7 +103,26 @@ final class ListViewController extends AbstractContentElementController
         {
             $filterFormName = $contentModel->flare_formName ?: 'fl' . $listModel->id;
 
+            $paginatorConfig = new PaginatorConfig(
+                itemsPerPage: (int) ($contentModel->flare_itemsPerPage ?: 0),
+            );
+
             $sortDescriptor = $this->getSortDescriptor($listModel);
+
+            try
+            {
+                $config = $this->config->create(InteractiveConfig::class, [
+                    'paginatorConfig' => $paginatorConfig,
+                    'sortDescriptor' => $sortDescriptor,
+                    'contentModelId' => (int) $contentModel->id,
+                    'formActionPage' => (int) $contentModel->flare_jumpTo,
+                    'formName' => $filterFormName,
+                ]);
+            }
+            catch (ValidationFailedException $e)
+            {
+                return $this->getErrorResponse($e);
+            }
 
             $listContext = $this->listContextBuilderFactory->create()
                 ->setPaginatorConfig(new PaginatorConfig(

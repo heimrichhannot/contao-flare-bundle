@@ -1,51 +1,78 @@
 # Architecture Refactoring Specification: Context-Aware Filter Invocation
 
 ## 1. Overview
-This specification details the architectural changes required to refactor the Filter Invocation system within the `contao-flare-bundle`. The goal is to decouple filter logic from the calling context, enable dynamic context registration (e.g., third-party Projectors), and centralize responsibility for value retrieval within the Projector.
+This specification details the architectural changes required to refactor the Filter Invocation system within the `contao-flare-bundle`. The goal is to decouple filter logic from the calling context, enable dynamic context registration, and standardize filter identification via an indexed collection strategy.
 
 ## 2. Core Architectural Principles
-1.  **Projector Responsibility:** The Projector is the ultimate authority on *what* values are used for filtering. It is responsible for gathering runtime values (from Forms, Request, Config) and Intrinsic values (Defaults) and passing them to the `ListQueryManager`.
-2.  **Context-Driven Logic:** Filter Elements are stateless services that can define specific behaviors for different contexts (e.g., "Interactive" vs "Export") using Attributes (`#[AsFilterInvoker]`), avoiding hardcoded `if ($context->isList())` checks.
-3.  **Unified DTO:** All necessary data for filtering is encapsulated in a single, typed DTO (`FilterInvocation`), replacing legacy loose arguments and `FilterContext`.
-4.  **Specification-Driven:** The `ListSpecification` (domain object) is the source of truth for filter definitions, replacing direct dependencies on Contao Models (`ListModel`) within the filter logic.
+1.  **Projector Responsibility:** The Projector is the ultimate authority on *what* values are used for filtering. It gathers runtime values (e.g., from Forms, Request, Config) and intrinsic values and passes them to the `ListQueryManager`.
+2.  **Indexed Collections:** Filters are stored in an associative map (`FilterDefinitionCollection`) where the key is the unique index. This allows filters to override each other (e.g., a DB filter named 'author' is overridden by a manual filter named 'author' added later).
+3.  **Context-Driven Logic:** Filter Elements use Attributes (`#[AsFilterInvoker]`) to define context-specific behavior, removing hardcoded scope checks (like `if ($context->isList())`).
+4.  **Unified DTO:** `FilterInvocation` DTO wraps all dependencies for the filter execution, replacing legacy loose arguments and `FilterContext`.
+5.  **Specification-Driven:** `ListSpecification` is the domain object source of truth.
 
-## 3. New Components
+## 3. Component Updates
 
-### A. The Invocation DTO (`FilterInvocation`)
+### A. FilterDefinitionCollection (The Map)
+Must function as an associative array to support overriding.
+
+```php
+class FilterDefinitionCollection implements \IteratorAggregate, \Countable
+{
+    private array $items = []; // [string $key => FilterDefinition]
+
+    /**
+     * Adds or overwrites a filter.
+     * @param string|null $key If null, a unique ID is generated.
+     */
+    public function set(?string $key, FilterDefinition $filter): void;
+    
+    public function get(string $key): ?FilterDefinition;
+    
+    public function all(): array; // Returns ['key' => Definition]
+}
+```
+
+### B. Filter Collectors (The Index Strategy)
+Collectors define the indexing strategy.
+
+*   **ListModelFilterCollector:**
+    *   **Index:** Uses `filterFormFieldName` if available.
+    *   **Fallback:** Uses `_db_id_{id}` if name is missing (could be intrinsic, but filters are generally not required to specify form field names).
+    *   **Result:** DB filters with the same form name automatically override earlier ones.
+
+### C. The Invocation DTO (`FilterInvocation`)
 Replaces `FilterContext` and loose arguments. Wraps all dependencies required by a filter to modify the query.
 
 ```php
-namespace HeimrichHannot\FlareBundle\Dto;
-
 class FilterInvocation
 {
     public function __construct(
-        public readonly FilterDefinition $definition, // Configuration (field, operator)
-        public readonly FilterQueryBuilder $qb,       // Target SQL builder
-        public readonly ListSpecification $spec,      // Global list context (tables)
-        public readonly ContextConfigInterface $contextConfig, // Context identity & options
-        public readonly mixed $value = null,          // The value to filter by
+        public readonly FilterDefinition $definition,
+        public readonly FilterQueryBuilder $qb,
+        public readonly ListSpecification $spec,
+        public readonly ContextConfigInterface $contextConfig,
+        public readonly mixed $value = null,
     ) {}
 }
 ```
 
-### B. The Invoker Attribute (`AsFilterInvoker`)
+### D. The Invoker Attribute (`AsFilterInvoker`)
 Allows methods on a `FilterElement` service to claim responsibility for specific contexts.
 
 ```php
-namespace HeimrichHannot\FlareBundle\Attribute;
+namespace HeimrichHannot\FlareBundle\DependencyInjection\Attribute;
 
 #[\Attribute(\Attribute::TARGET_METHOD)]
 class AsFilterInvoker
 {
     public function __construct(
-        public ?string $context = null, // e.g., 'interactive', 'export'. Null = Default.
-        public int $priority = 0        // Higher priority wins.
+        public ?string $context = null,
+        public int $priority = 0,
     ) {}
 }
 ```
 
-### C. Intrinsic Value Interface (`IntrinsicValueContract`)
+### E. Intrinsic Value Interface (`IntrinsicValueContract`)
 Allows the Projector to standardly retrieve default values from intrinsic filters without knowing internal implementation details.
 
 ```php
@@ -76,75 +103,70 @@ interface ContextConfigInterface
 ## 4. Execution Flow
 
 ### Step 1: Projector Gathers Values
-The Projector (e.g., `InteractiveProjector`) prepares the filter values map before invoking the manager.
+The Projector builds a value map using the **Collection Keys**.
 
 ```php
-$filterValues = [];
+$filterValues = []; // [string $key => mixed $value]
+$formData = $form->isSubmitted() ? $form->getData() : [];
 
-// 1. Get Runtime Values (e.g. from Form)
-if ($form->isSubmitted()) {
-    $filterValues = $form->getData();
-}
-
-// 2. Get Intrinsic Values
-foreach ($spec->getFilters() as $filter) {
-    if ($filter->isIntrinsic()) {
-        $element = $this->registry->get($filter->getType());
+/** @var \HeimrichHannot\FlareBundle\Filter\FilterDefinition $filter */
+foreach ($spec->getFilters()->all() as $key => $filter)
+{
+    if ($filter->isIntrinsic())
+    {
+        $element = $this->filterElementRegistry->get($filter->getType());
+        
         if ($element instanceof IntrinsicValueContract) {
-            // Projector actively retrieves the default value
-            $filterValues[$filter->getFilterFormFieldName()] = $element->getIntrinsicValue($filter);
+            $filterValues[$key] = $element->getIntrinsicValue($filter);
         }
+        
+        continue;
+    }
+    
+    $formFieldName = $filter->getFilterFormFieldName();
+    if ($formFieldName && \array_key_exists($formFieldName, $formData))
+    {
+        $filterValues[$key] = $formData[$formFieldName];
+        continue;
     }
 }
 
-// 3. Call Manager with values
 $this->listQueryManager->populate($builder, $spec, $contextConfig, $filterValues);
 ```
 
 ### Step 2: ListQueryManager Dispatches
-The `ListQueryManager` resolves the correct method to execute on the Filter Element.
+The Manager iterates using the keys.
 
 ```php
-// Inside ListQueryManager::invokeFilters
-$contextType = $contextConfig::getContextType(); // e.g. 'interactive'
+// Inside ListQueryManager::invokeFilters(..., array $filterValues)
+$contextType = $contextConfig::getContextType();
 
-foreach ($spec->getFilters() as $filter) {
-    // ... Scope/Applicability Checks (from DCA config) ...
-
-    $element = $this->registry->get($filter->getType());
-    
-    // Resolve Value from the map provided by Projector
-    $value = $filterValues[$filter->getFilterFormFieldName()] ?? null;
+foreach ($spec->getFilters()->all() as $key => $filter) {
+    // Value lookup by Collection Key
+    $value = $filterValues[$key] ?? null;
     
     $invocation = new FilterInvocation($filter, $qb, $spec, $contextConfig, $value);
 
-    // Find best method via Reflection/Metadata matching $contextType
+    // Resolution & Execution...
     $method = $this->resolver->resolveInvoker($element, $contextType);
-    
-    $element->$method($invocation);
+    $element->{$method}($invocation);
 }
 ```
 
 ## 5. Migration Strategy
 
-1.  **Infrastructure:**
-    *   Create `FilterInvocation` DTO.
-    *   Create `AsFilterInvoker` Attribute.
-    *   Create `IntrinsicValueContract` Interface.
-    *   Update `ContextConfigInterface` to include `getContextType()`.
+1.  **Collection Refactoring:**
+    *   Update `FilterDefinitionCollection` to support string keys and `set()`.
+    *   Update `ListModelFilterCollector` to implement the Name/ID indexing strategy.
 
-2.  **Manager Update:**
-    *   Update `ListQueryManager::populate` to accept `array $filterValues`.
-    *   Implement method resolution logic in `ListQueryManager` (using `AsFilterInvoker`).
+2.  **Infrastructure:**
+    *   Create DTO, Attribute, and Interface.
+    *   Update `ContextConfigInterface`.
 
-3.  **Filter Element Refactoring:**
-    *   Update `AbstractFilterElement` to remove `InScopeContract` logic.
-    *   Refactor `BooleanElement`, `DateRangeElement`, etc., to use `#[AsFilterInvoker]` and `FilterInvocation`.
-    *   Implement `IntrinsicValueContract` where applicable.
+3.  **Manager & Projectors:**
+    *   Update `ListQueryManager` to accept keyed array `$filterValues`.
+    *   Update Projectors to build the array using collection keys.
 
-4.  **Projector Update:**
-    *   Update `InteractiveProjector` (and others) to gather `$filterValues` and pass them to `populate`.
-
-5.  **Cleanup:**
-    *   Delete `src/Filter/FilterContext.php`.
-    *   Remove `ListItemProvider` classes (part of broader refactoring).
+4.  **Element Refactoring:**
+    *   Apply `#[AsFilterInvoker]` to elements.
+    *   Remove legacy scope logic, including `InScopeContract` and its usages.

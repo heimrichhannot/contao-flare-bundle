@@ -7,7 +7,7 @@ This specification details the architectural changes required to refactor the Fi
 1.  **Projector Responsibility:** The Projector is the ultimate authority on *what* values are used for filtering. It gathers runtime values (e.g., from Forms, Request, Config) and intrinsic values and passes them to the `ListQueryManager`.
 2.  **Indexed Collections:** Filters are stored in an associative map (`FilterDefinitionCollection`) where the key is the unique index. This allows filters to override each other (e.g., a DB filter named 'author' is overridden by a manual filter named 'author' added later).
 3.  **Context-Driven Logic:** Filter Elements use Attributes (`#[AsFilterInvoker]`) to define context-specific behavior, removing hardcoded scope checks (like `if ($context->isList())`).
-4.  **Unified DTO:** `FilterInvocation` DTO wraps all dependencies for the filter execution, replacing legacy loose arguments and `FilterContext`.
+4.  **Unified DTO:** `FilterInvocation` DTO wraps configuration and context for the filter execution, replacing legacy loose arguments and `FilterContext`. **Note:** The `FilterQueryBuilder` is passed separately to maintain a clear distinction between "Context Data" and "Action Target".
 5.  **Specification-Driven:** `ListSpecification` is the domain object source of truth.
 
 ## 3. Component Updates
@@ -37,18 +37,19 @@ Collectors define the indexing strategy.
 
 *   **ListModelFilterCollector:**
     *   **Index:** Uses `filterFormFieldName` if available.
-    *   **Fallback:** Uses `_db_id_{id}` if name is missing (could be intrinsic, but filters are generally not required to specify form field names).
+    *   **Fallback:** Uses `_db_id_{id}` if name is missing (Intrinsic).
     *   **Result:** DB filters with the same form name automatically override earlier ones.
 
 ### C. The Invocation DTO (`FilterInvocation`)
-Replaces `FilterContext` and loose arguments. Wraps all dependencies required by a filter to modify the query.
+Wraps configuration and context dependencies. **Does not include the Query Builder.**
 
 ```php
+namespace HeimrichHannot\FlareBundle\Filter;
+
 class FilterInvocation
 {
     public function __construct(
         public readonly FilterDefinition $definition,
-        public readonly FilterQueryBuilder $qb,
         public readonly ListSpecification $spec,
         public readonly ContextConfigInterface $contextConfig,
         public readonly mixed $value = null,
@@ -87,7 +88,7 @@ interface IntrinsicValueContract
 }
 ```
 
-### D. Context Configuration Updates
+### F. Context Configuration Updates
 `ContextConfigInterface` must provide a unique identity to match against the `AsFilterInvoker` attribute.
 
 ```php
@@ -145,11 +146,13 @@ foreach ($spec->getFilters()->all() as $key => $filter) {
     // Value lookup by Collection Key
     $value = $filterValues[$key] ?? null;
     
-    $invocation = new FilterInvocation($filter, $qb, $spec, $contextConfig, $value);
+    // Note: QueryBuilder is NOT in DTO
+    $invocation = new FilterInvocation($filter, $spec, $contextConfig, $value);
 
     // Resolution & Execution...
+    // Signature: method(FilterInvocation $invocation, FilterQueryBuilder $qb)
     $method = $this->resolver->resolveInvoker($element, $contextType);
-    $element->{$method}($invocation);
+    $element->{$method}($invocation, $qb);
 }
 ```
 
@@ -169,4 +172,5 @@ foreach ($spec->getFilters()->all() as $key => $filter) {
 
 4.  **Element Refactoring:**
     *   Apply `#[AsFilterInvoker]` to elements.
-    *   Remove legacy scope logic, including `InScopeContract` and its usages.
+    *   Update method signatures to `(FilterInvocation $inv, FilterQueryBuilder $qb)`.
+    *   Remove legacy scope logic.

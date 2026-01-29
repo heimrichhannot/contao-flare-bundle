@@ -9,6 +9,7 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
+use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -28,12 +29,22 @@ class InteractiveConfigFactory
 
         $sortDescriptor = $this->getSortDescriptor($listModel);
 
+        $jumpToReaderPageId = (int) ($listModel->jumpToReader ?: $contentModel->flare_jumpToReader);
+
+        $fieldAutoItem = DcaHelper::tryGetColumnName(
+            $listModel->dc,
+            $listModel->fieldAutoItem,
+            DcaHelper::tryGetColumnName($listModel->dc, 'alias', 'id')
+        );
+
         $config = new InteractiveConfig(
             paginatorConfig: $paginatorConfig,
             sortDescriptor: $sortDescriptor,
             contentModelId: (int) $contentModel->id,
             formActionPage: (int) $contentModel->flare_jumpTo,
             formName: $filterFormName,
+            jumpToReaderPageId: $jumpToReaderPageId,
+            autoItemField: $fieldAutoItem,
         );
 
         $violations = $this->validator->validate($config);

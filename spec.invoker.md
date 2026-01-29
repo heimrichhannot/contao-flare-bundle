@@ -17,34 +17,7 @@ The `AsFilterInvoker` attribute is the sole declarative entry point for register
 
 ### Definition
 
-File: `src/DependencyInjection/Attribute/AsFilterInvoker.php`
-
-```php
-<?php
-
-namespace HeimrichHannot\FlareBundle\DependencyInjection\Attribute;
-
-#[\Attribute(\Attribute::TARGET_CLASS | \Attribute::TARGET_METHOD)]
-class AsFilterInvoker
-{
-    /**
-     * @param string|null $filterType The type of the filter element (e.g., 'flare_bool').
-     *                                If null, it is inferred from the class, which must be a filter element service.
-     * @param string|null $context    The context this invoker applies to (e.g., 'interactive').
-     *                                If null, it's the default invoker for contexts without a specific one.
-     * @param string|null $method     The public method to be called on the service.
-     *                                Required when used on a class, unless the method is `__invoke`.
-     * @param int         $priority   Higher priority invokers are chosen over lower priority ones for the same
-     *                                filter type and context.
-     */
-    public function __construct(
-        public ?string $filterType = null,
-        public ?string $context = null,
-        public ?string $method = null,
-        public int $priority = 0,
-    ) {}
-}
-```
+[+] Already implemented in `src/DependencyInjection/Attribute/AsFilterInvoker.php`.
 
 ### Usage Examples
 
@@ -106,48 +79,41 @@ class GallerySearchInvoker
 
 The current runtime reflection mechanism will be replaced by a compiled registry populated via a compiler pass. This registry is then used by a new `FilterInvoker` service that provides consumers with a ready-to-use `callable`.
 
-### A. `FilterInvokerRegistry` (New Service)
+### A. `FilterInvokerRegistry`
 
 A simple service that acts as a collection for invoker configurations, populated by the compiler pass.
 
 - **Responsibility:** Hold a structured, in-memory map of all discovered invokers.
-- **Methods:**
-    - `add(string $filterType, ?string $context, string $serviceId, string $method, int $priority)`: Adds an invoker to the registry.
-    - `find(string $filterType, string $contextType): ?array`: Finds the highest-priority invoker configuration (`['serviceId' => string, 'method' => string]`) for a given filter type and context.
+- [+] Already implemented in `src/Registry/FilterInvokerRegistry.php`.
 
-### B. `RegisterFilterInvokersPass` (New Compiler Pass)
+### B. `RegisterFilterInvokersPass`
 
 This is the core of the new discovery mechanism. It will be registered in the bundle's `build()` method.
+
+[+] Already implemented in `src/DependencyInjection/RegisterFilterInvokersPass.php` BUT with a critical flaw in the inference logic that needs to be fixed.
 
 - **Responsibility:**
     1.  Iterate over all service definitions in the container.
     2.  Use Reflection to find `#[AsFilterInvoker]` attributes on classes and methods.
     3.  For each attribute instance, perform validation and collect the invoker configuration (`serviceId`, `method`, `filterType`, `context`, `priority`).
-    4.  **Inference Logic:** If `filterType` is `null`, it must verify that the service is a filter element (e.g., `is_subclass_of($serviceClass, AbstractFilterElement::class)`) and infer the type. If not, it throws a compile-time `InvalidArgumentException`.
+    4.  **Inference Logic:** (Currently incorrectly implemented)
+        - If `filterType` is `null`, it must verify that the service is a filter element and infer the type.
+        - Correction: filter element services do not necessarily extend `AbstractFilterElement`. It must be decorated with the `#[AsFilterElement]` attribute.
+        - If filterType is not given and cannot be inferred, it throws a compile-time `InvalidArgumentException`.
     5.  **Validation Logic:**
         - Throw an error if `filterType` is specified on an attribute decorating a filter element class/method (as it's redundant).
         - Throw an error if `method` is specified on an attribute decorating a method.
     6.  Populate the `FilterInvokerRegistry` service definition with the collected invoker configurations.
     7.  Collect all invoker service IDs and pass them to the `FilterInvoker` service constructor via a `ServiceLocator`.
 
-### C. `FilterInvokerResolver` (Refactored, Internal Service)
-
-The resolver is a simple, internal service that queries the registry.
-
-- **Dependencies:** `FilterInvokerRegistry`.
-- **Signature:** `resolve(string $filterType, string $contextType): ?array`.
-- **Return Value:** A tuple `['serviceId' => string, 'method' => string]` or `null`.
-- **Logic:**
-    1.  Query the registry for an invoker matching the specific `$filterType` and `$contextType`.
-    2.  If none is found, query again for a default invoker matching the `$filterType` and a `null` context.
-    3.  Return the highest-priority result or `null`.
-
-### D. `FilterInvoker` (New Service)
+### C. `FilterInvoker`
 
 This is the new primary public-facing service for executing filter logic. It encapsulates all the resolution and fallback logic.
 
+[+] Already implemented in `src/Filter/Invoker/FilterInvoker.php`
+
 - **Dependencies:**
-    - `FilterInvokerResolver`
+    - `FilterInvokerRegistry`
     - `FilterElementRegistry` (to get the base filter element for fallbacks)
     - `ServiceLocator $invokerLocator` (containing all invoker services, provided by the compiler pass)
 - **Primary Method:** `get(string $filterType, string $contextType): ?callable`

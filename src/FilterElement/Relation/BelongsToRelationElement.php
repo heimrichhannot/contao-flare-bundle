@@ -5,35 +5,33 @@ namespace HeimrichHannot\FlareBundle\FilterElement\Relation;
 use Contao\Message;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
+use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
-use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Util\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 
 #[AsFilterElement(type: self::TYPE)]
-class BelongsToRelationElement extends AbstractFilterElement implements PaletteContract
+class BelongsToRelationElement extends AbstractFilterElement
 {
-    const TYPE = 'flare_relation_belongsTo';
+    public const TYPE = 'flare_relation_belongsTo';
 
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
+    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
     {
-        $filterModel = $context->getFilterModel();
-        $listModel = $context->getListModel();
-
-        if (!$fieldPid = $filterModel->fieldPid)
+        if (!$fieldPid = $inv->filter->fieldPid)
         {
             throw new FilterException('No parent field defined.');
         }
 
-        $inferrer = new PtableInferrer($filterModel, $listModel->dc);
+        $inferrable = PtableInferrableFactory::createFromListModelLike($inv->list);
+        $inferrer = new PtableInferrer($inferrable, $inv->list->dc);
 
         try
         {
@@ -47,11 +45,11 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
 
         if (\is_string($fieldDynamicPtable))
         {
-            $this->filterDynamicPtableField($qb, $filterModel, $fieldDynamicPtable, $fieldPid);
+            $this->filterDynamicPtableField($qb, $inv->filter, $fieldDynamicPtable, $fieldPid);
             return;
         }
 
-        if (!$ptable || !$whitelistParents = StringUtil::deserialize($filterModel->whitelistParents)) {
+        if (!$ptable || !$whitelistParents = StringUtil::deserialize($inv->filter->whitelistParents)) {
             throw new FilterException('No whitelisted parents.');
         }
 
@@ -70,12 +68,12 @@ class BelongsToRelationElement extends AbstractFilterElement implements PaletteC
      */
     public function filterDynamicPtableField(
         FilterQueryBuilder $qb,
-        FilterModel        $filterModel,
+        FilterDefinition   $filter,
         string             $fieldDynamicPtable,
         string             $fieldPid,
         ?array             $submittedData = null,
     ): void {
-        if (!$parentGroups = StringUtil::deserialize($filterModel->groupWhitelistParents))
+        if (!$parentGroups = StringUtil::deserialize($filter->groupWhitelistParents))
         {
             $qb->abort();
         }

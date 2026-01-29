@@ -14,6 +14,7 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
+use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use HeimrichHannot\FlareBundle\Util\DcaFieldFilter;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
@@ -28,12 +29,13 @@ readonly class FieldsOptionsCallbacks
     public const TABLE_NAME = FilterContainer::TABLE_NAME;
 
     public function __construct(
-        private ContaoFramework       $contaoFramework,
-        private FilterContainer       $filterContainer,
-        private FilterElementRegistry $filterElementRegistry,
-        private ListQueryManager      $listQueryManager,
-        private TranslationManager    $translationManager,
-        private TranslatorInterface   $translator,
+        private ContaoFramework          $contaoFramework,
+        private FilterContainer          $filterContainer,
+        private FilterElementRegistry    $filterElementRegistry,
+        private ListQueryManager         $listQueryManager,
+        private TranslationManager       $translationManager,
+        private TranslatorInterface      $translator,
+        private ListSpecificationFactory $listSpecificationFactory,
     ) {}
 
     #[AsCallback(self::TABLE_NAME, 'fields.type.options')]
@@ -114,7 +116,9 @@ readonly class FieldsOptionsCallbacks
             return [];
         }
 
-        $table = $this->listQueryManager->prepare($listModel)
+        $listSpecification = $this->listSpecificationFactory->create($listModel);
+
+        $table = $this->listQueryManager->prepare($listSpecification)
             ->getTable($filterModel->targetAlias ?: ListQueryManager::ALIAS_MAIN);
 
         return DcaHelper::getFieldOptions($table);
@@ -217,7 +221,9 @@ readonly class FieldsOptionsCallbacks
             return [];
         }
 
-        $listQB = $this->listQueryManager->prepare($listModel);
+        $listSpecification = $this->listSpecificationFactory->create($listModel);
+
+        $listQB = $this->listQueryManager->prepare($listSpecification);
         $tables = $listQB->getTables();
         $options = [];
 

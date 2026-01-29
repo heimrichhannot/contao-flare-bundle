@@ -35,6 +35,9 @@ class FilterDefinitionCollection implements \IteratorAggregate, \Countable, \Ser
         return $this->items[$key] ?? null;
     }
 
+    /**
+     * @return array<int, FilterDefinition>
+     */
     public function all(): array
     {
         return $this->items;

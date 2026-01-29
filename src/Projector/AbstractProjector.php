@@ -42,17 +42,17 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
         $values = [];
         $filterElementRegistry = $this->getFilterElementRegistry();
 
-        foreach ($spec->getFilters()->all() as $key => $definition)
+        foreach ($spec->getFilters()->all() as $key => $filter)
         {
-            $element = $filterElementRegistry->get($definition->getType())?->getService();
+            $element = $filterElementRegistry->get($filter->getType())?->getService();
 
             if (\array_key_exists($key, $runtimeValues)) {
                 $values[$key] = $runtimeValues[$key];
                 continue;
             }
 
-            if ($element instanceof IntrinsicValueContract) {
-                $values[$key] = $element->getIntrinsicValue($definition);
+            if ($element instanceof IntrinsicValueContract && $filter->isIntrinsic()) {
+                $values[$key] = $element->getIntrinsicValue($spec, $filter);
             }
         }
 

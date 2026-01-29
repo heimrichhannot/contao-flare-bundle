@@ -25,6 +25,10 @@ services:
         bind:
             $finderFactory: '@contao.twig.finder_factory'
 
+    HeimrichHannot\FlareBundle\Filter\Invoker\FilterInvoker:
+        arguments:
+            $invokerLocator: null # will be replaced by the compiler pass
+
 #    bind:
 #      $projectDir: '%kernel.project_dir%'
 #      $csrfTokenName: '%contao.csrf_token_name%'

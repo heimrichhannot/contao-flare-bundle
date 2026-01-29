@@ -7,7 +7,7 @@ use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
 use HeimrichHannot\FlareBundle\Context\Interface\PaginatedContextInterface;
 use HeimrichHannot\FlareBundle\Context\Interface\SortableContextInterface;
 use HeimrichHannot\FlareBundle\Contract\ListType\PrepareListQueryInterface;
-use HeimrichHannot\FlareBundle\Dto\FilterInvocationDto;
+use HeimrichHannot\FlareBundle\Dto\InvokeFiltersResult;
 use HeimrichHannot\FlareBundle\Dto\ParameterizedSqlQuery;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokedEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokingEvent;
@@ -17,7 +17,8 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
-use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
+use HeimrichHannot\FlareBundle\Filter\Invoker\FilterInvoker;
 use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
@@ -28,9 +29,6 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class ListQueryManager
 {
-    public const FILTER_OK = 0;
-    public const FILTER_SKIP = 1;
-    public const FILTER_FAIL = 2;
     public const ALIAS_MAIN = 'main';
 
     private array $prepCache = [];
@@ -39,6 +37,7 @@ class ListQueryManager
         private readonly Connection                $connection,
         private readonly EventDispatcherInterface  $eventDispatcher,
         private readonly FilterElementRegistry     $filterElementRegistry,
+        private readonly FilterInvoker             $filterInvoker,
         private readonly FilterQueryBuilderFactory $filterQueryBuilderFactory,
         private readonly ListTypeRegistry          $listTypeRegistry,
     ) {}
@@ -101,6 +100,7 @@ class ListQueryManager
         ListQueryBuilder       $listQueryBuilder,
         ListSpecification      $listDefinition,
         ContextConfigInterface $contextConfig,
+        array                  $filterValues = [],
         bool                   $isCounting = false,
         bool                   $onlyId = false,
         ?array                 $select = null,
@@ -133,6 +133,7 @@ class ListQueryManager
                 listQueryBuilder: $listQueryBuilder,
                 listSpecification: $listDefinition,
                 contextConfig: $contextConfig,
+                filterValues: $filterValues,
             );
         }
         catch (AbortFilteringException)
@@ -210,14 +211,16 @@ class ListQueryManager
         ListQueryBuilder       $listQueryBuilder,
         ListSpecification      $listSpecification,
         ContextConfigInterface $contextConfig,
-    ): FilterInvocationDto {
-        $invoked = new FilterInvocationDto();
+        array                  $filterValues = [],
+    ): InvokeFiltersResult {
+        $invoked = new InvokeFiltersResult();
 
         /**
-         * @var int $i
+         * @var int|string $key
          * @var FilterDefinition $filter
          */
-        foreach ($listSpecification->getFilters() as $i => $filter)
+        $i = 0;
+        foreach ($listSpecification->getFilters()->all() as $key => $filter)
         {
             if (!$filterElementDescriptor = $this->filterElementRegistry->get($filter->getType())) {
                 continue;
@@ -235,26 +238,58 @@ class ListQueryManager
 
             $filterQueryBuilder = $this->filterQueryBuilderFactory->create($targetAlias);
 
-            $status = $this->invokeFilter(
-                filterQueryBuilder: $filterQueryBuilder,
-                listSpecification: $listSpecification,
-                filterDefinition: $filter,
-                contextConfig: $contextConfig,
+            $value = $filterValues[$key] ?? null;
+            $invocation = new FilterInvocation(
+                filter: $filter,
+                list: $listSpecification,
+                context: $contextConfig,
+                value: $value
             );
 
-            if ($status === self::FILTER_SKIP)
-            {
+            if (!$callback = $this->filterInvoker->get(
+                filterType: $filter->getType(),
+                contextType: $contextConfig::getContextType()
+            )) {
                 continue;
             }
 
-            if ($status !== self::FILTER_OK)
-                // If the filter failed, we stop building the query and throw an exception.
-                // This is useful for cases where the filter is not applicable or has an error.
-            {
-                throw new AbortFilteringException();
+            $event = $this->eventDispatcher->dispatch(new FilterElementInvokingEvent(
+                invocation: $invocation,
+                callback: $callback,
+                shouldInvoke: true,
+            ));
+
+            if (!$event->shouldInvoke()) {
+                continue;
             }
 
-            $filterQuery = $filterQueryBuilder->build((string) $i);
+            $callback = $event->getCallback();
+
+            try
+            {
+                $callback($invocation, $filterQueryBuilder);
+            }
+            catch (AbortFilteringException $e)
+            {
+                throw $e;
+            }
+            catch (FilterException $e)
+            {
+                $serviceId = \is_array($callback) && \is_object($callback[0] ?? null) ? $callback[0]::class : 'unknown';
+                $method = \is_array($callback) ? ($callback[1] ?? 'undefined/__invoke') : '__invoke';
+                $errorMethod = $e->getMethod() ?? ($serviceId . '::' . $method);
+
+                throw new FilterException(
+                    \sprintf('[FLARE] Query denied: %s', $e->getMessage()),
+                    code: $e->getCode(), previous: $e, method: $errorMethod,
+                    source: \sprintf('tl_flare_filter.id=%s', $filter->getSourceFilterModel()?->id ?: 'unknown'),
+                );
+            }
+
+            $method = \is_array($callback) ? ($callback[1] ?? '__invoke') : '__invoke';
+            $this->eventDispatcher->dispatch(new FilterElementInvokedEvent($invocation, $filterQueryBuilder, $method));
+
+            $filterQuery = $filterQueryBuilder->build((string) ++$i);
 
             if (!$sql = $filterQuery->getSql())
             {
@@ -263,84 +298,15 @@ class ListQueryManager
 
             $invoked->conditions[] = $sql;
 
-            foreach ($filterQuery->getParams() as $key => $value) {
-                $invoked->parameters[$key] = $value;
+            foreach ($filterQuery->getParams() as $k => $v) {
+                $invoked->parameters[$k] = $v;
             }
 
-            foreach ($filterQuery->getTypes() as $key => $value) {
-                $invoked->types[$key] = $value;
+            foreach ($filterQuery->getTypes() as $k => $v) {
+                $invoked->types[$k] = $v;
             }
         }
 
         return $invoked;
-    }
-
-    /**
-     * @throws FilterException
-     */
-    public function invokeFilter(
-        FilterQueryBuilder     $filterQueryBuilder,
-        ListSpecification      $listSpecification,
-        FilterDefinition       $filterDefinition,
-        ContextConfigInterface $contextConfig,
-        ?bool                  $dispatchEvent = null,
-    ): int {
-        if (!$config = $this->filterElementRegistry->get($filterDefinition->getType())) {
-            return self::FILTER_SKIP;
-        }
-
-        $service = $config->getService();
-        $method = $config->getMethod() ?? '__invoke';
-
-        if (!\method_exists($service, $method)) {
-            return self::FILTER_SKIP;
-        }
-
-        $shouldInvoke = true;
-        $callback = $service->{$method}(...);
-
-        if ($dispatchEvent ?? true)
-        {
-            $event = $this->eventDispatcher->dispatch(new FilterElementInvokingEvent(
-                listSpecification: $listSpecification,
-                filterDefinition: $filterDefinition,
-                contextConfig: $contextConfig,
-                callback: $callback,
-                shouldInvoke: true,
-            ));
-
-            $shouldInvoke = $event->shouldInvoke();
-            $callback = $event->getCallback();
-        }
-
-        if (!$shouldInvoke) {
-            return self::FILTER_SKIP;
-        }
-
-        try
-        {
-            $callback($filterDefinition, $filterQueryBuilder);
-        }
-        catch (AbortFilteringException)
-        {
-            return self::FILTER_FAIL;
-        }
-        catch (FilterException $e)
-        {
-            $errorMethod = $e->getMethod() ?? ($service::class . '::' . $method);
-
-            throw new FilterException(
-                \sprintf('[FLARE] Query denied: %s', $e->getMessage()),
-                code: $e->getCode(), previous: $e, method: $errorMethod,
-                source: \sprintf('tl_flare_filter.id=%s', $filterDefinition->getFilterModel()?->id ?: 'unknown'),
-            );
-        }
-
-        if ($dispatchEvent ?? true)
-        {
-            $this->eventDispatcher->dispatch(new FilterElementInvokedEvent($filterDefinition, $filterQueryBuilder, $method));
-        }
-
-        return self::FILTER_OK;
     }
 }

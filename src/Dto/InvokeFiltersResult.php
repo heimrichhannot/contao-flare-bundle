@@ -2,7 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Dto;
 
-class FilterInvocationDto
+class InvokeFiltersResult
 {
     public function __construct(
         public array $conditions = [],

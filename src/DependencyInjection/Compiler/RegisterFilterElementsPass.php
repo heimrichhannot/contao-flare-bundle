@@ -2,6 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\DependencyInjection\Factory\TypeNameFactory;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
@@ -22,7 +23,7 @@ class RegisterFilterElementsPass implements CompilerPassInterface
             return;
         }
 
-        $tag = FilterElementDescriptor::TAG;
+        $tag = AsFilterElement::TAG;
         $registry = $container->findDefinition(FilterElementRegistry::class);
 
         foreach ($this->findAndSortTaggedServices($tag, $container) as $reference)

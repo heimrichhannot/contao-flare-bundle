@@ -11,8 +11,6 @@ use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
 
 class FilterElementDescriptor implements ServiceDescriptorInterface, PaletteContract
 {
-    public const TAG = 'huh.flare.filter_element';
-
     /** @see RegisterFilterElementsPass::getFilterElementConfig */
     public function __construct(
         private object  $service,

@@ -7,6 +7,8 @@ use Symfony\Component\Form\FormTypeInterface;
 #[\Attribute(\Attribute::TARGET_CLASS | \Attribute::IS_REPEATABLE)]
 class AsFilterElement
 {
+    public const TAG = 'huh.flare.filter_element';
+
     public array $attributes;
 
     /**

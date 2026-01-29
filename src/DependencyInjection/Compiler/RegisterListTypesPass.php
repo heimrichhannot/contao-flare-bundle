@@ -2,6 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
@@ -24,7 +25,7 @@ class RegisterListTypesPass implements CompilerPassInterface
             return;
         }
 
-        $tag = ListTypeDescriptor::TAG;
+        $tag = AsListType::TAG;
         $registry = $container->findDefinition(ListTypeRegistry::class);
 
         foreach ($this->findAndSortTaggedServices($tag, $container) as $reference)

@@ -25,64 +25,25 @@ class RegisterFilterInvokersPass implements CompilerPassInterface
         $registryDefinition = $container->getDefinition(FilterInvokerRegistry::class);
         $invokerServiceIds = [];
 
-        foreach ($container->getDefinitions() as $serviceId => $definition)
+        $taggedServices = $container->findTaggedServiceIds(AsFilterInvoker::TAG);
+
+        foreach ($taggedServices as $serviceId => $tags)
         {
-            if ($definition->isAbstract() || $definition->isSynthetic()) {
+            $definition = $container->getDefinition($serviceId);
+
+            if ($definition->isAbstract()) {
                 continue;
             }
 
-            $class = $definition->getClass();
-            if (\is_null($class) || !\class_exists($class)) {
-                continue;
-            }
-
-            $reflectionClass = new \ReflectionClass($class);
-
-            // Process class attributes
-            $attributes = $reflectionClass->getAttributes(AsFilterInvoker::class);
-            if (\count($attributes) > 0)
+            foreach ($tags as $attributes)
             {
-                foreach ($attributes as $attribute)
-                {
-                    $instance = $attribute->newInstance();
-                    if (!$instance instanceof AsFilterInvoker) {
-                        throw new \LogicException(sprintf('The #[AsFilterInvoker] attribute on service "%s" must be an instance of "%s".', $serviceId, AsFilterInvoker::class));
-                    }
-                    $this->processAttribute(
-                        attribute: $instance,
-                        serviceId: $serviceId,
-                        definition: $definition,
-                        class: $reflectionClass,
-                        methodName: null,
-                        registryDefinition: $registryDefinition
-                    );
-                    $invokerServiceIds[$serviceId] = new Reference($serviceId);
-                }
-            }
-
-            // Process method attributes
-            foreach ($reflectionClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $method)
-            {
-                $attributes = $method->getAttributes(AsFilterInvoker::class);
-                if (\count($attributes) > 0)
-                {
-                    foreach ($attributes as $attribute)
-                    {
-                        $instance = $attribute->newInstance();
-                        if (!$instance instanceof AsFilterInvoker) {
-                            throw new \LogicException(sprintf('The #[AsFilterInvoker] attribute on service "%s" must be an instance of "%s".', $serviceId, AsFilterInvoker::class));
-                        }
-                        $this->processAttribute(
-                            attribute: $instance,
-                            serviceId: $serviceId,
-                            definition: $definition,
-                            class: $reflectionClass,
-                            methodName: $method->getName(),
-                            registryDefinition: $registryDefinition
-                        );
-                        $invokerServiceIds[$serviceId] = new Reference($serviceId);
-                    }
-                }
+                $this->processAttribute(
+                    attributes: $attributes,
+                    serviceId: $serviceId,
+                    definition: $definition,
+                    registryDefinition: $registryDefinition
+                );
+                $invokerServiceIds[$serviceId] = new Reference($serviceId);
             }
         }
         
@@ -98,30 +59,15 @@ class RegisterFilterInvokersPass implements CompilerPassInterface
     }
 
     private function processAttribute(
-        AsFilterInvoker  $attribute,
+        array            $attributes,
         string           $serviceId,
         Definition       $definition,
-        \ReflectionClass $class,
-        ?string          $methodName,
         Definition       $registryDefinition
     ): void {
-        $method = $methodName ?? $attribute->method;
-
-        if ($methodName !== null && $attribute->method !== null) {
-            throw new InvalidArgumentException(sprintf('You cannot specify the "method" property on the #[AsFilterInvoker] attribute when it decorates a method in service "%s".', $serviceId));
-        }
-
-        if ($method === null) {
-            $method = '__invoke';
-        }
-
-        if (!$class->hasMethod($method) || !$class->getMethod($method)->isPublic()) {
-            throw new InvalidArgumentException(sprintf('The invoker method "%s" does not exist or is not public on service "%s".', $method, $serviceId));
-        }
-
-        $filterType = $attribute->filterType;
-        $elementAttributes = $class->getAttributes(AsFilterElement::class);
-        $isFilterElement = \count($elementAttributes) > 0;
+        $method = $attributes['method'] ?? '__invoke';
+        $filterType = $attributes['filterType'] ?? null;
+        $context = $attributes['context'] ?? null;
+        $priority = $attributes['priority'] ?? 0;
 
         if (null !== $filterType)
         {
@@ -131,38 +77,35 @@ class RegisterFilterInvokersPass implements CompilerPassInterface
 
             $registryDefinition->addMethodCall('add', [
                 $filterType,
-                $attribute->context,
+                $context,
                 $serviceId,
                 $method,
-                $attribute->priority,
+                $priority,
             ]);
 
             return;
         }
 
+        // If filterType is null, we check if the service is a filter element
+        $elementTags = $definition->getTag(AsFilterElement::TAG);
+        $isFilterElement = \count($elementTags) > 0;
+
         if (!$isFilterElement) {
             throw new InvalidArgumentException(sprintf('Service "%s" is not a filter element, thus the "filterType" property on the #[AsFilterInvoker] attribute MUST be specified.', $serviceId));
         }
 
-        foreach ($elementAttributes as $elementAttribute)
+        foreach ($elementTags as $elementAttributes)
         {
-            /** @var AsFilterElement $instance */
-            $instance = $elementAttribute->newInstance();
-
-            if (!$instance instanceof AsFilterElement) {
-                throw new \LogicException(sprintf('The #[AsFilterElement] attribute on service "%s" must be an instance of "%s".', $serviceId, AsFilterElement::class));
-            }
-
-            if (!$type = (string) ($instance->attributes['type'] ?? null)) {
+            if (!$type = (string) ($elementAttributes['type'] ?? null)) {
                 $type = TypeNameFactory::createFilterElementType($definition->getClass());
             }
 
             $registryDefinition->addMethodCall('add', [
                 $type,
-                $attribute->context,
+                $context,
                 $serviceId,
                 $method,
-                $attribute->priority,
+                $priority,
             ]);
         }
     }

@@ -23,7 +23,6 @@ class AggregationProjector extends AbstractProjector
         private readonly ListQueryManager         $listQueryManager,
     ) {}
 
-
     public function supports(ContextConfigInterface $config): bool
     {
         return $config instanceof AggregationConfig;

@@ -9,6 +9,10 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
 use Symfony\Component\Form\FormInterface;
 
+/**
+ * @todo(@ericges): Remove in 0.1.0
+ * @deprecated
+ */
 class FilterContext
 {
     /**

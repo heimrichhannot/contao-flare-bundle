@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
@@ -21,12 +21,10 @@ class SimpleEquationElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
+    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
     {
-        $filterModel = $context->getFilterModel();
-
-        if (!($operand = $filterModel->equationLeft)
-            || !$op = SqlEquationOperator::match($filterModel->equationOperator))
+        if (!($operand = $inv->filter->equationLeft)
+            || !$op = SqlEquationOperator::match($inv->filter->equationOperator))
         {
             throw new FilterException('Invalid filter configuration.');
         }
@@ -54,7 +52,7 @@ class SimpleEquationElement extends AbstractFilterElement
         $qb->where($where);
 
         if (!$op->isUnary()) {
-            $qb->setParameter(':eq_right', $filterModel->equationRight ?: '');
+            $qb->setParameter(':eq_right', $inv->filter->equationRight ?: '');
         }
     }
 

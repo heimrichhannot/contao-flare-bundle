@@ -13,6 +13,7 @@ use HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent;
 use HeimrichHannot\FlareBundle\Event\FilterFormChildOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
+use HeimrichHannot\FlareBundle\Form\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\Exception\OutOfBoundsException;
@@ -24,6 +25,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 readonly class FilterFormManager
 {
     public function __construct(
+        private ChoicesBuilderFactory    $choicesBuilderFactory,
         private EventDispatcherInterface $eventDispatcher,
         private FilterElementRegistry    $filterElementRegistry,
         private FormFactoryInterface     $formFactory,
@@ -127,7 +129,10 @@ readonly class FilterFormManager
         ListSpecification $listSpecification,
         FilterDefinition  $filterDefinition,
     ): array {
+        $choicesBuilder = $this->choicesBuilderFactory->createChoicesBuilder();
+
         $formTypeOptionsEvent = new FilterElementFormTypeOptionsEvent(
+            choicesBuilder: $choicesBuilder,
             listDefinition: $listSpecification,
             filterDefinition: $filterDefinition,
             options: [],

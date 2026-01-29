@@ -39,6 +39,10 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 *   **Tests:** none
 *   **Linting/Formatting:** The project uses `mago`. Configuration is in `mago.toml`.
 
+### Tooling
+*   **IDE:** PHPStorm
+*   **Execution:** The `php` command is likely unavailable in your shell. Refrain from running `php` or `php bin/console` directly.
+
 ### Coding Standards
 *   Follow PSR-12/PER Coding Style.
 *   **Attributes over Annotations:** Use PHP 8 attributes for registration (e.g., `#[AsFilterElement]`).

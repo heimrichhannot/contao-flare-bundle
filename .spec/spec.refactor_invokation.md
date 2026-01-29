@@ -160,7 +160,7 @@ foreach ($spec->getFilters()->all() as $key => $filter) {
     *   [x] Update `ContextConfigInterface`.
 
 3.  **Manager & Projectors:**
-    *   [ ] Update `ListQueryManager` to accept keyed array `$filterValues`.
+    *   [x] Update `ListQueryManager` to accept keyed array `$filterValues`.
     *   [ ] Update Projectors to build the array using collection keys.
 
 4.  **Element Refactoring:**

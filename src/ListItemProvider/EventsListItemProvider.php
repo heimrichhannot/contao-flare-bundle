@@ -32,12 +32,12 @@ class EventsListItemProvider extends AbstractListItemProvider
      */
     public function fetchCount(
         ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listDefinition,
+        ListSpecification      $listSpecification,
         ContextConfigInterface $contextConfig,
     ): int {
         $byDate = $this->fetchEntriesGrouped(
             listQueryBuilder: $listQueryBuilder,
-            listDefinition: $listDefinition,
+            listDefinition: $listSpecification,
             contextConfig: $contextConfig,
             reduceSelect: true,
         );
@@ -61,16 +61,16 @@ class EventsListItemProvider extends AbstractListItemProvider
      */
     public function fetchEntries(
         ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listDefinition,
+        ListSpecification      $listSpecification,
         ContextConfigInterface $contextConfig,
     ): array {
         $byDate = $this->fetchEntriesGrouped(
             listQueryBuilder: $listQueryBuilder,
-            listDefinition: $listDefinition,
+            listDefinition: $listSpecification,
             contextConfig: $contextConfig,
         );
 
-        $table = $listDefinition->dc;
+        $table = $listSpecification->dc;
 
         $paginatorConfig = $contextConfig instanceof PaginatedContextInterface
             ? $contextConfig->getPaginatorConfig()
@@ -131,12 +131,12 @@ class EventsListItemProvider extends AbstractListItemProvider
      */
     public function fetchIds(
         ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listDefinition,
+        ListSpecification      $listSpecification,
         ContextConfigInterface $contextConfig,
     ): array {
         $byDate = $this->fetchEntriesGrouped(
             listQueryBuilder: $listQueryBuilder,
-            listDefinition: $listDefinition,
+            listDefinition: $listSpecification,
             contextConfig: $contextConfig,
             reduceSelect: true,
         );
@@ -174,7 +174,7 @@ class EventsListItemProvider extends AbstractListItemProvider
 
         $query = $this->listQueryManager->populate(
             listQueryBuilder: $listQueryBuilder,
-            listDefinition: $listDefinition,
+            listSpecification: $listDefinition,
             contextConfig: $contextConfig,
             select: $reduceSelect ? ['id', 'startTime', 'endTime', 'repeatEach', 'repeatEnd'] : null,
         );

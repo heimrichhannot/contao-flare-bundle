@@ -98,14 +98,14 @@ class ListQueryManager
      */
     public function populate(
         ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listDefinition,
+        ListSpecification      $listSpecification,
         ContextConfigInterface $contextConfig,
         array                  $filterValues = [],
         bool                   $isCounting = false,
         bool                   $onlyId = false,
         ?array                 $select = null,
     ): ParameterizedSqlQuery {
-        if (!Str::isValidSqlName($table = $listDefinition->dc)) {
+        if (!Str::isValidSqlName($table = $listSpecification->dc)) {
             throw new FilterException(
                 \sprintf('[FLARE] Invalid table name: %s', $table), method: __METHOD__,
             );
@@ -131,7 +131,7 @@ class ListQueryManager
         {
             $invoked = $this->invokeFilters(
                 listQueryBuilder: $listQueryBuilder,
-                listSpecification: $listDefinition,
+                listSpecification: $listSpecification,
                 contextConfig: $contextConfig,
                 filterValues: $filterValues,
             );

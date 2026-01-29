@@ -2,15 +2,13 @@
 
 namespace HeimrichHannot\FlareBundle\Projector;
 
+use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Context\AggregationConfig;
 use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
-use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Manager\ListItemProviderManager;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\View\AggregationView;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * @implements ProjectorInterface<AggregationView>
@@ -18,9 +16,8 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 class AggregationProjector extends AbstractProjector
 {
     public function __construct(
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly ListItemProviderManager  $itemProviderManager,
-        private readonly ListQueryManager         $listQueryManager,
+        private readonly Connection       $connection,
+        private readonly ListQueryManager $listQueryManager,
     ) {}
 
     public function supports(ContextConfigInterface $config): bool
@@ -30,11 +27,13 @@ class AggregationProjector extends AbstractProjector
 
     public function project(ListSpecification $spec, ContextConfigInterface $config): AggregationView
     {
-        \assert($config instanceof AggregationConfig);
+        \assert($config instanceof AggregationConfig, '$config must be an instance of AggregationConfig');
+
+        $filterValues = $this->gatherFilterValues($spec, $config->getFilterValues());
 
         return new AggregationView(
-            fetchCount: function () use ($spec, $config): int {
-                return $this->fetchCount($spec, $config);
+            fetchCount: function () use ($spec, $config, $filterValues): int {
+                return $this->fetchCount($spec, $config, $filterValues);
             }
         );
     }
@@ -42,30 +41,31 @@ class AggregationProjector extends AbstractProjector
     /**
      * @throws FlareException If the item provider throws an exception.
      */
-    public function fetchCount(ListSpecification $spec, AggregationConfig $config): int
+    public function fetchCount(ListSpecification $spec, AggregationConfig $config, array $filterValues): int
     {
         try
         {
-            $itemProvider = $this->itemProviderManager->ofList($spec);
             $listQueryBuilder = $this->listQueryManager->prepare($spec);
 
-            $event = $this->eventDispatcher->dispatch(
-                new FetchCountEvent(
-                    contextConfig: $config,
-                    listSpecification: $spec,
-                    itemProvider: $itemProvider,
-                    listQueryBuilder: $listQueryBuilder,
-                )
-            );
-
-            $itemProvider = $event->getItemProvider();
-            $listQueryBuilder = $event->getListQueryBuilder();
-
-            return $itemProvider->fetchCount(
+            $query = $this->listQueryManager->populate(
                 listQueryBuilder: $listQueryBuilder,
-                listDefinition: $spec,
+                listSpecification: $spec,
                 contextConfig: $config,
+                filterValues: $filterValues,
+                isCounting: true
             );
+
+            if (!$query->isAllowed()) {
+                return 0;
+            }
+
+            $result = $query->execute($this->connection);
+
+            $count = $result->fetchOne() ?: 0;
+
+            $result->free();
+
+            return $count;
         }
         catch (FlareException $e)
         {

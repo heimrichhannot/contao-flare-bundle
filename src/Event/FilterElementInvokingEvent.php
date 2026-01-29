@@ -9,14 +9,18 @@ class FilterElementInvokingEvent extends Event
 {
     /**
      * @param FilterInvocation $invocation
-     * @param \Closure $callback The callback to be invoked. Signature: (FilterInvocation, FilterQueryBuilder): void
+     * @param \Closure|array $callback The callback to be invoked. Signature: (FilterInvocation, FilterQueryBuilder): void
      * @param bool $shouldInvoke Whether the filter should be invoked.
      */
     public function __construct(
         private readonly FilterInvocation $invocation,
-        private \Closure                  $callback,
+        private \Closure|array            $callback,
         private bool                      $shouldInvoke,
-    ) {}
+    ) {
+        if (!\is_callable($callback)) {
+            throw new \InvalidArgumentException('The callback must be callable.');
+        }
+    }
 
     public function getInvocation(): FilterInvocation
     {

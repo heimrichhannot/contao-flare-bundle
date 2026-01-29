@@ -2,18 +2,16 @@
 
 namespace HeimrichHannot\FlareBundle\Projector;
 
+use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
 use HeimrichHannot\FlareBundle\Context\ValidationConfig;
-use HeimrichHannot\FlareBundle\Dto\FetchSingleEntryConfig;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
-use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Generator\ReaderPageUrlGenerator;
-use HeimrichHannot\FlareBundle\Manager\ListItemProviderManager;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\View\ValidationView;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * @implements ProjectorInterface<ValidationView>
@@ -21,10 +19,9 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 class ValidationProjector extends AbstractProjector
 {
     public function __construct(
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly ListItemProviderManager  $itemProviderManager,
-        private readonly ListQueryManager         $listQueryManager,
-        private readonly ReaderPageUrlGenerator   $readerPageUrlGenerator
+        private readonly Connection             $connection,
+        private readonly ListQueryManager       $listQueryManager,
+        private readonly ReaderPageUrlGenerator $readerPageUrlGenerator,
     ) {}
 
     public function supports(ContextConfigInterface $config): bool
@@ -34,7 +31,7 @@ class ValidationProjector extends AbstractProjector
 
     public function project(ListSpecification $spec, ContextConfigInterface $config): ValidationView
     {
-        \assert($config instanceof ValidationConfig);
+        \assert($config instanceof ValidationConfig, '$config must be an instance of ValidationConfig');
 
         $readerUrlGenerator = $this->readerPageUrlGenerator->createCallable($config);
 
@@ -50,47 +47,55 @@ class ValidationProjector extends AbstractProjector
     public function fetchEntry(int $id, ListSpecification $spec, ValidationConfig $config): ?array
     {
         // Fast lane cache check
-        if ($hit = $config->getEntryCache()[$id] ?? null) {
+        if ($hit = $config->getEntryCache()[$id] ?? null)
+        {
             return $hit;
         }
 
-        // IMPORTANT: clone the spec to not modify the original, i.e., when adding the id filter
-        $spec = clone $spec;
+        try
+        {
+            // IMPORTANT: clone the spec to not modify the original, i.e., when adding the id filter
+            $spec = clone $spec;
 
-        $idDefinition = SimpleEquationElement::define(
-            equationLeft: 'id',
-            equationOperator: SqlEquationOperator::EQUALS,
-            equationRight: $id,
-        );
+            $idDefinition = SimpleEquationElement::define(
+                equationLeft: 'id',
+                equationOperator: SqlEquationOperator::EQUALS,
+                equationRight: $id,
+            );
 
-        $spec->filters->add($idDefinition);
+            $spec->filters->add($idDefinition);
 
-        $listQueryBuilder = $this->listQueryManager->prepare($spec);
-        $itemProvider = $this->itemProviderManager->ofList($spec);
+            $listQueryBuilder = $this->listQueryManager->prepare($spec);
 
-        /**
-         * @noinspection PhpParenthesesCanBeOmittedForNewCallInspection
-         * @noinspection RedundantSuppression
-         * @var FetchListEntriesEvent $event
-         */
-        $event = $this->eventDispatcher->dispatch(
-            (new FetchListEntriesEvent(
-                contextConfig: $config,
-                listSpecification: $spec,
-                itemProvider: $itemProvider,
+            $filterValues = $this->gatherFilterValues($spec, $config->getFilterValues());
+            $this->listQueryManager->populate($listQueryBuilder, $spec, $config, $filterValues);
+
+            $query = $this->listQueryManager->populate(
                 listQueryBuilder: $listQueryBuilder,
-            ))->withSingleEntryConfig(new FetchSingleEntryConfig($id, $idDefinition))
-        );
+                listSpecification: $spec,
+                contextConfig: $config,
+            );
 
-        $itemProvider = $event->getItemProvider();
-        $listQueryBuilder = $event->getListQueryBuilder();
+            if (!$query->isAllowed())
+            {
+                return [];
+            }
 
-        $entries = $itemProvider->fetchEntries(
-            listQueryBuilder: $listQueryBuilder,
-            listDefinition: $spec,
-            contextConfig: $config,
-        );
+            $result = $query->execute($this->connection);
 
-        return \reset($entries) ?: null;
+            $entry = $result->fetchAssociative();
+
+            $result->free();
+
+            return $entry ?: null;
+        }
+        catch (FlareException $e)
+        {
+            throw $e;
+        }
+        catch (\Throwable $e)
+        {
+            throw new FlareException($e->getMessage(), $e->getCode(), $e);
+        }
     }
 }

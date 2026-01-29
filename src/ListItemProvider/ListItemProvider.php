@@ -24,17 +24,17 @@ class ListItemProvider extends AbstractListItemProvider
      */
     public function fetchEntries(
         ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listDefinition,
+        ListSpecification      $listSpecification,
         ContextConfigInterface $contextConfig,
     ): array {
         $entries = $this->fetchEntriesOrIds(
             listQueryBuilder: $listQueryBuilder,
-            listDefinition: $listDefinition,
+            listSpecification: $listSpecification,
             contextConfig: $contextConfig,
             returnIds: false,
         );
 
-        $table = $listDefinition->dc;
+        $table = $listSpecification->dc;
 
         return \array_combine(
             \array_map(
@@ -55,12 +55,12 @@ class ListItemProvider extends AbstractListItemProvider
      */
     public function fetchIds(
         ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listDefinition,
+        ListSpecification      $listSpecification,
         ContextConfigInterface $contextConfig,
     ): array {
         return $this->fetchEntriesOrIds(
             listQueryBuilder: $listQueryBuilder,
-            listDefinition: $listDefinition,
+            listSpecification: $listSpecification,
             contextConfig: $contextConfig,
             returnIds: true,
         );
@@ -74,7 +74,7 @@ class ListItemProvider extends AbstractListItemProvider
      */
     protected function fetchEntriesOrIds(
         ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listDefinition,
+        ListSpecification      $listSpecification,
         ContextConfigInterface $contextConfig,
         ?bool                  $returnIds = null,
     ): array {
@@ -82,7 +82,7 @@ class ListItemProvider extends AbstractListItemProvider
 
         $query = $this->getListQueryManager()->populate(
             listQueryBuilder: $listQueryBuilder,
-            listDefinition: $listDefinition,
+            listSpecification: $listSpecification,
             contextConfig: $contextConfig,
             onlyId: $returnIds,
         );
@@ -113,12 +113,12 @@ class ListItemProvider extends AbstractListItemProvider
      */
     public function fetchCount(
         ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listDefinition,
+        ListSpecification      $listSpecification,
         ContextConfigInterface $contextConfig,
     ): int {
         $query = $this->getListQueryManager()->populate(
             listQueryBuilder: $listQueryBuilder,
-            listDefinition: $listDefinition,
+            listSpecification: $listSpecification,
             contextConfig: $contextConfig,
             isCounting: true,
         );

@@ -3,10 +3,13 @@
 namespace HeimrichHannot\FlareBundle\Context;
 
 use Contao\PageModel;
+use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use Symfony\Component\Validator\Constraints as Assert;
 
-readonly class ValidationConfig implements ContextConfigInterface, Interface\ReaderLinkableInterface
+readonly class ValidationConfig implements ContextConfigInterface, Interface\ReaderLinkableInterface, Interface\PaginatedContextInterface
 {
+    private PaginatorConfig $paginatorConfig;
+
     public static function getContextType(): string
     {
         return 'validation';
@@ -19,7 +22,10 @@ readonly class ValidationConfig implements ContextConfigInterface, Interface\Rea
         private ?\Closure                   $entryCache = null,
         #[Assert\PositiveOrZero] public int $jumpToReaderPageId = 0,
         #[Assert\NotBlank] private string   $autoItemField = 'id',
-    ) {}
+        private array                       $filterValues = [],
+    ) {
+        $this->paginatorConfig = new PaginatorConfig(itemsPerPage: 1);
+    }
 
     public function getEntryCache(): array
     {
@@ -44,5 +50,25 @@ readonly class ValidationConfig implements ContextConfigInterface, Interface\Rea
         }
 
         return PageModel::findByPk($this->jumpToReaderPageId);
+    }
+
+    public function getFilterValues(): array
+    {
+        return $this->filterValues;
+    }
+
+    public function getPaginatorConfig(): PaginatorConfig
+    {
+        return $this->paginatorConfig;
+    }
+
+    public function withFilterValues(array $values): self
+    {
+        return new self(
+            entryCache: $this->entryCache,
+            jumpToReaderPageId: $this->jumpToReaderPageId,
+            autoItemField: $this->autoItemField,
+            filterValues: $values,
+        );
     }
 }

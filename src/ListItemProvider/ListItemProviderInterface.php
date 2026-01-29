@@ -19,7 +19,7 @@ interface ListItemProviderInterface
      */
     public function fetchCount(
         ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listDefinition,
+        ListSpecification      $listSpecification,
         ContextConfigInterface $contextConfig,
     ): int;
 
@@ -38,7 +38,7 @@ interface ListItemProviderInterface
      */
     public function fetchEntries(
         ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listDefinition,
+        ListSpecification      $listSpecification,
         ContextConfigInterface $contextConfig,
     ): array;
 
@@ -53,7 +53,7 @@ interface ListItemProviderInterface
      */
     public function fetchIds(
         ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listDefinition,
+        ListSpecification      $listSpecification,
         ContextConfigInterface $contextConfig,
     ): array;
 }

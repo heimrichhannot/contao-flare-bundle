@@ -2,25 +2,29 @@
 
 namespace HeimrichHannot\FlareBundle\Twig\Runtime;
 
-use Contao\ContentModel;
 use Contao\Controller;
 use Contao\FilesModel;
 use Contao\FrontendTemplate;
 use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
-use Contao\Template;
+use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageSchemaOrgConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageSchemaOrgContract;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
+use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\ListView\ListView;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
+use HeimrichHannot\FlareBundle\Projector\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
-use Symfony\Component\Form\FormView;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\View\ViewInterface;
 use Twig\Extension\RuntimeExtensionInterface;
 
 class FlareRuntime implements RuntimeExtensionInterface
@@ -29,8 +33,63 @@ class FlareRuntime implements RuntimeExtensionInterface
 
     public function __construct(
         private readonly ListViewBuilderFactory $listViewBuilderFactory,
-        private readonly ListTypeRegistry        $listTypeRegistry,
+        private readonly ListTypeRegistry       $listTypeRegistry,
+        private readonly ProjectorRegistry      $projectorRegistry,
     ) {}
+
+    public function project(ListSpecification $spec, ContextConfigInterface $config): ViewInterface
+    {
+        return $this->projectorRegistry->getProjectorFor($spec, $config)->project($spec, $config);
+    }
+
+    public function makeFilter(string $filterAlias, array $options = []): FilterDefinition
+    {
+        return match ($filterAlias) {
+            'eq' => (static function () use ($options): FilterDefinition {
+                if (!$options) {
+                    throw new \InvalidArgumentException('Missing required options for filter "eq"');
+                }
+
+                $prop = \array_key_first($options);
+                $value = $options[$prop];
+
+                return SimpleEquationElement::define(
+                    equationLeft: $prop,
+                    equationOperator: SqlEquationOperator::EQUALS,
+                    equationRight: $value,
+                );
+            })(),
+            default => throw new \InvalidArgumentException('Unknown filter alias: ' . $filterAlias)
+        };
+    }
+
+    public function copyView(
+        ListSpecification      $spec,
+        ContextConfigInterface $config,
+        array                  $filters = [],
+    ): ViewInterface {
+        $spec = clone $spec;
+
+        foreach ($filters as $filter)
+        {
+            if (!$filter instanceof FilterDefinition && !\is_array($filter)) {
+                throw new \InvalidArgumentException('Invalid filter definition');
+            }
+
+            if (\is_array($filter))
+            {
+                if (!isset($filter['alias'], $filter['options']) || !\is_string($filter['alias']) || !\is_array($filter['options'])) {
+                    throw new \InvalidArgumentException('Invalid filter definition');
+                }
+
+                $filter = $this->makeFilter($filter['alias'], $filter['options']);
+            }
+
+            $spec->filters->add($filter);
+        }
+
+        return $this->project($spec, clone $config);
+    }
 
     /**
      * Returns a list view DTO for the given list model.

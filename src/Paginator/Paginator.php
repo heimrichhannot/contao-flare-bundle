@@ -256,12 +256,11 @@ readonly class Paginator extends PaginatorConfig
      * If the prefix is null, the default page parameter name 'page' is returned.
      * Otherwise, the prefix is sanitized and appended with '_page'.
      *
-     * @param string|null $prefix The prefix to use for the page parameter.
+     * @param string|null $param The prefix to use for the page parameter.
      * @return string The generated page parameter name.
      */
-    public static function pageParam(string $prefix = null): string
+    public static function normalizePageParam(string $param = null): string
     {
-        $prefix = \preg_replace(['/[^a-z0-9_]/i', '/_?page$/i', '/_{2,}/'], ['_', '', '_'], $prefix);
-        return $prefix ? \rtrim($prefix, '_') . '_page' : 'page';
+        return \preg_replace(['/[^a-z0-9_]/i', '/_{2,}/'], ['_', '_'], $param) ?: 'page';
     }
 }

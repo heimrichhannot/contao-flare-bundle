@@ -1,23 +1,29 @@
-{# @var flare \HeimrichHannot\FlareBundle\ListView\ListView #}
+{# @var \HeimrichHannot\FlareBundle\View\InteractiveView flare_list #}
 {% extends '@Contao/flare/_flare_base.html.twig' %}
 
 {% block content %}
 
     {#
-        set flare = flare(list_model, {
+        set my_list_spec = flare_make_list({
+            dc: 'tl_news',
             form_name: 'lieselotte',
             items_per_page: 10,
         })
 
-        flare.entries
-        flare.paginator
+        my_list_spec.filters.add(flare_make_filter('eq', { id: 20 }))
+
+        set my_view = flare_project('interactive', my_list_spec, {});
+
+        my_view.form.createView
+        my_view.entries
+        my_view.paginator
     #}
 
     {% block content_start %}{% endblock %}
 
     {% block filter %}
 
-        {% set form = flare_form(flare) %}
+        {% set form = flare_list.form.createView %}
 
         {{ form_start(form) }}
             {{ form_widget(form) }}
@@ -36,11 +42,11 @@
         </div>
 
         {% if app.request.get('_preview') or app.debug %}
-            {% for entry in flare.entries %}
+            {% for entry in flare_list.entries %}
                 <details>
-                    <summary>#{{ entry.id }} <a href="{{ flare.to(entry.id) }}">{{ entry.title ?? entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>') }}</a></summary>
+                    <summary>#{{ entry.id }} <a href="{{ flare_list.to(entry.id) }}">{{ entry.title ?? entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>') }}</a></summary>
                     <div style="width: 100%; max-height: max(30vh, 150px); overflow: auto auto; background: #def; margin-bottom: .5rem">
-                        {% set model = flare.model(entry.id) %}
+                        {% set model = flare_list.model(entry.id) %}
                         <div style="display: grid; grid-template-columns: max-content auto; gap: .125rem 1rem; font-family: monospace; padding: .5rem 1rem 3rem; font-size: .9em;">
                             <strong style="grid-column: 1 / -1; margin-bottom: .25rem">{{ model.table }}</strong>
                             {% for key, field in entry %}
@@ -61,7 +67,7 @@
 
     {% block pagination %}
         {# @var \HeimrichHannot\FlareBundle\Paginator\Paginator paginator #}
-        {{ include('@Contao/flare/paginator.html.twig', { paginator: flare.paginator }) }}
+        {{ include('@Contao/flare/paginator.html.twig', { paginator: flare_list.paginator }) }}
     {% endblock %}
 
     {% block content_end %}{% endblock %}

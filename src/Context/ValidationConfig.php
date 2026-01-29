@@ -62,6 +62,11 @@ readonly class ValidationConfig implements ContextConfigInterface, Interface\Rea
         return $this->paginatorConfig;
     }
 
+    public function getPaginatorQueryParameter(): ?string
+    {
+        return null;
+    }
+
     public function withFilterValues(array $values): self
     {
         return new self(

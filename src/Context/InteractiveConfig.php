@@ -28,6 +28,7 @@ class InteractiveConfig implements
         #[Assert\NotBlank] public string          $formName = '',
         #[Assert\PositiveOrZero] public int       $jumpToReaderPageId = 0,
         #[Assert\NotBlank] public string          $autoItemField = 'id',
+        public ?string                            $pageParam = null,
     ) {}
 
     public function getContentModel(): ?ContentModel
@@ -54,6 +55,11 @@ class InteractiveConfig implements
         return $this->paginatorConfig;
     }
 
+    public function getPaginatorQueryParameter(): ?string
+    {
+        return $this->pageParam;
+    }
+
     public function getAutoItemField(): string
     {
         return $this->autoItemField;
@@ -73,12 +79,24 @@ class InteractiveConfig implements
         return $this->sortDescriptor;
     }
 
-    public function with(?PaginatorConfig $paginatorConfig = null): static
+    public function with(
+        ?PaginatorConfig $paginatorConfig = null,
+        ?string          $formName = null,
+        ?string          $pageParam = null,
+    ): static
     {
         $clone = clone $this;
 
         if ($paginatorConfig !== null) {
             $clone->paginatorConfig = $paginatorConfig;
+        }
+
+        if ($formName !== null) {
+            $clone->formName = $formName;
+        }
+
+        if ($pageParam !== null) {
+            $clone->pageParam = $pageParam;
         }
 
         return $clone;

@@ -134,8 +134,11 @@ final class ListViewController extends AbstractContentElementController
             )
         );
 
+        $template = $event->getTemplate();
         $data = $template->getData();
-        $data['flare_list'] ??= $event->getInteractiveView();
+        $data['flare_list_spec'] = $listSpec;
+        $data['flare_list_config'] = $interactiveConfig;
+        $data['flare_list'] ??= $interactiveView;
         /**
          * @todo(@ericges): Remove in 0.1.0
          * @deprecated Use 'flare_list' instead.

@@ -131,10 +131,15 @@ class InteractiveProjector extends AbstractProjector
             return $this->paginatorBuilderFactory->create()->buildEmpty();
         }
 
+        $pageParam = Paginator::normalizePageParam($context->getPaginatorQueryParameter() ?: $form->getName());
+        if ($pageParam === $form->getName()) {
+            $pageParam = $form->getName() . '_page';
+        }
+
         return $this->paginatorBuilderFactory
             ->create()
             ->fromConfig($context->getPaginatorConfig())
-            ->queryPrefix($form->getName())
+            ->pageParameter($pageParam)
             ->handleRequest()
             ->totalItems($totalItems)
             ->build();

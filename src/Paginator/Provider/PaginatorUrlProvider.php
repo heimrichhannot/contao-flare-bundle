@@ -16,13 +16,14 @@ readonly class PaginatorUrlProvider
      * @return callable(int $page): string
      */
     public function createGenerator(
-        ?string $routeName = null,
+        string $routeName,
+        string $pageParam,
         ?array  $routeParams = null,
-        ?string $queryPrefix = null,
     ): callable {
+        $routeParams ??= [];
         return fn (int $page): string => $this->urlGenerator->generate(
             $routeName,
-            \array_merge($routeParams, [Paginator::pageParam($queryPrefix) => $page]),
+            \array_merge($routeParams, [$pageParam => $page]),
         );
     }
 
@@ -32,9 +33,9 @@ readonly class PaginatorUrlProvider
      */
     public function createGeneratorFromRequest(
         Request $request,
+        string $pageParam,
         ?string $routeName = null,
         ?array  $routeParams = null,
-        ?string $queryPrefix = null,
     ): callable {
         if (!$routeName ??= $request->attributes->get('_route')) {
             throw new \RuntimeException('No route found in current request');
@@ -43,7 +44,6 @@ readonly class PaginatorUrlProvider
         if (\is_null($routeParams))
         {
             $params = $request->attributes->get('_route_params', []);
-            $pageParam = Paginator::pageParam($queryPrefix);
 
             // Merge query parameters, excluding the page parameter
             $queryParams = \array_filter(
@@ -55,6 +55,6 @@ readonly class PaginatorUrlProvider
             $routeParams = \array_merge($params, $queryParams);
         }
 
-        return $this->createGenerator($routeName, $routeParams, $queryPrefix);
+        return $this->createGenerator($routeName, $pageParam, $routeParams);
     }
 }

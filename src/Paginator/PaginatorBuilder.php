@@ -13,7 +13,7 @@ class PaginatorBuilder
     private ?int $currentPage = null;
     private ?int $itemsPerPage = null;
     private ?int $totalItems = null;
-    private ?string $queryPrefix = null;
+    private string $pageParam = 'page';
     private ?string $routeName = null;
     private ?array $routeParams = null;
 
@@ -47,9 +47,9 @@ class PaginatorBuilder
         return $this;
     }
 
-    public function queryPrefix(?string $queryPrefix): static
+    public function pageParameter(string $pageParam): static
     {
-        $this->queryPrefix = $queryPrefix;
+        $this->pageParam = Paginator::normalizePageParam($pageParam);
         return $this;
     }
 
@@ -76,7 +76,7 @@ class PaginatorBuilder
 
         $defaultPage ??= 1;
 
-        $this->currentPage = (int) $request->query->get(Paginator::pageParam($this->queryPrefix), $defaultPage);
+        $this->currentPage = (int) $request->query->get($this->pageParam, $defaultPage);
 
         return $this;
     }
@@ -88,9 +88,9 @@ class PaginatorBuilder
     {
         return $this->urlProvider->createGeneratorFromRequest(
             request: $this->requestStack->getCurrentRequest(),
+            pageParam: $this->pageParam,
             routeName: $this->routeName,
             routeParams: $this->routeParams,
-            queryPrefix: $this->queryPrefix,
         );
     }
 

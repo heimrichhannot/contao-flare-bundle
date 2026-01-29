@@ -14,8 +14,8 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
+use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -34,16 +34,13 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
+    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
     {
-        $filterModel = $context->getFilterModel();
-        $listModel = $context->getListModel();
+        $options = $this->getOptions($inv->list, $inv->filter) ?? [];
 
-        $options = $this->getOptions($listModel, $filterModel) ?? [];
-
-        if ($filterModel->intrinsic)
+        if ($inv->filter->isIntrinsic())
         {
-            if (!$preselect = $this->getPreselectValue($filterModel))
+            if (!$preselect = $this->getPreselectValue($inv->filter))
             {
                 return;
             }
@@ -54,7 +51,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
             }
         }
 
-        if (!$selected ??= $context->getFormData())
+        if (!$selected ??= $inv->getValue())
         {
             return;
         }
@@ -66,7 +63,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
             return;
         }
 
-        if (!$targetField = $filterModel->fieldGeneric)
+        if (!$targetField = $inv->filter->fieldGeneric)
         {
             $qb->abort();
         }
@@ -76,7 +73,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
             $qb->abort();
         }
 
-        $dcaOptionsField = $this->getOptionsField($context->getListModel(), $filterModel) ?? [];
+        $dcaOptionsField = $this->getOptionsField($inv->list, $inv->filter) ?? [];
         $isMultiple = $dcaOptionsField['eval']['multiple'] ?? false;
 
         if (\count($selected) === 1)
@@ -320,7 +317,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
         return $options;
     }
 
-    public function getOptionsField(ListSpecification $list, FilterDefinition $filter): ?array
+    public function getOptionsField(ListModel|ListSpecification $list, FilterModel|FilterDefinition $filter): ?array
     {
         Controller::loadLanguageFile($list->dc);
         Controller::loadDataContainer($list->dc);
@@ -328,7 +325,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
         return $GLOBALS['TL_DCA'][$list->dc]['fields'][$filter->fieldGeneric] ?? null;
     }
 
-    protected function tryGetOptionsFromField(ListSpecification $list, array $optionsField): ?array
+    protected function tryGetOptionsFromField(ListModel|ListSpecification $list, array $optionsField): ?array
     {
         if (\is_array($options = $optionsField['options'] ?? null))
         {

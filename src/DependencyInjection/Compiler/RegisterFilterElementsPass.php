@@ -2,13 +2,12 @@
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
+use HeimrichHannot\FlareBundle\DependencyInjection\Factory\TypeNameFactory;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\PriorityTaggedServiceTrait;
-use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
@@ -90,10 +89,6 @@ class RegisterFilterElementsPass implements CompilerPassInterface
             return $type;
         }
 
-        $className = $definition->getClass();
-        $className = \ltrim(\strrchr($className, '\\'), '\\');
-        $className = Str::trimSubstrings($className, suffix: ['Controller', 'FilterElement', 'Element']);
-
-        return Container::underscore($className);
+        return TypeNameFactory::createFilterElementType($definition->getClass());
     }
 }

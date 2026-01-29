@@ -2,9 +2,10 @@
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterInvoker;
+use HeimrichHannot\FlareBundle\DependencyInjection\Factory\TypeNameFactory;
 use HeimrichHannot\FlareBundle\Filter\Invoker\FilterInvoker;
-use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
 use HeimrichHannot\FlareBundle\Registry\FilterInvokerRegistry;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -47,7 +48,14 @@ class RegisterFilterInvokersPass implements CompilerPassInterface
                     if (!$instance instanceof AsFilterInvoker) {
                         throw new \LogicException(sprintf('The #[AsFilterInvoker] attribute on service "%s" must be an instance of "%s".', $serviceId, AsFilterInvoker::class));
                     }
-                    $this->processAttribute($instance, $serviceId, $definition, $reflectionClass, null, $registryDefinition);
+                    $this->processAttribute(
+                        attribute: $instance,
+                        serviceId: $serviceId,
+                        definition: $definition,
+                        class: $reflectionClass,
+                        methodName: null,
+                        registryDefinition: $registryDefinition
+                    );
                     $invokerServiceIds[$serviceId] = new Reference($serviceId);
                 }
             }
@@ -64,7 +72,14 @@ class RegisterFilterInvokersPass implements CompilerPassInterface
                         if (!$instance instanceof AsFilterInvoker) {
                             throw new \LogicException(sprintf('The #[AsFilterInvoker] attribute on service "%s" must be an instance of "%s".', $serviceId, AsFilterInvoker::class));
                         }
-                        $this->processAttribute($instance, $serviceId, $definition, $reflectionClass, $method->getName(), $registryDefinition);
+                        $this->processAttribute(
+                            attribute: $instance,
+                            serviceId: $serviceId,
+                            definition: $definition,
+                            class: $reflectionClass,
+                            methodName: $method->getName(),
+                            registryDefinition: $registryDefinition
+                        );
                         $invokerServiceIds[$serviceId] = new Reference($serviceId);
                     }
                 }
@@ -90,19 +105,6 @@ class RegisterFilterInvokersPass implements CompilerPassInterface
         ?string          $methodName,
         Definition       $registryDefinition
     ): void {
-        $filterType = $attribute->filterType;
-        $isFilterElement = $class->isSubclassOf(AbstractFilterElement::class);
-
-        // Inference Logic
-        if ($filterType === null) {
-            if (!$isFilterElement) {
-                throw new InvalidArgumentException(sprintf('Service "%s" is not a filter element, so you must specify the "filterType" property on the #[AsFilterInvoker] attribute.', $serviceId));
-            }
-            $filterType = $class->getMethod('getType')->invoke(null);
-        } elseif ($isFilterElement) {
-            throw new InvalidArgumentException(sprintf('Service "%s" is a filter element, so you must not specify the "filterType" property on the #[AsFilterInvoker] attribute; it is automatically inferred.', $serviceId));
-        }
-        
         $method = $methodName ?? $attribute->method;
 
         if ($methodName !== null && $attribute->method !== null) {
@@ -116,13 +118,52 @@ class RegisterFilterInvokersPass implements CompilerPassInterface
         if (!$class->hasMethod($method) || !$class->getMethod($method)->isPublic()) {
             throw new InvalidArgumentException(sprintf('The invoker method "%s" does not exist or is not public on service "%s".', $method, $serviceId));
         }
-        
-        $registryDefinition->addMethodCall('add', [
-            $filterType,
-            $attribute->context,
-            $serviceId,
-            $method,
-            $attribute->priority,
-        ]);
+
+        $filterType = $attribute->filterType;
+        $elementAttributes = $class->getAttributes(AsFilterElement::class);
+        $isFilterElement = \count($elementAttributes) > 0;
+
+        if (null !== $filterType)
+        {
+            if (!$filterType) {
+                throw new InvalidArgumentException(sprintf('The "filterType" property on the #[AsFilterInvoker] attribute on service "%s" MUST be specified and cannot be empty.', $serviceId));
+            }
+
+            $registryDefinition->addMethodCall('add', [
+                $filterType,
+                $attribute->context,
+                $serviceId,
+                $method,
+                $attribute->priority,
+            ]);
+
+            return;
+        }
+
+        if (!$isFilterElement) {
+            throw new InvalidArgumentException(sprintf('Service "%s" is not a filter element, thus the "filterType" property on the #[AsFilterInvoker] attribute MUST be specified.', $serviceId));
+        }
+
+        foreach ($elementAttributes as $elementAttribute)
+        {
+            /** @var AsFilterElement $instance */
+            $instance = $elementAttribute->newInstance();
+
+            if (!$instance instanceof AsFilterElement) {
+                throw new \LogicException(sprintf('The #[AsFilterElement] attribute on service "%s" must be an instance of "%s".', $serviceId, AsFilterElement::class));
+            }
+
+            if (!$type = (string) ($instance->attributes['type'] ?? null)) {
+                $type = TypeNameFactory::createFilterElementType($definition->getClass());
+            }
+
+            $registryDefinition->addMethodCall('add', [
+                $type,
+                $attribute->context,
+                $serviceId,
+                $method,
+                $attribute->priority,
+            ]);
+        }
     }
 }

@@ -22,6 +22,11 @@ interface ProjectorInterface
     public function supports(ContextConfigInterface $config): bool;
 
     /**
+     * Calculates the priority of the projector when supported, considering the given specification.
+     */
+    public function priority(ListSpecification $spec, ContextConfigInterface $config): int;
+
+    /**
      * Projects a list specification into a result based on the context config.
      *
      * @param ListSpecification $spec

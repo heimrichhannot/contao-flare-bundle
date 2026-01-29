@@ -16,10 +16,19 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
     use ServiceSubscriberTrait;
 
     /**
-     * Checks if the projector supports the given list context.
-     * May be used to overhaul projector logic in a future version. Until then, this method is final.
+     * {@inheritdoc}
      */
     abstract public function supports(ContextConfigInterface $config): bool;
+
+    /**
+     * {@inheritdoc}
+     *
+     * The default priority is 0, but can be overriden by subclasses.
+     */
+    public function priority(ListSpecification $spec, ContextConfigInterface $config): int
+    {
+        return 0;
+    }
 
     /**
      * {@inheritdoc}

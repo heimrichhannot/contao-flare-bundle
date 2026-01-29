@@ -100,8 +100,8 @@ final class ListViewController extends AbstractContentElementController
 
             $listSpec = $this->listSpecificationFactory->create(dataSource: $listModel);
 
-            $interactiveProjector = $this->projectorRegistry->getProjectorFor($interactiveConfig);
-            $interactiveView = $interactiveProjector->project(spec: $listSpec, config: $interactiveConfig);
+            $interactiveProjector = $this->projectorRegistry->getProjectorFor($listSpec, $interactiveConfig);
+            $interactiveView = $interactiveProjector->project($listSpec, $interactiveConfig);
             \assert($interactiveView instanceof InteractiveView);
 
             /* _keep for future reference_

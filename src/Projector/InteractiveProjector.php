@@ -117,7 +117,7 @@ class InteractiveProjector extends AbstractProjector
 
         $aggregationConfig = $aggregationConfig->withFilterValues($filterValues);
 
-        $projector = $this->projectorRegistry->getProjectorFor($aggregationConfig);
+        $projector = $this->projectorRegistry->getProjectorFor($spec, $aggregationConfig);
         $projection = $projector->project($spec, $aggregationConfig);
 
         \assert($projection instanceof AggregationView);

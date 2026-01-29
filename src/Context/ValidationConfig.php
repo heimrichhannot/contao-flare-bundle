@@ -7,6 +7,11 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 readonly class ValidationConfig implements ContextConfigInterface, Interface\ReaderLinkableInterface
 {
+    public static function getContextType(): string
+    {
+        return 'validation';
+    }
+
     /**
      * @param null|\Closure(): array $entryCache
      */

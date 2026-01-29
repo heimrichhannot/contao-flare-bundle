@@ -15,6 +15,11 @@ class InteractiveConfig implements
     Interface\ReaderLinkableInterface,
     Interface\SortableContextInterface
 {
+    public static function getContextType(): string
+    {
+        return 'interactive';
+    }
+
     public function __construct(
         #[Assert\NotNull] public ?PaginatorConfig $paginatorConfig = null,
         public ?SortDescriptor                    $sortDescriptor = null,

@@ -37,11 +37,13 @@ Collectors define the indexing strategy.
 
 *   **ListModelFilterCollector:**
     *   **Index:** Uses `filterFormFieldName` if available.
-    *   **Fallback:** Uses `_db_id_{id}` if name is missing (Intrinsic).
+    *   **Fallback:** Uses an automatically generated ID if name is missing.
     *   **Result:** DB filters with the same form name automatically override earlier ones.
 
 ### C. The Invocation DTO (`FilterInvocation`)
 Wraps configuration and context dependencies. **Does not include the Query Builder.**
+
+Implemented in `\HeimrichHannot\FlareBundle\Filter\FilterInvocation`;
 
 ```php
 namespace HeimrichHannot\FlareBundle\Filter;
@@ -60,18 +62,7 @@ class FilterInvocation
 ### D. The Invoker Attribute (`AsFilterInvoker`)
 Allows methods on a `FilterElement` service to claim responsibility for specific contexts.
 
-```php
-namespace HeimrichHannot\FlareBundle\DependencyInjection\Attribute;
-
-#[\Attribute(\Attribute::TARGET_METHOD)]
-class AsFilterInvoker
-{
-    public function __construct(
-        public ?string $context = null,
-        public int $priority = 0,
-    ) {}
-}
-```
+Implemented in `\HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterInvoker`;
 
 ### E. Intrinsic Value Interface (`IntrinsicValueContract`)
 Allows the Projector to standardly retrieve default values from intrinsic filters without knowing internal implementation details.
@@ -90,6 +81,8 @@ interface IntrinsicValueContract
 
 ### F. Context Configuration Updates
 `ContextConfigInterface` must provide a unique identity to match against the `AsFilterInvoker` attribute.
+
+Implemented in `\HeimrichHannot\FlareBundle\Context\ContextConfigInterface`;
 
 ```php
 interface ContextConfigInterface
@@ -159,18 +152,18 @@ foreach ($spec->getFilters()->all() as $key => $filter) {
 ## 5. Migration Strategy
 
 1.  **Collection Refactoring:**
-    *   Update `FilterDefinitionCollection` to support string keys and `set()`.
-    *   Update `ListModelFilterCollector` to implement the Name/ID indexing strategy.
+    *   [x] Update `FilterDefinitionCollection` to support string keys and `set()`.
+    *   [x] Update `ListModelFilterCollector` to implement the Name/ID indexing strategy.
 
 2.  **Infrastructure:**
-    *   Create DTO, Attribute, and Interface.
-    *   Update `ContextConfigInterface`.
+    *   [x] Create DTO, Attribute, and Interface.
+    *   [x] Update `ContextConfigInterface`.
 
 3.  **Manager & Projectors:**
-    *   Update `ListQueryManager` to accept keyed array `$filterValues`.
-    *   Update Projectors to build the array using collection keys.
+    *   [ ] Update `ListQueryManager` to accept keyed array `$filterValues`.
+    *   [ ] Update Projectors to build the array using collection keys.
 
 4.  **Element Refactoring:**
-    *   Apply `#[AsFilterInvoker]` to elements.
-    *   Update method signatures to `(FilterInvocation $inv, FilterQueryBuilder $qb)`.
-    *   Remove legacy scope logic.
+    *   [ ] Apply `#[AsFilterInvoker]` to elements.
+    *   [ ] Update method signatures to `(FilterInvocation $inv, FilterQueryBuilder $qb)`.
+    *   [ ] Remove legacy scope logic.

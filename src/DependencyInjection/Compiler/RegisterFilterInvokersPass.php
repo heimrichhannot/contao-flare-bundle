@@ -126,7 +126,7 @@ class RegisterFilterInvokersPass implements CompilerPassInterface
         if (null !== $filterType)
         {
             if (!$filterType) {
-                throw new InvalidArgumentException(sprintf('The "filterType" property on the #[AsFilterInvoker] attribute on service "%s" MUST be specified and cannot be empty.', $serviceId));
+                throw new InvalidArgumentException(sprintf('The "filterType" property on the #[AsFilterInvoker] attribute on service "%s" MUST NOT be empty.', $serviceId));
             }
 
             $registryDefinition->addMethodCall('add', [

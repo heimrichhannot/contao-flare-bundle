@@ -33,14 +33,6 @@ class FlareRuntime implements RuntimeExtensionInterface
     ) {}
 
     /**
-     * @throws FlareException
-     */
-    public function createFormView(ListView $container): FormView
-    {
-        return $container->getFormComponent()->createView();
-    }
-
-    /**
      * Returns a list view DTO for the given list model.
      *
      * @param array{
@@ -50,6 +42,8 @@ class FlareRuntime implements RuntimeExtensionInterface
      * } $options
      *
      * @throws FlareException
+     *
+     * @deprecated To be removed in 0.1.0 todo(@ericges)
      */
     public function getFlare(ListModel|string|int $listModel, array $options = []): ListView
     {
@@ -112,7 +106,7 @@ class FlareRuntime implements RuntimeExtensionInterface
         $table = $model->getTable();
         $id = $model->id;
 
-        $text = Template::once(static function () use ($table, $id): string {
+        $text = self::once(static function () use ($table, $id): string {
             if (!$elm = Model::getClassFromTable('tl_content')::findPublishedByPidAndTable($id, $table))
             {
                 return '';
@@ -244,6 +238,21 @@ class FlareRuntime implements RuntimeExtensionInterface
             {
                 return $this(...$args);
             }
+        };
+    }
+
+    private static function once(callable $callback): callable
+    {
+        $result = null;
+
+        return static function () use (&$callback, &$result) {
+            if ($callback !== null)
+            {
+                $result = $callback();
+                $callback = null;
+            }
+
+            return $result;
         };
     }
 }

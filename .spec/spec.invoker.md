@@ -1,21 +1,50 @@
-# Specification: Extensible Filter Invocation
+# Specification: Context-Aware Filter Invocation
 
 ## 1. Overview
 
-This document outlines the architectural refactoring of the filter invocation system. The primary goal was to replace the former reflection-based resolver with a compiled, extensible system that allows third-party developers to provide custom invocation logic for any filter element in any context.
+This document outlines the architecture of the filter invocation system.
+The system replaces legacy reflection-based logic with a compiled, extensible, and context-aware mechanism.
+It allows third-party developers to provide custom invocation logic for any filter element in any context (e.g., interactive forms, gallery viewers, API endpoints).
 
-This is achieved by:
-1.  Implementation of a powerful and flexible `AsFilterInvoker` attribute.
-2.  Introduction of a Symfony Compiler Pass to discover and register all invokers at compile time.
-3.  Replacement of the runtime resolver with one that queries a pre-populated registry.
+Key goals:
+*   **Performance:** Compile-time discovery of invokers.
+*   **Extensibility:** Decoupled logic via attributes.
+*   **Clarity:** Unified DTOs and clear responsibilities.
 
-This new architecture is more performant, significantly more extensible, and provides a clearer, more unified developer experience.
+## 2. Core Architectural Principles
 
-## 2. The `AsFilterInvoker` Attribute
+1.  **Projector Responsibility:** The Projector is the authority on *what* values are used for filtering. It gathers runtime values (from Forms, Request, Config) and intrinsic values, creating a clean value map before invoking filters.
+2.  **Context-Driven Logic:** Filter Elements use attributes (`#[AsFilterInvoker]`) to define context-specific behavior, removing hardcoded scope checks (e.g., ~`if ($context->isList())`~).
+3.  **Indexed Collections:** Filters are stored in an associative map where the key is a unique index. This allows filters to override each other (e.g., a Database filter named 'author' can be overridden by a Manual filter named 'author').
+4.  **Unified DTO:** The `FilterInvocation` DTO wraps configuration and context for the filter execution.
+5.  **Specification-Driven:** `ListSpecification` is the domain object source of truth.
 
-The `AsFilterInvoker` attribute is the sole declarative entry point for registering invocation logic. It was updated to support class and method targets, and to carry enough information for both internal and external use cases.
+## 3. The `FilterInvocation` DTO
 
-Implemented in `src/DependencyInjection/Attribute/AsFilterInvoker.php`.
+The `FilterInvocation` object wraps all necessary context and configuration for a filter's execution, *excluding* the Query Builder (which is passed separately to distinguish "Context" from "Action Target").
+
+**Class:** `HeimrichHannot\FlareBundle\Filter\FilterInvocation`
+
+```php
+class FilterInvocation
+{
+    public function __construct(
+        public readonly FilterDefinition $filter,
+        public readonly ListSpecification $list,
+        public readonly ContextConfigInterface $config,
+        public readonly mixed $value = null,
+    ) {}
+    
+    // Getter methods are also available...
+}
+```
+
+## 4. The `AsFilterInvoker` Attribute
+
+The `AsFilterInvoker` attribute is the declarative entry point for registering invocation logic.
+It supports class and method targets and carries enough information for both internal and external use cases.
+
+**Attribute:** `HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterInvoker`
 
 ### Usage Examples
 
@@ -24,11 +53,15 @@ The `filterType` is inferred from the class.
 
 ```php
 // In: src/FilterElement/BooleanElement.php
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterInvoker;
-
 #[AsFilterElement(...)]
 class BooleanElement extends AbstractFilterElement
 {
+    public function __invoke(FilterInvocation $invocation, FilterQueryBuilder $qb): void
+    {
+        // ... the default invoker for any context for which no specific invocation method is registered
+        // ... which class method to call (instead of __invoke) can be defined with the AsFilterElement attribute 
+    }
+
     #[AsFilterInvoker(context: 'interactive')]
     public function invokeForInteractive(FilterInvocation $invocation, FilterQueryBuilder $qb): void
     {
@@ -41,10 +74,6 @@ class BooleanElement extends AbstractFilterElement
 The `filterType` is mandatory.
 
 ```php
-// In: src/Acme/Gallery/Filter/GalleryBooleanInvoker.php
-use HeimrichHannot\FlareBundle\FilterElement\BooleanElement;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterInvoker;
-
 class GalleryBooleanInvoker
 {
     #[AsFilterInvoker(filterType: BooleanElement::TYPE, context: 'gallery')]
@@ -59,89 +88,97 @@ class GalleryBooleanInvoker
 The `filterType` is mandatory, and the `method` defaults to `__invoke`.
 
 ```php
-// In: src/Acme/Gallery/Filter/GallerySearchInvoker.php
-use HeimrichHannot\FlareBundle\FilterElement\SearchKeywordsElement;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterInvoker;
-
 #[AsFilterInvoker(filterType: SearchKeywordsElement::TYPE, context: 'gallery')]
 class GallerySearchInvoker
 {
     public function __invoke(FilterInvocation $invocation, FilterQueryBuilder $qb): void
     {
-        // ... custom logic for SearchKeywordsElement in the 'gallery' context
+        // ... logic
     }
 }
 ```
 
-## 3. System Architecture Changes
+## 5. System Components & Discovery
 
-The runtime reflection mechanism was replaced by a compiled registry populated via a compiler pass.
-This registry is used by the `FilterInvoker` service that provides consumers with a ready-to-use `callable`.
+The runtime reflection mechanism is replaced by a compiled registry populated via a compiler pass.
 
-### A. `FilterInvokerRegistry`
-
-A simple service that acts as a collection for invoker configurations, populated by the compiler pass.
-
-- **Responsibility:** Hold a structured, in-memory map of all discovered invokers.
-- Implemented in `src/Registry/FilterInvokerRegistry.php`.
-
-### B. `RegisterFilterInvokersPass`
-
-This is the core of the novel discovery mechanism. Registered in the bundle's `build()` method.
-
-Implemented in `src/DependencyInjection/RegisterFilterInvokersPass.php`.
-
-- **Responsibility:**
-    1.  Iterates over all service definitions in the container.
-    2.  Use Reflection to find `#[AsFilterInvoker]` attributes on classes and methods.
-    3.  For each attribute instance, performs validation and collects the invoker configuration (`serviceId`, `method`, `filterType`, `context`, `priority`).
-    4.  **Inference Logic:**
-        - If given, uses the `filterType` to infer the service ID.
-        - If `filterType` is `null`, verifies that the service is a filter element and infers the type.
-          (Note: Filter element services do not necessarily extend `AbstractFilterElement`. It must instead be decorated with the `#[AsFilterElement]` attribute.)
-        - If `filterType` is not given and cannot be inferred, it throws a compile-time `InvalidArgumentException`.
-    5.  Populates the `FilterInvokerRegistry` service definition with the collected invoker configurations.
-    6.  Collects all invoker service IDs and passes them to the `FilterInvoker` service constructor via a `ServiceLocator`.
-
-### C. `FilterInvoker`
-
-This is the novel primary public-facing service for executing filter invocation logic.
-It encapsulates all the resolution and fallback logic.
-
-Implemented in `src/Filter/Invoker/FilterInvoker.php`
-
-- **Primary Method:** `get(string $filterType, string $contextType): ?callable`
-- **Logic of `get()`:**
-    1.  Calls the `invokerResolver` to find a custom invoker config (`['serviceId', 'method']`).
-    2.  **If a config is found:**
-        - Gets the invoker service from the `$invokerLocator` using the `serviceId`.
-        - Returns the `callable` `[$service, $method]`.
-    3.  **If no config is found (fallback):**
-        - Gets the base filter element service from the `FilterElementRegistry` using the `$filterType`.
-        - Retrieves the invoker `$method` from the base element service (default is `__invoke`).
-        - If `method_exists($elementService, $method)`, returns the `callable` `[$elementService, $method]`.
-    4.  If no invoker can be resolved, returns `null`.
-
-## 4. Execution Flow
-
-With the new `FilterInvoker` service, consumer services like `ListQueryManager` no longer need to know about the
-underlying resolution mechanism. The execution flow is greatly simplified.
+### A. Context Configuration (`ContextConfigInterface`)
+Contexts must provide a unique identity to match against the `AsFilterInvoker` attribute.
 
 ```php
-// Inside a service like ListQueryManager...
+interface ContextConfigInterface
+{
+    /**
+     * Returns the unique machine name of this context type (e.g., 'interactive').
+     */
+    public static function getContextType(): string;
+}
+```
 
-// Dependency: private FilterInvoker $filterInvoker;
+### B. Filter Collection & Indexing
+Filters are managed in a `FilterDefinitionCollection` which functions as an associative array.
 
-$filterType = $filter->getType();
+*   **Collection:** Supports `set(?string $key, FilterDefinition $filter)`.
+*   **Indexing Strategy:** Collectors (like `ListModelFilterCollector`) determine the key.
+    For example, database filters use their form field name as the key, allowing them to override or be overridden by other filters sharing the same name.
+
+### C. Intrinsic Values (`IntrinsicValueContract`)
+Allows the Projector to retrieve default values from intrinsic filters without knowing internal implementation details.
+
+```php
+interface IntrinsicValueContract
+{
+    public function getIntrinsicValue(FilterDefinition $definition): mixed;
+}
+```
+
+### D. `RegisterFilterInvokersPass`
+A Symfony Compiler Pass that discovers and registers invokers.
+
+*   **Responsibility:**
+    1.  Iterates service definitions.
+    2.  Finds `#[AsFilterInvoker]` attributes.
+    3.  Infers `filterType` if missing (for internal elements).
+    4.  Populates the `FilterInvokerRegistry`.
+
+### E. `FilterInvoker` Service
+The primary public-facing service for executing filter invocation logic.
+
+*   **Service:** `src/Filter/Invoker/FilterInvoker.php`
+*   **Logic:**
+    1.  Queries the registry for a specific custom invoker (`filterType` + `contextType`).
+    2.  If found, returns that callable.
+    3.  **Fallback:** Checks the base Filter Element service for a method matching the default invocation (usually `__invoke` or derived from context).
+    4.  Returns `null` if no invoker is resolved.
+
+## 6. Execution Flow
+
+The consumer (typically `ListQueryManager`) orchestrates the process using the values provided by the Projector.
+
+```php
+// 1. Projector gathers values (Projector Responsibility)
+$filterValues = [];
+foreach ($spec->getFilters()->all() as $key => $filter) {
+   // ... resolves values from request/form/intrinsics using the Key ...
+   $filterValues[$key] = $value;
+}
+
+// 2. Manager Invokes Filters
+// Inside ListQueryManager::invokeFilters(...)
 $contextType = $contextConfig::getContextType();
 
-// 1. Get the callable invoker
-$invoker = $this->filterInvoker->get($filterType, $contextType);
+foreach ($spec->getFilters()->all() as $key => $filter) {
+    $value = $filterValues[$key] ?? null;
 
-// 2. Execute if found
-if ($invoker) {
-    $invoker($invocation, $qb);
-} else {
-    // No invoker found, handle appropriately (e.g., log a warning, throw an exception, or skip)
+    // Create DTO
+    $invocation = new FilterInvocation($filter, $spec, $contextConfig, $value);
+
+    // Get Invoker
+    $callback = $this->filterInvoker->get($filter->getType(), $contextType);
+
+    // Execute
+    if ($callback) {
+        $callback($invocation, $qb);
+    }
 }
 ```

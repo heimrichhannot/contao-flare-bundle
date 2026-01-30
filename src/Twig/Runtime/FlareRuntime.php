@@ -8,23 +8,23 @@ use Contao\FrontendTemplate;
 use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageSchemaOrgConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageSchemaOrgContract;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
+use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\ListView\ListView;
-use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
-use HeimrichHannot\FlareBundle\Projector\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
+use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
-use HeimrichHannot\FlareBundle\View\ViewInterface;
 use Twig\Extension\RuntimeExtensionInterface;
 
 class FlareRuntime implements RuntimeExtensionInterface
@@ -37,7 +37,7 @@ class FlareRuntime implements RuntimeExtensionInterface
         private readonly ProjectorRegistry      $projectorRegistry,
     ) {}
 
-    public function project(ListSpecification $spec, ContextConfigInterface $config): ViewInterface
+    public function project(ListSpecification $spec, ContextInterface $config): ViewInterface
     {
         return $this->projectorRegistry->getProjectorFor($spec, $config)->project($spec, $config);
     }
@@ -64,9 +64,9 @@ class FlareRuntime implements RuntimeExtensionInterface
     }
 
     public function copyView(
-        ListSpecification      $spec,
-        ContextConfigInterface $config,
-        array                  $filters = [],
+        ListSpecification $spec,
+        ContextInterface  $config,
+        array             $filters = [],
     ): ViewInterface {
         $spec = clone $spec;
 

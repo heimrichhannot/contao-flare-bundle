@@ -2,11 +2,11 @@
 
 namespace HeimrichHannot\FlareBundle\ListView;
 
-use HeimrichHannot\FlareBundle\Context\InteractiveConfig;
+use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
+use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Event\ListViewBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
-use HeimrichHannot\FlareBundle\View\InteractiveView;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -17,7 +17,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  */
 class ListViewBuilder
 {
-    private InteractiveConfig $interactiveConfig;
+    private InteractiveContext $interactiveConfig;
     private ListSpecification $listDefinition;
     private InteractiveView $interactiveView;
     private ?PaginatorConfig $paginatorConfig = null;
@@ -27,12 +27,12 @@ class ListViewBuilder
         private readonly EventDispatcherInterface $eventDispatcher,
     ) {}
 
-    public function getInteractiveConfig(): InteractiveConfig
+    public function getInteractiveConfig(): InteractiveContext
     {
         return $this->interactiveConfig;
     }
 
-    public function setInteractiveConfig(InteractiveConfig $interactiveConfig): static
+    public function setInteractiveConfig(InteractiveContext $interactiveConfig): static
     {
         $this->interactiveConfig = $interactiveConfig;
         return $this;

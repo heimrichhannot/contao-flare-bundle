@@ -87,7 +87,7 @@ readonly class ReaderManager
         }
 
         if (!($table = $listModel->dc)
-            || !($filters = $this->filterContextManager->collect($listModel, $contentContext)))
+            || !($filters = null/*$this->filterContextManager->collect($listModel, $contentContext)*/))
         {
             return null;
         }

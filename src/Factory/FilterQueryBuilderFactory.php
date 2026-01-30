@@ -3,7 +3,7 @@
 namespace HeimrichHannot\FlareBundle\Factory;
 
 use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Util\SqlHelper;
 
 readonly class FilterQueryBuilderFactory

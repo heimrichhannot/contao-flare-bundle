@@ -4,7 +4,7 @@ namespace HeimrichHannot\FlareBundle\Generator;
 
 use Contao\Model;
 use Contao\PageModel;
-use HeimrichHannot\FlareBundle\Context\Interface\ReaderLinkableInterface;
+use HeimrichHannot\FlareBundle\Engine\Context\Interface\ReaderLinkableInterface;
 use HeimrichHannot\FlareBundle\Event\DetailsPageUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;

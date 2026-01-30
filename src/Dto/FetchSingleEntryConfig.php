@@ -2,7 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Dto;
 
-use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 
 class FetchSingleEntryConfig
 {

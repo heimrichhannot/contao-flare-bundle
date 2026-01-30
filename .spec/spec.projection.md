@@ -27,12 +27,12 @@ This separation is directly reflected in the namespace structure (Specification,
 ### ContextConfig
 - **Type:** Value Object / DTO
 - **Responsibility:** Defines the specific use case (context).
-- **Examples:** `InteractiveConfig` (HTML lists with pagination/forms), `ExportConfig` (CSV downloads), `ValidationConfig`.
+- **Examples:** `InteractiveContext` (HTML lists with pagination/forms), `ExportConfig` (CSV downloads), `ValidationConfig`.
 - **Function:** Controls parameters such as pagination size, formatting, or lazy-loading behavior for a specific invocation.
 
 ### The Projector (Service / Factory)
 - **Type:** Stateless Symfony Service
-- **Responsibility:** Accepts a `ListSpecification` and a `ContextConfig`.
+- **Responsibility:** Accepts a `ListSpecification` and a `ContextInterface`.
 - **Function:** “Projects” the specification onto the context. Executes (optionally lazy) database queries or prepares query builders and instantiates the result object.
 - **Example:** `InteractiveProjector` creates an `InteractiveView`.
 
@@ -48,7 +48,7 @@ This separation is directly reflected in the namespace structure (Specification,
 ## The Flow
 
 - A controller or Twig function creates/loads a `ListSpecification`.
-- A suitable `ContextConfig` object is created (e.g. for an interactive list).
+- A suitable `Context` object is created (e.g. for an interactive list).
 - The corresponding projector service is called: `$projector->project($spec, $config)`.
 - A `View` is returned.
 - The view is used in Twig templates to render the list, or in controllers to generate content/files/reports.
@@ -60,7 +60,7 @@ This separation is directly reflected in the namespace structure (Specification,
 The system provides four specialized standard implementations of `ContextConfig` and their corresponding projections.
 
 ### 1. Interactive (Frontend Lists)
-- **Config:** `InteractiveConfig`
+- **Config:** `InteractiveContext`
 - **Goal:** Classic rendering of data in the browser (HTML).
 - **Specialty:** Automatically processes request data (GET).
 - **Features:**
@@ -70,21 +70,21 @@ The system provides four specialized standard implementations of `ContextConfig`
 - **Result (`InteractiveView`):** Provides methods for `getEntries()` (iterable entities), `getPagination()` (metadata), and `getFormComponent()` (for Twig).
 
 ### 2. Aggregation (Counting & Statistics)
-- **Config:** `AggregationConfig`
+- **Config:** `AggregationContext`
 - **Goal:** Efficient determination of total counts without loading actual data.
 - **Specialty:** Performance-optimized (executes `COUNT` queries, no entity hydration).
 - **Features:** Ignores pagination and sorting, but applies all filter criteria from the specification.
 - **Result (`AggregationView`):** Primarily provides `getCount()`.
 
 ### 3. Validation (Checking & Selection)
-- **Config:** `ValidationConfig`
+- **Config:** `ValidationContext`
 - **Goal:** Verify whether specific IDs or values are “visible” or valid under the current filter conditions.
 - **Specialty:** Often used internally, e.g. to check foreign-key constraints or generate whitelists.
 - **Features:** Accepts a list of IDs (“candidates”) to restrict the result set.
 - **Result (`ValidationView`):** Provides `isValid(id)` (boolean) or `getModel(id)` for valid candidates.
 
 ### 4. Export (Data Download)
-- **Config:** `ExportConfig`
+- **Config:** `ExportContext`
 - **Goal:** Output all data (or a large subset) for external processing (CSV, XML, JSON).
 - **Specialty:** Pagination is disabled by default (limit = 0).
 - **Features:** Can use memory-optimized iterators (unbuffered queries) to avoid memory limits with large lists.
@@ -107,21 +107,21 @@ Contains the core definition objects describing the “what”, independent of c
 
 ### 2. Context
 
-Holds the configuration DTOs (`ContextConfig`s) that control the use case.
+Holds the configuration DTOs (contexts) that control the use case.
 
-- **Namespace:** `HeimrichHannot\FlareBundle\Context`
+- **Namespace:** `HeimrichHannot\FlareBundle\Engine\Context`
 - **Classes:**
-  - `InteractiveConfig`
-  - `AggregationConfig`
-  - `ValidationConfig`
-  - `ExportConfig`
-  - *Interface:* `ContextConfigInterface`
+  - `InteractiveContext`
+  - `AggregationContext`
+  - `ValidationContext`
+  - `ExportContext`
+  - *Interface:* `ContextInterface`
 
 ### 3. Processing
 
 Contains the stateless services (projectors) that execute the logic.
 
-- **Namespace:** `HeimrichHannot\FlareBundle\Projector`
+- **Namespace:** `HeimrichHannot\FlareBundle\Engine\Projector`
 - **Classes:**
   - `InteractiveProjector`
   - `AggregationProjector`
@@ -133,7 +133,7 @@ Contains the stateless services (projectors) that execute the logic.
 
 Contains the stateful objects (views) that hold the processing results.
 
-- **Namespace:** `HeimrichHannot\FlareBundle\View`
+- **Namespace:** `HeimrichHannot\FlareBundle\Engine\View`
 - **Classes:**
   - `InteractiveView`
   - `AggregationView`

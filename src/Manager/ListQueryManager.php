@@ -3,12 +3,11 @@
 namespace HeimrichHannot\FlareBundle\Manager;
 
 use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
-use HeimrichHannot\FlareBundle\Context\Interface\PaginatedContextInterface;
-use HeimrichHannot\FlareBundle\Context\Interface\SortableContextInterface;
 use HeimrichHannot\FlareBundle\Contract\ListType\PrepareListQueryInterface;
 use HeimrichHannot\FlareBundle\Dto\InvokeFiltersResult;
-use HeimrichHannot\FlareBundle\Dto\ParameterizedSqlQuery;
+use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Context\Interface\PaginatedContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Context\Interface\SortableContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokedEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokingEvent;
 use HeimrichHannot\FlareBundle\Event\ListQueryPrepareEvent;
@@ -16,13 +15,14 @@ use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Factory\FilterQueryBuilderFactory;
-use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\Filter\Invoker\FilterInvoker;
-use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
+use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
+use HeimrichHannot\FlareBundle\Query\ParameterizedSqlQuery;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -97,13 +97,13 @@ class ListQueryManager
      * @throws FilterException
      */
     public function populate(
-        ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listSpecification,
-        ContextConfigInterface $contextConfig,
-        array                  $filterValues = [],
-        bool                   $isCounting = false,
-        bool                   $onlyId = false,
-        ?array                 $select = null,
+        ListQueryBuilder  $listQueryBuilder,
+        ListSpecification $listSpecification,
+        ContextInterface  $contextConfig,
+        array             $filterValues = [],
+        bool              $isCounting = false,
+        bool              $onlyId = false,
+        ?array            $select = null,
     ): ParameterizedSqlQuery {
         if (!Str::isValidSqlName($table = $listSpecification->dc)) {
             throw new FilterException(
@@ -208,10 +208,10 @@ class ListQueryManager
      * @throws AbortFilteringException
      */
     public function invokeFilters(
-        ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listSpecification,
-        ContextConfigInterface $contextConfig,
-        array                  $filterValues = [],
+        ListQueryBuilder  $listQueryBuilder,
+        ListSpecification $listSpecification,
+        ContextInterface  $contextConfig,
+        array             $filterValues = [],
     ): InvokeFiltersResult {
         $invoked = new InvokeFiltersResult();
 

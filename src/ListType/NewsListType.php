@@ -7,13 +7,13 @@ use Contao\News;
 use Contao\NewsModel;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageSchemaOrgConfig;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Event\ListQueryPrepareEvent;
+use HeimrichHannot\FlareBundle\Event\ListSpecificationCreatedEvent;
 use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
-use HeimrichHannot\FlareBundle\List\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\Util\Str;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsListType(type: self::TYPE, dataContainer: 'tl_news', palette: '{filter_legend},')]
 class NewsListType extends AbstractListType
@@ -36,10 +36,18 @@ class NewsListType extends AbstractListType
         );
     }
 
-    #[AsListCallback(self::TYPE, 'preset_filters')]
-    public function getPresetFilters(PresetFiltersConfig $config): void
+    #[AsEventListener(priority: 200)]
+    public function onListSpecificationCreated(ListSpecificationCreatedEvent $config): void
     {
-        $config->add(PublishedElement::define(), true);
+        if ($config->listSpecification->type !== self::TYPE) {
+            return;
+        }
+
+        $filters = $config->listSpecification->getFilters();
+
+        if (!$filters->hasType(PublishedElement::TYPE)) {
+            $filters->add(PublishedElement::define());
+        }
     }
 
     public function getReaderPageMeta(ReaderPageMetaConfig $config): ?ReaderPageMetaDto

@@ -2,23 +2,23 @@
 
 namespace HeimrichHannot\FlareBundle\Event;
 
-use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterDefinitionCollection;
-use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
+use HeimrichHannot\FlareBundle\Collection\FilterDefinitionCollection;
+use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
+use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Contracts\EventDispatcher\Event;
 
 abstract class AbstractFetchEvent extends Event
 {
     public function __construct(
-        private readonly ContextConfigInterface $contextConfig,
-        private readonly ListSpecification      $listSpecification,
-        private ListItemProviderInterface       $itemProvider,
-        private ListQueryBuilder                $listQueryBuilder,
+        private readonly ContextInterface  $contextConfig,
+        private readonly ListSpecification $listSpecification,
+        private ListItemProviderInterface  $itemProvider,
+        private ListQueryBuilder           $listQueryBuilder,
     ) {}
 
-    public function getContextConfig(): ContextConfigInterface
+    public function getContextConfig(): ContextInterface
     {
         return $this->contextConfig;
     }

@@ -2,7 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Specification;
 
-use HeimrichHannot\FlareBundle\Filter\FilterDefinitionCollection;
+use HeimrichHannot\FlareBundle\Collection\FilterDefinitionCollection;
 use HeimrichHannot\FlareBundle\Model\DocumentsListModelTrait;
 use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
 use HeimrichHannot\FlareBundle\Trait\AutoItemFieldGetterTrait;

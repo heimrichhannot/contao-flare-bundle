@@ -2,16 +2,17 @@
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
-use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
+use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 readonly class FilterInvocation
 {
     public function __construct(
-        public FilterDefinition       $filter,
-        public ListSpecification      $list,
-        public ContextConfigInterface $context,
-        public mixed                  $value = null,
+        public FilterDefinition  $filter,
+        public ListSpecification $list,
+        public ContextInterface  $context,
+        public mixed             $value = null,
     ) {}
 
     public function getFilterDefinition(): FilterDefinition
@@ -24,7 +25,7 @@ readonly class FilterInvocation
         return $this->list;
     }
 
-    public function getContextConfig(): ContextConfigInterface
+    public function getContextConfig(): ContextInterface
     {
         return $this->context;
     }

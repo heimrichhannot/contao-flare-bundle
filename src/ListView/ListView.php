@@ -3,10 +3,10 @@
 namespace HeimrichHannot\FlareBundle\ListView;
 
 use Contao\Model;
-use HeimrichHannot\FlareBundle\Context\InteractiveConfig;
+use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
+use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
-use HeimrichHannot\FlareBundle\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\FormInterface;
 
@@ -26,9 +26,9 @@ class ListView
      * @internal Use {@see ListViewBuilder} (inject {@see ListViewBuilderFactory}) to create a new instance.
      */
     public function __construct(
-        private readonly InteractiveConfig $interactiveConfig,
-        private readonly ListSpecification $listSpecification,
-        private readonly InteractiveView   $interactiveProjection,
+        private readonly InteractiveContext $interactiveConfig,
+        private readonly ListSpecification  $listSpecification,
+        private readonly InteractiveView    $interactiveProjection,
     ) {}
 
     /**
@@ -36,7 +36,7 @@ class ListView
      *
      * @api Use in twig templates to access the list context of a list.
      */
-    public function getInteractiveConfig(): InteractiveConfig
+    public function getInteractiveConfig(): InteractiveContext
     {
         return $this->interactiveConfig;
     }

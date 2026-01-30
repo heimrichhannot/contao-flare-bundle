@@ -2,9 +2,9 @@
 
 namespace HeimrichHannot\FlareBundle\Specification\Factory;
 
-use HeimrichHannot\FlareBundle\Event\ListFiltersCollectedEvent;
-use HeimrichHannot\FlareBundle\Filter\Collector\FilterCollectors;
-use HeimrichHannot\FlareBundle\Filter\FilterDefinitionCollection;
+use HeimrichHannot\FlareBundle\Collection\FilterDefinitionCollection;
+use HeimrichHannot\FlareBundle\Event\ListSpecificationCreatedEvent;
+use HeimrichHannot\FlareBundle\Registry\FilterCollectorRegistry;
 use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -16,27 +16,27 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 final readonly class ListSpecificationFactory
 {
     public function __construct(
-        private FilterCollectors         $filterCollectors,
+        private FilterCollectorRegistry  $filterCollectors,
         private EventDispatcherInterface $eventDispatcher,
     ) {}
 
     public function create(ListDataSourceInterface $dataSource): ListSpecification
     {
-        // Automatically collect filters (delegate to FilterCollectors)
+        // Automatically collect filters (delegate to FilterCollectorRegistry)
         $filterCollection = $this->collectFilters($dataSource);
-
-        // Allow modification of collected filters
-        $event = new ListFiltersCollectedEvent($filterCollection, $dataSource);
-        $this->eventDispatcher->dispatch($event);
 
         $specification = new ListSpecification(
             type: $dataSource->getListType(),
             dc: $dataSource->getListTable(),
             dataSource: $dataSource,
-            filters: $event->filters, // Use possibly modified filters
+            filters: $filterCollection, // Use possibly modified filters
         );
 
         $specification->setProperties($dataSource->getListData());
+
+        // Allow modification of collected filters
+        $event = new ListSpecificationCreatedEvent($specification);
+        $this->eventDispatcher->dispatch($event);
 
         return $specification;
     }

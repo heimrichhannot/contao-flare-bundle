@@ -3,7 +3,7 @@
 namespace HeimrichHannot\FlareBundle\Event;
 
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
-use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use Symfony\Contracts\EventDispatcher\Event;
 
 class FilterElementInvokedEvent extends Event

@@ -8,15 +8,15 @@ use HeimrichHannot\FlareBundle\Contract\Config\ListItemProviderConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\ListItemProviderContract;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Event\ListQueryPrepareEvent;
+use HeimrichHannot\FlareBundle\Event\ListSpecificationCreatedEvent;
 use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
-use HeimrichHannot\FlareBundle\List\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
 use HeimrichHannot\FlareBundle\ListItemProvider\EventsListItemProvider;
 use HeimrichHannot\FlareBundle\Util\Str;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsListType(type: self::TYPE, dataContainer: 'tl_calendar_events')]
 class EventsListType extends AbstractListType implements ListItemProviderContract
@@ -55,10 +55,18 @@ class EventsListType extends AbstractListType implements ListItemProviderContrac
         );
     }
 
-    #[AsListCallback(self::TYPE, 'preset_filters')]
-    public function getPresetFilters(PresetFiltersConfig $config): void
+    #[AsEventListener(priority: 200)]
+    public function onListSpecificationCreated(ListSpecificationCreatedEvent $config): void
     {
-        $config->add(PublishedElement::define(), true);
+        if ($config->listSpecification->type !== self::TYPE) {
+            return;
+        }
+
+        $filters = $config->listSpecification->getFilters();
+
+        if (!$filters->hasType(PublishedElement::TYPE)) {
+            $filters->add(PublishedElement::define());
+        }
     }
 
     public function getListItemProvider(ListItemProviderConfig $config): ?ListItemProviderInterface

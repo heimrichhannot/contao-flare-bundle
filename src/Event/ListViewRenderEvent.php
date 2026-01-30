@@ -4,9 +4,9 @@ namespace HeimrichHannot\FlareBundle\Event;
 
 use Contao\ContentModel;
 use Contao\Template;
+use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
-use HeimrichHannot\FlareBundle\View\InteractiveView;
 
 class ListViewRenderEvent extends AbstractTemplateRenderEvent
 {

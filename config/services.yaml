@@ -9,14 +9,16 @@ services:
     HeimrichHannot\FlareBundle\:
         resource: ../src
         exclude:
-            - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Dto,Event,Model,SortDescriptor}
+            - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Dto,Event,Model,Query,SortDescriptor,Trait}
             - ../src/**/*{Builder,Collection}.php
+            - ../src/Engine/Context/*.php
+            - ../src/Engine/View
             - ../src/EventListener/Integration
             - ../src/Filter/*.php
             - ../src/ListView/*.php
             - ../src/Paginator/*.php
-            - ../src/Projector/Projection
             - ../src/Registry/Descriptor
+            - ../src/Specification/*.php
 
     HeimrichHannot\FlareBundle\ListItemProvider\ListItemProvider: ~
     HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface: '@HeimrichHannot\FlareBundle\ListItemProvider\ListItemProvider'

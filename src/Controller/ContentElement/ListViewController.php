@@ -10,15 +10,15 @@ use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\StringUtil;
 use Contao\Template;
 use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
-use HeimrichHannot\FlareBundle\Context\Factory\InteractiveConfigFactory;
+use HeimrichHannot\FlareBundle\Engine\Context\Factory\InteractiveContextFactory;
+use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\View\InteractiveView;
-use HeimrichHannot\FlareBundle\Projector\Registry\ProjectorRegistry;
+use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,16 +34,16 @@ final class ListViewController extends AbstractContentElementController
     public const TYPE = 'flare_listview';
 
     public function __construct(
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly InteractiveConfigFactory $interactiveConfigFactory,
-        private readonly KernelInterface          $kernel,
-        private readonly LoggerInterface          $logger,
-        private readonly ScopeMatcher             $scopeMatcher,
-        private readonly SymfonyResponseTagger    $responseTagger,
-        private readonly TranslationManager       $translationManager,
-        private readonly TranslatorInterface      $translator,
-        private readonly ListSpecificationFactory $listSpecificationFactory,
-        private readonly ProjectorRegistry        $projectorRegistry,
+        private readonly EventDispatcherInterface  $eventDispatcher,
+        private readonly InteractiveContextFactory $interactiveConfigFactory,
+        private readonly KernelInterface           $kernel,
+        private readonly LoggerInterface           $logger,
+        private readonly ScopeMatcher              $scopeMatcher,
+        private readonly SymfonyResponseTagger     $responseTagger,
+        private readonly TranslationManager        $translationManager,
+        private readonly TranslatorInterface       $translator,
+        private readonly ListSpecificationFactory  $listSpecificationFactory,
+        private readonly ProjectorRegistry         $projectorRegistry,
     ) {}
 
     /**

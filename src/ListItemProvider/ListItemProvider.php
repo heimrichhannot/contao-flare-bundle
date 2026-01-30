@@ -6,10 +6,10 @@ namespace HeimrichHannot\FlareBundle\ListItemProvider;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DBALException;
-use HeimrichHannot\FlareBundle\Context\ContextConfigInterface;
+use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
+use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 class ListItemProvider extends AbstractListItemProvider
@@ -23,9 +23,9 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws FilterException
      */
     public function fetchEntries(
-        ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listSpecification,
-        ContextConfigInterface $contextConfig,
+        ListQueryBuilder  $listQueryBuilder,
+        ListSpecification $listSpecification,
+        ContextInterface  $contextConfig,
     ): array {
         $entries = $this->fetchEntriesOrIds(
             listQueryBuilder: $listQueryBuilder,
@@ -54,9 +54,9 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws FilterException
      */
     public function fetchIds(
-        ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listSpecification,
-        ContextConfigInterface $contextConfig,
+        ListQueryBuilder  $listQueryBuilder,
+        ListSpecification $listSpecification,
+        ContextInterface  $contextConfig,
     ): array {
         return $this->fetchEntriesOrIds(
             listQueryBuilder: $listQueryBuilder,
@@ -73,10 +73,10 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws FilterException
      */
     protected function fetchEntriesOrIds(
-        ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listSpecification,
-        ContextConfigInterface $contextConfig,
-        ?bool                  $returnIds = null,
+        ListQueryBuilder  $listQueryBuilder,
+        ListSpecification $listSpecification,
+        ContextInterface  $contextConfig,
+        ?bool             $returnIds = null,
     ): array {
         $returnIds ??= false;
 
@@ -112,9 +112,9 @@ class ListItemProvider extends AbstractListItemProvider
      * @throws FilterException
      */
     public function fetchCount(
-        ListQueryBuilder       $listQueryBuilder,
-        ListSpecification      $listSpecification,
-        ContextConfigInterface $contextConfig,
+        ListQueryBuilder  $listQueryBuilder,
+        ListSpecification $listSpecification,
+        ContextInterface  $contextConfig,
     ): int {
         $query = $this->getListQueryManager()->populate(
             listQueryBuilder: $listQueryBuilder,

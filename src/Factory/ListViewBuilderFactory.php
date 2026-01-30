@@ -2,8 +2,8 @@
 
 namespace HeimrichHannot\FlareBundle\Factory;
 
+use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\ListView\ListViewBuilder;
-use HeimrichHannot\FlareBundle\View\InteractiveView;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**

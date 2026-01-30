@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Factory;
+namespace HeimrichHannot\FlareBundle\Paginator\Factory;
 
 use HeimrichHannot\FlareBundle\Paginator\PaginatorBuilder;
 use HeimrichHannot\FlareBundle\Paginator\Provider\PaginatorUrlProvider;

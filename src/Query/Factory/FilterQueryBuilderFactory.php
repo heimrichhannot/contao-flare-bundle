@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\Factory;
+namespace HeimrichHannot\FlareBundle\Query\Factory;
 
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;

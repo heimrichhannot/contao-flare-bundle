@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\Factory;
+namespace HeimrichHannot\FlareBundle\ListView\Factory;
 
 use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\ListView\ListViewBuilder;

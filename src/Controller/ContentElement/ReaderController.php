@@ -21,7 +21,7 @@ use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Dto\ReaderRequestAttribute;
 use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
+use HeimrichHannot\FlareBundle\ListView\Factory\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Manager\ReaderManager;
 use HeimrichHannot\FlareBundle\Manager\RequestManager;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;

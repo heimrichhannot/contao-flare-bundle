@@ -8,7 +8,6 @@ use Contao\Controller;
 use HeimrichHannot\FlareBundle\Contract\Config\InScopeConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
-use HeimrichHannot\FlareBundle\Factory\FilterContextBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -25,7 +24,6 @@ use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 readonly class FilterContextManager
 {
     public function __construct(
-        private FilterContextBuilderFactory $contextBuilderFactory,
         private FilterElementRegistry       $filterElementRegistry,
         private ListTypeRegistry            $listTypeRegistry,
     ) {}
@@ -51,7 +49,7 @@ readonly class FilterContextManager
 
         /** @noinspection ProperNullCoalescingOperatorUsageInspection */
         $filterModels = FilterModel::findByPid($listModel->id, published: true) ?? [];
-        $collection = FilterContextCollection::create($listModel);
+        /*$collection = FilterContextCollection::create($listModel);*/
 
         $addedFilters = [];
 
@@ -90,7 +88,7 @@ readonly class FilterContextManager
                 continue;
             }
 
-            $filterContext = $this->contextBuilderFactory->create()
+            /*$filterContext = $this->contextBuilderFactory->create()
                 ->setContentContext($context)
                 ->setListModel($listModel)
                 ->setFilterModel($filterModel)
@@ -100,13 +98,13 @@ readonly class FilterContextManager
 
             $collection->add($filterContext);
 
-            $addedFilters[] = $filterElementAlias;
+            $addedFilters[] = $filterElementAlias;*/
         }
 
         // Add filters defined by the filter element type
         // -- removed --
 
-        return $collection;
+        return null;
     }
 
     public function definitionToContext(
@@ -119,12 +117,14 @@ readonly class FilterContextManager
             return null;
         }
 
-        return $this->contextBuilderFactory->create()
+        /*return $this->contextBuilderFactory->create()
             ->setContentContext($contentContext)
             ->setListModel($listModel)
             ->setFilterDefinition($definition)
             ->setFilterElementDescriptor($descriptor)
             ->setFilterElementType($definition->getType())
-            ->build();
+            ->build();*/
+
+        return null;
     }
 }

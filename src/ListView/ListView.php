@@ -5,7 +5,7 @@ namespace HeimrichHannot\FlareBundle\ListView;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
 use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
-use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
+use HeimrichHannot\FlareBundle\ListView\Factory\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\FormInterface;

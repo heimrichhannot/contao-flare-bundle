@@ -72,7 +72,7 @@ class ListQueryManager
         $builder->select('*', of: self::ALIAS_MAIN, allowAsterisk: true);
         $builder->groupBy('id', self::ALIAS_MAIN);
 
-        $event = new ListQueryPrepareEvent(listDefinition: $list, listQueryBuilder: $builder);
+        $event = new ListQueryPrepareEvent(listSpecification: $list, listQueryBuilder: $builder);
 
         $listType = $listTypeDescriptor->getService();
         if ($listType instanceof PrepareListQueryInterface) {

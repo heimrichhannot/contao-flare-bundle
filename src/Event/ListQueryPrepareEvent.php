@@ -9,7 +9,7 @@ use Symfony\Contracts\EventDispatcher\Event;
 class ListQueryPrepareEvent extends Event
 {
     public function __construct(
-        public readonly ListSpecification $listDefinition,
+        public readonly ListSpecification $listSpecification,
         private ListQueryBuilder          $listQueryBuilder,
     ) {}
 

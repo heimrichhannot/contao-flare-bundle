@@ -174,7 +174,7 @@ readonly class Str
         return $rand;
     }
 
-    public static function getHeadline(array|string|null $headline, bool $withTags = false): ?string
+    public static function formatHeadline(array|string|null $headline, bool $withTags = false): ?string
     {
         if (!$headline) {
             return null;
@@ -186,6 +186,10 @@ readonly class Str
 
         if (\is_string($headline)) {
             return $headline ?: null;
+        }
+
+        if (!\is_array($headline)) {
+            return null;
         }
 
         $tagName = $headline['tag_name'] ?? $headline['unit'] ?? 'h2';

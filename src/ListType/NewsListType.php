@@ -60,11 +60,8 @@ class NewsListType extends AbstractListType
 
         $pageMeta = new ReaderPageMetaDto();
 
-        $headline = $model->headline
-            ? $this->htmlDecoder->inputEncodedToPlainText($model->headline)
-            : $contentModel->headline;
-
-        $title = Str::getHeadline($headline) ?: $this->htmlDecoder->inputEncodedToPlainText($objPage->title);
+        $headline = Str::formatHeadline($model->headline) ?: Str::formatHeadline($contentModel->headline);
+        $title = $headline ?: $this->htmlDecoder->inputEncodedToPlainText($objPage->title);
         $pageMeta->setTitle($title);
 
         $teaser = $model->teaser

@@ -17,6 +17,7 @@ use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
+use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class ReaderManager
@@ -149,9 +150,17 @@ readonly class ReaderManager
 
         if (!$pageMeta->getTitle())
         {
-            $model = $config->getContentModel();
+            $model = $config->getDisplayModel();
+
             $pageMeta->setTitle($this->htmlDecoder->inputEncodedToPlainText(
-                $model->title ?? $model->headline ?? $model->name ?? $model->alias ?? $model->id ?: ''
+                (string) (
+                    (Str::formatHeadline($model->headline) ?: null)
+                    ?? $model->title
+                    ?? $model->question
+                    ?? $model->name
+                    ?? $model->alias
+                    ?? $model->id
+                ) ?: ''
             ));
         }
 

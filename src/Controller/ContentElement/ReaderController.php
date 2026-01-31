@@ -113,12 +113,12 @@ final class ReaderController extends AbstractContentElementController
 
         try
         {
+            $listSpec = $this->listSpecificationFactory->create(dataSource: $listModel);
+
             $validationContext = $this->validationContextFactory->createFromContent(
                 contentModel: $contentModel,
                 listModel: $listModel
             );
-
-            $listSpec = $this->listSpecificationFactory->create(dataSource: $listModel);
 
             $validationProjector = $this->projectorRegistry->getProjectorFor($listSpec, $validationContext);
             $validationView = $validationProjector->project($listSpec, $validationContext);
@@ -135,7 +135,6 @@ final class ReaderController extends AbstractContentElementController
 
             $pageMeta = $this->readerManager->getPageMeta(new ReaderPageMetaConfig(
                 contentModel: $contentModel,
-                context: $validationContext,
                 displayModel: $autoItemModel,
                 listSpecification: $listSpec,
             ));

@@ -144,11 +144,11 @@ class Terminal42ChangelanguageListener
             );
         }
 
-        $filters->add($this->filterContextManager->definitionToContext(
-            definition: $filterDefinition,
-            listModel: $filters->getListModel(),
-            contentContext: $contentContext,
-        ));
+        // $filters->add($this->filterContextManager->definitionToContext(
+        //     definition: $filterDefinition,
+        //     listModel: $filters->getListModel(),
+        //     contentContext: $contentContext,
+        // ));
     }
 
     private function applyMlQueriesIfNecessary(

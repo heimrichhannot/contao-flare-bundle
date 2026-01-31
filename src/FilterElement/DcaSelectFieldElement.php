@@ -6,10 +6,8 @@ use Contao\Controller;
 use Contao\DataContainer;
 use Contao\StringUtil;
 use Contao\System;
-use HeimrichHannot\FlareBundle\Contract\Config\InScopeConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
@@ -27,7 +25,7 @@ use Symfony\Component\Form\FormInterface;
     type: self::TYPE,
     formType: ChoiceType::class,
 )]
-class DcaSelectFieldElement extends AbstractFilterElement implements HydrateFormContract, InScopeContract
+class DcaSelectFieldElement extends AbstractFilterElement implements HydrateFormContract
 {
     public const TYPE = 'flare_dcaSelectField';
 
@@ -131,11 +129,6 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
             $qb->where($qb->expr()->in($qb->column($targetField), ':values'))
                 ->setParameter('values', $validOptions);
         }
-    }
-
-    public function isInScope(InScopeConfig $config): bool
-    {
-        return $config->getFilterModel()->intrinsic || $config->getContentContext()->isList();
     }
 
     public function getPalette(PaletteConfig $config): ?string

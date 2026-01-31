@@ -68,6 +68,10 @@ readonly class BreadcrumbListener
 
         $items = \array_values($items);
 
+        if (!\count($items)) {
+            return $items;
+        }
+
         try
         {
             $autoItem ??= (
@@ -75,6 +79,10 @@ readonly class BreadcrumbListener
                     ? Input::findGet('auto_item')
                     : Input::get('auto_item', false, true)
             );
+
+            if (!$autoItem) {
+                return $items;
+            }
 
             $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST);
 

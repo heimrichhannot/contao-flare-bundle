@@ -5,16 +5,10 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Manager;
 
 use Contao\Controller;
-use HeimrichHannot\FlareBundle\Contract\Config\InScopeConfig;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 
 /**
  * Class FilterContextManager
@@ -31,7 +25,7 @@ readonly class FilterContextManager
     /**
      * Collects filter contexts for a given list model.
      */
-    public function collect(ListModel $listModel, ContentContext $context): ?object
+    public function collect(ListModel $listModel, object $context): ?object
     {
         if (!$listModel->id || !$table = $listModel->dc) {
             return null;
@@ -69,24 +63,24 @@ readonly class FilterContextManager
             $service = $descriptor->getService();
 
             // Skip if the filter is not configured for the current context
-            if ($service instanceof InScopeContract)
-            {
-                $inScopeConfig = new InScopeConfig(
-                    contentContext: $context,
-                    listModel: $listModel,
-                    filterModel: $filterModel,
-                    descriptor: $descriptor,
-                );
-
-                if (!$service->isInScope($inScopeConfig)) {
-                    continue;
-                }
-            }
-            /** @mago-expect lint:no-else-clause This else clause is mandatory. */
-            elseif (!$descriptor->isAvailableForContext($context))
-            {
-                continue;
-            }
+            // if ($service instanceof InScopeContract)
+            // {
+            //     $inScopeConfig = new InScopeConfig(
+            //         contentContext: $context,
+            //         listModel: $listModel,
+            //         filterModel: $filterModel,
+            //         descriptor: $descriptor,
+            //     );
+            //
+            //     if (!$service->isInScope($inScopeConfig)) {
+            //         continue;
+            //     }
+            // }
+            // /** @mago-expect lint:no-else-clause This else clause is mandatory. */
+            // elseif (!$descriptor->isAvailableForContext($context))
+            // {
+            //     continue;
+            // }
 
             /*$filterContext = $this->contextBuilderFactory->create()
                 ->setContentContext($context)
@@ -107,24 +101,24 @@ readonly class FilterContextManager
         return null;
     }
 
-    public function definitionToContext(
-        FilterDefinition         $definition,
-        ListModel                $listModel,
-        ContentContext           $contentContext,
-        ?FilterElementDescriptor $descriptor = null,
-    ): ?FilterContext {
-        if (!$descriptor ??= $this->filterElementRegistry->get($definition->getType())) {
-            return null;
-        }
-
-        /*return $this->contextBuilderFactory->create()
-            ->setContentContext($contentContext)
-            ->setListModel($listModel)
-            ->setFilterDefinition($definition)
-            ->setFilterElementDescriptor($descriptor)
-            ->setFilterElementType($definition->getType())
-            ->build();*/
-
-        return null;
-    }
+    // public function definitionToContext(
+    //     FilterDefinition         $definition,
+    //     ListModel                $listModel,
+    //     ContentContext           $contentContext,
+    //     ?FilterElementDescriptor $descriptor = null,
+    // ): ?FilterContext {
+    //     if (!$descriptor ??= $this->filterElementRegistry->get($definition->getType())) {
+    //         return null;
+    //     }
+    //
+    //     /*return $this->contextBuilderFactory->create()
+    //         ->setContentContext($contentContext)
+    //         ->setListModel($listModel)
+    //         ->setFilterDefinition($definition)
+    //         ->setFilterElementDescriptor($descriptor)
+    //         ->setFilterElementType($definition->getType())
+    //         ->build();*/
+    //
+    //     return null;
+    // }
 }

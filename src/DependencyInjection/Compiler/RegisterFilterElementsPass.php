@@ -69,7 +69,6 @@ class RegisterFilterElementsPass implements CompilerPassInterface
             $attributes['palette'] ?? null,
             $attributes['formType'] ?? null,
             $attributes['method'] ?? null,
-            $attributes['scopes'] ?? null,
             $attributes['isTargeted'] ?? null,
         ]);
 

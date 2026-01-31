@@ -5,9 +5,7 @@ namespace HeimrichHannot\FlareBundle\FilterElement;
 use Contao\Controller;
 use Contao\Message;
 use Doctrine\DBAL\ParameterType;
-use HeimrichHannot\FlareBundle\Contract\Config\InScopeConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
@@ -26,7 +24,7 @@ use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
     formType: CheckboxType::class,
     isTargeted: true,
 )]
-class BooleanElement extends AbstractFilterElement implements InScopeContract
+class BooleanElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_bool';
 
@@ -68,17 +66,6 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract
 
         $qb->where($qb->expr()->eq($qb->column($targetField), ':val'))
             ->setParameter('val', $value ? '1' : '', ParameterType::STRING);
-    }
-
-    public function isInScope(InScopeConfig $config): bool
-    {
-        $filterModel = $config->getFilterModel();
-
-        if ($filterModel->intrinsic) {
-            return $this->normalizeValue($filterModel->preselect) !== null;
-        }
-
-        return $config->getContentContext()->isList();
     }
 
     public function normalizeValue(mixed $value, ?BoolBinaryChoices $choices = null): ?bool

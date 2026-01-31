@@ -12,10 +12,10 @@ trait HandlesModelsTrait
      * @return Model|null Return null if the entry does not exist.
      * @throws FlareException
      */
-    public function fetchModel(string $table, int $id, callable $getEntry): ?Model
+    public function fetchModel(string $table, int|string $id, callable $getEntry, $column = null): ?Model
     {
         $registry = Model\Registry::getInstance();
-        if ($model = $registry->fetch($table, $id))
+        if ($model = $registry->fetch($table, $id, strAlias: $column))
             // Contao native model cache
         {
             return $model;

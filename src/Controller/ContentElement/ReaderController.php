@@ -136,8 +136,8 @@ final class ReaderController extends AbstractContentElementController
             $pageMeta = $this->readerManager->getPageMeta(new ReaderPageMetaConfig(
                 contentModel: $contentModel,
                 context: $validationContext,
-                listSpecification: $listSpec,
                 displayModel: $autoItemModel,
+                listSpecification: $listSpec,
             ));
         }
         catch (FlareException $e)

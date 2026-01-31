@@ -10,10 +10,10 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 class PaginatorBuilder
 {
-    private int $currentPage = 1;
-    private int $itemsPerPage = 0;
-    private int $totalItems = 0;
-    private ?string $queryPrefix = null;
+    private ?int $currentPage = null;
+    private ?int $itemsPerPage = null;
+    private ?int $totalItems = null;
+    private string $pageParam = 'page';
     private ?string $routeName = null;
     private ?array $routeParams = null;
 
@@ -25,6 +25,7 @@ class PaginatorBuilder
     public function fromConfig(PaginatorConfig $config): static
     {
         $this->itemsPerPage = $config->getItemsPerPage();
+        $this->currentPage = $config->getCurrentPageNumber();
         return $this;
     }
 
@@ -46,9 +47,9 @@ class PaginatorBuilder
         return $this;
     }
 
-    public function queryPrefix(?string $queryPrefix): static
+    public function pageParameter(string $pageParam): static
     {
-        $this->queryPrefix = $queryPrefix;
+        $this->pageParam = Paginator::normalizePageParam($pageParam);
         return $this;
     }
 
@@ -75,7 +76,7 @@ class PaginatorBuilder
 
         $defaultPage ??= 1;
 
-        $this->currentPage = (int) $request->query->get(Paginator::pageParam($this->queryPrefix), $defaultPage);
+        $this->currentPage = (int) $request->query->get($this->pageParam, $defaultPage);
 
         return $this;
     }
@@ -87,57 +88,51 @@ class PaginatorBuilder
     {
         return $this->urlProvider->createGeneratorFromRequest(
             request: $this->requestStack->getCurrentRequest(),
+            pageParam: $this->pageParam,
             routeName: $this->routeName,
             routeParams: $this->routeParams,
-            queryPrefix: $this->queryPrefix,
         );
     }
 
     public function build(): Paginator
     {
-        $lastPage = ($this->itemsPerPage > 0) ? (int) \ceil($this->totalItems / $this->itemsPerPage) : 1;
-        $currentPage = (int) \max(1, ($this->currentPage < 0)
-            ? ($lastPage + $this->currentPage)
-            : \min($this->currentPage, $lastPage)
-        );
+        $itemsPerPage = $this->itemsPerPage ?? 0;
+        $totalItems = $this->totalItems ?? -1;
 
-        $firstItemNumber = ($currentPage - 1) * $this->itemsPerPage + 1;
-        $lastItemNumber = (int) \max(\min($currentPage * $this->itemsPerPage, $this->totalItems), $firstItemNumber);
+        $lastPage = ($itemsPerPage > 0 && $totalItems > -1)
+            ? (int) \ceil($totalItems / $itemsPerPage)
+            : null;
 
-        $previousPage = $currentPage > 1 ? $currentPage - 1 : null;
-        $nextPage = $currentPage < $lastPage ? $currentPage + 1 : null;
+        $currentPage = $this->currentPage;
+
+        if (!\is_null($this->currentPage) && !\is_null($lastPage)) {
+            $currentPage = (int) \max(1, \min($lastPage, $this->currentPage));
+        }
 
         return new Paginator(
+            itemsPerPage: $itemsPerPage,
             currentPage: $currentPage,
-            itemsPerPage: $this->itemsPerPage,
-            totalItems: $this->totalItems,
-            lastPage: $lastPage,
-            previousPage: $previousPage,
-            nextPage: $nextPage,
-            firstItemNumber: $firstItemNumber,
-            lastItemNumber: $lastItemNumber,
-            hasNextPage: $currentPage < $lastPage,
-            hasPreviousPage: $currentPage > 1,
+            totalItems: $totalItems,
             urlGenerator: $this->makeUrlGenerator(),
-            queryPrefix: $this->queryPrefix,
+        );
+    }
+
+    public function buildConfig(): PaginatorConfig
+    {
+        return new PaginatorConfig(
+            itemsPerPage: $this->itemsPerPage,
+            currentPage: $this->currentPage,
+            totalItems: $this->totalItems,
         );
     }
 
     public function buildEmpty(): Paginator
     {
         return new Paginator(
-            currentPage: 1,
             itemsPerPage: 10,
+            currentPage: 1,
             totalItems: 0,
-            lastPage: 0,
-            previousPage: null,
-            nextPage: null,
-            firstItemNumber: 0,
-            lastItemNumber: 0,
-            hasNextPage: false,
-            hasPreviousPage: false,
             urlGenerator: $this->makeUrlGenerator(),
-            queryPrefix: $this->queryPrefix,
         );
     }
 }

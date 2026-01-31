@@ -8,18 +8,21 @@ use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormInterface;
 
 #[AsFilterElement(
-    alias: FieldValueChoiceElement::TYPE,
+    type: self::TYPE,
     palette: '{filter_legend},fieldGeneric,isMultiple,preselect',
     formType: ChoiceType::class,
 )]
@@ -75,9 +78,9 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         }
     }
 
-    public function extractPreselectData(FilterModel $filterModel): ?array
+    public function extractPreselectData(FilterDefinition $filter): ?array
     {
-        if (!$preselect = $filterModel->preselect) {
+        if (!$preselect = $filter->preselect) {
             return null;
         }
 
@@ -85,7 +88,7 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
             return $preselect;
         }
 
-        if ($filterModel->isMultiple
+        if ($filter->isMultiple
             || (\is_string($preselect) && \preg_match('/^a:\d+:\{.*}$/', $preselect)))
         {
             return StringUtil::deserialize($preselect, true);
@@ -110,32 +113,31 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         return $submittedData;
     }
 
-    public function hydrateForm(FilterContext $context, FormInterface $field): void
+    public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void
     {
         if ($field->isSubmitted()) {
             return;
         }
 
-        $filterModel = $context->getFilterModel();
-
-        if (!$preselect = $this->extractPreselectData($filterModel)) {
+        if (!$preselect = $this->extractPreselectData($filter)) {
             return;
         }
 
-        if (!$filterModel->isMultiple) {
+        if (!$filter->isMultiple) {
             $preselect = \reset($preselect);
         }
 
         $field->setData($preselect);
     }
 
-    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
+    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void
     {
-        $filterModel = $context->getFilterModel();
-        $choices->enable()->setEmptyOption(!$filterModel->isMultiple);
+        $choices = $event->getChoicesBuilder()
+            ->enable()
+            ->setEmptyOption(!$event->filterDefinition->isMultiple);
 
-        $table = $context->getTable();
-        $field = $filterModel->fieldGeneric ?: '';
+        $table = $event->listDefinition->dc;
+        $field = $event->filterDefinition->fieldGeneric ?: '';
 
         $values = $this->getDistinctValues($table, $field);
 
@@ -143,10 +145,8 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
             $choices->add((string) $value, (string) $value);
         }
 
-        return [
-            'multiple' => (bool) $context->getFilterModel()->isMultiple,
-            'required' => false,
-        ];
+        $event->options['multiple'] = (bool) $event->filterDefinition->isMultiple;
+        $event->options['required'] = false;
     }
 
     #[AsFilterCallback(self::TYPE, 'fields.isMultiple.load')]
@@ -154,7 +154,7 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         mixed          $value,
         ?DataContainer $dc,
         FilterModel    $filterModel,
-        ListModel      $listModel
+        ListModel $listModel
     ): mixed {
         if (!$dc || !($dcTable = $dc->table) || !($dcField = $dc->field)) {
             return $value;
@@ -171,7 +171,7 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         mixed          $value,
         ?DataContainer $dc,
         FilterModel    $filterModel,
-        ListModel      $listModel
+        ListModel $listModel
     ): mixed {
         if (!$dc
             || !($dcTable = $dc->table)

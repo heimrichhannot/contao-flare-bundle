@@ -9,16 +9,15 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Event\AbstractFetchEvent;
+use HeimrichHannot\FlareBundle\Event\DetailsPageUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Event\FetchAutoItemEvent;
-use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
-use HeimrichHannot\FlareBundle\Event\ListViewDetailsPageUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
-use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
+use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
-use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\ListType\DcMultilingualListType;
 use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
 use HeimrichHannot\FlareBundle\Manager\RequestManager;
+use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Util\DcMultilingualHelper;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -52,7 +51,9 @@ class Terminal42ChangelanguageListener
     #[AsEventListener]
     public function fetchAutoItem(FetchAutoItemEvent $event): void
     {
-        if ($event->getListModel()->type !== DcMultilingualListType::TYPE) {
+        $list = $event->getListSpecification();
+
+        if ($list->type !== DcMultilingualListType::TYPE) {
             return;
         }
 
@@ -60,9 +61,11 @@ class Terminal42ChangelanguageListener
             return;
         }
 
+        $table = $list->dc;
+
         $this->applyMlQueriesIfNecessary(
             $event->getListQueryBuilder(),
-            $event->getFilters(),
+            $table,
             DcMultilingualHelper::getLanguage(),
         );
 
@@ -70,13 +73,10 @@ class Terminal42ChangelanguageListener
             return;
         }
 
-        $filters = $event->getFilters();
-        $table = $filters->getTable();
-
         // use the translated alias for auto_item retrieval if the alias field is translatable
         $translatableFields = DcMultilingualHelper::getTranslatableFields($table);
 
-        if (!\in_array($filters->getListModel()->getAutoItemField(), $translatableFields, true)) {
+        if (!\in_array($list->getAutoItemField(), $translatableFields, true)) {
             return;
         }
 
@@ -144,16 +144,16 @@ class Terminal42ChangelanguageListener
             );
         }
 
-        $filters->add($this->filterContextManager->definitionToContext(
-            definition: $filterDefinition,
-            listModel: $filters->getListModel(),
-            contentContext: $contentContext,
-        ));
+        // $filters->add($this->filterContextManager->definitionToContext(
+        //     definition: $filterDefinition,
+        //     listModel: $filters->getListModel(),
+        //     contentContext: $contentContext,
+        // ));
     }
 
     private function applyMlQueriesIfNecessary(
         ListQueryBuilder $listQueryBuilder,
-        FilterContextCollection $filters,
+        string $table,
         string $language,
     ): void
     {
@@ -161,7 +161,6 @@ class Terminal42ChangelanguageListener
             return;
         }
 
-        $table = $filters->getTable();
         $langColumnName = DcMultilingualHelper::getLangColumn($table);
         $pidColumnName = DcMultilingualHelper::getPidColumn($table);
         $regularFields = DcMultilingualHelper::getRegularFields($table);
@@ -197,7 +196,7 @@ class Terminal42ChangelanguageListener
     }
     
     #[AsEventListener(priority: 220)]
-    public function onListViewDetailsPageUrlGenerated(ListViewDetailsPageUrlGeneratedEvent $event): void
+    public function onListViewDetailsPageUrlGenerated(DetailsPageUrlGeneratedEvent $event): void
     {
         $eventPage = $event->getPage();
 

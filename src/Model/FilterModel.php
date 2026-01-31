@@ -23,6 +23,10 @@ class FilterModel extends Model implements PtableInferrableInterface
         return $this->_formName ??= static::generateFormName($this);
     }
 
+    /**
+     * @template TTraverse as \Traversable<int, FilterModel>
+     * @return Collection<FilterModel>&TTraverse
+     */
     public static function findByPid(int $pid, ?bool $published = null): Collection
     {
         $result = $published !== null

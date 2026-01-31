@@ -5,14 +5,14 @@ namespace HeimrichHannot\FlareBundle\ListItemProvider;
 use Contao\StringUtil;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Result as DBALResult;
+use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Context\Interface\PaginatedContextInterface;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Exception\NotImplementedException;
-use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
-use HeimrichHannot\FlareBundle\Paginator\Paginator;
+use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 
 class EventsListItemProvider extends AbstractListItemProvider
@@ -31,12 +31,14 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     public function fetchCount(
-        ListQueryBuilder $listQueryBuilder,
-        FilterContextCollection $filters,
+        ListQueryBuilder  $listQueryBuilder,
+        ListSpecification $listSpecification,
+        ContextInterface  $contextConfig,
     ): int {
         $byDate = $this->fetchEntriesGrouped(
             listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
+            listDefinition: $listSpecification,
+            contextConfig: $contextConfig,
             reduceSelect: true,
         );
 
@@ -58,22 +60,25 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     public function fetchEntries(
-        ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ?SortDescriptor         $sortDescriptor = null,
-        ?Paginator              $paginator = null,
+        ListQueryBuilder  $listQueryBuilder,
+        ListSpecification $listSpecification,
+        ContextInterface  $contextConfig,
     ): array {
         $byDate = $this->fetchEntriesGrouped(
             listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
-            sortDescriptor: $sortDescriptor,
+            listDefinition: $listSpecification,
+            contextConfig: $contextConfig,
         );
 
-        $table = $filters->getTable();
+        $table = $listSpecification->dc;
+
+        $paginatorConfig = $contextConfig instanceof PaginatedContextInterface
+            ? $contextConfig->getPaginatorConfig()
+            : null;
 
         // Now, we need to flatten the array and sort it by date while respecting the paginator
-        $limit = $paginator?->getItemsPerPage() ?: null;
-        $targetOffset = \max(0, ($paginator?->getFirstItemNumber() ?? 1) - 1);
+        $limit = $paginatorConfig?->getItemsPerPage() ?: null;
+        $targetOffset = \max(0, ($paginatorConfig?->getFirstItemNumber() ?? 1) - 1);
         $currentOffset = 0;
         $entries = [];
 
@@ -125,19 +130,14 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     public function fetchIds(
-        ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ?SortDescriptor         $sortDescriptor = null,
-        ?Paginator              $paginator = null,
+        ListQueryBuilder  $listQueryBuilder,
+        ListSpecification $listSpecification,
+        ContextInterface  $contextConfig,
     ): array {
-        if ($paginator) {
-            throw new NotImplementedException('Pagination is not yet supported for fetching IDs of an events list.', method: __METHOD__);
-        }
-
         $byDate = $this->fetchEntriesGrouped(
             listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
-            sortDescriptor: $sortDescriptor,
+            listDefinition: $listSpecification,
+            contextConfig: $contextConfig,
             reduceSelect: true,
         );
 
@@ -160,20 +160,22 @@ class EventsListItemProvider extends AbstractListItemProvider
      * @throws FlareException
      */
     protected function fetchEntriesGrouped(
-        ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ?SortDescriptor         $sortDescriptor = null,
-        ?bool                   $reduceSelect = null,
+        ListQueryBuilder  $listQueryBuilder,
+        ListSpecification $listDefinition,
+        ContextInterface  $contextConfig,
+        ?bool             $reduceSelect = null,
     ): array {
-        $sortDescriptor ??= SortDescriptor::fromMap([
+        $sortDescriptor = $contextConfig->sortDescriptor ?? SortDescriptor::fromMap([
             'startTime' => 'ASC',
             'endTime'   => 'DESC',
         ]);
 
+        // todo: assign sortDescriptor to context in some kind of hook beforehand
+
         $query = $this->listQueryManager->populate(
             listQueryBuilder: $listQueryBuilder,
-            filters: $filters,
-            order: $sortDescriptor?->toSql($this->connection->quoteIdentifier(...)),
+            listSpecification: $listDefinition,
+            contextConfig: $contextConfig,
             select: $reduceSelect ? ['id', 'startTime', 'endTime', 'repeatEach', 'repeatEnd'] : null,
         );
 

@@ -10,6 +10,7 @@ use Contao\Database;
 use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Util\DcaFieldFilter;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
@@ -37,9 +38,9 @@ readonly class FieldsOptionsCallbacks
     {
         $options = [];
 
-        foreach ($this->listTypeRegistry->all() as $alias => $listTypeConfig)
+        foreach ($this->listTypeRegistry->all() as $type => $listTypeConfig)
         {
-            $options[$alias] = $this->translationManager->listModel($alias);
+            $options[$type] = $this->translationManager->listModel($type);
         }
 
         return $options;

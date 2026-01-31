@@ -5,12 +5,11 @@ namespace HeimrichHannot\FlareBundle\DependencyInjection;
 use Composer\InstalledVersions;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterInvoker;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFlareCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
-use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\FlareCallbackDescriptor;
-use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -43,8 +42,10 @@ class HeimrichHannotFlareExtension extends Extension implements PrependExtension
         $container->setParameter($this->getAlias() . '.format_label_defaults', $flareConfig['format_label_defaults'] ?? []);
 
         $attributesForAutoconfiguration = [
-            AsListType::class => ListTypeDescriptor::TAG,
-            AsFilterElement::class => FilterElementDescriptor::TAG,
+            AsListType::class => AsListType::TAG,
+            AsFilterElement::class => AsFilterElement::TAG,
+            AsFilterInvoker::class => AsFilterInvoker::TAG,
+            // todo(@ericges): remove callbacks in favor of events in v0.1.0
             AsFlareCallback::class => FlareCallbackDescriptor::TAG,
             AsFilterCallback::class => FlareCallbackDescriptor::TAG_FILTER_CALLBACK,
             AsListCallback::class => FlareCallbackDescriptor::TAG_LIST_CALLBACK,

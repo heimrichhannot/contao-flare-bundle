@@ -80,13 +80,20 @@ abstract class AbstractCollection implements IteratorAggregate, Countable, Seria
      */
     public function remove(mixed $item): bool
     {
-        foreach ($this->items as $index => $value) {
-            if ($value === $item) {
-                \array_splice($this->items, $index, 1);
-                return true;
-            }
+        $originalCount = \count($this->items);
+
+        $filtered = \array_filter(
+            $this->items,
+            static fn (mixed $value): bool => $value === $item
+        );
+
+        if ($originalCount === \count($filtered)) {
+            return false;
         }
-        return false;
+
+        $this->items = \array_values($filtered);
+
+        return true;
     }
 
     /**
@@ -171,6 +178,11 @@ abstract class AbstractCollection implements IteratorAggregate, Countable, Seria
         foreach ($data as $item) {
             $this->add($item);
         }
+    }
+
+    public function __clone(): void
+    {
+        $this->items = \array_map(static fn (mixed $item): mixed => clone $item, $this->items);
     }
 
     /**

@@ -5,26 +5,30 @@ namespace HeimrichHannot\FlareBundle\Controller\ContentElement;
 use Contao\ContentModel;
 use Contao\CoreBundle\Controller\ContentElement\AbstractContentElementController;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsContentElement;
+use Contao\CoreBundle\Exception\ResponseException;
 use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\StringUtil;
 use Contao\Template;
 use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
+use HeimrichHannot\FlareBundle\Engine\Context\Factory\InteractiveContextFactory;
+use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
-use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
+use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Error\RuntimeError;
 
 #[AsContentElement(ListViewController::TYPE, category: 'includes', template: 'content_element/flare_listview')]
 final class ListViewController extends AbstractContentElementController
@@ -32,14 +36,16 @@ final class ListViewController extends AbstractContentElementController
     public const TYPE = 'flare_listview';
 
     public function __construct(
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly KernelInterface          $kernel,
-        private readonly ListViewBuilderFactory   $listViewBuilderFactory,
-        private readonly LoggerInterface          $logger,
-        private readonly ScopeMatcher             $scopeMatcher,
-        private readonly SymfonyResponseTagger    $responseTagger,
-        private readonly TranslationManager       $translationManager,
-        private readonly TranslatorInterface      $translator,
+        private readonly EventDispatcherInterface  $eventDispatcher,
+        private readonly InteractiveContextFactory $interactiveConfigFactory,
+        private readonly KernelInterface           $kernel,
+        private readonly LoggerInterface           $logger,
+        private readonly ScopeMatcher              $scopeMatcher,
+        private readonly SymfonyResponseTagger     $responseTagger,
+        private readonly TranslationManager        $translationManager,
+        private readonly TranslatorInterface       $translator,
+        private readonly ListSpecificationFactory  $listSpecificationFactory,
+        private readonly ProjectorRegistry         $projectorRegistry,
     ) {}
 
     /**
@@ -89,23 +95,26 @@ final class ListViewController extends AbstractContentElementController
 
         try
         {
-            $contentContext = new ContentContext(
-                context: ContentContext::CONTEXT_LIST,
+            $interactiveConfig = $this->interactiveConfigFactory->createFromContent(
                 contentModel: $contentModel,
-                formName: $contentModel->flare_formName ?: null,
-                actionPage: ((int) $contentModel->flare_jumpTo) ?: null,
+                listModel: $listModel,
             );
 
-            $paginatorConfig = new PaginatorConfig(
-                itemsPerPage: (int) ($contentModel->flare_itemsPerPage ?: 0)
-            );
+            $listSpec = $this->listSpecificationFactory->create(dataSource: $listModel);
 
-            $listView = $this->listViewBuilderFactory->create()
-                ->setContentContext($contentContext)
-                ->setListModel($listModel)
-                ->setPaginatorConfig($paginatorConfig)
-                ->setSortDescriptor(null)
-                ->build();
+            $interactiveProjector = $this->projectorRegistry->getProjectorFor($listSpec, $interactiveConfig);
+            $interactiveView = $interactiveProjector->project($listSpec, $interactiveConfig);
+            \assert($interactiveView instanceof InteractiveView, 'Expected InteractiveView');
+
+            /* _keep for future reference_
+             * $validationConfig = $this->validationConfigFactory->createFromInteractiveProjection($interactiveView);
+             * $validationProjector = $this->projectorRegistry->getProjectorFor($validationConfig);
+             * $validationView = $validationProjector->project(spec: $listSpec, config: $validationConfig);
+             * \assert($validationView instanceof ValidationView); */
+        }
+        catch (ValidationFailedException $e)
+        {
+            return $this->getErrorResponse($e);
         }
         catch (FlareException $e)
         {
@@ -119,20 +128,42 @@ final class ListViewController extends AbstractContentElementController
 
         $event = $this->eventDispatcher->dispatch(
             new ListViewRenderEvent(
-                contentContext: $contentContext,
                 contentModel: $contentModel,
+                interactiveView: $interactiveView,
+                listSpecification: $listSpec,
                 listModel: $listModel,
-                listView: $listView,
-                paginatorConfig: $paginatorConfig,
                 template: $template,
             )
         );
 
+        $template = $event->getTemplate();
         $data = $template->getData();
-        $data['flare'] ??= $event->getListView();
+        $data['flare_list_spec'] = $listSpec;
+        $data['flare_list_config'] = $interactiveConfig;
+        $data['flare_list'] ??= $interactiveView;
+        /**
+         * @todo(@ericges): Remove in 0.1.0
+         * @deprecated Use 'flare_list' instead.
+         */
+        $data['flare'] = $data['flare_list'];
         $template->setData($data);
 
-        return $template->getResponse();
+        try
+        {
+            return $template->getResponse();
+        }
+            /** @noinspection PhpRedundantCatchClauseInspection */
+        catch (RuntimeError $e)
+        {
+            $previous = $e;
+            while ($previous = $previous->getPrevious()) {
+                if ($previous instanceof ResponseException) {
+                    throw $previous;
+                }
+            }
+
+            throw $e;
+        }
     }
 
     protected function getBackendResponse(Template $template, ContentModel $model, Request $request): ?Response

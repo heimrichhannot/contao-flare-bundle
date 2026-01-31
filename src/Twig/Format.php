@@ -29,11 +29,11 @@ class Format extends AbstractExtension
 
     public function fmtHeadline(string|array|null $value): string
     {
-        return Str::getHeadline($value, withTags: true);
+        return Str::formatHeadline($value, withTags: true);
     }
 
     public function fmtHeadlineValue(string|array|null $value): string
     {
-        return Str::getHeadline($value);
+        return Str::formatHeadline($value);
     }
 }

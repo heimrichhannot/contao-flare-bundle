@@ -5,28 +5,26 @@ namespace HeimrichHannot\FlareBundle\FilterElement;
 use Contao\Controller;
 use Contao\Message;
 use Doctrine\DBAL\ParameterType;
-use HeimrichHannot\FlareBundle\Contract\Config\InScopeConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\InScopeContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
 use HeimrichHannot\FlareBundle\Enum\BoolMode;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
-use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 
 #[AsFilterElement(
-    alias: self::TYPE,
+    type: self::TYPE,
     palette: '{filter_legend},fieldGeneric,preselect',
     formType: CheckboxType::class,
     isTargeted: true,
 )]
-class BooleanElement extends AbstractFilterElement implements InScopeContract
+class BooleanElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_bool';
 
@@ -68,17 +66,6 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract
 
         $qb->where($qb->expr()->eq($qb->column($targetField), ':val'))
             ->setParameter('val', $value ? '1' : '', ParameterType::STRING);
-    }
-
-    public function isInScope(InScopeConfig $config): bool
-    {
-        $filterModel = $config->getFilterModel();
-
-        if ($filterModel->intrinsic) {
-            return $this->normalizeValue($filterModel->preselect) !== null;
-        }
-
-        return $config->getContentContext()->isList();
     }
 
     public function normalizeValue(mixed $value, ?BoolBinaryChoices $choices = null): ?bool
@@ -153,13 +140,12 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract
         return $options;
     }
 
-    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
+    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void
     {
+        $filter = $event->filterDefinition;
         /** @mago-expect lint:no-nested-ternary This is fine. Just be clear that the ternary operator is intentional. */
-        return [
-            'required' => false,
-            'label' => $context->getFilterModel()->label ?: $context->getFilterModel()->title ?: 'CBX',
-        ];
+        $event->options['label'] = $filter->label ?: $filter->getTitle() ?: 'CBX';
+        $event->options['required'] = false;
     }
 
     public function getPalette(PaletteConfig $config): ?string
@@ -176,7 +162,7 @@ class BooleanElement extends AbstractFilterElement implements InScopeContract
         ?bool $expectedValue = null,
     ): FilterDefinition {
         $definition = new FilterDefinition(
-            alias: static::TYPE,
+            type: static::TYPE,
             title: 'Boolean',
             intrinsic: true,
         );

@@ -9,12 +9,17 @@ services:
     HeimrichHannot\FlareBundle\:
         resource: ../src
         exclude:
-            - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Dto,Event,Filter,Model,SortDescriptor}
-            - ../src/**/*{Builder,Collection}.php
+            - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Dto,Event,Model,Trait}
+            - ../src/{Filter,ListView,Paginator,SortDescriptor,Specification}/*.php
+            - ../src/**/*{Builder}.php
+            - ../src/Engine/Context/*.php
+            - ../src/Engine/View
             - ../src/EventListener/Integration
-            - ../src/ListView/*.php
-            - ../src/Paginator/*.php
             - ../src/Registry/Descriptor
+
+    HeimrichHannot\FlareBundle\FilterInvoker\FilterInvokerResolver:
+        arguments:
+            $invokerLocator: null # populated by compiler pass
 
     HeimrichHannot\FlareBundle\ListItemProvider\ListItemProvider: ~
     HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface: '@HeimrichHannot\FlareBundle\ListItemProvider\ListItemProvider'

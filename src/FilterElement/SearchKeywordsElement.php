@@ -4,17 +4,15 @@ namespace HeimrichHannot\FlareBundle\FilterElement;
 
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
+use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 
 #[AsFilterElement(
-    alias: SearchKeywordsElement::TYPE,
+    type: self::TYPE,
     palette: '{filter_legend},columnsGeneric;{form_legend},label,placeholder',
     formType: TextType::class,
-    scopes: [ContentContext::CONTEXT_LIST],
     isTargeted: true,
 )]
 class SearchKeywordsElement extends AbstractFilterElement
@@ -74,23 +72,17 @@ class SearchKeywordsElement extends AbstractFilterElement
         return \array_diff($terms, $stopWords);
     }
 
-    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
+    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void
     {
-        $options = [
-            'label' => 'label.text',
-            'required' => false,
-        ];
+        $event->options['label'] = 'label.text';
+        $event->options['required'] = false;
 
-        $filterModel = $context->getFilterModel();
-
-        if ($label = $filterModel->label) {
-            $options['label'] = $label;
+        if ($label = $event->filterDefinition->label) {
+            $event->options['label'] = $label;
         }
 
-        if ($placeholder = $filterModel->placeholder) {
-            $options['attr']['placeholder'] = $placeholder;
+        if ($placeholder = $event->filterDefinition->placeholder) {
+            $event->options['attr']['placeholder'] = $placeholder;
         }
-
-        return $options;
     }
 }

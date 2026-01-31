@@ -2,10 +2,9 @@
 
 namespace HeimrichHannot\FlareBundle\ListItemProvider;
 
-use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
-use HeimrichHannot\FlareBundle\Paginator\Paginator;
-use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
+use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 /**
  * Interface required for list item providers.
@@ -19,8 +18,9 @@ interface ListItemProviderInterface
      * @return int Returns the total number of entries matching the given filters.
      */
     public function fetchCount(
-        ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
+        ListQueryBuilder  $listQueryBuilder,
+        ListSpecification $listSpecification,
+        ContextInterface  $contextConfig,
     ): int;
 
     /**
@@ -37,10 +37,9 @@ interface ListItemProviderInterface
      * @return array<int, array> Returns an array of associative arrays, each mapping column names to their values.
      */
     public function fetchEntries(
-        ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ?SortDescriptor         $sortDescriptor = null,
-        ?Paginator              $paginator = null,
+        ListQueryBuilder  $listQueryBuilder,
+        ListSpecification $listSpecification,
+        ContextInterface  $contextConfig,
     ): array;
 
     /**
@@ -53,9 +52,8 @@ interface ListItemProviderInterface
      * @return array<int> Returns an array of unique IDs.
      */
     public function fetchIds(
-        ListQueryBuilder        $listQueryBuilder,
-        FilterContextCollection $filters,
-        ?SortDescriptor         $sortDescriptor = null,
-        ?Paginator              $paginator = null,
+        ListQueryBuilder  $listQueryBuilder,
+        ListSpecification $listSpecification,
+        ContextInterface  $contextConfig,
     ): array;
 }

@@ -4,35 +4,28 @@ namespace HeimrichHannot\FlareBundle\Contract\Config;
 
 use Contao\ContentModel;
 use Contao\Model;
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
-use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 readonly class ReaderPageMetaConfig
 {
     public function __construct(
-        private ListModel      $listModel,
-        private Model          $model,
-        private ContentContext $contentContext,
-        private ContentModel   $contentModel,
+        private ContentModel      $contentModel,
+        private Model             $displayModel,
+        private ListSpecification $listSpecification,
     ) {}
-
-    public function getListModel(): ListModel
-    {
-        return $this->listModel;
-    }
-
-    public function getModel(): Model
-    {
-        return $this->model;
-    }
-
-    public function getContentContext(): ContentContext
-    {
-        return $this->contentContext;
-    }
 
     public function getContentModel(): ContentModel
     {
         return $this->contentModel;
+    }
+
+    public function getDisplayModel(): Model
+    {
+        return $this->displayModel;
+    }
+
+    public function getListSpecification(): ListSpecification
+    {
+        return $this->listSpecification;
     }
 }

@@ -3,23 +3,26 @@
 namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
-use HeimrichHannot\FlareBundle\Factory\FilterContextBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
 use Symfony\Component\Form\FormInterface;
 
+/**
+ * @todo(@ericges): Remove in 0.1.0
+ * @deprecated
+ */
 class FilterContext
 {
     /**
-     * @internal Use {@see FilterContextBuilder} (inject {@see FilterContextBuilderFactory}) to create a new instance.
+     * @internal Use {@see FilterContextBuilder} to create a new instance.
      */
     public function __construct(
         private readonly ContentContext          $contentContext,
         private readonly ListModel               $listModel,
         private readonly FilterModel             $filterModel,
         private readonly FilterElementDescriptor $filterElementDescriptor,
-        private readonly string                  $filterElementAlias,
+        private readonly string                  $filterElementType,
         private readonly string                  $table,
         private ?FormInterface                   $formField = null,
     ) {}
@@ -44,9 +47,9 @@ class FilterContext
         return $this->filterElementDescriptor;
     }
 
-    public function getFilterAlias(): string
+    public function getFilterType(): string
     {
-        return $this->filterElementAlias;
+        return $this->filterElementType;
     }
 
     public function getTable(): string

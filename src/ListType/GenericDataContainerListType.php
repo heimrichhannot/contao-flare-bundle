@@ -14,7 +14,7 @@ use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\ListType\Trait\GenericReaderPageMetaTrait;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 
-#[AsListType(alias: self::TYPE, palette: self::DEFAULT_PALETTE)]
+#[AsListType(type: self::TYPE, palette: self::DEFAULT_PALETTE)]
 class GenericDataContainerListType extends AbstractListType implements DataContainerContract
 {
     use GenericReaderPageMetaTrait;
@@ -60,7 +60,7 @@ class GenericDataContainerListType extends AbstractListType implements DataConta
 
         $table = $listModel->dc;
 
-        $inferrer = new PtableInferrer($listModel, $listModel);
+        $inferrer = new PtableInferrer($listModel, $listModel->dc);
 
         try
         {

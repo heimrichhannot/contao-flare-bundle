@@ -8,25 +8,28 @@ use Contao\Model\Collection;
 use Contao\StringUtil;
 use Doctrine\DBAL\ArrayParameterType;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
-use HeimrichHannot\FlareBundle\Contract\PaletteContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Util\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormInterface;
 
-#[AsFilterElement(alias: ArchiveElement::TYPE, formType: ChoiceType::class)]
-class ArchiveElement extends BelongsToRelationElement implements FormTypeOptionsContract, HydrateFormContract, PaletteContract
+#[AsFilterElement(type: self::TYPE, formType: ChoiceType::class)]
+class ArchiveElement extends BelongsToRelationElement implements HydrateFormContract, IntrinsicValueContract
 {
     public const TYPE = 'flare_archive';
 
@@ -37,17 +40,18 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
+    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
     {
-        $submitted = $context->getSubmittedData();
-        $filterModel = $context->getFilterModel();
-        $inferrer = new PtableInferrer($filterModel, $context->getListModel());
+        $filerValue = $inv->getValue();
 
-        if ($submitted && !\is_array($submitted)) {
-            $submitted = [$submitted];
+        $inferrable = PtableInferrableFactory::createFromListModelLike($inv->list);
+        $inferrer = new PtableInferrer($inferrable, $inv->list->dc);
+
+        if ($filerValue && !\is_array($filerValue)) {
+            $filerValue = [$filerValue];
         }
 
-        foreach ($submitted ?? [] as $value)
+        foreach ($filerValue ?? [] as $value)
         {
             if ($value === ChoicesBuilder::EMPTY_CHOICE) {
                 return;
@@ -60,21 +64,26 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
         if ($inferrer->getDcaMainPtable())
         {
-            if (!$whitelist = StringUtil::deserialize($filterModel->whitelistParents)) {
-                throw new FilterException('No whitelisted parents defined.');
-            }
+            $filerValueIds = \array_map(static fn (Model $model): int => (int) $model->id, $filerValue);
+            $whitelist = $filerValueIds;
 
-            if ($submitted && (!$filterModel->hasEmptyOption || \count($submitted) > 0))
-                // we expect $submitted to be an array of parent models
-                // if empty option is enabled, empty array is allowed
+            if (!$inv->filter->isIntrinsic())
+                // Double-check that we are only filtering by whitelisted parents when the filter has a form value
             {
-                $whitelist = \array_map('intval', $whitelist);
-                $submitted = \array_map(static fn (Model $model): int => (int) $model->id, $submitted);
-                $whitelist = \array_intersect($whitelist, $submitted);
+                if (!$whitelist = StringUtil::deserialize($inv->filter->whitelistParents, true)) {
+                    throw new FilterException('No whitelisted parents defined.');
+                }
 
-                if (!$whitelist)
+                if ($filerValueIds && (!$inv->filter->hasEmptyOption || \count($filerValueIds) > 0))
+                    // we expect $filerValue to be an array of parent models
+                    // if the empty option is enabled, an empty array is allowed
                 {
-                    $qb->abort();
+                    $whitelist = \array_intersect(\array_map('\intval', $whitelist), $filerValueIds);
+
+                    if (!$whitelist)
+                    {
+                        $qb->abort();
+                    }
                 }
             }
 
@@ -84,38 +93,83 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
             return;
         }
 
-        if ($inferrer->isDcaDynamicPtable())
+        if (!$inferrer->isDcaDynamicPtable())
+            // no valid ptable available
         {
-            $submittedGroup = null;
-            $submitted = \array_filter((array) $submitted);
-
-            if ($submitted || $filterModel->hasEmptyOption)
-                // we expect $submitted to be an array of values formatted {table}.{id}
-                // if hasEmptyOption is enabled, an empty array is allowed
-            {
-                $submittedGroup = [];
-
-                foreach ($submitted as $value)
-                {
-                    if ($value instanceof Model) {
-                        $submittedGroup[$value::getTable()][] = $value->id;
-                    }
-
-                    if (!\is_string($value) || !\str_contains($value, '.')) {  // skip invalid values
-                        continue;
-                    }
-
-                    [$table, $id] = \explode('.', $value, 2);
-
-                    $submittedGroup[$table][] = (int) $id;
-                }
-            }
-
-            $this->filterDynamicPtableField($qb, $filterModel, 'ptable', 'pid', $submittedGroup);
-            return;
+            throw new FilterException('No valid ptable found.');
         }
 
-        throw new FilterException('No valid ptable found.');
+        /**
+         * ## We are dealing with a _dynamic ptable_ henceforth.
+         */
+
+        $grouped = null;
+        $filerValue = \array_filter((array) $filerValue);
+
+        if ($filerValue || (!$inv->filter->isIntrinsic() && $inv->filter->hasEmptyOption))
+            // we expect $filerValue to be an array of values formatted {table}.{id}
+            // if hasEmptyOption is enabled, an empty array is allowed
+        {
+            $grouped = [];
+
+            foreach ($filerValue as $value)
+            {
+                if ($value instanceof Model) {
+                    $grouped[$value::getTable()][] = $value->id;
+                }
+
+                if (!\is_string($value) || !\str_contains($value, '.')) {  // skip invalid values
+                    continue;
+                }
+
+                [$table, $id] = \explode('.', $value, 2);
+
+                $grouped[$table][] = (int) $id;
+            }
+        }
+
+        $this->filterDynamicPtableField($qb, $inv->filter, 'ptable', 'pid', $grouped);
+    }
+
+    public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): array
+    {
+        $inferrable = PtableInferrableFactory::createFromListModelLike($list);
+        $inferrer = new PtableInferrer($inferrable, $list->dc);
+
+        if ($ptable = $inferrer->getDcaMainPtable())
+        {
+            $parents = $this->getParentsFromWhitelistBlob($ptable, $filter->whitelistParents);
+            return $parents?->getModels() ?? [];
+        }
+
+        if (!$inferrer->isDcaDynamicPtable())
+            // no valid ptable available
+        {
+            return [];
+        }
+
+        if (!$groupWhitelist = StringUtil::deserialize($filter->groupWhitelistParents, true))
+        {
+            return [];
+        }
+
+        $allParents = [];
+
+        foreach ($groupWhitelist as $group)
+        {
+            $table = $group['tablePtable'] ?? null;
+            $whitelistParents = $group['whitelistParents'] ?? null;
+
+            if (!$table || !$whitelistParents) {
+                continue;
+            }
+
+            $parents = $this->getParentsFromWhitelistBlob($table, $whitelistParents)?->getModels() ?? [];
+
+            \array_push($allParents, ...$parents);
+        }
+
+        return $allParents;
     }
 
     public function getPalette(PaletteConfig $config): ?string
@@ -124,7 +178,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
             return null;
         }
 
-        $inferrer = new PtableInferrer($filterModel, $config->getListModel());
+        $inferrer = new PtableInferrer($filterModel, $config->getListModel()->dc);
 
         $palettes = [];
 
@@ -161,33 +215,38 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
     /**
      * @throws FilterException
      */
-    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
+    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void
     {
-        $filterModel = $context->getFilterModel();
-        $inferrer = new PtableInferrer($filterModel, $context->getListModel());
+        $filter = $event->filterDefinition;
 
-        $choices->enable();
+        if (!$filterModel = $filter->getSourceFilterModel()) {
+            return;
+        }
 
-        if ($filterModel->hasEmptyOption)
+        $inferrer = new PtableInferrer($filterModel, $event->listDefinition->dc);
+
+        $choices = $event->getChoicesBuilder()->enable();
+
+        if ($filter->hasEmptyOption)
         {
-            $emptyOptionLabel = ($filterModel->formatEmptyOption === 'custom')
-                ? $filterModel->formatEmptyOptionCustom
-                : $filterModel->formatEmptyOption;
+            $emptyOptionLabel = ($filter->formatEmptyOption === 'custom')
+                ? $filter->formatEmptyOptionCustom
+                : $filter->formatEmptyOption;
 
             $choices->setEmptyOption($emptyOptionLabel ?: true);
         }
 
         if ($ptable = $inferrer->getDcaMainPtable())
         {
-            $label = ($filterModel->formatLabel === 'custom')
-                ? $filterModel->formatLabelCustom
-                : $filterModel->formatLabel;
+            $label = ($filter->formatLabel === 'custom')
+                ? $filter->formatLabelCustom
+                : $filter->formatLabel;
 
             $label = $label ?: null;
 
             $choices->setLabel($label);
 
-            $parents = $this->getParentsFromWhitelistBlob($ptable, $filterModel->whitelistParents);
+            $parents = $this->getParentsFromWhitelistBlob($ptable, $filter->whitelistParents);
 
             if (!$parents) {
                 throw new FilterException('No whitelisted parents defined or parent table class invalid.');
@@ -198,65 +257,62 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
                 $choices->add($parent->id, $parent);
             }
 
-            return [
-                'required' => $filterModel->isMandatory,
-                'multiple' => $filterModel->isMultiple,
-                'expanded' => $filterModel->isExpanded,
-            ];
+            $event->options['required'] = (bool) $filter->isMandatory;
+            $event->options['multiple'] = (bool) $filter->isMultiple;
+            $event->options['expanded'] = (bool) $filter->isExpanded;
+
+            return;
         }
 
-        if ($inferrer->isDcaDynamicPtable())
+        if (!$inferrer->isDcaDynamicPtable())
+            // no valid ptable available
         {
-            if (!$groupWhitelist = StringUtil::deserialize($filterModel->groupWhitelistParents)) {
-                throw new FilterException('No whitelisted parents defined.');
-            }
-
-            foreach ($groupWhitelist as $group)
-            {
-                $table = $group['tablePtable'] ?? null;
-                $whitelistParents = $group['whitelistParents'] ?? null;
-
-                if (!$table || !$whitelist = StringUtil::deserialize($whitelistParents)) {
-                    continue;
-                }
-
-                $pClass = Model::getClassFromTable($table);
-
-                if (!\class_exists($pClass)) {
-                    throw new FilterException(\sprintf('Invalid parent table class "%s" of table "%s".', $pClass, $table));
-                }
-
-                $parents = $pClass::findMultipleByIds($whitelist);
-
-                foreach ($parents as $parent)
-                {
-                    $choices->add(\sprintf('%s.%s', $table, $parent->id), $parent);
-                }
-
-                $formatLabel = $group['formatLabel'] ?? null;
-                $formatLabel = ($formatLabel === 'custom')
-                    ? ($group['formatLabelCustom'] ?? null)
-                    : $formatLabel;
-                $formatLabel = $formatLabel ?: null;
-
-                $choices->setLabelForTable($formatLabel, $table);
-            }
-
-            if (!$choices->count())
-            {
-                throw new FilterException('No valid whitelisted parents defined.');
-            }
-
-            $choices->setModelSuffix('(%@name%)');
-
-            return [
-                'required' => $filterModel->isMandatory,
-                'multiple' => $filterModel->isMultiple,
-                'expanded' => $filterModel->isExpanded,
-            ];
+            throw new FilterException('No valid ptable found.');
         }
 
-        throw new FilterException('No valid ptable found.');
+        /**
+         * ## We are dealing with a _dynamic ptable_ henceforth.
+         */
+
+        if (!$groupWhitelist = StringUtil::deserialize($filter->groupWhitelistParents, true))
+        {
+            throw new FilterException('No whitelisted parents defined.');
+        }
+
+        foreach ($groupWhitelist as $group)
+        {
+            $table = $group['tablePtable'] ?? null;
+            $whitelistParents = $group['whitelistParents'] ?? null;
+
+            if (!$table || !$whitelistParents) {
+                continue;
+            }
+
+            $parents = $this->getParentsFromWhitelistBlob($table, $whitelistParents);
+
+            foreach ($parents as $parent)
+            {
+                $choices->add(\sprintf('%s.%s', $table, $parent->id), $parent);
+            }
+
+            $formatLabel = $group['formatLabel'] ?? null;
+            $formatLabel = ($formatLabel === 'custom')
+                ? ($group['formatLabelCustom'] ?? null)
+                : $formatLabel;
+            $formatLabel = $formatLabel ?: null;
+
+            $choices->setLabelForTable($formatLabel, $table);
+        }
+
+        if (!$choices->count()) {
+            throw new FilterException('No valid whitelisted parents defined.');
+        }
+
+        $choices->setModelSuffix('(%@name%)');
+
+        $event->options['required'] = (bool) $filter->isMandatory;
+        $event->options['multiple'] = (bool) $filter->isMultiple;
+        $event->options['expanded'] = (bool) $filter->isExpanded;
     }
 
     #[AsFilterCallback(self::TYPE, 'fields.preselect.load')]
@@ -264,7 +320,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
         mixed          $value,
         ?DataContainer $dc,
         FilterModel    $filterModel,
-        ListModel      $listModel
+        ListModel $listModel
     ): mixed {
         if (!$dc) {
             return [];
@@ -272,7 +328,7 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
 
         $dca = &$GLOBALS['TL_DCA'][$dc->table]['fields'][$dc->field];
 
-        $inferrer = new PtableInferrer($filterModel, $listModel);
+        $inferrer = new PtableInferrer($filterModel, $listModel->dc);
         $choices = $this->choicesBuilderFactory
             ->createChoicesBuilder()
             ->setModelSuffix('[%id%]')
@@ -341,41 +397,57 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
             return null;
         }
 
-        if (!$whitelist = StringUtil::deserialize($blob)) {
+        if (!$parentModelClass = Model::getClassFromTable($table)) {
             return null;
         }
 
-        $pClass = Model::getClassFromTable($table);
-
-        if (!\class_exists($pClass)) {
+        if (!\class_exists($parentModelClass)) {
             return null;
         }
 
-        return $pClass::findMultipleByIds($whitelist);
+        if (!$whitelist = StringUtil::deserialize($blob, true)) {
+            return null;
+        }
+
+        if (!$whitelist = \array_unique(\array_filter(\array_map('\intval', $whitelist)))) {
+            return null;
+        }
+
+        return $parentModelClass::findMultipleByIds($whitelist);
     }
 
-    public function hydrateForm(FilterContext $context, FormInterface $field): void
+    public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void
     {
-        $filterModel = $context->getFilterModel();
-
-        if ($preselect = StringUtil::deserialize($filterModel->preselect ?: null, true))
+        if (!$preselect = StringUtil::deserialize($filter->preselect ?: null, true))
         {
-            $data = [];
+            return;
+        }
 
-            foreach ($preselect as $entity)
+        $ptableInferrer = static function () use (&$ptableInferrer, $list): PtableInferrer {
+            $inferrable = PtableInferrableFactory::createFromListModelLike($list);
+            $inferrer = new PtableInferrer($inferrable, $list->dc);
+            $ptableInferrer = static fn (): PtableInferrer => $inferrer;
+            return $inferrer;
+        };
+
+        $ptable = static function () use (&$ptable, $ptableInferrer): string {
+            $pt = $ptableInferrer()->getDcaMainPtable();
+            $ptable = static fn (): string => $pt;
+            return $pt;
+        };
+
+        $data = [];
+
+        foreach ($preselect as $entity)
+        {
+            if ($entity instanceof Model) {
+                $data[] = $entity;
+                continue;
+            }
+
+            if (\is_numeric($entity))
             {
-                if ($entity instanceof Model) {
-                    $data[] = $entity;
-                    continue;
-                }
-
-                if (!\is_string($entity) || !\str_contains($entity, '.')) {
-                    continue;
-                }
-
-                [$table, $id] = \explode('.', $entity, 2);
-
-                if (!$modelClass = Model::getClassFromTable($table)) {
+                if (!$ptable() || !$modelClass = Model::getClassFromTable($ptable())) {
                     continue;
                 }
 
@@ -383,12 +455,33 @@ class ArchiveElement extends BelongsToRelationElement implements FormTypeOptions
                     continue;
                 }
 
-                if ($model = $modelClass::findByPk($id)) {
-                    $data[] = $model;
+                if (!$model = $modelClass::findByPk($entity)) {
+                    continue;
                 }
+
+                $data[] = $model;
+                continue;
             }
 
-            $field->setData($data);
+            if (!\is_string($entity) || !\str_contains($entity, '.')) {
+                continue;
+            }
+
+            [$table, $id] = \explode('.', $entity, 2);
+
+            if (!$modelClass = Model::getClassFromTable($table)) {
+                continue;
+            }
+
+            if (!\class_exists($modelClass)) {
+                continue;
+            }
+
+            if ($model = $modelClass::findByPk($id)) {
+                $data[] = $model;
+            }
         }
+
+        $field->setData($data);
     }
 }

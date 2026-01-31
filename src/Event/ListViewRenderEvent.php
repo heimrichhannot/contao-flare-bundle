@@ -4,45 +4,38 @@ namespace HeimrichHannot\FlareBundle\Event;
 
 use Contao\ContentModel;
 use Contao\Template;
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
-use HeimrichHannot\FlareBundle\ListView\ListView;
+use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 class ListViewRenderEvent extends AbstractTemplateRenderEvent
 {
     public function __construct(
-        private readonly ContentContext  $contentContext,
-        private readonly ContentModel    $contentModel,
-        private readonly ListModel       $listModel,
-        private readonly ListView        $listView,
-        private readonly PaginatorConfig $paginatorConfig,
-        private Template                 $template,
+        private readonly ContentModel      $contentModel,
+        private readonly InteractiveView   $interactiveView,
+        private readonly ListSpecification $listSpecification,
+        private readonly ListModel         $listModel,
+        private Template                   $template,
     ) {}
-
-    public function getContentContext(): ContentContext
-    {
-        return $this->contentContext;
-    }
 
     public function getContentModel(): ContentModel
     {
         return $this->contentModel;
     }
 
+    public function getInteractiveView(): InteractiveView
+    {
+        return $this->interactiveView;
+    }
+
+    public function getListSpecification(): ListSpecification
+    {
+        return $this->listSpecification;
+    }
+
     public function getListModel(): ListModel
     {
         return $this->listModel;
-    }
-
-    public function getListView(): ListView
-    {
-        return $this->listView;
-    }
-
-    public function getPaginatorConfig(): PaginatorConfig
-    {
-        return $this->paginatorConfig;
     }
 
     public function getTemplate(): Template

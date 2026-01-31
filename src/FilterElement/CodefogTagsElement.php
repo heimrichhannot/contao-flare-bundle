@@ -7,7 +7,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 
 #[AsFilterElement(
-    alias: CodefogTagsElement::TYPE,
+    type: self::TYPE,
     palette: '{filter_legend},fieldGeneric,isMultiple,preselect',
     formType: ChoiceType::class,
 )]

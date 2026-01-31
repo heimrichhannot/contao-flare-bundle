@@ -8,17 +8,17 @@ use HeimrichHannot\FlareBundle\Contract\Config\ListItemProviderConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\ListItemProviderContract;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
+use HeimrichHannot\FlareBundle\Event\ListQueryPrepareEvent;
+use HeimrichHannot\FlareBundle\Event\ListSpecificationCreatedEvent;
 use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
-use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
-use HeimrichHannot\FlareBundle\List\PresetFiltersConfig;
 use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
 use HeimrichHannot\FlareBundle\ListItemProvider\EventsListItemProvider;
 use HeimrichHannot\FlareBundle\Util\Str;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
-#[AsListType(self::TYPE, dataContainer: 'tl_calendar_events')]
+#[AsListType(type: self::TYPE, dataContainer: 'tl_calendar_events')]
 class EventsListType extends AbstractListType implements ListItemProviderContract
 {
     public const TYPE = 'flare_events';
@@ -42,10 +42,11 @@ class EventsListType extends AbstractListType implements ListItemProviderContrac
         return null;
     }
 
-    #[AsListCallback(self::TYPE, 'query.configure')]
-    public function configureQuery(ListQueryBuilder $builder): void
+    public function onListQueryPrepareEvent(ListQueryPrepareEvent $event): void
     {
         $aliasArchive = 'events_archive';
+
+        $builder = $event->getListQueryBuilder();
 
         $builder->innerJoin(
             table: 'tl_calendar',
@@ -54,10 +55,18 @@ class EventsListType extends AbstractListType implements ListItemProviderContrac
         );
     }
 
-    #[AsListCallback(self::TYPE, 'preset_filters')]
-    public function getPresetFilters(PresetFiltersConfig $config): void
+    #[AsEventListener(priority: 200)]
+    public function onListSpecificationCreated(ListSpecificationCreatedEvent $config): void
     {
-        $config->add(PublishedElement::define(), true);
+        if ($config->listSpecification->type !== self::TYPE) {
+            return;
+        }
+
+        $filters = $config->listSpecification->getFilters();
+
+        if (!$filters->hasType(PublishedElement::TYPE)) {
+            $filters->add(PublishedElement::define());
+        }
     }
 
     public function getListItemProvider(ListItemProviderConfig $config): ?ListItemProviderInterface
@@ -70,7 +79,7 @@ class EventsListType extends AbstractListType implements ListItemProviderContrac
         global $objPage;
 
         /** @var CalendarEventsModel $model */
-        $model = $config->getModel();
+        $model = $config->getDisplayModel();
 
         $pageMeta = new ReaderPageMetaDto();
 

@@ -6,9 +6,8 @@ use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\IsSupportedContract;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterDefinition;
-use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
+use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 
 /**
  * @phpstan-template FormOptionsShape of array{
@@ -33,7 +32,7 @@ abstract class AbstractFilterElement implements FormTypeOptionsContract, IsSuppo
     /**
      * Creates default form type options based on default filter model fields and the given config.
      *
-     * @param FilterContext $context The filter context.
+     * @param FilterDefinition $filter The filter definition.
      * @param array<string, mixed>|array<int, string>|array<int|string, mixed> $config The config to use.
      * @phpstan-param FormOptionsShape|list<key-of<FormOptionsShape>> $config
      *
@@ -43,11 +42,9 @@ abstract class AbstractFilterElement implements FormTypeOptionsContract, IsSuppo
      * @example $config = ['label', 'multiple', 'placeholder' => 'Select a value']
      */
     public function defaultFormTypeOptions(
-        FilterContext $context,
-        array         $config = [],
+        FilterDefinition $filter,
+        array            $config = [],
     ): array {
-        $filterModel = $context->getFilterModel();
-
         $options = [];
 
         /** @var array<string, true> $listPart */
@@ -57,7 +54,7 @@ abstract class AbstractFilterElement implements FormTypeOptionsContract, IsSuppo
         {
             if (\array_key_exists($optionName, $config))
             {
-                $value = $filterModel->{$attribute};
+                $value = $filter->{$attribute};
 
                 if ($value === '') {
                     $value = $config[$optionName];
@@ -69,17 +66,14 @@ abstract class AbstractFilterElement implements FormTypeOptionsContract, IsSuppo
 
             if (\in_array($optionName, $listPart, true))
             {
-                $options[$optionName] = $filterModel->{$attribute};
+                $options[$optionName] = $filter->{$attribute};
             }
         }
 
         return $options;
     }
 
-    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
-    {
-        return [];
-    }
+    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void {}
 
     public function isSupported(): bool
     {

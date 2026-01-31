@@ -16,7 +16,7 @@ readonly class FetchListener
     #[AsEventListener(priority: -200)]
     public function onFetchCountEvent(FetchCountEvent $event): void
     {
-        $eventName = "flare.list.{$event->getListModel()->type}.fetch_count";
+        $eventName = "flare.list.{$event->getListSpecification()->type}.fetch_count";
 
         $this->eventDispatcher->dispatch(event: $event, eventName: $eventName);
     }
@@ -24,7 +24,7 @@ readonly class FetchListener
     #[AsEventListener(priority: -200)]
     public function onFetchListEntriesEvent(FetchListEntriesEvent $event): void
     {
-        $eventName = "flare.list.{$event->getListModel()->type}.fetch_entries";
+        $eventName = "flare.list.{$event->getListSpecification()->type}.fetch_entries";
 
         $this->eventDispatcher->dispatch(event: $event, eventName: $eventName);
     }

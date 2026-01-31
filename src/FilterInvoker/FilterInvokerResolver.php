@@ -1,12 +1,12 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\Filter\Invoker;
+namespace HeimrichHannot\FlareBundle\FilterInvoker;
 
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterInvokerRegistry;
 use Psr\Container\ContainerInterface;
 
-readonly class FilterInvoker
+readonly class FilterInvokerResolver
 {
     public function __construct(
         private FilterInvokerRegistry $registry,

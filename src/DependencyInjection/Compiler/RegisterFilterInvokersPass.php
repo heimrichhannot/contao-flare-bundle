@@ -5,7 +5,7 @@ namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterInvoker;
 use HeimrichHannot\FlareBundle\DependencyInjection\Factory\TypeNameFactory;
-use HeimrichHannot\FlareBundle\Filter\Invoker\FilterInvoker;
+use HeimrichHannot\FlareBundle\FilterInvoker\FilterInvokerResolver;
 use HeimrichHannot\FlareBundle\Registry\FilterInvokerRegistry;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -47,9 +47,9 @@ class RegisterFilterInvokersPass implements CompilerPassInterface
             }
         }
         
-        if ($container->hasDefinition(FilterInvoker::class))
+        if ($container->hasDefinition(FilterInvokerResolver::class))
         {
-            $invokerDefinition = $container->getDefinition(FilterInvoker::class);
+            $invokerDefinition = $container->getDefinition(FilterInvokerResolver::class);
             $invokerDefinition->setArgument(
                 '$invokerLocator',
                 (new Definition(ServiceLocator::class, [$invokerServiceIds]))

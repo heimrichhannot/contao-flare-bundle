@@ -15,7 +15,7 @@ use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
-use HeimrichHannot\FlareBundle\Filter\Invoker\FilterInvoker;
+use HeimrichHannot\FlareBundle\FilterInvoker\FilterInvokerResolver;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Query\ParameterizedSqlQuery;
@@ -37,7 +37,7 @@ class ListQueryManager
         private readonly Connection                $connection,
         private readonly EventDispatcherInterface  $eventDispatcher,
         private readonly FilterElementRegistry     $filterElementRegistry,
-        private readonly FilterInvoker             $filterInvoker,
+        private readonly FilterInvokerResolver     $filterInvoker,
         private readonly FilterQueryBuilderFactory $filterQueryBuilderFactory,
         private readonly ListTypeRegistry          $listTypeRegistry,
     ) {}

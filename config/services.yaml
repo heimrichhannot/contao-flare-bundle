@@ -17,16 +17,16 @@ services:
             - ../src/EventListener/Integration
             - ../src/Registry/Descriptor
 
+    HeimrichHannot\FlareBundle\FilterInvoker\FilterInvokerResolver:
+        arguments:
+            $invokerLocator: null # populated by compiler pass
+
     HeimrichHannot\FlareBundle\ListItemProvider\ListItemProvider: ~
     HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface: '@HeimrichHannot\FlareBundle\ListItemProvider\ListItemProvider'
 
     HeimrichHannot\FlareBundle\Manager\TemplateManager:
         bind:
             $finderFactory: '@contao.twig.finder_factory'
-
-    HeimrichHannot\FlareBundle\Filter\Invoker\FilterInvoker:
-        arguments:
-            $invokerLocator: null # populated by compiler pass
 
 #    bind:
 #      $projectDir: '%kernel.project_dir%'

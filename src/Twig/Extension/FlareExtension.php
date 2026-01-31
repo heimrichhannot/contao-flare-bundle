@@ -14,7 +14,6 @@ class FlareExtension extends AbstractExtension
     public function getFunctions(): array
     {
         return [
-            new TwigFunction('flare', [FlareRuntime::class, 'getFlare']),
             new TwigFunction('flare_content', [FlareRuntime::class, 'getTlContent'], ['is_safe' => ['html']]),
             new TwigFunction('flare_enclosure', [FlareRuntime::class, 'getEnclosure']),
             new TwigFunction('flare_enclosure_files', [FlareRuntime::class, 'getEnclosureFiles']),

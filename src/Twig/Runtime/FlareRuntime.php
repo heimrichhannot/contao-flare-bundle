@@ -10,31 +10,23 @@ use Contao\Model\Collection;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageSchemaOrgConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageSchemaOrgContract;
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
-use HeimrichHannot\FlareBundle\ListView\Factory\ListViewBuilderFactory;
-use HeimrichHannot\FlareBundle\ListView\ListView;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
-use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Twig\Extension\RuntimeExtensionInterface;
 
-class FlareRuntime implements RuntimeExtensionInterface
+readonly class FlareRuntime implements RuntimeExtensionInterface
 {
-    protected array $listViewCache = [];
-
     public function __construct(
-        private readonly ListViewBuilderFactory $listViewBuilderFactory,
-        private readonly ListTypeRegistry       $listTypeRegistry,
-        private readonly ProjectorRegistry      $projectorRegistry,
+        private ListTypeRegistry  $listTypeRegistry,
+        private ProjectorRegistry $projectorRegistry,
     ) {}
 
     public function project(ListSpecification $spec, ContextInterface $config): ViewInterface
@@ -104,42 +96,42 @@ class FlareRuntime implements RuntimeExtensionInterface
      *
      * @deprecated To be removed in 0.1.0 todo(@ericges)
      */
-    public function getFlare(ListModel|string|int $listModel, array $options = []): ListView
-    {
-        $cacheKey = $listModel->id . '@' . \md5(\serialize($options));
-
-        if (isset($this->listViewCache[$cacheKey])) {
-            return $this->listViewCache[$cacheKey];
-        }
-
-        $listModel = $this->getListModel($listModel);
-
-        $paginatorConfig = new PaginatorConfig(
-            itemsPerPage: $options['items_per_page'] ?? null,
-        );
-
-        $sortDescriptor = null;
-        if (isset($options['sort'])) {
-            $sortDescriptor = SortDescriptor::fromMap($options['sort']);
-        }
-
-        $contentContext = new ContentContext(
-            context: ContentContext::CONTEXT_TWIG,
-            contentModel: null,
-            formName: $options['form_name'] ?? null,
-        );
-
-        $listView = $this->listViewBuilderFactory->create()
-            ->setContentContext($contentContext)
-            ->setListModel($listModel)
-            ->setPaginatorConfig($paginatorConfig)
-            ->setSortDescriptor($sortDescriptor)
-            ->build();
-
-        $this->listViewCache[$cacheKey] = $listView;
-
-        return $listView;
-    }
+    // public function getFlare(ListModel|string|int $listModel, array $options = []): ListView
+    // {
+    //     $cacheKey = $listModel->id . '@' . \md5(\serialize($options));
+    //
+    //     if (isset($this->listViewCache[$cacheKey])) {
+    //         return $this->listViewCache[$cacheKey];
+    //     }
+    //
+    //     $listModel = $this->getListModel($listModel);
+    //
+    //     $paginatorConfig = new PaginatorConfig(
+    //         itemsPerPage: $options['items_per_page'] ?? null,
+    //     );
+    //
+    //     $sortDescriptor = null;
+    //     if (isset($options['sort'])) {
+    //         $sortDescriptor = SortDescriptor::fromMap($options['sort']);
+    //     }
+    //
+    //     $contentContext = new ContentContext(
+    //         context: ContentContext::CONTEXT_TWIG,
+    //         contentModel: null,
+    //         formName: $options['form_name'] ?? null,
+    //     );
+    //
+    //     $listView = $this->listViewBuilderFactory->create()
+    //         ->setContentContext($contentContext)
+    //         ->setListModel($listModel)
+    //         ->setPaginatorConfig($paginatorConfig)
+    //         ->setSortDescriptor($sortDescriptor)
+    //         ->build();
+    //
+    //     $this->listViewCache[$cacheKey] = $listView;
+    //
+    //     return $listView;
+    // }
 
     /**
      * @throws \InvalidArgumentException

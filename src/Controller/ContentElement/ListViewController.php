@@ -5,6 +5,7 @@ namespace HeimrichHannot\FlareBundle\Controller\ContentElement;
 use Contao\ContentModel;
 use Contao\CoreBundle\Controller\ContentElement\AbstractContentElementController;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsContentElement;
+use Contao\CoreBundle\Exception\ResponseException;
 use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\StringUtil;
@@ -27,6 +28,7 @@ use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Error\RuntimeError;
 
 #[AsContentElement(ListViewController::TYPE, category: 'includes', template: 'content_element/flare_listview')]
 final class ListViewController extends AbstractContentElementController
@@ -102,7 +104,7 @@ final class ListViewController extends AbstractContentElementController
 
             $interactiveProjector = $this->projectorRegistry->getProjectorFor($listSpec, $interactiveConfig);
             $interactiveView = $interactiveProjector->project($listSpec, $interactiveConfig);
-            \assert($interactiveView instanceof InteractiveView);
+            \assert($interactiveView instanceof InteractiveView, 'Expected InteractiveView');
 
             /* _keep for future reference_
              * $validationConfig = $this->validationConfigFactory->createFromInteractiveProjection($interactiveView);
@@ -146,7 +148,22 @@ final class ListViewController extends AbstractContentElementController
         $data['flare'] = $data['flare_list'];
         $template->setData($data);
 
-        return $template->getResponse();
+        try
+        {
+            return $template->getResponse();
+        }
+            /** @noinspection PhpRedundantCatchClauseInspection */
+        catch (RuntimeError $e)
+        {
+            $previous = $e;
+            while ($previous = $previous->getPrevious()) {
+                if ($previous instanceof ResponseException) {
+                    throw $previous;
+                }
+            }
+
+            throw $e;
+        }
     }
 
     protected function getBackendResponse(Template $template, ContentModel $model, Request $request): ?Response

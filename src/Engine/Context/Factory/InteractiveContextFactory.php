@@ -3,19 +3,18 @@
 namespace HeimrichHannot\FlareBundle\Engine\Context\Factory;
 
 use Contao\ContentModel;
-use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
-use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
-use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
+use HeimrichHannot\FlareBundle\SortDescriptor\Factory\SortDescriptorFactory;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class InteractiveContextFactory
+readonly class InteractiveContextFactory
 {
     public function __construct(
+        private SortDescriptorFactory $sortDescriptorFactory,
         private ValidatorInterface $validator,
     ) {}
 
@@ -27,7 +26,7 @@ class InteractiveContextFactory
             itemsPerPage: (int) ($contentModel->flare_itemsPerPage ?: 0),
         );
 
-        $sortDescriptor = $this->getSortDescriptor($listModel);
+        $sortDescriptor = $this->sortDescriptorFactory->createFromListModel($listModel);
 
         $jumpToReaderPageId = (int) ($listModel->jumpToReader ?: $contentModel->flare_jumpToReader);
 
@@ -54,26 +53,5 @@ class InteractiveContextFactory
         }
 
         return $config;
-    }
-
-    /**
-     * Get the sort descriptor for a given list model.
-     *
-     * @return SortDescriptor|null The sort descriptor, or null if none is found.
-     *
-     * @throws FlareException bubbling from {@see SortDescriptor::fromSettings()}
-     */
-    private function getSortDescriptor(ListModel $listModel): ?SortDescriptor
-    {
-        if (!$listModel->sortSettings) {
-            return null;
-        }
-
-        $sortSettings = StringUtil::deserialize($listModel->sortSettings);
-        if (!$sortSettings || !\is_array($sortSettings)) {
-            return null;
-        }
-
-        return SortDescriptor::fromSettings($sortSettings);
     }
 }

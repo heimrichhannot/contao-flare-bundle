@@ -55,7 +55,7 @@ class NewsListType extends AbstractListType
         global $objPage;
 
         /** @var NewsModel $model */
-        $model = $config->getModel();
+        $model = $config->getDisplayModel();
         $contentModel = $config->getContentModel();
 
         $pageMeta = new ReaderPageMetaDto();

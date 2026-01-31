@@ -9,8 +9,8 @@ services:
     HeimrichHannot\FlareBundle\:
         resource: ../src
         exclude:
-            - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Dto,Event,Model,SortDescriptor,Trait}
-            - ../src/{Filter,ListView,Paginator,Specification}/*.php
+            - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Dto,Event,Model,Trait}
+            - ../src/{Filter,ListView,Paginator,SortDescriptor,Specification}/*.php
             - ../src/**/*{Builder}.php
             - ../src/Engine/Context/*.php
             - ../src/Engine/View

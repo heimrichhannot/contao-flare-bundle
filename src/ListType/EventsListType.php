@@ -79,7 +79,7 @@ class EventsListType extends AbstractListType implements ListItemProviderContrac
         global $objPage;
 
         /** @var CalendarEventsModel $model */
-        $model = $config->getModel();
+        $model = $config->getDisplayModel();
 
         $pageMeta = new ReaderPageMetaDto();
 

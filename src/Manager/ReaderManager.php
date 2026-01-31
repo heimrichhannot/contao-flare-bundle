@@ -4,15 +4,11 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Manager;
 
-use Contao\ContentModel;
 use Contao\CoreBundle\String\HtmlDecoder;
-use Contao\Input;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageMetaContract;
-use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Dto\ContentContext;
-use HeimrichHannot\FlareBundle\Dto\ReaderContentDto;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Event\FetchAutoItemEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -34,45 +30,6 @@ readonly class ReaderManager
         private ListTypeRegistry         $listTypeRegistry,
         private FilterElementRegistry    $filterElementRegistry,
     ) {}
-
-    /**
-     * @throws FlareException If there is no valid list model or the auto_item is defunct for the given list model.
-     */
-    public function evalContent(ContentModel $contentModel, ?string $autoItem = null): ReaderContentDto
-    {
-        $autoItem ??= (
-            \method_exists(Input::class, 'findGet')
-                ? Input::findGet('auto_item')
-                : Input::get('auto_item', false, true)
-        );
-
-        $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST);
-
-        if (!$listModel instanceof ListModel) {
-            throw new FlareException(
-                \sprintf('No list model found for content model with id %s.', $contentModel->id),
-                source: __METHOD__,
-            );
-        }
-
-        $contentContext = new ContentContext(
-            context: ContentContext::CONTEXT_READER,
-            contentModel: $contentModel,
-        );
-
-        $model = $this->getModelByAutoItem(
-            autoItem: $autoItem,
-            listModel: $listModel,
-            contentContext: $contentContext,
-        );
-
-        return new ReaderContentDto(
-            autoItem: $autoItem,
-            contentContext: $contentContext,
-            listModel: $listModel,
-            model: $model ?: null,
-        );
-    }
 
     /**
      * @throws FlareException
@@ -171,11 +128,14 @@ readonly class ReaderManager
      */
     public function getPageMeta(ReaderPageMetaConfig $config): ReaderPageMetaDto
     {
-        $listType = $config->getListModel()->type;
+        $listType = $config->getListSpecification()->type;
 
         if (!$listTypeConfig = $this->listTypeRegistry->get($listType))
         {
-            throw new FlareException(\sprintf('No list type config registered for type "%s".', $listType), source: __METHOD__);
+            throw new FlareException(
+                \sprintf('No list type config registered for type "%s".', $listType),
+                source: __METHOD__
+            );
         }
 
         $service = $listTypeConfig->getService();
@@ -189,6 +149,7 @@ readonly class ReaderManager
 
         if (!$pageMeta->getTitle())
         {
+            $model = $config->getContentModel();
             $pageMeta->setTitle($this->htmlDecoder->inputEncodedToPlainText(
                 $model->title ?? $model->headline ?? $model->name ?? $model->alias ?? $model->id ?: ''
             ));

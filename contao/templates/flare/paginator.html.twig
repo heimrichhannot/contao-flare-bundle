@@ -45,8 +45,8 @@
 {% block below %}
     {% if use_default_styles and flare_env.contao5 %}
         {% add "flare_paginator_default" to stylesheets %}
-            {{ paginator_styles.default_styles() }}
-        {% endadd %}
+            {{- paginator_styles.default_styles() -}}
+        {% endadd -%}
     {% elseif use_default_styles %}
         {{ paginator_styles.default_styles() }}
     {% endif %}

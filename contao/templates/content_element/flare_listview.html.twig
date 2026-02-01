@@ -50,15 +50,14 @@
                     <summary>#{{ entry.id }} <a href="{{ flare_list.to(entry.id) }}">{{ entry.title ?? entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>') }}</a></summary>
                     <div style="width: 100%; max-height: max(30vh, 150px); overflow: auto auto; background: #def; margin-bottom: .5rem">
                         {% set model = flare_list.model(entry.id) %}
-                        <div style="display: grid; grid-template-columns: max-content auto; gap: .125rem 1rem; font-family: monospace; padding: .5rem 1rem 3rem; font-size: .9em;">
+                        <dl style="display: grid; grid-template-columns: max-content auto; gap: .125rem 1rem; font-family: monospace; padding: .5rem 1rem 3rem; font-size: .9em;">
                             <strong style="grid-column: 1 / -1; margin-bottom: .25rem">{{ model.table }}</strong>
-                            {% for key, field in entry %}
-                                {% if key not in ['password'] %}
-                                    <div>{{ key }}</div>
-                                    <div>{{ field|default('-') }}</div>
+                            {% for key, field in entry -%}
+                                {% if key not in ['password'] -%}
+                                    <dt>{{ key }}</dt><dd>{{ field|default('-') }}</dd>
                                 {% endif %}
-                            {% endfor %}
-                        </div>
+                            {%- endfor %}
+                        </dl>
                     </div>
                 </details>
             {% endfor %}

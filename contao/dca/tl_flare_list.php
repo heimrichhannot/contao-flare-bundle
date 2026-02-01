@@ -5,7 +5,7 @@ use Contao\DC_Table;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\SortDescriptor\Order;
+use HeimrichHannot\FlareBundle\Sort\SortOrder;
 use HeimrichHannot\FlareBundle\Util\BeActionsHelper;
 use HeimrichHannot\FlareBundle\Util\DcMultilingualHelper;
 use HeimrichHannot\FlareBundle\Util\Str;
@@ -218,7 +218,6 @@ $dca['fields'] = [
                 'inputType' => 'select',
                 'exclude' => true,
                 'filter' => false,
-                'options_callback' => [ListContainer::class, 'getFieldOptions_columns'],
                 'options_callback' => [ListContainer::class, 'getFieldOptions_sortSettings'],
                 'eval' => [
                     'mandatory' => true,

@@ -2,9 +2,9 @@
 
 namespace HeimrichHannot\FlareBundle\Engine\Context\Interface;
 
-use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
+use HeimrichHannot\FlareBundle\Sort\SortOrderSequence;
 
 interface SortableContextInterface
 {
-    public function getSortDescriptor(): ?SortDescriptor;
+    public function getSortOrderSequence(): ?SortOrderSequence;
 }

@@ -5,6 +5,7 @@ namespace HeimrichHannot\FlareBundle\Query;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Util\Str;
 
 class ListQueryBuilder
 {
@@ -130,7 +131,7 @@ class ListQueryBuilder
         $quoteColumn ??= true;
         $of ??= $this->mainAlias;
 
-        if (!$quoteColumn && !\preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $column)) {
+        if (!$quoteColumn && !Str::isValidSqlName($column)) {
             throw new \InvalidArgumentException("Invalid column name format: {$column}");
         }
 
@@ -217,11 +218,11 @@ class ListQueryBuilder
      */
     public function addJoin(string $join, string $table, string $alias, string $condition): static
     {
-        if (!\preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $alias)) {
+        if (!Str::isValidSqlName($alias)) {
             throw new FlareException("Invalid join alias format: {$alias}");
         }
 
-        if (!\preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $table)) {
+        if (!Str::isValidSqlName($table)) {
             throw new FlareException("Invalid join table format: {$table}");
         }
 

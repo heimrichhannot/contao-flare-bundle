@@ -1,5 +1,8 @@
-{# @var \HeimrichHannot\FlareBundle\View\InteractiveView flare_list #}
+{# @var \HeimrichHannot\FlareBundle\Engine\Engine flare #}
 {% extends '@Contao/flare/_flare_base.html.twig' %}
+
+{# @var \HeimrichHannot\FlareBundle\Engine\View\InteractiveView flare_list #}
+{% set flare_list = flare.createView %}
 
 {% block content %}
 

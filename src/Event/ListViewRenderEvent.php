@@ -4,18 +4,16 @@ namespace HeimrichHannot\FlareBundle\Event;
 
 use Contao\ContentModel;
 use Contao\Template;
-use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
+use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 class ListViewRenderEvent extends AbstractTemplateRenderEvent
 {
     public function __construct(
-        private readonly ContentModel      $contentModel,
-        private readonly InteractiveView   $interactiveView,
-        private readonly ListSpecification $listSpecification,
-        private readonly ListModel         $listModel,
-        private Template                   $template,
+        private readonly ContentModel $contentModel,
+        private readonly Engine       $engine,
+        private readonly ListModel    $listModel,
+        private Template              $template,
     ) {}
 
     public function getContentModel(): ContentModel
@@ -23,14 +21,9 @@ class ListViewRenderEvent extends AbstractTemplateRenderEvent
         return $this->contentModel;
     }
 
-    public function getInteractiveView(): InteractiveView
+    public function getEngine(): Engine
     {
-        return $this->interactiveView;
-    }
-
-    public function getListSpecification(): ListSpecification
-    {
-        return $this->listSpecification;
+        return $this->engine;
     }
 
     public function getListModel(): ListModel

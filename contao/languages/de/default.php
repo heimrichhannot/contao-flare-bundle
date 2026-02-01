@@ -5,7 +5,7 @@ use HeimrichHannot\FlareBundle\Controller\ContentElement\ReaderController;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\FilterElement;
 use HeimrichHannot\FlareBundle\ListType;
-use HeimrichHannot\FlareBundle\SortDescriptor\Order;
+use HeimrichHannot\FlareBundle\Sort\SortOrder;
 
 $lang = &$GLOBALS['TL_LANG'];
 $flare = &$lang['FLARE'];
@@ -35,8 +35,8 @@ $flare['list'] = [
 ];
 
 $flare['sort_order'] = [
-    Order::ASC => ['Aufsteigend [ASC]', 'Sortierung aufsteigend.'],
-    Order::DESC => ['Absteigend [DESC]', 'Sortierung absteigend.'],
+    SortOrder::ASC => ['Aufsteigend [ASC]', 'Sortierung aufsteigend.'],
+    SortOrder::DESC => ['Absteigend [DESC]', 'Sortierung absteigend.'],
 ];
 
 $flare['date_time'] = [

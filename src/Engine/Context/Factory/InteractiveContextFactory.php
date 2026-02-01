@@ -6,7 +6,7 @@ use Contao\ContentModel;
 use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
-use HeimrichHannot\FlareBundle\SortDescriptor\Factory\SortDescriptorFactory;
+use HeimrichHannot\FlareBundle\Sort\Factory\SortOrderSequenceFactory;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -14,8 +14,8 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 readonly class InteractiveContextFactory
 {
     public function __construct(
-        private SortDescriptorFactory $sortDescriptorFactory,
-        private ValidatorInterface $validator,
+        private SortOrderSequenceFactory $sortOrderSequenceFactory,
+        private ValidatorInterface       $validator,
     ) {}
 
     public function createFromContent(ContentModel $contentModel, ListModel $listModel): InteractiveContext
@@ -26,7 +26,7 @@ readonly class InteractiveContextFactory
             itemsPerPage: (int) ($contentModel->flare_itemsPerPage ?: 0),
         );
 
-        $sortDescriptor = $this->sortDescriptorFactory->createFromListModel($listModel);
+        $sortOrderSequence = $this->sortOrderSequenceFactory->createFromListModel($listModel);
 
         $jumpToReaderPageId = (int) ($listModel->jumpToReader ?: $contentModel->flare_jumpToReader);
 
@@ -38,7 +38,7 @@ readonly class InteractiveContextFactory
 
         $config = new InteractiveContext(
             paginatorConfig: $paginatorConfig,
-            sortDescriptor: $sortDescriptor,
+            sortOrderSequence: $sortOrderSequence,
             contentModelId: (int) $contentModel->id,
             formActionPage: (int) $contentModel->flare_jumpTo,
             formName: $filterFormName,

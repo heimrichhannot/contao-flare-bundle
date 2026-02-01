@@ -20,6 +20,7 @@ use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Dto\ReaderRequestAttribute;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\ValidationContextFactory;
+use HeimrichHannot\FlareBundle\Engine\Factory\EngineFactory;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
 use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -27,7 +28,6 @@ use HeimrichHannot\FlareBundle\Manager\ReaderManager;
 use HeimrichHannot\FlareBundle\Manager\RequestManager;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -44,11 +44,11 @@ final class ReaderController extends AbstractContentElementController
 
     public function __construct(
         private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly EngineFactory            $engineFactory,
         private readonly EntityCacheTags          $entityCacheTags,
         private readonly KernelInterface          $kernel,
         private readonly ListSpecificationFactory $listSpecificationFactory,
         private readonly LoggerInterface          $logger,
-        private readonly ProjectorRegistry        $projectorRegistry,
         private readonly ReaderManager            $readerManager,
         private readonly RequestManager           $requestManager,
         private readonly ResponseContextAccessor  $responseContextAccessor,
@@ -120,8 +120,9 @@ final class ReaderController extends AbstractContentElementController
                 listModel: $listModel
             );
 
-            $validationProjector = $this->projectorRegistry->getProjectorFor($listSpec, $validationContext);
-            $validationView = $validationProjector->project($listSpec, $validationContext);
+            $engine = $this->engineFactory->createEngine($validationContext, $listSpec);
+
+            $validationView = $engine->createView();
             \assert($validationView instanceof ValidationView, 'Expected ValidationView');
 
             if (!$autoItemModel = $validationView->getModelByAutoItem($autoItem)) {
@@ -158,13 +159,11 @@ final class ReaderController extends AbstractContentElementController
             )
         );
 
+        $template = $event->getTemplate();
         $data = $template->getData();
-        $data['flare_reader_spec'] = $listSpec;
-        $data['flare_reader_config'] = $validationContext;
-        $data['flare_reader'] ??= $validationView;
-        /** @deprecated Use 'flare_list' instead. todo(@ericges): Remove in 0.1.0 */
-        $data['flare'] = $validationView;
-        $data['model'] ??= $event->getDisplayModel();
+        $data['flare'] = $engine;
+        $data['flare_reader'] = $validationView;
+        $data['model'] = $autoItemModel;
         $template->setData($data);
 
         $pageMeta = $event->getPageMeta();

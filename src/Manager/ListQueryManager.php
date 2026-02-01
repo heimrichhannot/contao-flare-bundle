@@ -22,6 +22,7 @@ use HeimrichHannot\FlareBundle\Query\ParameterizedSqlQuery;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Sort\Codec\SortOrderSequenceSQLCodec;
 use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\Str;
@@ -40,6 +41,7 @@ class ListQueryManager
         private readonly FilterInvokerResolver     $filterInvoker,
         private readonly FilterQueryBuilderFactory $filterQueryBuilderFactory,
         private readonly ListTypeRegistry          $listTypeRegistry,
+        private readonly SortOrderSequenceSQLCodec $sortOrderSequenceSQLCodec,
     ) {}
 
     /**
@@ -115,9 +117,10 @@ class ListQueryManager
         $limit = null;
         $offset = null;
 
-        if ($contextConfig instanceof SortableContextInterface)
+        if ($contextConfig instanceof SortableContextInterface
+            && $sortOrderSequence = $contextConfig->getSortOrderSequence())
         {
-            $order = $contextConfig->getSortDescriptor()?->toSql($this->connection->quoteIdentifier(...));
+            $order = $this->sortOrderSequenceSQLCodec->toSql($sortOrderSequence);
         }
 
         if ($contextConfig instanceof PaginatedContextInterface)

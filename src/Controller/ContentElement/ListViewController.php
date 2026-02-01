@@ -12,14 +12,13 @@ use Contao\StringUtil;
 use Contao\Template;
 use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\InteractiveContextFactory;
-use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
+use HeimrichHannot\FlareBundle\Engine\Factory\EngineFactory;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -36,6 +35,7 @@ final class ListViewController extends AbstractContentElementController
     public const TYPE = 'flare_listview';
 
     public function __construct(
+        private readonly EngineFactory             $engineFactory,
         private readonly EventDispatcherInterface  $eventDispatcher,
         private readonly InteractiveContextFactory $interactiveConfigFactory,
         private readonly KernelInterface           $kernel,
@@ -45,7 +45,6 @@ final class ListViewController extends AbstractContentElementController
         private readonly TranslationManager        $translationManager,
         private readonly TranslatorInterface       $translator,
         private readonly ListSpecificationFactory  $listSpecificationFactory,
-        private readonly ProjectorRegistry         $projectorRegistry,
     ) {}
 
     /**
@@ -102,15 +101,7 @@ final class ListViewController extends AbstractContentElementController
 
             $listSpec = $this->listSpecificationFactory->create(dataSource: $listModel);
 
-            $interactiveProjector = $this->projectorRegistry->getProjectorFor($listSpec, $interactiveConfig);
-            $interactiveView = $interactiveProjector->project($listSpec, $interactiveConfig);
-            \assert($interactiveView instanceof InteractiveView, 'Expected InteractiveView');
-
-            /* _keep for future reference_
-             * $validationConfig = $this->validationConfigFactory->createFromInteractiveProjection($interactiveView);
-             * $validationProjector = $this->projectorRegistry->getProjectorFor($validationConfig);
-             * $validationView = $validationProjector->project(spec: $listSpec, config: $validationConfig);
-             * \assert($validationView instanceof ValidationView); */
+            $engine = $this->engineFactory->createEngine($interactiveConfig, $listSpec);
         }
         catch (ValidationFailedException $e)
         {
@@ -129,8 +120,7 @@ final class ListViewController extends AbstractContentElementController
         $event = $this->eventDispatcher->dispatch(
             new ListViewRenderEvent(
                 contentModel: $contentModel,
-                interactiveView: $interactiveView,
-                listSpecification: $listSpec,
+                engine: $engine,
                 listModel: $listModel,
                 template: $template,
             )
@@ -138,14 +128,7 @@ final class ListViewController extends AbstractContentElementController
 
         $template = $event->getTemplate();
         $data = $template->getData();
-        $data['flare_list_spec'] = $listSpec;
-        $data['flare_list_config'] = $interactiveConfig;
-        $data['flare_list'] ??= $interactiveView;
-        /**
-         * @todo(@ericges): Remove in 0.1.0
-         * @deprecated Use 'flare_list' instead.
-         */
-        $data['flare'] = $data['flare_list'];
+        $data['flare'] = $engine;
         $template->setData($data);
 
         try

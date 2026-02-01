@@ -5,7 +5,7 @@ namespace HeimrichHannot\FlareBundle\Engine\Context;
 use Contao\ContentModel;
 use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
-use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
+use HeimrichHannot\FlareBundle\Sort\SortOrderSequence;
 use Symfony\Component\Validator\Constraints as Assert;
 
 class InteractiveContext implements
@@ -22,7 +22,7 @@ class InteractiveContext implements
 
     public function __construct(
         #[Assert\NotNull] public ?PaginatorConfig $paginatorConfig = null,
-        public ?SortDescriptor                    $sortDescriptor = null,
+        public ?SortOrderSequence                 $sortOrderSequence = null,
         #[Assert\PositiveOrZero] public int       $contentModelId = 0,
         #[Assert\PositiveOrZero] public int       $formActionPage = 0,
         #[Assert\NotBlank] public string          $formName = '',
@@ -74,17 +74,16 @@ class InteractiveContext implements
         return PageModel::findByPk($this->jumpToReaderPageId);
     }
 
-    public function getSortDescriptor(): ?SortDescriptor
+    public function getSortOrderSequence(): ?SortOrderSequence
     {
-        return $this->sortDescriptor;
+        return $this->sortOrderSequence;
     }
 
     public function with(
         ?PaginatorConfig $paginatorConfig = null,
         ?string          $formName = null,
         ?string          $pageParam = null,
-    ): static
-    {
+    ): static {
         $clone = clone $this;
 
         if ($paginatorConfig !== null) {

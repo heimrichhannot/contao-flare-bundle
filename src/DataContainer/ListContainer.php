@@ -6,6 +6,7 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
+use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Registry\FlareCallbackRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -163,10 +164,10 @@ class ListContainer implements FlareCallbackContainerInterface
      *
      * @see contao/dca/tl_flare_list.php -> `$dca['fields']['sortSettings']['fields']['column']['options_callback']`
      */
-    public function getFieldOptions_columns(DataContainer $dc): array
+    public function getFieldOptions_sortSettings(DataContainer $dc): array
     {
         $row = DcaHelper::rowOf($dc);
-        return DcaHelper::getFieldOptions($row['dc'] ?? null);
+        return DcaHelper::getFieldOptions($row['dc'] ?? null, alias: ListQueryManager::ALIAS_MAIN);
     }
 
     public function getListedTableName(DataContainer $dc): ?string

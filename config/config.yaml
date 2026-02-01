@@ -14,3 +14,8 @@ huh_flare:
         tl_news_archive:    '%%title%%'
         tl_user:            '%%username%% (%%name%%<%%email%%>)'
         tl_user_group:      '%%name%%'
+
+twig:
+    globals:
+        flare_env: '@HeimrichHannot\FlareBundle\Util\Env'
+        flare_str: '@HeimrichHannot\FlareBundle\Util\Str'

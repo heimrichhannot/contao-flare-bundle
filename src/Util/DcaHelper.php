@@ -98,8 +98,11 @@ class DcaHelper
         return $column;
     }
 
-    public static function getFieldOptions(DataContainer|string|null $dc_or_table, ?callable $predicate = null): array
-    {
+    public static function getFieldOptions(
+        DataContainer|string|null $dc_or_table,
+        ?callable $predicate = null,
+        ?string $alias = null,
+    ): array {
         if (\is_string($dc_or_table))
         {
             $table = $dc_or_table;
@@ -119,8 +122,9 @@ class DcaHelper
                 continue;
             }
 
-            $key = $table . '.' . $field;
-            $options[$field] = $key;
+            $label = $table . '.' . $field;
+            $key = $alias ? "{$alias}.{$field}" : $field;
+            $options[$key] = $label;
         }
 
         \ksort($options);

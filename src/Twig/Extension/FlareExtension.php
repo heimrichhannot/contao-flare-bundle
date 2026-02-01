@@ -6,7 +6,6 @@ namespace HeimrichHannot\FlareBundle\Twig\Extension;
 
 use HeimrichHannot\FlareBundle\Twig\Runtime\FlareRuntime;
 use Twig\Extension\AbstractExtension;
-use Twig\TwigFilter;
 use Twig\TwigFunction;
 
 class FlareExtension extends AbstractExtension
@@ -21,13 +20,6 @@ class FlareExtension extends AbstractExtension
             new TwigFunction('flare_project', [FlareRuntime::class, 'project']),
             new TwigFunction('flare_copy_view', [FlareRuntime::class, 'copyView']),
             new TwigFunction('flare_schema_org', [FlareRuntime::class, 'getSchemaOrg'], ['needs_context'=> true]),
-        ];
-    }
-
-    public function getFilters(): array
-    {
-        return [
-            new TwigFilter('flare_form', [FlareRuntime::class, 'createFormView']),
         ];
     }
 }

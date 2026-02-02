@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\EventListener\Integration;
+namespace HeimrichHannot\FlareBundle\Integration\Terminal42Languages\EventListener;
 
 use Contao\Controller;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
@@ -17,6 +17,7 @@ use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\ListType\DcMultilingualListType;
 use HeimrichHannot\FlareBundle\Manager\FilterContextManager;
 use HeimrichHannot\FlareBundle\Manager\RequestManager;
+use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Util\DcMultilingualHelper;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
@@ -26,7 +27,7 @@ use Terminal42\ChangeLanguage\PageFinder;
 use Terminal42\DcMultilingualBundle\Driver;
 use Terminal42\DcMultilingualBundle\QueryBuilder\MultilingualQueryBuilderFactoryInterface;
 
-class Terminal42ChangelanguageListener
+class ChangelanguageListener
 {
     private ?MultilingualQueryBuilderFactoryInterface $queryBuilderFactory;
     private ?PageFinder $pageFinder;
@@ -186,7 +187,7 @@ class Terminal42ChangelanguageListener
         }
 
         $listQueryBuilder->addJoin(
-            'LEFT OUTER JOIN',
+            JoinTypeEnum::LEFT,
             $table,
             'translation',
             "$qMain.id=translation.$pidColumnName AND translation.$langColumnName='$language'"

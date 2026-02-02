@@ -16,6 +16,7 @@ use HeimrichHannot\FlareBundle\Manager\FilterFormManager;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorBuilderFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
+use HeimrichHannot\FlareBundle\Query\Factory\ListQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\FormInterface;
@@ -28,8 +29,8 @@ class InteractiveProjector extends AbstractProjector
 {
     public function __construct(
         private readonly AggregationContextFactory $aggregationConfigFactory,
-        private readonly Connection                $connection,
         private readonly FilterFormManager         $filterFormManager,
+        private readonly ListQueryBuilderFactory   $listQueryBuilderFactory,
         private readonly ListQueryManager          $listQueryManager,
         private readonly PaginatorBuilderFactory   $paginatorBuilderFactory,
         private readonly ProjectorRegistry         $projectorRegistry,
@@ -37,7 +38,7 @@ class InteractiveProjector extends AbstractProjector
         private readonly ReaderPageUrlGenerator    $readerPageUrlGenerator,
     ) {}
 
-    public function supports(ContextInterface $config): bool
+    public function supports(ListSpecification $spec, ContextInterface $config): bool
     {
         return $config instanceof InteractiveContext;
     }
@@ -152,23 +153,20 @@ class InteractiveProjector extends AbstractProjector
     ): array {
         try
         {
-            $listQueryBuilder = $this->listQueryManager->prepare($spec);
+            $listQueryBuilder = $this->listQueryBuilderFactory->create($spec);
 
-            $this->listQueryManager->populate($listQueryBuilder, $spec, $config, $filterValues);
-
-            $query = $this->listQueryManager->populate(
+            $qb = $this->listQueryManager->populate(
                 listQueryBuilder: $listQueryBuilder,
                 listSpecification: $spec,
                 contextConfig: $config,
                 filterValues: $filterValues,
             );
 
-            if (!$query->isAllowed())
-            {
+            if (!$qb) {
                 return [];
             }
 
-            $result = $query->execute($this->connection);
+            $result = $qb->executeQuery();
 
             $entries = $result->fetchAllAssociative();
 

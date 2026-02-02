@@ -3,26 +3,22 @@
 namespace HeimrichHannot\FlareBundle\Manager;
 
 use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\Contract\ListType\PrepareListQueryInterface;
+use Doctrine\DBAL\Query\QueryBuilder;
 use HeimrichHannot\FlareBundle\Dto\InvokeFiltersResult;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\Interface\PaginatedContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\Interface\SortableContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokedEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokingEvent;
-use HeimrichHannot\FlareBundle\Event\ListQueryPrepareEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\FilterInvoker\FilterInvokerResolver;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
+use HeimrichHannot\FlareBundle\Query\Factory\QueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
-use HeimrichHannot\FlareBundle\Query\ParameterizedSqlQuery;
-use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
-use HeimrichHannot\FlareBundle\Sort\Codec\SortOrderSequenceSQLCodec;
+use HeimrichHannot\FlareBundle\Sort\SortOrder;
 use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\Str;
@@ -40,60 +36,8 @@ class ListQueryManager
         private readonly FilterElementRegistry     $filterElementRegistry,
         private readonly FilterInvokerResolver     $filterInvoker,
         private readonly FilterQueryBuilderFactory $filterQueryBuilderFactory,
-        private readonly ListTypeRegistry          $listTypeRegistry,
-        private readonly SortOrderSequenceSQLCodec $sortOrderSequenceSQLCodec,
+        private readonly QueryBuilderFactory       $queryBuilderFactory,
     ) {}
-
-    /**
-     * @throws FlareException
-     */
-    public function prepare(ListSpecification $list, ?bool $noCache = null): ListQueryBuilder
-    {
-        $doCache = !$noCache;
-
-        $cacheKey = $list->hash();
-        if ($doCache && $hit = $this->prepCache[$cacheKey] ?? null) {
-            return clone $hit;
-        }
-
-        /** @var ListTypeDescriptor $listTypeDescriptor */
-        if (!($listTypeDescriptor = $this->listTypeRegistry->get($list->type)) instanceof ListTypeDescriptor) {
-            throw new FlareException(\sprintf('No list type registered for type "%s".', $list->type), method: __METHOD__);
-        }
-
-        if (!$mainTable = $list->dc ?? $listTypeDescriptor->getDataContainer()) {
-            throw new FlareException('No data container table set.', method: __METHOD__);
-        }
-
-        $builder = new ListQueryBuilder(
-            connection: $this->connection,
-            mainTable: $mainTable,
-            mainAlias: self::ALIAS_MAIN,
-        );
-
-        $builder->select('*', of: self::ALIAS_MAIN, allowAsterisk: true);
-        $builder->groupBy('id', self::ALIAS_MAIN);
-
-        $event = new ListQueryPrepareEvent(listSpecification: $list, listQueryBuilder: $builder);
-
-        $listType = $listTypeDescriptor->getService();
-        if ($listType instanceof PrepareListQueryInterface) {
-            $listType->onListQueryPrepareEvent($event);
-        }
-
-        /** @var ListQueryPrepareEvent $event */
-        $event = $this->eventDispatcher->dispatch($event);
-
-        $builder = $event->getListQueryBuilder();
-
-        $builder->select('id', of: self::ALIAS_MAIN, as: 'id');
-
-        if ($doCache) {
-            $this->prepCache[$cacheKey] = clone $builder;
-        }
-
-        return $builder;
-    }
 
     /**
      * @throws FilterException
@@ -106,7 +50,7 @@ class ListQueryManager
         bool              $isCounting = false,
         bool              $onlyId = false,
         ?array            $select = null,
-    ): ParameterizedSqlQuery {
+    ): ?QueryBuilder {
         if (!Str::isValidSqlName($table = $listSpecification->dc)) {
             throw new FilterException(
                 \sprintf('[FLARE] Invalid table name: %s', $table), method: __METHOD__,
@@ -120,7 +64,10 @@ class ListQueryManager
         if ($contextConfig instanceof SortableContextInterface
             && $sortOrderSequence = $contextConfig->getSortOrderSequence())
         {
-            $order = $this->sortOrderSequenceSQLCodec->toSql($sortOrderSequence);
+            $order = \array_map(
+                static fn (SortOrder $o): array => [$o->getQualifiedColumn(), $o->getDirection()],
+                $sortOrderSequence->getItems()
+            );
         }
 
         if ($contextConfig instanceof PaginatedContextInterface)
@@ -141,7 +88,7 @@ class ListQueryManager
         }
         catch (AbortFilteringException)
         {
-            return ParameterizedSqlQuery::noResult();
+            return null;
         }
 
         if (\is_array($select) && !$select)
@@ -161,7 +108,7 @@ class ListQueryManager
 
         if (\is_array($select) && !$select)
         {
-            return ParameterizedSqlQuery::noResult();
+            return null;
         }
 
         $aliasesUsed = \array_unique(\array_merge(
@@ -169,13 +116,13 @@ class ListQueryManager
             $listQueryBuilder->getMandatoryTableAliases(),
         ));
 
-        $sqlQuery = $listQueryBuilder->buildQuery()->withFilteredJoins($aliasesUsed);
+        $queryStruct = $listQueryBuilder->build()->filterJoinAliases($aliasesUsed);
 
         $altSelect = match (true) {
             $isCounting => [
                 \sprintf(
                     "COUNT(%s) AS %s",
-                    (\count($sqlQuery->getJoins()) < 1)
+                    (\count($queryStruct->getJoins()) < 1)
                         ? '*'
                         : \sprintf('DISTINCT(%s)', $this->connection->quoteIdentifier(self::ALIAS_MAIN . '.id')),
                     $this->connection->quoteIdentifier('count')
@@ -192,18 +139,28 @@ class ListQueryManager
             default => null,
         };
 
-        $finalSQL = $sqlQuery->sqlify(
-            select: $altSelect,
-            conditions: $invoked->conditions
-                ? $this->connection->createExpressionBuilder()->and(...$invoked->conditions)
-                : '1 = 1',
-            groupBy: $isCounting ? false : null,
-            orderBy: $isCounting ? null : $order,
-            limit: $isCounting ? null : $limit,
-            offset: $isCounting ? null : $offset,
-        );
+        if ($altSelect) {
+            $queryStruct->setSelect($altSelect);
+        }
 
-        return new ParameterizedSqlQuery($finalSQL, $invoked->parameters, $invoked->types, true);
+        if ($invoked->conditions) {
+            $queryStruct->setConditions($this->connection->createExpressionBuilder()->and(...$invoked->conditions));
+        }
+
+        if ($isCounting) {
+            $queryStruct->setGroupBy(null);
+        }
+
+        if (!$isCounting) {
+            $queryStruct->setOrderBy($order);
+            $queryStruct->setLimit($limit);
+            $queryStruct->setOffset($offset);
+        }
+
+        $queryStruct->setParams($invoked->parameters);
+        $queryStruct->setTypes($invoked->types);
+
+        return $this->queryBuilderFactory->create($queryStruct);
     }
 
     /**

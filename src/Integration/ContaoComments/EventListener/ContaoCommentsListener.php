@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\EventListener\Integration;
+namespace HeimrichHannot\FlareBundle\Integration\ContaoComments\EventListener;
 
 use Contao\Comments;
 use Contao\CoreBundle\DataContainer\PaletteManipulator;

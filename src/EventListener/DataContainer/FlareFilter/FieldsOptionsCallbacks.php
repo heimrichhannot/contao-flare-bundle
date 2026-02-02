@@ -12,6 +12,7 @@ use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Query\Factory\ListQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
@@ -32,10 +33,10 @@ readonly class FieldsOptionsCallbacks
         private ContaoFramework          $contaoFramework,
         private FilterContainer          $filterContainer,
         private FilterElementRegistry    $filterElementRegistry,
-        private ListQueryManager         $listQueryManager,
         private TranslationManager       $translationManager,
         private TranslatorInterface      $translator,
         private ListSpecificationFactory $listSpecificationFactory,
+        private ListQueryBuilderFactory  $listQueryBuilderFactory,
     ) {}
 
     #[AsCallback(self::TABLE_NAME, 'fields.type.options')]
@@ -118,7 +119,7 @@ readonly class FieldsOptionsCallbacks
 
         $listSpecification = $this->listSpecificationFactory->create($listModel);
 
-        $table = $this->listQueryManager->prepare($listSpecification)
+        $table = $this->listQueryBuilderFactory->create($listSpecification)
             ->getTable($filterModel->targetAlias ?: ListQueryManager::ALIAS_MAIN);
 
         return DcaHelper::getFieldOptions($table);
@@ -223,13 +224,13 @@ readonly class FieldsOptionsCallbacks
 
         $listSpecification = $this->listSpecificationFactory->create($listModel);
 
-        $listQB = $this->listQueryManager->prepare($listSpecification);
-        $tables = $listQB->getTables();
+        $listQueryBuilder = $this->listQueryBuilderFactory->create($listSpecification);
+        $tables = $listQueryBuilder->getTables();
         $options = [];
 
         foreach ($tables as $alias => $table)
         {
-            if ($listQB->isTableAliasHidden($alias)) {
+            if ($listQueryBuilder->isTableAliasHidden($alias)) {
                 continue;
             }
 

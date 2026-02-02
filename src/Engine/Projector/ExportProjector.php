@@ -12,7 +12,7 @@ use HeimrichHannot\FlareBundle\Specification\ListSpecification;
  */
 class ExportProjector extends AbstractProjector
 {
-    public function supports(ContextInterface $config): bool
+    public function supports(ListSpecification $spec, ContextInterface $config): bool
     {
         return false;
     }

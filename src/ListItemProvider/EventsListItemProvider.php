@@ -11,11 +11,10 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
-use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 
-class EventsListItemProvider extends AbstractListItemProvider
+class EventsListItemProvider implements ListItemProviderInterface
 {
     public function __construct(
         private readonly Connection       $connection,
@@ -165,28 +164,28 @@ class EventsListItemProvider extends AbstractListItemProvider
         ContextInterface  $contextConfig,
         ?bool             $reduceSelect = null,
     ): array {
-        $sortDescriptor = $contextConfig->sortDescriptor ?? SortDescriptor::fromMap([
-            'startTime' => 'ASC',
-            'endTime'   => 'DESC',
-        ]);
+        // $sortDescriptor = $contextConfig->sortDescriptor ?? SortDescriptor::fromMap([
+        //     'startTime' => 'ASC',
+        //     'endTime'   => 'DESC',
+        // ]);
 
         // todo: assign sortDescriptor to context in some kind of hook beforehand
 
-        $query = $this->listQueryManager->populate(
+        $qb = $this->listQueryManager->populate(
             listQueryBuilder: $listQueryBuilder,
             listSpecification: $listDefinition,
             contextConfig: $contextConfig,
             select: $reduceSelect ? ['id', 'startTime', 'endTime', 'repeatEach', 'repeatEnd'] : null,
         );
 
-        if (!$query->isAllowed())
+        if (!$qb)
         {
             return [];
         }
 
         try
         {
-            $result = $query->execute($this->connection);
+            $result = $qb->executeQuery();
 
             $entries = $result->fetchAllAssociative();
         }

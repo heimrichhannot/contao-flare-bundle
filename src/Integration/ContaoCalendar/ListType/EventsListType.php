@@ -1,31 +1,29 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\ListType;
+namespace HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListType;
 
 use Contao\CalendarEventsModel;
 use Contao\CoreBundle\String\HtmlDecoder;
-use HeimrichHannot\FlareBundle\Contract\Config\ListItemProviderConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
-use HeimrichHannot\FlareBundle\Contract\ListType\ListItemProviderContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
 use HeimrichHannot\FlareBundle\Event\ListQueryPrepareEvent;
 use HeimrichHannot\FlareBundle\Event\ListSpecificationCreatedEvent;
 use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
-use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
-use HeimrichHannot\FlareBundle\ListItemProvider\EventsListItemProvider;
+use HeimrichHannot\FlareBundle\ListType\AbstractListType;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
-#[AsListType(type: self::TYPE, dataContainer: 'tl_calendar_events')]
-class EventsListType extends AbstractListType implements ListItemProviderContract
+#[AsListType(type: self::TYPE, dataContainer: self::DATA_CONTAINER)]
+class EventsListType extends AbstractListType
 {
     public const TYPE = 'flare_events';
+    public const DATA_CONTAINER = 'tl_calendar_events';
+    public const ALIAS_ARCHIVE = 'events_archive';
 
     public function __construct(
-        private readonly EventsListItemProvider $itemProvider,
-        private readonly HtmlDecoder            $htmlDecoder,
+        private readonly HtmlDecoder $htmlDecoder,
     ) {}
 
     public function getPalette(PaletteConfig $config): ?string
@@ -44,7 +42,7 @@ class EventsListType extends AbstractListType implements ListItemProviderContrac
 
     public function onListQueryPrepareEvent(ListQueryPrepareEvent $event): void
     {
-        $aliasArchive = 'events_archive';
+        $aliasArchive = self::ALIAS_ARCHIVE;
 
         $builder = $event->getListQueryBuilder();
 
@@ -67,11 +65,6 @@ class EventsListType extends AbstractListType implements ListItemProviderContrac
         if (!$filters->hasType(PublishedElement::TYPE)) {
             $filters->add(PublishedElement::define());
         }
-    }
-
-    public function getListItemProvider(ListItemProviderConfig $config): ?ListItemProviderInterface
-    {
-        return $this->itemProvider;
     }
 
     public function getReaderPageMeta(ReaderPageMetaConfig $config): ?ReaderPageMetaDto

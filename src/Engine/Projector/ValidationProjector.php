@@ -2,7 +2,6 @@
 
 namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
-use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
@@ -11,6 +10,7 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Generator\ReaderPageUrlGenerator;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
+use HeimrichHannot\FlareBundle\Query\Factory\ListQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 /**
@@ -19,12 +19,12 @@ use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 class ValidationProjector extends AbstractProjector
 {
     public function __construct(
-        private readonly Connection             $connection,
-        private readonly ListQueryManager       $listQueryManager,
-        private readonly ReaderPageUrlGenerator $readerPageUrlGenerator,
+        private readonly ListQueryManager        $listQueryManager,
+        private readonly ReaderPageUrlGenerator  $readerPageUrlGenerator,
+        private readonly ListQueryBuilderFactory $listQueryBuilderFactory,
     ) {}
 
-    public function supports(ContextInterface $config): bool
+    public function supports(ListSpecification $spec, ContextInterface $config): bool
     {
         return $config instanceof ValidationContext;
     }
@@ -128,23 +128,22 @@ class ValidationProjector extends AbstractProjector
      */
     private function executeQuery(ListSpecification $spec, ValidationContext $config): ?array
     {
-        $listQueryBuilder = $this->listQueryManager->prepare($spec);
+        $listQueryBuilder = $this->listQueryBuilderFactory->create($spec);
 
         $filterValues = $this->gatherFilterValues($spec, $config->getFilterValues());
-        $this->listQueryManager->populate($listQueryBuilder, $spec, $config, $filterValues);
 
-        $query = $this->listQueryManager->populate(
+        $qb = $this->listQueryManager->populate(
             listQueryBuilder: $listQueryBuilder,
             listSpecification: $spec,
             contextConfig: $config,
+            filterValues: $filterValues,
         );
 
-        if (!$query->isAllowed())
-        {
+        if (!$qb) {
             return [];
         }
 
-        $result = $query->execute($this->connection);
+        $result = $qb->executeQuery();
 
         $entry = $result->fetchAssociative();
 

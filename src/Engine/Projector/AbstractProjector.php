@@ -18,7 +18,7 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
     /**
      * {@inheritdoc}
      */
-    abstract public function supports(ContextInterface $config): bool;
+    abstract public function supports(ListSpecification $spec, ContextInterface $config): bool;
 
     /**
      * {@inheritdoc}

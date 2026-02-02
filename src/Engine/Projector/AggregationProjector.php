@@ -2,12 +2,12 @@
 
 namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
-use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Engine\Context\AggregationContext;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\View\AggregationView;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
+use HeimrichHannot\FlareBundle\Query\Factory\ListQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 /**
@@ -16,11 +16,11 @@ use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 class AggregationProjector extends AbstractProjector
 {
     public function __construct(
-        private readonly Connection       $connection,
-        private readonly ListQueryManager $listQueryManager,
+        private readonly ListQueryManager        $listQueryManager,
+        private readonly ListQueryBuilderFactory $listQueryBuilderFactory,
     ) {}
 
-    public function supports(ContextInterface $config): bool
+    public function supports(ListSpecification $spec, ContextInterface $config): bool
     {
         return $config instanceof AggregationContext;
     }
@@ -45,9 +45,9 @@ class AggregationProjector extends AbstractProjector
     {
         try
         {
-            $listQueryBuilder = $this->listQueryManager->prepare($spec);
+            $listQueryBuilder = $this->listQueryBuilderFactory->create($spec);
 
-            $query = $this->listQueryManager->populate(
+            $qb = $this->listQueryManager->populate(
                 listQueryBuilder: $listQueryBuilder,
                 listSpecification: $spec,
                 contextConfig: $config,
@@ -55,11 +55,11 @@ class AggregationProjector extends AbstractProjector
                 isCounting: true
             );
 
-            if (!$query->isAllowed()) {
+            if (!$qb) {
                 return 0;
             }
 
-            $result = $query->execute($this->connection);
+            $result = $qb->executeQuery();
 
             $count = $result->fetchOne() ?: 0;
 

@@ -4,6 +4,7 @@ use HeimrichHannot\FlareBundle\Controller\ContentElement\ListViewController;
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ReaderController;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\FilterElement;
+use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListType\EventsListType;
 use HeimrichHannot\FlareBundle\ListType;
 use HeimrichHannot\FlareBundle\Sort\SortOrder;
 
@@ -31,7 +32,7 @@ $flare['filter'] = [
 $flare['list'] = [
     ListType\GenericDataContainerListType::TYPE => ['Data container', 'Lists items of a data container.'],
     ListType\NewsListType::TYPE => ['News', 'Lists news items.'],
-    ListType\EventsListType::TYPE => ['Events', 'Lists events.'],
+    EventsListType::TYPE => ['Events', 'Lists events.'],
 ];
 
 $flare['sort_order'] = [

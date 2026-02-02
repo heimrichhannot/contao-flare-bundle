@@ -8,6 +8,10 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 
 final class SortOrderSequence
 {
+    /**
+     * @param SortOrder[] $items
+     * @throws FlareException
+     */
     public function __construct(
         private array $items = [],
     ) {
@@ -15,6 +19,9 @@ final class SortOrderSequence
         $this->assertUnique($this->items);
     }
 
+    /**
+     * @return SortOrder[]
+     */
     public function getItems(): array
     {
         return $this->items;

@@ -19,7 +19,7 @@ interface ProjectorInterface
     /**
      * Checks if this projector supports the given context configuration.
      */
-    public function supports(ContextInterface $config): bool;
+    public function supports(ListSpecification $spec, ContextInterface $config): bool;
 
     /**
      * Calculates the priority of the projector when supported, considering the given specification.

@@ -23,14 +23,22 @@ readonly class ProjectorRegistry
      *
      * @throws FlareException If no projector is found.
      */
-    public function getProjectorFor(ListSpecification $spec, ContextInterface $config): ProjectorInterface
-    {
+    public function getProjectorFor(
+        ListSpecification $spec,
+        ContextInterface  $config,
+        ?array            $exclude = null
+    ): ProjectorInterface {
+        $exclude = $exclude ? \array_fill_keys($exclude, true) : null;
         $winner = null;
         $highestPriority = \PHP_INT_MIN;
 
         foreach ($this->projectors as $projector)
         {
-            if (!$projector->supports($config)) {
+            if ($exclude && ($exclude[\get_class($projector)] ?? false)) {
+                continue;
+            }
+
+            if (!$projector->supports($spec, $config)) {
                 continue;
             }
 

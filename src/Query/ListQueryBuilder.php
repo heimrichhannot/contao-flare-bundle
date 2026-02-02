@@ -9,12 +9,14 @@ use HeimrichHannot\FlareBundle\Util\Str;
 
 class ListQueryBuilder
 {
+    public const ALIAS_MAIN = 'main';
+
     private ?ExpressionBuilder $expr = null;
     private array $select = [];
     private array $groupBy = [];
 
     /**
-     * @var array<string, string> $joins Key is the alias, value is the SQL join string.
+     * @var array<string, SqlJoinStruct> $joins Key is the alias, value is the SQL join definition.
      */
     private array $joins = [];
 
@@ -22,6 +24,8 @@ class ListQueryBuilder
      * @var array<string, string> $tables Key is the alias, value is the table name.
      */
     private array $tables = [];
+
+    private readonly string $mainAlias;
 
     /**
      * @var array<string, bool> $mapTableAliaseHidden List of table aliases that should not be shown to the user.
@@ -38,8 +42,10 @@ class ListQueryBuilder
     public function __construct(
         private readonly Connection $connection,
         private readonly string     $mainTable,
-        private readonly string     $mainAlias,
+        ?string                     $mainAlias = null,
     ) {
+        $mainAlias ??= self::ALIAS_MAIN;
+        $this->mainAlias = $mainAlias;
         $this->tables[$mainAlias] = $mainTable;
         $this->mapTableAliaseHidden[$mainAlias] = false;
         $this->mapTableAliasMandatory[$mainAlias] = true;
@@ -216,8 +222,13 @@ class ListQueryBuilder
      * @throws FlareException If the join alias is already in use or the join condition is invalid.
      * @internal Do not use this method directly, use the join methods instead: {@see innerJoin} and {@see leftJoin}.
      */
-    public function addJoin(string $join, string $table, string $alias, string $condition): static
-    {
+    public function addJoin(
+        JoinTypeEnum|string $join,
+        string              $table,
+        string              $alias,
+        string              $condition,
+        ?string             $fromAlias = null
+    ): static {
         if (!Str::isValidSqlName($alias)) {
             throw new FlareException("Invalid join alias format: {$alias}");
         }
@@ -226,8 +237,9 @@ class ListQueryBuilder
             throw new FlareException("Invalid join table format: {$table}");
         }
 
-        if (!\str_contains($join, 'JOIN')) {
-            throw new FlareException("Invalid join type: {$join}");
+        if (\is_string($join)) {
+            $join = \trim(\str_replace('JOIN', '', \strtoupper($join)));
+            $join = JoinTypeEnum::tryFrom($join) ?? throw new FlareException("Invalid join type: {$join}");
         }
 
         if (!\str_contains($condition, '=')) {
@@ -238,11 +250,22 @@ class ListQueryBuilder
             throw new FlareException("Join alias '{$alias}' is already in use.");
         }
 
-        $qTable = $this->connection->quoteIdentifier($table);
-        $qAlias = $this->connection->quoteIdentifier($alias);
+        $fromAlias ??= $this->mainAlias;
+
+        $struct = new SqlJoinStruct(
+            fromAlias: $fromAlias,
+            joinType: $join,
+            table: $table,
+            joinAlias: $alias,
+            condition: $condition,
+        );
+
+        // $qTable = $this->connection->quoteIdentifier($table);
+        // $qAlias = $this->connection->quoteIdentifier($alias);
 
         $this->tables[$alias] = $table;
-        $this->joins[$alias] = \sprintf('%s %s AS %s ON %s', $join, $qTable, $qAlias, $condition);
+        // $this->joins[$alias] = \sprintf('%s %s AS %s ON %s', $join, $qTable, $qAlias, $condition);
+        $this->joins[$alias] = $struct;
 
         return $this;
     }
@@ -252,9 +275,9 @@ class ListQueryBuilder
      *
      * @throws FlareException If the join alias is already in use.
      */
-    public function leftJoin(string $table, string $as, string $on): static
+    public function leftJoin(string $table, string $as, string $on, ?string $fromAlias = null): static
     {
-        return $this->addJoin('LEFT JOIN', $table, $as, $on);
+        return $this->addJoin(JoinTypeEnum::LEFT, $table, $as, $on, $fromAlias);
     }
 
     /**
@@ -262,9 +285,9 @@ class ListQueryBuilder
      *
      * @throws FlareException If the join alias is already in use.
      */
-    public function innerJoin(string $table, string $as, string $on): static
+    public function innerJoin(string $table, string $as, string $on, ?string $fromAlias = null): static
     {
-        return $this->addJoin('INNER JOIN', $table, $as, $on);
+        return $this->addJoin(JoinTypeEnum::INNER, $table, $as, $on, $fromAlias);
     }
 
     public function makeJoinOn(
@@ -279,14 +302,13 @@ class ListQueryBuilder
         );
     }
 
-    public function buildQuery(): SqlQuery
+    public function build(): SqlQueryStruct
     {
-        return new SqlQuery(
-            select: $this->getSelect(),
-            from: $this->getMainTable(true),
-            fromAlias: $this->getMainAlias(true),
-            joins: $this->getJoins(),
-            groupBy: $this->getGroupBy(),
-        );
+        return SqlQueryStruct::create()
+            ->setSelect($this->getSelect())
+            ->setFrom($this->getMainTable())
+            ->setFromAlias($this->getMainAlias())
+            ->setJoins($this->getJoins())
+            ->setGroupBy($this->getGroupBy());
     }
 }

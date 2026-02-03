@@ -20,10 +20,6 @@ services:
         arguments:
             $invokerLocator: null # populated by compiler pass
 
-    HeimrichHannot\FlareBundle\Manager\TemplateManager:
-        bind:
-            $finderFactory: '@contao.twig.finder_factory'
-
 #    bind:
 #      $projectDir: '%kernel.project_dir%'
 #      $csrfTokenName: '%contao.csrf_token_name%'

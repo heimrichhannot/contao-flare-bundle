@@ -5,7 +5,7 @@ namespace HeimrichHannot\FlareBundle\FilterElement;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 
@@ -19,15 +19,14 @@ class SearchKeywordsElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_search_keywords';
 
-    public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
+    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
     {
-        $submittedData = $context->getFormData();
+        $submittedData = $inv->getValue();
         if (!$submittedData || !\is_string($submittedData)) {
             return;
         }
 
-        $filterModel = $context->getFilterModel();
-        if (!$columns = StringUtil::deserialize($filterModel->columnsGeneric, true)) {
+        if (!$columns = StringUtil::deserialize($inv->filter->columnsGeneric, true)) {
             return;
         }
 

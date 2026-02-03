@@ -7,6 +7,7 @@ use HeimrichHannot\FlareBundle\Manager\FlareCallbackManager;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListQueryBuilderFactory;
+use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 
 class FilterContainer implements FlareCallbackContainerInterface
@@ -14,8 +15,9 @@ class FilterContainer implements FlareCallbackContainerInterface
     public const TABLE_NAME = 'tl_flare_filter';
 
     public function __construct(
-        private readonly FlareCallbackManager    $callbacks,
-        private readonly ListQueryBuilderFactory $listQueryBuilderFactory,
+        private readonly FlareCallbackManager     $callbacks,
+        private readonly ListQueryBuilderFactory  $listQueryBuilderFactory,
+        private readonly ListSpecificationFactory $listSpecificationFactory,
     ) {}
 
     /* ============================= *
@@ -53,7 +55,8 @@ class FilterContainer implements FlareCallbackContainerInterface
 
         $callbacks = $this->callbacks->getFilterCallbacks($filterModel->type, $target);
 
-        $listQueryManager = $this->listQueryBuilderFactory->create($listModel);
+        $listSpecification = $this->listSpecificationFactory->create($listModel);
+        $listQueryManager = $this->listQueryBuilderFactory->create($listSpecification);
         $tables = $listQueryManager->getTables();
         $targetTable = $listQueryManager->getTable($filterModel->targetAlias) ?: $listModel->dc;
 

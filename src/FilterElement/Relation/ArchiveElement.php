@@ -54,7 +54,7 @@ class ArchiveElement extends BelongsToRelationElement implements HydrateFormCont
         foreach ($filerValue ?? [] as $value)
         {
             if ($value === ChoicesBuilder::EMPTY_CHOICE) {
-                return;
+                return; // todo: this is a bug, as the whitelisted parents should still be checked
             }
 
             if (!$value instanceof Model) {
@@ -67,13 +67,9 @@ class ArchiveElement extends BelongsToRelationElement implements HydrateFormCont
             $filerValueIds = \array_map(static fn (Model $model): int => (int) $model->id, $filerValue ?? []);
             $whitelist = $filerValueIds;
 
-            if (!$filerValueIds)
+            if (!$filerValueIds && $inv->filter->isIntrinsic())
             {
-                if ($inv->filter->isIntrinsic()) {
-                    return;
-                }
-
-                $qb->abort();
+                return;
             }
 
             if (!$inv->filter->isIntrinsic())
@@ -83,9 +79,11 @@ class ArchiveElement extends BelongsToRelationElement implements HydrateFormCont
                     throw new FilterException('No whitelisted parents defined.');
                 }
 
-                if ($filerValueIds && (!$inv->filter->hasEmptyOption || \count($filerValueIds) > 0))
+                $selectionRequired = !$inv->filter->isExpanded && !$inv->filter->hasEmptyOption;
+
+                if ($filerValueIds && ((!$inv->filter->hasEmptyOption || $inv->filter->isExpanded) || \count($filerValueIds) > 0))
                     // we expect $filerValue to be an array of parent models
-                    // if the empty option is enabled, an empty array is allowed
+                    // if the empty option is enabled, an empty array is allowed // todo: double-check this logic
                 {
                     $whitelist = \array_intersect(\array_map('\intval', $whitelist), $filerValueIds);
 

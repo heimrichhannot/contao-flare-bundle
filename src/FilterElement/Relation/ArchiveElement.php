@@ -64,8 +64,17 @@ class ArchiveElement extends BelongsToRelationElement implements HydrateFormCont
 
         if ($inferrer->getDcaMainPtable())
         {
-            $filerValueIds = \array_map(static fn (Model $model): int => (int) $model->id, $filerValue);
+            $filerValueIds = \array_map(static fn (Model $model): int => (int) $model->id, $filerValue ?? []);
             $whitelist = $filerValueIds;
+
+            if (!$filerValueIds)
+            {
+                if ($inv->filter->isIntrinsic()) {
+                    return;
+                }
+
+                $qb->abort();
+            }
 
             if (!$inv->filter->isIntrinsic())
                 // Double-check that we are only filtering by whitelisted parents when the filter has a form value

@@ -5,9 +5,11 @@ namespace HeimrichHannot\FlareBundle\FilterElement;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\IsSupportedContract;
+use HeimrichHannot\FlareBundle\Contract\OptionsInterface;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
  * @phpstan-template FormOptionsShape of array{
@@ -17,7 +19,8 @@ use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
  *      placeholder?: string
  *  }
  */
-abstract class AbstractFilterElement implements FormTypeOptionsContract, IsSupportedContract, PaletteContract
+abstract class AbstractFilterElement implements
+    FormTypeOptionsContract, IsSupportedContract, OptionsInterface, PaletteContract
 {
     /**
      * @var FormOptionsShape|string[] Defines which filter-model fields to use for auto-generating form type options.
@@ -79,6 +82,8 @@ abstract class AbstractFilterElement implements FormTypeOptionsContract, IsSuppo
     {
         return true;
     }
+
+    public function configureOptions(OptionsResolver $resolver): void {}
 
     public function getPalette(PaletteConfig $config): ?string
     {

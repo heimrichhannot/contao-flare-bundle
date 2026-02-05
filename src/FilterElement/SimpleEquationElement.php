@@ -12,6 +12,8 @@ use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
+use Symfony\Component\OptionsResolver\Options;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE, isTargeted: true)]
 class SimpleEquationElement extends AbstractFilterElement
@@ -62,6 +64,24 @@ class SimpleEquationElement extends AbstractFilterElement
         return DcaHelper::getFieldOptions($targetTable);
     }
 
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        $resolver->define('left')->required()->allowedTypes('string');
+
+        $resolver->define('operator')
+            ->required()
+            ->allowedTypes('string', SqlEquationOperator::class)
+            ->allowedValues(static function (SqlEquationOperator|string $value): bool {
+                return (bool) SqlEquationOperator::match($value);
+            })
+            ->normalize(static function (Options $resolver, SqlEquationOperator|string $value): ?SqlEquationOperator {
+                return SqlEquationOperator::match($value);
+            })
+        ;
+
+        $resolver->define('right')->default(null)->allowedTypes('string', 'null');
+    }
+
     public function getPalette(PaletteConfig $config): ?string
     {
         $filterModel = $config->getFilterModel();
@@ -80,7 +100,6 @@ class SimpleEquationElement extends AbstractFilterElement
     ): FilterDefinition {
         $definition = new FilterDefinition(
             type: static::TYPE,
-            title: 'Simple Equation',
             intrinsic: true,
         );
 

@@ -67,7 +67,7 @@ readonly class FilterFormManager
 
             $options = $this->getFilterElementOptions($listSpecification, $filterDefinition);
 
-            $childName = $filterDefinition->getFilterFormFieldName();
+            $childName = $filterDefinition->getAlias();
 
             /** @var FilterFormChildOptionsEvent $childOptionsEvent */
             $childOptionsEvent = $this->eventDispatcher->dispatch(new FilterFormChildOptionsEvent(
@@ -193,7 +193,7 @@ readonly class FilterFormManager
                 continue;
             }
 
-            if (!$filterName = $filterDefinition->getFilterFormFieldName()) {
+            if (!$filterName = $filterDefinition->getAlias()) {
                 throw new FilterException(message: 'Non-intrinsic filter must provide a form field name.');
             }
 
@@ -240,7 +240,7 @@ readonly class FilterFormManager
                 continue;
             }
 
-            if (!$filterName = $filter->getFilterFormFieldName()) {
+            if (!$filterName = $filter->getAlias()) {
                 throw new FilterException(message: 'Non-intrinsic filter must provide a form field name.');
             }
 

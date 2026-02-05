@@ -11,11 +11,10 @@ class FilterDefinitionFactory
     {
         $self = new FilterDefinition(
             type: $filterModel->type,
-            title: $filterModel->title,
             intrinsic: $filterModel->intrinsic,
-            sourceFilterModel: $filterModel,
-            filterFormFieldName: $filterModel->getFormName(),
+            alias: $filterModel->getFormName(),
             targetAlias: $filterModel->targetAlias,
+            sourceFilterModel: $filterModel,
         );
 
         $self->setProperties($filterModel->row());

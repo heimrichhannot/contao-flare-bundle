@@ -51,7 +51,7 @@ readonly class ListModelFilterCollector implements FilterCollectorInterface
 
             $filterDefinition = $this->filterDefinitionFactory->createFromFilterModel($filterModel);
 
-            $key = $filterDefinition->getFilterFormFieldName()
+            $key = $filterDefinition->getAlias()
                 ?: "_.{$filterModel::getTable()}.{$filterModel->id}";
 
             $collection->set($key, $filterDefinition);

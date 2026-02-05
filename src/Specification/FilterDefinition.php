@@ -13,12 +13,13 @@ class FilterDefinition
 
     public function __construct(
         private string       $type,
-        private string       $title,
         private bool         $intrinsic,
-        private ?FilterModel $sourceFilterModel = null,
-        private ?string      $filterFormFieldName = null,
+        private ?string      $alias = null,
         private ?string      $targetAlias = null,
-    ) {}
+        private ?FilterModel $sourceFilterModel = null,
+    ) {
+        $this->setAlias($alias);
+    }
 
     public function getType(): string
     {
@@ -32,14 +33,17 @@ class FilterDefinition
         return $this;
     }
 
-    public function getTitle(): string
+    public function getAlias(): ?string
     {
-        return $this->title;
+        return $this->alias;
     }
 
-    public function setTitle(string $title): static
+    public function setAlias(?string $alias): static
     {
-        $this->title = $title;
+        if (!\preg_match('/^\w+$/', $alias)) {
+            throw new \InvalidArgumentException('Alias must be alphanumeric and may only contain underscores.');
+        }
+        $this->alias = $alias;
         return $this;
     }
 
@@ -65,17 +69,6 @@ class FilterDefinition
         return $this;
     }
 
-    public function getFilterFormFieldName(): ?string
-    {
-        return $this->filterFormFieldName;
-    }
-
-    public function setFilterFormFieldName(?string $filterFormFieldName): static
-    {
-        $this->filterFormFieldName = $filterFormFieldName;
-        return $this;
-    }
-
     public function setTargetAlias(?string $targetAlias): static
     {
         $this->targetAlias = $targetAlias;
@@ -90,7 +83,8 @@ class FilterDefinition
     public function __isset(string $name): bool
     {
         return match ($name) {
-            'type', 'title', 'intrinsic', 'targetAlias', 'target_alias' => true,
+            'type', 'intrinsic' => true,
+            'alias', 'targetAlias', 'target_alias', 'sourceFilterModel' => $this->__get($name) !== null,
             default => $this->issetProperty($name),
         };
     }
@@ -99,9 +93,9 @@ class FilterDefinition
     {
         match ($name) {
             'type' => $this->setType($value),
-            'title' => $this->setTitle($value),
             'intrinsic' => $this->setIntrinsic($value),
             'targetAlias', 'target_alias' => $this->setTargetAlias($value),
+            'sourceFilterModel' => $this->setSourceFilterModel($value),
             default => $this->setProperty($name, $value),
         };
     }
@@ -110,9 +104,9 @@ class FilterDefinition
     {
         return match ($name) {
             'type' => $this->getType(),
-            'title' => $this->getTitle(),
             'intrinsic' => $this->isIntrinsic(),
             'targetAlias', 'target_alias' => $this->getTargetAlias(),
+            'sourceFilterModel' => $this->getSourceFilterModel(),
             default => $this->getProperty($name),
         };
     }
@@ -120,7 +114,6 @@ class FilterDefinition
     public function getRow(): array
     {
         return \array_merge($this->getProperties(), [
-            'title' => $this->title,
             'type' => $this->type,
             'intrinsic' => $this->intrinsic,
             'targetAlias' => $this->targetAlias,

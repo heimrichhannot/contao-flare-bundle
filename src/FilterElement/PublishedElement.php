@@ -69,7 +69,6 @@ class PublishedElement extends AbstractFilterElement
 
         $definition = new FilterDefinition(
             type: static::TYPE,
-            title: 'Is Published',
             intrinsic: true,
         );
 

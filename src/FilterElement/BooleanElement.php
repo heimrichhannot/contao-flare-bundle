@@ -144,7 +144,7 @@ class BooleanElement extends AbstractFilterElement
     {
         $filter = $event->filterDefinition;
         /** @mago-expect lint:no-nested-ternary This is fine. Just be clear that the ternary operator is intentional. */
-        $event->options['label'] = $filter->label ?: $filter->getTitle() ?: 'CBX';
+        $event->options['label'] = $filter->label ?: $filter->title ?: 'CBX';
         $event->options['required'] = false;
     }
 
@@ -163,7 +163,6 @@ class BooleanElement extends AbstractFilterElement
     ): FilterDefinition {
         $definition = new FilterDefinition(
             type: static::TYPE,
-            title: 'Boolean',
             intrinsic: true,
         );
 

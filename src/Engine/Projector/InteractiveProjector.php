@@ -100,7 +100,7 @@ class InteractiveProjector extends AbstractProjector
 
         foreach ($spec->getFilters()->all() as $key => $definition)
         {
-            $formName = $definition->getFilterFormFieldName();
+            $formName = $definition->getAlias();
             if ($formName && \array_key_exists($formName, $formData)) {
                 $values[$key] = $formData[$formName];
             }

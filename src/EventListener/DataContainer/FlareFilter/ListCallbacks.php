@@ -39,7 +39,7 @@ readonly class ListCallbacks
         }
         $typeLabel ??= 'N/A';
 
-        $formAlias = FilterModel::generateFormName($row);
+        $formFieldName = FilterModel::generateFormName($row);
 
         return $this->twig->render('@HeimrichHannotFlare/backend/be_filter_info.html.twig', [
             'row' => $row,
@@ -47,7 +47,7 @@ readonly class ListCallbacks
             'is_published' => $isPublished,
             'title' => $title,
             'type_label' => $typeLabel,
-            'form_alias' => $formAlias,
+            'form_alias' => $formFieldName,
         ]);
     }
 }

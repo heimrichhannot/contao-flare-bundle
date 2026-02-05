@@ -35,24 +35,34 @@ class SearchKeywordsElement extends AbstractFilterElement implements IntrinsicVa
 
         $columns = \array_map($qb->column(...), $columns);
 
-        if (!$searchTerms = $this->makeTerms($value)) {
-            return;
-        }
+        $searchTermGroups = \array_values(\preg_split('/\s+OR\s+/i', $value));
 
-        $and = [];
-        foreach (\array_values($searchTerms) as $i => $term)
+        $or = [];
+
+        foreach ($searchTermGroups ?: [] as $i => $searchTermGroup)
         {
-            $param = ':term_' . $i;
+            if (!$searchTerms = $this->makeTerms($searchTermGroup)) {
+                return;
+            }
 
-            $and[] = $qb->expr()->or(...\array_map(
-                static fn(string $column): string => $qb->expr()->like($column, $param),
-                $columns
-            ));
+            $and = [];
 
-            $qb->setParameter($param, '%' . $term . '%');
+            foreach (\array_values($searchTerms) as $j => $term)
+            {
+                $param = ':term_' . $i . '_' . $j;
+
+                $and[] = $qb->expr()->or(...\array_map(
+                    static fn(string $column): string => $qb->expr()->like($column, $param),
+                    $columns
+                ));
+
+                $qb->setParameter($param, '%' . $term . '%');
+            }
+
+            $or[] = $qb->expr()->and(...$and);
         }
 
-        $qb->whereAnd(...$and);
+        $qb->where($qb->expr()->or(...$or));
     }
 
     private function makeTerms(string $text): array

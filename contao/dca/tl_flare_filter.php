@@ -170,6 +170,12 @@ $dca['fields'] = [
         'eval' => ['tl_class' => 'w100 clr'],
         'sql' => ['type' => 'blob', 'notnull' => false],
     ],
+    'prefill' => [
+        'inputType' => 'text',
+        'default' => null,
+        'eval' => ['tl_class' => 'w100 clr', 'alwaysSave' => true],
+        'sql' => ['type' => 'text', 'notnull' => false],
+    ],
     'isMandatory' => [
         'exclude' => true,
         'toggle' => true,

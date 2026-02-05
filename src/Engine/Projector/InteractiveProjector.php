@@ -48,7 +48,7 @@ class InteractiveProjector extends AbstractProjector
         \assert($config instanceof InteractiveContext, '$config must be an instance of InteractiveConfig');
 
         $form = $this->getForm($spec, $config);
-        $filterValues = $this->mapFormDataToFilterKeys($spec, $form);
+        $filterValues = $this->gatherFilterValues($spec, $this->mapFormDataToFilterKeys($spec, $form));
         $totalItems = $this->getAggregationProjection($spec, $config, $filterValues)->getCount();
         $paginator = $this->getPaginator($form, $config, $totalItems);
 

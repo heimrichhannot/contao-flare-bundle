@@ -3,26 +3,29 @@
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 
 #[AsFilterElement(
     type: self::TYPE,
-    palette: '{filter_legend},columnsGeneric;{form_legend},label,placeholder',
     formType: TextType::class,
     isTargeted: true,
 )]
-class SearchKeywordsElement extends AbstractFilterElement
+class SearchKeywordsElement extends AbstractFilterElement implements IntrinsicValueContract
 {
     public const TYPE = 'flare_search_keywords';
 
     public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
     {
-        $submittedData = $inv->getValue();
-        if (!$submittedData || !\is_string($submittedData)) {
+        $value = $inv->getValue();
+        if (!$value || !\is_string($value)) {
             return;
         }
 
@@ -32,7 +35,7 @@ class SearchKeywordsElement extends AbstractFilterElement
 
         $columns = \array_map($qb->column(...), $columns);
 
-        if (!$searchTerms = $this->makeTerms($submittedData)) {
+        if (!$searchTerms = $this->makeTerms($value)) {
             return;
         }
 
@@ -57,7 +60,7 @@ class SearchKeywordsElement extends AbstractFilterElement
         $text = (string) \mb_strtolower($text);
         $text = \preg_replace('/[^\p{L}\p{Nd}-]+/u', ' ', $text);
         $text = \preg_replace('/\s+/', ' ', $text);
-        $terms = \explode(' ', \trim($text));
+        $terms = \array_unique(\explode(' ', \trim($text)));
         $stopWords = [
             'und', 'oder', 'nicht', 'kein', 'alle', 'allem', 'aller', 'alles', 'auch', 'beide', 'beiden', 'beider',
             'beides', 'da', 'damit', 'danach', 'darauf', 'darum', 'das', 'dass', 'dein', 'deine', 'deinem', 'deiner',
@@ -65,7 +68,7 @@ class SearchKeywordsElement extends AbstractFilterElement
             'einer', 'eines', 'eins', 'euer', 'eure', 'eurem', 'eurer', 'eures', 'für', 'gegen', 'gegenüber', 'haben',
             'hat', 'hatte', 'hatten', 'hier', 'hinter', 'ich', 'ihm', 'ihn', 'ihnen', 'ihre', 'ihrem', 'ihrer', 'ihres',
             'im', 'in', 'indem', 'ins', 'ist', 'ja', 'jed', 'jede', 'jedem', 'jeder', 'jedes', 'jener', 'jetzt', 'kann',
-            'kein', 'keine', 'keinem', 'keiner', 'keines', 'konnte', 'könnte', 'machen', 'and', 'or'
+            'kein', 'keine', 'keinem', 'keiner', 'keines', 'konnte', 'könnte', 'machen', 'and', 'or',
         ];
 
         return \array_diff($terms, $stopWords);
@@ -83,5 +86,21 @@ class SearchKeywordsElement extends AbstractFilterElement
         if ($placeholder = $event->filterDefinition->placeholder) {
             $event->options['attr']['placeholder'] = $placeholder;
         }
+    }
+
+    public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): ?string
+    {
+        return $filter->prefill ?: null;
+    }
+
+    public function getPalette(PaletteConfig $config): ?string
+    {
+        $palette = '{filter_legend},columnsGeneric,prefill';
+
+        if ($config->getFilterModel()->intrinsic) {
+            return $palette;
+        }
+
+        return $palette . ';{form_legend},label,placeholder';
     }
 }

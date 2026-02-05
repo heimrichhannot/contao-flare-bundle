@@ -105,10 +105,10 @@ class SearchKeywordsElement extends AbstractFilterElement implements IntrinsicVa
 
     public function getPalette(PaletteConfig $config): ?string
     {
-        $palette = '{filter_legend},columnsGeneric,prefill';
+        $palette = '{filter_legend},columnsGeneric';
 
         if ($config->getFilterModel()->intrinsic) {
-            return $palette;
+            return $palette . ',prefill';
         }
 
         return $palette . ';{form_legend},label,placeholder';

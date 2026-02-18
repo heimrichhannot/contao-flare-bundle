@@ -18,7 +18,9 @@ class FilterDefinition
         private ?string      $targetAlias = null,
         private ?FilterModel $sourceFilterModel = null,
     ) {
-        $this->setAlias($alias);
+        if (!\is_null($alias)) {
+            $this->setAlias($alias);
+        }
     }
 
     public function getType(): string
@@ -26,9 +28,8 @@ class FilterDefinition
         return $this->type;
     }
 
-    public function setType(string $type, ?string &$og = null): static
+    public function setType(string $type): static
     {
-        $og = $this->type;
         $this->type = $type;
         return $this;
     }
@@ -40,8 +41,8 @@ class FilterDefinition
 
     public function setAlias(?string $alias): static
     {
-        if (!\preg_match('/^\w+$/', $alias)) {
-            throw new \InvalidArgumentException('Alias must be alphanumeric and may only contain underscores.');
+        if (!\is_null($alias) && !\preg_match('/^\w+$/', $alias)) {
+            throw new \InvalidArgumentException(\sprintf('Filter alias "%s" is invalid: must be alphanumeric and may only contain underscores.', $alias));
         }
         $this->alias = $alias;
         return $this;

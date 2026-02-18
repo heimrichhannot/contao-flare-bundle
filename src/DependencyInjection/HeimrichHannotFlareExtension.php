@@ -27,7 +27,9 @@ class HeimrichHannotFlareExtension extends Extension implements PrependExtension
         $loader = new YamlFileLoader($container, new FileLocator(\dirname(__DIR__) . '/../config'));
         $loader->load('services.yaml');
 
-        if (InstalledVersions::isInstalled('contao/calendar-bundle')) {}
+        if (InstalledVersions::isInstalled('contao/calendar-bundle')) {
+            $loader->load('integrations/contao_calendar.yaml');
+        }
 
         if (InstalledVersions::isInstalled('contao/comments-bundle')) {
             $loader->load('integrations/contao_comments.yaml');

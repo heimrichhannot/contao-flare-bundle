@@ -2,7 +2,6 @@
 
 namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
-use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\AggregationContextFactory;
 use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
@@ -14,7 +13,7 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Generator\ReaderPageUrlGenerator;
 use HeimrichHannot\FlareBundle\Manager\FilterFormManager;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
-use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorBuilderFactory;
+use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Query\Factory\ListQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
@@ -32,7 +31,7 @@ class InteractiveProjector extends AbstractProjector
         private readonly FilterFormManager         $filterFormManager,
         private readonly ListQueryBuilderFactory   $listQueryBuilderFactory,
         private readonly ListQueryManager          $listQueryManager,
-        private readonly PaginatorBuilderFactory   $paginatorBuilderFactory,
+        private readonly PaginatorFactory          $paginatorFactory,
         private readonly ProjectorRegistry         $projectorRegistry,
         private readonly RequestStack              $requestStack,
         private readonly ReaderPageUrlGenerator    $readerPageUrlGenerator,
@@ -128,22 +127,20 @@ class InteractiveProjector extends AbstractProjector
 
     public function getPaginator(FormInterface $form, PaginatedContextInterface $context, int $totalItems): Paginator
     {
-        if ($form->isSubmitted() && !$form->isValid()) {
-            return $this->paginatorBuilderFactory->create()->buildEmpty();
-        }
-
-        $pageParam = Paginator::normalizePageParam($context->getPaginatorQueryParameter() ?: $form->getName());
+        $pageParam = $context->getPaginatorQueryParameter() ?: $form->getName();
+        $pageParam = $this->paginatorFactory->sanitizePageParam($pageParam);
         if ($pageParam === $form->getName()) {
-            $pageParam = $form->getName() . '_page';
+            $pageParam .= '_page';
         }
 
-        return $this->paginatorBuilderFactory
-            ->create()
-            ->fromConfig($context->getPaginatorConfig())
-            ->pageParameter($pageParam)
-            ->handleRequest()
-            ->totalItems($totalItems)
-            ->build();
+        if ($form->isSubmitted() && !$form->isValid()) {
+            return $this->paginatorFactory->createEmpty(pageParam: $pageParam);
+        }
+
+        return $this->paginatorFactory->create(
+            config: $context->getPaginatorConfig()->with(totalItems: $totalItems),
+            pageParam: $pageParam,
+        );
     }
 
     public function fetchEntries(

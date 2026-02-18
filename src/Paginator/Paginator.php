@@ -41,58 +41,58 @@ readonly class Paginator extends PaginatorConfig
      * Get the current page item.
      * @api
      */
-    public function getCurrent(): PageItem
+    public function current(): PageItem
     {
-        return $this->getPageItem($this->currentPage);
+        return $this->createPageItem($this->currentPage);
     }
 
     /**
      * Get the previous page item.
      * @api
      */
-    public function getPrevious(): ?PageItem
+    public function previous(): ?PageItem
     {
-        return $this->hasPreviousPage() ? $this->getPageItem($this->getPreviousPageNumber()) : null;
+        return $this->hasPreviousPage() ? $this->createPageItem($this->getPreviousPageNumber()) : null;
     }
 
     /**
      * Get the next page item.
      * @api
      */
-    public function getNext(): ?PageItem
+    public function next(): ?PageItem
     {
-        return $this->hasNextPage() ? $this->getPageItem($this->getNextPageNumber()) : null;
+        return $this->hasNextPage() ? $this->createPageItem($this->getNextPageNumber()) : null;
     }
 
     /**
      * Get the first page item.
      * @api
      */
-    public function getFirst(): PageItem
+    public function first(): PageItem
     {
-        return $this->getPageItem(1);
+        return $this->createPageItem(1);
     }
 
     /**
      * Get the last page item.
      * @api
      */
-    public function getLast(): PageItem
+    public function last(): PageItem
     {
-        return $this->getPageItem($this->getLastPageNumber());
+        return $this->createPageItem($this->getLastPageNumber());
     }
 
     /**
      * Returns a page item for the given page number.
      *
      * @param int       $page The page number to create the item for.
-     * @param bool|null $isFiller Whether the item is a filler (i.e. ellipsis or in place there of) or not.
+     * @param bool|null $isFiller Whether the item is a filler or not (i.e., an ellipsis or in place thereof).
      */
-    public function getPageItem(int $page, ?bool $isFiller = null): PageItem
+    public function createPageItem(int $page, ?bool $isFiller = null): PageItem
     {
         return new PageItem(
             number: $page,
-            url: $this->getPageUrl($page),
+            url: $this->generatePageUrl($page),
             isCurrent: $page === $this->currentPage,
             isFirst: $page === 1,
             isLast: $page === $this->getLastPageNumber(),
@@ -110,7 +110,7 @@ readonly class Paginator extends PaginatorConfig
      *
      * @api
      */
-    public function getPages(): iterable
+    public function pages(): iterable
     {
         if ($this->isEmpty()) {
             return;
@@ -120,7 +120,7 @@ readonly class Paginator extends PaginatorConfig
 
         for ($page = 1; $page <= $lastPage; $page++)
         {
-            yield $this->getPageItem($page);
+            yield $this->createPageItem($page);
         }
     }
 
@@ -130,13 +130,13 @@ readonly class Paginator extends PaginatorConfig
      * @param int $padding The number of pages to show on each side of the current page.
      * @api
      */
-    public function getWindow(int $padding = self::DEFAULT_WINDOW_PADDING): iterable
+    public function window(int $padding = self::DEFAULT_WINDOW_PADDING): iterable
     {
-        $range = $this->getPageNumberWindow($padding);
+        $range = $this->makePageNumberWindow($padding);
 
         foreach ($range as $page)
         {
-            yield $this->getPageItem($page);
+            yield $this->createPageItem($page);
         }
     }
 
@@ -147,7 +147,7 @@ readonly class Paginator extends PaginatorConfig
      * @param int $maxFramePages The maximum number of pages to show in the left and right frames.
      * @api
      */
-    public function getNavigation(
+    public function navigation(
         int $windowPadding = self::DEFAULT_WINDOW_PADDING,
         int $maxFramePages = self::DEFAULT_FRAME_PAGES,
     ): iterable {
@@ -158,12 +158,12 @@ readonly class Paginator extends PaginatorConfig
         $lastPage = $this->getLastPageNumber();
 
         if ($lastPage <= 1) {
-            yield $this->getPageItem(1);
+            yield $this->createPageItem(1);
             return;
         }
 
         // Define all page sets
-        $windowPages = $this->getPageNumberWindow($windowPadding);
+        $windowPages = $this->makePageNumberWindow($windowPadding);
         $leftFramePages = $maxFramePages === 0
             ? []
             : \range(1, \min($maxFramePages, $lastPage));
@@ -187,7 +187,7 @@ readonly class Paginator extends PaginatorConfig
                 if ($gap === 1)
                     // Just one gap page, so show it
                 {
-                    yield $this->getPageItem($prevPage + 1, isFiller: true);
+                    yield $this->createPageItem($prevPage + 1, isFiller: true);
                 }
                 /** @mago-expect lint:no-else-clause This else clause is fine. */
                 elseif ($gap > 1)
@@ -197,7 +197,7 @@ readonly class Paginator extends PaginatorConfig
                 }
             }
 
-            yield $this->getPageItem($page);
+            yield $this->createPageItem($page);
             $prevPage = $page;
         }
     }
@@ -208,12 +208,12 @@ readonly class Paginator extends PaginatorConfig
      * @example Use this method to create a window of page numbers for a pagination component.
      * ```php
      * $paginator->getCurrentPageNumber() === 5;
-     * $paginator->getPageNumberWindow(2) === [3, 4, 5, 6, 7];
+     * $paginator->makePageNumberWindow(2) === [3, 4, 5, 6, 7];
      * ```
      *
      * @return array<int>
      */
-    public function getPageNumberWindow(int $padding): array
+    public function makePageNumberWindow(int $padding): array
     {
         $maxPages = \max($padding, 0) + 1; // Ensure at least one page is shown
         $start = \max(1, $this->currentPage - \floor($maxPages / 2));
@@ -230,23 +230,23 @@ readonly class Paginator extends PaginatorConfig
      *
      * @param int $page
      * @return string
-     * @api
      */
-    public function getPageUrl(int $page): string
+    protected function generatePageUrl(int $page): string
     {
-        return ($this->urlGenerator)($page);
+        return ($this->urlGenerator)($page) ?? '';
     }
 
     public function with(
-        int $itemsPerPage = null,
-        int $currentPage = null,
-        int $totalItems = null
+        int      $itemsPerPage = null,
+        int      $currentPage = null,
+        int      $totalItems = null,
+        callable $urlGenerator = null,
     ): static {
         return new static(
             itemsPerPage: $itemsPerPage ?? $this->itemsPerPage,
             currentPage: $currentPage ?? $this->currentPage,
             totalItems: $totalItems ?? $this->totalItems,
-            urlGenerator: $this->urlGenerator,
+            urlGenerator: $urlGenerator ?? $this->urlGenerator,
         );
     }
 

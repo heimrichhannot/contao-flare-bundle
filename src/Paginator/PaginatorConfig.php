@@ -2,7 +2,7 @@
 
 namespace HeimrichHannot\FlareBundle\Paginator;
 
-readonly class PaginatorConfig
+readonly class PaginatorConfig implements \Countable, \Serializable, \Stringable
 {
     protected int $itemsPerPage;
     protected int $currentPage;
@@ -48,12 +48,13 @@ readonly class PaginatorConfig
 
     /**
      * Get the number of items across all pages.
+     *
+     * @return ?int The total number of items, or null if unknown.
      * @api
-     * @return int The total number of items, or -1 if unknown.
      */
-    public function getTotalItems(): int
+    public function getTotalItems(): ?int
     {
-        return $this->totalItems;
+        return $this->totalItems >= 0 ? $this->totalItems : null;
     }
 
     /**
@@ -152,6 +153,11 @@ readonly class PaginatorConfig
         return $this->currentPage < $this->getLastPageNumber();
     }
 
+    public function getCurrentPageItemCount(): int
+    {
+        return $this->getLastItemNumber() - $this->getFirstItemNumber();
+    }
+
     /**
      * Returns true if the paginator is configured to limit the number of items per page.
      * @api
@@ -169,15 +175,6 @@ readonly class PaginatorConfig
         return ($this->currentPage - 1) * $this->itemsPerPage;
     }
 
-    public function __toString(): string
-    {
-        return \serialize([
-            'itemsPerPage' => $this->itemsPerPage,
-            'currentPage' => $this->currentPage,
-            'totalItems' => $this->totalItems,
-        ]);
-    }
-
     public function with(
         int $itemsPerPage = null,
         int $currentPage = null,
@@ -187,6 +184,50 @@ readonly class PaginatorConfig
             itemsPerPage: $itemsPerPage ?? $this->itemsPerPage,
             currentPage: $currentPage ?? $this->currentPage,
             totalItems: $totalItems ?? $this->totalItems,
+        );
+    }
+
+    public function count(): int
+    {
+        return $this->getLastPageNumber();
+    }
+
+    public function serialize(): string
+    {
+        return \serialize($this->__serialize());
+    }
+
+    public function unserialize(string $data): void
+    {
+        $this->__unserialize(\unserialize($data, ['allowed_classes' => false]));
+    }
+
+    public function __serialize(): array
+    {
+        return [
+            'itemsPerPage' => $this->itemsPerPage,
+            'currentPage' => $this->currentPage,
+            'totalItems' => $this->totalItems,
+        ];
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->itemsPerPage = $data['itemsPerPage'];
+        $this->currentPage = $data['currentPage'];
+        $this->totalItems = $data['totalItems'];
+    }
+
+    public function __toString(): string
+    {
+        return \sprintf(
+            '[ page %d of %s | %d items of %s total | indices %d to %d ]',
+            $this->currentPage,
+            (string) ($this->getLastPageNumber() ?? 'many'),
+            $this->getCurrentPageItemCount(),
+            (string) ($this->getTotalItems() ?? 'unknown'),
+            $this->getFirstItemNumber(),
+            $this->getLastItemNumber(),
         );
     }
 }

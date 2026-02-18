@@ -249,18 +249,4 @@ readonly class Paginator extends PaginatorConfig
             urlGenerator: $urlGenerator ?? $this->urlGenerator,
         );
     }
-
-    /**
-     * Helper function to generate a page parameter name with a given prefix.
-     *
-     * If the prefix is null, the default page parameter name 'page' is returned.
-     * Otherwise, the prefix is sanitized and appended with '_page'.
-     *
-     * @param string|null $param The prefix to use for the page parameter.
-     * @return string The generated page parameter name.
-     */
-    public static function normalizePageParam(string $param = null): string
-    {
-        return \preg_replace(['/[^a-z0-9_]/i', '/_{2,}/'], ['_', '_'], $param) ?: 'page';
-    }
 }

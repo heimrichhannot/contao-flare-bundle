@@ -178,7 +178,7 @@ readonly class PaginatorConfig implements \Countable, \Serializable, \Stringable
     public function with(
         int $itemsPerPage = null,
         int $currentPage = null,
-        int $totalItems = null
+        int $totalItems = null,
     ): static {
         return new static(
             itemsPerPage: $itemsPerPage ?? $this->itemsPerPage,

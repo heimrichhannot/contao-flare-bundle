@@ -103,32 +103,39 @@ readonly class Str
         return $db_or_col_name && \preg_match('/^[A-Za-z_]\w*$/', $db_or_col_name);
     }
 
-    public static function force(mixed $value): string
+    public static function wrap(mixed $value): string
     {
-        if (\is_scalar($value)) {
-            return (string) $value;
+        if (\is_null($value)) {
+            return 'null';
         }
 
-        if (\is_string($value) || $value instanceof \Stringable) {
-            return (string) $value;
+        if (\is_bool($value)) {
+            return $value ? 'true' : 'false';
         }
 
-        if (\is_object($value) && \method_exists($value, '__toString')) {
+        if (\is_scalar($value) // A value is considered scalar if it is of type int, float, string or bool.
+            || $value instanceof \Stringable
+            || (\is_object($value) && \method_exists($value, '__toString')))
+        {
             return (string) $value;
         }
 
         if (\is_iterable($value)) {
             return \sprintf(
                 '[%s]',
-                static::implode(',', \array_map(static::force(...), \iterator_to_array($value)))
+                \implode(',', \array_map(static::wrap(...), \iterator_to_array($value)))
             );
         }
 
-        if (\is_object($value)) {
-            return \get_class($value);
+        if (\is_resource($value)) {
+            return \sprintf('resource(%s)', \get_resource_type($value));
         }
 
-        return \gettype($value);
+        if (\is_object($value)) {
+            return \sprintf('object(%s)', \get_class($value));
+        }
+
+        return \sprintf('type(%s)', \gettype($value));
     }
 
     public static function random(int $length = 10, ?string $chars = null): string

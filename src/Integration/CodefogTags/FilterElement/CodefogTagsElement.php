@@ -1,9 +1,9 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\FilterElement;
+namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement;
 
-use Codefog\TagsBundle\CodefogTagsBundle;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 
 #[AsFilterElement(

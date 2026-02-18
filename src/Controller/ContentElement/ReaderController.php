@@ -26,9 +26,9 @@ use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Manager\ReaderManager;
 use HeimrichHannot\FlareBundle\Manager\RequestManager;
-use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
+use HeimrichHannot\FlareBundle\Util\Str;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -54,7 +54,6 @@ final class ReaderController extends AbstractContentElementController
         private readonly ResponseContextAccessor  $responseContextAccessor,
         private readonly ScopeMatcher             $scopeMatcher,
         private readonly TranslatorInterface      $translator,
-        private readonly TranslationManager       $translationManager,
         private readonly ValidationContextFactory $validationContextFactory,
     ) {}
 
@@ -219,19 +218,11 @@ final class ReaderController extends AbstractContentElementController
             return new Response($e->getMessage());
         }
 
-        $headline = StringUtil::deserialize($model->headline, true);
-
-        if ($value = $headline['value'] ?? null)
-        {
-            $unit = $headline['unit'] ?? 'h2';
-            $hl = \sprintf('<%s>%s</%s>', $unit, $value, $unit);
-        }
-
         return new Response(\sprintf(
             '%s%s <span class="tl_gray">[%s, %s]</span>',
-            $hl ?? '',
+            Str::formatHeadline($model->headline, withTags: true),
             $listModel->title,
-            $this->translationManager->listModel($listModel),
+            $this->translator->trans($listModel->type, [], 'flare_list'),
             $listModel->dc,
         ));
     }

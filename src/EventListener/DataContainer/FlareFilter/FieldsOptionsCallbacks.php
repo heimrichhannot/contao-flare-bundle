@@ -14,7 +14,6 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use HeimrichHannot\FlareBundle\Util\DcaFieldFilter;
@@ -33,7 +32,6 @@ readonly class FieldsOptionsCallbacks
         private ContaoFramework          $contaoFramework,
         private FilterContainer          $filterContainer,
         private FilterElementRegistry    $filterElementRegistry,
-        private TranslationManager       $translationManager,
         private TranslatorInterface      $translator,
         private ListSpecificationFactory $listSpecificationFactory,
         private ListQueryBuilderFactory  $listQueryBuilderFactory,
@@ -44,7 +42,7 @@ readonly class FieldsOptionsCallbacks
     {
         $options = [];
 
-        foreach ($this->filterElementRegistry->all() as $alias => $filterElementDescriptor)
+        foreach ($this->filterElementRegistry->all() as $type => $filterElementDescriptor)
         {
             $filterElement = $filterElementDescriptor->getService();
 
@@ -53,7 +51,7 @@ readonly class FieldsOptionsCallbacks
                 continue;
             }
 
-            $options[$alias] = $this->translationManager->filterElement($alias);
+            $options[$type] = $this->translator->trans($type, [], 'flare_filter');
         }
 
         \asort($options, \SORT_NATURAL);

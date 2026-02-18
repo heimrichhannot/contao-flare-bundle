@@ -102,7 +102,6 @@ $dca['fields'] = [
         'exclude' => true,
         'filter' => true,
         'search' => true,
-        'reference' => &$GLOBALS['TL_LANG']['FLARE']['filter'],
         'eval' => [
             'mandatory' => true,
             'includeBlankOption' => true,

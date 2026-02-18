@@ -17,7 +17,6 @@ use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
 use Psr\Log\LoggerInterface;
@@ -39,12 +38,11 @@ final class ListViewController extends AbstractContentElementController
         private readonly EventDispatcherInterface  $eventDispatcher,
         private readonly InteractiveContextFactory $interactiveConfigFactory,
         private readonly KernelInterface           $kernel,
+        private readonly ListSpecificationFactory  $listSpecificationFactory,
         private readonly LoggerInterface           $logger,
         private readonly ScopeMatcher              $scopeMatcher,
         private readonly SymfonyResponseTagger     $responseTagger,
-        private readonly TranslationManager        $translationManager,
         private readonly TranslatorInterface       $translator,
-        private readonly ListSpecificationFactory  $listSpecificationFactory,
     ) {}
 
     /**
@@ -167,7 +165,7 @@ final class ListViewController extends AbstractContentElementController
             '%s%s <span class="tl_gray">[%s, %s]</span>',
             $hl ?? '',
             $listModel->title,
-            $this->translationManager->listModel($listModel),
+            $this->translator->trans($listModel->type, [], 'flare_list'),
             $listModel->dc
         ));
     }

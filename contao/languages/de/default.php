@@ -3,9 +3,6 @@
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ListViewController;
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ReaderController;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\FilterElement;
-use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListType\EventsListType;
-use HeimrichHannot\FlareBundle\ListType;
 use HeimrichHannot\FlareBundle\Sort\SortOrder;
 
 $lang = &$GLOBALS['TL_LANG'];
@@ -14,26 +11,6 @@ $err = &$lang['ERR']['flare'];
 
 $lang['CTE'][ListViewController::TYPE] = ['Listenansicht [FLARE]', 'Zeigt eine FLARE-Liste an.'];
 $lang['CTE'][ReaderController::TYPE] = ['Detailleser [FLARE]', 'Zeigt den Leser zu einer FLARE-Liste an.'];
-
-$flare['filter'] = [
-    FilterElement\Relation\ArchiveElement::TYPE => ['Archiv', 'Filtern nach Archiv.'],
-    FilterElement\Relation\BelongsToRelationElement::TYPE => ['Relation: Gehört zu', 'Filtern nach zugehörigen Eltern-Entitäten.'],
-    FilterElement\BooleanElement::TYPE => ['Boolescher Eigenschaftswert', 'Filtern nach einem Boolean.'],
-    FilterElement\CalendarCurrentElement::TYPE => ['Kalender-Zeitfenster', 'Filtern nach aktuellen Events.'],
-    FilterElement\CodefogTagsElement::TYPE => ['Tags [codefog/tags-bundle]', 'Filtern nach Codefog Tags.'],
-    FilterElement\DateRangeElement::TYPE => ['Datumsbereich', 'Filtern nach einem Datumsbereich.'],
-    FilterElement\DcaSelectFieldElement::TYPE => ['DCA-Feld Optionsauswahl', 'Filtern nach einem ausgewählten DCA-Feld.'],
-    FilterElement\FieldValueChoiceElement::TYPE => ['DCA-Feld Feldwerte-Auswahl (beta)', 'Filtern nach vorhandenen Feldwerten.'],
-    FilterElement\PublishedElement::TYPE => ['Veröffentlicht', 'Nur veröffentlichte Elemente anzeigen.'],
-    FilterElement\SimpleEquationElement::TYPE => ['Einfache Gleichung', 'Filtern, ob ein Feld einer einfachen Gleichung entspricht.'],
-    FilterElement\SearchKeywordsElement::TYPE => ['Stichwortsuche', 'Filtern nach Freitexteingabe.'],
-];
-
-$flare['list'] = [
-    ListType\GenericDataContainerListType::TYPE => ['Data-Container', 'Listet Elemente eines Data-Containers auf.'],
-    ListType\NewsListType::TYPE => ['Nachrichten', 'Listet Nachrichten auf.'],
-    EventsListType::TYPE => ['Events', 'Listet Events auf.'],
-];
 
 $flare['sort_order'] = [
     SortOrder::ASC => ['Aufsteigend [ASC]', 'Sortierung aufsteigend.'],

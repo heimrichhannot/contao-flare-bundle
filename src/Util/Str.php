@@ -170,6 +170,11 @@ readonly class Str
         }
 
         $tagName = $headline['tag_name'] ?? $headline['unit'] ?? 'h2';
+
+        if (\is_numeric($tagName)) {
+            $tagName = "h{$tagName}";
+        }
+
         $value = $headline['text'] ?? $headline['value'] ?? '';
 
         return $withTags ? "<{$tagName}>{$value}</{$tagName}>" : $value;

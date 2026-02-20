@@ -127,6 +127,7 @@ final class ListViewController extends AbstractContentElementController
         $template = $event->getTemplate();
         $data = $template->getData();
         $data['flare'] = $engine;
+        $data['content_model'] = $contentModel;
         $template->setData($data);
 
         try

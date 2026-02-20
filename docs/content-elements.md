@@ -13,11 +13,11 @@ allow you to provide list and filter configurations on the fly, without the need
 Flare provides a set of content elements that can be used in your Contao articles to display lists and readers.
 These content elements are designed to work seamlessly with the FLARE list and filter configurations.
 
-### FLARE List View
+### List View <span style={{opacity:.6}}>[FLARE]</span>
 
-Selecting the **FLARE List View** option in the content element configuration allows you to display a list of entities
+Selecting the **List View <span style={{opacity:.6}}>[FLARE]</span>** option in the content element configuration allows you to display a list of entities
 based on a specific list configuration. This content element will render the filter form and the list of entities
-according to the selected configuration.
+according to the selected configuration, including pagination.
 
 It asks you to provide a **form name**, which is used to identify the filter form in the frontend.
 The form name is also used to store the filter state in the URL query parameters, allowing users to bookmark or share
@@ -29,9 +29,9 @@ The same mechanism can be leveraged to **separate filter form and listing** into
 place your filter form in one place and the resulting list in another. For this mechanism to work as intended, ensure
 that you select the appropriate **form-only or list-only templates** in the respective content elements.
 
-### FLARE Detail Reader
+### Detail Reader <span style={{opacity:.6}}>[FLARE]</span>
 
-Selecting the **FLARE Detail Reader** option in the content element config allows you to display a single entity
+Selecting the **Detail Reader <span style={{opacity:.6}}>[FLARE]</span>** option in the content element config allows you to display a single entity
 that is part of a list. This content element uses Contao's standard **auto-item** feature to determine
 which entity to display from a unique ID or alias in the URL. Which field is used as the auto-item is defined in the
 list configuration.

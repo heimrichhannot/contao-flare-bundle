@@ -2,8 +2,13 @@ name: "Deploy docs to GitHub Pages"
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - docs/main
   workflow_dispatch: ~
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
   build:

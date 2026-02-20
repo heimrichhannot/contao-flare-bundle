@@ -16,7 +16,8 @@ readonly class FilterElementListener
     #[AsEventListener(priority: -200)]
     public function onFilterElementInvokedEvent(FilterElementInvokedEvent $event): void
     {
-        $eventName = "flare.filter_element.{$event->getFilter()->getFilterAlias()}.invoked";
+        $type = $event->getInvocation()->getFilterDefinition()->getType();
+        $eventName = "flare.filter_element.{$type}.invoked";
 
         $this->eventDispatcher->dispatch(event: $event, eventName: $eventName);
     }
@@ -24,7 +25,8 @@ readonly class FilterElementListener
     #[AsEventListener(priority: -200)]
     public function onFilterElementInvokingEvent(FilterElementInvokingEvent $event): void
     {
-        $eventName = "flare.filter_element.{$event->getFilter()->getFilterAlias()}.invoking";
+        $type = $event->getInvocation()->getFilterDefinition()->getType();
+        $eventName = "flare.filter_element.{$type}.invoking";
 
         $this->eventDispatcher->dispatch(event: $event, eventName: $eventName);
     }

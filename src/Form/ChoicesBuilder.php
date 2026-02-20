@@ -225,9 +225,9 @@ class ChoicesBuilder
     public function buildChoiceLabel(mixed $choice, string $key, mixed $value): TranslatableMessage|string
     {
         $params = [
-            '%@choice%' => Str::force($choice),
-            '%@key%' => Str::force($key),
-            '%@value%' => Str::force($value),
+            '%@choice%' => Str::wrap($choice),
+            '%@key%' => Str::wrap($key),
+            '%@value%' => Str::wrap($value),
             '%@type%' => \gettype($choice),
             '%@class%' => \is_object($choice) ? \get_class($choice) : null,
         ];

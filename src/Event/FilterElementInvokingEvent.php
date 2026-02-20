@@ -2,20 +2,29 @@
 
 namespace HeimrichHannot\FlareBundle\Event;
 
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use Symfony\Contracts\EventDispatcher\Event;
 
 class FilterElementInvokingEvent extends Event
 {
+    /**
+     * @param FilterInvocation $invocation
+     * @param \Closure|array $callback The callback to be invoked. Signature: (FilterInvocation, FilterQueryBuilder): void
+     * @param bool $shouldInvoke Whether the filter should be invoked.
+     */
     public function __construct(
-        private readonly FilterContext $filter,
-        private \Closure               $callback,
-        private bool                   $shouldInvoke,
-    ) {}
+        private readonly FilterInvocation $invocation,
+        private \Closure|array            $callback,
+        private bool                      $shouldInvoke,
+    ) {
+        if (!\is_callable($callback)) {
+            throw new \InvalidArgumentException('The callback must be callable.');
+        }
+    }
 
-    public function getFilter(): FilterContext
+    public function getInvocation(): FilterInvocation
     {
-        return $this->filter;
+        return $this->invocation;
     }
 
     public function getCallback(): callable

@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\ListType\Trait\GenericReaderPageMetaTrait;
 
-#[AsListType(alias: self::TYPE, palette: self::DEFAULT_PALETTE)]
+#[AsListType(type: self::TYPE, palette: self::DEFAULT_PALETTE)]
 class DcMultilingualListType extends AbstractListType implements DataContainerContract
 {
     use GenericReaderPageMetaTrait;

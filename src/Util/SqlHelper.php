@@ -3,7 +3,6 @@
 namespace HeimrichHannot\FlareBundle\Util;
 
 use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\Dto\SqlQuery;
 
 readonly class SqlHelper
 {

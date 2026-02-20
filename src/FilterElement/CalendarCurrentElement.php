@@ -4,17 +4,17 @@ namespace HeimrichHannot\FlareBundle\FilterElement;
 
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokingEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Type\DateRangeFilterType;
+use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsFilterElement(
-    alias: CalendarCurrentElement::TYPE,
+    type: self::TYPE,
     formType: DateRangeFilterType::class,
 )]
 class CalendarCurrentElement extends AbstractFilterElement
@@ -87,9 +87,9 @@ class CalendarCurrentElement extends AbstractFilterElement
     #[AsEventListener('flare.filter_element.' . self::TYPE . '.invoking')]
     public function onInvoking(FilterElementInvokingEvent $event): void
     {
-        $filterModel = $event->getFilter()->getFilterModel();
+        $filterDefinition = $event->getFilterDefinition();
 
-        if (!$filterModel->isLimited && $event->getFilter()->getContentContext()->isReader()) {
+        if (!$filterDefinition->isLimited && $event->getFilterDefinition()->getContentContext()->isReader()) {
             $event->setShouldInvoke(false);
         }
     }
@@ -107,36 +107,32 @@ class CalendarCurrentElement extends AbstractFilterElement
         return $palette;
     }
 
-    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
+    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void
     {
-        $options = [
-            'required' => false,
-        ];
+        $event->options['required'] = false;
 
-        $filterModel = $context->getFilterModel();
+        $filter = $event->filterDefinition;
 
-        if (!$filterModel->isLimited) {
-            return $options;
+        if (!$filter->isLimited) {
+            return;
         }
 
-        if ($filterModel->configureStart
-            && $filterModel->startAt
-            && ($startAt = \strtotime($filterModel->startAt))
+        if ($filter->configureStart
+            && $filter->startAt
+            && ($startAt = \strtotime($filter->startAt))
             && ($startAt = DateTimeHelper::timestampToDateTime($startAt)))
         {
-            $options['from_min'] = $startAt;
-            $options['to_min'] = $startAt;
+            $event->options['from_min'] = $startAt;
+            $event->options['to_min'] = $startAt;
         }
 
-        if ($filterModel->configureStop
-            && $filterModel->stopAt
-            && ($stopAt = \strtotime($filterModel->stopAt))
+        if ($filter->configureStop
+            && $filter->stopAt
+            && ($stopAt = \strtotime($filter->stopAt))
             && ($stopAt = DateTimeHelper::timestampToDateTime($stopAt)))
         {
-            $options['from_max'] = $stopAt;
-            $options['to_max'] = $stopAt;
+            $event->options['from_max'] = $stopAt;
+            $event->options['to_max'] = $stopAt;
         }
-
-        return $options;
     }
 }

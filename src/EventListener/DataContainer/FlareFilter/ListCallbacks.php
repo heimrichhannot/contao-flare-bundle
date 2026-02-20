@@ -6,8 +6,8 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
-use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment as TwigEnvironment;
 
 /**
@@ -16,8 +16,8 @@ use Twig\Environment as TwigEnvironment;
 readonly class ListCallbacks
 {
     public function __construct(
-        private TranslationManager $translationManager,
-        private TwigEnvironment    $twig,
+        private TranslatorInterface $translator,
+        private TwigEnvironment     $twig,
     ) {}
 
     #[AsCallback(FilterContainer::TABLE_NAME, 'list.label.group')]
@@ -35,19 +35,19 @@ readonly class ListCallbacks
         $title = StringUtil::specialchars($row['title'] ?? '');
 
         if ($type = $row['type'] ?? null) {
-            $typeLabel = StringUtil::specialchars($this->translationManager->filterElement($type));
+            $typeLabel = StringUtil::specialchars($this->translator->trans($type, [], 'flare_filter'));
         }
         $typeLabel ??= 'N/A';
 
-        $formAlias = FilterModel::generateFormName($row);
+        $formFieldName = FilterModel::generateFormName($row);
 
-        return $this->twig->render('@HeimrichHannotFlare/be_filter_info.html.twig', [
+        return $this->twig->render('@HeimrichHannotFlare/backend/be_filter_info.html.twig', [
             'row' => $row,
             'is_intrinsic' => $isIntrinsic,
             'is_published' => $isPublished,
             'title' => $title,
             'type_label' => $typeLabel,
-            'form_alias' => $formAlias,
+            'form_alias' => $formFieldName,
         ]);
     }
 }

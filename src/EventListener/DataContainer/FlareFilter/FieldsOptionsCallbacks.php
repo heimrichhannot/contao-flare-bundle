@@ -12,8 +12,9 @@ use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Query\Factory\ListQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\Manager\TranslationManager;
+use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use HeimrichHannot\FlareBundle\Util\DcaFieldFilter;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
@@ -28,12 +29,12 @@ readonly class FieldsOptionsCallbacks
     public const TABLE_NAME = FilterContainer::TABLE_NAME;
 
     public function __construct(
-        private ContaoFramework       $contaoFramework,
-        private FilterContainer       $filterContainer,
-        private FilterElementRegistry $filterElementRegistry,
-        private ListQueryManager      $listQueryManager,
-        private TranslationManager    $translationManager,
-        private TranslatorInterface   $translator,
+        private ContaoFramework          $contaoFramework,
+        private FilterContainer          $filterContainer,
+        private FilterElementRegistry    $filterElementRegistry,
+        private TranslatorInterface      $translator,
+        private ListSpecificationFactory $listSpecificationFactory,
+        private ListQueryBuilderFactory  $listQueryBuilderFactory,
     ) {}
 
     #[AsCallback(self::TABLE_NAME, 'fields.type.options')]
@@ -41,7 +42,7 @@ readonly class FieldsOptionsCallbacks
     {
         $options = [];
 
-        foreach ($this->filterElementRegistry->all() as $alias => $filterElementDescriptor)
+        foreach ($this->filterElementRegistry->all() as $type => $filterElementDescriptor)
         {
             $filterElement = $filterElementDescriptor->getService();
 
@@ -50,7 +51,7 @@ readonly class FieldsOptionsCallbacks
                 continue;
             }
 
-            $options[$alias] = $this->translationManager->filterElement($alias);
+            $options[$type] = $this->translator->trans($type, [], 'flare_filter');
         }
 
         \asort($options, \SORT_NATURAL);
@@ -114,7 +115,9 @@ readonly class FieldsOptionsCallbacks
             return [];
         }
 
-        $table = $this->listQueryManager->prepare($listModel)
+        $listSpecification = $this->listSpecificationFactory->create($listModel);
+
+        $table = $this->listQueryBuilderFactory->create($listSpecification)
             ->getTable($filterModel->targetAlias ?: ListQueryManager::ALIAS_MAIN);
 
         return DcaHelper::getFieldOptions($table);
@@ -142,7 +145,7 @@ readonly class FieldsOptionsCallbacks
             return [];
         }
 
-        $inferrer = new PtableInferrer($filterModel, $listModel);
+        $inferrer = new PtableInferrer($filterModel, $listModel->dc);
 
         if ($ptable = $inferrer->getDcaMainPtable())
         {
@@ -217,13 +220,15 @@ readonly class FieldsOptionsCallbacks
             return [];
         }
 
-        $listQB = $this->listQueryManager->prepare($listModel);
-        $tables = $listQB->getTables();
+        $listSpecification = $this->listSpecificationFactory->create($listModel);
+
+        $listQueryBuilder = $this->listQueryBuilderFactory->create($listSpecification);
+        $tables = $listQueryBuilder->getTables();
         $options = [];
 
         foreach ($tables as $alias => $table)
         {
-            if ($listQB->isTableAliasHidden($alias)) {
+            if ($listQueryBuilder->isTableAliasHidden($alias)) {
                 continue;
             }
 

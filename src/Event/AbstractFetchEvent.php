@@ -2,47 +2,30 @@
 
 namespace HeimrichHannot\FlareBundle\Event;
 
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
-use HeimrichHannot\FlareBundle\Filter\FilterContextCollection;
-use HeimrichHannot\FlareBundle\List\ListQueryBuilder;
+use HeimrichHannot\FlareBundle\Collection\FilterDefinitionCollection;
+use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\ListItemProvider\ListItemProviderInterface;
-use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
-use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
-use Symfony\Component\Form\FormInterface;
+use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Contracts\EventDispatcher\Event;
 
 abstract class AbstractFetchEvent extends Event
 {
     public function __construct(
-        private readonly ListModel        $listModel,
-        private readonly ContentContext   $contentContext,
-        private ListItemProviderInterface $itemProvider,
-        private ListQueryBuilder          $listQueryBuilder,
-        private FilterContextCollection   $filters,
-        private readonly ?FormInterface   $form = null,
-        private readonly ?PaginatorConfig $paginatorConfig = null,
-        private readonly ?SortDescriptor  $sortDescriptor = null,
+        private readonly ContextInterface  $contextConfig,
+        private readonly ListSpecification $listSpecification,
+        private ListItemProviderInterface  $itemProvider,
+        private ListQueryBuilder           $listQueryBuilder,
     ) {}
 
-    public function getListModel(): ListModel
+    public function getContextConfig(): ContextInterface
     {
-        return $this->listModel;
+        return $this->contextConfig;
     }
 
-    public function getContentContext(): ContentContext
+    public function getListSpecification(): ListSpecification
     {
-        return $this->contentContext;
-    }
-
-    public function getPaginatorConfig(): PaginatorConfig
-    {
-        return $this->paginatorConfig;
-    }
-
-    public function getForm(): FormInterface
-    {
-        return $this->form;
+        return $this->listSpecification;
     }
 
     public function getItemProvider(): ListItemProviderInterface
@@ -65,18 +48,9 @@ abstract class AbstractFetchEvent extends Event
         $this->listQueryBuilder = $listQueryBuilder;
     }
 
-    public function getFilters(): FilterContextCollection
+    /** @deprecated use {@see self::getListSpecification()->getFilters()} instead} */
+    public function getFilters(): FilterDefinitionCollection
     {
-        return $this->filters;
-    }
-
-    public function setFilters(FilterContextCollection $filters): void
-    {
-        $this->filters = $filters;
-    }
-
-    public function getSortDescriptor(): ?SortDescriptor
-    {
-        return $this->sortDescriptor;
+        return $this->getListSpecification()->getFilters();
     }
 }

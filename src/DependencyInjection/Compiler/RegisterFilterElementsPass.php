@@ -2,13 +2,13 @@
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\DependencyInjection\Factory\TypeNameFactory;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\PriorityTaggedServiceTrait;
-use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
@@ -23,7 +23,7 @@ class RegisterFilterElementsPass implements CompilerPassInterface
             return;
         }
 
-        $tag = FilterElementDescriptor::TAG;
+        $tag = AsFilterElement::TAG;
         $registry = $container->findDefinition(FilterElementRegistry::class);
 
         foreach ($this->findAndSortTaggedServices($tag, $container) as $reference)
@@ -38,10 +38,10 @@ class RegisterFilterElementsPass implements CompilerPassInterface
 
             foreach ($tags as $attributes)
             {
-                $alias = $this->getFilterElementAlias($definition, $attributes);
-                $attributes['alias'] = $alias;
+                $type = $this->getFilterElementType($definition, $attributes);
+                $attributes['type'] = $type;
 
-                $serviceId = 'huh.flare.filter_element.' . $alias;
+                $serviceId = 'huh.flare.filter_element.' . $type;
 
                 $childDefinition = new ChildDefinition((string) $reference);
                 $childDefinition->setPublic(true);
@@ -49,7 +49,7 @@ class RegisterFilterElementsPass implements CompilerPassInterface
                 $config = $this->getFilterElementConfig($container, $reference, $attributes);
 
                 /** @see FilterElementRegistry::add() */
-                $registry->addMethodCall('add', [$alias, $config]);
+                $registry->addMethodCall('add', [$type, $config]);
 
                 $childDefinition->setTags($definition->getTags());
                 $container->setDefinition($serviceId, $childDefinition);
@@ -69,7 +69,6 @@ class RegisterFilterElementsPass implements CompilerPassInterface
             $attributes['palette'] ?? null,
             $attributes['formType'] ?? null,
             $attributes['method'] ?? null,
-            $attributes['scopes'] ?? null,
             $attributes['isTargeted'] ?? null,
         ]);
 
@@ -79,21 +78,17 @@ class RegisterFilterElementsPass implements CompilerPassInterface
         return new Reference($serviceId);
     }
 
-    protected function getFilterElementAlias(Definition $definition, array $attributes): string
+    protected function getFilterElementType(Definition $definition, array $attributes): string
     {
-        if ($alias = (string) ($attributes['alias'] ?? null))
+        if ($type = (string) ($attributes['type'] ?? null))
         {
-            if ($alias === 'default') {
-                throw new \InvalidArgumentException('The filter element alias "default" is a reserved keyword.');
+            if ($type === 'default') {
+                throw new \InvalidArgumentException('The filter element type "default" is reserved and cannot be used. Choose a different type name.');
             }
 
-            return $alias;
+            return $type;
         }
 
-        $className = $definition->getClass();
-        $className = \ltrim(\strrchr($className, '\\'), '\\');
-        $className = Str::trimSubstrings($className, suffix: ['Controller', 'FilterElement', 'Element']);
-
-        return Container::underscore($className);
+        return TypeNameFactory::createFilterElementType($definition->getClass());
     }
 }

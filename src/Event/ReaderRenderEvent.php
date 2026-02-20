@@ -5,31 +5,29 @@ namespace HeimrichHannot\FlareBundle\Event;
 use Contao\ContentModel;
 use Contao\Model;
 use Contao\Template;
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
 use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
-use HeimrichHannot\FlareBundle\ListView\ListView;
-use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 class ReaderRenderEvent extends AbstractTemplateRenderEvent
 {
     public function __construct(
-        private readonly ContentContext $contentContext,
-        private readonly ContentModel   $contentModel,
-        private readonly Model          $displayModel,
-        private readonly ListModel      $listModel,
-        private readonly ListView       $listView,
-        private ReaderPageMetaDto       $pageMeta,
-        private Template                $template,
+        private readonly ContentModel      $contentModel,
+        private readonly ContextInterface  $context,
+        private readonly Model             $displayModel,
+        private readonly ListSpecification $listSpecification,
+        private ReaderPageMetaDto          $pageMeta,
+        private Template                   $template,
     ) {}
-
-    public function getContentContext(): ContentContext
-    {
-        return $this->contentContext;
-    }
 
     public function getContentModel(): ContentModel
     {
         return $this->contentModel;
+    }
+
+    public function getContext(): ContextInterface
+    {
+        return $this->context;
     }
 
     public function getDisplayModel(): Model
@@ -37,19 +35,14 @@ class ReaderRenderEvent extends AbstractTemplateRenderEvent
         return $this->displayModel;
     }
 
-    public function getListModel(): ListModel
+    public function getListSpecification(): ListSpecification
     {
-        return $this->listModel;
+        return $this->listSpecification;
     }
 
     public function getPageMeta(): ReaderPageMetaDto
     {
         return $this->pageMeta;
-    }
-
-    public function getListView(): ListView
-    {
-        return $this->listView;
     }
 
     public function setPageMeta(ReaderPageMetaDto $pageMeta): self

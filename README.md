@@ -160,6 +160,9 @@ See the examples below.
 
 ### Creating a custom filter element
 
+> [!CAUTION]
+> These examples are outdated and will be updated before v0.1.0.
+
 ```php
 <?php
 
@@ -170,10 +173,10 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\Form\FormInterface;
 
@@ -231,10 +234,10 @@ class MyCustomElement implements FormTypeOptionsContract, HydrateFormContract, P
          *
          * @var mixed $submittedData
          */
-        $submittedData = $context->getSubmittedData();
+        $submittedData = $context->getFormData();
 
         /**
-          * {@see \HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder} to see how it works,
+          * {@see \HeimrichHannot\FlareBundle\Query\FilterQueryBuilder} to see how it works,
           *   although practically you only need to use the where() and bind() methods.
           *
           * Using `$qb->where(...)` multiple times will concatenate the conditions with AND.

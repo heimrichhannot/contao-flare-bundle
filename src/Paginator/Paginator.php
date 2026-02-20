@@ -11,20 +11,16 @@ readonly class Paginator extends PaginatorConfig
      * @param \Closure(int): string $urlGenerator A closure that generates the URL for a given page number.
      */
     public function __construct(
-        private int      $currentPage,
-        private int      $itemsPerPage,
-        private int      $totalItems,
-        private int      $lastPage,
-        private ?int     $previousPage,
-        private ?int     $nextPage,
-        private int      $firstItemNumber,
-        private int      $lastItemNumber,
-        private bool     $hasNextPage,
-        private bool     $hasPreviousPage,
-        private \Closure $urlGenerator,
-        private ?string  $queryPrefix = null,
+        int                $itemsPerPage,
+        int                $currentPage,
+        int                $totalItems,
+        protected \Closure $urlGenerator,
     ) {
-        parent::__construct($itemsPerPage);
+        parent::__construct(
+            itemsPerPage: $itemsPerPage,
+            currentPage: $currentPage,
+            totalItems: $totalItems,
+        );
     }
 
     /**
@@ -36,159 +32,74 @@ readonly class Paginator extends PaginatorConfig
         return $this->totalItems === 0;
     }
 
-    /**
-     * Returns true if the paginator is configured to limit the number of items per page.
-     * @api
-     */
-    public function isLimited(): bool
-    {
-        return $this->itemsPerPage > 0;
-    }
-
-    /**
-     * Returns the page number of the current page.
-     * @api
-     */
-    public function getCurrentPageNumber(): int
-    {
-        return $this->currentPage;
-    }
-
-    /**
-     * Returns the number of items across all pages.
-     * @api
-     */
-    public function getTotalItems(): int
-    {
-        return $this->totalItems;
-    }
-
-    /**
-     * Returns the number of the last page.
-     * @api
-     */
     public function getLastPageNumber(): int
     {
-        return $this->lastPage;
-    }
-
-    /**
-     * Returns the page number of the previous page.
-     * @api
-     */
-    public function getPreviousPageNumber(): ?int
-    {
-        return $this->previousPage;
-    }
-
-    /**
-     * Returns the page number of the next page.
-     * @api
-     */
-    public function getNextPageNumber(): ?int
-    {
-        return $this->nextPage;
-    }
-
-    /**
-     * Returns the number of the first item on the current page.
-     * @api
-     */
-    public function getFirstItemNumber(): int
-    {
-        return $this->firstItemNumber;
-    }
-
-    /**
-     * Returns the number of the last item on the current page.
-     * @api
-     */
-    public function getLastItemNumber(): int
-    {
-        return $this->lastItemNumber;
-    }
-
-    /**
-     * Returns true if there is a next page.
-     * @api
-     */
-    public function hasNextPage(): bool
-    {
-        return $this->hasNextPage;
-    }
-
-    /**
-     * Returns true if there is a previous page.
-     * @api
-     */
-    public function hasPreviousPage(): bool
-    {
-        return $this->hasPreviousPage;
+        return parent::getLastPageNumber() ?? 1;
     }
 
     /**
      * Get the current page item.
      * @api
      */
-    public function getCurrent(): PageItem
+    public function current(): PageItem
     {
-        return $this->getPageItem($this->currentPage);
+        return $this->createPageItem($this->currentPage);
     }
 
     /**
      * Get the previous page item.
      * @api
      */
-    public function getPrevious(): ?PageItem
+    public function previous(): ?PageItem
     {
-        return $this->hasPreviousPage ? $this->getPageItem($this->previousPage) : null;
+        return $this->hasPreviousPage() ? $this->createPageItem($this->getPreviousPageNumber()) : null;
     }
 
     /**
      * Get the next page item.
      * @api
      */
-    public function getNext(): ?PageItem
+    public function next(): ?PageItem
     {
-        return $this->hasNextPage ? $this->getPageItem($this->nextPage) : null;
+        return $this->hasNextPage() ? $this->createPageItem($this->getNextPageNumber()) : null;
     }
 
     /**
      * Get the first page item.
      * @api
      */
-    public function getFirst(): PageItem
+    public function first(): PageItem
     {
-        return $this->getPageItem(1);
+        return $this->createPageItem(1);
     }
 
     /**
      * Get the last page item.
      * @api
      */
-    public function getLast(): PageItem
+    public function last(): PageItem
     {
-        return $this->getPageItem($this->lastPage);
+        return $this->createPageItem($this->getLastPageNumber());
     }
 
     /**
      * Returns a page item for the given page number.
      *
      * @param int       $page The page number to create the item for.
-     * @param bool|null $isFiller Whether the item is a filler (i.e. ellipsis or in place there of) or not.
+     * @param bool|null $isFiller Whether the item is a filler or not (i.e., an ellipsis or in place thereof).
      */
-    public function getPageItem(int $page, ?bool $isFiller = null): PageItem
+    public function createPageItem(int $page, ?bool $isFiller = null): PageItem
     {
         return new PageItem(
             number: $page,
-            url: $this->getPageUrl($page),
+            url: $this->generatePageUrl($page),
             isCurrent: $page === $this->currentPage,
             isFirst: $page === 1,
-            isLast: $page === $this->lastPage,
-            isPrevious: $page === $this->previousPage,
-            isNext: $page === $this->nextPage,
+            isLast: $page === $this->getLastPageNumber(),
+            isPrevious: $page === $this->getPreviousPageNumber(),
+            isNext: $page === $this->getNextPageNumber(),
             hasPrevious: $page > 1,
-            hasNext: $page < $this->lastPage,
+            hasNext: $page < $this->getLastPageNumber(),
             isEllipsis: false,
             isFiller: $isFiller ?? false,
         );
@@ -199,15 +110,17 @@ readonly class Paginator extends PaginatorConfig
      *
      * @api
      */
-    public function getPages(): iterable
+    public function pages(): iterable
     {
         if ($this->isEmpty()) {
             return;
         }
 
-        for ($page = 1; $page <= $this->lastPage; $page++)
+        $lastPage = $this->getLastPageNumber();
+
+        for ($page = 1; $page <= $lastPage; $page++)
         {
-            yield $this->getPageItem($page);
+            yield $this->createPageItem($page);
         }
     }
 
@@ -217,13 +130,13 @@ readonly class Paginator extends PaginatorConfig
      * @param int $padding The number of pages to show on each side of the current page.
      * @api
      */
-    public function getWindow(int $padding = self::DEFAULT_WINDOW_PADDING): iterable
+    public function window(int $padding = self::DEFAULT_WINDOW_PADDING): iterable
     {
-        $range = $this->getPageNumberWindow($padding);
+        $range = $this->makePageNumberWindow($padding);
 
         foreach ($range as $page)
         {
-            yield $this->getPageItem($page);
+            yield $this->createPageItem($page);
         }
     }
 
@@ -234,7 +147,7 @@ readonly class Paginator extends PaginatorConfig
      * @param int $maxFramePages The maximum number of pages to show in the left and right frames.
      * @api
      */
-    public function getNavigation(
+    public function navigation(
         int $windowPadding = self::DEFAULT_WINDOW_PADDING,
         int $maxFramePages = self::DEFAULT_FRAME_PAGES,
     ): iterable {
@@ -242,19 +155,21 @@ readonly class Paginator extends PaginatorConfig
             return;
         }
 
-        if ($this->lastPage <= 1) {
-            yield $this->getPageItem(1);
+        $lastPage = $this->getLastPageNumber();
+
+        if ($lastPage <= 1) {
+            yield $this->createPageItem(1);
             return;
         }
 
         // Define all page sets
-        $windowPages = $this->getPageNumberWindow($windowPadding);
+        $windowPages = $this->makePageNumberWindow($windowPadding);
         $leftFramePages = $maxFramePages === 0
             ? []
-            : \range(1, \min($maxFramePages, $this->lastPage));
+            : \range(1, \min($maxFramePages, $lastPage));
         $rightFramePages = $maxFramePages === 0
             ? []
-            : \range(\max(1, $this->lastPage - $maxFramePages + 1), $this->lastPage);
+            : \range(\max(1, $lastPage - $maxFramePages + 1), $lastPage);
 
         // Create a set of all pages that should be visible
         $visiblePages = \array_unique(\array_merge($leftFramePages, $windowPages, $rightFramePages));
@@ -272,7 +187,7 @@ readonly class Paginator extends PaginatorConfig
                 if ($gap === 1)
                     // Just one gap page, so show it
                 {
-                    yield $this->getPageItem($prevPage + 1, isFiller: true);
+                    yield $this->createPageItem($prevPage + 1, isFiller: true);
                 }
                 /** @mago-expect lint:no-else-clause This else clause is fine. */
                 elseif ($gap > 1)
@@ -282,7 +197,7 @@ readonly class Paginator extends PaginatorConfig
                 }
             }
 
-            yield $this->getPageItem($page);
+            yield $this->createPageItem($page);
             $prevPage = $page;
         }
     }
@@ -293,29 +208,21 @@ readonly class Paginator extends PaginatorConfig
      * @example Use this method to create a window of page numbers for a pagination component.
      * ```php
      * $paginator->getCurrentPageNumber() === 5;
-     * $paginator->getPageNumberWindow(2) === [3, 4, 5, 6, 7];
+     * $paginator->makePageNumberWindow(2) === [3, 4, 5, 6, 7];
      * ```
      *
      * @return array<int>
      */
-    public function getPageNumberWindow(int $padding): array
+    public function makePageNumberWindow(int $padding): array
     {
         $maxPages = \max($padding, 0) + 1; // Ensure at least one page is shown
         $start = \max(1, $this->currentPage - \floor($maxPages / 2));
-        $end = \min($this->lastPage, $start + $maxPages - 1);
+        $end = \min($this->getLastPageNumber(), $start + $maxPages - 1);
 
         // Adjust start if we're near the end
-        $start = \max(1, \min($start, $this->lastPage - $maxPages + 1));
+        $start = \max(1, \min($start, $this->getLastPageNumber() - $maxPages + 1));
 
         return \range((int) $start, (int) $end);
-    }
-
-    /**
-     * Returns the offset for database queries.
-     */
-    public function getOffset(): int
-    {
-        return ($this->currentPage - 1) * $this->itemsPerPage;
     }
 
     /**
@@ -323,34 +230,23 @@ readonly class Paginator extends PaginatorConfig
      *
      * @param int $page
      * @return string
-     * @api
      */
-    public function getPageUrl(int $page): string
+    protected function generatePageUrl(int $page): string
     {
-        return ($this->urlGenerator)($page);
+        return ($this->urlGenerator)($page) ?? '';
     }
 
-    /**
-     * Get the page parameter name for the current context.
-     * @api
-     */
-    public function getPageParameter(): string
-    {
-        return self::pageParam($this->queryPrefix);
-    }
-
-    /**
-     * Helper function to generate a page parameter name with a given prefix.
-     *
-     * If the prefix is null, the default page parameter name 'page' is returned.
-     * Otherwise, the prefix is sanitized and appended with '_page'.
-     *
-     * @param string|null $prefix The prefix to use for the page parameter.
-     * @return string The generated page parameter name.
-     */
-    public static function pageParam(string $prefix = null): string
-    {
-        $prefix = \preg_replace(['/[^a-z0-9_]/i', '/_?page$/i', '/_{2,}/'], ['_', '', '_'], $prefix);
-        return $prefix ? \rtrim($prefix, '_') . '_page' : 'page';
+    public function with(
+        int      $itemsPerPage = null,
+        int      $currentPage = null,
+        int      $totalItems = null,
+        callable $urlGenerator = null,
+    ): static {
+        return new static(
+            itemsPerPage: $itemsPerPage ?? $this->itemsPerPage,
+            currentPage: $currentPage ?? $this->currentPage,
+            totalItems: $totalItems ?? $this->totalItems,
+            urlGenerator: $urlGenerator ?? $this->urlGenerator,
+        );
     }
 }

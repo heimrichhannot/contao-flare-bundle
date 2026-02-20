@@ -102,7 +102,6 @@ $dca['fields'] = [
         'exclude' => true,
         'filter' => true,
         'search' => true,
-        'reference' => &$GLOBALS['TL_LANG']['FLARE']['filter'],
         'eval' => [
             'mandatory' => true,
             'includeBlankOption' => true,
@@ -169,6 +168,12 @@ $dca['fields'] = [
         'default' => null,
         'eval' => ['tl_class' => 'w100 clr'],
         'sql' => ['type' => 'blob', 'notnull' => false],
+    ],
+    'prefill' => [
+        'inputType' => 'text',
+        'default' => null,
+        'eval' => ['tl_class' => 'w100 clr', 'alwaysSave' => true],
+        'sql' => ['type' => 'text', 'notnull' => false],
     ],
     'isMandatory' => [
         'exclude' => true,

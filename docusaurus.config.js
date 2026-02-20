@@ -8,6 +8,8 @@ import {themes as prismThemes} from 'prism-react-renderer';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
+const uriPath = 'contao-flare-bundle'
+
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Contao Flare Bundle',
@@ -24,12 +26,12 @@ const config = {
   trailingSlash: false,
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/contao-flare-docs/',
+  baseUrl: `/${uriPath}/`,
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
   organizationName: 'heimrichhannot', // Usually your GitHub org/user name.
-  projectName: 'contao-flare-docs', // Usually your repo name.
+  projectName: uriPath, // Usually your repo name.
   deploymentBranch: 'gh-pages', // The branch that GitHub pages will deploy from.
 
   onBrokenLinks: 'throw',
@@ -53,7 +55,7 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/heimrichhannot/contao-flare-docs/tree/main/',
+            'https://github.com/heimrichhannot/contao-flare-bundle/tree/docs/main/',
         },
         blog: false/*{
           showReadingTime: true,
@@ -64,7 +66,7 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/heimrichhannot/contao-flare-docs/',
+            'https://github.com/heimrichhannot/contao-flare-bundle/',
           // Useful options to enforce blogging best practices
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',

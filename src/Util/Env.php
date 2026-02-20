@@ -5,34 +5,45 @@ namespace HeimrichHannot\FlareBundle\Util;
 use Composer\InstalledVersions;
 use Composer\Semver\VersionParser;
 
-class Env
+/**
+ * @method static bool isContao4()
+ * @method static bool isContao5()
+ * @method static bool hasContaoCalendar()
+ * @method static bool hasContaoComments()
+ * @method static bool hasContaoNews()
+ * @method static bool hasTerminal42ChangeLanguage()
+ */
+final class Env
 {
-    private static bool $isContao4;
-    private static bool $isContao5;
+    private static array $cache = [];
 
-    public static function isContao4(): bool
+    private static function populate(string $name, callable $test): bool
     {
-        if (!isset(self::$isContao4)) {
-            try {
-                self::$isContao4 = InstalledVersions::satisfies(new VersionParser(), 'contao/core-bundle', '^4.0');
-            } catch (\Throwable) {
-                self::$isContao4 = false;
-            }
+        try {
+            self::$cache[$name] = $test();
+        } catch (\Throwable) {
+            self::$cache[$name] = false;
         }
 
-        return self::$isContao4;
+        return self::$cache[$name];
     }
 
-    public static function isContao5(): bool
+    public static function __callStatic(string $name, array $arguments)
     {
-        if (!isset(self::$isContao5)) {
-            try {
-                self::$isContao5 = InstalledVersions::satisfies(new VersionParser(), 'contao/core-bundle', '^5.0');
-            } catch (\Throwable) {
-                self::$isContao5 = false;
-            }
+        if (isset(self::$cache[$name])) {
+            return self::$cache[$name];
         }
 
-        return self::$isContao5;
+        $callback = match ($name) {
+            'isContao4' => static fn (): bool => InstalledVersions::satisfies(new VersionParser(), 'contao/core-bundle', '^4.0'),
+            'isContao5' => static fn (): bool => InstalledVersions::satisfies(new VersionParser(), 'contao/core-bundle', '^5.0'),
+            'hasContaoCalendar' => static fn (): bool => InstalledVersions::isInstalled('contao/calendar-bundle'),
+            'hasContaoComments' => static fn (): bool => InstalledVersions::isInstalled('contao/comments-bundle'),
+            'hasContaoNews' => static fn (): bool => InstalledVersions::isInstalled('contao/news-bundle'),
+            'hasTerminal42ChangeLanguage' => static fn (): bool => InstalledVersions::isInstalled('terminal42/contao-changelanguage'),
+            default => static fn (): bool => false,
+        };
+
+        return self::populate($name, $callback);
     }
 }

@@ -4,7 +4,7 @@ namespace HeimrichHannot\FlareBundle\Util;
 
 use Contao\StringUtil;
 
-readonly class Str
+final readonly class Str
 {
     public const CHARS_ALPHA = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
     public const CHARS_ALPHA_LOWER = 'abcdefghijklmnopqrstuvwxyz';

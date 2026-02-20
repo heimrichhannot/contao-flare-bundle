@@ -128,6 +128,7 @@ final class ListViewController extends AbstractContentElementController
         $data = $template->getData();
         $data['flare'] = $engine;
         $data['content_model'] = $contentModel;
+        $data['headline'] = $contentModel->headline ?: null;
         $template->setData($data);
 
         try

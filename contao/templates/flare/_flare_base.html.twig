@@ -3,7 +3,7 @@
 <div class="{{ html_class|trim }}"{% if html_id is not null %} id="{{ html_id }}"{% elseif cssID|default %}{{ cssID|raw }}{% endif %}>
     {% block wrapper %}
         {% block headline %}
-            {% if headline and flare_str.formatHeadline(headline, false) %}
+            {% if headline|default(false) and flare_str.formatHeadline(headline, false) %}
                 {{ flare_str.formatHeadline(headline, true)|raw }}
             {% endif %}
         {% endblock %}

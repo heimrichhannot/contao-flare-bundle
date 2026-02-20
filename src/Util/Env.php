@@ -17,33 +17,27 @@ final class Env
 {
     private static array $cache = [];
 
-    private static function populate(string $name, callable $test): bool
-    {
-        try {
-            self::$cache[$name] = $test();
-        } catch (\Throwable) {
-            self::$cache[$name] = false;
-        }
-
-        return self::$cache[$name];
-    }
-
     public static function __callStatic(string $name, array $arguments)
     {
         if (isset(self::$cache[$name])) {
             return self::$cache[$name];
         }
 
-        $callback = match ($name) {
-            'isContao4' => static fn (): bool => InstalledVersions::satisfies(new VersionParser(), 'contao/core-bundle', '^4.0'),
-            'isContao5' => static fn (): bool => InstalledVersions::satisfies(new VersionParser(), 'contao/core-bundle', '^5.0'),
-            'hasContaoCalendar' => static fn (): bool => InstalledVersions::isInstalled('contao/calendar-bundle'),
-            'hasContaoComments' => static fn (): bool => InstalledVersions::isInstalled('contao/comments-bundle'),
-            'hasContaoNews' => static fn (): bool => InstalledVersions::isInstalled('contao/news-bundle'),
-            'hasTerminal42ChangeLanguage' => static fn (): bool => InstalledVersions::isInstalled('terminal42/contao-changelanguage'),
-            default => static fn (): bool => false,
-        };
-
-        return self::populate($name, $callback);
+        try
+        {
+            return self::$cache[$name] = match ($name) {
+                'isContao4' => InstalledVersions::satisfies(new VersionParser(), 'contao/core-bundle', '^4.0'),
+                'isContao5' => InstalledVersions::satisfies(new VersionParser(), 'contao/core-bundle', '^5.0'),
+                'hasContaoCalendar' => InstalledVersions::isInstalled('contao/calendar-bundle'),
+                'hasContaoComments' => InstalledVersions::isInstalled('contao/comments-bundle'),
+                'hasContaoNews' => InstalledVersions::isInstalled('contao/news-bundle'),
+                'hasTerminal42ChangeLanguage' => InstalledVersions::isInstalled('terminal42/contao-changelanguage'),
+                default => false,
+            };
+        }
+        catch (\Throwable)
+        {
+            return self::$cache[$name] = false;
+        }
     }
 }

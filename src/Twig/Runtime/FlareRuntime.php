@@ -21,14 +21,14 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Twig\Extension\RuntimeExtensionInterface;
 
 readonly class FlareRuntime implements RuntimeExtensionInterface
 {
     public function __construct(
-        private EventDispatcher   $eventDispatcher,
-        private ProjectorRegistry $projectorRegistry,
+        private EventDispatcherInterface $eventDispatcher,
+        private ProjectorRegistry        $projectorRegistry,
     ) {}
 
     public function project(ListSpecification $spec, ContextInterface $config): ViewInterface

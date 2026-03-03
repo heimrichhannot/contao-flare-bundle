@@ -1,0 +1,641 @@
+<?php
+
+use Contao\DataContainer;
+use Contao\DC_Table;
+use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
+use HeimrichHannot\FlareBundle\Enum\BoolMode;
+use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
+use HeimrichHannot\FlareBundle\Util\BeActionsHelper;
+use HeimrichHannot\FlareBundle\Util\Str;
+
+$dca = &$GLOBALS['TL_DCA'][$table = FilterModel::getTable()];
+
+$dca['config'] = [
+    'dataContainer' => DC_Table::class,
+    'enableVersioning' => true,
+    'ptable' => ListModel::getTable(),
+    'switchToEdit' => true,
+    'sql' => [
+        'keys' => [
+            'id' => 'primary',
+            'pid,published' => 'index',
+            'formAlias' => 'index',
+            'pid,formAlias' => 'index',
+        ],
+    ],
+];
+
+$dca['list'] = [
+    'sorting' => [
+        'mode' => DataContainer::MODE_PARENT,
+        'flag' => 11,
+        'panelLayout' => 'filter;search,limit',
+        'fields' => ['sorting'],
+        'headerFields' => ['title', 'type', 'dc'],
+    ],
+    'label' => [
+        'fields' => ['title'],
+        'format' => '%s',
+    ],
+    'global_operations' => [
+        'all' => [
+            'href' => 'act=select',
+            'class' => 'header_edit_all',
+            'attributes' => 'onclick="Backend.getScrollOffset()" accesskey="e"',
+        ],
+    ],
+    'operations' => [
+        ...BeActionsHelper::operation(BeActionsHelper::OP_EDIT),
+        'copy' => [
+            'href' => 'act=copy&amp;mode=copy',
+            'icon' => 'copy.svg',
+        ],
+        'cut' => [
+            'href' => 'act=paste&amp;mode=cut',
+            'icon' => 'cut.svg',
+        ],
+        'delete' => [
+            'href' => 'act=delete',
+            'icon' => 'delete.svg',
+            'attributes' => 'onclick="if(!confirm(\'' . ($GLOBALS['TL_LANG']['MSC']['deleteConfirm'] ?? 'Confirm delete') . '\'))return false;Backend.getScrollOffset()"',
+        ],
+        'toggle' => [
+            'href' => 'act=toggle&amp;field=published',
+            'icon' => 'visible.svg',
+        ],
+        'show' => [
+            'href' => 'act=show',
+            'icon' => 'show.svg',
+        ],
+    ],
+];
+
+$dca['fields'] = [
+    'id' => [
+        'sql' => "int(10) unsigned NOT NULL auto_increment",
+    ],
+    'pid' => [
+        'foreignKey' => \sprintf('%s.title', ListModel::getTable()),
+        'relation' => ['type' => 'belongsTo', 'load' => 'lazy'],
+        'sql' => "int(10) unsigned NOT NULL default '0'",
+    ],
+    'sorting' => [
+        'flag' => DataContainer::SORT_ASC,
+        'sql' => "int(10) unsigned NOT NULL default 0",
+    ],
+    'tstamp' => [
+        'sql' => "int(10) unsigned NOT NULL default '0'",
+    ],
+    'title' => [
+        'exclude' => true,
+        'search' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
+        'inputType' => 'text',
+        'eval' => ['mandatory' => true, 'maxlength' => 255, 'tl_class' => 'w50'],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'type' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => true,
+        'search' => true,
+        'reference' => &$GLOBALS['TL_LANG']['FLARE']['filter'],
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'submitOnChange' => true,
+            'tl_class' => 'w50',
+            'chosen' => true,
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'formAlias' => [
+        'exclude' => true,
+        'search' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
+        'inputType' => 'text',
+        'eval' => [
+            'mandatory' => false,
+            'maxlength' => 128,
+            'tl_class' => 'w50',
+            'doNotCopy' => true,
+            'rgxp' => 'alias',
+        ],
+        'sql' => ['type' => 'string', 'length' => 128, 'default' => '', 'notnull' => true],
+    ],
+    'published' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => true,
+        'default' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => ['doNotCopy' => true, 'tl_class' => 'w50'],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'intrinsic' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => true,
+        'default' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => true,
+            'tl_class' => 'cbx m12 w50',
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'targetAlias' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => true,
+        'default' => ListQueryManager::ALIAS_MAIN,
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => false,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50',
+            'submitOnChange' => true,
+        ],
+        'sql' => ['type' => 'string', 'length' => 128, 'default' => ListQueryManager::ALIAS_MAIN],
+    ],
+    'preselect' => [
+        'inputType' => 'text',
+        'default' => null,
+        'eval' => ['tl_class' => 'w100 clr'],
+        'sql' => ['type' => 'blob', 'notnull' => false],
+    ],
+    'isMandatory' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => false,
+            'tl_class' => 'cbx w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'isMultiple' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => true,
+            'tl_class' => 'cbx w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'isExpanded' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => false,
+            'tl_class' => 'cbx w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'isLimited' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => false,
+            'tl_class' => 'cbx w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'hasEmptyOption' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => true,
+            'tl_class' => 'cbx w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'usePublished' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => true,
+            'tl_class' => 'cbx w50 clr'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => true],
+    ],
+    'useStart' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => true,
+            'tl_class' => 'cbx w50 clr'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => true],
+    ],
+    'useStop' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => true,
+            'tl_class' => 'cbx w50 clr'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => true],
+    ],
+    'invertPublished' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'tl_class' => 'w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'formatLabel' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => false,
+            'submitOnChange' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'formatLabelCustom' => [
+        'exclude' => true,
+        'search' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
+        'inputType' => 'text',
+        'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'formatEmptyOption' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => false,
+            'submitOnChange' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50 clr',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'formatEmptyOptionCustom' => [
+        'exclude' => true,
+        'search' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
+        'inputType' => 'text',
+        'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'whichPtable' => [
+        'exclude' => true,
+        'filter' => false,
+        'default' => 'auto',
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'radio',
+        'options' => ['auto', 'dynamic', 'static'],
+        'reference' => &$GLOBALS['TL_LANG'][$table]['whichPtable_options'],
+        'eval' => [
+            'submitOnChange' => true,
+            'alwaysSave' => true,
+            'tl_class' => 'w50 clr'
+        ],
+        'sql' => "varchar(32) NOT NULL default 'auto'",
+    ],
+    'fieldPublished' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'fieldStart' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'fieldStop' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'fieldPid' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'submitOnChange' => true,
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'fieldPtable' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50 clr',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'tablePtable' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => true,
+            'submitOnChange' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'whitelistParents' => [
+        'inputType' => 'select',
+        'default' => null,
+        'eval' => [
+            'chosen' => true,
+            'multiple' => true,
+        ],
+        'sql' => ['type' => 'blob', 'notnull' => false],
+    ],
+    'fieldGeneric' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50 clr',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'columnsGeneric' => [ // "columns" instead of "fields" to prevent confusion and typos
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'default' => null,
+        'eval' => [
+            'chosen' => true,
+            'multiple' => true,
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'tl_class' => 'clr w100',
+        ],
+        'sql' => ['type' => 'blob', 'notnull' => false],
+    ],
+    'groupWhitelistParents' => [
+        'inputType' => 'group',
+        'palette' => ['tablePtable', 'whitelistParents', 'formatLabel', 'formatLabelCustom'],
+        'fields' => [
+            '&tablePtable' => [
+                'eval' => ['tl_class' => 'clr w50'],
+            ],
+            '&whitelistParents' => [
+                'eval' => ['tl_class' => 'w50'],
+            ],
+            '&formatLabel' => [
+                'eval' => ['tl_class' => 'w50'],
+            ],
+            '&formatLabelCustom' => [
+                'eval' => ['tl_class' => 'w50'],
+            ],
+        ],
+        'order' => false,
+        'sql' => ['type' => 'blob', 'notnull' => false]
+    ],
+    'equationOperator' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'select',
+        'options' => SqlEquationOperator::asOptions(false),
+        'eval' => ['mandatory' => true, 'maxlength' => 255, 'alwaysSave' => true, 'submitOnChange' => true],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'equationLeft' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'select',
+        'eval' => ['mandatory' => true, 'maxlength' => 255],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'equationRight' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'text',
+        'eval' => ['mandatory' => false, 'maxlength' => 255],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'placeholder' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'text',
+        'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'label' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'text',
+        'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'configureStart' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'select',
+        'reference' => &$GLOBALS['TL_LANG']['FLARE']['date_time'],
+        'default' => 'today',
+        'eval' => [
+            'mandatory' => false,
+            'maxlength' => 255,
+            'tl_class' => 'clr w50',
+            'includeBlankOption' => true,
+            'chosen' => true,
+            'submitOnChange' => true,
+            'alwaysSave' => true,
+        ],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'configureStop' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'select',
+        'reference' => &$GLOBALS['TL_LANG']['FLARE']['date_time'],
+        'default' => '',
+        'eval' => [
+            'mandatory' => false,
+            'maxlength' => 255,
+            'tl_class' => 'clr w50',
+            'includeBlankOption' => true,
+            'chosen' => true,
+            'submitOnChange' => true,
+            'alwaysSave' => true,
+        ],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'startAt' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'text',
+        'eval' => [
+            'mandatory' => false,
+            'maxlength' => 255,
+            'rgxp' => 'datim',
+            'datepicker' => true,
+            'tl_class' => 'w50 wizard',
+        ],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'stopAt' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'text',
+        'eval' => [
+            'mandatory' => false,
+            'maxlength' => 255,
+            'rgxp' => 'datim',
+            'datepicker' => true,
+            'tl_class' => 'w50 wizard',
+        ],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'hasExtendedEvents' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'tl_class' => 'cbx w50 clr'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'boolMode' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'select',
+        'options' => BoolMode::asOptions(),
+        'eval' => [
+            'mandatory' => true,
+            'maxlength' => 255,
+            'alwaysSave' => true,
+            'submitOnChange' => true,
+            'tl_class' => 'w50 clr',
+        ],
+        'sql' => "varchar(64) NOT NULL default ''",
+    ],
+    'boolBinaryChoices' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'select',
+        'options' => BoolBinaryChoices::asOptions(),
+        'eval' => ['mandatory' => true, 'maxlength' => 255, 'alwaysSave' => true, 'tl_class' => 'w50 clr'],
+        'sql' => "varchar(64) NOT NULL default ''",
+    ],
+];
+
+$dca['palettes'] = [
+    '__selector__' => [
+        'type', 'usePublished', 'useStart', 'useStop', 'whichPtable', 'formatLabel', 'formatEmptyOption',
+        'configureStart', 'configureStop', 'boolMode',
+    ],
+    '__prefix__' => '{title_legend},title,type,intrinsic',
+    '__suffix__' => '{expert_legend:hide},formAlias;{publish_legend},published',
+];
+
+$dca['palettes']['default'] = Str::mergePalettes($dca['palettes']['__prefix__'], $dca['palettes']['__suffix__']);
+
+$dca['subpalettes'] = [
+    'usePublished' => 'fieldPublished,invertPublished',
+    'useStart' => 'fieldStart',
+    'useStop' => 'fieldStop',
+    'whichPtable_auto' => '',
+    'whichPtable_dynamic' => 'fieldPtable',
+    'whichPtable_static' => 'tablePtable',
+    'formatLabel_custom' => 'formatLabelCustom',
+    'formatEmptyOption_custom' => 'formatEmptyOptionCustom',
+    'configureStart_str' => 'startAt',
+    'configureStart_date' => 'startAt',
+    'configureStop_str' => 'stopAt',
+    'configureStop_date' => 'stopAt',
+    'boolMode_binary' => 'boolBinaryChoices',
+];

@@ -1,0 +1,23 @@
+{#{% if headline is iterable %}
+#}{# This is needed if element inherits from block_searchable in contao 5. #}{#
+#}{# It can be removed when extending from @Contao/content_element/_base.html.twig #}{#
+{% set hl = headline.tag_name %}
+{% set headline = headline.text %}
+{% endif %}#}
+{% set html_class = ('flare-listview content-flare-listview block ' ~ element_css_classes|default(class|default('')) ~ ' ' ~ flare_css_classes|default('')) %}
+{% set html_id = element_html_id|default(null) %}
+<div class="{{ html_class|trim }}"{% if html_id is not null %} id="{{ html_id }}"{% elseif cssID|default %}{{ cssID|raw }}{% endif %}>
+    {% block wrapper %}
+        {% block headline %}
+            {% if headline and flare_fmt_headline_value(headline) %}
+                {{ headline|flare_fmt_headline }}
+            {% endif %}
+        {% endblock %}
+        {% block content %}
+            {# === empty _flare_base content === #}
+        {% endblock %}
+        {% block footer %}
+            {# === empty _flare_base footer === #}
+        {% endblock %}
+    {% endblock %}
+</div>

@@ -1,0 +1,26 @@
+[data-flare-suffix]::after {
+    display: inline-block;
+    content: attr(data-flare-suffix);
+    margin-inline-start: 1ch;
+    opacity: .5;
+}
+
+.tl_formbody_edit #sub_formatEmptyOption,
+.tl_formbody_edit #sub_formatLabel {
+    display: inline;
+}
+
+@media (min-width: 620px) {
+    [data-contao--toggle-fieldset-id-value="flare_simple_equation_legend"],
+    #pal_flare_simple_equation_legend {
+        display: grid;
+        grid-template-columns: 3fr 1fr 3fr;
+    }
+    [data-contao--toggle-fieldset-id-value="flare_simple_equation_legend"] > legend,
+    #pal_flare_simple_equation_legend > legend {
+        grid-column: 1 / -1;
+    }
+    #ctrl_equationOperator {
+        text-align: center;
+    }
+}

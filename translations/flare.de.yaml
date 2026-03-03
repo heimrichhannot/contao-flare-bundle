@@ -1,0 +1,27 @@
+reader:
+    default_template:
+        warning: "Standard-Template ausgewählt"
+        description: "Bitte erstellen/wählen Sie ein benutzerdefiniertes Template für diesen FLARE-Reader."
+
+list:
+    default_template:
+        warning: "Standard-Template ausgewählt"
+        description: "Bitte erstellen/wählen Sie ein benutzerdefiniertes Template für diese FLARE-Liste."
+
+filter:
+    limited_scope:
+        single: "Dieser Filter ist ausschließlich anwendbar auf: %scopes%"
+        multiple: "Dieser Filter ist anwendbar auf: %scopes%"
+        dynamic: "Der Geltungsbereich dieses Filters wird anhand dieser Konfiguration dynamisch ermittelt."
+        disqualified: "Dieser Filter ist nicht anwendbar, da der Geltungsbereich nicht definiert ist."
+
+    scope:
+        list: "Listenansicht"
+        reader: "Detailleser"
+        twig: "Twig-Template"
+
+    info:
+        alias: "Alias"
+        intrinsic:
+            yes: "Dieser Filter ist intrinsisch"
+            no: "Dieser Filter ist nicht intrinsisch"

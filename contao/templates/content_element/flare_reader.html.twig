@@ -1,0 +1,29 @@
+{# @var \Contao\Model model #}
+{% extends '@Contao/flare/_flare_base.html.twig' %}
+
+{% block content %}
+
+    <div style="color: #800; background: #fdd; padding: 1rem;">
+        <strong>{{ 'reader.default_template.warning'|trans({}, 'flare') }}</strong>
+        <br><small>{{ 'reader.default_template.description'|trans({}, 'flare') }}</small>
+    </div>
+
+    {% if app.request.get('_preview') or app.debug %}
+        <div style="display: grid; grid-template-columns: max-content auto max-content auto; gap: .125rem 1rem; font-family: monospace; padding: 1rem; background: #def; font-size: .9em;">
+            <strong style="grid-column: 1 / -1; margin-bottom: 1rem">{{ model.table }}</strong>
+            {% for key, field in model.row %}
+                {% if key not in ['password'] %}
+                    <div>{{ key }}</div>
+                    <div>{{ field|default('-') }}</div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+{% endblock %}
+
+{% block footer %}
+    {% if comments|default(false) %}
+        {{ include('@Contao/flare/comments/basic.html.twig', comments) }}
+    {% endif %}
+{% endblock %}

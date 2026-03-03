@@ -6,8 +6,8 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
+use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Util\PtableInferrer;
 
 #[AsCallback(ListContainer::TABLE_NAME, 'config.onload')]
 #[AsCallback(ListContainer::TABLE_NAME, 'config.onsubmit')]
@@ -31,7 +31,7 @@ readonly class WhichPtableCheckCallback
 
         try
         {
-            $inferrer = new PtableInferrer($listModel, $listModel);
+            $inferrer = new PtableInferrer($listModel, $listModel->dc);
 
             $inferrer->infer();
 

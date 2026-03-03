@@ -13,23 +13,27 @@ use Contao\CoreBundle\Routing\ResponseContext\HtmlHeadBag\HtmlHeadBag;
 use Contao\CoreBundle\Routing\ResponseContext\ResponseContextAccessor;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Input;
-use Contao\StringUtil;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
-use HeimrichHannot\FlareBundle\Dto\ReaderRequestAttribute;
+use HeimrichHannot\FlareBundle\Engine\Context\Factory\ValidationContextFactory;
+use HeimrichHannot\FlareBundle\Engine\Factory\EngineFactory;
+use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
 use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
-use HeimrichHannot\FlareBundle\Manager\ReaderManager;
-use HeimrichHannot\FlareBundle\Manager\RequestManager;
-use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Reader\Factory\ReaderPageMetaFactory;
+use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;
+use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
+use HeimrichHannot\FlareBundle\Reader\ReaderRequestAttribute;
+use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
+use HeimrichHannot\FlareBundle\Util\Str;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Error\RuntimeError;
 
 #[AsContentElement(ReaderController::TYPE, category: 'includes', template: 'content_element/flare_reader')]
@@ -38,15 +42,18 @@ final class ReaderController extends AbstractContentElementController
     public const TYPE = 'flare_reader';
 
     public function __construct(
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly EntityCacheTags          $entityCacheTags,
-        private readonly ListViewBuilderFactory   $listViewBuilderFactory,
-        private readonly LoggerInterface          $logger,
-        private readonly ReaderManager            $readerManager,
-        private readonly RequestManager           $requestManager,
-        private readonly ResponseContextAccessor  $responseContextAccessor,
-        private readonly ScopeMatcher             $scopeMatcher,
-        private readonly TranslationManager       $translator,
+        private readonly EventDispatcherInterface       $eventDispatcher,
+        private readonly EngineFactory                  $engineFactory,
+        private readonly EntityCacheTags                $entityCacheTags,
+        private readonly KernelInterface                $kernel,
+        private readonly ListSpecificationFactory       $listSpecificationFactory,
+        private readonly LoggerInterface                $logger,
+        private readonly ReaderPageMetaFactory          $readerPageMetaFactory,
+        private readonly ReaderRequestAttributeResolver $attributeResolver,
+        private readonly ResponseContextAccessor        $responseContextAccessor,
+        private readonly ScopeMatcher                   $scopeMatcher,
+        private readonly TranslatorInterface            $translator,
+        private readonly ValidationContextFactory       $validationContextFactory,
     ) {}
 
     /**
@@ -59,46 +66,77 @@ final class ReaderController extends AbstractContentElementController
             : $this->getBackendResponse($template, $model, $request);
     }
 
+    /**
+     * @throws \Exception
+     */
+    protected function getErrorResponse(?\Exception $e = null): Response
+    {
+        if (isset($e) && $this->kernel->isDebug()) {
+            throw $e;
+        }
+        /** @noinspection PhpTranslationKeyInspection, PhpTranslationDomainInspection */
+        $msg = $this->translator->trans('ERR.flare.listview.malconfigured', [], 'contao_modules');
+        return new Response($msg, status: Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * @throws \Exception
+     */
     protected function getFrontendResponse(Template $template, ContentModel $contentModel, Request $request): Response
     {
         if (!$autoItem = Input::get('auto_item')) {
             throw $this->createNotFoundException('No auto_item supplied.');
         }
 
-        $errData = ['tl_content.id' => $contentModel->id];
+        try
+        {
+            $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST);
+
+            if (!$listModel instanceof ListModel) {
+                throw new FlareException('No list model found.');
+            }
+        }
+        catch (\Exception $e)
+        {
+            $this->logger->error(\sprintf('%s (tl_content.id=%s)', $e->getMessage(), $contentModel->id),
+                ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
+
+            return $this->getErrorResponse($e);
+        }
+
+        $errData = [
+            "tl_content.id={$contentModel->id}",
+            "tl_flare_list.id={$listModel->id}",
+        ];
 
         try
         {
-            $content = $this->readerManager->evalContent(
+            $listSpec = $this->listSpecificationFactory->create(dataSource: $listModel);
+
+            $validationContext = $this->validationContextFactory->createFromContent(
                 contentModel: $contentModel,
-                autoItem: $autoItem,
+                listModel: $listModel
             );
 
-            $listModel = $content->listModel;
-            $contentContext = $content->contentContext;
+            $engine = $this->engineFactory->createEngine($validationContext, $listSpec);
 
-            $errData['tl_flare_list.id'] = $listModel->id;
+            $validationView = $engine->createView();
+            \assert($validationView instanceof ValidationView, 'Expected ValidationView');
 
-            if (!$model = $content->model) {
-                throw $this->createNotFoundException('No model found.');
+            if (!$autoItemModel = $validationView->getModelByAutoItem($autoItem)) {
+                throw $this->createNotFoundException('No model found for the given auto_item.');
             }
 
-            $errData[$model::getTable() . '.id'] = $model->id;
+            $errData[] = "{$autoItemModel::getTable()}.id={$autoItemModel->id}";
 
-            $this->requestManager->setReader(new ReaderRequestAttribute($model, $listModel));
-            $this->entityCacheTags->tagWith($model);
+            $this->attributeResolver->store(new ReaderRequestAttribute($autoItemModel, $listSpec), $request);
+            $this->entityCacheTags->tagWith($autoItemModel);
 
-            $pageMeta = $this->readerManager->getPageMeta(new ReaderPageMetaConfig(
-                listModel: $listModel,
-                model: $model,
-                contentContext: $contentContext,
+            $pageMeta = $this->readerPageMetaFactory->create(new ReaderPageMetaConfig(
                 contentModel: $contentModel,
+                displayModel: $autoItemModel,
+                listSpecification: $listSpec,
             ));
-
-            $listView = $this->listViewBuilderFactory->create()
-                ->setContentContext($contentContext)
-                ->setListModel($listModel)
-                ->build();
         }
         catch (FlareException $e)
         {
@@ -110,19 +148,22 @@ final class ReaderController extends AbstractContentElementController
 
         $event = $this->eventDispatcher->dispatch(
             new ReaderRenderEvent(
-                contentContext: $contentContext,
                 contentModel: $contentModel,
-                displayModel: $model,
-                listModel: $listModel,
-                listView: $listView,
+                context: $validationContext,
+                displayModel: $autoItemModel,
+                listSpecification: $listSpec,
                 pageMeta: $pageMeta,
                 template: $template,
             )
         );
 
+        $template = $event->getTemplate();
         $data = $template->getData();
-        $data['flare'] ??= $event->getListView();
-        $data['model'] ??= $event->getDisplayModel();
+        $data['flare'] = $engine;
+        $data['flare_reader'] = $validationView;
+        $data['model'] = $autoItemModel;
+        $data['content_model'] = $contentModel;
+        $data['headline'] = $contentModel->headline ?: null;
         $template->setData($data);
 
         $pageMeta = $event->getPageMeta();
@@ -146,7 +187,7 @@ final class ReaderController extends AbstractContentElementController
         }
     }
 
-    public function applyPageMeta(ReaderPageMetaDto $pageMeta, ?HtmlHeadBag $htmlHeadBag = null): void
+    public function applyPageMeta(ReaderPageMeta $pageMeta, ?HtmlHeadBag $htmlHeadBag = null): void
     {
         $htmlHeadBag ??= $this->responseContextAccessor?->getResponseContext()?->get(HtmlHeadBag::class);
 
@@ -178,19 +219,11 @@ final class ReaderController extends AbstractContentElementController
             return new Response($e->getMessage());
         }
 
-        $headline = StringUtil::deserialize($model->headline, true);
-
-        if ($value = $headline['value'] ?? null)
-        {
-            $unit = $headline['unit'] ?? 'h2';
-            $hl = \sprintf('<%s>%s</%s>', $unit, $value, $unit);
-        }
-
         return new Response(\sprintf(
             '%s%s <span class="tl_gray">[%s, %s]</span>',
-            $hl ?? '',
+            Str::formatHeadline($model->headline, withTags: true),
             $listModel->title,
-            $this->translator->listModel($listModel),
+            $this->translator->trans($listModel->type, [], 'flare_list'),
             $listModel->dc,
         ));
     }

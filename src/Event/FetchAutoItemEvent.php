@@ -4,6 +4,7 @@ namespace HeimrichHannot\FlareBundle\Event;
 
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 
+/** @deprecated replaced by view engine */
 class FetchAutoItemEvent extends AbstractFetchEvent
 {
     public function __construct(

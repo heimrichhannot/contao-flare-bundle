@@ -9,10 +9,10 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Database;
 use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
-use HeimrichHannot\FlareBundle\Manager\TranslationManager;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Util\DcaFieldFilter;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * @internal For internal use only. Do not call this class or its methods directly.
@@ -24,9 +24,9 @@ readonly class FieldsOptionsCallbacks
     public function __construct(
         private ContaoFramework         $contaoFramework,
         private ListContainer           $listContainer,
-        private TranslationManager      $translationManager,
-        private ResourceFinderInterface $resourceFinder,
         private ListTypeRegistry        $listTypeRegistry,
+        private ResourceFinderInterface $resourceFinder,
+        private TranslatorInterface     $translator,
     ) {}
 
     /**
@@ -37,9 +37,9 @@ readonly class FieldsOptionsCallbacks
     {
         $options = [];
 
-        foreach ($this->listTypeRegistry->all() as $alias => $listTypeConfig)
+        foreach ($this->listTypeRegistry->all() as $type => $listTypeConfig)
         {
-            $options[$alias] = $this->translationManager->listModel($alias);
+            $options[$type] = $this->translator->trans($type, [], 'flare_list');
         }
 
         return $options;

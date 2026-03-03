@@ -5,7 +5,7 @@ namespace HeimrichHannot\FlareBundle\ListType\Trait;
 use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\CoreBundle\String\SimpleTokenParser;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
-use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
+use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 use HeimrichHannot\FlareBundle\Util\Str;
 
 trait GenericReaderPageMetaTrait
@@ -14,18 +14,21 @@ trait GenericReaderPageMetaTrait
 
     abstract protected function getSimpleTokenParser(): SimpleTokenParser;
 
-    public function getReaderPageMeta(ReaderPageMetaConfig $config): ?ReaderPageMetaDto
+    public function getReaderPageMeta(ReaderPageMetaConfig $config): ?ReaderPageMeta
     {
-        $listModel = $config->getListModel();
+        $list = $config->getListSpecification();
         $contentModel = $config->getContentModel();
-        $model = $config->getModel();
+        $model = $config->getDisplayModel();
 
-        $pageMeta = new ReaderPageMetaDto();
+        $pageMeta = new ReaderPageMeta();
 
-        $tokens = [];
+        $tokens = [
+            'list.type' => $list->type,
+            'list.dc' => $list->dc,
+        ];
 
-        foreach ($listModel->row() as $key => $value) {
-            if (\is_scalar($value)) {
+        foreach ($list->getProperties() as $key => $value) {
+            if (\is_scalar($value) && $key !== 'type' && $key !== 'dc') {
                 $tokens['list.' . $key] = $value;
             }
         }
@@ -42,7 +45,7 @@ trait GenericReaderPageMetaTrait
             }
         }
 
-        if ($titleFormat = $listModel->metaTitleFormat)
+        if ($titleFormat = $list->metaTitleFormat)
         {
             $titleFormat = $this->getHtmlDecoder()->inputEncodedToPlainText($titleFormat);
             $title = $this->getSimpleTokenParser()->parse($titleFormat, $tokens, allowHtml: false);
@@ -50,7 +53,7 @@ trait GenericReaderPageMetaTrait
             $pageMeta->setTitle(Str::htmlToMeta($title, flags: \ENT_QUOTES));
         }
 
-        if ($descriptionFormat = $listModel->metaDescriptionFormat)
+        if ($descriptionFormat = $list->metaDescriptionFormat)
         {
             $descriptionFormat = $this->getHtmlDecoder()->inputEncodedToPlainText($descriptionFormat);
             $description = $this->getSimpleTokenParser()->parse($descriptionFormat, $tokens, allowHtml: false);
@@ -58,7 +61,7 @@ trait GenericReaderPageMetaTrait
             $pageMeta->setDescription(Str::htmlToMeta($description));
         }
 
-        if ($robotsFormat = $listModel->metaRobotsFormat)
+        if ($robotsFormat = $list->metaRobotsFormat)
         {
             $robotsFormat = $this->getHtmlDecoder()->inputEncodedToPlainText($robotsFormat);
             $robots = $this->getSimpleTokenParser()->parse($robotsFormat, $tokens, allowHtml: false);

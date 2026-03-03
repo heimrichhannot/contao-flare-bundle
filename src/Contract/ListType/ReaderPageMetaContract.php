@@ -3,9 +3,9 @@
 namespace HeimrichHannot\FlareBundle\Contract\ListType;
 
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
-use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
+use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 
 interface ReaderPageMetaContract
 {
-    public function getReaderPageMeta(ReaderPageMetaConfig $config): ?ReaderPageMetaDto;
+    public function getReaderPageMeta(ReaderPageMetaConfig $config): ?ReaderPageMeta;
 }

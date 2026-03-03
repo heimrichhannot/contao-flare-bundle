@@ -3,10 +3,12 @@
 namespace HeimrichHannot\FlareBundle\DataContainer;
 
 use Contao\DataContainer;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Manager\FlareCallbackManager;
-use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
+use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 
 class FilterContainer implements FlareCallbackContainerInterface
@@ -14,8 +16,9 @@ class FilterContainer implements FlareCallbackContainerInterface
     public const TABLE_NAME = 'tl_flare_filter';
 
     public function __construct(
-        private readonly FlareCallbackManager $callbacks,
-        private readonly ListQueryManager     $listQueryManager,
+        private readonly FlareCallbackManager        $callbacks,
+        private readonly ListExecutionContextFactory $listExecutionContextFactory,
+        private readonly ListSpecificationFactory    $listSpecificationFactory,
     ) {}
 
     /* ============================= *
@@ -42,6 +45,7 @@ class FilterContainer implements FlareCallbackContainerInterface
 
     /**
      * @throws \RuntimeException
+     * @throws FlareException
      */
     public function handleFieldOptions(?DataContainer $dc, string $target): array
     {
@@ -53,9 +57,10 @@ class FilterContainer implements FlareCallbackContainerInterface
 
         $callbacks = $this->callbacks->getFilterCallbacks($filterModel->type, $target);
 
-        $listQueryManager = $this->listQueryManager->prepare($listModel);
-        $tables = $listQueryManager->getTables();
-        $targetTable = $listQueryManager->getTable($filterModel->targetAlias) ?: $listModel->dc;
+        $listSpecification = $this->listSpecificationFactory->create($listModel);
+        $context = $this->listExecutionContextFactory->create($listSpecification);
+        $tables = $context->tableAliasRegistry->getTables();
+        $targetTable = $context->tableAliasRegistry->getTable($filterModel->targetAlias) ?: $listModel->dc;
 
         return CallbackHelper::firstReturn($callbacks, [], [
             FilterModel::class => $filterModel,

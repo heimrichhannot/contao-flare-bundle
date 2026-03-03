@@ -3,17 +3,13 @@
 namespace HeimrichHannot\FlareBundle\Util;
 
 use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\Dto\SqlQuery;
 
 readonly class SqlHelper
 {
-    public function __construct(
-        private Connection $connection,
-    ) {}
-
-    public function findInSerializedArrayColumn(
+    public static function findInSerializedArrayColumn(
         array|int|string $find,
         string           $column,
+        Connection       $connection,
     ): string {
         $escaped = \array_map(static fn (string $value): string => \preg_quote((string) $value, '/'), (array) $find);
         $alternation = \implode('|', $escaped);
@@ -22,7 +18,7 @@ readonly class SqlHelper
         return \sprintf(
             'CONVERT(%s USING utf8mb4) REGEXP %s',
             $column,
-            $this->connection->quote($pattern),
+            $connection->quote($pattern),
         );
     }
 }

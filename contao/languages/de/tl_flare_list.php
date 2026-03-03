@@ -53,7 +53,11 @@ $lang['whichPtable_options'] = [
     'dynamic' => 'Spalte mit dynamischer Elterntabelle festlegen',
     'static' => 'Statische Elterntabelle festlegen',
 ];
-###< relations_legend
+###< parent_legend
+
+###> advanced_legend
+$lang['advanced_legend'] = 'Erweiterte Einstellungen';
+###< advanced_legend
 
 ###> comments_legend ###
 $lang['comments_legend'] = 'Kommentareinstellungen';

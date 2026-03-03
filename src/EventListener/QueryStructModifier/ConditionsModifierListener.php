@@ -51,7 +51,7 @@ readonly class ConditionsModifierListener
 
             if ($allConditions) {
                 $struct->setConditions(
-                    $this->connection->createExpressionBuilder()->and(...$allConditions)
+                    (string) $this->connection->createExpressionBuilder()->and(...$allConditions)
                 );
             }
         }

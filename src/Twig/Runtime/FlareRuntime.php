@@ -10,24 +10,24 @@ use Contao\FrontendTemplate;
 use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageSchemaOrgConfig;
-use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageSchemaOrgContract;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
+use HeimrichHannot\FlareBundle\Event\ReaderPageSchemaOrgEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Twig\Extension\RuntimeExtensionInterface;
 
 readonly class FlareRuntime implements RuntimeExtensionInterface
 {
     public function __construct(
-        private ListTypeRegistry  $listTypeRegistry,
+        private EventDispatcher   $eventDispatcher,
         private ProjectorRegistry $projectorRegistry,
     ) {}
 
@@ -223,28 +223,26 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
         return [];
     }
 
-    public function getSchemaOrg(array $context): ?array
+    public function getSchemaOrg(array $context, ?Model $model = null, ?ListSpecification $list = null): ?array
     {
-        $model = $context['model'] ?? null;
+        $model ??= $context['model'] ?? null;
         if (!$model instanceof Model) {
             return null;
         }
 
-        $listId = $context['data']['flare_list'] ?? null;
-        if (!$listId) {
-            return null;
-        }
-        $listModel = ListModel::findByPk((int) $listId);
-        if (!$listModel) {
-            return null;
+        if (!$list)
+        {
+            $engine = $context['data']['flare'] ?? null;
+            if (!$engine instanceof Engine) {
+                return null;
+            }
+
+            $list = $engine->getList();
         }
 
-        $type = $this->listTypeRegistry->get($listModel->type)?->getService();
-        if (!$type || !($type instanceof ReaderPageSchemaOrgContract)) {
-            return null;
-        }
+        $event = $this->eventDispatcher->dispatch(new ReaderPageSchemaOrgEvent($list, $model));
 
-        return $type->getReaderPageSchemaOrg(new ReaderPageSchemaOrgConfig($listModel, $model));
+        return $event->data;
     }
 
     /**

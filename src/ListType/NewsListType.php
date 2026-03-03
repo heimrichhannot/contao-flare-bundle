@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\ListType;
 
 use Contao\CoreBundle\String\HtmlDecoder;
-use Contao\News;
 use Contao\NewsModel;
 use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
-use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageSchemaOrgConfig;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Event\ListSpecificationCreatedEvent;
 use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
@@ -77,12 +75,5 @@ class NewsListType extends AbstractListType
         }
 
         return $pageMeta;
-    }
-
-    public function getReaderPageSchemaOrg(ReaderPageSchemaOrgConfig $config): ?array
-    {
-        /** @var NewsModel $model */
-        $model = $config->model;
-        return News::getSchemaOrgData($model);
     }
 }

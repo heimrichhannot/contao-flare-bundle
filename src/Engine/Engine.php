@@ -12,8 +12,8 @@ use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 final class Engine
 {
     public function __construct(
-        private ContextInterface  $context,
-        private ListSpecification $listSpecification,
+        private ContextInterface           $context,
+        private ListSpecification          $list,
         private readonly ProjectorRegistry $projectorRegistry,
     ) {}
 
@@ -22,16 +22,16 @@ final class Engine
         return $this->context;
     }
 
-    public function getSpecification(): ListSpecification
+    public function getList(): ListSpecification
     {
-        return $this->listSpecification;
+        return $this->list;
     }
 
     public function createView(): ViewInterface
     {
         return $this->projectorRegistry
-            ->getProjectorFor($this->listSpecification, $this->context)
-            ->project($this->listSpecification, $this->context);
+            ->getProjectorFor($this->list, $this->context)
+            ->project($this->list, $this->context);
     }
 
     public function clone(): self
@@ -42,6 +42,6 @@ final class Engine
     public function __clone(): void
     {
         $this->context = clone $this->context;
-        $this->listSpecification = clone $this->listSpecification;
+        $this->list = clone $this->list;
     }
 }

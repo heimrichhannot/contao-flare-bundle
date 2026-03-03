@@ -21,7 +21,7 @@ readonly class EngineFactory
     ): Engine {
         return new Engine(
             context: $context,
-            listSpecification: $listSpecification,
+            list: $listSpecification,
             projectorRegistry: $this->projectorRegistry,
         );
     }

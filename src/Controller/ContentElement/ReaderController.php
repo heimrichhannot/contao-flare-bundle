@@ -16,15 +16,14 @@ use Contao\CoreBundle\Routing\ResponseContext\ResponseContextAccessor;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Input;
 use Contao\Template;
-use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\ValidationContextFactory;
 use HeimrichHannot\FlareBundle\Engine\Factory\EngineFactory;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
+use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
 use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Reader\Factory\ReaderPageMetaFactory;
 use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 use HeimrichHannot\FlareBundle\Reader\ReaderRequestAttribute;
@@ -50,7 +49,6 @@ final class ReaderController extends AbstractContentElementController
         private readonly KernelInterface                $kernel,
         private readonly ListSpecificationFactory       $listSpecificationFactory,
         private readonly LoggerInterface                $logger,
-        private readonly ReaderPageMetaFactory          $readerPageMetaFactory,
         private readonly ReaderRequestAttributeResolver $attributeResolver,
         private readonly ResponseContextAccessor        $responseContextAccessor,
         private readonly ScopeMatcher                   $scopeMatcher,
@@ -134,11 +132,13 @@ final class ReaderController extends AbstractContentElementController
             $this->attributeResolver->store(new ReaderRequestAttribute($autoItemModel, $listSpec), $request);
             $this->entityCacheTags->tagWith($autoItemModel);
 
-            $pageMeta = $this->readerPageMetaFactory->create(new ReaderPageMetaConfig(
+            /** @var ReaderPageMetaEvent $pageMetaEvent $pageMetaEvent */
+            $pageMetaEvent = $this->eventDispatcher->dispatch(new ReaderPageMetaEvent(
                 contentModel: $contentModel,
                 displayModel: $autoItemModel,
                 listSpecification: $listSpec,
             ));
+            $pageMeta = $pageMetaEvent->getPageMeta();
         }
         catch (FlareException $e)
         {
@@ -168,8 +168,9 @@ final class ReaderController extends AbstractContentElementController
         $data['headline'] = Str::normalizeHeadline($contentModel->headline ?: null);
         $template->setData($data);
 
-        $pageMeta = $event->getPageMeta();
-        $this->applyPageMeta($pageMeta);
+        if ($pageMeta = $event->getPageMeta()) {
+            $this->applyPageMeta($pageMeta);
+        }
 
         try
         {

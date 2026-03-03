@@ -10,24 +10,24 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use Contao\Input;
 use Contao\Module;
 use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ReaderController;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\ValidationContextFactory;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
+use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Reader\Factory\ReaderPageMetaFactory;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
 use HeimrichHannot\FlareBundle\Util\Env;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 #[AsHook('generateBreadcrumb')]
 readonly class BreadcrumbListener
 {
     public function __construct(
         private Connection               $connection,
+        private EventDispatcherInterface $eventDispatcher,
         private ListSpecificationFactory $listSpecificationFactory,
-        private ReaderPageMetaFactory    $readerPageMetaFactory,
         private ProjectorRegistry        $projectorRegistry,
         private ValidationContextFactory $validationContextFactory,
     ) {}
@@ -107,13 +107,14 @@ readonly class BreadcrumbListener
                 return $items;
             }
 
-            $pageMeta = $this->readerPageMetaFactory->create(new ReaderPageMetaConfig(
+            /** @var ReaderPageMetaEvent $pageMetaEvent */
+            $pageMetaEvent = $this->eventDispatcher->dispatch(new ReaderPageMetaEvent(
                 contentModel: $contentModel,
                 displayModel: $autoItemModel,
                 listSpecification: $listSpec,
             ));
 
-            $title = $pageMeta->getTitle();
+            $title = $pageMetaEvent->getPageMeta()?->getTitle();
             $item = &$items[\count($items) - 1];
 
             if ($title && $item)

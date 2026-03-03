@@ -14,13 +14,10 @@ use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
-use HeimrichHannot\FlareBundle\ListType\Trait\GenericReaderPageMetaTrait;
 
 #[AsListType(type: self::TYPE, palette: self::DEFAULT_PALETTE)]
 class GenericDataContainerListType extends AbstractListType implements DataContainerContract
 {
-    use GenericReaderPageMetaTrait;
-
     public const TYPE = 'flare_generic_dc';
     public const DEFAULT_PALETTE = <<<'PALETTE'
         {data_container_legend},dc,fieldAutoItem;{parent_legend},hasParent;

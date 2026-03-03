@@ -1,35 +1,24 @@
 <?php
 
-declare(strict_types=1);
-
 namespace HeimrichHannot\FlareBundle\Event;
 
 use Contao\ContentModel;
 use Contao\Model;
-use Contao\Template;
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
-class ReaderRenderEvent extends AbstractTemplateRenderEvent
+class ReaderPageMetaEvent
 {
     public function __construct(
         private readonly ContentModel      $contentModel,
-        private readonly ContextInterface  $context,
         private readonly Model             $displayModel,
         private readonly ListSpecification $listSpecification,
-        private ?ReaderPageMeta            $pageMeta,
-        private Template                   $template,
+        private ?ReaderPageMeta            $pageMeta = null,
     ) {}
 
     public function getContentModel(): ContentModel
     {
         return $this->contentModel;
-    }
-
-    public function getContext(): ContextInterface
-    {
-        return $this->context;
     }
 
     public function getDisplayModel(): Model
@@ -47,22 +36,8 @@ class ReaderRenderEvent extends AbstractTemplateRenderEvent
         return $this->pageMeta;
     }
 
-    public function setPageMeta(?ReaderPageMeta $pageMeta): self
+    public function setPageMeta(?ReaderPageMeta $pageMeta): void
     {
         $this->pageMeta = $pageMeta;
-
-        return $this;
-    }
-
-    public function getTemplate(): Template
-    {
-        return $this->template;
-    }
-
-    public function setTemplate(Template $template): self
-    {
-        $this->template = $template;
-
-        return $this;
     }
 }

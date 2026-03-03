@@ -19,7 +19,7 @@ final readonly class Str
         string            $str,
         array|string|null $both = null,
         array|string|null $prefix = null,
-        array|string|null $suffix = null
+        array|string|null $suffix = null,
     ): string {
         if ($str === '') {
             return $str;
@@ -74,7 +74,7 @@ final readonly class Str
         string              $glue,
         array               $pieces,
         callable|false|null $filter = null,
-        ?callable           $format = null
+        ?callable           $format = null,
     ): string {
         /** @mago-expect lint:no-boolean-literal-comparison We have to check for false specifically. */
         if ($filter !== false) {
@@ -125,7 +125,7 @@ final readonly class Str
         if (\is_iterable($value)) {
             return \sprintf(
                 '[%s]',
-                \implode(',', \array_map(self::wrap(...), \iterator_to_array($value)))
+                \implode(',', \array_map(self::wrap(...), \iterator_to_array($value))),
             );
         }
 
@@ -151,6 +151,28 @@ final readonly class Str
         }
 
         return $rand;
+    }
+
+    public static function normalizeHeadline(array|string|null $headline): ?array
+    {
+        if (!$headline) {
+            return null;
+        }
+
+        $headline = StringUtil::deserialize($headline, true);
+
+        if (!isset($headline['tag_name']) && !isset($headline['unit'])
+            && !isset($headline['text']) && !isset($headline['value']))
+        {
+            return null;
+        }
+
+        return [
+            'tag_name' => $headline['tag_name'] ?? $headline['unit'] ?? 'h2',
+            'unit' => $headline['unit'] ?? $headline['tag_name'] ?? 'h2',
+            'text' => $headline['text'] ?? $headline['value'] ?? '',
+            'value' => $headline['value'] ?? $headline['text'] ?? '',
+        ];
     }
 
     public static function formatHeadline(array|string|null $headline, bool $withTags = false): ?string
@@ -203,17 +225,17 @@ final readonly class Str
      * @return string The processed metadata-friendly string.
      */
     public static function htmlToMeta(
-        string $text,
-        ?int   $charLimit = null,
+        string  $text,
+        ?int    $charLimit = null,
         ?string $ellipsis = null,
-        int    $flags = \ENT_QUOTES | \ENT_HTML5,
+        int     $flags = \ENT_QUOTES | \ENT_HTML5,
     ): string {
         $trim = \function_exists('mb_trim') ? \mb_trim(...) : \trim(...);
 
         $text = \preg_replace('/(\r\n|\n|\r){2,}/', "\n", $text);
 
         $text = $trim(\strip_tags($text));
-        $text = \preg_replace('/\s+/', ' ', $text);
+        $text = (string) \preg_replace('/\s+/', ' ', $text);
         $text = \html_entity_decode($text, \ENT_QUOTES | \ENT_HTML5, 'UTF-8');
 
         $originalTextLength = \mb_strlen($text);
@@ -232,12 +254,14 @@ final readonly class Str
 
         $text = $trim($text);
 
-        $ellipsis = \html_entity_decode($ellipsis, \ENT_QUOTES | \ENT_HTML5, 'UTF-8');
-        if ($ellipsis
-            && \mb_strlen($text) < $originalTextLength
-            && !\in_array(\mb_substr($text, -1), [$ellipsis, '.', '!', '?'], true))
+        if (!\is_null($ellipsis) && \mb_strlen($text) < $originalTextLength)
         {
-            $text .= $ellipsis;
+            $ellipsis = \html_entity_decode($ellipsis, \ENT_QUOTES | \ENT_HTML5, 'UTF-8');
+
+            if (!\in_array(\mb_substr($text, -1), [$ellipsis, '.', '!', '?'], true))
+            {
+                $text .= $ellipsis;
+            }
         }
 
         return \htmlentities($text, $flags, 'UTF-8');

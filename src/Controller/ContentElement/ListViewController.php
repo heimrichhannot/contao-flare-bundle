@@ -21,6 +21,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
+use HeimrichHannot\FlareBundle\Util\Str;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -130,7 +131,7 @@ final class ListViewController extends AbstractContentElementController
         $data = $template->getData();
         $data['flare'] = $engine;
         $data['content_model'] = $contentModel;
-        $data['headline'] = $contentModel->headline ?: null;
+        $data['headline'] = Str::normalizeHeadline($contentModel->headline ?: null);
         $template->setData($data);
 
         try

@@ -165,7 +165,7 @@ final class ReaderController extends AbstractContentElementController
         $data['flare_reader'] = $validationView;
         $data['model'] = $autoItemModel;
         $data['content_model'] = $contentModel;
-        $data['headline'] = $contentModel->headline ?: null;
+        $data['headline'] = Str::normalizeHeadline($contentModel->headline ?: null);
         $template->setData($data);
 
         $pageMeta = $event->getPageMeta();

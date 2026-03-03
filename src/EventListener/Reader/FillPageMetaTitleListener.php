@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\EventListener;
+namespace HeimrichHannot\FlareBundle\EventListener\Reader;
 
 use Contao\CoreBundle\String\HtmlDecoder;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;

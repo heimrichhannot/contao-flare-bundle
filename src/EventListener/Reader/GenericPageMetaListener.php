@@ -1,11 +1,10 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\EventListener;
+namespace HeimrichHannot\FlareBundle\EventListener\Reader;
 
 use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\CoreBundle\String\SimpleTokenParser;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
-use HeimrichHannot\FlareBundle\ListType\GenericDataContainerListType;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;

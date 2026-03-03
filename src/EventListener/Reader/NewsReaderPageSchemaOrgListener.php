@@ -1,6 +1,6 @@
 <?php
 
-namespace HeimrichHannot\FlareBundle\EventListener;
+namespace HeimrichHannot\FlareBundle\EventListener\Ŗeader;
 
 use Contao\News;
 use Contao\NewsModel;

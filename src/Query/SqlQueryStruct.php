@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Query;
 
 use Symfony\Component\Validator\Constraints as Assert;

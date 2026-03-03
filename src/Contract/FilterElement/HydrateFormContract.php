@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Contract\FilterElement;
 
 use HeimrichHannot\FlareBundle\Specification\FilterDefinition;

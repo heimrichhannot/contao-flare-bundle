@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\FilterElement\Relation;
 
 use Contao\DataContainer;

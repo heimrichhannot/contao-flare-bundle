@@ -1,5 +1,7 @@
 <?php /** @noinspection PhpFullyQualifiedNameUsageInspection */
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\DataContainer;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;

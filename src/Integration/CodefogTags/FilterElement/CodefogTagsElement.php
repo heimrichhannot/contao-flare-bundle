@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;

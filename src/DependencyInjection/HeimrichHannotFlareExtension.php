@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\DependencyInjection;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;

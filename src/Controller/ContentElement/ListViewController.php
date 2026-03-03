@@ -1,5 +1,7 @@
 <?php /** @noinspection RedundantSuppression */
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Controller\ContentElement;
 
 use Contao\ContentModel;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\InferPtable\Factory;
 
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrable;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Reader\Resolver;
 
 use HeimrichHannot\FlareBundle\Reader\Factory\ReaderRequestAttributeFactory;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareFilter;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;

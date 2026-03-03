@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;

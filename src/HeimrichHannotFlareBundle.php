@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @package   Heimrich & Hannot Flare Bundle
  * @author    Eric Gesemann (@ericges) <e.gesemann@heimrich-hannot.de>

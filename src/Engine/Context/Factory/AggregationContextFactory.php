@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Engine\Context\Factory;
 
 use HeimrichHannot\FlareBundle\Engine\Context\AggregationContext;

@@ -1,54 +1,66 @@
-# Contao Flare Bundle
+# AGENTS.md
 
-You are a senior software architect and developer, an expert in Symfony 7 and PHP 8 in the context of the Contao CMS.
+This file provides guidance AI coding agents, e.g., Claude Code (claude.ai/code), Gemini, and ChatGPT Codex, when working with code in this repository.
 
-We are developing a Contao extension called FLARE (acronym for “Filter, List, and Reader”).
+## Project
 
-## Project Overview
+**FLARE** (Filter, List, And REader) — a Symfony bundle for Contao CMS that replaces complex module setups with a unified List/Reader content element approach.
 
-- **Name:** Contao Flare Bundle (`heimrichhannot/contao-flare-bundle`)
-- **Type:** Symfony Bundle for Contao CMS
-- **Purpose:** A powerful and flexible extension for filtering, listing, and reading entities (such as News, Events, or generic data containers) in the Contao frontend. It aims to replace complex module setups with a unified "List" and "Reader" approach configured via the backend.
-- **Status:** Active development (Beta/WIP).
-
-## Key Technologies
-
-*   **Language:** PHP ^8.2
-*   **Framework:** Symfony ^6 || ^7 (extensively uses Forms, Dependency Injection, EventDispatcher)
-*   **CMS:** Contao Open Source CMS (^4.13 || ^5.0)
-*   **Templating:** Twig
-*   **Database:** Doctrine DBAL
-*   **Quality Assurance:** Mago (Linter/Formatter), PHPStan
+- Namespace: `HeimrichHannot\FlareBundle\`
+- Requires PHP ^8.2, Symfony ^5.4/^6.0, Contao ^4.13/^5.0
+- Bundle Name: Contao Flare Bundle (`heimrichhannot/contao-flare-bundle`)
+- Type: Symfony Bundle for Contao CMS
+- Status: Active development (Beta/WIP).
 
 ## Architecture
 
+The core execution flow is:
+
+```
+ContentElement Controller
+  → EngineFactory → Engine
+    → Context (Interactive / Validation / Aggregation / Export)
+      → Projector (orchestrates query + filter execution)
+        → View (formats data for Twig template)
+```
+
+
 The bundle follows standard Symfony Bundle architecture with deep Contao integration.
 
-*   **Bundle Entry Point:** `src/HeimrichHannotFlareBundle.php`. Registers several Compiler Passes to handle the extensible plugin architecture (`RegisterFilterElementsPass`, `RegisterListTypesPass`, etc.).
-*   **Dependency Injection:** Services are defined in `config/services.yaml` and loaded via `src/DependencyInjection/HeimrichHannotFlareExtension.php`.
-*   **Extensibility:** The bundle is designed to be extended.
-    *   **Custom Filters:** specific classes marked with `#[AsFilterElement]`.
-    *   **Custom Lists:** specific classes marked with `#[AsListType]`.
-*   **Events:** A comprehensive event system allows hooking into almost every stage of the process (Form Generation, Item Retrieval, Filter Invocation, Rendering).
-    *   Namespace: `HeimrichHannot\FlareBundle\Event`
+**Key entry points:**
+- `src/HeimrichHannotFlareBundle.php` — bundle entry, registers compiler passes
+- `src/DependencyInjection/HeimrichHannotFlareExtension.php` — DI setup
+- `src/Engine/Factory/EngineFactory.php` — creates Engine with appropriate Context
+- `src/Controller/ContentElement/ListViewController.php` / `ReaderController.php` — frontend controllers
 
-## Development & Conventions
+**Extensibility via PHP 8 attributes** (compiler passes auto-register tagged services):
+- `#[AsFilterElement(type: '...', palette: '...', formType: ...)]` — register a filter element
+- `#[AsListType(type: '...', dataContainer: '...', palette: '...')]` — register a list type
+- `#[AsFilterCallback(type, 'path.to.callback')]` — register a Contao DCA callback on a filter type
+- `#[AsFilterInvoker]` — register a custom filter invocation handler
 
-### Build & Install
-*   **Installation:** `composer require heimrichhannot/contao-flare-bundle`
-*   **Tests:** none
-*   **Linting/Formatting:** The project uses `mago`. Configuration is in `mago.toml`.
+Attributes are in `src/DependencyInjection/Attribute/`, compiler passes in `src/DependencyInjection/Compiler/`.
+
+**Event system** — Events, some with aliased dispatch for targeted listening (`flare.form.{name}.build`, etc.). All events are in `src/Event/`. Prefer events over overriding services for customization.
+
+**Registry pattern** — `FilterElementRegistry`, `ListTypeRegistry`, `FilterInvokerRegistry`, `ProjectorRegistry` map type names to implementations.
+
+**Query safety** — `FilterQueryBuilder` (`src/Query/FilterQueryBuilder.php`) enforces parameterized queries. `TableAliasRegistry` (`src/Query/TableAliasRegistry.php`) manages table aliases and JOINs safely.
+
+**Contao DCA** — Backend form definitions in `contao/dca/tl_flare_*.php`. Templates in `contao/templates/`. Translations in `contao/languages/`.
+
+## Coding Conventions
+
+- `declare(strict_types=1);` at the top of every PHP file
+- PSR-12 / PER coding style, 4-space indent, 120-char line width (enforced by Mago)
+- Use PHP 8 attributes over docblock annotations for registrations
+- `src/Model/` is excluded from Mago linting rules
 
 ### Tooling
 *   **IDE:** PHPStorm
 *   **Execution:** The `php` command is likely unavailable in your shell. Refrain from running `php` or `php bin/console` directly.
 
-### Coding Standards
-*   Follow PSR-12/PER Coding Style.
-*   **Attributes over Annotations:** Use PHP 8 attributes for registration (e.g., `#[AsFilterElement]`).
-*   **Strict Typing:** `declare(strict_types=1);` is recommended.
-
-### Key Directories
+## Key Directories
 
 *   **`src/`**: Contains the bundle's source code.
 *   **`contao/`**: Contao-specific configuration.
@@ -56,12 +68,4 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
     *   `templates/`: Twig templates for frontend output.
     *   `config/`: `config.php` for Contao hooks/constants.
 *   **`config/`**: Symfony configuration (services, routes).
-*   **`translations/`**: YAML/PHP translation files.
-
-## Usage by Contao
-
-1.  **Backend:** Create a "List" configuration under **Layout > Lists FLARE**.
-2.  **Filters:** Add children to the List configuration to define filters.
-3.  **Frontend:**
-    *   Use the **Flare List** content element to display the list.
-    *   Use the **Flare Reader** content element to display details.
+*   **`translations/`**: YAML/PHP translation files for Flare messages.

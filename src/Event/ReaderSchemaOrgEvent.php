@@ -6,7 +6,7 @@ use Contao\Model;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class ReaderPageSchemaOrgEvent extends Event
+class ReaderSchemaOrgEvent extends Event
 {
     public function __construct(
         public readonly ListSpecification $listSpecification,

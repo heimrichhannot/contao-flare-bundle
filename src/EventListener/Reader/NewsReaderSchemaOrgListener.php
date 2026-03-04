@@ -4,13 +4,13 @@ namespace HeimrichHannot\FlareBundle\EventListener\Reader;
 
 use Contao\News;
 use Contao\NewsModel;
-use HeimrichHannot\FlareBundle\Event\ReaderPageSchemaOrgEvent;
+use HeimrichHannot\FlareBundle\Event\ReaderSchemaOrgEvent;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsEventListener(priority: 200)]
-class NewsReaderPageSchemaOrgListener
+class NewsReaderSchemaOrgListener
 {
-    public function __invoke(ReaderPageSchemaOrgEvent $event): void
+    public function __invoke(ReaderSchemaOrgEvent $event): void
     {
         $model = $event->model;
 

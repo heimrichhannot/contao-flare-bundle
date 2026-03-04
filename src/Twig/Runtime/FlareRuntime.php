@@ -14,7 +14,7 @@ use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
-use HeimrichHannot\FlareBundle\Event\ReaderPageSchemaOrgEvent;
+use HeimrichHannot\FlareBundle\Event\ReaderSchemaOrgEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -240,7 +240,7 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
             $list = $engine->getList();
         }
 
-        $event = $this->eventDispatcher->dispatch(new ReaderPageSchemaOrgEvent($list, $model));
+        $event = $this->eventDispatcher->dispatch(new ReaderSchemaOrgEvent($list, $model));
 
         return $event->data;
     }

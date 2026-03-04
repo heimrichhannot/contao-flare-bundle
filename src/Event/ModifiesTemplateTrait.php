@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Event;
 
 use Contao\Template;
-use Symfony\Contracts\EventDispatcher\Event;
 
-abstract class AbstractTemplateRenderEvent extends Event
+trait ModifiesTemplateTrait
 {
     abstract public function getTemplate(): Template;
 

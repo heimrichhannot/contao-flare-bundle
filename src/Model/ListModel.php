@@ -8,7 +8,7 @@ use Contao\Model;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrableInterface;
 use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
-use HeimrichHannot\FlareBundle\Trait\AutoItemFieldGetterTrait;
+use HeimrichHannot\FlareBundle\Specification\AutoItemFieldGetterTrait;
 
 /**
  * Class ListModel

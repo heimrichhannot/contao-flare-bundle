@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Trait;
+namespace HeimrichHannot\FlareBundle\Specification;
 
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 

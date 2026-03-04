@@ -10,9 +10,12 @@ use Contao\Template;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use Symfony\Contracts\EventDispatcher\Event;
 
-class ReaderRenderEvent extends AbstractTemplateRenderEvent
+class ReaderRenderEvent extends Event
 {
+    use ModifiesTemplateTrait;
+
     public function __construct(
         private readonly ContentModel      $contentModel,
         private readonly ContextInterface  $context,

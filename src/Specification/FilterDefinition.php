@@ -6,7 +6,6 @@ namespace HeimrichHannot\FlareBundle\Specification;
 
 use HeimrichHannot\FlareBundle\Model\DocumentsFilterModelTrait;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
-use HeimrichHannot\FlareBundle\Trait\DynamicPropertiesTrait;
 
 /**
  * @property string $type

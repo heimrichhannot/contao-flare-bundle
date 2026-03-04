@@ -8,8 +8,8 @@ use Contao\Model;
 
 class ValidationView implements ViewInterface
 {
-    use Trait\HandlesModelsTrait;
-    use Trait\LinksToReaderTrait;
+    use HandlesModelsTrait;
+    use LinksToReaderTrait;
 
     private array $entriesById;
     private array $entriesByAutoItem;

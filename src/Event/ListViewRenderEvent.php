@@ -8,9 +8,12 @@ use Contao\ContentModel;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use Symfony\Contracts\EventDispatcher\Event;
 
-class ListViewRenderEvent extends AbstractTemplateRenderEvent
+class ListViewRenderEvent extends Event
 {
+    use ModifiesTemplateTrait;
+
     public function __construct(
         private readonly ContentModel $contentModel,
         private readonly Engine       $engine,

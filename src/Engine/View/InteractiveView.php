@@ -11,8 +11,8 @@ use Symfony\Component\Form\FormInterface;
 
 class InteractiveView implements ViewInterface
 {
-    use Trait\HandlesModelsTrait;
-    use Trait\LinksToReaderTrait;
+    use HandlesModelsTrait;
+    use LinksToReaderTrait;
 
     private array $entries;
     private array $models;

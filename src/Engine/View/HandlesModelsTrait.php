@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Engine\View\Trait;
+namespace HeimrichHannot\FlareBundle\Engine\View;
 
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Exception\FlareException;

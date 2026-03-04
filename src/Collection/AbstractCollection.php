@@ -34,7 +34,7 @@ abstract class AbstractCollection implements \IteratorAggregate, \Countable, \Se
      */
     public function isEmpty(): bool
     {
-        return empty($this->items);
+        return \count($this->items) < 1;
     }
 
     /**

@@ -93,22 +93,23 @@ class CalendarCurrentElement extends AbstractFilterElement
             return null;
         }
 
-        if (\array_key_exists('from', $value) || \array_key_exists('to', $value))
+        if (!\array_key_exists('from', $value) && !\array_key_exists('to', $value))
         {
-            $from = $value['from'] ?? null;
-            $to = $value['to'] ?? null;
-        }
-        elseif (\count($value) === 2)
-        {
+            if (\count($value) !== 2)
+            {
+                return null;
+            }
+
             $value = \array_values($value);
 
-            $from = $value[0] ?? null;
-            $to = $value[1] ?? null;
+            return [
+                'from' => $this->mixedToDateTime($value[0] ?? null),
+                'to' => $this->mixedToDateTime($value[1] ?? null),
+            ];
         }
-        else
-        {
-            return null;
-        }
+
+        $from = $value['from'] ?? null;
+        $to = $value['to'] ?? null;
 
         return [
             'from' => $this->mixedToDateTime($from),

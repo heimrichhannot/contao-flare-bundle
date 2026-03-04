@@ -136,7 +136,7 @@ class TableAliasRegistry
         $visitedAliases = [];
         $stack = $this->getActiveAliases();
 
-        while (!empty($stack))
+        while (\count($stack) > 0)
         {
             $alias = \array_pop($stack);
 

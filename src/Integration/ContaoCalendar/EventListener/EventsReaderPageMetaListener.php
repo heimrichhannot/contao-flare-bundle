@@ -28,9 +28,8 @@ readonly class EventsReaderPageMetaListener
 
         $pageMeta = $event->getPageMeta() ?? new ReaderPageMeta();
 
-        /** @mago-expect lint:no-nested-ternary This is a fine fallback chain. */
         $pageMeta->setTitle($this->htmlDecoder->inputEncodedToPlainText(
-            $model->pageTitle ?: $model->title ?: $objPage?->title ?: ''
+            Str::coalesce($model->pageTitle, $model->title, $objPage?->title) ?? ''
         ));
 
         $description = null;

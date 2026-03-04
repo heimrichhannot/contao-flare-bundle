@@ -28,9 +28,7 @@ class AggregationProjector extends AbstractProjector
         $queryConfig = $this->createListQueryConfig($spec, $context);
 
         return new AggregationView(
-            fetchCount: function () use ($queryConfig): int {
-                return $this->fetchCount($queryConfig);
-            }
+            fetchCount: fn (): int => $this->fetchCount($queryConfig)
         );
     }
 

@@ -49,7 +49,7 @@ final class SortOrderSequence
         foreach ($items as $order) {
             $key = $order->key();
             if (isset($seen[$key])) {
-                throw new FlareException("Duplicate sort key in sequence: $key");
+                throw new FlareException("Duplicate sort key in sequence: {$key}");
             }
             $seen[$key] = true;
         }

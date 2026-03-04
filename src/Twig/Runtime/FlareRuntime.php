@@ -15,7 +15,6 @@ use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Event\ReaderSchemaOrgEvent;
-use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
@@ -87,56 +86,6 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
     }
 
     /**
-     * Returns a list view DTO for the given list model.
-     *
-     * @param array{
-     *     form_name?: string,
-     *     items_per_page?: int,
-     *     sort?: array<string, string>,
-     * } $options
-     *
-     * @throws FlareException
-     *
-     * @deprecated To be removed in 0.1.0 todo(@ericges)
-     */
-    // public function getFlare(ListModel|string|int $listModel, array $options = []): ListView
-    // {
-    //     $cacheKey = $listModel->id . '@' . \md5(\serialize($options));
-    //
-    //     if (isset($this->listViewCache[$cacheKey])) {
-    //         return $this->listViewCache[$cacheKey];
-    //     }
-    //
-    //     $listModel = $this->getListModel($listModel);
-    //
-    //     $paginatorConfig = new PaginatorConfig(
-    //         itemsPerPage: $options['items_per_page'] ?? null,
-    //     );
-    //
-    //     $sortDescriptor = null;
-    //     if (isset($options['sort'])) {
-    //         $sortDescriptor = SortDescriptor::fromMap($options['sort']);
-    //     }
-    //
-    //     $contentContext = new ContentContext(
-    //         context: ContentContext::CONTEXT_TWIG,
-    //         contentModel: null,
-    //         formName: $options['form_name'] ?? null,
-    //     );
-    //
-    //     $listView = $this->listViewBuilderFactory->create()
-    //         ->setContentContext($contentContext)
-    //         ->setListModel($listModel)
-    //         ->setPaginatorConfig($paginatorConfig)
-    //         ->setSortDescriptor($sortDescriptor)
-    //         ->build();
-    //
-    //     $this->listViewCache[$cacheKey] = $listView;
-    //
-    //     return $listView;
-    // }
-
-    /**
      * @throws \InvalidArgumentException
      */
     public function getListModel(ListModel|string|int $listModel): ?ListModel
@@ -145,7 +94,6 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
             return $listModel;
         }
 
-        /** @noinspection CallableParameterUseCaseInTypeContextInspection */
         $listModel = ListModel::findByPk((int) $listModel);
 
         if ($listModel instanceof ListModel) {
@@ -297,7 +245,7 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
     {
         $result = null;
 
-        return static function () use (&$callback, &$result) {
+        return static function () use (&$callback, &$result): mixed {
             if ($callback !== null)
             {
                 $result = $callback();

@@ -20,7 +20,7 @@ class DcMultilingualHelper
 
     private static ?string $language = null;
 
-    public static function getLanguage()
+    public static function getLanguage(): string
     {
         return self::$language ??= (
             $GLOBALS['TL_LANGUAGE']

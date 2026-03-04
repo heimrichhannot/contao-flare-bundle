@@ -151,7 +151,8 @@ readonly class FilterExecutor
                 $serviceId = $callback::class;
                 $method = '::__invoke';
             }
-            elseif (\is_callable($callback))
+
+            if (!$serviceId && \is_callable($callback))
             {
                 try
                 {
@@ -159,6 +160,7 @@ readonly class FilterExecutor
                     $serviceId = $reflection->getClosureScopeClass()?->getName() ?? 'Closure';
                     $method = '::' . $reflection->getName();
                 }
+                /** @mago-expect lint:no-empty-catch-clause ReflectionException is safely ignored here */
                 catch (\ReflectionException) {}
             }
 

@@ -63,7 +63,7 @@ class EventsAggregationProjector extends AggregationProjector
 
             return \array_reduce(
                 $byDate,
-                static fn ($carry, $entriesOnDate): int => $carry + \count($entriesOnDate),
+                static fn (int $carry, array $entriesOnDate): int => $carry + \count($entriesOnDate),
                 0
             );
         }

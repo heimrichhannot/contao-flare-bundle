@@ -61,9 +61,7 @@ class InteractiveProjector extends AbstractProjector
             $fetchEntries = static fn (): array => [];
         }
 
-        $fetchEntries ??= function () use ($queryConfig): array {
-            return $this->fetchEntries($queryConfig);
-        };
+        $fetchEntries ??= fn (): array => $this->fetchEntries($queryConfig);
 
         $readerUrlGenerator = $this->readerPageUrlGenerator->createCallable($context);
 
@@ -195,7 +193,7 @@ class InteractiveProjector extends AbstractProjector
         $projector = $this->getProjectorFor($spec, $aggregationConfig);
         $projection = $projector->project($spec, $aggregationConfig);
 
-        \assert($projection instanceof AggregationView);
+        \assert($projection instanceof AggregationView, 'Expected AggregationView from projector.');
 
         return $projection;
     }

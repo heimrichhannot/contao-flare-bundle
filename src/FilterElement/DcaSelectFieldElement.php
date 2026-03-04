@@ -38,7 +38,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
     {
         $options = $this->getOptions($inv->list, $inv->filter) ?? [];
 
-        /** @todo(@ericges): Refactor logic to use IntrinsicValueContract and RuntimeValueContract */
+        /** @todo (@ericges): Refactor logic to use IntrinsicValueContract and RuntimeValueContract */
 
         if ($inv->filter->isIntrinsic())
         {
@@ -88,12 +88,12 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
             if ($isMultiple)
             {
                 $qb->whereInSerialized($value, $targetField);
+
+                return;
             }
-            else
-            {
-                $qb->where($qb->expr()->eq($qb->column($targetField), ':value'))
-                    ->setParameter('value', $value);
-            }
+
+            $qb->where($qb->expr()->eq($qb->column($targetField), ':value'))
+                ->setParameter('value', $value);
 
             return;
         }
@@ -127,12 +127,12 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
         if ($isMultiple)
         {
             $qb->whereInSerialized($validOptions, $targetField);
+
+            return;
         }
-        else
-        {
-            $qb->where($qb->expr()->in($qb->column($targetField), ':values'))
-                ->setParameter('values', $validOptions);
-        }
+
+        $qb->where($qb->expr()->in($qb->column($targetField), ':values'))
+            ->setParameter('values', $validOptions);
     }
 
     public function getPalette(PaletteConfig $config): ?string

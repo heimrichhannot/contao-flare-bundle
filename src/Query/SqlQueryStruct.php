@@ -36,7 +36,7 @@ class SqlQueryStruct
         $seen = [];
         foreach ($this->joins as $join) {
             if (isset($seen[$join->joinAlias])) {
-                throw new \LogicException("Duplicate join alias: $join->joinAlias");
+                throw new \LogicException("Duplicate join alias: {$join->joinAlias}");
             }
             $seen[$join->joinAlias] = true;
         }

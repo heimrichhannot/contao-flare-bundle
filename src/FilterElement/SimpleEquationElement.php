@@ -73,12 +73,8 @@ class SimpleEquationElement extends AbstractFilterElement
         $resolver->define('operator')
             ->required()
             ->allowedTypes('string', SqlEquationOperator::class)
-            ->allowedValues(static function (SqlEquationOperator|string $value): bool {
-                return (bool) SqlEquationOperator::match($value);
-            })
-            ->normalize(static function (Options $resolver, SqlEquationOperator|string $value): ?SqlEquationOperator {
-                return SqlEquationOperator::match($value);
-            })
+            ->allowedValues(static fn (SqlEquationOperator|string $value): bool => (bool) SqlEquationOperator::match($value))
+            ->normalize(static fn (Options $resolver, SqlEquationOperator|string $value): ?SqlEquationOperator => SqlEquationOperator::match($value))
         ;
 
         $resolver->define('right')->default(null)->allowedTypes('string', 'null');

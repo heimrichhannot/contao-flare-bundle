@@ -76,11 +76,9 @@ readonly class BreadcrumbListener
 
         try
         {
-            $autoItem ??= (
-                \method_exists(Input::class, 'findGet')
-                    ? Input::findGet('auto_item')
-                    : Input::get('auto_item', false, true)
-            );
+            $autoItem ??= \method_exists(Input::class, 'findGet')
+                ? Input::findGet('auto_item')
+                : Input::get('auto_item', false, true);
 
             if (!$autoItem) {
                 return $items;
@@ -123,6 +121,7 @@ readonly class BreadcrumbListener
                 $item['link'] = $title;
             }
         }
+        // @mago-expect lint:no-empty-catch-clause Intentionally ignored to not break the breadcrumb
         catch (\Throwable)
         {
             // ignore

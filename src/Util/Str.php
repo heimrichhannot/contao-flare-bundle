@@ -266,4 +266,36 @@ final readonly class Str
 
         return \htmlentities($text, $flags, 'UTF-8');
     }
+
+    /**
+     * Returns the first non-empty string from a list of arguments, evaluating callable arguments if necessary.
+     *
+     * This function iterates through a list of arguments and performs the following operations:
+     * 1. If an argument is a callable, it executes the callable and uses its return value.
+     * 2. Checks if the argument is a non-empty string.
+     * 3. Returns the first non-empty string encountered.
+     * 4. If no non-empty string is found, the function returns null.
+     *
+     * @param string|callable|null ...$args A variable number of arguments to check. Each argument can be:
+     *                                      - A string,
+     *                                      - A callable returning a value,
+     *                                      - null.
+     *
+     * @return string|null The first non-empty string, or null if no such string is found.
+     */
+    public static function coalesce(string|callable|null ...$args): ?string
+    {
+        foreach ($args as $arg)
+        {
+            if (\is_callable($arg)) {
+                $arg = $arg();
+            }
+
+            if (\is_string($arg) && $arg !== '') {
+                return $arg;
+            }
+        }
+
+        return null;
+    }
 }

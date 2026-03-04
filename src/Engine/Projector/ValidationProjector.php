@@ -36,12 +36,8 @@ class ValidationProjector extends AbstractProjector
         $readerUrlGenerator = $this->readerPageUrlGenerator->createCallable($context);
 
         return new ValidationView(
-            fetchEntryById: function (int $id) use ($spec, $context): ?array {
-                return $this->fetchEntry($id, $spec, $context);
-            },
-            fetchEntryByAutoItem: function (string $autoItem) use ($autoItemField, $spec, $context): ?array {
-                return $this->fetchEntryByAutoItem($autoItem, $autoItemField, $spec, $context);
-            },
+            fetchEntryById: fn (int $id): ?array => $this->fetchEntry($id, $spec, $context),
+            fetchEntryByAutoItem: fn (string $autoItem): ?array => $this->fetchEntryByAutoItem($autoItem, $autoItemField, $spec, $context),
             readerUrlGenerator: $readerUrlGenerator,
             table: $spec->dc,
             autoItemField: $autoItemField,

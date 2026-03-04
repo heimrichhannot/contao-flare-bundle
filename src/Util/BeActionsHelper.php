@@ -28,7 +28,7 @@ class BeActionsHelper
 
         $val = match ($operation) {
             self::OP_CHILDREN => [
-                'href' => "table=$itemTable",
+                'href' => "table={$itemTable}",
                 'icon' => $contao4 ? 'edit.svg' : 'children.svg',
             ],
             self::OP_EDIT => [

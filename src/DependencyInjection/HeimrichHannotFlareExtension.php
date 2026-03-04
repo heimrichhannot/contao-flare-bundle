@@ -37,9 +37,9 @@ class HeimrichHannotFlareExtension extends Extension implements PrependExtension
             $loader->load('integrations/contao_comments.yaml');
         }
 
-        if (Env::hasTerminal42ChangeLanguage()) {
-            $loader->load('integrations/terminal42_changelanguage.yaml');
-        }
+        // if (Env::hasTerminal42ChangeLanguage()) {
+        //     $loader->load('integrations/terminal42_changelanguage.yaml');
+        // }
 
         $configuration = new Configuration();
         $flareConfig = $this->processConfiguration($configuration, $configs);

@@ -7,7 +7,7 @@ use HeimrichHannot\FlareBundle\ListType\GenericDataContainerListType;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsEventListener]
-class AttachGenericPageMetaListener
+class EnableGenericPageMetaListener
 {
     public function __invoke(ListSpecificationCreatedEvent $event): void
     {

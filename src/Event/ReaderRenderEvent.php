@@ -18,7 +18,7 @@ class ReaderRenderEvent extends AbstractTemplateRenderEvent
         private readonly ContextInterface  $context,
         private readonly Model             $displayModel,
         private readonly ListSpecification $listSpecification,
-        private ?ReaderPageMeta            $pageMeta,
+        private ReaderPageMeta             $pageMeta,
         private Template                   $template,
     ) {}
 
@@ -42,12 +42,12 @@ class ReaderRenderEvent extends AbstractTemplateRenderEvent
         return $this->listSpecification;
     }
 
-    public function getPageMeta(): ?ReaderPageMeta
+    public function getPageMeta(): ReaderPageMeta
     {
         return $this->pageMeta;
     }
 
-    public function setPageMeta(?ReaderPageMeta $pageMeta): self
+    public function setPageMeta(ReaderPageMeta $pageMeta): self
     {
         $this->pageMeta = $pageMeta;
 

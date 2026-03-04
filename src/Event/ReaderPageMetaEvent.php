@@ -9,12 +9,16 @@ use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 class ReaderPageMetaEvent
 {
+    private ReaderPageMeta $pageMeta;
+
     public function __construct(
         private readonly ContentModel      $contentModel,
         private readonly Model             $displayModel,
         private readonly ListSpecification $listSpecification,
-        private ?ReaderPageMeta            $pageMeta = null,
-    ) {}
+        ?ReaderPageMeta                    $pageMeta = null,
+    ) {
+        $this->pageMeta = $pageMeta ?? new ReaderPageMeta();
+    }
 
     public function getContentModel(): ContentModel
     {
@@ -31,12 +35,12 @@ class ReaderPageMetaEvent
         return $this->listSpecification;
     }
 
-    public function getPageMeta(): ?ReaderPageMeta
+    public function getPageMeta(): ReaderPageMeta
     {
         return $this->pageMeta;
     }
 
-    public function setPageMeta(?ReaderPageMeta $pageMeta): void
+    public function setPageMeta(ReaderPageMeta $pageMeta): void
     {
         $this->pageMeta = $pageMeta;
     }

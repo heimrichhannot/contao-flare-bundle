@@ -168,9 +168,7 @@ final class ReaderController extends AbstractContentElementController
         $data['headline'] = Str::normalizeHeadline($contentModel->headline ?: null);
         $template->setData($data);
 
-        if ($pageMeta = $event->getPageMeta()) {
-            $this->applyPageMeta($pageMeta);
-        }
+        $this->applyPageMeta($event->getPageMeta());
 
         try
         {

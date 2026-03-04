@@ -5,12 +5,11 @@ namespace HeimrichHannot\FlareBundle\EventListener\Reader;
 use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\NewsModel;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
-use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsEventListener(priority: 190)]
-readonly class NewsPageMetaListener
+readonly class NewsReaderPageMetaListener
 {
     public function __construct(
         private HtmlDecoder $htmlDecoder,
@@ -27,7 +26,7 @@ readonly class NewsPageMetaListener
 
         $contentModel = $event->getContentModel();
 
-        $pageMeta = $event->getPageMeta() ?? new ReaderPageMeta();
+        $pageMeta = $event->getPageMeta();
 
         $headline = Str::formatHeadline($model->headline) ?: Str::formatHeadline($contentModel->headline);
         $title = $headline ?: $this->htmlDecoder->inputEncodedToPlainText($objPage->title);
@@ -40,7 +39,5 @@ readonly class NewsPageMetaListener
         if ($teaser) {
             $pageMeta->setDescription(Str::htmlToMeta($teaser, 250));
         }
-
-        $event->setPageMeta($pageMeta);
     }
 }

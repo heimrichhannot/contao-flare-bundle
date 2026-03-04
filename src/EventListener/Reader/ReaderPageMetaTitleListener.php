@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsEventListener(priority: -200)]
-readonly class FillPageMetaTitleListener
+readonly class ReaderPageMetaTitleListener
 {
     public function __construct(
         private HtmlDecoder $htmlDecoder,
@@ -18,7 +18,7 @@ readonly class FillPageMetaTitleListener
     public function __invoke(ReaderPageMetaEvent $event): void
     {
         $pageMeta = $event->getPageMeta();
-        if ($pageMeta?->getTitle()) {
+        if ($pageMeta->getTitle()) {
             return;
         }
 
@@ -39,8 +39,6 @@ readonly class FillPageMetaTitleListener
             return;
         }
 
-        $pageMeta ??= new ReaderPageMeta();
         $pageMeta->setTitle($title);
-        $event->setPageMeta($pageMeta);
     }
 }

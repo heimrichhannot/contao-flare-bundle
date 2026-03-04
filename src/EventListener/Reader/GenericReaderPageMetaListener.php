@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsEventListener(priority: 200)]
-readonly class GenericPageMetaListener
+readonly class GenericReaderPageMetaListener
 {
     public function __construct(
         private HtmlDecoder       $htmlDecoder,
@@ -27,7 +27,7 @@ readonly class GenericPageMetaListener
             return;
         }
 
-        $pageMeta = $event->getPageMeta() ?? new ReaderPageMeta();
+        $pageMeta = $event->getPageMeta();
 
         $titleFormat = $pageMeta->getTitle() ? null : $list->metaTitleFormat;
         $descriptionFormat = $pageMeta->getDescription() ? null : $list->metaDescriptionFormat;
@@ -83,7 +83,5 @@ readonly class GenericPageMetaListener
             $robots = $this->simpleTokenParser->parse($robotsFormat, $tokens, allowHtml: false);
             $pageMeta->setRobots($robots);
         }
-
-        $event->setPageMeta($pageMeta);
     }
 }

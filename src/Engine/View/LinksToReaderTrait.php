@@ -5,11 +5,17 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Engine\View;
 
 use Contao\Model;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
 
 trait LinksToReaderTrait
 {
     private array $readerUrls = [];
 
+    /**
+     * @return Model|null     The resolved model or `null` if a model of the given ID is not available.
+     * @throws FlareException If an issue not pertaining to the availability of the requested model occurs.
+     *   E.g., when the model class cannot be resolved. Possibly bubbling from {@see HandlesModelsTrait}.
+     */
     abstract protected function getReaderModel(int $id): ?Model;
 
     /**
@@ -18,10 +24,12 @@ trait LinksToReaderTrait
     abstract protected function getReaderUrlGenerator(): callable;
 
     /**
-     * Generates and retrieves the reader URL for a given ID.
+     * Generates and retrieves the reader URL for a given model or ID.
      *
-     * @param Model|int|string $target The target model or ID.
-     * @return string|null The URL as a string if available, or null if not found.
+     * @param Model|int|string $target The model instance or its ID.
+     * @return string|null The generated URL, or null if the model cannot be resolved.
+     * @throws FlareException Thrown by {@see getReaderModel()}.
+     * @throws \InvalidArgumentException If the provided model does not match the expected model type for this context.
      */
     public function to(Model|int|string $target): ?string
     {

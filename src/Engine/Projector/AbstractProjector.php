@@ -119,7 +119,9 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
     {
         try
         {
-            return $this->container->get(ListQueryDirector::class)->createQueryBuilder($config);
+            /** @var ListQueryDirector $listQueryDirector */
+            $listQueryDirector = $this->container->get(ListQueryDirector::class);
+            return $listQueryDirector->createQueryBuilder($config);
         }
         catch (ContainerExceptionInterface $e)
         {

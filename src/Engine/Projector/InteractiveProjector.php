@@ -67,12 +67,30 @@ class InteractiveProjector extends AbstractProjector
 
         $readerUrlGenerator = $this->readerPageUrlGenerator->createCallable($context);
 
-        return new InteractiveView(
+        return $this->createView(
             fetchEntries: $fetchEntries,
             form: $form,
             paginator: $paginator,
             readerUrlGenerator: $readerUrlGenerator,
             table: $spec->dc,
+            totalItems: $totalItems,
+        );
+    }
+
+    protected function createView(
+        \Closure $fetchEntries,
+        FormInterface $form,
+        Paginator $paginator,
+        \Closure $readerUrlGenerator,
+        string $table,
+        int $totalItems,
+    ): InteractiveView {
+        return new InteractiveView(
+            fetchEntries: $fetchEntries,
+            form: $form,
+            paginator: $paginator,
+            readerUrlGenerator: $readerUrlGenerator,
+            table: $table,
             totalItems: $totalItems,
         );
     }

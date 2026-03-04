@@ -24,7 +24,6 @@ ContentElement Controller
         → View (formats data for Twig template)
 ```
 
-
 The bundle follows standard Symfony Bundle architecture with deep Contao integration.
 
 **Key entry points:**

@@ -14,12 +14,12 @@ use HeimrichHannot\FlareBundle\Specification\ListSpecification;
  */
 class ExportProjector extends AbstractProjector
 {
-    public function supports(ListSpecification $spec, ContextInterface $context): bool
+    public function supports(ListSpecification $list, ContextInterface $context): bool
     {
         return false;
     }
 
-    public function project(ListSpecification $spec, ContextInterface $context): ViewInterface
+    public function project(ListSpecification $list, ContextInterface $context): ViewInterface
     {
         throw new \RuntimeException('Not implemented.');
     }

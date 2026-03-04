@@ -10,8 +10,8 @@ use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
 /**
- * @template TProjection of ViewInterface
- * @template TConfig of ContextInterface
+ * @template TView of ViewInterface
+ * @template TContext of ContextInterface
  */
 #[AutoconfigureTag('flare.projector')]
 interface ProjectorInterface
@@ -19,19 +19,19 @@ interface ProjectorInterface
     /**
      * Checks if this projector supports the given context configuration.
      */
-    public function supports(ListSpecification $spec, ContextInterface $context): bool;
+    public function supports(ListSpecification $list, ContextInterface $context): bool;
 
     /**
      * Calculates the priority of the projector when supported, considering the given specification.
      */
-    public function priority(ListSpecification $spec, ContextInterface $context): int;
+    public function priority(ListSpecification $list, ContextInterface $context): int;
 
     /**
      * Projects a list specification into a result based on the context config.
      *
-     * @param ListSpecification $spec
-     * @param ContextInterface $context
+     * @param ListSpecification $list
+     * @param ContextInterface  $context
      * @return ViewInterface
      */
-    public function project(ListSpecification $spec, ContextInterface $context): ViewInterface;
+    public function project(ListSpecification $list, ContextInterface $context): ViewInterface;
 }

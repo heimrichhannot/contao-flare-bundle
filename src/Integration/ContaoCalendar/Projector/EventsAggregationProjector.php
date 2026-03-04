@@ -17,12 +17,12 @@ class EventsAggregationProjector extends AggregationProjector
 {
     use GroupsEntriesTrait;
 
-    public function supports(ListSpecification $spec, ContextInterface $context): bool
+    public function supports(ListSpecification $list, ContextInterface $context): bool
     {
-        return $spec->type === EventsListType::TYPE && $context instanceof AggregationContext;
+        return $list->type === EventsListType::TYPE && $context instanceof AggregationContext;
     }
 
-    public function priority(ListSpecification $spec, ContextInterface $context): int
+    public function priority(ListSpecification $list, ContextInterface $context): int
     {
         return 100;
     }

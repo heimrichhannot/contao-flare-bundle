@@ -20,12 +20,12 @@ class EventsInteractiveProjector extends InteractiveProjector
 {
     use GroupsEntriesTrait;
 
-    public function supports(ListSpecification $spec, ContextInterface $context): bool
+    public function supports(ListSpecification $list, ContextInterface $context): bool
     {
-        return $spec->type === EventsListType::TYPE && $context instanceof InteractiveContext;
+        return $list->type === EventsListType::TYPE && $context instanceof InteractiveContext;
     }
 
-    public function priority(ListSpecification $spec, ContextInterface $context): int
+    public function priority(ListSpecification $list, ContextInterface $context): int
     {
         return 100;
     }

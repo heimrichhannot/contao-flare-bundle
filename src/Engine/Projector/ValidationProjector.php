@@ -23,12 +23,12 @@ class ValidationProjector extends AbstractProjector
         private readonly ReaderPageUrlGenerator $readerPageUrlGenerator,
     ) {}
 
-    public function supports(ListSpecification $spec, ContextInterface $context): bool
+    public function supports(ListSpecification $list, ContextInterface $context): bool
     {
         return $context instanceof ValidationContext;
     }
 
-    public function project(ListSpecification $spec, ContextInterface $context): ValidationView
+    public function project(ListSpecification $list, ContextInterface $context): ValidationView
     {
         \assert($context instanceof ValidationContext, '$config must be an instance of ValidationConfig');
 
@@ -36,10 +36,10 @@ class ValidationProjector extends AbstractProjector
         $readerUrlGenerator = $this->readerPageUrlGenerator->createCallable($context);
 
         return new ValidationView(
-            fetchEntryById: fn (int $id): ?array => $this->fetchEntry($id, $spec, $context),
-            fetchEntryByAutoItem: fn (string $autoItem): ?array => $this->fetchEntryByAutoItem($autoItem, $autoItemField, $spec, $context),
+            fetchEntryById: fn (int $id): ?array => $this->fetchEntry($id, $list, $context),
+            fetchEntryByAutoItem: fn (string $autoItem): ?array => $this->fetchEntryByAutoItem($autoItem, $autoItemField, $list, $context),
             readerUrlGenerator: $readerUrlGenerator,
-            table: $spec->dc,
+            table: $list->dc,
             autoItemField: $autoItemField,
         );
     }

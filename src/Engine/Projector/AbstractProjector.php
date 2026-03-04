@@ -40,14 +40,14 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
     /**
      * {@inheritdoc}
      */
-    abstract public function supports(ListSpecification $spec, ContextInterface $context): bool;
+    abstract public function supports(ListSpecification $list, ContextInterface $context): bool;
 
     /**
      * {@inheritdoc}
      *
      * The default priority is 0, but can be overriden by subclasses.
      */
-    public function priority(ListSpecification $spec, ContextInterface $context): int
+    public function priority(ListSpecification $list, ContextInterface $context): int
     {
         return 0;
     }
@@ -57,7 +57,7 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
      *
      * @throws FlareException Thrown if the projector does not support the provided list context and configuration.
      */
-    abstract public function project(ListSpecification $spec, ContextInterface $context): ViewInterface;
+    abstract public function project(ListSpecification $list, ContextInterface $context): ViewInterface;
 
     protected function gatherFilterValues(ListSpecification $spec, array $runtimeValues): array
     {

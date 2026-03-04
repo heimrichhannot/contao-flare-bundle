@@ -34,25 +34,25 @@ class InteractiveProjector extends AbstractProjector
         private readonly ReaderPageUrlGenerator    $readerPageUrlGenerator,
     ) {}
 
-    public function supports(ListSpecification $spec, ContextInterface $context): bool
+    public function supports(ListSpecification $list, ContextInterface $context): bool
     {
         return $context instanceof InteractiveContext;
     }
 
-    public function project(ListSpecification $spec, ContextInterface $context): InteractiveView
+    public function project(ListSpecification $list, ContextInterface $context): InteractiveView
     {
         \assert($context instanceof InteractiveContext, '$config must be an instance of InteractiveConfig');
 
-        $form = $this->getForm($spec, $context);
-        $filterValues = $this->gatherFilterValues($spec, $this->mapFormDataToFilterKeys($spec, $form));
-        $totalItems = $this->getAggregationProjection($spec, $context, $filterValues)->getCount();
+        $form = $this->getForm($list, $context);
+        $filterValues = $this->gatherFilterValues($list, $this->mapFormDataToFilterKeys($list, $form));
+        $totalItems = $this->getAggregationProjection($list, $context, $filterValues)->getCount();
         $paginator = $this->getPaginator($form, $context, $totalItems);
 
         // Override list context to include the proper paginator config
         $context = $context->with(paginatorConfig: $paginator);
 
         $queryConfig = new ListQueryConfig(
-            list: $spec,
+            list: $list,
             context: $context,
             filterValues: $filterValues,
         );
@@ -70,7 +70,7 @@ class InteractiveProjector extends AbstractProjector
             form: $form,
             paginator: $paginator,
             readerUrlGenerator: $readerUrlGenerator,
-            table: $spec->dc,
+            table: $list->dc,
             totalItems: $totalItems,
         );
     }
@@ -96,12 +96,12 @@ class InteractiveProjector extends AbstractProjector
     /**
      * @throws FlareException
      */
-    public function getForm(ListSpecification $spec, InteractiveContext $config): FormInterface
+    public function getForm(ListSpecification $list, InteractiveContext $context): FormInterface
     {
-        $form = $this->filterFormFactory->create($spec, $config);
+        $form = $this->filterFormFactory->create($list, $context);
         $form->handleRequest($this->getCurrentRequest());
 
-        $this->hydrateForm($form, $spec);
+        $this->hydrateForm($form, $list);
 
         return $form;
     }
@@ -159,7 +159,7 @@ class InteractiveProjector extends AbstractProjector
         }
     }
 
-    protected function mapFormDataToFilterKeys(ListSpecification $spec, FormInterface $form): array
+    protected function mapFormDataToFilterKeys(ListSpecification $list, FormInterface $form): array
     {
         if (!$formData = $form->getData()) {
             return [];
@@ -167,7 +167,7 @@ class InteractiveProjector extends AbstractProjector
 
         $values = [];
 
-        foreach ($spec->getFilters()->all() as $key => $definition)
+        foreach ($list->getFilters()->all() as $key => $definition)
         {
             $formName = $definition->getAlias();
             if ($formName && \array_key_exists($formName, $formData)) {

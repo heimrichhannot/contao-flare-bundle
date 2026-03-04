@@ -16,16 +16,16 @@ use HeimrichHannot\FlareBundle\Specification\ListSpecification;
  */
 class AggregationProjector extends AbstractProjector
 {
-    public function supports(ListSpecification $spec, ContextInterface $context): bool
+    public function supports(ListSpecification $list, ContextInterface $context): bool
     {
         return $context instanceof AggregationContext;
     }
 
-    public function project(ListSpecification $spec, ContextInterface $context): AggregationView
+    public function project(ListSpecification $list, ContextInterface $context): AggregationView
     {
         \assert($context instanceof AggregationContext, '$config must be an instance of AggregationConfig');
 
-        $queryConfig = $this->createListQueryConfig($spec, $context);
+        $queryConfig = $this->createListQueryConfig($list, $context);
 
         return new AggregationView(
             fetchCount: fn (): int => $this->fetchCount($queryConfig)

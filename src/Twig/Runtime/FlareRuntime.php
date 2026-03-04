@@ -232,7 +232,7 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
 
         if (!$list)
         {
-            $engine = $context['data']['flare'] ?? null;
+            $engine = $context['flare'] ?? null;
             if (!$engine instanceof Engine) {
                 return null;
             }

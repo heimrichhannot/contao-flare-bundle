@@ -76,4 +76,12 @@ class FilterModel extends Model implements PtableInferrableInterface
 
         throw new \RuntimeException('Unable to generate form name for filter model.');
     }
+
+    public function __get($strKey)
+    {
+        return match ($strKey) {
+            'intrinsic', 'published' => (bool) parent::__get($strKey),
+            default => parent::__get($strKey),
+        };
+    }
 }

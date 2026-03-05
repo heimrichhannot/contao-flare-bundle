@@ -220,7 +220,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
         $choices = $event->choicesBuilder->enable();
 
         foreach ($options as $value => $label) {
-            $choices->add($value, $label);
+            $choices->add((string) $value, (string) $label);
         }
     }
 

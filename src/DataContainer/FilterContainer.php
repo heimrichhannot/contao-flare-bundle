@@ -10,7 +10,9 @@ use HeimrichHannot\FlareBundle\Manager\FlareCallbackManager;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
+use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
 use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 
 class FilterContainer implements FlareCallbackContainerInterface
@@ -68,6 +70,8 @@ class FilterContainer implements FlareCallbackContainerInterface
             FilterModel::class => $filterModel,
             ListModel::class  => $listModel,
             DataContainer::class  => $dc,
+            ListSpecification::class => $listSpecification,
+            ListExecutionContext::class => $context,
             'tables' => $tables,
             'targetTable' => $targetTable,
         ]) ?? [];

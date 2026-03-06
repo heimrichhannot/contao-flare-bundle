@@ -8,6 +8,7 @@ use Composer\InstalledVersions;
 use Composer\Semver\VersionParser;
 
 /**
+ * @method static bool hasCodefogTags()
  * @method static bool hasContaoCalendar()
  * @method static bool hasContaoComments()
  * @method static bool hasContaoNews()
@@ -33,6 +34,7 @@ final class Env
         try
         {
             return self::$cache[$name] = match ($name) {
+                'hasCodefogTags' => InstalledVersions::satisfies(new VersionParser(), 'codefog/tags-bundle', '^3.0'),
                 'hasContaoCalendar' => InstalledVersions::isInstalled('contao/calendar-bundle'),
                 'hasContaoComments' => InstalledVersions::isInstalled('contao/comments-bundle'),
                 'hasContaoNews' => InstalledVersions::isInstalled('contao/news-bundle'),

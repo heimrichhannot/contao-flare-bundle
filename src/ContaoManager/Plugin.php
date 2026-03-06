@@ -12,12 +12,14 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\ContaoManager;
 
+use Codefog\TagsBundle\CodefogTagsBundle;
 use Contao\CoreBundle\ContaoCoreBundle;
 use Contao\ManagerPlugin\Bundle\BundlePluginInterface;
 use Contao\ManagerPlugin\Bundle\Config\BundleConfig;
 use Contao\ManagerPlugin\Bundle\Parser\ParserInterface;
 use Contao\ManagerPlugin\Routing\RoutingPluginInterface;
 use HeimrichHannot\FlareBundle\HeimrichHannotFlareBundle;
+use HeimrichHannot\FlareBundle\Util\Env;
 use Symfony\Component\Config\Loader\LoaderResolverInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Routing\RouteCollection;
@@ -29,8 +31,16 @@ class Plugin implements BundlePluginInterface, RoutingPluginInterface
      */
     public function getBundles(ParserInterface $parser): array
     {
+        $loadAfter = [
+            ContaoCoreBundle::class
+        ];
+
+        if (\class_exists(CodefogTagsBundle::class) && Env::hasCodefogTags()) {
+            $loadAfter[] = CodefogTagsBundle::class;
+        }
+
         return [
-            BundleConfig::create(HeimrichHannotFlareBundle::class)->setLoadAfter([ContaoCoreBundle::class]),
+            BundleConfig::create(HeimrichHannotFlareBundle::class)->setLoadAfter($loadAfter),
         ];
     }
 

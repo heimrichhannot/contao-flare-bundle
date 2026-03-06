@@ -1,7 +1,7 @@
 <?php
 
 use HeimrichHannot\FlareBundle\FilterElement;
-use HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement\CodefogTagsElement;
+use HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement as CodefogTagsElement;
 
 return [
     FilterElement\Relation\ArchiveElement::TYPE => 'Archiv',
@@ -15,5 +15,6 @@ return [
     FilterElement\SimpleEquationElement::TYPE => 'Einfache Gleichung',
     FilterElement\SearchKeywordsElement::TYPE => 'Stichwortsuche',
 
-    CodefogTagsElement::TYPE => 'Tags [codefog/tags-bundle]',
+    CodefogTagsElement\CodefogTagsChoiceElement::TYPE => 'Tag-Auswahl [codefog/tags-bundle]',
+    CodefogTagsElement\CodefogTagsSearchElement::TYPE => 'Tag-Suche [codefog/tags-bundle]',
 ];

@@ -12,15 +12,9 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
     type: self::TYPE,
     palette: '{filter_legend},fieldGeneric,isMultiple,preselect',
     formType: ChoiceType::class,
+    isTargeted: true,
 )]
-class CodefogTagsElement extends AbstractFilterElement
+class CodefogTagsChoiceElement extends AbstractFilterElement
 {
-    public const TYPE = 'cfg_tags';
-
-    public function isSupported(): bool
-    {
-        return false;
-        // todo(@ericges): implement CodefogTagsElement logic before re-enabling
-        // return \class_exists(CodefogTagsBundle::class);
-    }
+    public const TYPE = 'cfg_tags_choice';
 }

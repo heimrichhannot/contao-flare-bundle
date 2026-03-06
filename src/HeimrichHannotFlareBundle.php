@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle;
 
+use HeimrichHannot\FlareBundle\Util\Env;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
@@ -41,6 +42,10 @@ class HeimrichHannotFlareBundle extends Bundle
 
     public function build(ContainerBuilder $container): void
     {
+        if (Env::hasCodefogTags()) {
+            $container->addCompilerPass(new DependencyInjection\Compiler\CodefogTagsManagerFinderPass());
+        }
+
         ###> Fill Registries ###
         $container->addCompilerPass(new DependencyInjection\Compiler\RegisterFlareCallbacksPass());
         $container->addCompilerPass(new DependencyInjection\Compiler\RegisterFilterInvokersPass());

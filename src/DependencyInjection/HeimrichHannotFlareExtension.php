@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection;
 
+use Codefog\TagsBundle\DependencyInjection\Configuration as CodefogTagsConfiguration;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterInvoker;
@@ -35,6 +36,10 @@ class HeimrichHannotFlareExtension extends Extension implements PrependExtension
 
         if (Env::hasContaoComments()) {
             $loader->load('integrations/contao_comments.yaml');
+        }
+
+        if (Env::hasCodefogTags()) {
+            $loader->load('integrations/codefog_tags.yaml');
         }
 
         // if (Env::hasTerminal42ChangeLanguage()) {

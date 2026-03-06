@@ -13,7 +13,7 @@ readonly class TargetAliasCallback
     #[AsFilterCallback(CodefogTagsSearchElement::TYPE, 'fields.targetAlias.options', priority: 20)]
     public function onTargetAliasOptions(ListExecutionContext $context): ?array
     {
-        $tables = $context->tableAliasRegistry->getTablesWithAttribute('codefog_tags_field');
+        $tables = $context->tableAliasRegistry->getTablesWithAttribute('codefog_tags');
         if (!$tables) {
             return null;
         }

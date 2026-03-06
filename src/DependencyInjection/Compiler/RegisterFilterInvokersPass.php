@@ -25,7 +25,7 @@ class RegisterFilterInvokersPass implements CompilerPassInterface
         }
 
         $registryDefinition = $container->getDefinition(FilterInvokerRegistry::class);
-        $invokerServiceIds = [];
+        $invokerLocations = [];
 
         $taggedServices = $container->findTaggedServiceIds(AsFilterInvoker::TAG);
 
@@ -45,16 +45,16 @@ class RegisterFilterInvokersPass implements CompilerPassInterface
                     definition: $definition,
                     registryDefinition: $registryDefinition
                 );
-                $invokerServiceIds[$serviceId] = new Reference($serviceId);
+                $invokerLocations[$serviceId] = new Reference($serviceId);
             }
         }
         
         if ($container->hasDefinition(FilterInvokerResolver::class))
         {
-            $invokerDefinition = $container->getDefinition(FilterInvokerResolver::class);
-            $invokerDefinition->setArgument(
+            $resolverDefinition = $container->getDefinition(FilterInvokerResolver::class);
+            $resolverDefinition->setArgument(
                 '$invokerLocator',
-                (new Definition(ServiceLocator::class, [$invokerServiceIds]))
+                (new Definition(ServiceLocator::class, [$invokerLocations]))
                     ->addTag('container.service_locator')
             );
         }

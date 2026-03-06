@@ -42,9 +42,9 @@ class HeimrichHannotFlareBundle extends Bundle
 
     public function build(ContainerBuilder $container): void
     {
-        if (Env::hasCodefogTags()) {
-            $container->addCompilerPass(new DependencyInjection\Compiler\CodefogTagsManagerFinderPass());
-        }
+        ###> Integrations ###
+        $container->addCompilerPass(new DependencyInjection\Compiler\CodefogTagsPass());
+        ###< Integrations ###
 
         ###> Fill Registries ###
         $container->addCompilerPass(new DependencyInjection\Compiler\RegisterFlareCallbacksPass());

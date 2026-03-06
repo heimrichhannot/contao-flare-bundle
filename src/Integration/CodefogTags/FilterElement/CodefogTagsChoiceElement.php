@@ -30,6 +30,7 @@ class CodefogTagsChoiceElement extends AbstractFilterElement
     public const TYPE = 'cfg_tags_choice';
 
     public function __construct(
+        private readonly ListExecutionContextFactory $listExecutionContextFactory,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -82,7 +83,9 @@ class CodefogTagsChoiceElement extends AbstractFilterElement
 
         $event->options = \array_merge($event->options, $options);
 
-        if (\is_null($optValues = $this->getOptions($list, $filter))) {
+        $context = $this->listExecutionContextFactory->create($list);
+
+        if (\is_null($optValues = $this->getOptions($list, $filter, $context))) {
             return;
         }
 
@@ -98,24 +101,31 @@ class CodefogTagsChoiceElement extends AbstractFilterElement
     {
         $targetAlias = $filter->getTargetAlias();
 
-        $tables = $context->tableAliasRegistry->getTablesWithAttribute('codefog_tags_field');
+        $tables = $context->tableAliasRegistry->getTablesWithAttribute('codefog_tags');
 
         if (\count($tables) !== 1) {
             $this->logger->warning(\sprintf(
-                '[FLARE] Cannot determine target table for tags filter on list %s (ID %s), filter %s (ID %s), targetAlias %s',
-                $list->type,
-                (string) ($list->getDataSource()?->getListProperty('id') ?? 'N/A'),
-                $filter->type,
-                (string) ($filter->getDataSource()?->getFilterProperty('id') ?? 'N/A'),
+                '[FLARE] Cannot determine single target table for tags filter on '
+                . 'list %s (ID %s), filter %s (ID %s), targetAlias %s',
+                $list->type, (string) ($list->getDataSource()?->getListProperty('id') ?? 'N/A'),
+                $filter->type, (string) ($filter->getDataSource()?->getFilterProperty('id') ?? 'N/A'),
                 $targetAlias,
             ));
             return null;
         }
 
-        return [
-            'a' => 'Abraham',
-            'b' => 'Bebraham',
-            'c' => 'Cebraham',
-        ];
+        $tableAlias = \current(\array_keys($tables));
+
+        $config = $context->tableAliasRegistry->getAttribute($tableAlias, 'codefog_tags');
+
+        $options = [];
+
+        /** @var \Codefog\TagsBundle\Tag $tag */
+        foreach ($config['manager']?->getAllTags() ?? [] as $tag) {
+            $value = $tag->getValue();
+            $options[$value] = "{$tag->getName()} [{$value}]";
+        }
+
+        return $options;
     }
 }

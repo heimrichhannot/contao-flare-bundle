@@ -6,26 +6,27 @@ namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\EventListener;
 
 use Contao\Controller;
 use HeimrichHannot\FlareBundle\Event\QueryBaseInitializedEvent;
+use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsManagersRegistry;
+use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsManagersResolver;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Query\SqlJoinStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsEventListener]
 readonly class RegisterTagsTablesListener
 {
     public function __construct(
-        private ParameterBagInterface $parameters,
+        private CfgTagsManagersRegistry $registry,
+        private CfgTagsManagersResolver $resolver,
         private LoggerInterface $logger,
     ) {}
 
     public function __invoke(QueryBaseInitializedEvent $event): void
     {
         $table = $event->listSpecification->dc;
-        $columns = $this->getCodefogTagsTargetColumns($table);
-        if (!$columns || !\is_array($columns)) {
+        if (!$columns = $this->registry->fieldsOf($table)) {
             return;
         }
 
@@ -44,6 +45,13 @@ readonly class RegisterTagsTablesListener
 
         if (\count($fields) < 1) {
             $this->logger->warning("[FLARE] Codefog tags integration could not find a tags field on {$table}.");
+            return;
+        }
+
+        $field = \current($columns);
+
+        if (!$manager = $this->resolver->get($table, $field)) {
+            $this->logger->error("[FLARE] Codefog tags integration could not find a tag manager service on {$table}.");
             return;
         }
 
@@ -72,24 +80,12 @@ readonly class RegisterTagsTablesListener
             joinAlias: $cfgTagsAlias,
             condition: $registry->makeJoinOn($cfgTagsAlias, 'id', $cfgJoinAlias, 'cfg_tag_id'),
         ), attributes: [
-            'codefog_tags_field' => \current($columns),
+            'codefog_tags' => [
+                'join_table' => $cfgJoinTable,
+                'join_alias' => $cfgJoinAlias,
+                'field' => $field,
+                'manager' => $manager,
+            ],
         ]);
-    }
-
-    /**
-     * @return string[]|null Array of table columns or null if the table has no tags field.
-     */
-    private function getCodefogTagsTargetColumns(string $table): ?array
-    {
-        $targets = $this->parameters->get('flare_codefog_tags_targets');
-
-        if (!\is_array($targets)) {
-            throw new \RuntimeException(
-                '[FLARE] Dependency injection error: CodefogTags integration loaded, '
-                . 'but flare_codefog_tags_targets has not been configured'
-            );
-        }
-
-        return $targets[$table] ?? null;
     }
 }

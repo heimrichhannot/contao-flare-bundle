@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterCallback;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
@@ -30,7 +32,7 @@ readonly class TargetAliasCallback
         $options = [];
 
         foreach ($activeTagsAliases as $alias => $config) {
-            $options[] = "{$alias} [tl_cfg_tag]";
+            $options[$alias] = "{$alias} [tl_cfg_tag]";
         }
 
         return $options;

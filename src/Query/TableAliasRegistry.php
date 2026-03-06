@@ -30,16 +30,10 @@ class TableAliasRegistry
      */
     private array $hiddenAliases = [];
 
-    /**
-     * @var array<string, array<string, mixed>>
-     */
-    private array $aliasAttributes = [];
-
     public function registerJoin(
         SqlJoinStruct $join,
         bool          $activate = false,
         bool          $hidden = false,
-        ?array        $attributes = null,
     ): self {
         $this->joins[$join->joinAlias] = $join;
         $this->tables[$join->joinAlias] = $join->table;
@@ -50,10 +44,6 @@ class TableAliasRegistry
 
         if ($hidden) {
             $this->hideAlias($join->joinAlias);
-        }
-
-        if (!\is_null($attributes)) {
-            $this->aliasAttributes[$join->joinAlias] = $attributes;
         }
 
         return $this;
@@ -139,26 +129,6 @@ class TableAliasRegistry
     public function getVisibleAliases(): array
     {
         return \array_diff($this->getAliases(), $this->getHiddenAliases());
-    }
-
-    public function setAttribute(string $alias, string $attribute, mixed $value): self
-    {
-        $this->aliasAttributes[$alias][$attribute] = $value;
-        return $this;
-    }
-
-    public function getAttribute(string $alias, string $attribute, mixed $default = null): mixed
-    {
-        return $this->aliasAttributes[$alias][$attribute] ?? $default;
-    }
-
-    public function getTablesWithAttribute(string $attribute): array
-    {
-        return \array_filter(
-            $this->tables,
-            fn (string $alias): bool => isset($this->aliasAttributes[$alias][$attribute]),
-            \ARRAY_FILTER_USE_KEY
-        );
     }
 
     /**

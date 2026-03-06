@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
-use HeimrichHannot\FlareBundle\Integration\CodefogTags\CfgTagsJoinAttribute;
+use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
@@ -31,8 +31,9 @@ class CodefogTagsChoiceElement extends AbstractFilterElement
     public const TYPE = 'cfg_tags_choice';
 
     public function __construct(
+        private readonly CfgTagsJoinsRegistry        $joinsRegistry,
         private readonly ListExecutionContextFactory $listExecutionContextFactory,
-        private readonly LoggerInterface $logger,
+        private readonly LoggerInterface             $logger,
     ) {}
 
     public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
@@ -102,9 +103,12 @@ class CodefogTagsChoiceElement extends AbstractFilterElement
     {
         $targetAlias = $filter->getTargetAlias();
 
-        $tables = $context->tableAliasRegistry->getTablesWithAttribute(CfgTagsJoinAttribute::NAME);
+        $activeTagsAliases = \array_intersect_key(
+            $this->joinsRegistry->all(),
+            \array_flip($context->tableAliasRegistry->getAliases()),
+        );
 
-        if (\count($tables) !== 1) {
+        if (\count($activeTagsAliases) !== 1) {
             $this->logger->warning(\sprintf(
                 '[FLARE] Cannot determine single target table for tags filter on '
                 . 'list %s (ID %s), filter %s (ID %s), targetAlias %s',
@@ -115,10 +119,8 @@ class CodefogTagsChoiceElement extends AbstractFilterElement
             return null;
         }
 
-        $tableAlias = \current(\array_keys($tables));
-
-        /** @var ?CfgTagsJoinAttribute $config */
-        $config = $context->tableAliasRegistry->getAttribute($tableAlias, CfgTagsJoinAttribute::NAME);
+        $tableAlias = \array_key_first($activeTagsAliases);
+        $config = $this->joinsRegistry->get($tableAlias);
 
         $options = [];
 

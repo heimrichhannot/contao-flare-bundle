@@ -7,6 +7,7 @@ namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\EventListener;
 use Contao\Controller;
 use HeimrichHannot\FlareBundle\Event\QueryBaseInitializedEvent;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\CfgTagsJoinAttribute;
+use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegistry;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsManagersRegistry;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsManagersResolver;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
@@ -19,9 +20,10 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 readonly class RegisterTagsTablesListener
 {
     public function __construct(
+        private CfgTagsJoinsRegistry    $joinsRegistry,
         private CfgTagsManagersRegistry $registry,
         private CfgTagsManagersResolver $resolver,
-        private LoggerInterface $logger,
+        private LoggerInterface         $logger,
     ) {}
 
     public function __invoke(QueryBaseInitializedEvent $event): void
@@ -80,13 +82,13 @@ readonly class RegisterTagsTablesListener
             table: 'tl_cfg_tag',
             joinAlias: $cfgTagsAlias,
             condition: $registry->makeJoinOn($cfgTagsAlias, 'id', $cfgJoinAlias, 'cfg_tag_id'),
-        ), attributes: [
-            CfgTagsJoinAttribute::NAME => new CfgTagsJoinAttribute(
-                joinTable: $cfgJoinTable,
-                joinAlias: $cfgJoinAlias,
-                tagsField: $tagsField,
-                manager: $manager,
-            ),
-        ]);
+        ));
+
+        $this->joinsRegistry->register($cfgTagsAlias, new CfgTagsJoinAttribute(
+            joinTable: $cfgJoinTable,
+            joinAlias: $cfgJoinAlias,
+            tagsField: $tagsField,
+            manager: $manager,
+        ));
     }
 }

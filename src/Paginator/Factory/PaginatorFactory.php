@@ -47,7 +47,10 @@ readonly class PaginatorFactory
             itemsPerPage: 10,
             currentPage: 1,
             totalItems: 0,
-            urlGenerator: $this->createUrlGeneratorFromRequest($pageParam, $request),
+            urlGenerator: $this->createUrlGeneratorFromRequest(
+                request: $request,
+                pageParam: $pageParam
+            ),
         );
     }
 

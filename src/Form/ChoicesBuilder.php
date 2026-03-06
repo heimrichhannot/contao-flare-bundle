@@ -85,7 +85,7 @@ class ChoicesBuilder
     public function add(
         string                          $alias,
         Model|LabelableInterface|string $choice,
-        string|null                     $value = null,
+        mixed                           $value = null,
         string|null                     $group = null,
     ): static {
         $this->choices[$alias] = $choice;

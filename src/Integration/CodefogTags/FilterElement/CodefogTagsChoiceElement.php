@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement;
 
 use Contao\StringUtil;
+use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\ParameterType;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -20,14 +23,15 @@ use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\FormInterface;
 
 #[AsFilterElement(
     type: self::TYPE,
-    palette: '{filter_legend},label,isMultiple,isExpanded,preselect',
+    palette: '{form_legend},label,isMandatory,isMultiple,isExpanded;{filter_legend},preselect',
     formType: ChoiceType::class,
     isTargeted: true,
 )]
-class CodefogTagsChoiceElement extends AbstractFilterElement implements IntrinsicValueContract
+class CodefogTagsChoiceElement extends AbstractFilterElement implements HydrateFormContract, IntrinsicValueContract
 {
     public const TYPE = 'cfg_tags_choice';
 
@@ -44,7 +48,30 @@ class CodefogTagsChoiceElement extends AbstractFilterElement implements Intrinsi
             return;
         }
 
-        // todo: implement filter logic
+        if (\count($tagIds) === 1) {
+            $qb->where($qb->expr()->eq($qb->column('id'), ':cfg_tag_id'))
+                ->setParameter('cfg_tag_id', \reset($tagIds), ParameterType::INTEGER);
+        } else {
+            $qb->where($qb->expr()->in($qb->column('id'), ':cfg_tag_ids'))
+                ->setParameter('cfg_tag_ids', $tagIds, ArrayParameterType::INTEGER);
+        }
+    }
+
+    public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void
+    {
+        if ($field->isSubmitted()) {
+            return;
+        }
+
+        if (!$preselect = $this->getIntrinsicValue($list, $filter)) {
+            return;
+        }
+
+        if (!$filter->isMultiple) {
+            $preselect = \reset($preselect);
+        }
+
+        $field->setData($preselect);
     }
 
     #[AsFilterCallback(self::TYPE, 'config.onload')]
@@ -123,7 +150,7 @@ class CodefogTagsChoiceElement extends AbstractFilterElement implements Intrinsi
         $choices = $event->choicesBuilder->enable();
 
         foreach ($optValues as $value => $label) {
-            $choices->add((string) $value, (string) $label);
+            $choices->add((string) $value, (string) $label, (int) $value);
         }
     }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement;
 
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
@@ -26,7 +27,7 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
     formType: ChoiceType::class,
     isTargeted: true,
 )]
-class CodefogTagsChoiceElement extends AbstractFilterElement
+class CodefogTagsChoiceElement extends AbstractFilterElement implements IntrinsicValueContract
 {
     public const TYPE = 'cfg_tags_choice';
 
@@ -38,7 +39,12 @@ class CodefogTagsChoiceElement extends AbstractFilterElement
 
     public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
     {
+        /** @var ?array $tagIds */
+        if (!$tagIds = $inv->getValue()) {
+            return;
+        }
 
+        // todo: implement filter logic
     }
 
     #[AsFilterCallback(self::TYPE, 'config.onload')]
@@ -61,11 +67,34 @@ class CodefogTagsChoiceElement extends AbstractFilterElement
         ###< preselect
     }
 
-    public function getPreselectValue(FilterDefinition $filter): mixed
+    private function normalizeValueArray(array $values): array
     {
-        return $filter->isMultiple
-            ? StringUtil::deserialize($filter->preselect ?: null)
-            : $filter->preselect;
+        return \array_values(\array_unique(\array_filter(\array_map('\intval', $values))));
+    }
+
+    public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): ?array
+    {
+        return $this->normalizeValueArray(
+            StringUtil::deserialize($filter->preselect ?: null, true)
+        ) ?: null;
+    }
+
+    public function processRuntimeValue(mixed $value, ListSpecification $list, FilterDefinition $filter): mixed
+    {
+        if (!$value = StringUtil::deserialize($value)) {
+            return null;
+        }
+
+        if (\is_numeric($value)) {
+            $value = (int) $value;
+            return $value > 0 ? $value : null;
+        }
+
+        if (\is_array($value)) {
+            return $this->normalizeValueArray($value);
+        }
+
+        return null;
     }
 
     public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void

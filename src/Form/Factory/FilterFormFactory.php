@@ -122,7 +122,7 @@ readonly class FilterFormFactory
         $filterElement = $this->filterElementRegistry->get($filter->getType())?->getService();
         if ($filterElement instanceof FormTypeOptionsContract)
         {
-            $filterElement->onFormTypeOptionsEvent($formTypeOptionsEvent);
+            $filterElement->handleFormTypeOptions($formTypeOptionsEvent);
         }
 
         /** @var FilterElementFormTypeOptionsEvent $formTypeOptionsEvent */

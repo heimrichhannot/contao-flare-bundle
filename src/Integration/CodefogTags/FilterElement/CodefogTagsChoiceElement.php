@@ -4,17 +4,118 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement;
 
+use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
+use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
+use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
+use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 
 #[AsFilterElement(
     type: self::TYPE,
-    palette: '{filter_legend},fieldGeneric,isMultiple,preselect',
+    palette: '{filter_legend},label,isMultiple,isExpanded,preselect',
     formType: ChoiceType::class,
     isTargeted: true,
 )]
 class CodefogTagsChoiceElement extends AbstractFilterElement
 {
     public const TYPE = 'cfg_tags_choice';
+
+    public function __construct(
+        private readonly LoggerInterface $logger,
+    ) {}
+
+    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
+    {
+
+    }
+
+    #[AsFilterCallback(self::TYPE, 'config.onload')]
+    public function onLoadConfig(FilterModel $filterModel): void
+    {
+        $table = FilterModel::getTable();
+        $fields = &$GLOBALS['TL_DCA'][$table]['fields'];
+
+        ###> isMultiple
+        $field = &$fields['isMultiple'];
+        $field['eval']['submitOnChange'] = true;
+        ###< isMultiple
+
+        ###> preselect
+        $field = &$fields['preselect'];
+        $field['inputType'] = 'select';
+        $field['eval']['includeBlankOption'] = true;
+        $field['eval']['multiple'] = $filterModel->isMultiple;
+        $field['eval']['chosen'] = true;
+        ###< preselect
+    }
+
+    public function getPreselectValue(FilterDefinition $filter): mixed
+    {
+        return $filter->isMultiple
+            ? StringUtil::deserialize($filter->preselect ?: null)
+            : $filter->preselect;
+    }
+
+    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
+    {
+        $list = $event->list;
+        $filter = $event->filter;
+
+        $emptyPlaceholder = $filter->isMandatory ? 'empty_option.prompt' : 'empty_option.no_selection';
+
+        $options = $this->defaultFormTypeOptions($filter, [
+            'multiple',
+            'expanded',
+            'required',
+            'placeholder' => $emptyPlaceholder,
+            'label' => null,
+        ]);
+
+        $event->options = \array_merge($event->options, $options);
+
+        if (\is_null($optValues = $this->getOptions($list, $filter))) {
+            return;
+        }
+
+        $choices = $event->choicesBuilder->enable();
+
+        foreach ($optValues as $value => $label) {
+            $choices->add((string) $value, (string) $label);
+        }
+    }
+
+    #[AsFilterCallback(self::TYPE, 'fields.preselect.options')]
+    public function getOptions(ListSpecification $list, FilterDefinition $filter, ListExecutionContext $context): ?array
+    {
+        $targetAlias = $filter->getTargetAlias();
+
+        $tables = $context->tableAliasRegistry->getTablesWithAttribute('codefog_tags_field');
+
+        if (\count($tables) !== 1) {
+            $this->logger->warning(\sprintf(
+                '[FLARE] Cannot determine target table for tags filter on list %s (ID %s), filter %s (ID %s), targetAlias %s',
+                $list->type,
+                (string) ($list->getDataSource()?->getListProperty('id') ?? 'N/A'),
+                $filter->type,
+                (string) ($filter->getDataSource()?->getFilterProperty('id') ?? 'N/A'),
+                $targetAlias,
+            ));
+            return null;
+        }
+
+        return [
+            'a' => 'Abraham',
+            'b' => 'Bebraham',
+            'c' => 'Cebraham',
+        ];
+    }
 }

@@ -224,11 +224,12 @@ class ArchiveElement extends BelongsToRelationElement implements HydrateFormCont
     /**
      * @throws FilterException
      */
-    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void
+    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
     {
         $filter = $event->filter;
 
-        if (!$filterModel = $filter->getSourceFilterModel()) {
+        $filterModel = $filter->getDataSource();
+        if (!$filterModel instanceof FilterModel) {
             return;
         }
 

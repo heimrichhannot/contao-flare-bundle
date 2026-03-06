@@ -197,7 +197,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
         $field->setData($data);
     }
 
-    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void
+    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
     {
         $list = $event->list;
         $filter = $event->filter;

@@ -161,7 +161,7 @@ class CalendarCurrentElement extends AbstractFilterElement
         return $palette;
     }
 
-    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void
+    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
     {
         $event->options['required'] = false;
 

@@ -148,7 +148,7 @@ class BooleanElement extends AbstractFilterElement implements IntrinsicValueCont
         return $options;
     }
 
-    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void
+    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
     {
         $filter = $event->filter;
         /** @mago-expect lint:no-nested-ternary This is fine. Just be clear that the ternary operator is intentional. */

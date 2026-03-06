@@ -135,7 +135,7 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         $field->setData($preselect);
     }
 
-    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void
+    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
     {
         $choices = $event->choicesBuilder
             ->enable()

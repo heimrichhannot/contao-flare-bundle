@@ -32,6 +32,8 @@ abstract class AbstractFilterElement implements
     public static array $autoFormOptionsMap = [
         'multiple' => 'isMultiple',
         'expanded' => 'isExpanded',
+        'required' => 'isMandatory',
+        'mandatory' => 'isMandatory',
         'label' => 'label',
         'placeholder' => 'placeholder',
     ];
@@ -54,23 +56,31 @@ abstract class AbstractFilterElement implements
     ): array {
         $options = [];
 
-        /** @var array<string, true> $listPart */
+        /** @var array<int, string> $listPart */
         $listPart = \array_filter($config, '\is_int', \ARRAY_FILTER_USE_KEY);
 
         foreach (self::$autoFormOptionsMap as $optionName => $attribute)
         {
+            // Associative branch
             if (\array_key_exists($optionName, $config))
             {
                 $value = $filter->{$attribute};
+                $default = $config[$optionName];
 
                 if ($value === '') {
-                    $value = $config[$optionName];
+                    $value = $default;
                 }
 
-                $options[$optionName] = $value ?? $config[$optionName];
+                $option = $value ?? $default;
+
+                if (!\is_null($option)) {
+                    $options[$optionName] = $option;
+                }
+
                 continue;
             }
 
+            // List branch
             if (\in_array($optionName, $listPart, true))
             {
                 $options[$optionName] = $filter->{$attribute};
@@ -80,7 +90,7 @@ abstract class AbstractFilterElement implements
         return $options;
     }
 
-    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void {}
+    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void {}
 
     public function isSupported(): bool
     {

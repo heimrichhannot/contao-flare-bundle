@@ -63,7 +63,7 @@ readonly class RegisterTagsTablesListener
             table: $cfgJoinTable,
             joinAlias: $cfgJoinAlias,
             condition: $registry->makeJoinOn($cfgJoinAlias, $cfgJoinColumn, $fromAlias, 'id'),
-        ), activate: true, hidden: true);
+        ), hidden: true);
 
         $registry->registerJoin(new SqlJoinStruct(
             fromAlias: $cfgJoinAlias,
@@ -71,7 +71,7 @@ readonly class RegisterTagsTablesListener
             table: 'tl_cfg_tag',
             joinAlias: $cfgTagsAlias,
             condition: $registry->makeJoinOn($cfgTagsAlias, 'id', $cfgJoinAlias, 'cfg_tag_id'),
-        ), activate: true, attributes: [
+        ), attributes: [
             'codefog_tags_field' => \current($columns),
         ]);
     }

@@ -12,5 +12,5 @@ interface FormTypeOptionsContract
     /**
      * @throws FlareException
      */
-    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void;
+    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void;
 }

@@ -86,7 +86,7 @@ class SearchKeywordsElement extends AbstractFilterElement implements IntrinsicVa
         return \array_diff($terms, $stopWords);
     }
 
-    public function onFormTypeOptionsEvent(FilterElementFormTypeOptionsEvent $event): void
+    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
     {
         $event->options['label'] = 'label.text';
         $event->options['required'] = false;

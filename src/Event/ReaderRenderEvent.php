@@ -1,35 +1,38 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Event;
 
 use Contao\ContentModel;
 use Contao\Model;
 use Contao\Template;
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
-use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
-use HeimrichHannot\FlareBundle\ListView\ListView;
-use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use Symfony\Contracts\EventDispatcher\Event;
 
-class ReaderRenderEvent extends AbstractTemplateRenderEvent
+class ReaderRenderEvent extends Event
 {
-    public function __construct(
-        private readonly ContentContext $contentContext,
-        private readonly ContentModel   $contentModel,
-        private readonly Model          $displayModel,
-        private readonly ListModel      $listModel,
-        private readonly ListView       $listView,
-        private ReaderPageMetaDto       $pageMeta,
-        private Template                $template,
-    ) {}
+    use ModifiesTemplateTrait;
 
-    public function getContentContext(): ContentContext
-    {
-        return $this->contentContext;
-    }
+    public function __construct(
+        private readonly ContentModel      $contentModel,
+        private readonly ContextInterface  $context,
+        private readonly Model             $displayModel,
+        private readonly ListSpecification $listSpecification,
+        private ReaderPageMeta             $pageMeta,
+        private Template                   $template,
+    ) {}
 
     public function getContentModel(): ContentModel
     {
         return $this->contentModel;
+    }
+
+    public function getContext(): ContextInterface
+    {
+        return $this->context;
     }
 
     public function getDisplayModel(): Model
@@ -37,22 +40,17 @@ class ReaderRenderEvent extends AbstractTemplateRenderEvent
         return $this->displayModel;
     }
 
-    public function getListModel(): ListModel
+    public function getListSpecification(): ListSpecification
     {
-        return $this->listModel;
+        return $this->listSpecification;
     }
 
-    public function getPageMeta(): ReaderPageMetaDto
+    public function getPageMeta(): ReaderPageMeta
     {
         return $this->pageMeta;
     }
 
-    public function getListView(): ListView
-    {
-        return $this->listView;
-    }
-
-    public function setPageMeta(ReaderPageMetaDto $pageMeta): self
+    public function setPageMeta(ReaderPageMeta $pageMeta): self
     {
         $this->pageMeta = $pageMeta;
 

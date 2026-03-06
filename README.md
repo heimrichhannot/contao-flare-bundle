@@ -29,14 +29,16 @@ Requires **Contao ^4.13 or ^5.0** and **PHP ^8.2**.
 - Batteries-included: Comes with a set of predefined filter and list types
 - Customizable filter and list templates
 - Extensible with custom filter and list types
-- Integration with [terminal42/contao-DC_Multilingual](https://github.com/terminal42/contao-DC_Multilingual)
-  and [terminal42/contao-changelanguage](https://github.com/terminal42/contao-changelanguage), respectively
 - No modules, no worries!
 
+<!-- Currently not supported --
+- Integration with [terminal42/contao-DC_Multilingual](https://github.com/terminal42/contao-DC_Multilingual)
+  and [terminal42/contao-changelanguage](https://github.com/terminal42/contao-changelanguage), respectively
+-->
 
 ## Usage
 
-1. Create a new list configuration in the Contao backend under "Layout" &rarr; "Lists&emsp;FLARE"
+1. Create a new list configuration in the Contao backend under "Layout" &rarr; "Lists&ensp;<span style="opacity:.6">FLARE</span>"
 2. Each list is an archive of filter elements: add filters as children to the list configuration
 3. Add a list view content element to a page and select the list configuration
 4. Add a reader content element to a separate page and select the list configuration
@@ -160,6 +162,9 @@ See the examples below.
 
 ### Creating a custom filter element
 
+> [!CAUTION]
+> These examples are outdated and will be updated before v0.1.0.
+
 ```php
 <?php
 
@@ -170,10 +175,10 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\Form\FormInterface;
 
@@ -231,10 +236,10 @@ class MyCustomElement implements FormTypeOptionsContract, HydrateFormContract, P
          *
          * @var mixed $submittedData
          */
-        $submittedData = $context->getSubmittedData();
+        $submittedData = $context->getFormData();
 
         /**
-          * {@see \HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder} to see how it works,
+          * {@see \HeimrichHannot\FlareBundle\Query\FilterQueryBuilder} to see how it works,
           *   although practically you only need to use the where() and bind() methods.
           *
           * Using `$qb->where(...)` multiple times will concatenate the conditions with AND.

@@ -79,7 +79,7 @@ class CodefogTagsChoiceElement extends AbstractFilterElement implements Intrinsi
         ) ?: null;
     }
 
-    public function processRuntimeValue(mixed $value, ListSpecification $list, FilterDefinition $filter): mixed
+    public function processRuntimeValue(mixed $value, ListSpecification $list, FilterDefinition $filter): ?array
     {
         if (!$value = StringUtil::deserialize($value)) {
             return null;
@@ -87,7 +87,7 @@ class CodefogTagsChoiceElement extends AbstractFilterElement implements Intrinsi
 
         if (\is_numeric($value)) {
             $value = (int) $value;
-            return $value > 0 ? $value : null;
+            return $value > 0 ? [$value] : null;
         }
 
         if (\is_array($value)) {

@@ -8,11 +8,12 @@ use Contao\Model;
 use Contao\Model\Collection;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrableInterface;
+use HeimrichHannot\FlareBundle\Specification\DataSource\FilterDataSourceInterface;
 
 /**
  * Class FilterModel
  */
-class FilterModel extends Model implements PtableInferrableInterface
+class FilterModel extends Model implements FilterDataSourceInterface, PtableInferrableInterface
 {
     use DocumentsFilterModelTrait, PtableInferrableTrait;
 
@@ -20,9 +21,34 @@ class FilterModel extends Model implements PtableInferrableInterface
 
     private string $_formName;
 
-    public function getFormName(): string
+    public function getFilterType(): string
+    {
+        return (string) $this->type;
+    }
+
+    public function isFilterIntrinsic(): bool
+    {
+        return (bool) $this->intrinsic;
+    }
+
+    public function getFilterTargetAlias(): string
+    {
+        return (string) $this->targetAlias;
+    }
+
+    public function getFilterFormName(): string
     {
         return $this->_formName ??= static::generateFormName($this);
+    }
+
+    public function getFilterData(): array
+    {
+        return $this->arrData;
+    }
+
+    public function getFilterProperty(string $name): mixed
+    {
+        return $this->{$name};
     }
 
     /**

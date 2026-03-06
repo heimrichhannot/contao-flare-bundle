@@ -36,11 +36,9 @@ final readonly class ListSpecificationFactory
 
         $specification->setProperties($dataSource->getListData());
 
-        // Allow modification of collected filters
-        $event = new ListSpecificationCreatedEvent($specification);
-        $this->eventDispatcher->dispatch($event);
+        $event = $this->eventDispatcher->dispatch(new ListSpecificationCreatedEvent($specification));
 
-        return $specification;
+        return $event->listSpecification;
     }
 
     private function collectFilters(ListDataSourceInterface $dataSource): FilterDefinitionCollection

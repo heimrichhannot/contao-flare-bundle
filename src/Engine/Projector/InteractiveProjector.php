@@ -145,7 +145,7 @@ class InteractiveProjector extends AbstractProjector
             }
             catch (OutOfBoundsException $exception)
             {
-                $filerModel = $filterDefinition->getSourceFilterModel();
+                $filerModel = $filterDefinition->getDataSource();
 
                 throw new FlareException(
                     message: 'Filter form does not contain field: ' . $filterName,

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Specification;
 
 use HeimrichHannot\FlareBundle\Model\DocumentsFilterModelTrait;
-use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Specification\DataSource\FilterDataSourceInterface;
 
 /**
  * @property string $type
@@ -17,12 +17,12 @@ class FilterDefinition
     use DynamicPropertiesTrait;
 
     public function __construct(
-        private string       $type,
-        private bool         $intrinsic,
-        private ?string      $alias = null,
-        private ?string      $targetAlias = null,
-        private bool         $isTargetingForced = false,
-        private ?FilterModel $sourceFilterModel = null,
+        private string                     $type,
+        private bool                       $intrinsic,
+        private ?string                    $alias = null,
+        private ?string                    $targetAlias = null,
+        private bool                       $isTargetingForced = false,
+        private ?FilterDataSourceInterface $dataSource = null,
     ) {
         if (!\is_null($alias)) {
             $this->setAlias($alias);
@@ -65,14 +65,14 @@ class FilterDefinition
         return $this;
     }
 
-    public function getSourceFilterModel(): ?FilterModel
+    public function getDataSource(): ?FilterDataSourceInterface
     {
-        return $this->sourceFilterModel;
+        return $this->dataSource;
     }
 
-    public function setSourceFilterModel(?FilterModel $sourceFilterModel): static
+    public function setDataSource(?FilterDataSourceInterface $dataSource): static
     {
-        $this->sourceFilterModel = $sourceFilterModel;
+        $this->dataSource = $dataSource;
         return $this;
     }
 
@@ -124,7 +124,7 @@ class FilterDefinition
             'type' => $this->setType($value),
             'intrinsic' => $this->setIntrinsic($value),
             'targetAlias', 'target_alias' => $this->setTargetAlias($value),
-            'sourceFilterModel' => $this->setSourceFilterModel($value),
+            'dataSource', 'sourceFilterModel' => $this->setDataSource($value),
             default => $this->setProperty($name, $value),
         };
     }
@@ -135,7 +135,7 @@ class FilterDefinition
             'type' => $this->getType(),
             'intrinsic' => $this->isIntrinsic(),
             'targetAlias', 'target_alias' => $this->getTargetAlias(),
-            'sourceFilterModel' => $this->getSourceFilterModel(),
+            'dataSource', 'sourceFilterModel' => $this->getDataSource(),
             default => $this->getProperty($name),
         };
     }
@@ -153,9 +153,9 @@ class FilterDefinition
     {
         return \sha1(\serialize([
             'row' => $this->getRow(),
-            'list' => $this->getSourceFilterModel() ? [
-                $this->getSourceFilterModel()->id,
-                $this->getSourceFilterModel()->type,
+            'filter' => $this->getDataSource() ? [
+                'id' => $this->getDataSource()->getFilterProperty('id'),
+                'type' => $this->getDataSource()->getFilterProperty('type'),
             ] : null,
         ]));
     }

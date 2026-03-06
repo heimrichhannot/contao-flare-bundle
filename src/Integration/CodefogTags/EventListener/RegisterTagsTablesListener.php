@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\EventListener;
 
 use Contao\Controller;
 use HeimrichHannot\FlareBundle\Event\QueryBaseInitializedEvent;
+use HeimrichHannot\FlareBundle\Integration\CodefogTags\CfgTagsJoinAttribute;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsManagersRegistry;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsManagersResolver;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
@@ -48,10 +49,10 @@ readonly class RegisterTagsTablesListener
             return;
         }
 
-        $field = \current($columns);
+        $tagsField = \current($columns);
 
-        if (!$manager = $this->resolver->get($table, $field)) {
-            $this->logger->error("[FLARE] Codefog tags integration could not find a tag manager service on {$table}.");
+        if (!$manager = $this->resolver->get($table, $tagsField)) {
+            $this->logger->error("[FLARE] Codefog tags integration could not find a tag manager service for {$table}.{$tagsField}.");
             return;
         }
 
@@ -80,12 +81,12 @@ readonly class RegisterTagsTablesListener
             joinAlias: $cfgTagsAlias,
             condition: $registry->makeJoinOn($cfgTagsAlias, 'id', $cfgJoinAlias, 'cfg_tag_id'),
         ), attributes: [
-            'codefog_tags' => [
-                'join_table' => $cfgJoinTable,
-                'join_alias' => $cfgJoinAlias,
-                'field' => $field,
-                'manager' => $manager,
-            ],
+            CfgTagsJoinAttribute::NAME => new CfgTagsJoinAttribute(
+                joinTable: $cfgJoinTable,
+                joinAlias: $cfgJoinAlias,
+                tagsField: $tagsField,
+                manager: $manager,
+            ),
         ]);
     }
 }

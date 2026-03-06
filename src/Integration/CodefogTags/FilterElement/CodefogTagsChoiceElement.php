@@ -10,6 +10,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
+use HeimrichHannot\FlareBundle\Integration\CodefogTags\CfgTagsJoinAttribute;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
@@ -101,7 +102,7 @@ class CodefogTagsChoiceElement extends AbstractFilterElement
     {
         $targetAlias = $filter->getTargetAlias();
 
-        $tables = $context->tableAliasRegistry->getTablesWithAttribute('codefog_tags');
+        $tables = $context->tableAliasRegistry->getTablesWithAttribute(CfgTagsJoinAttribute::NAME);
 
         if (\count($tables) !== 1) {
             $this->logger->warning(\sprintf(
@@ -116,12 +117,13 @@ class CodefogTagsChoiceElement extends AbstractFilterElement
 
         $tableAlias = \current(\array_keys($tables));
 
-        $config = $context->tableAliasRegistry->getAttribute($tableAlias, 'codefog_tags');
+        /** @var ?CfgTagsJoinAttribute $config */
+        $config = $context->tableAliasRegistry->getAttribute($tableAlias, CfgTagsJoinAttribute::NAME);
 
         $options = [];
 
         /** @var \Codefog\TagsBundle\Tag $tag */
-        foreach ($config['manager']?->getAllTags() ?? [] as $tag) {
+        foreach ($config?->manager->getAllTags() ?? [] as $tag) {
             $value = $tag->getValue();
             $options[$value] = "{$tag->getName()} [{$value}]";
         }

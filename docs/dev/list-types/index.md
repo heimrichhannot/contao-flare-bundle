@@ -21,7 +21,7 @@ class MyCustomListType extends AbstractListType
 ```
 
 ### Attribute Parameters:
-- **`type`** (or `alias`): Unique identifier for the list type.
+- **`type`**: Unique identifier for the list type.
 - **`dataContainer`**: The main database table (e.g., `tl_news`).
 - **`palette`**: (Optional) Specific DCA palette to use.
 

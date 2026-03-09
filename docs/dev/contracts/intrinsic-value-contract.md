@@ -1,12 +1,33 @@
 # IntrinsicValueContract
 
-The `IntrinsicValueContract` allows a filter element to provide a default value when it is marked as **intrinsic** (automatic) and no value was provided by the user or context.
+The `IntrinsicValueContract` lets a filter element provide a value for an intrinsic filter when no runtime value is
+available.
 
 **Interface:** `HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract`
 
-## Implementation
+## Method
 
-Implement this contract to fetch default values from the backend configuration (e.g., a "Preselect" field in the DCA).
+### `getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): mixed`
+
+Return any value that the filter's invoker knows how to interpret. That value becomes the one available through
+`$invocation->getValue()`.
+
+## When is this called?
+
+Flare uses this contract in `AbstractProjector::gatherFilterValues()`.
+
+The method is called only when:
+
+- The filter element implements `IntrinsicValueContract`.
+- The filter is marked as intrinsic.
+- No runtime value exists for that filter key.
+
+The "no runtime value" check is based on the presence of the key in the runtime values array. If a runtime key exists,
+even with a `null` value, runtime handling wins and intrinsic fallback is skipped.
+
+Intrinsic values are **not** passed through `RuntimeValueContract::processRuntimeValue()`.
+
+## Example
 
 ```php
 use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract;
@@ -17,16 +38,7 @@ class MyFilterElement extends AbstractFilterElement implements IntrinsicValueCon
 {
     public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): mixed
     {
-        // Fetch value from the filter's data source (e.g., a Contao Model)
-        return $filter->getDataSource()?->getFilterProperty('preselect_value');
+        return $filter->preselect ?: null;
     }
 }
 ```
-
-### When is this called?
-*   The filter is marked as **intrinsic** in the list configuration.
-*   No runtime value was provided (e.g. from a Form or Request parameter).
-
-:::note
-Intrinsic values are **NOT** passed through `processRuntimeValue()`.
-:::

@@ -1,12 +1,29 @@
 # RuntimeValueContract
 
-The `RuntimeValueContract` is used to normalize or preprocess values that come from user interaction (Forms, GET parameters, Twig variables).
+The `RuntimeValueContract` is used to normalize or preprocess values that were determined at runtime.
 
 **Interface:** `HeimrichHannot\FlareBundle\Contract\FilterElement\RuntimeValueContract`
 
-## Implementation
+## Method
 
-Implement this if you need to transform the raw input before it reaches your `__invoke` method.
+### `processRuntimeValue(mixed $value, ListSpecification $list, FilterDefinition $filter): mixed`
+
+Return the processed value that should be passed to the filter invoker. The returned value becomes the one available
+through `$invocation->getValue()`.
+
+## When is this called?
+
+Flare uses this contract in `AbstractProjector::gatherFilterValues()`.
+
+The method is called only when a runtime value exists for the filter key. In interactive lists that runtime value comes
+from the form view data; in other execution contexts it can come from context-provided filter values.
+
+If the key is absent, `processRuntimeValue()` is not called. If the key is present with `null`, the method is still
+called with `null`.
+
+This hook is not used for intrinsic fallback values returned by `IntrinsicValueContract`.
+
+## Example
 
 ```php
 use HeimrichHannot\FlareBundle\Contract\FilterElement\RuntimeValueContract;
@@ -17,7 +34,6 @@ class MyFilterElement extends AbstractFilterElement implements RuntimeValueContr
 {
     public function processRuntimeValue(mixed $value, ListSpecification $list, FilterDefinition $filter): mixed
     {
-        // Example: Convert a comma-separated string from a GET parameter into an array
         if (is_string($value)) {
             return explode(',', $value);
         }
@@ -28,5 +44,5 @@ class MyFilterElement extends AbstractFilterElement implements RuntimeValueContr
 ```
 
 :::info
-`AbstractFilterElement` implements this contract by default (returning the value unchanged), so you only need to override `processRuntimeValue` when needed.
+`AbstractFilterElement` implements this contract by default and returns the runtime value unchanged.
 :::

@@ -33,7 +33,7 @@ class MyCustomFilterElement extends AbstractFilterElement
 ```
 
 ### Attribute Parameters:
-- **`type`** (or `alias`): Unique identifier for the filter type.
+- **`type`**: Unique identifier for the filter type.
 - **`formType`**: The Symfony Form Type class used for this filter in the frontend.
 - **`palette`**: (Optional) Specific DCA palette for filter configuration.
 - **`isTargeted`**: (Optional) Boolean. If true, the filter expects a specific table alias.

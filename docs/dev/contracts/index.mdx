@@ -1,0 +1,33 @@
+# Contracts Reference
+
+Flare exposes a set of small interfaces that opt a filter element, list type, or helper object into specific
+behavior.
+
+Most custom filter elements extend `AbstractFilterElement` and most custom list types extend `AbstractListType`.
+Those base classes already implement several contracts with no-op or default behavior, so you only need to override
+the contracts that matter for your type.
+
+Contracts are grouped into three categories:
+
+## 1. Filter Element Contracts
+- [**`FormTypeOptionsContract`**](./form-type-options-contract.md): Dynamically modify Symfony form field options and
+  generated choices.
+- [**`HydrateFormContract`**](./hydrate-form-contract.md): Hydrate non-submitted form fields for non-intrinsic filters.
+- [**`IntrinsicValueContract`**](./intrinsic-value-contract.md): Provide values for intrinsic filters when no runtime
+  value exists.
+- [**`RuntimeValueContract`**](./runtime-value-contract.md): Normalize runtime values before the filter invoker sees
+  them.
+
+## 2. List Type Contracts
+- [**`ConfigureQueryContract`**](./configure-query-contract.md): Register joins and customize the base SQL query.
+- [**`DataContainerContract`**](./data-container-contract.md): Resolve the list record's `dc` value during backend
+  editing.
+
+## 3. General Contracts
+- [**`IsSupportedContract`**](./is-supported-contract.md): Hide unsupported services from bundle integrations that check
+  availability.
+- [**`PaletteContract`**](./palette-contract.md): Return or adjust Contao DCA palette strings during palette building.
+{/*
+  * - [**`OptionsInterface`**](./options-interface.md): Define and validate custom options with Symfony's `OptionsResolver`.
+  * - [**`LabelableInterface`**](./labelable-interface.md): Supply custom translation parameters for dynamically rendered choice labels. This interface is currently marked experimental.
+  */}

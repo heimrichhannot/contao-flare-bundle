@@ -2,6 +2,8 @@
 
 Callbacks allow you to hook into the configuration and lifecycle of filter elements and list types using PHP 8 attributes. This mechanism replaces the traditional Contao DCA callbacks with a more flexible, service-oriented approach.
 
+import CallbackDoc from '@site/src/components/CallbackDoc';
+
 ## 1. Registration
 
 To register a callback, use the `#[AsFilterCallback]` or `#[AsListCallback]` attribute on a service method.
@@ -48,45 +50,146 @@ public function handleOnLoad(): void
 }
 ```
 
-## 2. Common Targets
+## 2. Filter Element Callbacks
 
-The `target` parameter corresponds to the [Contao callbacks](https://docs.contao.org/5.x/dev/reference/dca/callbacks/).
+<CallbackDoc 
+  attribute="Filter"
+  target="config.onload"
+  description="Executed when the DataContainer object for the filter element is initialized."
+  arguments={[
+    { type: 'FilterModel', description: 'The current filter element model' },
+    { type: 'ListModel', description: 'The list model the filter belongs to' },
+    { type: 'DataContainer', description: 'The Contao DataContainer instance' }
+  ]}
+  code={`#[AsFilterCallback(element: 'my_filter', target: 'config.onload')]
+public function onLoad(FilterModel $filter, DataContainer $dc): void
+{
+    // Custom logic
+}`}
+/>
 
-### Filter Elements
-- **`config.onload`**: Executed when the DataContainer object is initialized.
-- **`fields.<fieldname>.options`**: Used to dynamically provide options for a DataContainer field.
-- **`fields.<fieldname>.load`**: Triggered when a DataContainer field value is loaded.
-- **`fields.<fieldname>.save`**: Triggered before a DataContainer field value is saved.
+<CallbackDoc 
+  attribute="Filter"
+  target="fields.<field>.options"
+  description="Used to dynamically provide options for a filter element field."
+  arguments={[
+    { type: 'FilterModel', description: 'The current filter element model' },
+    { type: 'ListModel', description: 'The list model the filter belongs to' },
+    { type: 'DataContainer', description: 'The Contao DataContainer instance' },
+    { type: 'FilterDefinition', description: 'Internal filter definition' },
+    { type: 'ListSpecification', description: 'The list specification' },
+    { type: 'ListExecutionContext', description: 'Current execution context' },
+    { type: 'array', name: '$tables', description: 'Associated tables for the list' },
+    { type: 'string', name: '$targetTable', description: 'The target table for the filter' }
+  ]}
+  code={`#[AsFilterCallback(element: 'my_filter', target: 'fields.myField.options')]
+public function getOptions(array $tables, string $targetTable): array
+{
+    return ['val' => 'Label'];
+}`}
+/>
 
-### List Types
-- **`config.onload`**: Triggered when the list configuration is initialized.
-- **`fields.<fieldname>.options`**: Used for list configuration fields.
+<CallbackDoc 
+  attribute="Filter"
+  target="fields.<field>.load"
+  description="Triggered when a filter element field value is loaded from the database."
+  arguments={[
+    { type: 'mixed', name: '$value', positional: true, description: 'The raw value from the database' },
+    { type: 'FilterModel', description: 'The current filter element model' },
+    { type: 'ListModel', description: 'The list model' },
+    { type: 'DataContainer', description: 'The Contao DataContainer instance' }
+  ]}
+  code={`#[AsFilterCallback(element: 'my_filter', target: 'fields.myField.load')]
+public function onLoad($value, FilterModel $filter): mixed
+{
+    return $value === 'foo' ? 'bar' : $value;
+}`}
+/>
 
-## 3. Arguments
+<CallbackDoc 
+  attribute="Filter"
+  target="fields.<field>.save"
+  description="Triggered before a filter element field value is saved to the database."
+  arguments={[
+    { type: 'mixed', name: '$value', positional: true, description: 'The value to be saved' },
+    { type: 'FilterModel', description: 'The current filter element model' },
+    { type: 'ListModel', description: 'The list model' },
+    { type: 'DataContainer', description: 'The Contao DataContainer instance' }
+  ]}
+  code={`#[AsFilterCallback(element: 'my_filter', target: 'fields.myField.save')]
+public function onSave($value, FilterModel $filter): mixed
+{
+    return strtoupper($value);
+}`}
+/>
 
-Depending on the target, different arguments are passed to the callback. The arguments are resolved by their type-hint (FQCN) or by their parameter name.
+## 3. List Type Callbacks
 
-### Filter Callbacks (`#[AsFilterCallback]`)
+<CallbackDoc 
+  attribute="List"
+  target="config.onload"
+  description="Triggered when the list configuration (DCA) is initialized."
+  arguments={[
+    { type: 'ListModel', description: 'The list model' },
+    { type: 'DataContainer', description: 'The Contao DataContainer instance' }
+  ]}
+  code={`#[AsListCallback(element: 'my_list', target: 'config.onload')]
+public function onLoad(ListModel $list, DataContainer $dc): void
+{
+    // Modify DCA or state
+}`}
+/>
 
-| Target | Positional Arguments (Must be first) | Optional Arguments (Resolved by type-hint or name) |
-| :--- | :--- | :--- |
-| `config.onload` | None | `FilterModel`, `ListModel`, `DataContainer` |
-| `fields.<field>.options` | None | `FilterModel`, `ListModel`, `DataContainer`, `FilterDefinition`, `ListSpecification`, `ListExecutionContext`, `array $tables`, `string $targetTable` |
-| `fields.<field>.load` | `mixed $value` | `FilterModel`, `ListModel`, `DataContainer` |
-| `fields.<field>.save` | `mixed $value` | `FilterModel`, `ListModel`, `DataContainer` |
+<CallbackDoc 
+  attribute="List"
+  target="fields.<field>.options"
+  description="Used to provide options for list configuration fields."
+  arguments={[
+    { type: 'ListModel', description: 'The list model' },
+    { type: 'DataContainer', description: 'The Contao DataContainer instance' }
+  ]}
+  code={`#[AsListCallback(element: 'my_list', target: 'fields.myField.options')]
+public function getOptions(ListModel $list): array
+{
+    return ['a' => 'Option A'];
+}`}
+/>
 
-### List Callbacks (`#[AsListCallback]`)
+<CallbackDoc 
+  attribute="List"
+  target="fields.<field>.load"
+  description="Triggered when a list configuration field value is loaded."
+  arguments={[
+    { type: 'mixed', name: '$value', positional: true, description: 'The raw value' },
+    { type: 'ListModel', description: 'The list model' },
+    { type: 'DataContainer', description: 'The Contao DataContainer instance' }
+  ]}
+  code={`#[AsListCallback(element: 'my_list', target: 'fields.myField.load')]
+public function onLoad($value): mixed
+{
+    return $value;
+}`}
+/>
 
-| Target | Positional Arguments (Must be first) | Optional Arguments (Resolved by type-hint or name) |
-| :--- | :--- | :--- |
-| `config.onload` | None | `ListModel`, `DataContainer` |
-| `fields.<field>.options` | None | `ListModel`, `DataContainer` |
-| `fields.<field>.load` | `mixed $value` | `ListModel`, `DataContainer` |
-| `fields.<field>.save` | `mixed $value` | `ListModel`, `DataContainer` |
+<CallbackDoc 
+  attribute="List"
+  target="fields.<field>.save"
+  description="Triggered before a list configuration field value is saved."
+  arguments={[
+    { type: 'mixed', name: '$value', positional: true, description: 'The value to be saved' },
+    { type: 'ListModel', description: 'The list model' },
+    { type: 'DataContainer', description: 'The Contao DataContainer instance' }
+  ]}
+  code={`#[AsListCallback(element: 'my_list', target: 'fields.myField.save')]
+public function onSave($value): mixed
+{
+    return $value;
+}`}
+/>
 
-### Argument Resolution Details
+## 4. Argument Resolution Details
 
-- **Positional Arguments**: Some targets provide a value as the first argument (e.g., `.load` and `.save` targets).
+- **Positional Arguments**: Some targets provide a value as the first argument (marked as **Positional** above).
 - **Type-hinted Arguments**: You can type-hint any of the following classes to have them injected:
     - `HeimrichHannot\FlareBundle\Model\FilterModel`
     - `HeimrichHannot\FlareBundle\Model\ListModel`
@@ -94,6 +197,4 @@ Depending on the target, different arguments are passed to the callback. The arg
     - `HeimrichHannot\FlareBundle\Specification\FilterDefinition`
     - `HeimrichHannot\FlareBundle\Specification\ListSpecification`
     - `HeimrichHannot\FlareBundle\Query\ListExecutionContext`
-- **Named Arguments**: For targets like `options`, additional data is passed that can be accessed by the parameter name:
-    - `array $tables`: An array of tables associated with the current list context.
-    - `string $targetTable`: The target table name for the filter element.
+- **Named Arguments**: For targets like `options`, additional data is passed that can be accessed by the parameter name (e.g., `array $tables`, `string $targetTable`).

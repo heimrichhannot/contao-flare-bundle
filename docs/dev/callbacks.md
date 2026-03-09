@@ -61,6 +61,7 @@ public function handleOnLoad(): void
     { type: 'ListModel', description: 'The list model the filter belongs to' },
     { type: 'DataContainer', description: 'The Contao DataContainer instance' }
   ]}
+  returnType="void"
   code={`#[AsFilterCallback(element: 'my_filter', target: 'config.onload')]
 public function onLoad(FilterModel $filter, DataContainer $dc): void
 {
@@ -79,9 +80,11 @@ public function onLoad(FilterModel $filter, DataContainer $dc): void
     { type: 'FilterDefinition', description: 'Internal filter definition' },
     { type: 'ListSpecification', description: 'The list specification' },
     { type: 'ListExecutionContext', description: 'Current execution context' },
-    { type: 'array', name: '$tables', description: 'Associated tables for the list' },
-    { type: 'string', name: '$targetTable', description: 'The target table for the filter' }
+    { type: 'array $tables', description: 'Associated tables for the list' },
+    { type: 'string $targetTable', description: 'The target table for the filter' }
   ]}
+  returnType="array"
+  returnDescription="Return an associative array of selectable options where the array key is the stored value and the array value is the backend label."
   code={`#[AsFilterCallback(element: 'my_filter', target: 'fields.myField.options')]
 public function getOptions(array $tables, string $targetTable): array
 {
@@ -94,11 +97,13 @@ public function getOptions(array $tables, string $targetTable): array
   target="fields.<field>.load"
   description="Triggered when a filter element field value is loaded from the database."
   arguments={[
-    { type: 'mixed', name: '$value', positional: true, description: 'The raw value from the database' },
+    { type: 'mixed $value', positional: true, description: 'The raw value from the database' },
     { type: 'FilterModel', description: 'The current filter element model' },
     { type: 'ListModel', description: 'The list model' },
     { type: 'DataContainer', description: 'The Contao DataContainer instance' }
   ]}
+  returnType="mixed"
+  returnDescription="Return the transformed value that should be used in the backend form after loading."
   code={`#[AsFilterCallback(element: 'my_filter', target: 'fields.myField.load')]
 public function onLoad($value, FilterModel $filter): mixed
 {
@@ -111,11 +116,13 @@ public function onLoad($value, FilterModel $filter): mixed
   target="fields.<field>.save"
   description="Triggered before a filter element field value is saved to the database."
   arguments={[
-    { type: 'mixed', name: '$value', positional: true, description: 'The value to be saved' },
+    { type: 'mixed $value', positional: true, description: 'The value to be saved' },
     { type: 'FilterModel', description: 'The current filter element model' },
     { type: 'ListModel', description: 'The list model' },
     { type: 'DataContainer', description: 'The Contao DataContainer instance' }
   ]}
+  returnType="mixed"
+  returnDescription="Return the normalized value that should actually be persisted to the database."
   code={`#[AsFilterCallback(element: 'my_filter', target: 'fields.myField.save')]
 public function onSave($value, FilterModel $filter): mixed
 {
@@ -133,6 +140,7 @@ public function onSave($value, FilterModel $filter): mixed
     { type: 'ListModel', description: 'The list model' },
     { type: 'DataContainer', description: 'The Contao DataContainer instance' }
   ]}
+  returnType="void"
   code={`#[AsListCallback(element: 'my_list', target: 'config.onload')]
 public function onLoad(ListModel $list, DataContainer $dc): void
 {
@@ -148,6 +156,8 @@ public function onLoad(ListModel $list, DataContainer $dc): void
     { type: 'ListModel', description: 'The list model' },
     { type: 'DataContainer', description: 'The Contao DataContainer instance' }
   ]}
+  returnType="array"
+  returnDescription="Return an associative array of selectable options where the array key is the stored value and the array value is the backend label."
   code={`#[AsListCallback(element: 'my_list', target: 'fields.myField.options')]
 public function getOptions(ListModel $list): array
 {
@@ -160,10 +170,12 @@ public function getOptions(ListModel $list): array
   target="fields.<field>.load"
   description="Triggered when a list configuration field value is loaded."
   arguments={[
-    { type: 'mixed', name: '$value', positional: true, description: 'The raw value' },
+    { type: 'mixed $value', positional: true, description: 'The raw value' },
     { type: 'ListModel', description: 'The list model' },
     { type: 'DataContainer', description: 'The Contao DataContainer instance' }
   ]}
+  returnType="mixed"
+  returnDescription="Return the transformed value that should be shown in the backend form after loading."
   code={`#[AsListCallback(element: 'my_list', target: 'fields.myField.load')]
 public function onLoad($value): mixed
 {
@@ -176,10 +188,12 @@ public function onLoad($value): mixed
   target="fields.<field>.save"
   description="Triggered before a list configuration field value is saved."
   arguments={[
-    { type: 'mixed', name: '$value', positional: true, description: 'The value to be saved' },
+    { type: 'mixed $value', positional: true, description: 'The value to be saved' },
     { type: 'ListModel', description: 'The list model' },
     { type: 'DataContainer', description: 'The Contao DataContainer instance' }
   ]}
+  returnType="mixed"
+  returnDescription="Return the normalized value that should be persisted for the list configuration field."
   code={`#[AsListCallback(element: 'my_list', target: 'fields.myField.save')]
 public function onSave($value): mixed
 {

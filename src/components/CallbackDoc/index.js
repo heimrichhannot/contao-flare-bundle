@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import CodeBlock from '@theme/CodeBlock';
 import styles from './styles.module.css';
 
-export default function CallbackDoc({ attribute, target, description, arguments: args, code }) {
+export default function CallbackDoc({ attribute, target, description, arguments: args, returnType, returnDescription, code }) {
   const isList = attribute === 'List';
 
   return (
@@ -19,26 +19,45 @@ export default function CallbackDoc({ attribute, target, description, arguments:
       <div className={styles.detailsContent}>
         {args && args.length > 0 && (
           <>
-            <h4>Available Arguments</h4>
-            <table className={styles.argumentTable}>
-              <thead>
-                <tr>
-                  <th>Type / Name</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody>
+            <h4 className={styles.sectionTitle}>Available Arguments</h4>
+            <div className={styles.argumentList}>
+              <div className={styles.argumentListHeader}>
+                <span>Type or class</span>
+                <span>Notes</span>
+              </div>
+              <div className={styles.argumentItems}>
                 {args.map((arg, idx) => (
-                  <tr key={idx}>
-                    <td>
-                      <code>{arg.type}</code> {arg.name && <code>{arg.name}</code>}
-                      {arg.positional && <span className={styles.positionalBadge}>Positional</span>}
-                    </td>
-                    <td>{arg.description}</td>
-                  </tr>
+                  <article key={idx} className={styles.argumentItem}>
+                    <div className={styles.argumentMeta}>
+                      <div className={styles.argumentSignature}>
+                        <code>{arg.name ? `${arg.type} ${arg.name}` : arg.type}</code>
+                      </div>
+                      {arg.positional && (
+                        <span className={styles.positionalBadge}>
+                          <span className={styles.positionalBadgeDot} aria-hidden="true" />
+                          Positional
+                        </span>
+                      )}
+                    </div>
+                    <p className={styles.argumentDescription}>{arg.description}</p>
+                  </article>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {returnType && (
+          <>
+            <h4 className={styles.sectionTitle}>Return Type</h4>
+            <div className={styles.returnBlock}>
+              <div className={styles.returnRow}>
+                <code className={styles.returnCode}>{returnType}</code>
+                {returnDescription && (
+                  <p className={styles.returnDescription}>{returnDescription}</p>
+                )}
+              </div>
+            </div>
           </>
         )}
         

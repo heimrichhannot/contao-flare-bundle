@@ -76,22 +76,200 @@ details[open] .summary::after {
   border-top: 1px solid var(--ifm-color-emphasis-300);
 }
 
-.argumentTable {
-  width: 100%;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
+.sectionTitle {
+  margin-bottom: 0.85rem;
 }
 
-.argumentTable th {
-  text-align: left;
+.argumentList {
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-global-radius);
+  overflow: hidden;
+  background: var(--ifm-background-surface-color);
+}
+
+.argumentListHeader {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--ifm-color-emphasis-100);
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.argumentItems {
+  display: flex;
+  flex-direction: column;
+}
+
+.argumentItem {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+  align-items: start;
+  background: var(--ifm-background-surface-color);
+}
+
+.argumentItem + .argumentItem {
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.argumentMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.argumentSignature {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.argumentSignature code {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 4px;
+  background-color: var(--ifm-color-emphasis-100);
+  font-size: 0.82rem;
+}
+
+.argumentDescription {
+  margin: 0;
+  color: var(--ifm-color-emphasis-800);
+  line-height: 1.65;
+}
+
+.returnBlock {
+  margin-bottom: 1.25rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-global-radius);
+  background: var(--ifm-background-surface-color);
+}
+
+.returnRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.returnCode {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 2rem;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 4px;
+  background-color: var(--ifm-color-emphasis-100);
+  font-size: 0.82rem;
+}
+
+.returnDescription {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  color: var(--ifm-color-emphasis-800);
+  line-height: 1.65;
+}
+
+:global([data-theme='dark']) .argumentList {
+  border-color: var(--ifm-color-emphasis-200);
+}
+
+:global([data-theme='dark']) .argumentListHeader {
+  border-bottom-color: var(--ifm-color-emphasis-300);
+}
+
+:global([data-theme='dark']) .argumentItem + .argumentItem {
+  border-top-color: var(--ifm-color-emphasis-300);
+}
+
+:global([data-theme='dark']) .argumentSignature code {
+  border-color: var(--ifm-color-emphasis-300);
+}
+
+:global([data-theme='dark']) .returnBlock {
+  border-color: var(--ifm-color-emphasis-200);
+}
+
+:global([data-theme='dark']) .returnCode {
+  border-color: var(--ifm-color-emphasis-300);
 }
 
 .positionalBadge {
-  background-color: var(--ifm-color-warning);
-  color: var(--ifm-color-warning-contrast-background);
-  font-size: 0.7rem;
-  padding: 0.1rem 0.3rem;
-  border-radius: 3px;
-  margin-left: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.6rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 4px;
+  background-color: var(--ifm-color-emphasis-100);
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.positionalBadgeDot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background-color: var(--ifm-color-primary);
+  flex: 0 0 auto;
+}
+
+:global([data-theme='dark']) .positionalBadge {
+  border-color: var(--ifm-color-emphasis-200);
+}
+
+:global([data-theme='dark']) .positionalBadgeDot {
+  background-color: var(--ifm-color-primary-light);
+}
+
+@media (max-width: 768px) {
+  .summary {
+    flex-wrap: wrap;
+  }
+
+  .summary::after {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+  }
+
+  .targetString,
+  .shortDescription {
+    white-space: normal;
+  }
+
+  .argumentListHeader,
+  .argumentItem {
+    grid-template-columns: 1fr;
+  }
+
+  .argumentListHeader {
+    gap: 0.25rem;
+  }
+
+  .argumentItem {
+    gap: 0.75rem;
+  }
 }

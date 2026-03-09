@@ -9,7 +9,7 @@ sidebar_position: 2
 
 This document outlines the architecture of the filter invocation system.
 The system replaces legacy reflection-based logic with a compiled, extensible, and context-aware mechanism.
-It allows third-party developers to provide custom invocation logic for any filter element in any context (e.g., interactive forms, gallery viewers, API endpoints).
+It allows third-party developers to provide custom invocation logic for any filter element in any context (e.g., interactive forms, aggregation).
 
 Key goals:
 *   **Performance:** Compile-time discovery of invokers.
@@ -18,36 +18,36 @@ Key goals:
 
 ## 2. Core Architectural Principles
 
-1.  **Projector Responsibility:** The Projector is the authority on *what* values are used for filtering. It gathers runtime values (from Forms, Request, Config) and intrinsic values, creating a clean value map before invoking filters.
-2.  **Context-Driven Logic:** Filter Elements use attributes (`#[AsFilterInvoker]`) to define context-specific behavior, removing hardcoded scope checks (e.g., ~`if ($context->isList())`~).
-3.  **Indexed Collections:** Filters are stored in an associative map where the key is a unique index. This allows filters to override each other (e.g., a Database filter named 'author' can be overridden by a Manual filter named 'author').
+1.  **Projector Responsibility:** The Projector is the authority on *what* values are used for filtering. It gathers runtime values (from Forms, Request, Context) and intrinsic values, creating a clean value map.
+2.  **Context-Driven Logic:** Filter Elements use attributes (`#[AsFilterInvoker]`) to define context-specific behavior, removing hardcoded scope checks.
+3.  **Indexed Collections:** Filters are stored in an associative map where the key is a unique index.
 4.  **Unified DTO:** The `FilterInvocation` DTO wraps configuration and context for the filter execution.
-5.  **Specification-Driven:** `ListSpecification` is the domain object source of truth.
+5.  **Targeted Query Building:** The `FilterQueryBuilder` provides a safe API to manipulate the SQL query.
 
 ## 3. The `FilterInvocation` DTO
 
-The `FilterInvocation` object wraps all necessary context and configuration for a filter's execution, *excluding* the Query Builder (which is passed separately to distinguish "Context" from "Action Target").
+The `FilterInvocation` object wraps all necessary context and configuration for a filter's execution.
 
 **Class:** `HeimrichHannot\FlareBundle\Filter\FilterInvocation`
 
 ```php
-class FilterInvocation
+readonly class FilterInvocation
 {
     public function __construct(
-        public readonly FilterDefinition $filter,
-        public readonly ListSpecification $list,
-        public readonly ContextConfigInterface $config,
-        public readonly mixed $value = null,
+        public FilterDefinition  $filter,
+        public ListSpecification $list,
+        public ContextInterface  $context,
+        public mixed             $value = null,
     ) {}
     
-    // Getter methods are also available...
+    // Getter methods are also available: getFilterDefinition(), getListSpecification(), getContextConfig(), getValue()
 }
 ```
 
 ## 4. The `AsFilterInvoker` Attribute
 
 The `AsFilterInvoker` attribute is the declarative entry point for registering invocation logic.
-It supports class and method targets and carries enough information for both internal and external use cases.
+It supports class and method targets.
 
 **Attribute:** `HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterInvoker`
 
@@ -63,14 +63,13 @@ class BooleanElement extends AbstractFilterElement
 {
     public function __invoke(FilterInvocation $invocation, FilterQueryBuilder $qb): void
     {
-        // ... the default invoker for any context for which no specific invocation method is registered
-        // ... which class method to call (instead of __invoke) can be defined with the AsFilterElement attribute 
+        // Default invoker
     }
 
     #[AsFilterInvoker(context: 'interactive')]
     public function invokeForInteractive(FilterInvocation $invocation, FilterQueryBuilder $qb): void
     {
-        // ... logic for interactive context
+        // Logic specific to interactive context
     }
 }
 ```
@@ -79,111 +78,43 @@ class BooleanElement extends AbstractFilterElement
 The `filterType` is mandatory.
 
 ```php
-class GalleryBooleanInvoker
+class CustomInvoker
 {
-    #[AsFilterInvoker(filterType: BooleanElement::TYPE, context: 'gallery')]
-    public function extendBooleanFilter(FilterInvocation $invocation, FilterQueryBuilder $qb): void
+    #[AsFilterInvoker(filterType: BooleanElement::TYPE, context: 'interactive', priority: 10)]
+    public function overrideBoolean(FilterInvocation $invocation, FilterQueryBuilder $qb): void
     {
-        // ... custom logic for BooleanElement in the 'gallery' context
+        // Custom logic that overrides the default BooleanElement behavior in 'interactive' context
     }
 }
 ```
 
-**3. External: On a Third-Party Service's Class**
-The `filterType` is mandatory, and the `method` defaults to `__invoke`.
+## 5. System Components & Execution Flow
 
-```php
-#[AsFilterInvoker(filterType: SearchKeywordsElement::TYPE, context: 'gallery')]
-class GallerySearchInvoker
-{
-    public function __invoke(FilterInvocation $invocation, FilterQueryBuilder $qb): void
-    {
-        // ... logic
-    }
-}
-```
+The invocation process is orchestrated by several specialized services.
 
-## 5. System Components & Discovery
+### A. Discovery (`RegisterFilterInvokersPass`)
+A Symfony Compiler Pass discovers all methods and classes tagged with `#[AsFilterInvoker]`. These are registered in the `FilterInvokerRegistry`.
 
-The runtime reflection mechanism is replaced by a compiled registry populated via a compiler pass.
+### B. Resolution (`FilterInvokerResolver`)
+The `FilterInvokerResolver` is responsible for finding the most appropriate invoker for a given filter type and context.
+- It first looks for a specific match (`filterType` + `contextType`).
+- If not found, it falls back to the default invoker for that filter type.
 
-### A. Context Configuration (`ContextConfigInterface`)
-Contexts must provide a unique identity to match against the `AsFilterInvoker` attribute.
+### C. Execution (`FilterExecutor`)
+The `FilterExecutor` is the high-level service that iterates through all filters in a `ListSpecification` and executes them.
 
-```php
-interface ContextConfigInterface
-{
-    /**
-     * Returns the unique machine name of this context type (e.g., 'interactive').
-     */
-    public static function getContextType(): string;
-}
-```
+**Execution Flow:**
+1. **Gather Values:** The Projector prepares a map of filter values (from request, form, or context).
+2. **Loop Filters:** The `FilterExecutor` iterates over all `FilterDefinition` objects in the specification.
+3. **Create Invocation:** For each filter, a `FilterInvocation` DTO is created.
+4. **Resolve Invoker:** `FilterInvokerResolver` provides the callable (the invoker).
+5. **Create Query Builder:** A `FilterQueryBuilder` is instantiated for the target table alias.
+6. **Dispatch Event:** `FilterElementInvokingEvent` is dispatched (allows skipping or modifying the callback).
+7. **Invoke:** The callback is executed: `$callback($invocation, $filterQueryBuilder)`.
+8. **Dispatch Event:** `FilterElementInvokedEvent` is dispatched.
 
-### B. Filter Collection & Indexing
-Filters are managed in a `FilterDefinitionCollection` which functions as an associative array.
+## 6. Target Aliases
 
-*   **Collection:** Supports `set(?string $key, FilterDefinition $filter)`.
-*   **Indexing Strategy:** Collectors (like `ListModelFilterCollector`) determine the key.
-    For example, database filters use their form field name as the key, allowing them to override or be overridden by other filters sharing the same name.
-
-### C. Intrinsic Values (`IntrinsicValueContract`)
-Allows the Projector to retrieve default values from intrinsic filters without knowing internal implementation details.
-
-```php
-interface IntrinsicValueContract
-{
-    public function getIntrinsicValue(FilterDefinition $definition): mixed;
-}
-```
-
-### D. `RegisterFilterInvokersPass`
-A Symfony Compiler Pass that discovers and registers invokers.
-
-*   **Responsibility:**
-    1.  Iterates service definitions.
-    2.  Finds `#[AsFilterInvoker]` attributes.
-    3.  Infers `filterType` if missing (for internal elements).
-    4.  Populates the `FilterInvokerRegistry`.
-
-### E. `FilterInvoker` Service
-The primary public-facing service for executing filter invocation logic.
-
-*   **Service:** `src/Filter/Invoker/FilterInvoker.php`
-*   **Logic:**
-    1.  Queries the registry for a specific custom invoker (`filterType` + `contextType`).
-    2.  If found, returns that callable.
-    3.  **Fallback:** Checks the base Filter Element service for a method matching the default invocation (usually `__invoke` or derived from context).
-    4.  Returns `null` if no invoker is resolved.
-
-## 6. Execution Flow
-
-The consumer (typically `ListQueryManager`) orchestrates the process using the values provided by the Projector.
-
-```php
-// 1. Projector gathers values (Projector Responsibility)
-$filterValues = [];
-foreach ($spec->getFilters()->all() as $key => $filter) {
-   // ... resolves values from request/form/intrinsics using the Key ...
-   $filterValues[$key] = $value;
-}
-
-// 2. Manager Invokes Filters
-// Inside ListQueryManager::invokeFilters(...)
-$contextType = $contextConfig::getContextType();
-
-foreach ($spec->getFilters()->all() as $key => $filter) {
-    $value = $filterValues[$key] ?? null;
-
-    // Create DTO
-    $invocation = new FilterInvocation($filter, $spec, $contextConfig, $value);
-
-    // Get Invoker
-    $callback = $this->filterInvoker->get($filter->getType(), $contextType);
-
-    // Execute
-    if ($callback) {
-        $callback($invocation, $qb);
-    }
-}
-```
+Filters can target different tables within a complex query.
+By default, they target `TableAliasRegistry::ALIAS_MAIN`.
+If a filter is "targeted" (e.g., it belongs to a joined table), the `FilterExecutor` automatically provides a `FilterQueryBuilder` initialized with the correct table alias.

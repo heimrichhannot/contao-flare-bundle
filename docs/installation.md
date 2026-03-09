@@ -5,24 +5,29 @@ sidebar_position: 2
 
 # Installation
 
-:::note
-Flare is a work-in-progress and not yet feature-complete. We are actively working on it and will release updates regularly.
-At this point, it is not recommended for userland production use, which is why we are not yet tagging a stable release.
-:::
+Flare is a professional Contao bundle that requires **Contao ^4.13 or ^5.0** and **PHP ^8.2**.
 
+## 1. Install via Composer
 
-Install the bundle via Composer:
+You can install the bundle using Composer:
 
 ```bash
 composer require heimrichhannot/contao-flare-bundle
 ```
 
-Requires **Contao ^4.13 or ^5.0** and **PHP ^8.2**.
+## 2. Database Migration
 
-Then, update your Contao database by running:
+After installation, update your Contao database schema:
 
 ```bash
+# Using the Contao Console
 php vendor/bin/contao-console contao:migrate
+
+# OR via the Contao Install Tool or Manager
 ```
 
-After that, you can start using Flare in your Contao installation. You can find the configuration options in the Contao backend under **Layout &rarr; Lists&ensp;<span className="text--muted">FLARE</span>**.
+## 3. Configuration
+
+Flare is fully integrated into the Contao backend. You can find the main configuration under **Layout → Lists (FLARE)**.
+
+No additional bundle configuration in `config/config.yaml` is required for basic usage.

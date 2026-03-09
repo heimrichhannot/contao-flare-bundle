@@ -7,131 +7,69 @@ sidebar_position: 1
 
 ## Architecture Overview
 
-We use a specialized design pattern for generating and rendering data lists that adapts concepts from **CQRS** (Command Query Responsibility Segregation) and **ADR** (Action-Domain-Responder).
+Flare uses a specialized design pattern for generating and rendering data lists, inspired by **CQRS** (Command Query Responsibility Segregation).
 
-The system is based on a strict separation of responsibilities, optimized for testability, Symfony 7 autowiring, and cognitive clarity (code discovery). The architecture is divided into four logical layers:
+The system is based on a strict separation of responsibilities:
 
-1. **Definition (What?)**: Static description of the data source and filters (`Specification`).
-2. **Context (How?)**: Specific configuration of the use case (`Context`).
-3. **Processing (Who?)**: Stateless services that perform the projection (`Projector`).
-4. **Result (Data)**: Stateful data objects for output (`View`).
+1. **Specification (What?)**: Static description of the data source and filters.
+2. **Context (How?)**: Use-case specific configuration (e.g., interactive list, aggregation).
+3. **Engine (Orchestrator)**: Stateful container that binds Specification and Context.
+4. **Projector (Who?)**: Stateless service that executes the projection logic.
+5. **View (Result)**: Stateful data object containing the results (entries, pagination, etc.).
 
-This separation is directly reflected in the namespace structure (Specification, Context, Projector, View) to ensure clear orientation within the bundle (`HeimrichHannot\FlareBundle`).
+## The 5 Core Components
 
-## The 4 Core Components
+### 1. Specification (`ListSpecification`)
+- **Type:** Value Object / Domain Object.
+- **Responsibility:** Contains the static configuration of a list (e.g., table name, base query, filters).
+- **Function:** Abstractly defines the data source without knowing the execution context.
 
-### ListSpecification
-- **Type:** Value Object / Definition Class
-- **Responsibility:** Contains the static base configuration of a list and a collection of filter elements.
-- **Function:** Abstractly defines query manipulations and the data source, without knowing how the data will later be rendered.
+### 2. Context (`ContextInterface`)
+- **Type:** Value Object / Configuration DTO.
+- **Responsibility:** Defines *how* the specification should be projected.
+- **Examples:**
+    - `InteractiveContext`: For HTML lists with pagination and forms.
+    - `AggregationContext`: For counting or statistical calculations.
+    - `ValidationContext`: For checking if specific IDs are valid within the filter scope.
+    - `ExportContext`: (Future) For CSV/Excel downloads.
 
-### ContextConfig
-- **Type:** Value Object / DTO
-- **Responsibility:** Defines the specific use case (context).
-- **Examples:** `InteractiveContext` (HTML lists with pagination/forms), `ExportConfig` (CSV downloads), `ValidationConfig`.
-- **Function:** Controls parameters such as pagination size, formatting, or lazy-loading behavior for a specific invocation.
+### 3. Engine (`Engine`)
+- **Type:** Stateful Orchestrator.
+- **Responsibility:** Acts as a bridge between the Specification and the Context.
+- **Function:** Provides a unified entry point (`createView()`) to trigger the projection process. It uses the `ProjectorRegistry` to find the appropriate projector.
 
-### The Projector (Service / Factory)
-- **Type:** Stateless Symfony Service
-- **Responsibility:** Accepts a `ListSpecification` and a `ContextInterface`.
-- **Function:** “Projects” the specification onto the context. Executes (optionally lazy) database queries or prepares query builders and instantiates the result object.
-- **Example:** `InteractiveProjector` creates an `InteractiveView`.
+### 4. Projector (`ProjectorInterface`)
+- **Type:** Stateless Symfony Service.
+- **Responsibility:** Executes the actual business logic to transform a Specification and Context into a View.
+- **Function:** Interacts with the database (via `SqlQueryStruct` and `FilterQueryBuilder`) to fetch or aggregate data.
 
-### The View (Data Object / Result)
-- **Type:** Data Object (stateful) — **not a service**
-- **Responsibility:** Holds the final data or iterators for output.
-- **Usage:** Passed to Twig templates or export functions.
-- **API:** Provides methods such as `getEntries()`, `getTotal()`, etc.  
-  **Important:** This is not a finished HTML string, but a data container (“view data”) consumed by templates.
+### 5. View (`ViewInterface`)
+- **Type:** Stateful Data Object (Result).
+- **Responsibility:** Holds the results of the projection.
+- **Usage:** Passed to Twig templates or returned by an API.
+- **API:** Provides access to the processed data (e.g., `getEntries()`, `getPagination()`, `getCount()`).
 
 ## The Flow
 
-- A controller or Twig function creates/loads a `ListSpecification`.
-- A suitable `Context` object is created (e.g. for an interactive list).
-- The corresponding projector service is called: `$projector->project($spec, $config)`.
-- A `View` is returned.
-- The view is used in Twig templates to render the list, or in controllers to generate content/files/reports.
+1. You create or load a **Specification**.
+2. You define a **Context** (e.g., `InteractiveContext` with pagination settings).
+3. You instantiate an **Engine** with both: `$engine = new Engine($context, $spec, $registry);`.
+4. You call `$view = $engine->createView();`.
+5. The Engine delegates the work to a **Projector**, which returns the **View**.
 
-## Standard Contexts & Use Cases
+## Standard Contexts
 
-The system provides four specialized standard implementations of `ContextConfig` and their corresponding projections.
+### Interactive Context (`InteractiveContext`)
+- **Goal:** Standard frontend/backend list rendering.
+- **Features:** Supports pagination, sorting, and form-based filtering.
+- **View:** `InteractiveView` (provides entries and pagination).
 
-### 1. Interactive (Frontend Lists)
-- **Config:** `InteractiveContext`
-- **Goal:** Classic rendering of data in the browser (HTML).
-- **Specialty:** Automatically processes request data (GET).
-- **Features:**
-  - Manages pagination (page X of Y) and pagination links (with `{list}_page` parameter in the URL).
-  - Builds the Symfony filter form based on the specification.
-  - Handles sorting via user input.
-- **Result (`InteractiveView`):** Provides methods for `getEntries()` (iterable entities), `getPagination()` (metadata), and `getFormComponent()` (for Twig).
+### Aggregation Context (`AggregationContext`)
+- **Goal:** Fast counting or calculations.
+- **Features:** Ignores pagination and sorting for performance.
+- **View:** `AggregationView` (provides the count).
 
-### 2. Aggregation (Counting & Statistics)
-- **Config:** `AggregationContext`
-- **Goal:** Efficient determination of total counts without loading actual data.
-- **Specialty:** Performance-optimized (executes `COUNT` queries, no entity hydration).
-- **Features:** Ignores pagination and sorting, but applies all filter criteria from the specification.
-- **Result (`AggregationView`):** Primarily provides `getCount()`.
-
-### 3. Validation (Checking & Selection)
-- **Config:** `ValidationContext`
-- **Goal:** Verify whether specific IDs or values are “visible” or valid under the current filter conditions.
-- **Specialty:** Often used internally, e.g. to check foreign-key constraints or generate whitelists.
-- **Features:** Accepts a list of IDs (“candidates”) to restrict the result set.
-- **Result (`ValidationView`):** Provides `isValid(id)` (boolean) or `getModel(id)` for valid candidates.
-
-### 4. Export (Data Download)
-- **Config:** `ExportContext`
-- **Goal:** Output all data (or a large subset) for external processing (CSV, XML, JSON).
-- **Specialty:** Pagination is disabled by default (limit = 0).
-- **Features:** Can use memory-optimized iterators (unbuffered queries) to avoid memory limits with large lists.
-- **Result (`ExportView`):** Provides a pure data iterator optimized for `fputcsv` or serializers.
-
-## Namespace Architecture
-
-The architecture follows a layer-based structure to cleanly separate technical responsibilities (definition vs. processing vs. result). This supports Symfony autowiring and improves cognitive readability of the code.
-
-**Root Namespace (Bundle):** `HeimrichHannot\FlareBundle`
-
-### 1. Definition
-
-Contains the core definition objects describing the “what”, independent of context.
-
-- **Namespace:** `HeimrichHannot\FlareBundle\Specification`
-- **Core Class:** `ListSpecification`
-
-### 2. Context
-
-Holds the configuration DTOs (contexts) that control the use case.
-
-- **Namespace:** `HeimrichHannot\FlareBundle\Engine\Context`
-- **Classes:**
-  - `InteractiveContext`
-  - `AggregationContext`
-  - `ValidationContext`
-  - `ExportContext`
-  - *Interface:* `ContextInterface`
-
-### 3. Processing
-
-Contains the stateless services (projectors) that execute the logic.
-
-- **Namespace:** `HeimrichHannot\FlareBundle\Engine\Projector`
-- **Classes:**
-  - `InteractiveProjector`
-  - `AggregationProjector`
-  - `ValidationProjector`
-  - `ExportProjector`
-  - *Interface:* `ProjectorInterface`
-
-### 4. Result
-
-Contains the stateful objects (views) that hold the processing results.
-
-- **Namespace:** `HeimrichHannot\FlareBundle\Engine\View`
-- **Classes:**
-  - `InteractiveView`
-  - `AggregationView`
-  - `ValidationView`
-  - `ExportView`
-  - *Interface:* `ViewInterface`
+### Validation Context (`ValidationContext`)
+- **Goal:** Check if specific entities exist within the current filter scope.
+- **Features:** Used for internal validation or access control.
+- **View:** `ValidationView`.

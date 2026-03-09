@@ -20,16 +20,16 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 readonly class RegisterTagsTablesListener
 {
     public function __construct(
-        private CfgTagsJoinsRegistry    $joinsRegistry,
-        private CfgTagsManagersRegistry $registry,
-        private CfgTagsManagersResolver $resolver,
+        private CfgTagsJoinsRegistry    $tagsJoins,
+        private CfgTagsManagersRegistry $managersRegistry,
+        private CfgTagsManagersResolver $managersResolver,
         private LoggerInterface         $logger,
     ) {}
 
     public function __invoke(QueryBaseInitializedEvent $event): void
     {
         $table = $event->listSpecification->dc;
-        if (!$columns = $this->registry->fieldsOf($table)) {
+        if (!$columns = $this->managersRegistry->fieldsOf($table)) {
             return;
         }
 
@@ -53,7 +53,7 @@ readonly class RegisterTagsTablesListener
 
         $tagsField = \current($columns);
 
-        if (!$manager = $this->resolver->get($table, $tagsField)) {
+        if (!$manager = $this->managersResolver->get($table, $tagsField)) {
             $this->logger->error("[FLARE] Codefog tags integration could not find a tag manager service for {$table}.{$tagsField}.");
             return;
         }
@@ -84,7 +84,7 @@ readonly class RegisterTagsTablesListener
             condition: $registry->makeJoinOn($cfgTagsAlias, 'id', $cfgJoinAlias, 'cfg_tag_id'),
         ), activate: true);
 
-        $this->joinsRegistry->register($cfgTagsAlias, new CfgTagsJoinAttribute(
+        $this->tagsJoins->register($cfgTagsAlias, new CfgTagsJoinAttribute(
             joinTable: $cfgJoinTable,
             joinAlias: $cfgJoinAlias,
             tagsField: $tagsField,

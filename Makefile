@@ -1,4 +1,4 @@
-.PHONY: help docs-setup docs-remove
+.PHONY: help docs-setup docs-remove php composer
 
 # Configuration
 DOCS_DIR = docs
@@ -7,6 +7,12 @@ DOCS_BRANCH = docs/main
 help: ## Show this help menu
 	@echo "Available commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
+
+php: ## Run php command in docker
+	docker compose run --rm php $(filter-out $@,$(MAKECMDGOALS))
+
+composer: ## Run composer command in docker
+	docker compose run --rm composer $(filter-out $@,$(MAKECMDGOALS))
 
 docs-setup: ## Setup the Docusaurus worktree environment locally
 	@if [ -d "$(DOCS_DIR)" ]; then \
@@ -29,3 +35,7 @@ docs-remove: ## Safely remove the local Docusaurus worktree
 	@echo "Safely removing the git worktree..."
 	@git worktree remove $(DOCS_DIR)
 	@echo "Worktree removed successfully."
+
+# Handle arguments for shortcuts
+%:
+	@:

@@ -1,0 +1,11 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    HeimrichHannot\FlareBundle\Integration\CodefogTags\:
+        resource: ../src/Integration/CodefogTags
+
+    HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsManagersResolver:
+        arguments:
+            $managerLocator: null # populated by compiler pass

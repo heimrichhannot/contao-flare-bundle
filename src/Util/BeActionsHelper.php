@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Util;
 
 class BeActionsHelper
@@ -26,7 +28,7 @@ class BeActionsHelper
 
         $val = match ($operation) {
             self::OP_CHILDREN => [
-                'href' => "table=$itemTable",
+                'href' => "table={$itemTable}",
                 'icon' => $contao4 ? 'edit.svg' : 'children.svg',
             ],
             self::OP_EDIT => [

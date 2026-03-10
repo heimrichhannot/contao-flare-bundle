@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\ListType;
 
 use Contao\CoreBundle\DataContainer\PaletteManipulator;
@@ -11,14 +13,11 @@ use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
-use HeimrichHannot\FlareBundle\ListType\Trait\GenericReaderPageMetaTrait;
-use HeimrichHannot\FlareBundle\Util\PtableInferrer;
+use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 
-#[AsListType(alias: self::TYPE, palette: self::DEFAULT_PALETTE)]
+#[AsListType(type: self::TYPE, palette: self::DEFAULT_PALETTE)]
 class GenericDataContainerListType extends AbstractListType implements DataContainerContract
 {
-    use GenericReaderPageMetaTrait;
-
     public const TYPE = 'flare_generic_dc';
     public const DEFAULT_PALETTE = <<<'PALETTE'
         {data_container_legend},dc,fieldAutoItem;{parent_legend},hasParent;
@@ -60,7 +59,7 @@ class GenericDataContainerListType extends AbstractListType implements DataConta
 
         $table = $listModel->dc;
 
-        $inferrer = new PtableInferrer($listModel, $listModel);
+        $inferrer = new PtableInferrer($listModel, $listModel->dc);
 
         try
         {

@@ -3,9 +3,7 @@
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ListViewController;
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ReaderController;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\FilterElement;
-use HeimrichHannot\FlareBundle\ListType;
-use HeimrichHannot\FlareBundle\SortDescriptor\Order;
+use HeimrichHannot\FlareBundle\Sort\SortOrder;
 
 $lang = &$GLOBALS['TL_LANG'];
 $flare = &$lang['FLARE'];
@@ -14,29 +12,9 @@ $err = &$lang['ERR']['flare'];
 $lang['CTE'][ListViewController::TYPE] = ['List view [FLARE]', 'Displays a FLARE list.'];
 $lang['CTE'][ReaderController::TYPE] = ['Detail reader [FLARE]', 'Displays the reader for a FLARE list.'];
 
-$flare['filter'] = [
-    FilterElement\Relation\ArchiveElement::TYPE => ['Archive', 'Filter by archive.'],
-    FilterElement\Relation\BelongsToRelationElement::TYPE => ['Relation: Belongs to', 'Filter by related parent entities.'],
-    FilterElement\BooleanElement::TYPE => ['Boolean property value', 'Filter by a boolean value.'],
-    FilterElement\CalendarCurrentElement::TYPE => ['Calendar time window', 'Filter by current events.'],
-    FilterElement\CodefogTagsElement::TYPE => ['Tags [codefog/tags-bundle]', 'Filter by Codefog tags.'],
-    FilterElement\DateRangeElement::TYPE => ['Date range', 'Filter by a date range.'],
-    FilterElement\DcaSelectField::TYPE => ['DCA field options selection', 'Filter by a selected DCA field.'],
-    FilterElement\FieldValueChoiceElement::TYPE => ['DCA field value selection (beta)', 'Filter by existing field values.'],
-    FilterElement\PublishedElement::TYPE => ['Published', 'Show only published items.'],
-    FilterElement\SimpleEquationElement::TYPE => ['Simple equation', 'Filter whether a field matches a simple equation.'],
-    FilterElement\SearchKeywordsElement::TYPE => ['Keyword search', 'Filter by free text input.'],
-];
-
-$flare['list'] = [
-    ListType\GenericDataContainerListType::TYPE => ['Data container', 'Lists items of a data container.'],
-    ListType\NewsListType::TYPE => ['News', 'Lists news items.'],
-    ListType\EventsListType::TYPE => ['Events', 'Lists events.'],
-];
-
 $flare['sort_order'] = [
-    Order::ASC => ['Ascending [ASC]', 'Sort ascending.'],
-    Order::DESC => ['Descending [DESC]', 'Sort descending.'],
+    SortOrder::ASC => ['Ascending [ASC]', 'Sort ascending.'],
+    SortOrder::DESC => ['Descending [DESC]', 'Sort descending.'],
 ];
 
 $flare['date_time'] = [

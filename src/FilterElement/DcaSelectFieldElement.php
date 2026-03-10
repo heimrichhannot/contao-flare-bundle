@@ -80,7 +80,8 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
 
         if (\count($selected) === 1)
         {
-            if (!$value = \array_search($selected[0], $options, true))
+            $value = \current($selected);
+            if (!\array_key_exists($value, $options))
             {
                 $qb->abort();
             }
@@ -108,13 +109,12 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
             ));
         }
 
-        $options = \array_flip($options);
         $validOptions = [];
 
         foreach ($selected as $value)
         {
-            if ($key = $options[$value] ?? null) {
-                $validOptions[] = $key;
+            if ($options[$value] ?? null) {
+                $validOptions[] = $value;
             }
         }
 

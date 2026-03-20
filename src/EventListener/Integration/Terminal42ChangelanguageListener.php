@@ -183,7 +183,7 @@ class Terminal42ChangelanguageListener
 
         // Translatable fields
         foreach (array_intersect($translatableFields, $regularFields) as $field) {
-            $listQueryBuilder->addRawSelect("IFNULL(translation.$field, $qMain.$field) AS $field");
+            $listQueryBuilder->addRawSelect("COALESCE(NULLIF(translation.$field, ''), $qMain.$field) AS $field");
         }
 
         $listQueryBuilder->addJoin(

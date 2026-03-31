@@ -1,3 +1,7 @@
+---
+sidebar_position: 5
+---
+
 # Events Reference
 
 Flare provides several events to hook into the list and reader lifecycle.

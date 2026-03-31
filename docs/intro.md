@@ -7,7 +7,7 @@ sidebar_position: 1
 
 [heimrichhannot/contao-flare-bundle](https://github.com/heimrichhannot/contao-flare-bundle) is a powerful [Contao CMS](https://contao.org/) extension designed for high-performance filtering, listing, and individual detail views (readers).
 
-Built on a modern, decoupled architecture (Projection Pattern), Flare provides a flexible and developer-friendly way to manage complex data displays without the overhead of traditional Contao modules.
+Built on a modern, decoupled architecture, Flare provides a flexible and developer-friendly way to manage complex data displays without the overhead of traditional Contao modules.
 
 ## Features
 

@@ -17,17 +17,14 @@ composer require heimrichhannot/contao-flare-bundle
 
 ## 2. Database Migration
 
-After installation, update your Contao database schema:
+After installation, update your Contao database schema using the Contao Manager or Contao Console:
 
 ```bash
-# Using the Contao Console
 php vendor/bin/contao-console contao:migrate
-
-# OR via the Contao Install Tool or Manager
 ```
 
 ## 3. Configuration
 
-Flare is fully integrated into the Contao backend. You can find the main configuration under **Layout → Lists (FLARE)**.
+Flare is fully integrated into the Contao backend. You can find the main configuration under <strong>Layout → Lists&nbsp;&nbsp;<span style={{ opacity: .6 }}>FLARE</span></strong>.
 
-No additional bundle configuration in `config/config.yaml` is required for basic usage.
+No additional bundle configuration with config files is required for basic usage.

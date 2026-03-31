@@ -7,24 +7,46 @@ import "../src/prism/html-twig.prism";
 
 # Templating
 
-Flare's content elements render Twig templates. In current Flare versions, the `flare` variable in those templates is
-an `Engine` object. To access list or reader data, create a view explicitly in Twig with `flare.createView`.
+Flare's content elements render Twig templates. A Flare `Engine` object is made availble as `flare` variable in those
+templates to interface with the list or reader in the current context.
 
 :::tip
 Use the bundled templates as your starting point. They reflect the current runtime API.
 :::
 
-## Current Templating Model
+## Quick Start
 
-Older Flare documentation referred to Twig helpers such as `flare_form(...)`, `flare_make_list(...)`, and direct access
-to `flare.entries`. That is no longer the current model.
-
-Today:
+:::info
+**When upgrading to Flare v0.1**&ensp;&ndash;&ensp;Older Flare documentation referred to Twig helpers such as `flare_form(...)`, `flare_make_list(...)`,
+and direct access to `flare.entries`. These functions and accessors are no longer available.
+:::
 
 - `flare` is the engine injected by the content element controller
 - `flare.createView` creates the runtime view object for the current context
-- list templates work with an `InteractiveView`
-- reader templates work with a `ValidationView`
+  ```html-twig
+  {% set flare_view = flare.createView %}
+  ```
+- Reader templates work with a `ValidationView`
+- List templates work with an `InteractiveView`<br />
+  Within an `InteractiveView`:
+    - Create the list view:
+      ```html-twig
+      {% set flare_list = flare.createView %}
+      ```
+    - Create the Symfony Form views for filtering:
+      ```html-twig
+      {% set form = flare_list.form.createView %}
+      ```
+    - Access entries:
+      ```html-twig
+      {% for entry in flare_list.entries %}
+        <h3>{{ entry.headline }}</h3>
+      {% endfor %]
+      ```
+    - Display a paginator:
+      ```html-twig
+      {{ include('@Contao/flare/paginator.html.twig', { paginator: flare_list.paginator }) }}
+      ```
 
 ## Template Locations
 
@@ -116,6 +138,7 @@ After creating the view with `flare.createView`, you typically work with:
 
 - `flare_list.form`: the Symfony form object
 - `flare_list.entries`: the current result set
+- `flare_list.models`: the current result set as Contao models
 - `flare_list.paginator`: the paginator
 - `flare_list.count`: the total result count
 - `flare_list.to(id)`: the reader URL for an entry, if configured
@@ -143,18 +166,22 @@ the current entry:
 {% endfor %}
 ```
 
+Under the hood, `flare_list.model(id)` may resolve each model from the cache or from the database individually,
+while `flare_list.models` resolves all models at once. In any case, models are registered from the raw result set (i.e.
+`flare_list.entries`) and cached for later use, eliminating unnecessary database queries.
+
 :::note
 - Use `flare_list.entries` when the raw result data is sufficient.
 - If you only need models occasionally throughout the loop, using `flare_list.model(entry.id)` is perfectly fine.
 - If you need models throughout the whole loop, `flare_list.models` is the better choice than resolving each model individually.
 :::
 
-## Customizing the Filter Form
+### Customizing the Filter Form
 
 The filter form is a normal Symfony form. Create the form view from `flare_list.form` and apply form themes as usual.
 
 ```html-twig
-{# {% set flare_list = flare.createView %} if not yet created #}
+{# assuming {% set flare_list = flare.createView %} has been defined #}
 {% set form = flare_list.form.createView %}
 ```
 
@@ -230,13 +257,22 @@ view, but works with reader-specific variables.
 The reader content element injects these variables:
 
 - `flare`: the `Engine`
-- `flare_reader`: the `ValidationView`
+- `flare_reader`: the pre-defined `ValidationView` created from `flare`
 - `model`: the resolved `Contao\Model` for the current reader item
 - `content_model`: the `tl_content` model of the current content element
 - `headline`: the normalized Contao headline data
 - `comments`: optional comments data when the comments integration attaches it
 
-The reader template can also use `flare_reader.to(id)` if you need to generate reader links from the validation view.
+The reader template can also use `flare_reader.to(id)` if you need to generate reader links from within the validation
+view, i.e., linking to other entries of the same list.
+
+:::note
+Within a reader template, creating a separate view with `flare.createView` is typically not necessary.
+Instead of a `flare_list` variable, you can use `flare_reader` directly.
+
+In a `ValidationView`, no Symfony form is available for filtering, meaning you _cannot_ use `flare_reader.form` or
+similar.
+:::
 
 ## Block Structure
 
@@ -296,9 +332,132 @@ Flare also ships:
 - `@Contao/flare/paginator/bs5.html.twig`
 - `@Contao/flare/paginator/bs5_extended.html.twig`
 
-These are useful if you want Bootstrap-compatible paginator markup instead of the default Flare-specific markup.
+These are useful if you want predefined Bootstrap-compatible paginator markup.
+
+## Modding the Flare Engine
+
+Influencing list filtering or filter form rendering is possible by adding mods to the `flare` engine before creating
+the view.
+
+```html-twig
+{% do flare.addMod(mod_type, mod_options) %}
+```
+
+For example, add filters dynamically or change the paginator url query parameter.
+
+```html-twig
+{%
+    set modded_view = flare
+        .addMod('equation', { ... })
+        .addMod('query_param', { ... })
+        .createView()
+%}
+```
+
+If you want to create multiple views consecutively with different mods, use `flare.clearMods()` to clear the current
+mod stack and start fresh.
+
+### Bundled Mods
+
+Currently, only the following few mods are built-in.
+
+#### Filter: Simple equation
+
+Useful for showing multiple lists of different archives or categories on the same page. Just use one list view content
+element and display the different lists with different mods.
+
+- **Mod type:** `equation`
+- **Mod options:**
+    - `operand1` (string): the database column name to filter on,
+    - `operator` (string): the operator, e.g. `=`, `>=`, `LIKE`, etc.,
+    - `operand2`: the second operand, e.g., a string to match, a number to compare, an ID, etc.
+
+#### Form: Query parameter
+
+To add individual paginators to multiple lists created in one template, use this mod to change the query parameter
+used for pagination.
+
+- **Mod type:** `query_param`
+- **Mod options:**
+    - `param` (string): the query parameter name.
+
+### Examples
+
+```html-twig
+{# @var \HeimrichHannot\FlareBundle\Engine\Engine flare #}
+{% extends '@Contao/content_element/flare_listview.html.twig' %}
+
+{# @var \HeimrichHannot\FlareBundle\Engine\View\InteractiveView flare_list #}
+{% set flare_list = flare.createView %}
+{% set form = flare_list.form.createView %}
+
+{% macro render_list(list_view, headline) %}
+    <article class="flare-listview content-flare-listview block">
+        <h2>{{ headline }}</h2>
+        {% for entry in list_view.entries %}
+            {# Render the entry here #}
+        {% endfor %}
+        <footer>
+            {{ include('@Contao/flare/paginator.html.twig', { paginator: list_view.paginator }) }}
+        </footer>
+    </article>
+{% endmacro %}
+
+{% block list %}
+
+    {% set list_view = flare
+        .addMod('equation', { operand1: 'medium', operator: '=', operand2: 'video' })
+        .addMod('query_param', { param: 'video_page' })
+        .createView()
+    %}
+    {{ _self.render_list(list_view, 'Videos') }}
+
+    {% set list_view = flare
+        .clearMods()
+        .addMod('equation', { operand1: 'medium', operator: '=', operand2: 'podcast' })
+        .addMod('query_param', { param: 'podcast_page' })
+        .createView()
+    %}
+    {{ _self.render_list(list_view, 'Podcasts') }}
+
+{% endblock %}
+```
+
+### Debugging
+
+We are working on improving ways to explore and document the available options per mod.
+
+:::tip
+Providing an empty or malconfigured config dictionary will typically raise an exception informing you
+on required and available option keys.
+
+```html-twig
+{% do flare.addMod('equation', { what: 'ever' }).createView %}
+```
+
+Resulting in an exception like this:
+<pre style={{ whiteSpace: 'wrap' }}>An exception has been thrown during the rendering of a template
+    ("The option "what" does not exist. Defined options are: "name", "operand1", "operand2", "operator".")</pre>
+:::
+
+## Twig Helpers
+
+Flare currently registers these Twig functions:
+
+- `flare_content(model)` for rendering the content elements belonging to the model.
+- `flare_enclosure(model|entry_row, string field = "enclosure")` for retreiving file enclosure data as you would with
+  ```php
+  \Contao\Controller::addEnclosuresToTemplate(...)
+  ```
+- `flare_enclosure_files(model|enclosure_array)` (deprecated, will be removed in v0.2): retreives a collection of `Contao\FilesModel` instances
+  for the given model or an imediate array of enclosure data.
+- `flare_schema_org(?model = null)` (uses model from context if not provided): prints the JSON-LD schema markup for the given model in a reader context.
+  The data can be influenced using the `ReaderSchemaOrgEvent`.
 
 ## Comments Integration
+
+Comments are not universally available. They are attached by Flare's comments integration when the current list and
+reader setup supports them.
 
 The default reader template renders comments in its `footer` block if comments data is present:
 
@@ -309,30 +468,3 @@ The default reader template renders comments in its `footer` block if comments d
     {% endif %}
 {% endblock %}
 ```
-
-Comments are not universally available. They are attached by Flare's comments integration when the current list and
-reader setup supports them.
-
-## Twig Helpers
-
-Flare currently registers these Twig functions:
-
-- `flare_content`
-- `flare_enclosure`
-- `flare_enclosure_files`
-- `flare_make_filter`
-- `flare_project`
-- `flare_copy_view`
-- `flare_schema_org`
-
-These are lower-level helpers for advanced use cases. They are not a replacement for the standard content-element
-templating workflow described above.
-
-## Migration Notes
-
-When updating older custom templates:
-
-- replace `flare_form(...)` with `flare.createView` followed by `flare_list.form.createView`
-- replace direct `flare.entries` and `flare.paginator` access with properties on the created view
-- remove any use of `flare_make_list(...)`, which is no longer part of the current Twig API
-- access all current list models via `flare_list.models` when you need the full collection

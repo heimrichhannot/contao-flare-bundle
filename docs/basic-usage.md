@@ -8,11 +8,12 @@ Using Flare is simple: define a list, add filters, and display it on your page.
 
 ## The 5-Step Setup
 
-1. **Create a List Configuration**: Go to **Layout → Lists (FLARE)** in the Contao backend.
-2. **Add Filter Elements**: Each list is an archive of filters. Add filters as children to your list.
-3. **Configure the List**: Select the List Type (e.g., News, Generic Data Container) and the table to fetch data from.
+1. **Create a List Configuration**: Go to <strong>Layout → Lists&nbsp;&nbsp;<span style={{ opacity: .6 }}>FLARE</span></strong>&ensp;in the Contao backend.
+2. **Configure the List**: Select the List Type (e.g., News, Generic Data Container) and configure the relevant fields.
+3. **Add Filter Elements**: Each list is an archive of filters. Add filters as children to your list.
 4. **Display the List**: Add a **Flare List View** content element to any page and select your list configuration.
-5. **Add a Reader (Optional)**: If you need detail pages, add a **Flare Reader** content element to a separate page and select the same list configuration.
+5. **Add a Reader (Optional)**: If you need detail pages, add a **Flare Reader** content element to a separate page and select your list configuration.
+   - **Reader-URLs**: If you have a detail page, and you want flare to automatically generate URLs to it, return to the list configuration and specify the details page.
 
 ---
 
@@ -45,8 +46,10 @@ In Flare, a filter can be marked as **Intrinsic**:
 
 ## Example: News List
 
-1. Create a list of type **News** for the table `tl_news`.
-2. Add an **Intrinsic** filter for `published = 1`.
-3. Add a **Visible** filter (e.g., a select field) for `pid` (News Archives).
+1. Create a list of type **News**, which automatically uses the `tl_news` table.
+2. Add an **Intrinsic** filter, e.g., a published filter using the published filter type.
+3. Add a **Visible** filter, e.g., a news archives filter using the archive filter type.
 4. Add the content element to a page.
-5. Flare will show a dropdown of news archives and list the news articles belonging to the selected archive.
+5. Flare will show a dropdown of news archives and list only published the news articles belonging to the selected archive.
+
+> In case of the the News list type, a `published` filter is added by default. If you add your own published filter, it will replace the default one.

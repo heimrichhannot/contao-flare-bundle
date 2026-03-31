@@ -2,18 +2,13 @@
 title: Content Elements
 sidebar_position: 4
 ---
-# Displaying Filters, Lists, and Readers
+# Content Elements for displaying Filters, Lists, and Readers
 
 Flare provides multiple ways to configure and display lists and filters in your Contao pages, and content elements are
-the primary way to do so. You may also inject lists and filters directly into your own templates using our custom-built Twig functions, which
-allow you to provide list and filter configurations on the fly, without the need for content elements.
+the primary way to do so. The built-in content elements can be used in your Contao articles to display lists and readers.
+These content elements are designed to work seamlessly with the list and filter configurations.
 
-## Content Elements
-
-Flare provides a set of content elements that can be used in your Contao articles to display lists and readers.
-These content elements are designed to work seamlessly with the FLARE list and filter configurations.
-
-### List View <span style={{opacity:.6}}>[FLARE]</span>
+## List View
 
 Selecting the **List View <span style={{opacity:.6}}>[FLARE]</span>** option in the content element configuration allows you to display a list of entities
 based on a specific list configuration. This content element will render the filter form and the list of entities
@@ -23,13 +18,13 @@ It asks you to provide a **form name**, which is used to identify the filter for
 The form name is also used to store the filter state in the URL query parameters, allowing users to bookmark or share
 the filtered view.
 
-#### Separating Filter Form and List
+### Separating Filter Form and List
 
 The same mechanism can be leveraged to **separate filter form and listing** into multiple content elements, allowing you to
 place your filter form in one place and the resulting list in another. For this mechanism to work as intended, ensure
 that you select the appropriate **form-only or list-only templates** in the respective content elements.
 
-### Detail Reader <span style={{opacity:.6}}>[FLARE]</span>
+## Detail Reader
 
 Selecting the **Detail Reader <span style={{opacity:.6}}>[FLARE]</span>** option in the content element config allows you to display a single entity
 that is part of a list. This content element uses Contao's standard **auto-item** feature to determine

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @package   Heimrich & Hannot Flare Bundle
  * @author    Eric Gesemann (@ericges) <e.gesemann@heimrich-hannot.de>
@@ -9,6 +11,7 @@
 
 namespace HeimrichHannot\FlareBundle;
 
+use HeimrichHannot\FlareBundle\Util\Env;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
@@ -39,8 +42,14 @@ class HeimrichHannotFlareBundle extends Bundle
 
     public function build(ContainerBuilder $container): void
     {
+        ###> Integrations ###
+        $container->addCompilerPass(new DependencyInjection\Compiler\CodefogTagsPass());
+        ###< Integrations ###
+
         ###> Fill Registries ###
         $container->addCompilerPass(new DependencyInjection\Compiler\RegisterFlareCallbacksPass());
+        $container->addCompilerPass(new DependencyInjection\Compiler\RegisterFilterInvokersPass());
+        // RegisterFilterInvokersPass MUST be added before RegisterFilterElementsPass
         $container->addCompilerPass(new DependencyInjection\Compiler\RegisterFilterElementsPass());
         $container->addCompilerPass(new DependencyInjection\Compiler\RegisterListTypesPass());
         ###< Fill Registries ###

@@ -86,7 +86,7 @@ services:
 
 ### 3. Use in Twig
 
-```html-twig
+```twig
 {% set view = flare.addMod('app.boolean_true', { field: 'published' }).createView() %}
 ```
 

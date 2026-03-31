@@ -3,8 +3,6 @@ title: Templating
 sidebar_position: 5
 ---
 
-import "../src/prism/html-twig.prism";
-
 # Templating
 
 Flare's content elements render Twig templates. A Flare `Engine` object is made availble as `flare` variable in those
@@ -23,28 +21,28 @@ and direct access to `flare.entries`. These functions and accessors are no longe
 
 - `flare` is the engine injected by the content element controller
 - `flare.createView` creates the runtime view object for the current context
-  ```html-twig
+  ```twig
   {% set flare_view = flare.createView %}
   ```
 - Reader templates work with a `ValidationView`
 - List templates work with an `InteractiveView`<br />
   Within an `InteractiveView`:
     - Create the list view:
-      ```html-twig
+      ```twig
       {% set flare_list = flare.createView %}
       ```
     - Create the Symfony Form views for filtering:
-      ```html-twig
+      ```twig
       {% set form = flare_list.form.createView %}
       ```
     - Access entries:
-      ```html-twig
+      ```twig
       {% for entry in flare_list.entries %}
         <h3>{{ entry.headline }}</h3>
-      {% endfor %]
+      {% endfor %}
       ```
     - Display a paginator:
-      ```html-twig
+      ```twig
       {{ include('@Contao/flare/paginator.html.twig', { paginator: flare_list.paginator }) }}
       ```
 
@@ -87,7 +85,7 @@ You can then select the variant via the content element's `customTpl` field.
 The default list template creates an interactive view first and then renders the filter form, entries, and paginator
 from that view.
 
-```html-twig title="contao/templates/content_element/flare_listview/my_variant.html.twig"
+```twig title="contao/templates/content_element/flare_listview/my_variant.html.twig"
 {% extends "@Contao/content_element/flare_listview.html.twig" %}
 
 {% set flare_list = flare.createView %}
@@ -150,7 +148,7 @@ In list templates, `flare_list.entries` yields associative arrays for the curren
 
 If you need access to the full model collection directly, use `flare_list.models`:
 
-```html-twig
+```twig
 {% for model in flare_list.models %}
     <h3>{{ model.headline ?? model.title ?? '' }}</h3>
 {% endfor %}
@@ -159,7 +157,7 @@ If you need access to the full model collection directly, use `flare_list.models
 If you need models only occasionally, you can still iterate over `flare_list.entries` and resolve a specific model from
 the current entry:
 
-```html-twig
+```twig
 {% for entry in flare_list.entries %}
     {% set model = flare_list.model(entry.id) %}
     <h3>{{ model.headline ?? entry.headline ?? '' }}</h3>
@@ -180,7 +178,7 @@ while `flare_list.models` resolves all models at once. In any case, models are r
 
 The filter form is a normal Symfony form. Create the form view from `flare_list.form` and apply form themes as usual.
 
-```html-twig
+```twig
 {# assuming {% set flare_list = flare.createView %} has been defined #}
 {% set form = flare_list.form.createView %}
 ```
@@ -188,12 +186,12 @@ The filter form is a normal Symfony form. Create the form view from `flare_list.
 You can access individual form fields by their field name. That field name is also used for the submitted query
 parameter. For example, if a field is named `search`, you can access it as `form.search`:
 
-```html-twig
+```twig
 {% set search_field = form.search %}
 {{ form_row(search_field) }}
 ```
 
-```html-twig
+```twig
 {% block filter %}
     {% set flare_list = flare.createView %}
     {% set form = flare_list.form.createView %}
@@ -236,7 +234,7 @@ in the Contao templates directory.
 The reader content element renders a single model. Its default template extends the same base template as the list
 view, but works with reader-specific variables.
 
-```html-twig title="contao/templates/content_element/flare_reader/my_variant.html.twig"
+```twig title="contao/templates/content_element/flare_reader/my_variant.html.twig"
 {% extends "@Contao/content_element/flare_reader.html.twig" %}
 
 {% block content %}
@@ -310,7 +308,7 @@ Flare ships several paginator templates.
 
 ### Default paginator
 
-```html-twig
+```twig
 {{ include('@Contao/flare/paginator.html.twig', {
     paginator: flare_list.paginator
 }) }}
@@ -318,7 +316,7 @@ Flare ships several paginator templates.
 
 The default paginator supports `use_default_styles`:
 
-```html-twig
+```twig
 {{ include('@Contao/flare/paginator.html.twig', {
     paginator: flare_list.paginator,
     use_default_styles: true
@@ -339,13 +337,13 @@ These are useful if you want predefined Bootstrap-compatible paginator markup.
 Influencing list filtering or filter form rendering is possible by adding mods to the `flare` engine before creating
 the view.
 
-```html-twig
+```twig
 {% do flare.addMod(mod_type, mod_options) %}
 ```
 
 For example, add filters dynamically or change the paginator url query parameter.
 
-```html-twig
+```twig
 {%
     set modded_view = flare
         .addMod('equation', { ... })
@@ -385,7 +383,7 @@ used for pagination.
 
 ### Examples
 
-```html-twig
+```twig
 {# @var \HeimrichHannot\FlareBundle\Engine\Engine flare #}
 {% extends '@Contao/content_element/flare_listview.html.twig' %}
 
@@ -433,7 +431,7 @@ We are working on improving ways to explore and document the available options p
 Providing an empty or malconfigured config dictionary will typically raise an exception informing you
 on required and available option keys.
 
-```html-twig
+```twig
 {% do flare.addMod('equation', { what: 'ever' }).createView %}
 ```
 
@@ -463,7 +461,7 @@ reader setup supports them.
 
 The default reader template renders comments in its `footer` block if comments data is present:
 
-```html-twig
+```twig
 {% block footer %}
     {% if comments|default(false) %}
         {{ include('@Contao/flare/comments/basic.html.twig', comments) }}

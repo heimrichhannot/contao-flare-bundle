@@ -22,17 +22,37 @@
 
 /* Grayscale Design palette: https://grayscale.design/app?lums=93.88,87.19,69.16,61.14,42.57,28.39,17.57,11.21,6.97,4.72,1.63&palettes=%23e0e000,%23007daa&filters=1.9%7C-11.5,-1.3%7C-9.8&names=plus,huh&labels=, */
 :root {
-    --grayscale-50: rgb(248, 248, 248);
-    --grayscale-100: rgb(240, 240, 240);
-    --grayscale-200: rgb(225, 225, 225);
-    --grayscale-300: rgb(205, 205, 205);
-    --grayscale-400: rgb(174, 174, 174);
-    --grayscale-500: rgb(145, 145, 145);
-    --grayscale-600: rgb(118, 118, 118);
-    --grayscale-700: rgb(94, 94, 94);
-    --grayscale-800: rgb(75, 75, 75);
-    --grayscale-900: rgb(61, 61, 61);
-    --grayscale-950: rgb(34, 34, 34);
+    --grayscale-1000: oklch(0 0 0);
+    --grayscale-950: oklch(0.068 0.0020 196.0);
+    --grayscale-900: oklch(0.136 0.0040 196.0);
+    --grayscale-800: oklch(0.272 0.0080 196.0);
+    --grayscale-850: oklch(0.204 0.0060 196.0);
+    --grayscale-700: oklch(0.408 0.0120 196.0);
+    --grayscale-600: oklch(0.543 0.0160 196.0);
+    --grayscale-500: oklch(0.679 0.0200 196.0);
+    --grayscale-400: oklch(0.743 0.0200 196.0);
+    --grayscale-300: oklch(0.808 0.0200 196.0);
+    --grayscale-200: oklch(0.872 0.0200 196.0);
+    --grayscale-150: oklch(0.904 0.0200 196.0);
+    --grayscale-100: oklch(0.936 0.0200 196.0);
+    --grayscale-20: oklch(0.987 0.0160 196.0);
+    --grayscale-0: oklch(1 0 0);
+    --grayscale-1000-hover: oklch(0.136 0.0040 196.0);
+    --grayscale-950-hover: oklch(0.136 0.0040 196.0);
+    --grayscale-900-hover: oklch(0.272 0.0080 196.0);
+    --grayscale-850-hover: oklch(0.272 0.0080 196.0);
+    --grayscale-800-hover: oklch(0.408 0.0120 196.0);
+    --grayscale-700-hover: oklch(0.543 0.0160 196.0);
+    --grayscale-600-hover: oklch(0.408 0.0120 196.0);
+    --grayscale-500-hover: oklch(0.543 0.0160 196.0);
+    --grayscale-400-hover: oklch(0.679 0.0200 196.0);
+    --grayscale-300-hover: oklch(0.743 0.0200 196.0);
+    --grayscale-200-hover: oklch(0.808 0.0200 196.0);
+    --grayscale-150-hover: oklch(0.808 0.0200 196.0);
+    --grayscale-100-hover: oklch(0.872 0.0200 196.0);
+    --grayscale-20-hover: oklch(0.936 0.0160 196.0);
+    --grayscale-0-hover: oklch(0.936 0.0200 196.0);
+
 
     --plus-50: rgb(249, 250, 220);
     --plus-100: rgb(243, 247, 128);
@@ -47,17 +67,34 @@
     --plus-950: rgb(34, 35, 30);
     --plus: var(--plus-200);
 
-    --huh-50: rgb(244, 249, 250);
-    --huh-100: rgb(228, 243, 246);
-    --huh-200: rgb(176, 225, 236);
-    --huh-300: rgb(142, 217, 235);
-    --huh-400: rgb(39, 189, 232);
-    --huh-500: rgb(11, 157, 204);
-    --huh-600: rgb(0, 125, 170); /* primary */
-    --huh-700: rgb(7, 102, 132);
-    --huh-800: rgb(11, 81, 102);
-    --huh-900: rgb(14, 67, 81);
-    --huh-950: rgb(11, 38, 43);
+    --huh-1000: hsl(0 0% 0%);
+    --huh-950: hsl(196 100% 4%);
+    --huh-900: hsl(196 100% 9%);
+    --huh-850: hsl(196 100% 13%);
+    --huh-800: hsl(196 100% 17%);
+    --huh-700: hsl(196 100% 26%);
+    --huh-600: hsl(196 100% 35%);
+    --huh-500: hsl(196 100% 44%);
+    --huh-400: hsl(196 100% 55%);
+    --huh-300: hsl(196 100% 66%);
+    --huh-200: hsl(196 100% 77%);
+    --huh-150: hsl(196 100% 83%);
+    --huh-100: hsl(196 100% 89%);
+    --huh-0: hsl(0 0% 100%);
+    --huh-1000-hover: hsl(196 100% 9%);
+    --huh-950-hover: hsl(196 100% 9%);
+    --huh-900-hover: hsl(196 100% 17%);
+    --huh-850-hover: hsl(196 100% 17%);
+    --huh-800-hover: hsl(196 100% 26%);
+    --huh-700-hover: hsl(196 100% 35%);
+    --huh-600-hover: hsl(196 100% 26%);
+    --huh-500-hover: hsl(196 100% 35%);
+    --huh-400-hover: hsl(196 100% 44%);
+    --huh-300-hover: hsl(196 100% 55%);
+    --huh-200-hover: hsl(196 100% 66%);
+    --huh-150-hover: hsl(196 100% 66%);
+    --huh-100-hover: hsl(196 100% 77%);
+    --huh-0-hover: hsl(196 100% 89%);
     --huh: var(--huh-600);
 }
 
@@ -78,18 +115,23 @@
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'] {
-    --ifm-color-primary-darkest: var(--huh-800);
-    --ifm-color-primary-darker: var(--huh-700);
-    --ifm-color-primary-dark: var(--huh-600);
-    --ifm-color-primary: var(--huh-500);
-    --ifm-color-primary-light: var(--huh-400);
-    --ifm-color-primary-lighter: var(--huh-300);
-    --ifm-color-primary-lightest: var(--huh-200);
+    --ifm-color-primary-darkest: var(--huh-700);
+    --ifm-color-primary-darker: var(--huh-600);
+    --ifm-color-primary-dark: var(--huh-500);
+    --ifm-color-primary: var(--huh-400);
+    --ifm-color-primary-light: var(--huh-300);
+    --ifm-color-primary-lighter: var(--huh-200);
+    --ifm-color-primary-lightest: var(--huh-100);
+    --ifm-background-color: var(--grayscale-850);
+    --ifm-background-surface-color: var(--grayscale-800);
+    --ifm-heading-color: var(--huh-0);
+
     --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+    --prism-background-color: transparent !important;
 }
 
 .footer--dark {
-    --ifm-footer-background-color: var(--huh-800);
+    --ifm-footer-background-color: var(--huh-700);
 }
 
 .text--muted {

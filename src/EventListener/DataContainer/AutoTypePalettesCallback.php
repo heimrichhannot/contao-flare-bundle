@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\EventListener\DataContainer;
 
 use Contao\Controller;
@@ -56,15 +58,15 @@ readonly class AutoTypePalettesCallback
         }
 
         $descriptor = match ($container) {
-            PaletteContainer::FILTER => $this->filterElementRegistry->get($alias = $filterModel?->type),
-            PaletteContainer::LIST => $this->listTypeRegistry->get($alias = $listModel->type),
+            PaletteContainer::FILTER => $this->filterElementRegistry->get($type = $filterModel?->type),
+            PaletteContainer::LIST => $this->listTypeRegistry->get($type = $listModel->type),
         };
 
-        if (!isset($alias) || !$alias || !($descriptor instanceof ServiceDescriptorInterface)) {
+        if (!isset($type) || !$type || !($descriptor instanceof ServiceDescriptorInterface)) {
             return;
         }
 
-        $this->applyPalette($container, $dc, $alias, $descriptor, $listModel, $filterModel);
+        $this->applyPalette($container, $dc, $type, $descriptor, $listModel, $filterModel);
     }
 
     protected function getModelsFromDC(PaletteContainer $container, DataContainer $dc): array
@@ -88,17 +90,17 @@ readonly class AutoTypePalettesCallback
     protected function applyPalette(
         PaletteContainer           $container,
         DataContainer              $dc,
-        string                     $alias,
+        string                     $type,
         ServiceDescriptorInterface $descriptor,
         ListModel                  $listModel,
         ?FilterModel               $filterModel,
     ): void {
-        if (!($table = $dc->table) || $alias === 'default' || \str_starts_with($alias, '__')) {
+        if (!($table = $dc->table) || $type === 'default' || \str_starts_with($type, '__')) {
             return;
         }
 
         $paletteConfigFactory = static fn (string $prefix, string $suffix): PaletteConfig => new PaletteConfig(
-            alias: $alias,
+            type: $type,
             dataContainer: $dc,
             prefix: $prefix,
             suffix: $suffix,
@@ -151,6 +153,6 @@ readonly class AutoTypePalettesCallback
 
         ###< </editor-fold>
 
-        $dcaPalettes[$alias] = Str::mergePalettes($prefix, $palette, $suffix);
+        $dcaPalettes[$type] = Str::mergePalettes($prefix, $palette, $suffix);
     }
 }

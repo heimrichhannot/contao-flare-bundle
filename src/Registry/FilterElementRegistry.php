@@ -1,5 +1,7 @@
 <?php /** @noinspection PhpRedundantMethodOverrideInspection */
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Registry;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Registry\AbstractServiceDescriptorRegistry;

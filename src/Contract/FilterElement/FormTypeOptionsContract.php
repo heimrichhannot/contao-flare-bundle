@@ -1,15 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Contract\FilterElement;
 
-use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
 
 interface FormTypeOptionsContract
 {
     /**
-     * @throws FilterException
+     * @throws FlareException
      */
-    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array;
+    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void;
 }

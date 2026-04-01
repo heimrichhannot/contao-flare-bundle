@@ -3,4 +3,5 @@ services:
         autowire: true
         autoconfigure: true
 
-    HeimrichHannot\FlareBundle\EventListener\Integration\ContaoCommentsListener: ~
+    HeimrichHannot\FlareBundle\Integration\ContaoComments\:
+        resource: ../src/Integration/ContaoComments

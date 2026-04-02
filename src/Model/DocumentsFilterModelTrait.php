@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Model;
 
 /**
@@ -39,6 +41,7 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string $whitelistParents
  * @property string $groupWhitelistParents
  * @property string $preselect
+ * @property string $prefill
  * @property string $equationOperator
  * @property string $equationLeft
  * @property string $equationRight

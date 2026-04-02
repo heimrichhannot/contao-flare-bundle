@@ -5,7 +5,7 @@ use Contao\DC_Table;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\SortDescriptor\Order;
+use HeimrichHannot\FlareBundle\Sort\SortOrder;
 use HeimrichHannot\FlareBundle\Util\BeActionsHelper;
 use HeimrichHannot\FlareBundle\Util\DcMultilingualHelper;
 use HeimrichHannot\FlareBundle\Util\Str;
@@ -91,7 +91,6 @@ $dca['fields'] = [
         'exclude' => true,
         'filter' => true,
         'sorting' => true,
-        'reference' => &$GLOBALS['TL_LANG']['FLARE']['list'],
         'eval' => [
             'mandatory' => true,
             'includeBlankOption' => true,
@@ -218,7 +217,7 @@ $dca['fields'] = [
                 'inputType' => 'select',
                 'exclude' => true,
                 'filter' => false,
-                'options_callback' => [ListContainer::class, 'getFieldOptions_columns'],
+                'options_callback' => [ListContainer::class, 'getFieldOptions_sortSettings'],
                 'eval' => [
                     'mandatory' => true,
                     'chosen' => true,
@@ -231,8 +230,8 @@ $dca['fields'] = [
                 'inputType' => 'select',
                 'exclude' => true,
                 'filter' => false,
-                'default' => Order::ASC,
-                'options' => [Order::ASC, Order::DESC],
+                'default' => SortOrder::ASC,
+                'options' => [SortOrder::ASC, SortOrder::DESC],
                 'reference' => &$GLOBALS['TL_LANG']['FLARE']['sort_order'],
                 'eval' => [
                     'mandatory' => true,
@@ -298,7 +297,7 @@ $dca['fields']['comments_sendNativeEmails'] = [
 $dca['palettes'] = [
     '__selector__' => ['type', 'whichPtable'],
     '__prefix__' => '{title_legend},title,type',
-    '__suffix__' => '{flare_defaults_legend},sortSettings;{flare_reader_legend},jumpToReader;{publish_legend},published',
+    '__suffix__' => '{flare_defaults_legend},sortSettings;{flare_reader_legend},jumpToReader;{advanced_legend:hide};{publish_legend},published',
 ];
 
 $dca['palettes']['default'] = Str::mergePalettes($dca['palettes']['__prefix__'], $dca['palettes']['__suffix__']);

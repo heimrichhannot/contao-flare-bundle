@@ -1,91 +1,38 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Twig\Runtime;
 
-use Contao\ContentModel;
 use Contao\Controller;
 use Contao\FilesModel;
 use Contao\FrontendTemplate;
 use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
-use Contao\Template;
-use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageSchemaOrgConfig;
-use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageSchemaOrgContract;
-use HeimrichHannot\FlareBundle\Dto\ContentContext;
-use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\ListView\ListView;
-use HeimrichHannot\FlareBundle\Factory\ListViewBuilderFactory;
+use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Engine;
+use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
+use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
+use HeimrichHannot\FlareBundle\Event\ReaderSchemaOrgEvent;
+use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
-use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
-use HeimrichHannot\FlareBundle\SortDescriptor\SortDescriptor;
-use Symfony\Component\Form\FormView;
+use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
+use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Twig\Extension\RuntimeExtensionInterface;
 
-class FlareRuntime implements RuntimeExtensionInterface
+readonly class FlareRuntime implements RuntimeExtensionInterface
 {
-    protected array $listViewCache = [];
-
     public function __construct(
-        private readonly ListViewBuilderFactory $listViewBuilderFactory,
-        private readonly ListTypeRegistry        $listTypeRegistry,
+        private EventDispatcherInterface $eventDispatcher,
+        private ProjectorRegistry        $projectorRegistry,
     ) {}
 
-    /**
-     * @throws FlareException
-     */
-    public function createFormView(ListView $container): FormView
+    public function project(ListSpecification $spec, ContextInterface $config): ViewInterface
     {
-        return $container->getFormComponent()->createView();
-    }
-
-    /**
-     * Returns a list view DTO for the given list model.
-     *
-     * @param array{
-     *     form_name?: string,
-     *     items_per_page?: int,
-     *     sort?: array<string, string>,
-     * } $options
-     *
-     * @throws FlareException
-     */
-    public function getFlare(ListModel|string|int $listModel, array $options = []): ListView
-    {
-        $cacheKey = $listModel->id . '@' . \md5(\serialize($options));
-
-        if (isset($this->listViewCache[$cacheKey])) {
-            return $this->listViewCache[$cacheKey];
-        }
-
-        $listModel = $this->getListModel($listModel);
-
-        $paginatorConfig = new PaginatorConfig(
-            itemsPerPage: $options['items_per_page'] ?? null,
-        );
-
-        $sortDescriptor = null;
-        if (isset($options['sort'])) {
-            $sortDescriptor = SortDescriptor::fromMap($options['sort']);
-        }
-
-        $contentContext = new ContentContext(
-            context: ContentContext::CONTEXT_TWIG,
-            contentModel: null,
-            formName: $options['form_name'] ?? null,
-        );
-
-        $listView = $this->listViewBuilderFactory->create()
-            ->setContentContext($contentContext)
-            ->setListModel($listModel)
-            ->setPaginatorConfig($paginatorConfig)
-            ->setSortDescriptor($sortDescriptor)
-            ->build();
-
-        $this->listViewCache[$cacheKey] = $listView;
-
-        return $listView;
+        return $this->projectorRegistry->getProjectorFor($spec, $config)->project($spec, $config);
     }
 
     /**
@@ -97,7 +44,6 @@ class FlareRuntime implements RuntimeExtensionInterface
             return $listModel;
         }
 
-        /** @noinspection CallableParameterUseCaseInTypeContextInspection */
         $listModel = ListModel::findByPk((int) $listModel);
 
         if ($listModel instanceof ListModel) {
@@ -112,7 +58,7 @@ class FlareRuntime implements RuntimeExtensionInterface
         $table = $model->getTable();
         $id = $model->id;
 
-        $text = Template::once(static function () use ($table, $id): string {
+        $text = self::once(static function () use ($table, $id): string {
             if (!$elm = Model::getClassFromTable('tl_content')::findPublishedByPidAndTable($id, $table))
             {
                 return '';
@@ -145,6 +91,9 @@ class FlareRuntime implements RuntimeExtensionInterface
         return $template->enclosure;
     }
 
+    /**
+     * @deprecated Will be replaced in 0.2 with a solution using the virtual file system.
+     */
     public function getEnclosureFiles(Model|array|string|null $enclosed): array
     {
         if ($enclosed instanceof Model) {
@@ -175,28 +124,26 @@ class FlareRuntime implements RuntimeExtensionInterface
         return [];
     }
 
-    public function getSchemaOrg(array $context): ?array
+    public function getSchemaOrg(array $context, ?Model $model = null, ?ListSpecification $list = null): ?array
     {
-        $model = $context['model'] ?? null;
+        $model ??= $context['model'] ?? null;
         if (!$model instanceof Model) {
             return null;
         }
 
-        $listId = $context['data']['flare_list'] ?? null;
-        if (!$listId) {
-            return null;
-        }
-        $listModel = ListModel::findByPk((int) $listId);
-        if (!$listModel) {
-            return null;
+        if (!$list)
+        {
+            $engine = $context['flare'] ?? null;
+            if (!$engine instanceof Engine) {
+                return null;
+            }
+
+            $list = $engine->getList();
         }
 
-        $type = $this->listTypeRegistry->get($listModel->type)?->getService();
-        if (!$type || !($type instanceof ReaderPageSchemaOrgContract)) {
-            return null;
-        }
+        $event = $this->eventDispatcher->dispatch(new ReaderSchemaOrgEvent($list, $model));
 
-        return $type->getReaderPageSchemaOrg(new ReaderPageSchemaOrgConfig($listModel, $model));
+        return $event->data;
     }
 
     /**
@@ -244,6 +191,21 @@ class FlareRuntime implements RuntimeExtensionInterface
             {
                 return $this(...$args);
             }
+        };
+    }
+
+    private static function once(callable $callback): callable
+    {
+        $result = null;
+
+        return static function () use (&$callback, &$result): mixed {
+            if ($callback !== null)
+            {
+                $result = $callback();
+                $callback = null;
+            }
+
+            return $result;
         };
     }
 }

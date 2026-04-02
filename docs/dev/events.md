@@ -32,11 +32,6 @@ Dispatched when a `FilterDefinition` has been created.
 
 ## 3. List View Lifecycle
 
-### `ListViewBuildEvent`
-Dispatched when the `ListViewBuilder` is initialized.
-- **Use Case:** Customizing the builder before it starts processing data.
-- **Class:** `HeimrichHannot\FlareBundle\Event\ListViewBuildEvent`
-
 ### `ListViewRenderEvent`
 Dispatched just before the list template is rendered.
 - **Use Case:** Injecting additional data into the Twig template or switching the template.

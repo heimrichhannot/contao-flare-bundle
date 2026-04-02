@@ -23,11 +23,11 @@ final readonly class EngineFactory
         array $mods = [],
     ): Engine {
         return new Engine(
+            engineModRegistry: $this->engineModRegistry,
+            projectorRegistry: $this->projectorRegistry,
             context: $context,
             list: $listSpecification,
             mods: $mods,
-            engineModRegistry: $this->engineModRegistry,
-            projectorRegistry: $this->projectorRegistry,
         );
     }
 }

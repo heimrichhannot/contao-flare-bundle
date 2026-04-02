@@ -6,6 +6,8 @@ namespace HeimrichHannot\FlareBundle\Specification\DataSource;
 
 interface ListDataSourceInterface
 {
+    public function getListIdentifier(): string;
+
     public function getListType(): string;
 
     public function getListTable(): string;

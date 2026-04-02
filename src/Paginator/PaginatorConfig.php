@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Paginator;
 
-readonly class PaginatorConfig implements \Countable, \Serializable, \Stringable
+class PaginatorConfig implements \Countable, \Serializable, \Stringable
 {
-    protected int $itemsPerPage;
-    protected int $currentPage;
-    protected int $totalItems;
+    protected readonly int $itemsPerPage;
+    protected readonly int $currentPage;
+    protected readonly int $totalItems;
     private int $_firstItemNumber;
     private int $_lastItemNumber;
     private int $_lastPageNumber;
@@ -181,8 +181,8 @@ readonly class PaginatorConfig implements \Countable, \Serializable, \Stringable
         int $itemsPerPage = null,
         int $currentPage = null,
         int $totalItems = null,
-    ): static {
-        return new static(
+    ): self {
+        return new self(
             itemsPerPage: $itemsPerPage ?? $this->itemsPerPage,
             currentPage: $currentPage ?? $this->currentPage,
             totalItems: $totalItems ?? $this->totalItems,

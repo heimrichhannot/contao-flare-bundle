@@ -6,12 +6,12 @@ namespace HeimrichHannot\FlareBundle\Engine\View;
 
 use HeimrichHannot\FlareBundle\Engine\Loader\AggregationLoaderInterface;
 
-readonly class AggregationView implements ViewInterface
+class AggregationView implements ViewInterface
 {
     private int $count;
 
     public function __construct(
-        private AggregationLoaderInterface $loader,
+        private readonly AggregationLoaderInterface $loader,
     ) {}
 
     public function getCount(): int

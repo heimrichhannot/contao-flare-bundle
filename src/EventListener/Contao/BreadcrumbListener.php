@@ -77,7 +77,8 @@ readonly class BreadcrumbListener
 
         try
         {
-            $autoItem ??= \method_exists(Input::class, 'findGet')
+            // @phpstan-ignore function.alreadyNarrowedType
+            $autoItem = \method_exists(Input::class, 'findGet')
                 ? Input::findGet('auto_item')
                 : Input::get('auto_item', false, true);
 

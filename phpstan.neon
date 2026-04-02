@@ -10,4 +10,20 @@ parameters:
         - src/
     excludePaths:
         - src/Model/
+        - src/Integration/Terminal42Languages
     treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        -
+            identifier: generics.noParent
+        -
+            identifier: class.notFound
+            path: src/Integration/
+        -
+            identifier: varTag.nativeType
+            path: src/Integration/
+        -
+            message: "#^Access to an undefined property Contao\\\\\\w*Model\\:\\:\\$\\w+\\.$#"
+        -
+            message: "#^Call to function method_exists\\(\\) with Contao\\\\DataContainer and 'getCurrentRecord' will always evaluate to true\\.$#"
+        -
+            message: "#^Call to an undefined static method Contao\\\\\\w*Model\\:\\:\\w+\\(\\)\\.$#"

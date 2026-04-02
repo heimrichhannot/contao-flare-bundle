@@ -21,6 +21,11 @@ class ListModel extends Model implements PtableInferrableInterface, ListDataSour
 
     protected static $strTable = ListContainer::TABLE_NAME;
 
+    public function getListIdentifier(): string
+    {
+        return (string) $this->id;
+    }
+
     public function getListType(): string
     {
         return $this->type;

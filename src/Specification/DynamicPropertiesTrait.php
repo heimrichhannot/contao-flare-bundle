@@ -28,7 +28,7 @@ trait DynamicPropertiesTrait
         $this->properties = $properties;
     }
 
-    protected function setProperty(string $name, mixed $value): void
+    public function setProperty(string $name, mixed $value): void
     {
         $this->properties[$name] = $value;
     }

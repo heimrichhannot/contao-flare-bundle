@@ -25,7 +25,7 @@ final class FlareCollector extends AbstractDataCollector
         return 'flare.collector';
     }
 
-    public static function getTemplate(): ?string
+    public static function getTemplate(): string
     {
         return '@HeimrichHannotFlare/data_collector/flare.html.twig';
     }

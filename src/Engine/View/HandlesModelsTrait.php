@@ -10,14 +10,14 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 trait HandlesModelsTrait
 {
     /**
-     * @param callable(int $id): array $getEntry
+     * @param callable(int|string $id_or_alias): ?array $getEntry
      * @return Model|null Return null if the entry does not exist.
      * @throws FlareException
      */
-    public function fetchModel(string $table, int|string $id, callable $getEntry, ?string $column = null): ?Model
+    public function fetchModel(string $table, int|string $id_or_alias, callable $getEntry, ?string $column = null): ?Model
     {
         $registry = Model\Registry::getInstance();
-        if ($model = $registry->fetch($table, $id, strAlias: $column))
+        if ($model = $registry->fetch($table, $id_or_alias, strAlias: $column))
             // Contao native model cache
         {
             return $model;
@@ -28,7 +28,7 @@ trait HandlesModelsTrait
             throw new FlareException(\sprintf('Model class does not exist: "%s"', $modelClass), source: __METHOD__);
         }
 
-        if (!$row = $getEntry($id)) {
+        if (!$row = $getEntry($id_or_alias)) {
             return null;
         }
 

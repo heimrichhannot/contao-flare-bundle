@@ -13,13 +13,11 @@ use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
-use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Event\ReaderSchemaOrgEvent;
-use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Util\CallableWrapper;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Twig\Extension\RuntimeExtensionInterface;
 
@@ -74,7 +72,7 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
             return $text;
         });
 
-        return $this->getCallableWrapper($text);
+        return new CallableWrapper($text);
     }
 
     public function getEnclosure(Model|array $entity, ?string $field = null): array
@@ -84,11 +82,10 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
         }
 
         $template = new FrontendTemplate();
-        $template->enclosure = [];
 
         Controller::addEnclosuresToTemplate($template, $entity, $field ?? 'enclosure');
 
-        return $template->enclosure;
+        return $template->getData()['enclosure'] ?? [];
     }
 
     /**
@@ -144,54 +141,6 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
         $event = $this->eventDispatcher->dispatch(new ReaderSchemaOrgEvent($list, $model));
 
         return $event->data;
-    }
-
-    /**
-     * @see \Contao\CoreBundle\Twig\Interop\ContextFactory::getCallableWrapper()
-     * @return object{
-     *     __invoke: callable(mixed ...$args): mixed,
-     *     __toString: callable(): string,
-     *     invoke: callable(mixed ...$args): mixed
-     * }
-     */
-    private function getCallableWrapper(callable $callable): object
-    {
-        return new class($callable) implements \Stringable {
-            /**
-             * @var callable
-             */
-            private $callable;
-
-            public function __construct(callable $callable)
-            {
-                $this->callable = $callable;
-            }
-
-            /**
-             * Delegates call to callable, e.g. when in a Contao template context.
-             */
-            public function __invoke(mixed ...$args): mixed
-            {
-                return ($this->callable)(...$args);
-            }
-
-            /**
-             * Called when evaluating "{{ var }}" in a Twig template.
-             */
-            public function __toString(): string
-            {
-                return (string) $this();
-            }
-
-            /**
-             * Called when evaluating "{{ var.invoke() }}" in a Twig template. We do not cast
-             * to string here, so that other types (like arrays) are supported as well.
-             */
-            public function invoke(mixed ...$args): mixed
-            {
-                return $this(...$args);
-            }
-        };
     }
 
     private static function once(callable $callback): callable

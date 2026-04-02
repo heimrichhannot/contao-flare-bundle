@@ -73,6 +73,7 @@ class DateTimeHelper
      */
     public static function getTimeSpanOptions(): array
     {
+        // @phpstan-ignore argument.type
         return \array_map('\array_keys', self::TIME_SPANS);
     }
 
@@ -84,8 +85,7 @@ class DateTimeHelper
 
         $map = [];
 
-        foreach (self::TIME_SPANS as $options)
-        {
+        foreach (self::TIME_SPANS as $options) {
             $map += $options;
         }
 

@@ -8,6 +8,7 @@ use HeimrichHannot\FlareBundle\Collection\FilterDefinitionCollection;
 use HeimrichHannot\FlareBundle\Model\DocumentsListModelTrait;
 use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
 
+#[\AllowDynamicProperties]
 class ListSpecification
 {
     use AutoItemFieldGetterTrait;
@@ -50,9 +51,9 @@ class ListSpecification
             $this->type,
             $this->filters->hash(),
             'model' => $this->dataSource ? [
-                $this->dataSource->id,
-                $this->dataSource->type,
-                $this->dataSource->dc,
+                $this->dataSource->getListIdentifier(),
+                $this->dataSource->getListType(),
+                $this->dataSource->getListTable(),
             ] : null,
         ]));
     }

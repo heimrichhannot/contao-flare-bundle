@@ -58,6 +58,11 @@ readonly class ValidationContext implements
         return null;
     }
 
+    public function setPaginatorQueryParameter(?string $queryParameter): void
+    {
+        // ignore
+    }
+
     public function withFilterValues(array $values): self
     {
         return new self(

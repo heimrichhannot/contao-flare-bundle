@@ -28,7 +28,7 @@ readonly class EventsReaderPageMetaListener
             return;
         }
 
-        $pageMeta = $event->getPageMeta() ?? new ReaderPageMeta();
+        $pageMeta = $event->getPageMeta();
 
         $pageMeta->setTitle($this->htmlDecoder->inputEncodedToPlainText(
             Str::coalesce($model->pageTitle, $model->title, $objPage?->title) ?? ''

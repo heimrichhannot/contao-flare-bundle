@@ -126,7 +126,7 @@ readonly class FieldsOptionsCallbacks
     {
         $db = $this->contaoFramework->createInstance(Database::class);
 
-        if (!$tables = $db?->listTables()) {
+        if (!$db || !$tables = $db->listTables()) {
             return [];
         }
 

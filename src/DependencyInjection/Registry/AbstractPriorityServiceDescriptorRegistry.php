@@ -17,7 +17,7 @@ namespace HeimrichHannot\FlareBundle\DependencyInjection\Registry;
 abstract class AbstractPriorityServiceDescriptorRegistry
 {
     /**
-     * @var array<TNamespace, array<TKey, array<TPrio, TDescriptor[]>>
+     * @var array<TNamespace, array<TKey, array<TPrio, TDescriptor[]>>>
      */
     private array $elements = [];
 
@@ -125,7 +125,7 @@ abstract class AbstractPriorityServiceDescriptorRegistry
     /**
      * Returns all registered service configurations.
      *
-     * @return array<TNamespace, array<TKey, array<TPrio, TDescriptor[]>>
+     * @return array<TNamespace, array<TKey, array<TPrio, TDescriptor[]>>>
      */
     public function all(): array
     {

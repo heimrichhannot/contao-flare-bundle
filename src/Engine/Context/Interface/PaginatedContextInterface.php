@@ -11,4 +11,6 @@ interface PaginatedContextInterface
     public function getPaginatorConfig(): PaginatorConfig;
 
     public function getPaginatorQueryParameter(): ?string;
+
+    public function setPaginatorQueryParameter(?string $queryParameter): void;
 }

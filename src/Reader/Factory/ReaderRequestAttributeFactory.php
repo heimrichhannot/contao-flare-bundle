@@ -26,7 +26,7 @@ final readonly class ReaderRequestAttributeFactory
             return null;
         }
 
-        if (!\class_exists($modelClass) || !\is_a($modelClass, Model::class)) {
+        if (!\class_exists($modelClass) || !\is_subclass_of($modelClass, Model::class)) {
             return null;
         }
 

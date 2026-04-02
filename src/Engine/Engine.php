@@ -14,11 +14,11 @@ use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 final class Engine
 {
     public function __construct(
+        private readonly EngineModRegistry $engineModRegistry,
+        private readonly ProjectorRegistry $projectorRegistry,
         private ContextInterface           $context,
         private ListSpecification          $list,
         private array                      $mods = [],
-        private readonly EngineModRegistry $engineModRegistry,
-        private readonly ProjectorRegistry $projectorRegistry,
     ) {}
 
     public function getContext(): ContextInterface
@@ -97,11 +97,11 @@ final class Engine
     public function with(?ContextInterface $context = null, ?ListSpecification $list = null, ?array $mods = null): self
     {
         return new self(
+            engineModRegistry: $this->engineModRegistry,
+            projectorRegistry: $this->projectorRegistry,
             context: $context ?? clone $this->context,
             list: $list ?? clone $this->list,
             mods: $mods ?? $this->mods,
-            engineModRegistry: $this->engineModRegistry,
-            projectorRegistry: $this->projectorRegistry,
         );
     }
 

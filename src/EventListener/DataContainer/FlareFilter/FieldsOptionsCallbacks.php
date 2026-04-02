@@ -21,6 +21,7 @@ use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use HeimrichHannot\FlareBundle\Util\DcaFieldFilter;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
+use Symfony\Component\Translation\TranslatorBagInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -99,8 +100,8 @@ readonly class FieldsOptionsCallbacks
     public function getFieldOptions_fieldGeneric(DataContainer $dc): array
     {
         /** @var ?FilterModel $filterModel */
-        if (!$filterModel = DcaHelper::modelOf($dc))
-        {
+        $filterModel = DcaHelper::modelOf($dc);
+        if (!$filterModel) {
             return DcaHelper::getFieldOptions($dc);
         }
 
@@ -131,7 +132,7 @@ readonly class FieldsOptionsCallbacks
     {
         $db = $this->contaoFramework->createInstance(Database::class);
 
-        if (!$tables = $db?->listTables()) {
+        if (!$db || !$tables = $db->listTables()) {
             return [];
         }
 
@@ -243,6 +244,10 @@ readonly class FieldsOptionsCallbacks
 
     public function getFormatOptions(string $field, ?string $prefix = null): array
     {
+        if (!$this->translator instanceof TranslatorBagInterface) {
+            return [];
+        }
+
         $catalogue = $this->translator->getCatalogue();
         $labels = $catalogue->all('flare_form');
 

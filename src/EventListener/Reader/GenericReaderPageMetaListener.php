@@ -8,7 +8,6 @@ use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\CoreBundle\String\SimpleTokenParser;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
-use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 use HeimrichHannot\FlareBundle\Util\Arr;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
@@ -27,7 +26,7 @@ readonly class GenericReaderPageMetaListener
         $contentModel = $event->getContentModel();
         $model = $event->getDisplayModel();
 
-        if (!$list->isPageMetaGeneric) {
+        if (!$list->getProperty('eval_generic_page_meta')) {
             return;
         }
 

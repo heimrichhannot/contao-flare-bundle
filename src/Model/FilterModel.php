@@ -13,6 +13,7 @@ use HeimrichHannot\FlareBundle\Specification\DataSource\FilterDataSourceInterfac
 /**
  * Class FilterModel
  */
+#[\AllowDynamicProperties]
 class FilterModel extends Model implements FilterDataSourceInterface, PtableInferrableInterface
 {
     use DocumentsFilterModelTrait, PtableInferrableTrait;
@@ -20,6 +21,11 @@ class FilterModel extends Model implements FilterDataSourceInterface, PtableInfe
     protected static $strTable = FilterContainer::TABLE_NAME;
 
     private string $_formName;
+
+    public function getFilterIdentifier(): string
+    {
+        return (string) $this->id;
+    }
 
     public function getFilterType(): string
     {

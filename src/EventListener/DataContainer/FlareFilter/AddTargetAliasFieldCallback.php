@@ -29,13 +29,13 @@ readonly class AddTargetAliasFieldCallback
 
     public function __invoke(?DataContainer $dc = null): void
     {
-        if (!$dc?->id) {
+        if (!$id = $dc?->id) {
             return;
         }
 
         Controller::loadDataContainer(FilterContainer::TABLE_NAME);
 
-        if (!$filterModel = FilterModel::findByPk($dc?->id)) {
+        if (!$filterModel = FilterModel::findByPk($id)) {
             return;
         }
 

@@ -64,8 +64,11 @@ readonly class FieldsLoadAndSaveCallbacks
     {
         $value = (bool) $value;
 
-        $request = $this->requestStack->getCurrentRequest();
-        if ($request?->getMethod() === 'POST' && $request?->request->get('FORM_SUBMIT') === self::TABLE_NAME)
+        if (!$request = $this->requestStack->getCurrentRequest()) {
+            return $value;
+        }
+
+        if ($request->getMethod() === 'POST' && $request->request->get('FORM_SUBMIT') === self::TABLE_NAME)
         {
             // do not disable intrinsic field if form is being submitted
             // otherwise the save callback will not be called

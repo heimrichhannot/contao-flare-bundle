@@ -23,7 +23,7 @@ class PageParamMod extends AbstractMod
             return;
         }
 
-        $context->pageParam = $options['param'] ?? null;
+        $context->setPaginatorQueryParameter($options['param'] ?? null);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

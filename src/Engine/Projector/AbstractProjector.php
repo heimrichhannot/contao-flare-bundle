@@ -16,6 +16,7 @@ use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\ContainerInterface;
 use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -25,6 +26,8 @@ use Symfony\Contracts\Service\ServiceSubscriberTrait;
 abstract class AbstractProjector implements ProjectorInterface, ServiceSubscriberInterface
 {
     use ServiceSubscriberTrait;
+
+    protected ContainerInterface $container;
 
     public static function getSubscribedServices(): array
     {

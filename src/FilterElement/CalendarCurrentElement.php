@@ -64,10 +64,10 @@ class CalendarCurrentElement extends AbstractFilterElement
         $or = [
             "{$colStartTime} >= :start AND {$colStartTime} <= :end",  // event starts in range
             $qb->expr()->and(  // event is recurring
-                $qb->expr()->eq($colRecurring, 1),
+                $qb->expr()->eq($colRecurring, '1'),
                 $qb->expr()->lte($colStartTime, ':end'),  // event starts before the end of the range
                 $qb->expr()->or(
-                    $qb->expr()->eq($colRecurrences, 0),  // 0 = infinite recurrences
+                    $qb->expr()->eq($colRecurrences, '0'),  // 0 = infinite recurrences
                     $qb->expr()->gte($colRepeatEnd, ':start'),
                 ),
             ),

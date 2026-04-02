@@ -6,6 +6,8 @@ namespace HeimrichHannot\FlareBundle\Specification\DataSource;
 
 interface FilterDataSourceInterface
 {
+    public function getFilterIdentifier(): string;
+
     public function getFilterType(): string;
 
     public function isFilterIntrinsic(): bool;

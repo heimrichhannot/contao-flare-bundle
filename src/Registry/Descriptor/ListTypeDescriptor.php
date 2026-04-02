@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Registry\Descriptor;
 
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
@@ -9,8 +11,6 @@ use HeimrichHannot\FlareBundle\ListType\AbstractListType;
 
 class ListTypeDescriptor implements ServiceDescriptorInterface, PaletteContract
 {
-    public const TAG = 'huh.flare.list_type';
-
     public function __construct(
         private object  $service,
         private array   $attributes = [],

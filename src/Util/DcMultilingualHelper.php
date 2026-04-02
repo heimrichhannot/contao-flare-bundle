@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Util;
 
 use Contao\Controller;
@@ -18,7 +20,7 @@ class DcMultilingualHelper
 
     private static ?string $language = null;
 
-    public static function getLanguage()
+    public static function getLanguage(): string
     {
         return self::$language ??= (
             $GLOBALS['TL_LANGUAGE']

@@ -3,6 +3,9 @@ services:
         autowire: true
         autoconfigure: true
 
-    HeimrichHannot\FlareBundle\EventListener\Integration\Terminal42ChangelanguageListener:
+    HeimrichHannot\FlareBundle\Integration\Terminal42Languages\:
+        resource: ../src/Integration/Terminal42Languages
+
+    HeimrichHannot\FlareBundle\Integration\Terminal42Languages\EventListener\ChangelanguageListener:
         calls:
             - setMultilingualQueryBuilderFactory: [ '@?Terminal42\DcMultilingualBundle\QueryBuilder\MultilingualQueryBuilderFactoryInterface' ]

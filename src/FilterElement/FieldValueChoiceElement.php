@@ -1,29 +1,36 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
 use Contao\DataContainer;
 use Contao\StringUtil;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
-use HeimrichHannot\FlareBundle\Form\ChoicesBuilderFactory;
+use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormInterface;
 
 #[AsFilterElement(
-    alias: FieldValueChoiceElement::TYPE,
+    type: self::TYPE,
     palette: '{filter_legend},fieldGeneric,isMultiple,preselect',
     formType: ChoiceType::class,
 )]
-class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFormContract
+class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFormContract, IntrinsicValueContract
 {
     public const TYPE = 'flare_fieldValueChoice';
 
@@ -37,47 +44,48 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
+    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
     {
-        if ($context->getContentContext()->isReader()) {
+        if ($inv->context instanceof ValidationContext) {
             return;
         }
 
-        $filterModel = $context->getFilterModel();
-
-        if (!($field = $filterModel->fieldGeneric)) {
+        if (!($field = $inv->filter->fieldGeneric)) {
             return;
         }
 
-        $data = match ((bool) $filterModel->intrinsic)
-        {
-            true => $this->extractPreselectData($filterModel),
-            false => $this->extractSubmittedData((array) $context->getFormData())
-                ?? $this->extractPreselectData($filterModel),
-        };
-
-        if (!$data) {
+        if (!$value = $inv->getValue()) {
             return;
         }
 
         $colField = $qb->column($field);
 
-        if (\count($data) < 2)
+        if (\count($value) < 2)
         {
             $qb->where("LOWER(TRIM({$colField})) = :value")
-                ->setParameter('value', \reset($data));
+                ->setParameter('value', \reset($value));
         }
         /** @mago-expect lint:no-else-clause This else clause is fine. */
         else
         {
             $qb->where("LOWER(TRIM({$colField})) IN (:values)")
-                ->setParameter('values', $data);
+                ->setParameter('values', $value);
         }
     }
 
-    public function extractPreselectData(FilterModel $filterModel): ?array
+    public function processRuntimeValue(mixed $value, ListSpecification $list, FilterDefinition $filter): ?array
     {
-        if (!$preselect = $filterModel->preselect) {
+        return $this->extractSubmittedData((array) $value) ?? $this->extractPreselectData($filter);
+    }
+
+    public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): ?array
+    {
+        return $this->extractPreselectData($filter);
+    }
+
+    public function extractPreselectData(FilterDefinition $filter): ?array
+    {
+        if (!$preselect = $filter->preselect) {
             return null;
         }
 
@@ -85,7 +93,7 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
             return $preselect;
         }
 
-        if ($filterModel->isMultiple
+        if ($filter->isMultiple
             || (\is_string($preselect) && \preg_match('/^a:\d+:\{.*}$/', $preselect)))
         {
             return StringUtil::deserialize($preselect, true);
@@ -110,32 +118,31 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         return $submittedData;
     }
 
-    public function hydrateForm(FilterContext $context, FormInterface $field): void
+    public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void
     {
         if ($field->isSubmitted()) {
             return;
         }
 
-        $filterModel = $context->getFilterModel();
-
-        if (!$preselect = $this->extractPreselectData($filterModel)) {
+        if (!$preselect = $this->extractPreselectData($filter)) {
             return;
         }
 
-        if (!$filterModel->isMultiple) {
+        if (!$filter->isMultiple) {
             $preselect = \reset($preselect);
         }
 
         $field->setData($preselect);
     }
 
-    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
+    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
     {
-        $filterModel = $context->getFilterModel();
-        $choices->enable()->setEmptyOption(!$filterModel->isMultiple);
+        $choices = $event->choicesBuilder
+            ->enable()
+            ->setEmptyOption(!$event->filter->isMultiple);
 
-        $table = $context->getTable();
-        $field = $filterModel->fieldGeneric ?: '';
+        $table = $event->list->dc;
+        $field = $event->filter->fieldGeneric ?: '';
 
         $values = $this->getDistinctValues($table, $field);
 
@@ -143,10 +150,8 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
             $choices->add((string) $value, (string) $value);
         }
 
-        return [
-            'multiple' => (bool) $context->getFilterModel()->isMultiple,
-            'required' => false,
-        ];
+        $event->options['multiple'] = (bool) $event->filter->isMultiple;
+        $event->options['required'] = false;
     }
 
     #[AsFilterCallback(self::TYPE, 'fields.isMultiple.load')]
@@ -154,7 +159,7 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         mixed          $value,
         ?DataContainer $dc,
         FilterModel    $filterModel,
-        ListModel      $listModel
+        ListModel $listModel
     ): mixed {
         if (!$dc || !($dcTable = $dc->table) || !($dcField = $dc->field)) {
             return $value;
@@ -171,7 +176,7 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         mixed          $value,
         ?DataContainer $dc,
         FilterModel    $filterModel,
-        ListModel      $listModel
+        ListModel $listModel
     ): mixed {
         if (!$dc
             || !($dcTable = $dc->table)

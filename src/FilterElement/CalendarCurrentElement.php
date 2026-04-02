@@ -1,20 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementInvokingEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
+use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\Form\Type\DateRangeFilterType;
+use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsFilterElement(
-    alias: CalendarCurrentElement::TYPE,
+    type: self::TYPE,
     formType: DateRangeFilterType::class,
 )]
 class CalendarCurrentElement extends AbstractFilterElement
@@ -24,22 +29,20 @@ class CalendarCurrentElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
+    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
     {
-        $submittedData = $context->getFormData();
-        $filterModel = $context->getFilterModel();
+        $value = $inv->getValue();
+        $from = $value['from'] ?? null;
+        $to = $value['to'] ?? null;
 
-        $start = \strtotime($filterModel->startAt) ?: 0;
-        $stop = \strtotime($filterModel->stopAt) ?: DateTimeHelper::maxTimestamp();
-
-        $from = $submittedData['from'] ?? null;
-        $to = $submittedData['to'] ?? null;
+        $start = \strtotime($inv->filter->startAt) ?: 0;
+        $stop = \strtotime($inv->filter->stopAt) ?: DateTimeHelper::maxTimestamp();
 
         if ($from instanceof \DateTimeInterface)
         {
             $from = $from->getTimestamp();
 
-            if (!$filterModel->isLimited || $from >= $start) {
+            if (!$inv->filter->isLimited || $from >= $start) {
                 $start = $from;
             }
         }
@@ -48,7 +51,7 @@ class CalendarCurrentElement extends AbstractFilterElement
         {
             $to = $to->getTimestamp();
 
-            if (!$filterModel->isLimited || $to <= $stop) {
+            if (!$inv->filter->isLimited || $to <= $stop) {
                 $stop = $to;
             }
         }
@@ -70,7 +73,7 @@ class CalendarCurrentElement extends AbstractFilterElement
             ),
         ];
 
-        if ($filterModel->hasExtendedEvents)
+        if ($inv->filter->hasExtendedEvents)
         {
             $colEndTime = $qb->column('endTime');
 
@@ -84,12 +87,63 @@ class CalendarCurrentElement extends AbstractFilterElement
         $qb->setParameter('end', $stop);
     }
 
+    public function processRuntimeValue(mixed $value, ListSpecification $list, FilterDefinition $filter): ?array
+    {
+        if (!\is_array($value)) {
+            return null;
+        }
+
+        if (!\array_key_exists('from', $value) && !\array_key_exists('to', $value))
+        {
+            if (\count($value) !== 2)
+            {
+                return null;
+            }
+
+            $value = \array_values($value);
+
+            return [
+                'from' => $this->mixedToDateTime($value[0] ?? null),
+                'to' => $this->mixedToDateTime($value[1] ?? null),
+            ];
+        }
+
+        $from = $value['from'] ?? null;
+        $to = $value['to'] ?? null;
+
+        return [
+            'from' => $this->mixedToDateTime($from),
+            'to' => $this->mixedToDateTime($to),
+        ];
+    }
+
+    private function mixedToDateTime(mixed $input): ?\DateTimeInterface
+    {
+        if (!$input) {
+            return null;
+        }
+
+        if ($input instanceof \DateTimeInterface) {
+            return $input;
+        }
+
+        if (\is_numeric($input)) {
+            return \DateTimeImmutable::createFromFormat('U', $input);
+        }
+
+        if (\is_string($input)) {
+            return new \DateTimeImmutable($input);
+        }
+
+        return null;
+    }
+
     #[AsEventListener('flare.filter_element.' . self::TYPE . '.invoking')]
     public function onInvoking(FilterElementInvokingEvent $event): void
     {
-        $filterModel = $event->getFilter()->getFilterModel();
+        $filter = $event->getInvocation()->filter;
 
-        if (!$filterModel->isLimited && $event->getFilter()->getContentContext()->isReader()) {
+        if (!$filter->isLimited && $event->getContext() instanceof ValidationContext) {
             $event->setShouldInvoke(false);
         }
     }
@@ -107,36 +161,32 @@ class CalendarCurrentElement extends AbstractFilterElement
         return $palette;
     }
 
-    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
+    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
     {
-        $options = [
-            'required' => false,
-        ];
+        $event->options['required'] = false;
 
-        $filterModel = $context->getFilterModel();
+        $filter = $event->filter;
 
-        if (!$filterModel->isLimited) {
-            return $options;
+        if (!$filter->isLimited) {
+            return;
         }
 
-        if ($filterModel->configureStart
-            && $filterModel->startAt
-            && ($startAt = \strtotime($filterModel->startAt))
+        if ($filter->configureStart
+            && $filter->startAt
+            && ($startAt = \strtotime($filter->startAt))
             && ($startAt = DateTimeHelper::timestampToDateTime($startAt)))
         {
-            $options['from_min'] = $startAt;
-            $options['to_min'] = $startAt;
+            $event->options['from_min'] = $startAt;
+            $event->options['to_min'] = $startAt;
         }
 
-        if ($filterModel->configureStop
-            && $filterModel->stopAt
-            && ($stopAt = \strtotime($filterModel->stopAt))
+        if ($filter->configureStop
+            && $filter->stopAt
+            && ($stopAt = \strtotime($filter->stopAt))
             && ($stopAt = DateTimeHelper::timestampToDateTime($stopAt)))
         {
-            $options['from_max'] = $stopAt;
-            $options['to_max'] = $stopAt;
+            $event->options['from_max'] = $stopAt;
+            $event->options['to_max'] = $stopAt;
         }
-
-        return $options;
     }
 }

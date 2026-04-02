@@ -1,3 +1,5 @@
+{# @var \HeimrichHannot\FlareBundle\Engine\Engine flare #}
+{# @var \HeimrichHannot\FlareBundle\Engine\View\ValidationView flare_reader #}
 {# @var \Contao\Model model #}
 {% extends '@Contao/flare/_flare_base.html.twig' %}
 
@@ -9,15 +11,14 @@
     </div>
 
     {% if app.request.get('_preview') or app.debug %}
-        <div style="display: grid; grid-template-columns: max-content auto max-content auto; gap: .125rem 1rem; font-family: monospace; padding: 1rem; background: #def; font-size: .9em;">
+        <dl style="display: grid; grid-template-columns: max-content auto; gap: .125rem 1rem; font-family: monospace; padding: 1rem; background: #def; font-size: .9em; height: fit-content; max-height: 80svh; min-height: min(500px, 100%); overflow-y: auto;">
             <strong style="grid-column: 1 / -1; margin-bottom: 1rem">{{ model.table }}</strong>
-            {% for key, field in model.row %}
-                {% if key not in ['password'] %}
-                    <div>{{ key }}</div>
-                    <div>{{ field|default('-') }}</div>
-                {% endif %}
+            {% for key, field in model.row -%}
+                {% if key not in ['password'] -%}
+                    <dt>{{ key }}</dt><dd>{{ field|default('-') }}</dd>
+                {%- endif %}
             {% endfor %}
-        </div>
+        </dl>
     {% endif %}
 
 {% endblock %}

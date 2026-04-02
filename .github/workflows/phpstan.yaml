@@ -4,6 +4,10 @@ on:
   push:
     branches-ignore:
       - 'docs/**'
+    paths:
+      - '**.php'
+      - 'composer.json'
+      - 'phpstan.neon'
   workflow_dispatch: ~
 
 jobs:

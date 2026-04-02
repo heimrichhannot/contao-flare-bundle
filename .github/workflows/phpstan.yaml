@@ -31,6 +31,7 @@ jobs:
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
       - name: Restore Composer cache
+        id: composer-cache-restore
         uses: actions/cache/restore@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
@@ -41,13 +42,14 @@ jobs:
         run: composer update --no-progress --prefer-dist
 
       - name: Save Composer cache
-        if: always()
+        if: always() && steps.composer-cache-restore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: composer-${{ matrix.php-version }}-${{ hashFiles('composer.json') }}
 
       - name: Restore PHPStan result cache
+        id: phpstan-cache-restore
         uses: actions/cache/restore@v4
         with:
           path: /tmp/phpstan
@@ -58,7 +60,7 @@ jobs:
         run: vendor/bin/phpstan analyse --no-progress
 
       - name: Save PHPStan result cache
-        if: always()
+        if: always() && steps.phpstan-cache-restore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: /tmp/phpstan

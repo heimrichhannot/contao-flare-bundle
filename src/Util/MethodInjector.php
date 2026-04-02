@@ -43,8 +43,10 @@ class MethodInjector
                 continue;
             }
 
+            // @phpstan-ignore method.notFound
             if ($parameter->getType() && !$parameter->getType()->isBuiltin())
             {
+                // @phpstan-ignore method.notFound
                 $typeName = $parameter->getType()->getName();
 
                 if (\array_key_exists($typeName, $optionalParams))

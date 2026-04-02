@@ -1,14 +1,9 @@
 # FLARE 🔥 Filter, List and Reader Bundle
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/heimrichhannot/contao-flare-bundle.svg)](https://packagist.org/packages/heimrichhannot/contao-flare-bundle)
-[![Total Downloads](https://img.shields.io/packagist/dt/heimrichhannot/contao-flare-bundle.svg)](https://packagist.org/packages/heimrichhannot/contao-flare-bundle)
-[![Monthly Downloads](https://img.shields.io/packagist/dm/heimrichhannot/contao-flare-bundle.svg)](https://packagist.org/packages/heimrichhannot/contao-flare-bundle)
-[![License](https://img.shields.io/packagist/l/heimrichhannot/contao-flare-bundle.svg)](https://packagist.org/packages/heimrichhannot/contao-flare-bundle)
 [![PHP Version](https://img.shields.io/packagist/dependency-v/heimrichhannot/contao-flare-bundle/php.svg)](https://packagist.org/packages/heimrichhannot/contao-flare-bundle)
 [![Contao Version](https://img.shields.io/packagist/dependency-v/heimrichhannot/contao-flare-bundle/contao/core-bundle.svg)](https://packagist.org/packages/heimrichhannot/contao-flare-bundle)
-[![Last Commit](https://img.shields.io/github/last-commit/heimrichhannot/contao-flare-bundle.svg)](https://github.com/heimrichhannot/contao-flare-bundle/commits)
-[![GitHub Issues](https://img.shields.io/github/issues/heimrichhannot/contao-flare-bundle.svg)](https://github.com/heimrichhannot/contao-flare-bundle/issues)
-[![GitHub Stars](https://img.shields.io/github/stars/heimrichhannot/contao-flare-bundle.svg)](https://github.com/heimrichhannot/contao-flare-bundle/stargazers)
+[![PHPStan](https://github.com/heimrichhannot/contao-flare-bundle/actions/workflows/phpstan.yaml/badge.svg)](https://github.com/heimrichhannot/contao-flare-bundle/actions/workflows/phpstan.yaml)
 
 A Contao CMS bundle for building filterable lists and detail pages — for news, events, or any DCA-based entity.
 

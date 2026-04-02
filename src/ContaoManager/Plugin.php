@@ -50,6 +50,9 @@ final class Plugin implements BundlePluginInterface, RoutingPluginInterface
      */
     public function getRouteCollection(LoaderResolverInterface $resolver, KernelInterface $kernel): ?RouteCollection
     {
-        return $resolver->resolve($routes = '@HeimrichHannotFlareBundle/config/routes.yaml')->load($routes);
+        $routesFile = Env::isSymfony7orHigher() ? 'routes.yaml' : 'routes_legacy.yaml';
+        $routes = "@HeimrichHannotFlareBundle/config/{$routesFile}";
+
+        return $resolver->resolve($routes)->load($routes);
     }
 }

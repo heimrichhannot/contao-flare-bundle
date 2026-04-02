@@ -25,3 +25,12 @@ filter:
         intrinsic:
             yes: "Dieser Filter ist intrinsisch"
             no: "Dieser Filter ist nicht intrinsisch"
+
+errors:
+    missing_model: 'Listen- oder Filtermodell nicht gefunden'
+    missing_datacontainer: 'Bitte definieren Sie einen Data-Container für das Listenmodell [ID %id%]'
+
+infer_ptable:
+    auto: "Als Elterntabelle von \"%table%.%field%\" wird \"%ptable%\" abgeleitet."
+    dynamic: "Die Elterntabelle von \"%table%\" kann dynamisch abgeleitet werden."
+    invalid: "Die Elterntabelle von \"%table%.%field%\" kann nicht automatisch abgeleitet werden."

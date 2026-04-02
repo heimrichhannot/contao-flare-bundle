@@ -15,6 +15,8 @@ use Composer\Semver\VersionParser;
  * @method static bool hasTerminal42ChangeLanguage()
  * @method static bool isContao4()
  * @method static bool isContao5()
+ * @method static bool isSymfony7()
+ * @method static bool isSymfony7orHigher()
  */
 final class Env
 {
@@ -41,6 +43,8 @@ final class Env
                 'hasTerminal42ChangeLanguage' => InstalledVersions::isInstalled('terminal42/contao-changelanguage'),
                 'isContao4' => InstalledVersions::satisfies(new VersionParser(), 'contao/core-bundle', '^4.0'),
                 'isContao5' => InstalledVersions::satisfies(new VersionParser(), 'contao/core-bundle', '^5.0'),
+                'isSymfony7' => InstalledVersions::satisfies(new VersionParser(), 'symfony/framework-bundle', '^7.0'),
+                'isSymfony7orHigher' => InstalledVersions::satisfies(new VersionParser(), 'symfony/framework-bundle', '>=7.0'),
                 default => false,
             };
         }

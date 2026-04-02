@@ -6,8 +6,10 @@ namespace HeimrichHannot\FlareBundle\EventListener\Reader;
 
 use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\CoreBundle\String\SimpleTokenParser;
+use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
+use HeimrichHannot\FlareBundle\Util\Arr;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
@@ -45,23 +47,9 @@ readonly class GenericReaderPageMetaListener
             'list.dc' => $list->dc,
         ];
 
-        foreach ($list->getProperties() as $key => $value) {
-            if (\is_scalar($value) && $key !== 'type' && $key !== 'dc') {
-                $tokens['list.' . $key] = $value;
-            }
-        }
-
-        foreach ($contentModel->row() as $key => $value) {
-            if (\is_scalar($value)) {
-                $tokens['ce.' . $key] = $value;
-            }
-        }
-
-        foreach ($model->row() as $key => $value) {
-            if (\is_scalar($value)) {
-                $tokens[$key] = $value;
-            }
-        }
+        $this->addTokensFromProperties($tokens, $list->getProperties(), prefix: 'list');
+        $this->addTokensFromProperties($tokens, $contentModel->row(), prefix: 'ce');
+        $this->addTokensFromProperties($tokens, $model->row());
 
         if ($titleFormat)
         {
@@ -84,6 +72,29 @@ readonly class GenericReaderPageMetaListener
             $robotsFormat = $this->htmlDecoder->inputEncodedToPlainText($robotsFormat);
             $robots = $this->simpleTokenParser->parse($robotsFormat, $tokens, allowHtml: false);
             $pageMeta->setRobots($robots);
+        }
+    }
+
+    private function addTokensFromProperties(array &$tokens, array $properties, ?string $prefix = null): void
+    {
+        foreach ($properties as $key => $value)
+        {
+            if (!\is_scalar($value)) {
+                continue;
+            }
+
+            $path = \is_null($prefix) ? $key : "{$prefix}.{$key}";
+
+            $tokens[$path] = $value;
+
+            if (\is_array($deserialized = StringUtil::deserialize($value)))
+            {
+                $flat = Arr::flatten($deserialized, prefix: $path);
+
+                foreach ($flat as $flatKey => $flatValue) {
+                    $tokens[$flatKey] = $flatValue;
+                }
+            }
         }
     }
 }

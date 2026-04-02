@@ -2,4 +2,4 @@ huh_flare:
     resource: "@HeimrichHannotFlareBundle/src/Controller/"
     exclude:
         - "@HeimrichHannotFlareBundle/src/Controller/ContentElement/"
-    type: attribute
+    type: annotation

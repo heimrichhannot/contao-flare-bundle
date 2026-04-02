@@ -42,10 +42,11 @@ readonly class BreadcrumbListener
         $qId = $this->connection->quoteIdentifier('id');
         $qPid = $this->connection->quoteIdentifier('pid');
 
-        $articleIds = $this->connection
-            ->prepare("SELECT DISTINCT({$qId}) AS {$qId} FROM {$qArticle} WHERE {$qPid} = :pid LIMIT 1")
-            ->executeQuery(['pid' => $pageId])
-            ->fetchFirstColumn();
+        $stmt = $this->connection->prepare("SELECT DISTINCT({$qId}) AS {$qId} FROM {$qArticle} WHERE {$qPid} = :pid LIMIT 1");
+        $stmt->bindValue('pid', $pageId);
+        $result = $stmt->executeQuery();
+        $articleIds = $result->fetchFirstColumn();
+        $result->free();
 
         if (!$articleIds) {
             return $items;

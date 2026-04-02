@@ -135,7 +135,7 @@ class FilterQueryBuilder
 
         $type ??= $this->tryGetPDOType($value);
 
-        if (!\is_int($type)) {
+        if (\is_null($type)) {
             throw new \InvalidArgumentException(\sprintf(
                 'PDO parameter type of "%s" cannot be guessed. Please provide a type explicitly.', $param,
             ));
@@ -154,7 +154,7 @@ class FilterQueryBuilder
         $this->types = [];
     }
 
-    protected function tryGetPDOType(mixed $value): ?int
+    protected function tryGetPDOType(mixed $value): ParameterType|ArrayParameterType|int|null
     {
         if (\is_null($value)) {
             return ParameterType::NULL;

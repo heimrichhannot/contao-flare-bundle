@@ -25,3 +25,12 @@ filter:
         intrinsic:
             yes: "This filter is intrinsic"
             no: "This filter ist not intrinsic"
+
+errors:
+    missing_model: 'List model or filter model not found.'
+    missing_datacontainer: 'Please define a data container on the list model [ID %id%]'
+
+infer_ptable:
+    auto: "Parent table of \"%table%.%field%\" inferred as \"%ptable%\""
+    dynamic: "Parent table of \"%table%\" can be inferred dynamically"
+    invalid: "Parent table cannot be inferred automatically on \"%table%.%field%\""

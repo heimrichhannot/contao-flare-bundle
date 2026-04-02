@@ -15,11 +15,16 @@ use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsFilterElement(type: self::TYPE)]
 class BelongsToRelationElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_relation_belongsTo';
+
+    public function __construct(
+        private readonly TranslatorInterface $trans,
+    ) {}
 
     /**
      * @throws FilterException
@@ -142,12 +147,14 @@ class BelongsToRelationElement extends AbstractFilterElement
         $filterModel = $config->getFilterModel();
 
         if (!$filterModel) {
-            Message::addError('List model or filter model not found.');
+            Message::addError($this->trans->trans('errors.missing_model', [], 'flare'));
             return '';
         }
 
         if (!$listModel->dc) {
-            Message::addError(\sprintf('Please define a data container on the list model [ID %d]', $listModel->id));
+            Message::addError($this->trans->trans('errors.missing_datacontainer', [
+                '%id%' => $listModel->id,
+            ], 'flare'));
             return '';
         }
 
@@ -162,9 +169,18 @@ class BelongsToRelationElement extends AbstractFilterElement
             $ptable = $inferrer->explicit(true);
 
             Message::addInfo(match (true) {
-                $inferrer->isAutoInferable() && $ptable => \sprintf('Parent table of "%s.%s" inferred as "%s"', $table, $fieldPid, $ptable),
-                $inferrer->isAutoDynamicPtable() => \sprintf('Parent table of "%s" can be inferred dynamically', $table),
-                default => \sprintf('Parent table cannot be inferred on "%s.%s"', $table, $fieldPid)
+                $inferrer->isAutoInferable() && $ptable => $this->trans->trans('infer_ptable.auto', [
+                    '%table%' => $table,
+                    '%field%' => $fieldPid,
+                    '%ptable%' => $ptable,
+                ], 'flare'),
+                $inferrer->isAutoDynamicPtable() => $this->trans->trans('infer_ptable.dynamic', [
+                    '%table%' => $table,
+                ], 'flare'),
+                default => $this->trans->trans('infer_ptable.invalid', [
+                    '%table%' => $table,
+                    '%field%' => $fieldPid,
+                ], 'flare')
             });
         }
         catch (InferenceException $e)

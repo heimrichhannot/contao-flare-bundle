@@ -35,11 +35,11 @@ class PublishedElement extends AbstractFilterElement
             $operator = $invertPublished ? 'neq' : 'eq';
 
             // "published = '1'" or "published != '1'"
-            $qb->where($qb->expr()->{$operator}($publishedField, $this->connection->quote(1)));
+            $qb->where($qb->expr()->{$operator}($publishedField, $this->connection->quote('1')));
         }
 
         $epsilon = $this->connection->quote('');
-        $zero = $this->connection->quote(0);
+        $zero = $this->connection->quote('0');
 
         if ($inv->filter->useStart ?? true)
         {

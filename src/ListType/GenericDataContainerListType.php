@@ -14,6 +14,7 @@ use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsListType(type: self::TYPE, palette: self::DEFAULT_PALETTE)]
 class GenericDataContainerListType extends AbstractListType implements DataContainerContract
@@ -25,8 +26,9 @@ class GenericDataContainerListType extends AbstractListType implements DataConta
         PALETTE;
 
     public function __construct(
-        private readonly HtmlDecoder       $htmlDecoder,
-        private readonly SimpleTokenParser $simpleTokenParser,
+        private readonly HtmlDecoder         $htmlDecoder,
+        private readonly SimpleTokenParser   $simpleTokenParser,
+        private readonly TranslatorInterface $trans,
     ) {}
 
     protected function getHtmlDecoder(): HtmlDecoder
@@ -66,9 +68,18 @@ class GenericDataContainerListType extends AbstractListType implements DataConta
             $ptable = $inferrer->explicit(true);
 
             Message::addInfo(match (true) {
-                $inferrer->isAutoInferable() && $ptable => \sprintf('Parent table of "%s.%s" inferred as "%s"', $table, $listModel->fieldPid, $ptable),
-                $inferrer->isAutoDynamicPtable() => \sprintf('Parent table of "%s" can be inferred dynamically', $table),
-                default => \sprintf('Parent table cannot be inferred on "%s.%s"', $table, $listModel->fieldPid)
+                $inferrer->isAutoInferable() && $ptable => $this->trans->trans('infer_ptable.auto', [
+                    '%table%' => $table,
+                    '%field%' => $listModel->fieldPid,
+                    '%ptable%' => $ptable,
+                ], 'flare'),
+                $inferrer->isAutoDynamicPtable() => $this->trans->trans('infer_ptable.dynamic', [
+                    '%table%' => $table,
+                ], 'flare'),
+                default => $this->trans->trans('infer_ptable.invalid', [
+                    '%table%' => $table,
+                    '%field%' => $listModel->fieldPid,
+                ], 'flare'),
             });
         }
         catch (InferenceException $e)

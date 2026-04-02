@@ -1,8 +1,6 @@
 # FLARE 🔥 Filter, List and Reader Bundle
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/heimrichhannot/contao-flare-bundle.svg)](https://packagist.org/packages/heimrichhannot/contao-flare-bundle)
-[![Total Downloads](https://img.shields.io/packagist/dt/heimrichhannot/contao-flare-bundle.svg)](https://packagist.org/packages/heimrichhannot/contao-flare-bundle)
-[![Monthly Downloads](https://img.shields.io/packagist/dm/heimrichhannot/contao-flare-bundle.svg)](https://packagist.org/packages/heimrichhannot/contao-flare-bundle)
 [![License](https://img.shields.io/packagist/l/heimrichhannot/contao-flare-bundle.svg)](https://packagist.org/packages/heimrichhannot/contao-flare-bundle)
 [![PHP Version](https://img.shields.io/packagist/dependency-v/heimrichhannot/contao-flare-bundle/php.svg)](https://packagist.org/packages/heimrichhannot/contao-flare-bundle)
 [![Contao Version](https://img.shields.io/packagist/dependency-v/heimrichhannot/contao-flare-bundle/contao/core-bundle.svg)](https://packagist.org/packages/heimrichhannot/contao-flare-bundle)

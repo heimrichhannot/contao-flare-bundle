@@ -119,7 +119,11 @@ class DateTimeHelper
             return null;
         }
 
-        return \DateTime::createFromFormat('U', (string) $timestamp)?->setTimezone(self::getTimeZone()) ?: null;
+        if (!$dt = \DateTime::createFromFormat('U', (string) $timestamp)) {
+            return null;
+        }
+
+        return $dt->setTimezone(self::getTimeZone());
     }
 
     public static function toDateTime(string $time_span_or_string_or_stamp): ?\DateTime

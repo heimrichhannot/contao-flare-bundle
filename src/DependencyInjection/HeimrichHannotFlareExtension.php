@@ -37,6 +37,10 @@ final class HeimrichHannotFlareExtension extends Extension implements PrependExt
             $loader->load('integrations/contao_comments.yaml');
         }
 
+        if (Env::hasContaoNews()) {
+            $loader->load('integrations/contao_news.yaml');
+        }
+
         if (Env::hasCodefogTags()) {
             $loader->load('integrations/codefog_tags.yaml');
         }

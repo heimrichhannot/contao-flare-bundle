@@ -20,6 +20,7 @@ class ChoicesBuilder
     /** @var array<string, callable|string|null> $choiceValues */
     private array $choiceValues = [];
     private array $groups = [];
+    // @phpstan-ignore property.onlyWritten
     private array $choiceGroupMap = [];
     private string $modelSuffix = '';
     private bool $enabled = false;

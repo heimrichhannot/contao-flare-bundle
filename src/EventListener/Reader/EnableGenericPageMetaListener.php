@@ -16,7 +16,8 @@ class EnableGenericPageMetaListener
         $list = $event->listSpecification;
 
         if ($list->type === GenericDataContainerListType::TYPE) {
-            $list->isPageMetaGeneric = true;
+            // @todo (@ericges): Overhaul this mechanic
+            $list->setProperty('eval_generic_page_meta', true);
         }
     }
 }

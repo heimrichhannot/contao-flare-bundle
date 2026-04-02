@@ -144,7 +144,7 @@ class ListContainer implements FlareCallbackContainerInterface
         }
 
         // if no data container is set, use the default data container of the list type
-        $expectedDataContainer ??= $listTypeConfig->getDataContainer() ?? '';
+        $expectedDataContainer ??= $listTypeConfig->getAttributes()['dc'] ?? '';
 
         if (!$expectedDataContainer) {
             throw new BadRequestHttpException('No data container found for list type ' . $type);
@@ -153,9 +153,10 @@ class ListContainer implements FlareCallbackContainerInterface
         if ($expectedDataContainer !== ($row['dc'] ?? null))
         {
             $qTable = $this->connection->quoteIdentifier(self::TABLE_NAME);
-            $this->connection
-                ->prepare("UPDATE {$qTable} SET {$qTable}.`dc` = ? WHERE {$qTable}.`id` = ?")
-                ->executeStatement([$expectedDataContainer, $dc->id]);
+            $stmt = $this->connection->prepare("UPDATE {$qTable} SET {$qTable}.`dc` = :dc WHERE {$qTable}.`id` = :id");
+            $stmt->bindValue(':dc', $expectedDataContainer);
+            $stmt->bindValue(':id', $dc->id);
+            $stmt->executeStatement();
         }
     }
 

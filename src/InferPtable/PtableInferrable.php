@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\InferPtable;
 
-readonly class PtableInferrable implements PtableInferrableInterface
+final readonly class PtableInferrable implements PtableInferrableInterface
 {
     public function __construct(
         private string $fieldPid,
@@ -13,7 +13,7 @@ readonly class PtableInferrable implements PtableInferrableInterface
         private string $tablePtable,
     ) {}
 
-    public function getInferFieldPid(): ?string
+    public function getInferFieldPid(): string
     {
         return $this->fieldPid;
     }
@@ -23,12 +23,12 @@ readonly class PtableInferrable implements PtableInferrableInterface
         return $this->whichPtable;
     }
 
-    public function getInferFieldPtable(): ?string
+    public function getInferFieldPtable(): string
     {
         return $this->fieldPtable;
     }
 
-    public function getInferTablePtable(): ?string
+    public function getInferTablePtable(): string
     {
         return $this->tablePtable;
     }
@@ -38,8 +38,8 @@ readonly class PtableInferrable implements PtableInferrableInterface
         ?string $whichPtable = null,
         ?string $fieldPtable = null,
         ?string $tablePtable = null,
-    ): static {
-        return new static(
+    ): self {
+        return new self(
             fieldPid: $fieldPid ?? $this->fieldPid,
             whichPtable: $whichPtable ?? $this->whichPtable,
             fieldPtable: $fieldPtable ?? $this->fieldPtable,

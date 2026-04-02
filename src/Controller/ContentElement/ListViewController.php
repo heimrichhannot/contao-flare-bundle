@@ -152,7 +152,7 @@ final class ListViewController extends AbstractContentElementController
         }
     }
 
-    protected function getBackendResponse(Template $template, ContentModel $model, Request $request): ?Response
+    protected function getBackendResponse(Template $template, ContentModel $model, Request $request): Response
     {
         try {
             /** @var ?ListModel $listModel */

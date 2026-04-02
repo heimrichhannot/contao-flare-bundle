@@ -52,8 +52,7 @@ abstract class AbstractFilterElement implements FilterInvokerInterface, OptionsI
      * Creates default form type options based on default filter model fields and the given config.
      *
      * @param FilterDefinition $filter The filter definition.
-     * @param array<string, mixed>|array<int, string>|array<int|string, mixed> $config The config to use.
-     * @phpstan-param FormOptionsShape|list<key-of<FormOptionsShape>> $config
+     * @param array<string, mixed>|array<int, string>|array<int|string, mixed>|FormOptionsShape|list<key-of<FormOptionsShape>> $config The config to use.
      *
      * @return array
      *

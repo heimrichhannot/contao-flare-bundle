@@ -17,8 +17,6 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
  */
 class DcaHelper
 {
-    private static array $dcTableCache = [];
-
     public static function modelOf(?DataContainer $dc): ?Model
     {
         if (!$dc || !($id = $dc->id ?? null)) {
@@ -63,8 +61,11 @@ class DcaHelper
             return null;
         }
 
-        if (isset(static::$dcTableCache[$pid])) {
-            return static::$dcTableCache[$pid];
+        static $dcTableCache;
+        $dcTableCache ??= [];
+
+        if (isset($dcTableCache[$pid])) {
+            return$dcTableCache[$pid];
         }
 
         if (!($list = ListModel::findByPk($pid))
@@ -73,7 +74,7 @@ class DcaHelper
             return null;
         }
 
-        return static::$dcTableCache[$pid] = $table;
+        return $dcTableCache[$pid] = $table;
     }
 
     public static function tryGetColumnName(
@@ -149,9 +150,11 @@ class DcaHelper
             return static::isStrSqlType((string) $sqlType, $expectedType);
         }
 
-        return \is_string($sql)
-            && ($regex = static::getSqlTypeRegex($expectedType))
-            && \preg_match($regex, $sql);
+        if ($regex = static::getSqlTypeRegex($expectedType)) {
+            return \preg_match($regex, $sql);
+        }
+
+        return false;
     }
 
     protected static function getSqlTypeRegex(string $type): ?string

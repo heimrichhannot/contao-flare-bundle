@@ -44,7 +44,8 @@ class CodefogTagsChoiceElement extends AbstractFilterElement implements HydrateF
     public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
     {
         /** @var ?array $tagIds */
-        if (!$tagIds = $inv->getValue()) {
+        $tagIds = $inv->getValue();
+        if (!$tagIds) {
             return;
         }
 

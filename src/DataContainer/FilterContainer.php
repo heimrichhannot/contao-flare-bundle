@@ -133,6 +133,10 @@ class FilterContainer implements FlareCallbackContainerInterface
                 && ($ignoreType || $filterModel->type)
                 && ($listModel = $filterModel->getRelated('pid')))
             {
+                if (!$listModel instanceof ListModel) {
+                    return [null, null];
+                }
+
                 return [$filterModel, $listModel];
             }
         }

@@ -27,10 +27,14 @@ class CallbackHelper
     {
         foreach ($callbacks as $callbackConfig)
         {
-            $method = $callbackConfig?->getMethod();
-            $service = $callbackConfig?->getService();
+            if (!$callbackConfig instanceof ServiceDescriptorInterface) {
+                throw new \InvalidArgumentException('Callback must be an instance of ServiceDescriptorInterface');
+            }
 
-            if (!$method || !$service || !\method_exists($service, $method)) {
+            $method = $callbackConfig->getMethod();
+            $service = $callbackConfig->getService();
+
+            if (!$method || !\method_exists($service, $method)) {
                 continue;
             }
 
@@ -55,10 +59,14 @@ class CallbackHelper
     {
         foreach ($callbacks as $callbackConfig)
         {
-            $method = $callbackConfig?->getMethod();
-            $service = $callbackConfig?->getService();
+            if (!$callbackConfig instanceof ServiceDescriptorInterface) {
+                throw new \InvalidArgumentException('Callback must be an instance of ServiceDescriptorInterface');
+            }
 
-            if (!$method || !$service || !\method_exists($service, $method)) {
+            $method = $callbackConfig->getMethod();
+            $service = $callbackConfig->getService();
+
+            if (!$method || !\method_exists($service, $method)) {
                 continue;
             }
 

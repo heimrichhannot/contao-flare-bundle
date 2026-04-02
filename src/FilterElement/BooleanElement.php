@@ -175,7 +175,7 @@ class BooleanElement extends AbstractFilterElement implements IntrinsicValueCont
         );
 
         $definition->fieldGeneric = $targetField;
-        $definition->preselect = (bool) $expectedValue;
+        $definition->preselect = (string) (bool) $expectedValue;
 
         return $definition;
     }

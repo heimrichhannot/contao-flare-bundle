@@ -11,6 +11,7 @@ use HeimrichHannot\FlareBundle\Specification\DataSource\FilterDataSourceInterfac
  * @property string $type
  * @property bool $intrinsic
  */
+#[\AllowDynamicProperties]
 class FilterDefinition
 {
     use DocumentsFilterModelTrait;

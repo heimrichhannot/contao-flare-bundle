@@ -60,9 +60,14 @@ Attributes are in `src/DependencyInjection/Attribute/`, compiler passes in `src/
 *   **Execution:** The `php` command is likely unavailable in your shell. Use the provided `Makefile` to run commands via Docker:
     *   `make php <args>` — Runs PHP commands (e.g., `make php bin/console debug:container`)
     *   `make composer <args>` — Runs Composer commands (e.g., `make composer install`)
+    *   `make phpstan` — Runs PHPStan static analysis (level 5)
     *   `make docs-setup` — Sets up the Docusaurus environment in the `docs/` directory
     *   `make docs-remove` — Safely removes the documentation worktree
     *   `make help` — Lists all available make commands
+
+#### Static Analysis (PHPStan)
+*   **Config:** `phpstan.neon` — level 5, analyses `src/` (with a number of excludes)
+*   `src/Model/` is excluded because Contao models use magic `__get`/`__set` properties
 
 ## Key Directories
 

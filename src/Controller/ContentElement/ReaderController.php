@@ -190,7 +190,7 @@ final class ReaderController extends AbstractContentElementController
 
     public function applyPageMeta(ReaderPageMeta $pageMeta, ?HtmlHeadBag $htmlHeadBag = null): void
     {
-        $htmlHeadBag ??= $this->responseContextAccessor?->getResponseContext()?->get(HtmlHeadBag::class);
+        $htmlHeadBag ??= $this->responseContextAccessor->getResponseContext()?->get(HtmlHeadBag::class);
 
         if (!$htmlHeadBag) {
             return;

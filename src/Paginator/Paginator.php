@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Paginator;
 
-readonly class Paginator extends PaginatorConfig
+class Paginator extends PaginatorConfig
 {
     public const DEFAULT_WINDOW_PADDING = 2;
     public const DEFAULT_FRAME_PAGES = 1;
@@ -13,10 +13,10 @@ readonly class Paginator extends PaginatorConfig
      * @param \Closure(int): string $urlGenerator A closure that generates the URL for a given page number.
      */
     public function __construct(
-        int                $itemsPerPage,
-        int                $currentPage,
-        int                $totalItems,
-        protected \Closure $urlGenerator,
+        int                         $itemsPerPage,
+        int                         $currentPage,
+        int                         $totalItems,
+        protected readonly \Closure $urlGenerator,
     ) {
         parent::__construct(
             itemsPerPage: $itemsPerPage,
@@ -243,8 +243,8 @@ readonly class Paginator extends PaginatorConfig
         int      $currentPage = null,
         int      $totalItems = null,
         callable $urlGenerator = null,
-    ): static {
-        return new static(
+    ): self {
+        return new self(
             itemsPerPage: $itemsPerPage ?? $this->itemsPerPage,
             currentPage: $currentPage ?? $this->currentPage,
             totalItems: $totalItems ?? $this->totalItems,

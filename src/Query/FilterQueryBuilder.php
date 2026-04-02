@@ -64,7 +64,7 @@ class FilterQueryBuilder
      * the filtering to stop and return an empty result set.
      *
      * @noinspection RedundantSuppression, PhpDocMissingThrowsInspection
-     * @throws null {@see AbortFilteringException}
+     * @throws never {@see AbortFilteringException}
      */
     public static function abort(): never
     {
@@ -117,8 +117,11 @@ class FilterQueryBuilder
         return $this->where(SqlHelper::findInSerializedArrayColumn($find, $this->column($column), $this->connection));
     }
 
-    public function setParameter(string $param, string|int|array $value, ?int $type = null): static
-    {
+    public function setParameter(
+        string                                    $param,
+        string|int|array                          $value,
+        ParameterType|ArrayParameterType|int|null $type = null,
+    ): static {
         $param = \ltrim($param, ':');
 
         if (!\preg_match('/^[a-zA-Z0-9_]+$/', $param)) {

@@ -73,6 +73,7 @@ class DateTimeHelper
      */
     public static function getTimeSpanOptions(): array
     {
+        // @phpstan-ignore argument.type
         return \array_map('\array_keys', self::TIME_SPANS);
     }
 
@@ -84,8 +85,7 @@ class DateTimeHelper
 
         $map = [];
 
-        foreach (self::TIME_SPANS as $options)
-        {
+        foreach (self::TIME_SPANS as $options) {
             $map += $options;
         }
 
@@ -119,7 +119,11 @@ class DateTimeHelper
             return null;
         }
 
-        return \DateTime::createFromFormat('U', (string) $timestamp)?->setTimezone(self::getTimeZone()) ?: null;
+        if (!$dt = \DateTime::createFromFormat('U', (string) $timestamp)) {
+            return null;
+        }
+
+        return $dt->setTimezone(self::getTimeZone());
     }
 
     public static function toDateTime(string $time_span_or_string_or_stamp): ?\DateTime

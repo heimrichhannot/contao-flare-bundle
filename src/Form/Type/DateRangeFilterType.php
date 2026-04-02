@@ -16,8 +16,10 @@ class DateRangeFilterType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $fromMin = $options['from_min']?->format('Y-m-d');
-        /** @var \DateTimeInterface $fromMax */
-        if ($fromMax = $options['from_max'] ?? null) {
+
+        if (/** @var \DateTimeInterface $fromMax */
+            $fromMax = $options['from_max'] ?? null)
+        {
             $fromMax = \DateTime::createFromInterface($fromMax);
             $fromMax->modify('-1 second');
             $fromMax = $fromMax->format('Y-m-d');
@@ -34,8 +36,9 @@ class DateRangeFilterType extends AbstractType
         ]);
 
         $toMin = $options['to_min']?->format('Y-m-d');
-        /** @var \DateTimeInterface $toMax */
-        if ($toMax = $options['to_max'] ?? null) {
+        if (/** @var \DateTimeInterface $toMax */
+            $toMax = $options['to_max'] ?? null)
+        {
             $toMax = \DateTime::createFromInterface($toMax);
             $toMax->modify('-1 second');
             $toMax = $toMax->format('Y-m-d');

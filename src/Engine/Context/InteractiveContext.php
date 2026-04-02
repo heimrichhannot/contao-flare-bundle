@@ -62,6 +62,11 @@ class InteractiveContext implements
         return $this->pageParam;
     }
 
+    public function setPaginatorQueryParameter(?string $queryParameter): void
+    {
+        $this->pageParam = $queryParameter;
+    }
+
     public function getSortOrderSequence(): ?SortOrderSequence
     {
         return $this->sortOrderSequence;

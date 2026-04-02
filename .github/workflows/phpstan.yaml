@@ -1,0 +1,71 @@
+name: PHPStan
+
+on:
+  push:
+    branches-ignore:
+      - 'docs/**'
+    paths:
+      - '**.php'
+      - 'composer.json'
+      - 'phpstan.neon'
+  workflow_dispatch: ~
+
+jobs:
+  phpstan:
+    name: PHPStan (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3', '8.4']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: composer
+          coverage: none
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Restore Composer cache
+        id: composer-cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ matrix.php-version }}-${{ hashFiles('composer.json') }}
+          restore-keys: composer-${{ matrix.php-version }}-
+
+      - name: Install dependencies
+        run: composer update --no-progress --prefer-dist
+
+      - name: Save Composer cache
+        if: always() && steps.composer-cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ matrix.php-version }}-${{ hashFiles('composer.json') }}
+
+      - name: Restore PHPStan result cache
+        id: phpstan-cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/phpstan
+          key: phpstan-${{ matrix.php-version }}-${{ github.sha }}
+          restore-keys: phpstan-${{ matrix.php-version }}-
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --no-progress
+
+      - name: Save PHPStan result cache
+        if: always() && steps.phpstan-cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/phpstan
+          key: phpstan-${{ matrix.php-version }}-${{ github.sha }}

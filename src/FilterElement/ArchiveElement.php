@@ -31,12 +31,13 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormInterface;
 
 #[AsFilterElement(type: self::TYPE, formType: ChoiceType::class)]
-class ArchiveElement extends BelongsToRelationElement implements HydrateFormContract, IntrinsicValueContract
+class ArchiveElement extends AbstractFilterElement implements HydrateFormContract, IntrinsicValueContract
 {
     public const TYPE = 'flare_archive';
 
     public function __construct(
         private readonly ChoicesBuilderFactory $choicesBuilderFactory,
+        private readonly BelongsToRelationElement $relationElement,
     ) {}
 
     /**
@@ -137,7 +138,7 @@ class ArchiveElement extends BelongsToRelationElement implements HydrateFormCont
             }
         }
 
-        $this->filterDynamicPtableField($qb, $inv->filter, 'ptable', 'pid', $grouped);
+        $this->relationElement->filterDynamicPtableField($qb, $inv->filter, 'ptable', 'pid', $grouped);
     }
 
     public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): array
@@ -264,7 +265,7 @@ class ArchiveElement extends BelongsToRelationElement implements HydrateFormCont
 
             foreach ($parents as $parent)
             {
-                $choices->add($parent->id, $parent);
+                $choices->add((string) $parent->id, $parent);
             }
 
             $event->options['required'] = (bool) $filter->isMandatory;
@@ -358,10 +359,6 @@ class ArchiveElement extends BelongsToRelationElement implements HydrateFormCont
 
             foreach ($parents as $parent)
             {
-                if (!$parent instanceof Model) {
-                    continue;
-                }
-
                 $choices->add(\sprintf('%s.%s', $ptable, $parent->id), $parent);
             }
 
@@ -389,10 +386,6 @@ class ArchiveElement extends BelongsToRelationElement implements HydrateFormCont
 
                 foreach ($parents as $parent)
                 {
-                    if (!$parent instanceof Model) {
-                        continue;
-                    }
-
                     $choices->add(\sprintf('%s.%s', $table, $parent->id), $parent);
                 }
             }

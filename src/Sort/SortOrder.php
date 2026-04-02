@@ -52,7 +52,7 @@ final readonly class SortOrder implements \Serializable, \Stringable
         ];
     }
 
-    public function serialize(): ?string
+    public function serialize(): string
     {
         return \serialize($this->__serialize());
     }

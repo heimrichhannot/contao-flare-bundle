@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\EventListener\Reader;
+namespace HeimrichHannot\FlareBundle\Integration\ContaoNews\EventListener;
 
 use Contao\News;
 use Contao\NewsModel;

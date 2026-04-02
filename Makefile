@@ -14,6 +14,9 @@ php: ## Run php command in docker
 composer: ## Run composer command in docker
 	docker compose run --rm composer $(filter-out $@,$(MAKECMDGOALS))
 
+phpstan: ## Run PHPStan static analysis
+	docker compose run --rm php vendor/bin/phpstan analyse --memory-limit=512M
+
 docs-setup: ## Setup the Docusaurus worktree environment locally
 	@if [ -d "$(DOCS_DIR)" ]; then \
 		echo "Directory $(DOCS_DIR) already exists."; \

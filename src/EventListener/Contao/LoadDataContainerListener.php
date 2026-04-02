@@ -63,6 +63,7 @@ readonly class LoadDataContainerListener
             'tl_flare_list' => $this->listContainer,
         };
 
+        // @phpstan-ignore function.alreadyNarrowedType
         if (!\is_subclass_of($container, FlareCallbackContainerInterface::class)) {
             return;
         }

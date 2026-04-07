@@ -9,7 +9,6 @@ use Contao\Message;
 use Doctrine\DBAL\ParameterType;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\RuntimeValueContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
@@ -151,7 +150,6 @@ class BooleanElement extends AbstractFilterElement implements IntrinsicValueCont
     public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
     {
         $filter = $event->filter;
-        /** @mago-expect lint:no-nested-ternary This is fine. Just be clear that the ternary operator is intentional. */
         $event->options['label'] = $filter->label ?: $filter->title ?: 'CBX';
         $event->options['required'] = false;
     }

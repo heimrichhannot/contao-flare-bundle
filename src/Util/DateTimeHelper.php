@@ -58,8 +58,6 @@ class DateTimeHelper
 
     /**
      * Get the configured time zone or the system default.
-     *
-     * @mago-expect lint:no-nested-ternary The config fallback chain has to test for truthiness.
      */
     public static function getTimeZone(): \DateTimeZone
     {
@@ -94,7 +92,7 @@ class DateTimeHelper
 
     public static function maxTimestamp(): int
     {
-        return min(\PHP_INT_MAX, 4294967295);
+        return \min(\PHP_INT_MAX, 4_294_967_295);
     }
 
     public static function spanToTimeString(string $timeSpan): ?string

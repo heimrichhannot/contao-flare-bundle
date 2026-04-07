@@ -11,7 +11,6 @@ use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\EventListener\DataContainer\AutoTypePalettesCallback;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
-use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 
 /**

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Util;
 
 class Arr
@@ -32,11 +34,10 @@ class Arr
                     if (is_array($value) && $depth < $maxDepth)
                     {
                         $walk($value, $path, $depth + 1);
+                        continue;
                     }
-                    else
-                    {
-                        $result[$path] = $value;
-                    }
+
+                    $result[$path] = $value;
                 }
             };
 

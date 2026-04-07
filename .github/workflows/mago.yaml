@@ -11,7 +11,7 @@ on:
 
 jobs:
   mago:
-    name: Mago Checks (PHP ${{ matrix.php-version }})
+    name: Mago Linter (PHP ${{ matrix.php-version }})
     runs-on: ubuntu-latest
 
     strategy:

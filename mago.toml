@@ -25,6 +25,7 @@ no-assign-in-condition = { enabled = false }
 no-global = { enabled = false }
 no-hash-comment = { enabled = false }
 no-shorthand-ternary = { enabled = false }
+no-isset = { enabled = false }
 tagged-todo = { enabled = false }
 too-many-methods = { threshold = 20 }
 

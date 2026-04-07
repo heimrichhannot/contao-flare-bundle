@@ -6,7 +6,6 @@ namespace HeimrichHannot\FlareBundle\EventListener\Reader;
 
 use Contao\CoreBundle\String\HtmlDecoder;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
-use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 

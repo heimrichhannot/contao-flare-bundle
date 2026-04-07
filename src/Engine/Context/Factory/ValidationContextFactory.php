@@ -45,7 +45,7 @@ readonly class ValidationContextFactory
     public function createFromInteractiveView(InteractiveView $interactiveView): ValidationContext
     {
         $config = new ValidationContext(
-            entryCache: fn (): ?array => $interactiveView->issetEntries()
+            entryCache: static fn (): ?array => $interactiveView->issetEntries()
                     ? $interactiveView->getEntries()
                     : null,
         );

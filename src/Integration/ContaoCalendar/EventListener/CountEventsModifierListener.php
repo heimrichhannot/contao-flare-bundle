@@ -7,7 +7,6 @@ namespace HeimrichHannot\FlareBundle\Integration\ContaoCalendar\EventListener;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Event\ModifyListQueryStructEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
-use HeimrichHannot\FlareBundle\Query\SqlQueryStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;

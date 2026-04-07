@@ -1,0 +1,60 @@
+name: Mago
+
+on:
+  push:
+    branches-ignore:
+      - 'docs/**'
+    paths:
+      - '**.php'
+      - 'mago.toml'
+  workflow_dispatch: ~
+
+jobs:
+  mago:
+    name: Mago Linter (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3', '8.4']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: composer
+          coverage: none
+        env:
+          COMPOSER_ALLOW_SUPERUSER: 1
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Restore Composer cache
+        id: composer-cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ matrix.php-version }}-${{ hashFiles('composer.json') }}
+          restore-keys: composer-${{ matrix.php-version }}-
+
+      - name: Install dependencies
+        run: composer update --no-progress --prefer-dist
+
+      - name: Save Composer cache
+        if: always() && steps.composer-cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ matrix.php-version }}-${{ hashFiles('composer.json') }}
+
+      - name: Setup Mago
+        uses: nhedger/setup-mago@v1
+
+      - name: Run Mago Lint
+        run: mago lint --minimum-fail-level note --reporting-format github

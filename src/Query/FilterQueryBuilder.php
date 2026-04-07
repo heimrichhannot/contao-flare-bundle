@@ -187,8 +187,9 @@ class FilterQueryBuilder
                 if ($notInt = !\is_int($v)) {
                     $allInt = false;
                 }
+
                 // Allowed: scalar, null, object with __toString method
-                if ($notStr = !(\is_scalar($v) || \is_null($v) || (\is_object($v) && \method_exists($v, '__toString')))) {
+                if ($notStr = !(\is_scalar($v) || \is_null($v) || $v instanceof \Stringable)) {
                     $allStr = false;
                 }
 

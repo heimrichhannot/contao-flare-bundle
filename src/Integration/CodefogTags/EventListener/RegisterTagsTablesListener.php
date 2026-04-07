@@ -42,7 +42,7 @@ readonly class RegisterTagsTablesListener
         );
 
         if (\count($fields) > 1) {
-            $this->logger->warning("[FLARE] Multiple codefog tag fields are currently not supported (\"$table\").");
+            $this->logger->warning("[FLARE] Multiple codefog tag fields are currently not supported (\"{$table}\").");
             return;
         }
 

@@ -76,7 +76,6 @@ final readonly class Str
         callable|false|null $filter = null,
         ?callable           $format = null,
     ): string {
-        /** @mago-expect lint:no-boolean-literal-comparison We have to check for false specifically. */
         if ($filter !== false) {
             $pieces = \array_filter($pieces, $filter);
         }
@@ -115,10 +114,8 @@ final readonly class Str
             return $value ? 'true' : 'false';
         }
 
-        if (\is_scalar($value) // A value is considered scalar if it is of type int, float, string or bool.
-            || $value instanceof \Stringable
-            || (\is_object($value) && \method_exists($value, '__toString')))
-        {
+        // A value is considered scalar if it is of type int, float, string or bool.
+        if (\is_scalar($value) || $value instanceof \Stringable) {
             return (string) $value;
         }
 
@@ -246,7 +243,6 @@ final readonly class Str
 
             $lastSpace = \mb_strrpos($text, ' ');
 
-            /** @mago-expect lint:no-boolean-literal-comparison We have to check for false specifically. */
             if ($lastSpace !== false) {
                 $text = \mb_substr($text, 0, $lastSpace);
             }

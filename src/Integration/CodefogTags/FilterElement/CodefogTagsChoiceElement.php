@@ -52,10 +52,11 @@ class CodefogTagsChoiceElement extends AbstractFilterElement implements HydrateF
         if (\count($tagIds) === 1) {
             $qb->where($qb->expr()->eq($qb->column('id'), ':cfg_tag_id'))
                 ->setParameter('cfg_tag_id', \reset($tagIds), ParameterType::INTEGER);
-        } else {
-            $qb->where($qb->expr()->in($qb->column('id'), ':cfg_tag_ids'))
-                ->setParameter('cfg_tag_ids', $tagIds, ArrayParameterType::INTEGER);
+            return;
         }
+
+        $qb->where($qb->expr()->in($qb->column('id'), ':cfg_tag_ids'))
+            ->setParameter('cfg_tag_ids', $tagIds, ArrayParameterType::INTEGER);
     }
 
     public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void

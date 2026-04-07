@@ -4,6 +4,7 @@
 [![PHP Version](https://img.shields.io/packagist/dependency-v/heimrichhannot/contao-flare-bundle/php.svg)](https://packagist.org/packages/heimrichhannot/contao-flare-bundle)
 [![Contao Version](https://img.shields.io/packagist/dependency-v/heimrichhannot/contao-flare-bundle/contao/core-bundle.svg)](https://packagist.org/packages/heimrichhannot/contao-flare-bundle)
 [![PHPStan](https://github.com/heimrichhannot/contao-flare-bundle/actions/workflows/phpstan.yaml/badge.svg)](https://github.com/heimrichhannot/contao-flare-bundle/actions/workflows/phpstan.yaml)
+[![Mago](https://github.com/heimrichhannot/contao-flare-bundle/actions/workflows/mago.yaml/badge.svg)](https://github.com/heimrichhannot/contao-flare-bundle/actions/workflows/mago.yaml)
 
 A Contao CMS bundle for building filterable lists and detail pages — for news, events, or any DCA-based entity.
 

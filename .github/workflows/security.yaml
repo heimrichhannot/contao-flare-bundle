@@ -1,0 +1,68 @@
+name: Security
+
+on:
+  push:
+    branches-ignore:
+      - 'docs/**'
+  schedule:
+    - cron: '23 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  composer-audit:
+    name: Composer Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          tools: composer:v2
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Restore Composer cache
+        id: composer-cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-8.2-${{ hashFiles('composer.json') }}
+          restore-keys: composer-8.2-
+
+      - name: Install dependencies
+        run: composer update --no-progress --prefer-dist
+
+      - name: Save Composer cache
+        if: always() && steps.composer-cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-8.2-${{ hashFiles('composer.json') }}
+
+      - name: Run Composer audit
+        run: composer audit || true
+
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: semgrep scan --config "p/phpcs-security-audit" --config "p/security-audit" --error

@@ -11,8 +11,8 @@ on:
   workflow_dispatch: ~
 
 jobs:
-  phpstan:
-    name: PHPStan
+  analyse:
+    name: Static Analysis
     runs-on: ubuntu-latest
 
     steps:

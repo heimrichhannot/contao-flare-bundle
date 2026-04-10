@@ -239,10 +239,10 @@ class Paginator extends PaginatorConfig
     }
 
     public function with(
-        int      $itemsPerPage = null,
-        int      $currentPage = null,
-        int      $totalItems = null,
-        callable $urlGenerator = null,
+        ?int      $itemsPerPage = null,
+        ?int      $currentPage = null,
+        ?int      $totalItems = null,
+        ?callable $urlGenerator = null,
     ): self {
         return new self(
             itemsPerPage: $itemsPerPage ?? $this->itemsPerPage,

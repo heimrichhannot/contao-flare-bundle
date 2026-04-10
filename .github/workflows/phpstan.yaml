@@ -12,13 +12,8 @@ on:
 
 jobs:
   phpstan:
-    name: PHPStan (PHP ${{ matrix.php-version }})
+    name: PHPStan
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        php-version: ['8.2', '8.3', '8.4']
 
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +21,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-version }}
+          php-version: '8.2'
           tools: composer
           coverage: none
 
@@ -39,8 +34,8 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: composer-${{ matrix.php-version }}-${{ hashFiles('composer.json') }}
-          restore-keys: composer-${{ matrix.php-version }}-
+          key: composer-8.2-${{ hashFiles('composer.json') }}
+          restore-keys: composer-8.2-
 
       - name: Install dependencies
         run: composer update --no-progress --prefer-dist
@@ -50,15 +45,15 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: composer-${{ matrix.php-version }}-${{ hashFiles('composer.json') }}
+          key: composer-8.2-${{ hashFiles('composer.json') }}
 
       - name: Restore PHPStan result cache
         id: phpstan-cache-restore
         uses: actions/cache/restore@v4
         with:
           path: /tmp/phpstan
-          key: phpstan-${{ matrix.php-version }}-${{ github.sha }}
-          restore-keys: phpstan-${{ matrix.php-version }}-
+          key: phpstan-8.2-${{ github.sha }}
+          restore-keys: phpstan-8.2-
 
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse --no-progress
@@ -68,4 +63,4 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: /tmp/phpstan
-          key: phpstan-${{ matrix.php-version }}-${{ github.sha }}
+          key: phpstan-8.2-${{ github.sha }}

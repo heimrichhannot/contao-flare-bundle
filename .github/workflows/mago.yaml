@@ -11,13 +11,8 @@ on:
 
 jobs:
   mago:
-    name: Mago Linter (PHP ${{ matrix.php-version }})
+    name: Mago Linter
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        php-version: ['8.2', '8.3', '8.4']
 
     steps:
       - uses: actions/checkout@v4
@@ -25,7 +20,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-version }}
+          php-version: '8.2'
           tools: composer
           coverage: none
         env:
@@ -40,8 +35,8 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: composer-${{ matrix.php-version }}-${{ hashFiles('composer.json') }}
-          restore-keys: composer-${{ matrix.php-version }}-
+          key: composer-8.2-${{ hashFiles('composer.json') }}
+          restore-keys: composer-8.2-
 
       - name: Install dependencies
         run: composer update --no-progress --prefer-dist
@@ -51,10 +46,22 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: composer-${{ matrix.php-version }}-${{ hashFiles('composer.json') }}
+          key: composer-8.2-${{ hashFiles('composer.json') }}
 
       - name: Setup Mago
         uses: nhedger/setup-mago@v1
 
-      - name: Run Mago Lint
+      - name: Run Mago Lint (PHP 8.2)
         run: mago lint --minimum-fail-level note --reporting-format github
+        env:
+          MAGO_PHP_VERSION: '8.2'
+
+      - name: Run Mago Lint (PHP 8.3)
+        run: mago lint --minimum-fail-level note --reporting-format github
+        env:
+          MAGO_PHP_VERSION: '8.3'
+
+      - name: Run Mago Lint (PHP 8.4)
+        run: mago lint --minimum-fail-level note --reporting-format github
+        env:
+          MAGO_PHP_VERSION: '8.4'

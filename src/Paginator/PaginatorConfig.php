@@ -178,9 +178,9 @@ class PaginatorConfig implements \Countable, \Serializable, \Stringable
     }
 
     public function with(
-        int $itemsPerPage = null,
-        int $currentPage = null,
-        int $totalItems = null,
+        ?int $itemsPerPage = null,
+        ?int $currentPage = null,
+        ?int $totalItems = null,
     ): self {
         return new self(
             itemsPerPage: $itemsPerPage ?? $this->itemsPerPage,

@@ -1,4 +1,4 @@
-.PHONY: help docs-setup docs-remove php composer
+.PHONY: help docs-setup docs-remove php composer semgrep-sec
 
 # Configuration
 DOCS_DIR = docs
@@ -16,6 +16,9 @@ composer: ## Run composer command in docker
 
 phpstan: ## Run PHPStan static analysis
 	docker compose run --rm php vendor/bin/phpstan analyse --memory-limit=512M
+
+semgrep-sec: ## Run Semgrep security scanner
+	docker compose run --rm semgrep-sec
 
 docs-setup: ## Setup the Docusaurus worktree environment locally
 	@if [ -d "$(DOCS_DIR)" ]; then \

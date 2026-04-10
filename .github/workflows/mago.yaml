@@ -6,6 +6,7 @@ on:
       - 'docs/**'
     paths:
       - '**.php'
+      - 'composer.json'
       - 'mago.toml'
   workflow_dispatch: ~
 
@@ -65,3 +66,8 @@ jobs:
         run: mago lint --minimum-fail-level note --reporting-format github
         env:
           MAGO_PHP_VERSION: '8.4'
+
+      - name: Run Mago Lint (PHP 8.5)
+        run: mago lint --minimum-fail-level note --reporting-format github
+        env:
+          MAGO_PHP_VERSION: '8.5'

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Paginator;
 
+use Closure;
+
 class Paginator extends PaginatorConfig
 {
     public const DEFAULT_WINDOW_PADDING = 2;
@@ -244,6 +246,10 @@ class Paginator extends PaginatorConfig
         ?int      $totalItems = null,
         ?callable $urlGenerator = null,
     ): self {
+        if ($urlGenerator) {
+            $urlGenerator = $urlGenerator(...);
+        }
+
         return new self(
             itemsPerPage: $itemsPerPage ?? $this->itemsPerPage,
             currentPage: $currentPage ?? $this->currentPage,

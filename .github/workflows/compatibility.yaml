@@ -1,0 +1,44 @@
+name: Compatibility
+
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - 'docs/**'
+    paths:
+      - 'composer.json'
+  workflow_dispatch: ~
+
+jobs:
+  resolve:
+    name: PHP ${{ matrix.php }} / Contao ${{ matrix.dependency.contao }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    strategy:
+      matrix:
+        php: ['8.2', '8.3', '8.4', '8.5']
+        dependency:
+          - { contao: '4.13.*' }
+          - { contao: '5.3.*' }
+          - { contao: '5.7.*' }
+        exclude:
+          - { php: '8.2', dependency: { contao: '5.7.*' } }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Check dependency resolution
+        run: >-
+          composer update --dry-run --no-progress --prefer-dist
+          --with contao/core-bundle:${{ matrix.dependency.contao }}

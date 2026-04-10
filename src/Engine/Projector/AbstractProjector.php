@@ -20,14 +20,18 @@ use Psr\Container\ContainerInterface;
 use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Contracts\Service\Attribute\Required;
 use Symfony\Contracts\Service\ServiceSubscriberInterface;
-use Symfony\Contracts\Service\ServiceSubscriberTrait;
 
 abstract class AbstractProjector implements ProjectorInterface, ServiceSubscriberInterface
 {
-    use ServiceSubscriberTrait;
-
     protected ContainerInterface $container;
+
+    #[Required]
+    public function setContainer(ContainerInterface $container): void
+    {
+        $this->container = $container;
+    }
 
     public static function getSubscribedServices(): array
     {

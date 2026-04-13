@@ -264,7 +264,7 @@ class ArchiveElement extends BelongsToRelationElement implements HydrateFormCont
 
             foreach ($parents as $parent)
             {
-                $choices->add($parent->id, $parent);
+                $choices->add((string)$parent->id, $parent);
             }
 
             $event->options['required'] = (bool) $filter->isMandatory;

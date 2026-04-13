@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Form;
 
 use Contao\Model;
@@ -83,7 +85,7 @@ class ChoicesBuilder
     public function add(
         string                          $alias,
         Model|LabelableInterface|string $choice,
-        string|null                     $value = null,
+        mixed                           $value = null,
         string|null                     $group = null,
     ): static {
         $this->choices[$alias] = $choice;
@@ -225,9 +227,9 @@ class ChoicesBuilder
     public function buildChoiceLabel(mixed $choice, string $key, mixed $value): TranslatableMessage|string
     {
         $params = [
-            '%@choice%' => Str::force($choice),
-            '%@key%' => Str::force($key),
-            '%@value%' => Str::force($value),
+            '%@choice%' => Str::wrap($choice),
+            '%@key%' => Str::wrap($key),
+            '%@value%' => Str::wrap($value),
             '%@type%' => \gettype($choice),
             '%@class%' => \is_object($choice) ? \get_class($choice) : null,
         ];

@@ -1,31 +1,47 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Event;
 
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
+use HeimrichHannot\FlareBundle\Filter\FilterInvokerInterface;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class FilterElementInvokingEvent extends Event implements FlareDynamicEventInterface
+class FilterElementInvokingEvent extends Event
 {
+    /**
+     * @param FilterInvocation $invocation
+     * @param ContextInterface $context
+     * @param FilterInvokerInterface $invoker The callback to invoke.
+     * @param bool $shouldInvoke Whether the filter should be invoked.
+     */
     public function __construct(
-        private readonly FilterContext $filter,
-        private \Closure               $callback,
-        private bool                   $shouldInvoke,
+        private readonly FilterInvocation $invocation,
+        private readonly ContextInterface $context,
+        private FilterInvokerInterface    $invoker,
+        private bool                      $shouldInvoke,
     ) {}
 
-    public function getFilter(): FilterContext
+    public function getInvocation(): FilterInvocation
     {
-        return $this->filter;
+        return $this->invocation;
     }
 
-    public function getCallback(): callable
+    public function getContext(): ContextInterface
     {
-        return $this->callback;
+        return $this->context;
     }
 
-    public function setCallback(callable $callback): void
+    public function getInvoker(): FilterInvokerInterface
     {
-        $this->callback = $callback;
+        return $this->invoker;
+    }
+
+    public function setInvoker(FilterInvokerInterface $invoker): void
+    {
+        $this->invoker = $invoker;
     }
 
     public function shouldInvoke(): bool
@@ -36,10 +52,5 @@ class FilterElementInvokingEvent extends Event implements FlareDynamicEventInter
     public function setShouldInvoke(bool $shouldInvoke): void
     {
         $this->shouldInvoke = $shouldInvoke;
-    }
-
-    public function getEventName(): string
-    {
-        return "flare.filter_element.{$this->getFilter()->getFilterAlias()}.invoking";
     }
 }

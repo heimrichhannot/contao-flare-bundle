@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Enum;
 
 enum SqlEquationOperator: string
@@ -49,19 +51,19 @@ enum SqlEquationOperator: string
 
         if (!$includeIn)
         {
-            $cases = \array_filter($cases, static fn(SqlEquationOperator $case): bool => !\in_array($case, [
-                SqlEquationOperator::IN,
-                SqlEquationOperator::NOT_IN
+            $cases = \array_filter($cases, static fn (self $case): bool => !\in_array($case, [
+                self::IN,
+                self::NOT_IN,
             ], strict: true));
         }
 
         return \array_combine(
-            \array_map(static fn(SqlEquationOperator $case): string => $case->value, $cases),
-            \array_map(static fn(SqlEquationOperator $case): string => $case->getOperator(), $cases)
+            \array_map(static fn(self $case): string => $case->value, $cases),
+            \array_map(static fn(self $case): string => $case->getOperator(), $cases)
         );
     }
 
-    public static function match(SqlEquationOperator|string $operator): ?SqlEquationOperator
+    public static function match(self|string $operator): ?self
     {
         if ($operator instanceof self) {
             return $operator;
@@ -71,12 +73,33 @@ enum SqlEquationOperator: string
             return $from;
         }
 
-        foreach (self::cases() as $case) {
-            if (\strtoupper($case->name) === \strtoupper($operator)) {
-                return $case;
-            }
+        if ($from = self::tryFromSymbol($operator)) {
+            return $from;
+        }
+
+        $caseClass = self::class . '::' . \strtoupper(\preg_replace('/[^a-z]+/i', '_', $operator));
+
+        if (\defined($caseClass)) {
+            return \constant($caseClass);
         }
 
         return null;
+    }
+
+    public static function tryFromSymbol(string $symbol): ?self
+    {
+        return match ($symbol) {
+            '=' => self::EQUALS,
+            '!=', '<>', '=/=' => self::NOT_EQUALS,
+            '>' => self::GREATER_THAN,
+            '>=' => self::GREATER_THAN_EQUALS,
+            '<' => self::LESS_THAN,
+            '<=' => self::LESS_THAN_EQUALS,
+            'LIKE', '~' => self::LIKE,
+            'UNLIKE', '!~' => self::NOT_LIKE,
+            'IN', '∈' => self::IN,
+            'NI', '∉' => self::NOT_IN,
+            default => null,
+        };
     }
 }

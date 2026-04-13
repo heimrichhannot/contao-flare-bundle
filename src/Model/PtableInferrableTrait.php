@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Model;
 
-use HeimrichHannot\FlareBundle\Util\PtableInferrer;
+use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 
 trait PtableInferrableTrait
 {

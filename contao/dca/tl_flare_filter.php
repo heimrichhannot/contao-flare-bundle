@@ -4,10 +4,10 @@ use Contao\DataContainer;
 use Contao\DC_Table;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
 use HeimrichHannot\FlareBundle\Enum\BoolMode;
-use HeimrichHannot\FlareBundle\Manager\ListQueryManager;
+use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
+use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Util\BeActionsHelper;
 use HeimrichHannot\FlareBundle\Util\Str;
 
@@ -102,7 +102,6 @@ $dca['fields'] = [
         'exclude' => true,
         'filter' => true,
         'search' => true,
-        'reference' => &$GLOBALS['TL_LANG']['FLARE']['filter'],
         'eval' => [
             'mandatory' => true,
             'includeBlankOption' => true,
@@ -153,7 +152,7 @@ $dca['fields'] = [
         'inputType' => 'select',
         'exclude' => true,
         'filter' => true,
-        'default' => ListQueryManager::ALIAS_MAIN,
+        'default' => TableAliasRegistry::ALIAS_MAIN,
         'eval' => [
             'mandatory' => true,
             'includeBlankOption' => false,
@@ -162,13 +161,19 @@ $dca['fields'] = [
             'tl_class' => 'w50',
             'submitOnChange' => true,
         ],
-        'sql' => ['type' => 'string', 'length' => 128, 'default' => ListQueryManager::ALIAS_MAIN],
+        'sql' => ['type' => 'string', 'length' => 128, 'default' => TableAliasRegistry::ALIAS_MAIN],
     ],
     'preselect' => [
         'inputType' => 'text',
         'default' => null,
         'eval' => ['tl_class' => 'w100 clr'],
         'sql' => ['type' => 'blob', 'notnull' => false],
+    ],
+    'prefill' => [
+        'inputType' => 'text',
+        'default' => null,
+        'eval' => ['tl_class' => 'w100 clr', 'alwaysSave' => true],
+        'sql' => ['type' => 'text', 'notnull' => false],
     ],
     'isMandatory' => [
         'exclude' => true,
@@ -486,21 +491,27 @@ $dca['fields'] = [
         'search' => false,
         'inputType' => 'select',
         'options' => SqlEquationOperator::asOptions(false),
-        'eval' => ['mandatory' => true, 'maxlength' => 255, 'alwaysSave' => true, 'submitOnChange' => true],
+        'eval' => [
+            'mandatory' => true,
+            'maxlength' => 255,
+            'alwaysSave' => true,
+            'submitOnChange' => true,
+            'chosen' => true,
+        ],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
     'equationLeft' => [
         'exclude' => true,
         'search' => false,
         'inputType' => 'select',
-        'eval' => ['mandatory' => true, 'maxlength' => 255],
+        'eval' => ['mandatory' => true, 'maxlength' => 255, 'chosen' => true],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
     'equationRight' => [
         'exclude' => true,
         'search' => false,
         'inputType' => 'text',
-        'eval' => ['mandatory' => false, 'maxlength' => 255],
+        'eval' => ['mandatory' => false, 'maxlength' => 255, 'chosen' => true],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
     'placeholder' => [

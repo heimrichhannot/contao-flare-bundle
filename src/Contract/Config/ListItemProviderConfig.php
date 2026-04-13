@@ -1,17 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Contract\Config;
 
-use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 readonly class ListItemProviderConfig
 {
     public function __construct(
-        private ListModel $listModel,
+        private ListSpecification $listSpecification,
     ) {}
 
-    public function getListModel(): ListModel
+    public function getListSpecification(): ListSpecification
     {
-        return $this->listModel;
+        return $this->listSpecification;
     }
 }

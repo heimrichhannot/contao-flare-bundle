@@ -14,3 +14,40 @@ huh_flare:
         tl_news_archive:    '%%title%%'
         tl_user:            '%%username%% (%%name%%<%%email%%>)'
         tl_user_group:      '%%name%%'
+    search_stop_words:
+        de: [
+            'aber', 'als', 'also', 'am', 'an', 'ander', 'andere', 'anderem', 'anderen', 'anderer', 'anderes',
+            'auch', 'auf', 'aus', 'bei', 'bin', 'bis', 'bist', 'da', 'dadurch', 'daher', 'darum', 'das', 'dass',
+            'daß', 'dein', 'deine', 'deinem', 'deinen', 'deiner', 'deines', 'dem', 'den', 'der', 'des', 'dessen',
+            'deshalb', 'die', 'dies', 'diese', 'diesem', 'diesen', 'dieser', 'dieses', 'doch', 'dort', 'du',
+            'durch', 'ein', 'eine', 'einem', 'einen', 'einer', 'eines', 'er', 'es', 'euer', 'eure', 'eurem',
+            'euren', 'eurer', 'eures', 'für', 'hatte', 'hatten', 'hattest', 'hattet', 'hier', 'hinter', 'ich',
+            'ihr', 'ihre', 'ihrem', 'ihren', 'ihrer', 'ihres', 'euch', 'im', 'in', 'ist', 'ja', 'jede', 'jedem',
+            'jeden', 'jeder', 'jedes', 'jener', 'jenes', 'jetzt', 'kann', 'kannst', 'können', 'könnt', 'machen',
+            'mein', 'meine', 'meinem', 'meinen', 'meiner', 'meines', 'mit', 'muss', 'musst', 'müssen', 'müsst',
+            'nach', 'nachdem', 'nein', 'nicht', 'nun', 'oder', 'seid', 'sein', 'seine', 'seinem', 'seinen',
+            'seiner', 'seines', 'selbst', 'sich', 'sie', 'ihnen', 'sind', 'so', 'solche', 'solchem', 'solchen',
+            'solcher', 'solches', 'soll', 'sollte', 'sollten', 'sondern', 'sonst', 'über', 'um', 'und', 'uns',
+            'unser', 'unsere', 'unserem', 'unseren', 'unserer', 'unseres', 'unter', 'viel', 'vom', 'von', 'vor',
+            'wann', 'warum', 'was', 'weiter', 'weitere', 'wenn', 'wer', 'werde', 'werden', 'werdet', 'weshalb',
+            'wie', 'wieder', 'wieso', 'wir', 'wird', 'wirst', 'wo', 'woher', 'wohin', 'zu', 'zum', 'zur',
+            'zwar', 'zwischen'
+        ]
+        en: [
+            'a', 'an', 'and', 'or', 'not', 'no', 'nor', 'all', 'any', 'both', 'each', 'every', 'few', 'more', 'most',
+            'other', 'some', 'such', 'the', 'this', 'that', 'these', 'those', 'there', 'here', 'then', 'than', 'too',
+            'very', 'can', 'could', 'may', 'might', 'must', 'shall', 'should', 'will', 'would',
+            'i', 'me', 'my', 'mine', 'myself', 'you', 'your', 'yours', 'yourself', 'yourselves',
+            'he', 'him', 'his', 'himself', 'she', 'her', 'hers', 'herself', 'it', 'its', 'itself',
+            'we', 'us', 'our', 'ours', 'ourselves', 'they', 'them', 'their', 'theirs', 'themselves',
+            'who', 'whom', 'whose', 'which', 'what', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+            'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'of', 'at', 'by', 'for', 'with', 'about',
+            'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from',
+            'up', 'down', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'once', 'as', 'if', 'because',
+            'while', 'until', 'own', 'same', 'so', 'just'
+        ]
+
+twig:
+    globals:
+        flare_env: '@HeimrichHannot\FlareBundle\Util\Env'
+        flare_str: '@HeimrichHannot\FlareBundle\Util\Str'

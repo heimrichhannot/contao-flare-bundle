@@ -1,29 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\ListType;
 
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageMetaConfig;
-use HeimrichHannot\FlareBundle\Contract\Config\ReaderPageSchemaOrgConfig;
-use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageMetaContract;
-use HeimrichHannot\FlareBundle\Contract\ListType\ReaderPageSchemaOrgContract;
-use HeimrichHannot\FlareBundle\Contract\PaletteContract;
-use HeimrichHannot\FlareBundle\Dto\ReaderPageMetaDto;
+use HeimrichHannot\FlareBundle\Contract;
+use HeimrichHannot\FlareBundle\Query\SqlQueryStruct;
+use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 
-abstract class AbstractListType implements PaletteContract, ReaderPageMetaContract, ReaderPageSchemaOrgContract
+abstract class AbstractListType implements
+    Contract\PaletteContract,
+    Contract\ListType\ConfigureQueryContract
 {
     public function getPalette(PaletteConfig $config): ?string
     {
         return null;
     }
 
-    public function getReaderPageMeta(ReaderPageMetaConfig $config): ?ReaderPageMetaDto
-    {
-        return null;
-    }
+    public function configureTableRegistry(TableAliasRegistry $registry): void {}
 
-    public function getReaderPageSchemaOrg(ReaderPageSchemaOrgConfig $config): ?array
-    {
-        return null;
-    }
+    public function configureBaseQuery(SqlQueryStruct $struct): void {}
 }

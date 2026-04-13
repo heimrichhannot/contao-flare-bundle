@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
 use HeimrichHannot\FlareBundle\Registry\Descriptor\FlareCallbackDescriptor;
@@ -10,7 +12,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 
-class RegisterFlareCallbacksPass implements CompilerPassInterface
+final class RegisterFlareCallbacksPass implements CompilerPassInterface
 {
     use PriorityTaggedServiceTrait;
 

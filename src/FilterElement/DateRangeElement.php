@@ -1,16 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
+use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\Form\Type\DateRangeFilterType;
+use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 
 #[AsFilterElement(
-    alias: DateRangeElement::TYPE,
+    type: self::TYPE,
     palette: 'fieldGeneric',
     formType: DateRangeFilterType::class,
 )]
@@ -21,17 +23,16 @@ class DateRangeElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterContext $context, FilterQueryBuilder $qb): void
+    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
     {
-        $submittedData = $context->getSubmittedData();
-        $filterModel = $context->getFilterModel();
+        $value = $inv->getValue();
 
-        if (!$field = $filterModel->fieldGeneric) {
+        if (!$field = $inv->filter->fieldGeneric) {
             throw new FilterException('Set fieldGeneric in filter model.');
         }
 
-        $from = $submittedData['from'] ?? null;
-        $to = $submittedData['to'] ?? null;
+        $from = $value['from'] ?? null;
+        $to = $value['to'] ?? null;
 
         $colField = $qb->column($field);
 
@@ -46,10 +47,8 @@ class DateRangeElement extends AbstractFilterElement
         }
     }
 
-    public function getFormTypeOptions(FilterContext $context, ChoicesBuilder $choices): array
+    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
     {
-        return [
-            'required' => false,
-        ];
+        $event->options['required'] = false;
     }
 }

@@ -7,6 +7,7 @@
         "php": "^8.2",
         "ext-mbstring": "*",
         "contao/core-bundle": "^4.13 || ^5.0",
+        "composer/semver": "^3.4",
         "doctrine/dbal": "^2.13 || ^3.0",
         "mvo/contao-group-widget": "^1.5",
         "psr/log": "^1.0 || ^2.0 || ^3.0",
@@ -17,6 +18,10 @@
         "symfony/form": "^5.4 || ^6.0",
         "symfony/http-foundation": "^5.4 || ^6.0",
         "symfony/http-kernel": "^5.4 || ^6.0",
+        "symfony/options-resolver": "^5.4 || ^6.0",
+        "symfony/property-access": "^5.4 || ^6.0",
+        "symfony/property-info": "^5.4 || ^6.0",
+        "symfony/serializer": "^5.4 || ^6.0",
         "symfony/string": "^5.2 || ^6.0",
         "symfony/validator": "^5.4 || ^6.0",
         "twig/twig": "^3.0"
@@ -30,6 +35,10 @@
         "symfony/phpunit-bridge": "^5.4 || ^6.0",
         "phpstan/phpstan": "^1.10",
         "phpstan/phpstan-symfony": "^1.2"
+    },
+    "suggest": {
+        "codefog/tags-bundle": "FLARE integrates with Codefog Tags Bundle for tag-based filtering on any data container.",
+        "contao/calendar-bundle": "FLARE can be used to filter and list calendar events."
     },
     "autoload": {
         "psr-4": {

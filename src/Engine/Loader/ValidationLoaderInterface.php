@@ -1,0 +1,10 @@
+<?php
+
+namespace HeimrichHannot\FlareBundle\Engine\Loader;
+
+interface ValidationLoaderInterface
+{
+    public function fetchEntryById(int $id): ?array;
+
+    public function fetchEntryByAutoItem(string $autoItem): ?array;
+}

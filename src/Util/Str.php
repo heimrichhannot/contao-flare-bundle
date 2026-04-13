@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Util;
 
 use Contao\StringUtil;
 
-readonly class Str
+final readonly class Str
 {
     public const CHARS_ALPHA = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
     public const CHARS_ALPHA_LOWER = 'abcdefghijklmnopqrstuvwxyz';
@@ -17,7 +19,7 @@ readonly class Str
         string            $str,
         array|string|null $both = null,
         array|string|null $prefix = null,
-        array|string|null $suffix = null
+        array|string|null $suffix = null,
     ): string {
         if ($str === '') {
             return $str;
@@ -72,7 +74,7 @@ readonly class Str
         string              $glue,
         array               $pieces,
         callable|false|null $filter = null,
-        ?callable           $format = null
+        ?callable           $format = null,
     ): string {
         /** @mago-expect lint:no-boolean-literal-comparison We have to check for false specifically. */
         if ($filter !== false) {
@@ -84,32 +86,6 @@ readonly class Str
         }
 
         return \implode($glue, $pieces);
-    }
-
-    public static function formatAlias(string $alias): string
-    {
-        if (!\str_contains($alias, '\\')) {
-            return static::alphaNum(static::snakeCase($alias));
-        }
-
-        $arrAlias = \explode('\\', $alias);
-
-        $class = \array_pop($arrAlias);
-        $vendor = \array_shift($arrAlias);
-        $bundle = \array_shift($arrAlias);
-
-        if (!$vendor || !$class) {
-            throw new \InvalidArgumentException('Invalid alias format.');
-        }
-
-        $bundle = static::trimSubstrings($bundle ?? '', prefix: 'Contao', suffix: 'Bundle');
-        $class = static::trimSubstrings($class, suffix: ['Controller', 'Element', 'Filter']);
-
-        return static::implode(
-            '__',
-            \array_map(static::snakeCase(...), [$vendor, $bundle, $class]),
-            format: static::alphaNum(...)
-        );
     }
 
     /**
@@ -126,39 +102,42 @@ readonly class Str
 
     public static function isValidSqlName(?string $db_or_col_name): bool
     {
-        if (!$db_or_col_name) {
-            return false;
-        }
-
-        return (bool) preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $db_or_col_name);
+        return $db_or_col_name && \preg_match('/^[A-Za-z_]\w*$/', $db_or_col_name);
     }
 
-    public static function force(mixed $value): string
+    public static function wrap(mixed $value): string
     {
-        if (\is_scalar($value)) {
+        if (\is_null($value)) {
+            return 'null';
+        }
+
+        if (\is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if (\is_scalar($value) // A value is considered scalar if it is of type int, float, string or bool.
+            || $value instanceof \Stringable
+            || (\is_object($value) && \method_exists($value, '__toString')))
+        {
             return (string) $value;
         }
 
-        if (\is_string($value) || $value instanceof \Stringable) {
-            return (string) $value;
-        }
-
-        if (\is_array($value)) {
+        if (\is_iterable($value)) {
             return \sprintf(
                 '[%s]',
-                static::implode(',', \array_map(static::force(...), \iterator_to_array($value)))
+                \implode(',', \array_map(self::wrap(...), \iterator_to_array($value))),
             );
         }
 
-        if (\is_object($value) && \method_exists($value, '__toString')) {
-            return (string) $value;
+        if (\is_resource($value)) {
+            return \sprintf('resource(%s)', \get_resource_type($value));
         }
 
         if (\is_object($value)) {
-            return \get_class($value);
+            return \sprintf('object(%s)', \get_class($value));
         }
 
-        return \gettype($value);
+        return \sprintf('type(%s)', \gettype($value));
     }
 
     public static function random(int $length = 10, ?string $chars = null): string
@@ -174,7 +153,29 @@ readonly class Str
         return $rand;
     }
 
-    public static function getHeadline(array|string|null $headline, bool $withTags = false): ?string
+    public static function normalizeHeadline(array|string|null $headline): ?array
+    {
+        if (!$headline) {
+            return null;
+        }
+
+        $headline = StringUtil::deserialize($headline, true);
+
+        if (!isset($headline['tag_name']) && !isset($headline['unit'])
+            && !isset($headline['text']) && !isset($headline['value']))
+        {
+            return null;
+        }
+
+        return [
+            'tag_name' => $headline['tag_name'] ?? $headline['unit'] ?? 'h2',
+            'unit' => $headline['unit'] ?? $headline['tag_name'] ?? 'h2',
+            'text' => $headline['text'] ?? $headline['value'] ?? '',
+            'value' => $headline['value'] ?? $headline['text'] ?? '',
+        ];
+    }
+
+    public static function formatHeadline(array|string|null $headline, bool $withTags = false): ?string
     {
         if (!$headline) {
             return null;
@@ -188,24 +189,56 @@ readonly class Str
             return $headline ?: null;
         }
 
+        if (!\is_array($headline)) {
+            return null;
+        }
+
         $tagName = $headline['tag_name'] ?? $headline['unit'] ?? 'h2';
+
+        if (\is_numeric($tagName)) {
+            $tagName = "h{$tagName}";
+        }
+
         $value = $headline['text'] ?? $headline['value'] ?? '';
 
         return $withTags ? "<{$tagName}>{$value}</{$tagName}>" : $value;
     }
 
+    /**
+     * Converts an HTML string to a metadata-friendly string by removing tags and trimming content.
+     *
+     * This function cleans up an input string by performing the following actions:
+     * 1. Replacing multiple consecutive line breaks with a single newline character.
+     * 2. Stripping HTML tags from the string.
+     * 3. Replacing consecutive whitespace characters with a single space.
+     * 4. Decoding HTML entities in the string using UTF-8 encoding.
+     * 5. Optionally, truncating the string to the specified character limit, if provided,
+     *    ensuring the truncation respects word boundaries where possible.
+     * 6. Optionally, appending an ellipsis to the string if it was truncated.
+     * 7. Re-encoding the string as HTML entities with the specified flags.
+     *
+     * @param string $text The input text to be processed.
+     * @param int|null $charLimit Optional character limit for the output string. If null, no limit is applied.
+     * @param string|null $ellipsis Optional ellipsis string to be appended to the output string if it is truncated.
+     * @param int $flags Flags for encoding HTML entities. Defaults to ENT_QUOTES | ENT_HTML5.
+     *
+     * @return string The processed metadata-friendly string.
+     */
     public static function htmlToMeta(
-        string $text,
-        ?int   $charLimit = null,
-        int    $flags = \ENT_QUOTES | \ENT_HTML5,
+        string  $text,
+        ?int    $charLimit = null,
+        ?string $ellipsis = null,
+        int     $flags = \ENT_QUOTES | \ENT_HTML5,
     ): string {
         $trim = \function_exists('mb_trim') ? \mb_trim(...) : \trim(...);
 
         $text = \preg_replace('/(\r\n|\n|\r){2,}/', "\n", $text);
 
         $text = $trim(\strip_tags($text));
-        $text = \preg_replace('/\s+/', ' ', $text);
-        $text = \html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = (string) \preg_replace('/\s+/', ' ', $text);
+        $text = \html_entity_decode($text, \ENT_QUOTES | \ENT_HTML5, 'UTF-8');
+
+        $originalTextLength = \mb_strlen($text);
 
         if (!\is_null($charLimit) && \mb_strlen($text) > $charLimit)
         {
@@ -219,6 +252,50 @@ readonly class Str
             }
         }
 
-        return \htmlentities($trim($text), $flags, 'UTF-8');
+        $text = $trim($text);
+
+        if (!\is_null($ellipsis) && \mb_strlen($text) < $originalTextLength)
+        {
+            $ellipsis = \html_entity_decode($ellipsis, \ENT_QUOTES | \ENT_HTML5, 'UTF-8');
+
+            if (!\in_array(\mb_substr($text, -1), [$ellipsis, '.', '!', '?'], true))
+            {
+                $text .= $ellipsis;
+            }
+        }
+
+        return \htmlentities($text, $flags, 'UTF-8');
+    }
+
+    /**
+     * Returns the first non-empty string from a list of arguments, evaluating callable arguments if necessary.
+     *
+     * This function iterates through a list of arguments and performs the following operations:
+     * 1. If an argument is a callable, it executes the callable and uses its return value.
+     * 2. Checks if the argument is a non-empty string.
+     * 3. Returns the first non-empty string encountered.
+     * 4. If no non-empty string is found, the function returns null.
+     *
+     * @param string|callable|null ...$args A variable number of arguments to check. Each argument can be:
+     *                                      - A string,
+     *                                      - A callable returning a value,
+     *                                      - null.
+     *
+     * @return string|null The first non-empty string, or null if no such string is found.
+     */
+    public static function coalesce(string|callable|null ...$args): ?string
+    {
+        foreach ($args as $arg)
+        {
+            if (\is_callable($arg)) {
+                $arg = $arg();
+            }
+
+            if (\is_string($arg) && $arg !== '') {
+                return $arg;
+            }
+        }
+
+        return null;
     }
 }

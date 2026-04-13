@@ -1,9 +1,11 @@
 {% extends '@Contao/block_unsearchable.html5' %}
 
+{% set flare_list = flare.createView %}
+
 {% block content %}
     {% block filter %}
 
-        {% set form = flare|flare_form %}
+        {% set form = flare_list.form.createView %}
 
         {{ form_start(form) }}
         {{ form_widget(form) }}

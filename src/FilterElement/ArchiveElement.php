@@ -20,6 +20,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
+use HeimrichHannot\FlareBundle\InferPtable\PtableInferrableInterface;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -229,14 +230,18 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
     {
         $filter = $event->filter;
 
-        $filterModel = $filter->getDataSource();
-        if (!$filterModel instanceof FilterModel) {
+        $dataSource = $filter->getDataSource();
+        if (!$dataSource instanceof PtableInferrableInterface) {
             return;
         }
 
-        $inferrer = new PtableInferrer($filterModel, $event->list->dc);
+        $inferrer = new PtableInferrer($dataSource, $event->list->dc);
 
         $choices = $event->choicesBuilder->enable();
+
+        $event->options['required'] = (bool) $filter->isMandatory;
+        $event->options['multiple'] = (bool) $filter->isMultiple;
+        $event->options['expanded'] = (bool) $filter->isExpanded;
 
         if ($filter->hasEmptyOption)
         {
@@ -267,10 +272,6 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
             {
                 $choices->add((string) $parent->id, $parent);
             }
-
-            $event->options['required'] = (bool) $filter->isMandatory;
-            $event->options['multiple'] = (bool) $filter->isMultiple;
-            $event->options['expanded'] = (bool) $filter->isExpanded;
 
             return;
         }
@@ -320,10 +321,6 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
         }
 
         $choices->setModelSuffix('(%@name%)');
-
-        $event->options['required'] = (bool) $filter->isMandatory;
-        $event->options['multiple'] = (bool) $filter->isMultiple;
-        $event->options['expanded'] = (bool) $filter->isExpanded;
     }
 
     #[AsFilterCallback(self::TYPE, 'fields.preselect.load')]

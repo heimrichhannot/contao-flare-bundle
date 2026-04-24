@@ -36,6 +36,8 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
 {
     public const TYPE = 'flare_archive';
 
+    private array $_inferrer = [];
+
     public function __construct(
         private readonly ChoicesBuilderFactory $choicesBuilderFactory,
         private readonly BelongsToRelationElement $relationElement,
@@ -46,35 +48,13 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
      */
     public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
     {
-        $filerValue = $inv->getValue();
-
-        $inferrable = PtableInferrableFactory::createFromListModelLike($inv->list);
-        $inferrer = new PtableInferrer($inferrable, $inv->list->dc);
-
-        if ($filerValue && !\is_array($filerValue)) {
-            $filerValue = [$filerValue];
-        }
-
-        foreach ($filerValue ?? [] as $value)
-        {
-            if ($value === ChoicesBuilder::EMPTY_CHOICE) {
-                return; // todo: this is a bug, as the whitelisted parents should still be checked
-            }
-
-            if (!$value instanceof Model) {
-                $qb->abort();
-            }
-        }
+        $filerValue = $inv->getValue() ?? [];
+        $inferrer = $this->getPtableInferrer($inv->list);
 
         if ($inferrer->getDcaMainPtable())
         {
-            $filerValueIds = \array_map(static fn (Model $model): int => (int) $model->id, $filerValue ?? []);
+            $filerValueIds = \array_map(static fn (Model $model): int => (int) $model->id, $filerValue);
             $whitelist = $filerValueIds;
-
-            if (!$filerValueIds && $inv->filter->isIntrinsic())
-            {
-                return;
-            }
 
             if (!$inv->filter->isIntrinsic())
                 // Double-check that we are only filtering by whitelisted parents when the filter has a form value
@@ -83,9 +63,9 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
                     throw new FilterException('No whitelisted parents defined.');
                 }
 
-                $selectionRequired = !$inv->filter->isExpanded && !$inv->filter->hasEmptyOption;
+                $allowEmpty = !$inv->filter->hasEmptyOption || $inv->filter->isExpanded;
 
-                if ($filerValueIds && ((!$inv->filter->hasEmptyOption || $inv->filter->isExpanded) || \count($filerValueIds) > 0))
+                if ($filerValueIds && ($allowEmpty || \count($filerValueIds) > 0))
                     // we expect $filerValue to be an array of parent models
                     // if the empty option is enabled, an empty array is allowed // todo: double-check this logic
                 {
@@ -139,13 +119,18 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
             }
         }
 
-        $this->relationElement->filterDynamicPtableField($qb, $inv->filter, 'ptable', 'pid', $grouped);
+        $this->relationElement->filterDynamicPtableField(
+            qb: $qb,
+            filter: $inv->filter,
+            fieldDynamicPtable: 'ptable',
+            fieldPid: 'pid',
+            submittedData: $grouped,
+        );
     }
 
     public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): array
     {
-        $inferrable = PtableInferrableFactory::createFromListModelLike($list);
-        $inferrer = new PtableInferrer($inferrable, $list->dc);
+        $inferrer = $this->getPtableInferrer($list);
 
         if ($ptable = $inferrer->getDcaMainPtable())
         {
@@ -183,6 +168,71 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
         return $allParents;
     }
 
+    public function processRuntimeValue(mixed $value, ListSpecification $list, FilterDefinition $filter): array
+    {
+        $values = $this->normalizeFilterValue($value);
+
+        // If no value is selected, and the archives not only apply to form options,
+        //   we filter by all whitelisted archives.
+        $useFullWhitelist = !$values && !$filter->useWhitelistForOptionsOnly;
+
+        if ($useFullWhitelist || $values === true)
+            // Empty option selected -> also filter by all whitelisted archives.
+        {
+            // intrinsic value uses whitelist options
+            return $this->getIntrinsicValue($list, $filter);
+        }
+
+        if (!$values) {
+            return [];
+        }
+
+        $inferrer = $this->getPtableInferrer($list);
+        // todo: limit selection to whitelisted archives
+
+        return $values;
+    }
+
+    /**
+     * @return Model[]|true|null Returns true if the empty option is selected.
+     */
+    protected function normalizeFilterValue(mixed $value): array|true|null
+    {
+        if (!$value) {
+            return null;
+        }
+
+        if (!\is_iterable($value)) {
+            $value = [$value];
+        }
+
+        $arr = [];
+
+        foreach ($value as $v) {
+            if ($v === ChoicesBuilder::EMPTY_CHOICE) {
+                return true;
+            }
+
+            if ($v instanceof Model) {
+                $arr[] = $v;
+            }
+        }
+
+        return $arr;
+    }
+
+    private function getPtableInferrer(ListSpecification $list): PtableInferrer
+    {
+        $cacheKey = $list->hash();
+
+        if (isset($this->_inferrer[$cacheKey])) {
+            return $this->_inferrer[$cacheKey];
+        }
+
+        $inferrable = PtableInferrableFactory::createFromListModelLike($list);
+        return $this->_inferrer[$cacheKey] = new PtableInferrer($inferrable, $list->dc);
+    }
+
     public function getPalette(PaletteConfig $config): ?string
     {
         if (!$filterModel = $config->getFilterModel()) {
@@ -195,12 +245,12 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
 
         if ($inferrer->getDcaMainPtable())
         {
-            $palettes[] = '{archive_legend},whitelistParents,formatLabel';
+            $palettes[] = '{archive_legend},whitelistParents,formatLabel,useWhitelistForOptionsOnly';
         }
         /** @mago-expect lint:no-else-clause This else clause is fine. */
         elseif ($inferrer->isDcaDynamicPtable())
         {
-            $palettes[] = '{archive_legend},groupWhitelistParents';
+            $palettes[] = '{archive_legend},groupWhitelistParents,useWhitelistForOptionsOnly';
         }
 
         if (!$filterModel->intrinsic)

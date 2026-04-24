@@ -58,6 +58,7 @@ $lang['groupWhitelistParents'] = ['Zulässige Eltern-Archive definieren', 'Bitte
 $lang['formatLabel'] = ['Formatierung', 'Bitte wählen Sie eine Formatierung für die Anzeige.'];
 $lang['formatLabel_custom'] = 'Eigene Formatierung';
 $lang['formatLabelCustom'] = ['Eigene Formatierung', 'Bitte geben Sie eine Formatierung für die Anzeige ein.'];
+$lang['useWhitelistForOptionsOnly'] = ['Whitelist nur auf Formularoptionen anwenden', 'Aktiv: Whitelist begrenzt nur die im Filter angezeigten Archive. Ohne Auswahl im Formular werden auch Elemente aus anderen Archiven angezeigt.'];
 ###< archive_legend ###
 
 ###> form_legend ###

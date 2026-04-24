@@ -49,6 +49,7 @@ class ListSpecification
     {
         return \sha1(\serialize([
             $this->type,
+            $this->dc,
             $this->filters->hash(),
             'model' => $this->dataSource ? [
                 $this->dataSource->getListIdentifier(),

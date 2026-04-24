@@ -227,6 +227,19 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
+    'useWhitelistForOptionsOnly' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => false,
+            'tl_class' => 'cbx w50 m12'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
     'hasEmptyOption' => [
         'exclude' => true,
         'toggle' => true,

@@ -187,7 +187,7 @@ class InteractiveProjector extends AbstractProjector
         {
             $formName = $definition->getAlias();
             if ($formName && \array_key_exists($formName, $formData)) {
-                $values[$key] = $form->get($formName)->getViewData();
+                $values[$key] = $form->get($formName)->getData();
             }
         }
 

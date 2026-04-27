@@ -152,17 +152,15 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
     {
         $values = $this->normalizeFilterValue($value);
 
-        // If no value is selected, and the filter applies not only to form options,
-        //   we must filter by all whitelisted archives.
-        $useFullWhitelist = !$values && !$filter->useWhitelistForOptionsOnly;
+        // If no value is selected, or the empty option is selected, and the filter
+        // applies not only to form options, we must filter by all whitelisted archives.
+        $useFullWhitelist = (!$values || $values === true) && !$filter->useWhitelistForOptionsOnly;
 
-        if ($useFullWhitelist || $values === true)
-            // Empty option selected -> also filter by all whitelisted archives.
-        {
+        if ($useFullWhitelist) {
             return $this->getWhitelistedParents($list, $filter);
         }
 
-        if (!$values) {
+        if (!$values || $values === true) {
             return [];
         }
 

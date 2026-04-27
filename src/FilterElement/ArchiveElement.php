@@ -184,7 +184,7 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
             return $this->getWhitelistedParents($list, $filter);
         }
 
-        if (!$values || !\is_array($values)) {
+        if (!$values) {
             return [];
         }
 
@@ -203,10 +203,20 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
         }
 
         \array_walk($allowedParentIds, static fn (array &$ids): array => $ids = \array_flip($ids));
-
+        /**
+         * @var array<string, array<int, int>> $allowedParentIds 2D array mapping table names to parent IDs as keys.
+         *   I.e., flips the nested arrays to be lookup tables for efficient filtering.
+         * @example $allowedParentIds = array{
+         *    'tl_news_archive': [
+         *      5:  0,  // where 5 is the ID of the news archive
+         *      8:  1,  // ID 8
+         *      12: 2,  // ID 12
+         *    ]
+         *  }
+         */
         return \array_values(\array_filter(
             $values,
-            static fn (Model $model): bool => isset($allowedLookup[$model::getTable()][$model->id]),
+            static fn (Model $model): bool => isset($allowedParentIds[$model::getTable()][$model->id]),
         ));
     }
 

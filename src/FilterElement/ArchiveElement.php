@@ -63,10 +63,10 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
 
         if ($inferrer->getDcaMainPtable())
         {
-            $filerValueIds = \array_map(static fn (Model $model): int => (int) $model->id, $selectedModels);
+            $pids = \array_map(static fn (Model $model): int => (int) $model->id, $selectedModels);
 
             $qb->where($qb->expr()->in($qb->column('pid'), ':pidIn'))
-                ->setParameter('pidIn', $filerValueIds, ArrayParameterType::INTEGER);
+                ->setParameter('pidIn', $pids, ArrayParameterType::INTEGER);
 
             return;
         }

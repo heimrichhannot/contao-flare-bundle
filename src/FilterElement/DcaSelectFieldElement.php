@@ -10,6 +10,7 @@ use Contao\StringUtil;
 use Contao\System;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
@@ -27,7 +28,7 @@ use Symfony\Component\Form\FormInterface;
     type: self::TYPE,
     formType: ChoiceType::class,
 )]
-class DcaSelectFieldElement extends AbstractFilterElement implements HydrateFormContract
+class DcaSelectFieldElement extends AbstractFilterElement implements HydrateFormContract, IntrinsicValueContract
 {
     public const TYPE = 'flare_dcaSelectField';
 
@@ -38,40 +39,19 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
     {
         $options = $this->getOptions($inv->list, $inv->filter) ?? [];
 
-        /** @todo (@ericges): Refactor logic to use IntrinsicValueContract and RuntimeValueContract */
-
-        if ($inv->filter->isIntrinsic())
-        {
-            if (!$preselect = $this->getPreselectValue($inv->filter))
-            {
-                return;
-            }
-
-            if (!$selected = $options[$preselect] ?? null)
-            {
-                $qb->abort();
-            }
-        }
-
-        if (!$selected ??= $inv->getValue())
-        {
+        if (!$selected = $inv->getValue()) {
             return;
         }
 
-        $selected = \array_values((array) $selected);
-
-        if (!\count($selected))
-        {
+        if (!$selected = \array_values((array) $selected)) {
             return;
         }
 
-        if (!$targetField = $inv->filter->fieldGeneric)
-        {
+        if (!$options) {
             $qb->abort();
         }
 
-        if (!$options)
-        {
+        if (!$targetField = $inv->filter->fieldGeneric) {
             $qb->abort();
         }
 
@@ -119,7 +99,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
         }
 
         if (!\count($validOptions))
-            // of the submitted values, none is valid
+            // of the submitted values, none are valid
         {
             $qb->abort();
         }
@@ -144,6 +124,11 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
         }
 
         return $palette;
+    }
+
+    public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): mixed
+    {
+        return $this->getPreselectValue($filter);
     }
 
     public function getPreselectValue(FilterDefinition $filter): mixed

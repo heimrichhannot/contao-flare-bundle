@@ -13,7 +13,18 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ChoicesBuilder
 {
+    /**
+     * @api This is the 'choice' property of the empty option. Use as a placholder for a empty choice option.
+     */
     public const EMPTY_CHOICE = '__flare_empty__';
+    /**
+     * @api Use when no choice value shall be submitted when the empty option is selected.
+     */
+    public const EMPTY_CHOICE_VALUE_DEFAULT = '';
+    /**
+     * @api Use when a url parameter value is required.
+     */
+    public const EMPTY_CHOICE_VALUE_ALTERNATIVE = '__';
 
     /** @var array<string, Model|LabelableInterface|string> $choices */
     private array $choices = [];
@@ -25,6 +36,7 @@ class ChoicesBuilder
     private string $modelSuffix = '';
     private bool $enabled = false;
     private bool $emptyOption = false;
+    private string $emptyOptionValue = self::EMPTY_CHOICE_VALUE_DEFAULT;
     private LabelableInterface|string|null $emptyOptionLabel = null;
     private ?string $label = null;
     private array $mapTypeLabel = [];
@@ -147,17 +159,19 @@ class ChoicesBuilder
         return $this->emptyOption;
     }
 
-    public function setEmptyOption(LabelableInterface|string|bool|null $value): static
+    public function setEmptyOption(LabelableInterface|string|bool|null $state_or_label, ?string $value = null): static
     {
-        if (\is_bool($value))
+        $this->emptyOptionValue = $value ?? '';
+
+        if (\is_bool($state_or_label))
         {
-            $this->emptyOption = $value;
+            $this->emptyOption = $state_or_label;
 
             return $this;
         }
 
         $this->emptyOption = true;
-        $this->emptyOptionLabel = $value;
+        $this->emptyOptionLabel = $state_or_label;
 
         return $this;
     }
@@ -201,7 +215,7 @@ class ChoicesBuilder
         return function (mixed $choice): string {
             if ($choice === self::EMPTY_CHOICE)
             {
-                return '';
+                return $this->emptyOptionValue;
             }
 
             if (!$alias = \array_search($choice, $this->choices, true))
@@ -218,7 +232,7 @@ class ChoicesBuilder
         return function (mixed $choice, string $key, mixed $value): TranslatableMessage|string {
             if ($key === self::EMPTY_CHOICE)
             {
-                return $this->buildChoiceLabel($this->emptyOptionLabel, '', '');
+                return $this->buildChoiceLabel($this->emptyOptionLabel, '', $this->emptyOptionValue);
             }
 
             return $this->buildChoiceLabel($choice, $key, $value);
@@ -289,7 +303,7 @@ class ChoicesBuilder
         $options = [];
 
         if ($this->emptyOption) {
-            $options[''] = $this->buildChoiceLabel($this->emptyOptionLabel, '', '');
+            $options[''] = $this->buildChoiceLabel($this->emptyOptionLabel, '', $this->emptyOptionValue);
         }
 
         $labelFactory = $this->buildChoiceLabelCallback();

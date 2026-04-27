@@ -63,10 +63,12 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
 
         if ($inferrer->getDcaMainPtable())
         {
-            $pids = \array_map(static fn (Model $model): int => (int) $model->id, $selectedModels);
+            if (!$pids = \array_column($selectedModels, 'id')) {
+                throw new FilterException('No valid parent archive ids extracted.');
+            }
 
-            $qb->where($qb->expr()->in($qb->column('pid'), ':pidIn'))
-                ->setParameter('pidIn', $pids, ArrayParameterType::INTEGER);
+            $qb->where($qb->expr()->in($qb->column('pid'), ':pids'))
+                ->setParameter('pids', $pids, ArrayParameterType::INTEGER);
 
             return;
         }

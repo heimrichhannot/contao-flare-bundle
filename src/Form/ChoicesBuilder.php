@@ -17,7 +17,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 class ChoicesBuilder
 {
     /**
-     * @api This is the 'choice' property of the empty option. Use as a placholder for a empty choice option.
+     * @api This is the 'choice' property of the empty option. Use as a placeholder for a empty choice option.
      */
     public const EMPTY_CHOICE = '__flare_empty__';
     /**

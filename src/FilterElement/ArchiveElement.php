@@ -549,7 +549,7 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
             \array_push($allParents, ...$coll->getModels());
         }
 
-        return \array_values($allParents);
+        return $allParents;
     }
 
     public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void

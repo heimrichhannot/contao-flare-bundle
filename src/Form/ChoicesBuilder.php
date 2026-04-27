@@ -11,6 +11,9 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+/**
+ * @mago-expect lint:too-many-properties
+ */
 class ChoicesBuilder
 {
     /**

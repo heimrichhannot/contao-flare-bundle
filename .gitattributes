@@ -1,0 +1,56 @@
+# Auto-detect text files and normalize line endings on commit
+* text=auto eol=lf
+
+# Explicit text files
+*.php          text diff=php
+*.html         text diff=html
+*.html.twig    text
+*.twig         text
+*.css          text diff=css
+*.scss         text diff=css
+*.js           text
+*.json         text
+*.yaml         text
+*.yml          text
+*.xml          text
+*.xliff        text
+*.svg          text
+*.md           text diff=markdown
+*.neon         text
+*.toml         text
+*.dist         text
+*.sh           text eol=lf
+Makefile       text eol=lf
+Dockerfile     text eol=lf
+
+# Binary files
+*.png          binary
+*.jpg          binary
+*.jpeg         binary
+*.gif          binary
+*.ico          binary
+*.webp         binary
+*.woff         binary
+*.woff2        binary
+*.ttf          binary
+*.eot          binary
+*.otf          binary
+*.pdf          binary
+
+# Files excluded from the Composer distribution archive
+/.claude              export-ignore
+/.dockerignore        export-ignore
+/.editorconfig        export-ignore
+/.gitattributes       export-ignore
+/.github              export-ignore
+/.gitignore           export-ignore
+/.idea                export-ignore
+/AGENTS.md            export-ignore
+/Makefile             export-ignore
+/docker               export-ignore
+/docker-compose.yml   export-ignore
+/docs                 export-ignore
+/mago.toml            export-ignore
+/phpstan.neon         export-ignore
+/phpunit.xml.dist     export-ignore
+/tests                export-ignore

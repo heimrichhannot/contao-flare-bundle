@@ -15,11 +15,11 @@ class ViewException extends FlareException
     /**
      * @param class-string<ViewInterface> $expectedClass
      */
-    public static function create(string $expectedClass, mixed $var, ?string $method = null): static
+    public static function create(string $expectedClass, mixed $var, ?string $method = null): self
     {
         $type = \is_object($var) ? \get_class($var) : \get_debug_type($var);
 
-        return new static(
+        return new self(
             message: \sprintf('Expected instance of %s, got %s', $expectedClass, $type),
             method: $method
         );

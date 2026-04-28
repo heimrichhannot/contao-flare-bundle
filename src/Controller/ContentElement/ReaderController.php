@@ -23,6 +23,7 @@ use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
 use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Exception\ViewException;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
@@ -121,7 +122,14 @@ final class ReaderController extends AbstractContentElementController
             $engine = $this->engineFactory->createEngine($validationContext, $listSpec);
 
             $validationView = $engine->createView();
-            \assert($validationView instanceof ValidationView, 'Expected ValidationView');
+
+            if (!$validationView instanceof ValidationView) {
+                throw new ViewException(\sprintf(
+                    'Expected view to be instance of "%s", got "%s".',
+                    ValidationView::class,
+                    \get_class($validationView),
+                ));
+            }
 
             if (!$autoItemModel = $validationView->getModelByAutoItem($autoItem)) {
                 throw $this->createNotFoundException('No model found for the given auto_item.');

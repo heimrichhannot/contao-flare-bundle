@@ -8,7 +8,9 @@
             <details>
                 {# (entry.headline is defined) ? (entry.headline|flare_fmt_headline_value|default('<' ~ loop.index ~ '>')) : #}
                 <summary>#{{ entry.id }} {{ entry.title ?? (entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>')) }}</summary>
-                {{ dump(entry) }}
+                {% if app.debug %}
+                    {{ dump(entry) }}
+                {% endif %}
             </details>
         {% endfor %}
 

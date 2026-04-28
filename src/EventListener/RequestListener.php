@@ -18,6 +18,10 @@ readonly class RequestListener
 
     public function __invoke(RequestEvent $event): void
     {
+        if (!$event->isMainRequest()) {
+            return;
+        }
+
         $request = $event->getRequest();
 
         $this->scopeMatcher->isBackendRequest($request)

@@ -17,6 +17,9 @@ composer: ## Run composer command in docker
 phpstan: ## Run PHPStan static analysis
 	docker compose run --rm php vendor/bin/phpstan analyse --memory-limit=512M
 
+phpstan-pro: ## Run PHPStan static analysis in Pro GUI
+	docker compose run --rm -p 127.0.0.1:11111:11111 php vendor/bin/phpstan analyse --memory-limit=512M --pro
+
 semgrep-sec: ## Run Semgrep security scanner
 	docker compose run --rm semgrep-sec
 

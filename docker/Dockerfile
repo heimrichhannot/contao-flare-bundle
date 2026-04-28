@@ -39,4 +39,7 @@ ARG GROUP_ID=1000
 RUN addgroup -g ${GROUP_ID} dev && adduser -u ${USER_ID} -G dev -D dev
 USER dev
 
+ENV PHPSTAN_PRO_WEB_PORT=11111
+EXPOSE 11111
+
 ENTRYPOINT ["php"]

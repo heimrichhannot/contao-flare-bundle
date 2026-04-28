@@ -133,6 +133,7 @@ class InteractiveProjector extends AbstractProjector
 
         $filterElementRegistry = $this->getFilterElementRegistry();
 
+        $data = [];
         foreach ($list->getFilters()->getIterator() as $filterDefinition)
         {
             if (!$filterElement = $filterElementRegistry->get($filterDefinition->getType())?->getService()) {
@@ -172,7 +173,11 @@ class InteractiveProjector extends AbstractProjector
             }
 
             $filterElement->hydrateForm($field, $list, $filterDefinition);
+
+            $data[$filterName] = $field->getData();
         }
+
+        $form->setData(\array_merge($form->getData() ?? [], $data));
     }
 
     protected function mapFormDataToFilterKeys(ListSpecification $list, FormInterface $form): array
@@ -187,7 +192,7 @@ class InteractiveProjector extends AbstractProjector
         {
             $formName = $definition->getAlias();
             if ($formName && \array_key_exists($formName, $formData)) {
-                $values[$key] = $form->get($formName)->getViewData();
+                $values[$key] = $form->get($formName)->getData();
             }
         }
 

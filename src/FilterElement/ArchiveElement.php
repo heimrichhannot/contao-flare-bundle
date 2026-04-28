@@ -20,6 +20,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
+use HeimrichHannot\FlareBundle\InferPtable\PtableInferrableInterface;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -35,6 +36,8 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
 {
     public const TYPE = 'flare_archive';
 
+    private array $_inferrer = [];
+
     public function __construct(
         private readonly ChoicesBuilderFactory $choicesBuilderFactory,
         private readonly BelongsToRelationElement $relationElement,
@@ -45,60 +48,27 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
      */
     public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
     {
-        $filerValue = $inv->getValue();
+        /** @var Model[] $selectedModels */
+        $selectedModels = $inv->getValue() ?? [];
+        $inferrer = $this->getPtableInferrer($inv->list);
 
-        $inferrable = PtableInferrableFactory::createFromListModelLike($inv->list);
-        $inferrer = new PtableInferrer($inferrable, $inv->list->dc);
-
-        if ($filerValue && !\is_array($filerValue)) {
-            $filerValue = [$filerValue];
-        }
-
-        foreach ($filerValue ?? [] as $value)
+        if (!$selectedModels)
         {
-            if ($value === ChoicesBuilder::EMPTY_CHOICE) {
-                return; // todo: this is a bug, as the whitelisted parents should still be checked
+            if ($inv->filter->useWhitelistForOptionsOnly) {
+                return;
             }
 
-            if (!$value instanceof Model) {
-                $qb->abort();
-            }
+            $qb::abort();
         }
 
         if ($inferrer->getDcaMainPtable())
         {
-            $filerValueIds = \array_map(static fn (Model $model): int => (int) $model->id, $filerValue ?? []);
-            $whitelist = $filerValueIds;
-
-            if (!$filerValueIds && $inv->filter->isIntrinsic())
-            {
-                return;
+            if (!$pids = \array_column($selectedModels, 'id')) {
+                throw new FilterException('No valid parent archive ids extracted.');
             }
 
-            if (!$inv->filter->isIntrinsic())
-                // Double-check that we are only filtering by whitelisted parents when the filter has a form value
-            {
-                if (!$whitelist = StringUtil::deserialize($inv->filter->whitelistParents, true)) {
-                    throw new FilterException('No whitelisted parents defined.');
-                }
-
-                $selectionRequired = !$inv->filter->isExpanded && !$inv->filter->hasEmptyOption;
-
-                if ($filerValueIds && ((!$inv->filter->hasEmptyOption || $inv->filter->isExpanded) || \count($filerValueIds) > 0))
-                    // we expect $filerValue to be an array of parent models
-                    // if the empty option is enabled, an empty array is allowed // todo: double-check this logic
-                {
-                    $whitelist = \array_intersect(\array_map('\intval', $whitelist), $filerValueIds);
-
-                    if (!$whitelist)
-                    {
-                        $qb->abort();
-                    }
-                }
-            }
-
-            $qb->where($qb->expr()->in($qb->column('pid'), ':pidIn'))
-                ->setParameter('pidIn', $whitelist, ArrayParameterType::INTEGER);
+            $qb->where($qb->expr()->in($qb->column('pid'), ':pids'))
+                ->setParameter('pids', $pids, ArrayParameterType::INTEGER);
 
             return;
         }
@@ -110,41 +80,49 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
         }
 
         /**
-         * ## We are dealing with a _dynamic ptable_ henceforth.
+         * ## = We are dealing with a _dynamic ptable_. ⇒
          */
 
-        $grouped = null;
-        $filerValue = \array_filter((array) $filerValue);
+        $grouped = [];
+        $selectedModels = \array_filter((array) $selectedModels);
 
-        if ($filerValue || (!$inv->filter->isIntrinsic() && $inv->filter->hasEmptyOption))
-            // we expect $filerValue to be an array of values formatted {table}.{id}
-            // if hasEmptyOption is enabled, an empty array is allowed
+        foreach ($selectedModels as $item)
         {
-            $grouped = [];
-
-            foreach ($filerValue as $value)
-            {
-                if ($value instanceof Model) {
-                    $grouped[$value::getTable()][] = $value->id;
-                }
-
-                if (!\is_string($value) || !\str_contains($value, '.')) {  // skip invalid values
-                    continue;
-                }
-
-                [$table, $id] = \explode('.', $value, 2);
-
-                $grouped[$table][] = (int) $id;
+            if ($item instanceof Model) {
+                $grouped[$item::getTable()][] = $item->id;
             }
         }
 
-        $this->relationElement->filterDynamicPtableField($qb, $inv->filter, 'ptable', 'pid', $grouped);
+        $this->relationElement->filterDynamicPtableField(
+            qb: $qb,
+            filter: $inv->filter,
+            fieldDynamicPtable: 'ptable',
+            fieldPid: 'pid',
+            submittedData: $grouped,
+        );
     }
 
-    public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): array
+    protected function getWhitelistedParentIds(ListSpecification $list, FilterDefinition $filter): ?array
     {
-        $inferrable = PtableInferrableFactory::createFromListModelLike($list);
-        $inferrer = new PtableInferrer($inferrable, $list->dc);
+        $inferrer = $this->getPtableInferrer($list);
+
+        if ($inferrer->getDcaMainPtable())
+        {
+            return $this->getParentIdsFromWhitelistBlob($filter->whitelistParents);
+        }
+
+        if (!$inferrer->isDcaDynamicPtable())
+            // no valid ptable available
+        {
+            return [];
+        }
+
+        return $this->getParentIdsFromGroupWhitelistBlob($filter->groupWhitelistParents);
+    }
+
+    protected function getWhitelistedParents(ListSpecification $list, FilterDefinition $filter): array
+    {
+        $inferrer = $this->getPtableInferrer($list);
 
         if ($ptable = $inferrer->getDcaMainPtable())
         {
@@ -158,28 +136,106 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
             return [];
         }
 
-        if (!$groupWhitelist = StringUtil::deserialize($filter->groupWhitelistParents, true))
-        {
+        return $this->getParentsFromGroupWhitelistBlob($filter->groupWhitelistParents);
+    }
+
+    /**
+     * @return Model[]
+     */
+    public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): array
+    {
+        return $this->getWhitelistedParents($list, $filter);
+    }
+
+    /**
+     * @return Model[]
+     */
+    public function processRuntimeValue(mixed $value, ListSpecification $list, FilterDefinition $filter): array
+    {
+        $values = $this->normalizeFilterValue($value);
+
+        // If no value is selected, or the empty option is selected, and the filter
+        // applies not only to form options, we must filter by all whitelisted archives.
+        $useFullWhitelist = (!$values || $values === true) && !$filter->useWhitelistForOptionsOnly;
+
+        if ($useFullWhitelist) {
+            return $this->getWhitelistedParents($list, $filter);
+        }
+
+        if (!$values || $values === true) {
             return [];
         }
 
-        $allParents = [];
-
-        foreach ($groupWhitelist as $group)
-        {
-            $table = $group['tablePtable'] ?? null;
-            $whitelistParents = $group['whitelistParents'] ?? null;
-
-            if (!$table || !$whitelistParents) {
-                continue;
-            }
-
-            $parents = $this->getParentsFromWhitelistBlob($table, $whitelistParents)?->getModels() ?? [];
-
-            \array_push($allParents, ...$parents);
+        if (!$allowedParentIds = $this->getWhitelistedParentIds($list, $filter)) {
+            return [];
         }
 
-        return $allParents;
+        if (\array_is_list($allowedParentIds))
+        {
+            $allowedLookup = \array_flip($allowedParentIds);
+
+            return \array_values(\array_filter(
+                $values,
+                static fn (Model $model): bool => isset($allowedLookup[$model->id]),
+            ));
+        }
+
+        \array_walk($allowedParentIds, static fn (array &$ids): array => $ids = \array_flip($ids));
+        /**
+         * @var array<string, array<int, int>> $allowedParentIds 2D array mapping table names to parent IDs as keys.
+         *   I.e., flips the nested arrays to be lookup tables for efficient filtering.
+         * @example $allowedParentIds = array{
+         *    'tl_news_archive': [
+         *      5:  0,  // where 5 is the ID of the news archive
+         *      8:  1,  // ID 8
+         *      12: 2,  // ID 12
+         *    ]
+         *  }
+         */
+        return \array_values(\array_filter(
+            $values,
+            static fn (Model $model): bool => isset($allowedParentIds[$model::getTable()][$model->id]),
+        ));
+    }
+
+    /**
+     * @return Model[]|true|null Returns true if the empty option is selected, null if no value is selected.
+     */
+    protected function normalizeFilterValue(mixed $value): array|true|null
+    {
+        if (!$value) {
+            return null;
+        }
+
+        if (!\is_iterable($value)) {
+            $value = [$value];
+        }
+
+        $arr = [];
+
+        foreach ($value as $v) {
+            if ($v === ChoicesBuilder::EMPTY_CHOICE) {
+                return true;
+            }
+
+            if ($v instanceof Model) {
+                $arr[] = $v;
+            }
+        }
+
+        return $arr;
+    }
+
+    private function getPtableInferrer(ListSpecification $list): PtableInferrer
+    {
+        $cacheKey = $list->hash();
+
+        if (isset($this->_inferrer[$cacheKey])) {
+            return $this->_inferrer[$cacheKey];
+        }
+
+        $inferrable = PtableInferrableFactory::createFromListModelLike($list);
+        return $this->_inferrer[$cacheKey] = new PtableInferrer($inferrable, $list->dc);
     }
 
     public function getPalette(PaletteConfig $config): ?string
@@ -194,12 +250,12 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
 
         if ($inferrer->getDcaMainPtable())
         {
-            $palettes[] = '{archive_legend},whitelistParents,formatLabel';
+            $palettes[] = '{archive_legend},whitelistParents,formatLabel,useWhitelistForOptionsOnly';
         }
         /** @mago-expect lint:no-else-clause This else clause is fine. */
         elseif ($inferrer->isDcaDynamicPtable())
         {
-            $palettes[] = '{archive_legend},groupWhitelistParents';
+            $palettes[] = '{archive_legend},groupWhitelistParents,useWhitelistForOptionsOnly';
         }
 
         if (!$filterModel->intrinsic)
@@ -229,14 +285,18 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
     {
         $filter = $event->filter;
 
-        $filterModel = $filter->getDataSource();
-        if (!$filterModel instanceof FilterModel) {
+        $dataSource = $filter->getDataSource();
+        if (!$dataSource instanceof PtableInferrableInterface) {
             return;
         }
 
-        $inferrer = new PtableInferrer($filterModel, $event->list->dc);
+        $inferrer = new PtableInferrer($dataSource, $event->list->dc);
 
         $choices = $event->choicesBuilder->enable();
+
+        $event->options['required'] = (bool) $filter->isMandatory;
+        $event->options['multiple'] = (bool) $filter->isMultiple;
+        $event->options['expanded'] = (bool) $filter->isExpanded;
 
         if ($filter->hasEmptyOption)
         {
@@ -244,7 +304,11 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
                 ? $filter->formatEmptyOptionCustom
                 : $filter->formatEmptyOption;
 
-            $choices->setEmptyOption($emptyOptionLabel ?: true);
+            $emptyOptionValue = ($filter->isExpanded && $filter->isMultiple)
+                ? ChoicesBuilder::EMPTY_CHOICE_VALUE_ALTERNATIVE
+                : null;
+
+            $choices->setEmptyOption($emptyOptionLabel ?: true, $emptyOptionValue);
         }
 
         if ($ptable = $inferrer->getDcaMainPtable())
@@ -267,10 +331,6 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
             {
                 $choices->add((string) $parent->id, $parent);
             }
-
-            $event->options['required'] = (bool) $filter->isMandatory;
-            $event->options['multiple'] = (bool) $filter->isMultiple;
-            $event->options['expanded'] = (bool) $filter->isExpanded;
 
             return;
         }
@@ -320,10 +380,6 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
         }
 
         $choices->setModelSuffix('(%@name%)');
-
-        $event->options['required'] = (bool) $filter->isMandatory;
-        $event->options['multiple'] = (bool) $filter->isMultiple;
-        $event->options['expanded'] = (bool) $filter->isExpanded;
     }
 
     #[AsFilterCallback(self::TYPE, 'fields.preselect.load')]
@@ -394,7 +450,23 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
         return $value;
     }
 
-    public function getParentsFromWhitelistBlob(?string $table, ?string $blob): ?Collection
+    /**
+     * @return int[]|null
+     */
+    protected function getParentIdsFromWhitelistBlob(?string $blob): ?array
+    {
+        if (!$whitelist = StringUtil::deserialize($blob, true)) {
+            return null;
+        }
+
+        if (!$whitelist = \array_unique(\array_filter(\array_map('\intval', $whitelist)))) {
+            return null;
+        }
+
+        return \array_values($whitelist);
+    }
+
+    protected function getParentsFromWhitelistBlob(?string $table, ?string $blob): ?Collection
     {
         if (!$table || !$blob) {
             return null;
@@ -408,15 +480,76 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
             return null;
         }
 
-        if (!$whitelist = StringUtil::deserialize($blob, true)) {
-            return null;
-        }
-
-        if (!$whitelist = \array_unique(\array_filter(\array_map('\intval', $whitelist)))) {
-            return null;
-        }
+        $whitelist = $this->getParentIdsFromWhitelistBlob($blob);
 
         return $parentModelClass::findMultipleByIds($whitelist);
+    }
+
+    /**
+     * @return array<string, int[]> Returns an array mapping table names to parent IDs
+     */
+    protected function getParentIdsFromGroupWhitelistBlob(?string $blob): array
+    {
+        $groupWhitelist = StringUtil::deserialize($blob, true);
+
+        $tableToParentIds = [];
+
+        foreach ($groupWhitelist as $group)
+        {
+            if (!\is_array($group)) {
+                continue;
+            }
+
+            $table = $group['tablePtable'] ?? null;
+            $whitelistParentsBlob = $group['whitelistParents'] ?? null;
+
+            if (!$table || !$whitelistParentsBlob) {
+                continue;
+            }
+
+            if (!$parentIds = $this->getParentIdsFromWhitelistBlob($whitelistParentsBlob)) {
+                continue;
+            }
+
+            $tableToParentIds[$table] ??= [];
+            \array_push($tableToParentIds[$table], ...$parentIds);
+        }
+
+        return $tableToParentIds;
+    }
+
+    /**
+     * @param string|null $blob
+     * @return Model[]
+     */
+    protected function getParentsFromGroupWhitelistBlob(?string $blob): array
+    {
+        $tableToParentIds = $this->getParentIdsFromGroupWhitelistBlob($blob);
+
+        $allParents = [];
+
+        foreach ($tableToParentIds as $table => $parentIds)
+        {
+            if (!$parentModelClass = Model::getClassFromTable($table)) {
+                continue;
+            }
+
+            if (!\class_exists($parentModelClass)) {
+                continue;
+            }
+
+            if (!$parentIds = \array_unique($parentIds)) {
+                continue;
+            }
+
+            if (!$coll = $parentModelClass::findMultipleByIds($parentIds)) {
+                continue;
+            }
+
+            \array_push($allParents, ...$coll->getModels());
+        }
+
+        return $allParents;
     }
 
     public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void
@@ -440,6 +573,7 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
         };
 
         $data = [];
+        $fetch = [];
 
         foreach ($preselect as $entity)
         {
@@ -472,6 +606,16 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
 
             [$table, $id] = \explode('.', $entity, 2);
 
+            $fetch[$table] ??= [];
+            $fetch[$table][] = (int) $id;
+        }
+
+        foreach ($fetch as $table => $ids)
+        {
+            if (!$ids = \array_unique($ids)) {
+                continue;
+            }
+
             if (!$modelClass = Model::getClassFromTable($table)) {
                 continue;
             }
@@ -480,9 +624,11 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
                 continue;
             }
 
-            if ($model = $modelClass::findByPk($id)) {
-                $data[] = $model;
+            if (!$models = $modelClass::findMultipleByIds($ids)?->getModels()) {
+                continue;
             }
+
+            \array_push($data, ...$models);
         }
 
         $field->setData($data);

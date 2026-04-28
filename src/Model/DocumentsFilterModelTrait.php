@@ -25,6 +25,7 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property bool   $useStart
  * @property bool   $useStop
  * @property bool   $invertPublished
+ * @property bool   $useWhitelistForOptionsOnly
  * @property string $formatLabel
  * @property string $formatLabelCustom
  * @property string $formatEmptyOption

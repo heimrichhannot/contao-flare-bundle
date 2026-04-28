@@ -11,9 +11,55 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+/**
+ * Builds Symfony form choice configurations from Contao Models, {@see LabelableInterface}
+ * instances, or strings.
+ *
+ * Aggregates choices with optional values (and groups ffu), then produces the artifacts a Symfony
+ * ChoiceType field needs: a choices array via {@see buildChoices()}, a value callback via
+ * {@see buildChoiceValueCallback()}, and a label callback via {@see buildChoiceLabelCallback()}.
+ * For Contao-style option arrays, use {@see buildOptions()} instead.
+ *
+ * Labels are resolved against the `flare_form` translation domain. For a given choice, the first
+ * available source wins:
+ *   1. a per-class/per-table label set via {@see setLabelForClass()}, {@see setLabelForTable()},
+ *      or {@see setLabelForModel()};
+ *   2. the global label from {@see setLabel()};
+ *   3. a default from the `huh_flare.format_label_defaults` parameter, keyed by class or table;
+ *   4. the model's id (Model instances only) or a dash.
+ *
+ * String choices are translated directly. Null choices resolve to the `empty_option.ndash` key.
+ *
+ * Label translations receive the placeholders `%@choice%`, `%@key%`, `%@value%`, `%@type%`, and
+ * `%@class%`. Model choices additionally receive `%@table%`, `%@name%` (the translated
+ * `table.<table>` key), and one placeholder per row field as `%<field>%`. Choices implementing
+ * {@see LabelableInterface} may contribute further parameters via
+ * {@see LabelableInterface::getLabelParameters()}.
+ *
+ * An optional empty option is enabled via {@see setEmptyOption()}. It is rendered under the
+ * sentinel key {@see self::EMPTY_CHOICE} in {@see buildChoices()} (and under an empty-string key
+ * in {@see buildOptions()}), with its submitted value controlled by {@see setEmptyOptionValue()}.
+ * Use {@see self::EMPTY_CHOICE_VALUE_DEFAULT} for no value or
+ * {@see self::EMPTY_CHOICE_VALUE_ALTERNATIVE} when a non-empty URL parameter value is required.
+ *
+ * Group support ({@see addGroup()}, {@see removeGroup()}) is reserved and not yet implemented.
+ *
+ * @mago-expect lint:too-many-properties
+ */
 class ChoicesBuilder
 {
+    /**
+     * @api This is the 'choice' property of the empty option. Use as a placeholder for a empty choice option.
+     */
     public const EMPTY_CHOICE = '__flare_empty__';
+    /**
+     * @api Use when no choice value shall be submitted when the empty option is selected.
+     */
+    public const EMPTY_CHOICE_VALUE_DEFAULT = '';
+    /**
+     * @api Use when a url parameter value is required.
+     */
+    public const EMPTY_CHOICE_VALUE_ALTERNATIVE = '__';
 
     /** @var array<string, Model|LabelableInterface|string> $choices */
     private array $choices = [];
@@ -25,6 +71,7 @@ class ChoicesBuilder
     private string $modelSuffix = '';
     private bool $enabled = false;
     private bool $emptyOption = false;
+    private string $emptyOptionValue = self::EMPTY_CHOICE_VALUE_DEFAULT;
     private LabelableInterface|string|null $emptyOptionLabel = null;
     private ?string $label = null;
     private array $mapTypeLabel = [];
@@ -34,6 +81,7 @@ class ChoicesBuilder
         private readonly ParameterBagInterface $parameterBag,
     ) {}
 
+    /** @api */
     public function setLabelForTable(?string $label, string $table): self
     {
         if (!$class = Model::getClassFromTable($table)) {
@@ -45,6 +93,7 @@ class ChoicesBuilder
         return $this;
     }
 
+    /** @api */
     public function setLabelForModel(?string $label, Model $model): self
     {
         $this->mapTypeLabel[$model::class] = $label;
@@ -52,6 +101,7 @@ class ChoicesBuilder
         return $this;
     }
 
+    /** @api */
     public function setLabelForClass(?string $label, string $class): self
     {
         if (!$class) {
@@ -71,6 +121,7 @@ class ChoicesBuilder
         return $this;
     }
 
+    /** @api */
     public function setLabel(?string $label): self
     {
         $this->label = $label;
@@ -78,11 +129,13 @@ class ChoicesBuilder
         return $this;
     }
 
+    /** @api */
     public function getChoice(string $key): Model|LabelableInterface|string|null
     {
         return $this->choices[$key] ?? null;
     }
 
+    /** @api */
     public function add(
         string                          $alias,
         Model|LabelableInterface|string $choice,
@@ -102,6 +155,7 @@ class ChoicesBuilder
         return $this;
     }
 
+    /** @interal Functionality not yet implemented. */
     public function addGroup(string $key, string $label): static
     {
         $this->groups[$key] = $label;
@@ -109,6 +163,7 @@ class ChoicesBuilder
         return $this;
     }
 
+    /** @interal Functionality not yet implemented. */
     public function removeGroup(string $key): static
     {
         unset($this->groups[$key]);
@@ -116,6 +171,7 @@ class ChoicesBuilder
         return $this;
     }
 
+    /** @api */
     public function setEnabled(bool $enabled): static
     {
         $this->enabled = $enabled;
@@ -123,11 +179,13 @@ class ChoicesBuilder
         return $this;
     }
 
+    /** @api */
     public function isEnabled(): bool
     {
         return $this->enabled;
     }
 
+    /** @api */
     public function enable(): static
     {
         $this->enabled = true;
@@ -135,6 +193,7 @@ class ChoicesBuilder
         return $this;
     }
 
+    /** @api */
     public function disable(): static
     {
         $this->enabled = false;
@@ -147,21 +206,35 @@ class ChoicesBuilder
         return $this->emptyOption;
     }
 
-    public function setEmptyOption(LabelableInterface|string|bool|null $value): static
+    /** @api */
+    public function setEmptyOption(LabelableInterface|string|bool|null $state_or_label, ?string $value = null): static
     {
-        if (\is_bool($value))
+        if (!\is_null($value)) {
+            $this->emptyOptionValue = $value;
+        }
+
+        if (\is_bool($state_or_label))
         {
-            $this->emptyOption = $value;
+            $this->emptyOption = $state_or_label;
 
             return $this;
         }
 
         $this->emptyOption = true;
-        $this->emptyOptionLabel = $value;
+        $this->emptyOptionLabel = $state_or_label;
 
         return $this;
     }
 
+    /** @api */
+    public function setEmptyOptionValue(string $value): static
+    {
+        $this->emptyOptionValue = $value;
+
+        return $this;
+    }
+
+    /** @api */
     public function setModelSuffix(string $modelSuffix): static
     {
         $this->modelSuffix = $modelSuffix;
@@ -169,16 +242,19 @@ class ChoicesBuilder
         return $this;
     }
 
+    /** @api */
     public function getModelSuffix(): string
     {
         return $this->modelSuffix;
     }
 
+    /** @api */
     public function count(): int
     {
         return \count($this->choices);
     }
 
+    /** @api */
     public function buildChoices(): array
     {
         $choices = [];
@@ -196,12 +272,13 @@ class ChoicesBuilder
         return $choices;
     }
 
+    /** @api */
     public function buildChoiceValueCallback(): callable
     {
         return function (mixed $choice): string {
             if ($choice === self::EMPTY_CHOICE)
             {
-                return '';
+                return $this->emptyOptionValue;
             }
 
             if (!$alias = \array_search($choice, $this->choices, true))
@@ -213,18 +290,20 @@ class ChoicesBuilder
         };
     }
 
+    /** @api */
     public function buildChoiceLabelCallback(): callable
     {
         return function (mixed $choice, string $key, mixed $value): TranslatableMessage|string {
             if ($key === self::EMPTY_CHOICE)
             {
-                return $this->buildChoiceLabel($this->emptyOptionLabel, '', '');
+                return $this->buildChoiceLabel($this->emptyOptionLabel, '', $this->emptyOptionValue);
             }
 
             return $this->buildChoiceLabel($choice, $key, $value);
         };
     }
 
+    /** @api */
     public function buildChoiceLabel(mixed $choice, string $key, mixed $value): TranslatableMessage|string
     {
         $params = [
@@ -283,13 +362,15 @@ class ChoicesBuilder
 
     /**
      * Builds the Contao-compatible options array for a form field.
+     *
+     * @api
      */
     public function buildOptions(): array
     {
         $options = [];
 
         if ($this->emptyOption) {
-            $options[''] = $this->buildChoiceLabel($this->emptyOptionLabel, '', '');
+            $options[''] = $this->buildChoiceLabel($this->emptyOptionLabel, '', $this->emptyOptionValue);
         }
 
         $labelFactory = $this->buildChoiceLabelCallback();
@@ -305,6 +386,7 @@ class ChoicesBuilder
 
     /**
      * @param class-string $type
+     * @internal
      */
     private function tryGetTypeLabel(string $type): ?string
     {
@@ -313,6 +395,7 @@ class ChoicesBuilder
 
     /**
      * @param class-string $type
+     * @internal
      */
     private function tryGetDefaultTypeLabel(string $type): ?string
     {
@@ -327,6 +410,7 @@ class ChoicesBuilder
 
     /**
      * @param class-string $class
+     * @internal
      */
     private function tryGetTableFromClass(string $class): ?string
     {

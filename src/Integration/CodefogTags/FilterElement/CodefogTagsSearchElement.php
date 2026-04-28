@@ -24,4 +24,9 @@ class CodefogTagsSearchElement extends AbstractFilterElement
     {
         // TODO: Implement __invoke() method.
     }
+
+    public function isSupported(): bool
+    {
+        return false;
+    }
 }

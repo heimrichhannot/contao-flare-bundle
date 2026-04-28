@@ -124,11 +124,7 @@ final class ReaderController extends AbstractContentElementController
             $validationView = $engine->createView();
 
             if (!$validationView instanceof ValidationView) {
-                throw new ViewException(\sprintf(
-                    'Expected view to be instance of "%s", got "%s".',
-                    ValidationView::class,
-                    \get_class($validationView),
-                ));
+                throw ViewException::create(ValidationView::class, $validationView, __METHOD__);
             }
 
             if (!$autoItemModel = $validationView->getModelByAutoItem($autoItem)) {

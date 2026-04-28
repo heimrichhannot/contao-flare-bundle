@@ -15,6 +15,7 @@ use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\ValidationContextFactory;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
+use HeimrichHannot\FlareBundle\Exception\ViewException;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
@@ -101,7 +102,14 @@ readonly class BreadcrumbListener
 
             $validationProjector = $this->projectorRegistry->getProjectorFor($listSpec, $validationContext);
             $validationView = $validationProjector->project($listSpec, $validationContext);
-            \assert($validationView instanceof ValidationView, 'Expected ValidationView');
+
+            if (!$validationView instanceof ValidationView) {
+                throw new ViewException(\sprintf(
+                    'Expected view to be instance of "%s", got "%s".',
+                    ValidationView::class,
+                    \get_class($validationView),
+                ));
+            }
 
             if (!$autoItemModel = $validationView->getModelByAutoItem($autoItem)) {
                 return $items;

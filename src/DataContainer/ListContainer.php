@@ -144,7 +144,7 @@ class ListContainer implements FlareCallbackContainerInterface
         }
 
         // if no data container is set, use the default data container of the list type
-        $expectedDataContainer ??= $listTypeConfig->getAttributes()['dc'] ?? '';
+        $expectedDataContainer ??= $listTypeConfig->getDataContainer();
 
         if (!$expectedDataContainer) {
             throw new BadRequestHttpException('No data container found for list type ' . $type);

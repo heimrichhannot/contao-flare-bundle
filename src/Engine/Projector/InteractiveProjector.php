@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
+use HeimrichHannot\FlareBundle\Contract\FilterElement\FormDataContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\AggregationContextFactory;
@@ -21,6 +22,7 @@ use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\Exception\OutOfBoundsException;
 use Symfony\Component\Form\FormInterface;
@@ -33,6 +35,7 @@ class InteractiveProjector extends AbstractProjector
     public function __construct(
         private readonly AggregationContextFactory $aggregationConfigFactory,
         private readonly FilterFormFactory         $filterFormFactory,
+        private readonly FilterElementRegistry     $filterElementRegistry,
         private readonly LoaderFactory             $loaderFactory,
         private readonly PaginatorFactory          $paginatorFactory,
         private readonly ReaderUrlGeneratorFactory $readerUrlGeneratorFactory,
@@ -177,23 +180,32 @@ class InteractiveProjector extends AbstractProjector
             $data[$filterName] = $field->getData();
         }
 
-        $form->setData(\array_merge($form->getData() ?? [], $data));
+        // This might not be necessary, but we keep it here for reference.
+        // $form->setData(\array_merge($form->getData() ?? [], $data));
     }
 
     protected function mapFormDataToFilterKeys(ListSpecification $list, FormInterface $form): array
     {
-        if (!$formData = $form->getData()) {
-            return [];
-        }
-
         $values = [];
 
         foreach ($list->getFilters()->all() as $key => $definition)
         {
-            $formName = $definition->getAlias();
-            if ($formName && \array_key_exists($formName, $formData)) {
-                $values[$key] = $form->get($formName)->getData();
+            $alias = $definition->getAlias();
+
+            if (\is_null($alias)) {
+                continue;
             }
+
+            if (!$form->has($alias)) {
+                continue;
+            }
+
+            $field = $form->get($alias);
+            $filterElement = $this->filterElementRegistry->get($definition->getType())?->getService();
+
+            $values[$key] = $filterElement instanceof FormDataContract
+                ? $filterElement->extractFormData($field)
+                : $field->getData();
         }
 
         return $values;

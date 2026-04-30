@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
+use HeimrichHannot\FlareBundle\Contract\FilterElement\FormDataContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\AggregationContextFactory;
@@ -177,23 +178,34 @@ class InteractiveProjector extends AbstractProjector
             $data[$filterName] = $field->getData();
         }
 
+        // This might not be necessary, but $form->getData() should return all child data as well.
         $form->setData(\array_merge($form->getData() ?? [], $data));
     }
 
     protected function mapFormDataToFilterKeys(ListSpecification $list, FormInterface $form): array
     {
-        if (!$formData = $form->getData()) {
-            return [];
-        }
-
         $values = [];
+
+        $filterElementRegistry = $this->getFilterElementRegistry();
 
         foreach ($list->getFilters()->all() as $key => $definition)
         {
-            $formName = $definition->getAlias();
-            if ($formName && \array_key_exists($formName, $formData)) {
-                $values[$key] = $form->get($formName)->getData();
+            $alias = $definition->getAlias();
+
+            if (\is_null($alias)) {
+                continue;
             }
+
+            if (!$form->has($alias)) {
+                continue;
+            }
+
+            $field = $form->get($alias);
+            $filterElement = $filterElementRegistry->get($definition->getType())?->getService();
+
+            $values[$key] = $filterElement instanceof FormDataContract
+                ? $filterElement->extractFormData($field)
+                : $field->getData();
         }
 
         return $values;

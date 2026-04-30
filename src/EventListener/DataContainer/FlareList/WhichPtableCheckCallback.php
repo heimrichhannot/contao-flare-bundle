@@ -35,8 +35,6 @@ readonly class WhichPtableCheckCallback
         {
             $inferrer = new PtableInferrer($listModel, $listModel->dc);
 
-            $inferrer->infer();
-
             if (!$inferrer->isAutoInferable())
             {
                 $listModel->whichPtable_disableAutoOption();

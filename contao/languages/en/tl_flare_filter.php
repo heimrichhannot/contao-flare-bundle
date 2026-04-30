@@ -58,6 +58,7 @@ $lang['groupWhitelistParents'] = ['Define allowed parent archives', 'Please choo
 $lang['formatLabel'] = ['Formatting', 'Please select a formatting option for display.'];
 $lang['formatLabel_custom'] = 'Custom formatting';
 $lang['formatLabelCustom'] = ['Custom formatting', 'Please enter a formatting rule for display.'];
+$lang['useWhitelistForOptionsOnly'] = ['Apply whitelist to form options only', 'Active: the whitelist only restricts the archives shown in the filter. Without a selection in the form, items from other archives are also displayed.'];
 ###< archive_legend ###
 
 ###> form_legend ###
@@ -71,6 +72,7 @@ $lang['formatEmptyOption'] = ['Display empty option as', 'Please select a format
 $lang['formatEmptyOption_custom'] = 'Custom formatting';
 $lang['formatEmptyOptionCustom'] = ['Empty option formatting', 'Please enter a text or label format for the empty option.'];
 $lang['preselect'] = ['Preselection', 'Specify which values should be preselected.'];
+$lang['prefill'] = ['Prefill', 'Specify the text to prefill the field content with.'];
 $lang['placeholder'] = ['Placeholder', 'Please enter a placeholder text.'];
 $lang['label'] = ['Label', 'Please enter a label for the field.'];
 ###< form_legend ###

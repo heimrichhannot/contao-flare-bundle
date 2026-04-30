@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\FormDataContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\FormTypeOptionsContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\RuntimeValueContract;
 use HeimrichHannot\FlareBundle\Contract\IsSupportedContract;
@@ -16,6 +17,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterInvokerInterface;
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
@@ -27,7 +29,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *  }
  */
 abstract class AbstractFilterElement implements FilterInvokerInterface, OptionsInterface,
-    FormTypeOptionsContract, IsSupportedContract, PaletteContract, RuntimeValueContract
+    FormDataContract, FormTypeOptionsContract, IsSupportedContract, PaletteContract, RuntimeValueContract
 {
     /**
      * @var FormOptionsShape|string[] Defines which filter-model fields to use for auto-generating form type options.
@@ -52,7 +54,8 @@ abstract class AbstractFilterElement implements FilterInvokerInterface, OptionsI
      * Creates default form type options based on default filter model fields and the given config.
      *
      * @param FilterDefinition $filter The filter definition.
-     * @param array<string, mixed>|array<int, string>|array<int|string, mixed>|FormOptionsShape|list<key-of<FormOptionsShape>> $config The config to use.
+     * @param array<string, mixed>|array<int, string>|array<int|string,
+     *     mixed>|FormOptionsShape|list<key-of<FormOptionsShape>> $config The config to use.
      *
      * @return array
      *
@@ -100,6 +103,11 @@ abstract class AbstractFilterElement implements FilterInvokerInterface, OptionsI
     }
 
     public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void {}
+
+    public function extractFormData(FormInterface $form): mixed
+    {
+        return $form->getData();
+    }
 
     public function isSupported(): bool
     {

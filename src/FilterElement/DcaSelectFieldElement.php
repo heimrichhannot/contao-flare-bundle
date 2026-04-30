@@ -138,6 +138,11 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
             : $filter->preselect;
     }
 
+    public function extractFormData(FormInterface $form): mixed
+    {
+        return $form->getViewData();
+    }
+
     public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void
     {
         if ($field->isSubmitted()) {

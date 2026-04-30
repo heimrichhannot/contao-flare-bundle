@@ -55,6 +55,10 @@ $lang['whichPtable_options'] = [
 ];
 ###< parent_legend ###
 
+###> advanced_legend ###
+$lang['advanced_legend'] = 'Advanced Settings';
+###< advanced_legend ###
+
 ###> comments_legend ###
 $lang['comments_legend'] = 'Comment Settings';
 $lang['comments_enabled'] = ['Enable Comments', 'Enable the comment function for entries of this list.'];

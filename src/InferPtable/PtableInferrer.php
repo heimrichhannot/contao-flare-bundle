@@ -103,7 +103,8 @@ final class PtableInferrer
 
     /**
      * @throws InferenceException
-     * @deprecated Use {@see self::getInferredPtable()} instead. Return type will change to void. Visibility will change to private.
+     * @deprecated Use {@see self::getInferredPtable()} instead. Return type will change to void. Visibility will
+     *     change to private.
      */
     #[\ReturnTypeWillChange]
     public function infer(): ?string
@@ -112,7 +113,12 @@ final class PtableInferrer
             return $this->inferredPtable ?? null;
         }
 
+        if (!$entityDca = $this->getDCA()) {
+            throw new InferenceException('No data container array found for ' . $this->entityTable);
+        }
+
         $this->inferred = true;
+        $this->inferredPtable = null;
         $this->autoInferable = true;
         $this->autoDynamicPtable = false;
 
@@ -125,9 +131,14 @@ final class PtableInferrer
             return $this->inferredPtable;
         }
 
-        if (!$entityDca = $this->getDCA()) {
-            throw new InferenceException('No data container array found for ' . $this->entityTable);
+        if ($whichPtable === self::WHICH_PTABLE_DYNAMIC)
+        {
+            $this->setupDynamicPtable();
+
+            return $this->inferredPtable;
         }
+
+        // $whichPtable === self::WHICH_PTABLE_AUTO
 
         $fieldPid = $this->inferrable->getInferFieldPid() ?: 'pid';
 
@@ -149,11 +160,16 @@ final class PtableInferrer
             return $this->inferredPtable;
         }
 
+        $this->setupDynamicPtable();
+
+        return $this->inferredPtable;
+    }
+
+    private function setupDynamicPtable(): void
+    {
         $this->inferredPtable = null;
         $this->autoInferable = false;
         $this->autoDynamicPtable = (bool) ($entityDca['config']['dynamicPtable'] ?? false);
-
-        return $this->inferredPtable;
     }
 
     /**

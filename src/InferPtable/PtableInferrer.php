@@ -70,7 +70,7 @@ final class PtableInferrer
     /**
      * @deprecated Use {@see getEntityDca()} instead. Removal pending for v0.2.
      */
-    public function getDCA(): ?array
+    public function getDCA(): array
     {
         return $this->getEntityDca();
     }

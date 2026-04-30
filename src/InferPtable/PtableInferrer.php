@@ -75,13 +75,13 @@ class PtableInferrer
         return null;
     }
 
-    public function isDcaDynamicPtable(): ?string
+    public function isDcaDynamicPtable(): bool
     {
         if (!$entityDca = $this->getDCA()) {
-            return null;
+            return false;
         }
 
-        return $entityDca['config']['dynamicPtable'] ?? null;
+        return $entityDca['config']['dynamicPtable'] ?? false;
     }
 
     /**

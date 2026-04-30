@@ -178,8 +178,8 @@ class InteractiveProjector extends AbstractProjector
             $data[$filterName] = $field->getData();
         }
 
-        // This might not be necessary, but we keep it here for reference.
-        // $form->setData(\array_merge($form->getData() ?? [], $data));
+        // This might not be necessary, but $form->getData() should return all child data as well.
+        $form->setData(\array_merge($form->getData() ?? [], $data));
     }
 
     protected function mapFormDataToFilterKeys(ListSpecification $list, FormInterface $form): array

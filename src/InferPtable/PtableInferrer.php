@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\InferPtable;
 use Contao\Controller;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 
-class PtableInferrer
+final class PtableInferrer
 {
     public const WHICH_PTABLE_AUTO = 'auto';
     public const WHICH_PTABLE_STATIC = 'static';
@@ -19,14 +19,14 @@ class PtableInferrer
         self::WHICH_PTABLE_DYNAMIC,
     ];
 
-    protected bool $autoInferable = true;
-    protected bool $autoDynamicPtable = false;
-    protected bool $inferred = false;
-    protected ?string $inferredPtable;
+    private bool $autoInferable = true;
+    private bool $autoDynamicPtable = false;
+    private bool $inferred = false;
+    private ?string $inferredPtable;
 
     public function __construct(
-        protected PtableInferrableInterface $inferrable,
-        protected string                    $entityTable,
+        private readonly PtableInferrableInterface $inferrable,
+        private readonly string                    $entityTable,
     ) {}
 
     public function getInferrable(): PtableInferrableInterface
@@ -34,19 +34,36 @@ class PtableInferrer
         return $this->inferrable;
     }
 
+    public function getEntityTable(): string
+    {
+        return $this->entityTable;
+    }
+
     public function isAutoInferable(): bool
     {
+        if (!$this->inferred) {
+            $this->infer();
+        }
+
         return $this->autoInferable;
     }
 
     public function isAutoDynamicPtable(): bool
     {
+        if (!$this->inferred) {
+            $this->infer();
+        }
+
         return $this->autoDynamicPtable;
     }
 
-    public function getEntityTable(): string
+    public function getInferredPtable(): ?string
     {
-        return $this->entityTable;
+        if (!$this->inferred) {
+            $this->infer();
+        }
+
+        return $this->inferredPtable ?? null;
     }
 
     public function getDCA(): ?array
@@ -86,18 +103,31 @@ class PtableInferrer
 
     /**
      * @throws InferenceException
+     * @deprecated Use {@see self::getInferredPtable()} instead. Return type will change to void. Visibility will change to private.
      */
+    #[\ReturnTypeWillChange]
     public function infer(): ?string
     {
         if ($this->inferred) {
             return $this->inferredPtable ?? null;
         }
 
+        $this->inferred = true;
+        $this->autoInferable = true;
+        $this->autoDynamicPtable = false;
+
+        $whichPtable = $this->inferrable->getInferWhichPtable();
+
+        if ($whichPtable === self::WHICH_PTABLE_STATIC)
+        {
+            $this->inferredPtable = $this->inferrable->getInferTablePtable();
+
+            return $this->inferredPtable;
+        }
+
         if (!$entityDca = $this->getDCA()) {
             throw new InferenceException('No data container array found for ' . $this->entityTable);
         }
-
-        $this->inferred = true;
 
         $fieldPid = $this->inferrable->getInferFieldPid() ?: 'pid';
 
@@ -106,8 +136,6 @@ class PtableInferrer
             //   => default contao behavior with the parent id field being "pid"
         {
             $this->inferredPtable = $ptable;
-            $this->autoInferable = true;
-            $this->autoDynamicPtable = false;
 
             return $this->inferredPtable;
         }
@@ -117,8 +145,6 @@ class PtableInferrer
         {
             [$ptable, $field] = \explode('.', $foreignKey);
             $this->inferredPtable = $ptable;
-            $this->autoInferable = true;
-            $this->autoDynamicPtable = false;
 
             return $this->inferredPtable;
         }
@@ -134,18 +160,11 @@ class PtableInferrer
      * Considers all possible cases and returns the inferred or user-defined ptable as explicitly as possible.
      *
      * @throws InferenceException
+     * @deprecated Use {@see self::getInferredPtable()} instead. Removal pending for v0.2.
      */
     public function explicit(bool $alwaysInfer = false): ?string
     {
-        if ($alwaysInfer) {
-            $this->infer();
-        }
-
-        return match ($this->inferrable->getInferWhichPtable()) {
-            self::WHICH_PTABLE_DYNAMIC => null,
-            self::WHICH_PTABLE_STATIC => $this->inferrable->getInferTablePtable(),
-            default => $this->infer(),
-        };
+        return $this->getInferredPtable();
     }
 
     public function getPidField(): string
@@ -156,7 +175,7 @@ class PtableInferrer
     /**
      * @throws InferenceException
      */
-    public function tryGetDynamicPtableField(): string|null
+    public function tryGetDynamicPtableField(): ?string
     {
         if ($this->inferrable->getInferWhichPtable() === self::WHICH_PTABLE_STATIC)
         {
@@ -168,9 +187,7 @@ class PtableInferrer
             return $this->inferrable->getInferFieldPtable() ?: 'ptable';
         }
 
-        $this->infer();
-
-        if ($this->autoDynamicPtable)
+        if ($this->isAutoDynamicPtable())
         {
             return 'ptable';
         }

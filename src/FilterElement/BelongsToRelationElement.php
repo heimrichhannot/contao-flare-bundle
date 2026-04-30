@@ -41,7 +41,7 @@ class BelongsToRelationElement extends AbstractFilterElement
 
         try
         {
-            $ptable = $inferrer->explicit();
+            $ptable = $inferrer->getInferredPtable();
             $fieldDynamicPtable = $inferrer->tryGetDynamicPtableField();
         }
         catch (InferenceException)
@@ -166,7 +166,7 @@ class BelongsToRelationElement extends AbstractFilterElement
 
         try
         {
-            $ptable = $inferrer->explicit(true);
+            $ptable = $inferrer->getInferredPtable();
 
             Message::addInfo(match (true) {
                 $inferrer->isAutoInferable() && $ptable => $this->trans->trans('infer_ptable.auto', [

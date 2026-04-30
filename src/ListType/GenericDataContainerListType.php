@@ -65,7 +65,7 @@ class GenericDataContainerListType extends AbstractListType implements DataConta
 
         try
         {
-            $ptable = $inferrer->explicit(true);
+            $ptable = $inferrer->getInferredPtable();
 
             Message::addInfo(match (true) {
                 $inferrer->isAutoInferable() && $ptable => $this->trans->trans('infer_ptable.auto', [

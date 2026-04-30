@@ -22,7 +22,6 @@ use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
-use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\Exception\OutOfBoundsException;
 use Symfony\Component\Form\FormInterface;
@@ -35,7 +34,6 @@ class InteractiveProjector extends AbstractProjector
     public function __construct(
         private readonly AggregationContextFactory $aggregationConfigFactory,
         private readonly FilterFormFactory         $filterFormFactory,
-        private readonly FilterElementRegistry     $filterElementRegistry,
         private readonly LoaderFactory             $loaderFactory,
         private readonly PaginatorFactory          $paginatorFactory,
         private readonly ReaderUrlGeneratorFactory $readerUrlGeneratorFactory,
@@ -188,6 +186,8 @@ class InteractiveProjector extends AbstractProjector
     {
         $values = [];
 
+        $filterElementRegistry = $this->getFilterElementRegistry();
+
         foreach ($list->getFilters()->all() as $key => $definition)
         {
             $alias = $definition->getAlias();
@@ -201,7 +201,7 @@ class InteractiveProjector extends AbstractProjector
             }
 
             $field = $form->get($alias);
-            $filterElement = $this->filterElementRegistry->get($definition->getType())?->getService();
+            $filterElement = $filterElementRegistry->get($definition->getType())?->getService();
 
             $values[$key] = $filterElement instanceof FormDataContract
                 ? $filterElement->extractFormData($field)

@@ -18,4 +18,15 @@ class ListTypeRegistry extends AbstractServiceDescriptorRegistry
     {
         return ListTypeDescriptor::class;
     }
+
+    public function get(?string $alias): ?ListTypeDescriptor
+    {
+        $descriptor = parent::get($alias);
+
+        if (!$descriptor instanceof ListTypeDescriptor) {
+            return null;
+        }
+
+        return $descriptor;
+    }
 }

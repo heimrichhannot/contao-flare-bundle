@@ -23,6 +23,7 @@ final class PtableInferrer
     private bool $autoDynamicPtable = false;
     private bool $inferred = false;
     private ?string $inferredPtable;
+    private array $entityDca;
 
     public function __construct(
         private readonly PtableInferrableInterface $inferrable,
@@ -66,20 +67,44 @@ final class PtableInferrer
         return $this->inferredPtable ?? null;
     }
 
+    /**
+     * @deprecated Use {@see getEntityDca()} instead. Removal pending for v0.2.
+     */
     public function getDCA(): ?array
     {
+        return $this->getEntityDca();
+    }
+
+    /**
+     * @throws never {@see InferenceException}
+     * @noinspection PhpDocMissingThrowsInspection,PhpUnhandledExceptionInspection
+     */
+    public function getEntityDca(): array
+    {
+        if (isset($this->entityDca)) {
+            return $this->entityDca;
+        }
+
         if (!$this->entityTable) {
-            return null;
+            throw new InferenceException('No entity table set');
         }
 
         Controller::loadDataContainer($this->entityTable);
 
-        return $GLOBALS['TL_DCA'][$this->entityTable] ?? null;
+        if (!$dca = $GLOBALS['TL_DCA'][$this->entityTable] ?? null) {
+            throw new InferenceException(\sprintf('No data container array found for "%s"', $this->entityTable));
+        }
+
+        if (!\is_array($dca)) {
+            throw new \InvalidArgumentException(\sprintf('Invalid data container array for "%s"', $this->entityTable));
+        }
+
+        return $this->entityDca = $dca;
     }
 
     public function getDcaMainPtable(): ?string
     {
-        if (!$entityDca = $this->getDCA()) {
+        if (!$entityDca = $this->getEntityDca()) {
             return null;
         }
 
@@ -94,7 +119,7 @@ final class PtableInferrer
 
     public function isDcaDynamicPtable(): bool
     {
-        if (!$entityDca = $this->getDCA()) {
+        if (!$entityDca = $this->getEntityDca()) {
             return false;
         }
 
@@ -113,9 +138,7 @@ final class PtableInferrer
             return $this->inferredPtable ?? null;
         }
 
-        if (!$entityDca = $this->getDCA()) {
-            throw new InferenceException('No data container array found for ' . $this->entityTable);
-        }
+        $entityDca = $this->getEntityDca();
 
         $this->inferred = true;
         $this->inferredPtable = null;
@@ -169,7 +192,7 @@ final class PtableInferrer
     {
         $this->inferredPtable = null;
         $this->autoInferable = false;
-        $this->autoDynamicPtable = (bool) ($entityDca['config']['dynamicPtable'] ?? false);
+        $this->autoDynamicPtable = (bool) ($this->getEntityDca()['config']['dynamicPtable'] ?? false);
     }
 
     /**

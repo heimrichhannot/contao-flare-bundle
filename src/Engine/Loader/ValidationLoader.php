@@ -7,7 +7,6 @@ namespace HeimrichHannot\FlareBundle\Engine\Loader;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Resolver\FilterValueResolver;
 use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
@@ -16,9 +15,8 @@ use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 readonly class ValidationLoader implements ValidationLoaderInterface
 {
     public function __construct(
-        private FilterValueResolver    $filterValueResolver,
-        private ListQueryDirector      $listQueryDirector,
         private ValidationLoaderConfig $config,
+        private ListQueryDirector      $listQueryDirector,
     ) {}
 
     /**
@@ -94,12 +92,12 @@ readonly class ValidationLoader implements ValidationLoaderInterface
     /**
      * @throws \Exception
      */
-    private function executeQuery(ListSpecification $spec, ValidationContext $config): ?array
+    private function executeQuery(ListSpecification $spec, ValidationContext $context): ?array
     {
         $qb = $this->listQueryDirector->createQueryBuilder(new ListQueryConfig(
             list: $spec,
-            context: $config,
-            filterValues: $this->filterValueResolver->resolve($spec, $config->getFilterValues()),
+            context: $context,
+            filterValues: $context->getFilterValues(),
         ));
 
         if (!$qb) {

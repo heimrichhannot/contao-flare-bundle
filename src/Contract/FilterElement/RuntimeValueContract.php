@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Contract\FilterElement;
 
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 interface RuntimeValueContract
@@ -19,5 +19,5 @@ interface RuntimeValueContract
      * @return mixed The processed value, which will be passed to the filter method upon invocation, where it can
      *   be accessed through `$invocation->getValue()`.
      */
-    public function processRuntimeValue(mixed $value, ListSpecification $list, FilterDefinition $filter): mixed;
+    public function processRuntimeValue(mixed $value, ListSpecification $list, ConfiguredFilter $filter): mixed;
 }

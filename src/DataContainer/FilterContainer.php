@@ -11,9 +11,9 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
-use HeimrichHannot\FlareBundle\Specification\Factory\FilterDefinitionFactory;
+use HeimrichHannot\FlareBundle\Specification\Factory\ConfiguredFilterFactory;
 use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 
@@ -22,7 +22,7 @@ class FilterContainer implements FlareCallbackContainerInterface
     public const TABLE_NAME = 'tl_flare_filter';
 
     public function __construct(
-        private readonly FilterDefinitionFactory     $filterDefinitionFactory,
+        private readonly ConfiguredFilterFactory     $configuredFilterFactory,
         private readonly FlareCallbackManager        $callbacks,
         private readonly ListExecutionContextFactory $listExecutionContextFactory,
         private readonly ListSpecificationFactory    $listSpecificationFactory,
@@ -64,7 +64,7 @@ class FilterContainer implements FlareCallbackContainerInterface
 
         $callbacks = $this->callbacks->getFilterCallbacks($filterModel->type, $target);
 
-        $filterDefinition = $this->filterDefinitionFactory->create($filterModel);
+        $configuredFilter = $this->configuredFilterFactory->create($filterModel);
         $listSpecification = $this->listSpecificationFactory->create($listModel);
         $context = $this->listExecutionContextFactory->create($listSpecification);
         $tables = $context->tableAliasRegistry->getTables();
@@ -74,7 +74,7 @@ class FilterContainer implements FlareCallbackContainerInterface
             FilterModel::class => $filterModel,
             ListModel::class  => $listModel,
             DataContainer::class  => $dc,
-            FilterDefinition::class => $filterDefinition,
+            ConfiguredFilter::class => $configuredFilter,
             ListSpecification::class => $listSpecification,
             ListExecutionContext::class => $context,
             'tables' => $tables,

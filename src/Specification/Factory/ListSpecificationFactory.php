@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Specification\Factory;
 
-use HeimrichHannot\FlareBundle\Collection\FilterDefinitionCollection;
+use HeimrichHannot\FlareBundle\Collection\ConfiguredFilterCollection;
 use HeimrichHannot\FlareBundle\Event\ListSpecificationCreatedEvent;
 use HeimrichHannot\FlareBundle\Registry\FilterCollectorRegistry;
 use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
@@ -41,14 +41,14 @@ final readonly class ListSpecificationFactory
         return $event->listSpecification;
     }
 
-    private function collectFilters(ListDataSourceInterface $dataSource): FilterDefinitionCollection
+    private function collectFilters(ListDataSourceInterface $dataSource): ConfiguredFilterCollection
     {
         $collector = $this->filterCollectors->match($dataSource);
 
         if (!$collector) {
-            return new FilterDefinitionCollection();
+            return new ConfiguredFilterCollection();
         }
 
-        return $collector->collect($dataSource) ?? new FilterDefinitionCollection();
+        return $collector->collect($dataSource) ?? new ConfiguredFilterCollection();
     }
 }

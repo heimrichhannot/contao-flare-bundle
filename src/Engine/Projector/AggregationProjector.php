@@ -33,7 +33,7 @@ class AggregationProjector extends AbstractProjector
         $loader = $this->createLoader(new AggregationLoaderConfig(
             list: $list,
             context: $context,
-            filterValues: $this->resolveFilterValues($list, $context->getFilterValues()),
+            filterValues: $context->getFilterValues(),
         ));
 
         return $this->createView($loader);

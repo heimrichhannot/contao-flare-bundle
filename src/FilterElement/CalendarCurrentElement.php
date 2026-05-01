@@ -8,15 +8,14 @@ use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
-use HeimrichHannot\FlareBundle\Event\FilterElementInvokingEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
+use HeimrichHannot\FlareBundle\Filter\Type\CalendarCurrentFilterType;
 use HeimrichHannot\FlareBundle\Form\Type\DateRangeFilterType;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
-use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsFilterElement(
     type: self::TYPE,
@@ -29,20 +28,26 @@ class CalendarCurrentElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
     {
-        $value = $inv->getValue();
+        $filter = $invocation->filter;
+
+        if (!$filter->isLimited && $invocation->context instanceof ValidationContext) {
+            return;
+        }
+
+        $value = $this->processRuntimeValue($invocation->getValue(), $invocation->list, $filter) ?? [];
         $from = $value['from'] ?? null;
         $to = $value['to'] ?? null;
 
-        $start = \strtotime($inv->filter->startAt) ?: 0;
-        $stop = \strtotime($inv->filter->stopAt) ?: DateTimeHelper::maxTimestamp();
+        $start = \strtotime($filter->startAt) ?: 0;
+        $stop = \strtotime($filter->stopAt) ?: DateTimeHelper::maxTimestamp();
 
         if ($from instanceof \DateTimeInterface)
         {
             $from = $from->getTimestamp();
 
-            if (!$inv->filter->isLimited || $from >= $start) {
+            if (!$filter->isLimited || $from >= $start) {
                 $start = $from;
             }
         }
@@ -51,43 +56,19 @@ class CalendarCurrentElement extends AbstractFilterElement
         {
             $to = $to->getTimestamp();
 
-            if (!$inv->filter->isLimited || $to <= $stop) {
+            if (!$filter->isLimited || $to <= $stop) {
                 $stop = $to;
             }
         }
 
-        $colStartTime = $qb->column('startTime');
-        $colRepeatEnd = $qb->column('repeatEnd');
-        $colRecurrences = $qb->column('recurrences');
-        $colRecurring = $qb->column('recurring');
-
-        $or = [
-            "{$colStartTime} >= :start AND {$colStartTime} <= :end",  // event starts in range
-            $qb->expr()->and(  // event is recurring
-                $qb->expr()->eq($colRecurring, '1'),
-                $qb->expr()->lte($colStartTime, ':end'),  // event starts before the end of the range
-                $qb->expr()->or(
-                    $qb->expr()->eq($colRecurrences, '0'),  // 0 = infinite recurrences
-                    $qb->expr()->gte($colRepeatEnd, ':start'),
-                ),
-            ),
-        ];
-
-        if ($inv->filter->hasExtendedEvents)
-        {
-            $colEndTime = $qb->column('endTime');
-
-            $or[] = "{$colEndTime} >= :start AND {$colEndTime} <= :end";  // event ends in the range
-            $or[] = "{$colStartTime} <= :start AND {$colEndTime} >= :end";  // event is within the range
-        }
-
-        $qb->whereOr(...$or);
-
-        $qb->setParameter('start', $start);
-        $qb->setParameter('end', $stop);
+        $builder->add(CalendarCurrentFilterType::class, [
+            'start' => $start,
+            'stop' => $stop,
+            'has_extended_events' => (bool) $filter->hasExtendedEvents,
+        ]);
     }
 
-    public function processRuntimeValue(mixed $value, ListSpecification $list, FilterDefinition $filter): ?array
+    public function processRuntimeValue(mixed $value, ListSpecification $list, ConfiguredFilter $filter): ?array
     {
         if (!\is_array($value)) {
             return null;
@@ -136,16 +117,6 @@ class CalendarCurrentElement extends AbstractFilterElement
         }
 
         return null;
-    }
-
-    #[AsEventListener('flare.filter_element.' . self::TYPE . '.invoking')]
-    public function onInvoking(FilterElementInvokingEvent $event): void
-    {
-        $filter = $event->getInvocation()->filter;
-
-        if (!$filter->isLimited && $event->getContext() instanceof ValidationContext) {
-            $event->setShouldInvoke(false);
-        }
     }
 
     public function getPalette(PaletteConfig $config): ?string

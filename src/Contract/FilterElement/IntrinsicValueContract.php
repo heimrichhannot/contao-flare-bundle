@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Contract\FilterElement;
 
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 interface IntrinsicValueContract
@@ -19,5 +19,5 @@ interface IntrinsicValueContract
      * @return mixed Any intrinsic value of which the FilterElement's invokers know how to interpret. Will be accessible
      *   through `$invocation->getValue()` from the invoker methods.
      */
-    public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): mixed;
+    public function getIntrinsicValue(ListSpecification $list, ConfiguredFilter $filter): mixed;
 }

@@ -5,21 +5,20 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement;
 
 use Contao\StringUtil;
-use Doctrine\DBAL\ArrayParameterType;
-use Doctrine\DBAL\ParameterType;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
+use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
+use HeimrichHannot\FlareBundle\Filter\Type\IntegerIdChoiceFilterType;
 use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -41,25 +40,24 @@ class CodefogTagsChoiceElement extends AbstractFilterElement implements HydrateF
         private readonly LoggerInterface             $logger,
     ) {}
 
-    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
     {
         /** @var ?array $tagIds */
-        $tagIds = $inv->getValue();
+        $tagIds = $invocation->filter->isIntrinsic()
+            ? $this->getIntrinsicValue($invocation->list, $invocation->filter)
+            : $this->processRuntimeValue($invocation->getValue(), $invocation->list, $invocation->filter);
+
         if (!$tagIds) {
             return;
         }
 
-        if (\count($tagIds) === 1) {
-            $qb->where($qb->expr()->eq($qb->column('id'), ':cfg_tag_id'))
-                ->setParameter('cfg_tag_id', \reset($tagIds), ParameterType::INTEGER);
-            return;
-        }
-
-        $qb->where($qb->expr()->in($qb->column('id'), ':cfg_tag_ids'))
-            ->setParameter('cfg_tag_ids', $tagIds, ArrayParameterType::INTEGER);
+        $builder->add(IntegerIdChoiceFilterType::class, [
+            'field' => 'id',
+            'ids' => $tagIds,
+        ]);
     }
 
-    public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void
+    public function hydrateForm(FormInterface $field, ListSpecification $list, ConfiguredFilter $filter): void
     {
         if ($field->isSubmitted()) {
             return;
@@ -101,14 +99,14 @@ class CodefogTagsChoiceElement extends AbstractFilterElement implements HydrateF
         return \array_values(\array_unique(\array_filter(\array_map('\intval', $values))));
     }
 
-    public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): ?array
+    public function getIntrinsicValue(ListSpecification $list, ConfiguredFilter $filter): ?array
     {
         return $this->normalizeValueArray(
             StringUtil::deserialize($filter->preselect ?: null, true)
         ) ?: null;
     }
 
-    public function processRuntimeValue(mixed $value, ListSpecification $list, FilterDefinition $filter): ?array
+    public function processRuntimeValue(mixed $value, ListSpecification $list, ConfiguredFilter $filter): ?array
     {
         if (!$value = StringUtil::deserialize($value)) {
             return null;
@@ -157,7 +155,7 @@ class CodefogTagsChoiceElement extends AbstractFilterElement implements HydrateF
     }
 
     #[AsFilterCallback(self::TYPE, 'fields.preselect.options')]
-    public function getOptions(ListSpecification $list, FilterDefinition $filter, ListExecutionContext $context): ?array
+    public function getOptions(ListSpecification $list, ConfiguredFilter $filter, ListExecutionContext $context): ?array
     {
         $targetAlias = $filter->getTargetAlias();
 

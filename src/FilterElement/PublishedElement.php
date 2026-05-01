@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
-use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Filter\Type\PublishedFilterType;
+use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 
 #[AsFilterElement(
     type: self::TYPE,
@@ -19,43 +18,17 @@ class PublishedElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_published';
 
-    public function __construct(
-        private readonly Connection $connection,
-    ) {}
-
-    /**
-     * @throws FilterException
-     */
-    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
     {
-        if ($inv->filter->usePublished ?? true)
-        {
-            $publishedField = $qb->column($inv->filter->fieldPublished ?: 'published');
-            $invertPublished = $inv->filter->invertPublished ?? false;
-            $operator = $invertPublished ? 'neq' : 'eq';
+        $filter = $invocation->filter;
 
-            // "published = '1'" or "published != '1'"
-            $qb->where($qb->expr()->{$operator}($publishedField, $this->connection->quote('1')));
-        }
-
-        $epsilon = $this->connection->quote('');
-        $zero = $this->connection->quote('0');
-
-        if ($inv->filter->useStart ?? true)
-        {
-            $startField = $qb->column($inv->filter->fieldStart ?: 'start');
-
-            $qb->where("{$startField} = {$epsilon} OR {$startField} = {$zero} OR {$startField} <= :start")
-                ->setParameter('start', \time());
-        }
-
-        if ($inv->filter->useStop ?? true)
-        {
-            $stopField = $qb->column($inv->filter->fieldStop ?: 'stop');
-
-            $qb->where("{$stopField} = {$epsilon} OR {$stopField} = {$zero} OR {$stopField} >= :stop")
-                ->setParameter('stop', \time());
-        }
+        $builder->add(PublishedFilterType::class, [
+            'published_field' => ($filter->usePublished ?? true) ? ($filter->fieldPublished ?: 'published') : null,
+            'start_field' => ($filter->useStart ?? true) ? ($filter->fieldStart ?: 'start') : null,
+            'stop_field' => ($filter->useStop ?? true) ? ($filter->fieldStop ?: 'stop') : null,
+            'invert_published' => (bool) ($filter->invertPublished ?? false),
+            'now' => \time(),
+        ]);
     }
 
     public static function define(
@@ -63,13 +36,13 @@ class PublishedElement extends AbstractFilterElement
         string|false|null $start = null,
         string|false|null $stop = null,
         bool|null $invertPublished = null,
-    ): FilterDefinition {
+    ): ConfiguredFilter {
         $published ??= 'published';
         $start ??= 'start';
         $stop ??= 'stop';
         $invertPublished ??= false;
 
-        $definition = new FilterDefinition(
+        $definition = new ConfiguredFilter(
             type: static::TYPE,
             intrinsic: true,
         );

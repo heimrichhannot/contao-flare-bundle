@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Specification;
 
-use HeimrichHannot\FlareBundle\Collection\FilterDefinitionCollection;
+use HeimrichHannot\FlareBundle\Collection\ConfiguredFilterCollection;
 use HeimrichHannot\FlareBundle\Model\DocumentsListModelTrait;
 use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
 
@@ -19,9 +19,9 @@ class ListSpecification
         public readonly string              $type,
         public readonly string              $dc,
         private ?ListDataSourceInterface    $dataSource = null,
-        private ?FilterDefinitionCollection $filters = null,
+        private ?ConfiguredFilterCollection $filters = null,
     ) {
-        $this->filters ??= new FilterDefinitionCollection();
+        $this->filters ??= new ConfiguredFilterCollection();
     }
 
     public function getDataSource(): ?ListDataSourceInterface
@@ -35,12 +35,12 @@ class ListSpecification
         return $this;
     }
 
-    public function getFilters(): FilterDefinitionCollection
+    public function getFilters(): ConfiguredFilterCollection
     {
         return $this->filters;
     }
 
-    public function setFilters(FilterDefinitionCollection $filters): void
+    public function setFilters(ConfiguredFilterCollection $filters): void
     {
         $this->filters = $filters;
     }

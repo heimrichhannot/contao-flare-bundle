@@ -8,37 +8,66 @@ use HeimrichHannot\FlareBundle\Model\DocumentsFilterModelTrait;
 use HeimrichHannot\FlareBundle\Specification\DataSource\FilterDataSourceInterface;
 
 /**
+ * In-memory filter configuration used by the engine.
+ *
+ * The Contao row remains the storage format. This object keeps the stable runtime identity
+ * separate from the raw DCA configuration that filter elements interpret.
+ *
  * @property string $type
+ * @property string $elementType
  * @property bool $intrinsic
  */
 #[\AllowDynamicProperties]
-class FilterDefinition
+class ConfiguredFilter
 {
     use DocumentsFilterModelTrait;
     use DynamicPropertiesTrait;
 
+    private string $elementType;
+
     public function __construct(
-        private string                     $type,
+        string                             $type,
         private bool                       $intrinsic,
         private ?string                    $alias = null,
         private ?string                    $targetAlias = null,
         private bool                       $isTargetingForced = false,
         private ?FilterDataSourceInterface $dataSource = null,
+        array                              $rawData = [],
     ) {
+        $this->elementType = $type;
+
         if (!\is_null($alias)) {
             $this->setAlias($alias);
         }
+
+        $this->setProperties($rawData);
     }
 
+    public function getElementType(): string
+    {
+        return $this->elementType;
+    }
+
+    public function setElementType(string $elementType): static
+    {
+        $this->elementType = $elementType;
+        return $this;
+    }
+
+    /**
+     * @deprecated Use getElementType().
+     */
     public function getType(): string
     {
-        return $this->type;
+        return $this->getElementType();
     }
 
+    /**
+     * @deprecated Use setElementType().
+     */
     public function setType(string $type): static
     {
-        $this->type = $type;
-        return $this;
+        return $this->setElementType($type);
     }
 
     public function getAlias(): ?string
@@ -113,8 +142,8 @@ class FilterDefinition
     public function __isset(string $name): bool
     {
         return match ($name) {
-            'type', 'intrinsic' => true,
-            'alias', 'targetAlias', 'target_alias', 'sourceFilterModel' => $this->__get($name) !== null,
+            'type', 'elementType', 'intrinsic' => true,
+            'alias', 'targetAlias', 'target_alias', 'dataSource', 'sourceFilterModel' => $this->__get($name) !== null,
             default => $this->issetProperty($name),
         };
     }
@@ -122,7 +151,7 @@ class FilterDefinition
     public function __set(string $name, mixed $value): void
     {
         match ($name) {
-            'type' => $this->setType($value),
+            'type', 'elementType' => $this->setElementType($value),
             'intrinsic' => $this->setIntrinsic($value),
             'targetAlias', 'target_alias' => $this->setTargetAlias($value),
             'dataSource', 'sourceFilterModel' => $this->setDataSource($value),
@@ -133,7 +162,7 @@ class FilterDefinition
     public function __get(string $name): mixed
     {
         return match ($name) {
-            'type' => $this->getType(),
+            'type', 'elementType' => $this->getElementType(),
             'intrinsic' => $this->isIntrinsic(),
             'targetAlias', 'target_alias' => $this->getTargetAlias(),
             'dataSource', 'sourceFilterModel' => $this->getDataSource(),
@@ -141,10 +170,16 @@ class FilterDefinition
         };
     }
 
+    public function getRawData(): array
+    {
+        return $this->getProperties();
+    }
+
     public function getRow(): array
     {
         return \array_merge($this->getProperties(), [
-            'type' => $this->type,
+            'type' => $this->elementType,
+            'elementType' => $this->elementType,
             'intrinsic' => $this->intrinsic,
             'targetAlias' => $this->targetAlias,
         ]);

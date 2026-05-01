@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
 use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\ConfigProvider;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
+use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Filter\Type\SearchKeywordsFilterType;
+use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 
@@ -25,61 +25,25 @@ class SearchKeywordsElement extends AbstractFilterElement implements IntrinsicVa
 {
     public const TYPE = 'flare_search_keywords';
 
-    public function __construct(
-        private readonly ConfigProvider $configProvider,
-    ) {}
-
-    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
     {
-        $value = $inv->getValue();
+        $filter = $invocation->filter;
+        $value = $filter->isIntrinsic()
+            ? $this->getIntrinsicValue($invocation->list, $filter)
+            : $invocation->getValue();
+
         if (!$value || !\is_string($value)) {
             return;
         }
 
-        if (!$columns = StringUtil::deserialize($inv->filter->columnsGeneric, true)) {
+        if (!$columns = StringUtil::deserialize($filter->columnsGeneric, true)) {
             return;
         }
 
-        $columns = \array_map($qb->column(...), $columns);
-
-        $searchTermGroups = \array_values(\preg_split('/\s+OR\s+/i', $value));
-
-        $or = [];
-
-        foreach ($searchTermGroups ?: [] as $i => $searchTermGroup)
-        {
-            if (!$searchTerms = $this->makeTerms($searchTermGroup)) {
-                return;
-            }
-
-            $and = [];
-
-            foreach (\array_values($searchTerms) as $j => $term)
-            {
-                $param = ':term_' . $i . '_' . $j;
-
-                $and[] = $qb->expr()->or(...\array_map(
-                    static fn(string $column): string => $qb->expr()->like($column, $param),
-                    $columns
-                ));
-
-                $qb->setParameter($param, '%' . $term . '%');
-            }
-
-            $or[] = $qb->expr()->and(...$and);
-        }
-
-        $qb->where($qb->expr()->or(...$or));
-    }
-
-    private function makeTerms(string $text): array
-    {
-        $text = (string) \mb_strtolower($text);
-        $text = \preg_replace('/[^\p{L}\p{Nd}-]+/u', ' ', $text);
-        $text = \preg_replace('/\s+/', ' ', $text);
-        $terms = \array_unique(\array_filter(\array_map('\trim', \explode(' ', \trim($text)))));
-        $stopWords = $this->configProvider->getStopWords();
-        return $stopWords ? \array_diff($terms, $stopWords) : $terms;
+        $builder->add(SearchKeywordsFilterType::class, [
+            'value' => $value,
+            'columns' => $columns,
+        ]);
     }
 
     public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
@@ -96,7 +60,7 @@ class SearchKeywordsElement extends AbstractFilterElement implements IntrinsicVa
         }
     }
 
-    public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): ?string
+    public function getIntrinsicValue(ListSpecification $list, ConfiguredFilter $filter): ?string
     {
         return $filter->prefill ?: null;
     }

@@ -6,7 +6,6 @@ namespace HeimrichHannot\FlareBundle\DependencyInjection;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterInvoker;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFlareCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
@@ -58,7 +57,6 @@ final class HeimrichHannotFlareExtension extends Extension implements PrependExt
         $attributesForAutoconfiguration = [
             AsListType::class => AsListType::TAG,
             AsFilterElement::class => AsFilterElement::TAG,
-            AsFilterInvoker::class => AsFilterInvoker::TAG,
             // todo(@ericges): remove callbacks in favor of events in v0.2.0
             AsFlareCallback::class => FlareCallbackDescriptor::TAG,
             AsFilterCallback::class => FlareCallbackDescriptor::TAG_FILTER_CALLBACK,

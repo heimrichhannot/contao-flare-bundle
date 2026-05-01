@@ -29,6 +29,7 @@ no-isset = { enabled = false }
 tagged-todo = { enabled = false }
 too-many-methods = { threshold = 20 }
 prefer-early-continue = { enabled = false }
+assertion-style = { style = "self" }
 
 cyclomatic-complexity = { enabled = false }
 kan-defect = { enabled = false }

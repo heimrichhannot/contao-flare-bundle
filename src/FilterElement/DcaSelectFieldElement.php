@@ -15,11 +15,12 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
+use HeimrichHannot\FlareBundle\Filter\Type\DcaSelectFilterType;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormInterface;
@@ -35,11 +36,16 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
     {
-        $options = $this->getOptions($inv->list, $inv->filter) ?? [];
+        $filter = $invocation->filter;
+        $options = $this->getOptions($invocation->list, $filter) ?? [];
 
-        if (!$selected = $inv->getValue()) {
+        $selected = $filter->isIntrinsic()
+            ? $this->getIntrinsicValue($invocation->list, $filter)
+            : $invocation->getValue();
+
+        if (!$selected) {
             return;
         }
 
@@ -48,71 +54,22 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
         }
 
         if (!$options) {
-            $qb->abort();
+            $builder->abort();
         }
 
-        if (!$targetField = $inv->filter->fieldGeneric) {
-            $qb->abort();
+        if (!$targetField = $filter->fieldGeneric) {
+            $builder->abort();
         }
 
-        $dcaOptionsField = $this->getOptionsField($inv->list, $inv->filter) ?? [];
+        $dcaOptionsField = $this->getOptionsField($invocation->list, $filter) ?? [];
         $isMultiple = $dcaOptionsField['eval']['multiple'] ?? false;
 
-        if (\count($selected) === 1)
-        {
-            $value = \current($selected);
-            if (!\array_key_exists($value, $options))
-            {
-                $qb->abort();
-            }
-
-            if ($isMultiple)
-            {
-                $qb->whereInSerialized($value, $targetField);
-
-                return;
-            }
-
-            $qb->where($qb->expr()->eq($qb->column($targetField), ':value'))
-                ->setParameter('value', $value);
-
-            return;
-        }
-
-        if (\count(\array_unique($options)) !== \count($options))
-            // options are not unique, cannot flip
-        {
-            throw new FilterException(\sprintf(
-                'The options for the DCA select field %s.%s must be unique.',
-                $inv->list->dc,
-                $targetField,
-            ));
-        }
-
-        $validOptions = [];
-
-        foreach ($selected as $value)
-        {
-            if ($options[$value] ?? null) {
-                $validOptions[] = $value;
-            }
-        }
-
-        if (!\count($validOptions))
-            // of the submitted values, none are valid
-        {
-            $qb->abort();
-        }
-
-        if ($isMultiple)
-        {
-            $qb->whereInSerialized($validOptions, $targetField);
-
-            return;
-        }
-
-        $qb->where($qb->expr()->in($qb->column($targetField), ':values'))
-            ->setParameter('values', $validOptions);
+        $builder->add(DcaSelectFilterType::class, [
+            'field' => $targetField,
+            'selected' => $selected,
+            'valid_options' => $options,
+            'is_multiple_dca_field' => (bool) $isMultiple,
+        ]);
     }
 
     public function getPalette(PaletteConfig $config): ?string
@@ -126,12 +83,12 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
         return $palette;
     }
 
-    public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): mixed
+    public function getIntrinsicValue(ListSpecification $list, ConfiguredFilter $filter): mixed
     {
         return $this->getPreselectValue($filter);
     }
 
-    public function getPreselectValue(FilterDefinition $filter): mixed
+    public function getPreselectValue(ConfiguredFilter $filter): mixed
     {
         return $filter->isMultiple
             ? StringUtil::deserialize($filter->preselect ?: null)
@@ -143,7 +100,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
         return $form->getViewData();
     }
 
-    public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void
+    public function hydrateForm(FormInterface $field, ListSpecification $list, ConfiguredFilter $filter): void
     {
         if ($field->isSubmitted()) {
             return;
@@ -278,7 +235,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
         return $this->tryGetOptionsFromField($listModel, $field) ?? [];
     }
 
-    public function getOptions(ListSpecification $list, FilterDefinition $filter): ?array
+    public function getOptions(ListSpecification $list, ConfiguredFilter $filter): ?array
     {
         $optionsField = $this->getOptionsField($list, $filter) ?? [];
         $options = $this->tryGetOptionsFromField($list, $optionsField);
@@ -304,7 +261,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements HydrateForm
         return $options;
     }
 
-    public function getOptionsField(ListModel|ListSpecification $list, FilterModel|FilterDefinition $filter): ?array
+    public function getOptionsField(ListModel|ListSpecification $list, FilterModel|ConfiguredFilter $filter): ?array
     {
         Controller::loadLanguageFile($list->dc);
         Controller::loadDataContainer($list->dc);

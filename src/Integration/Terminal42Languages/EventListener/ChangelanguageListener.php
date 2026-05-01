@@ -126,27 +126,27 @@ class ChangelanguageListener
         $dcMultilingualDisplay = $event->getContentContext()->getContentModel()->flare_dcMultilingualDisplay
             ?: $filters->getListModel()->dcMultilingual_display;
 
-        $filterDefinition = null;
+        $configuredFilter = null;
         
         if ($lang !== $langFallback && $dcMultilingualDisplay === DcMultilingualHelper::DISPLAY_LOCALIZED)
             // localized list view
         {
-            $filterDefinition = SimpleEquationElement::define(
+            $configuredFilter = SimpleEquationElement::define(
                 equationLeft: DcMultilingualHelper::getPidColumn($table),
                 equationOperator: SqlEquationOperator::GREATER_THAN,
                 equationRight: '0'
             );
-            $filterDefinition->forceTargetAlias('translation');
+            $configuredFilter->forceTargetAlias('translation');
         }
 
-        $filterDefinition ??= SimpleEquationElement::define(
+        $configuredFilter ??= SimpleEquationElement::define(
             equationLeft: DcMultilingualHelper::getPidColumn($table),
             equationOperator: SqlEquationOperator::EQUALS,
             equationRight: '0'
         );
 
         // $filters->add($this->filterContextManager->definitionToContext(
-        //     definition: $filterDefinition,
+        //     filter: $configuredFilter,
         //     listModel: $filters->getListModel(),
         //     contentContext: $contentContext,
         // ));

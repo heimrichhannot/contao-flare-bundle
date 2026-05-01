@@ -14,13 +14,14 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
+use HeimrichHannot\FlareBundle\Filter\Type\FieldValueChoiceFilterType;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormInterface;
@@ -44,46 +45,43 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
     {
-        if ($inv->context instanceof ValidationContext) {
+        if ($invocation->context instanceof ValidationContext) {
             return;
         }
 
-        if (!($field = $inv->filter->fieldGeneric)) {
+        $filter = $invocation->filter;
+
+        if (!($field = $filter->fieldGeneric)) {
             return;
         }
 
-        if (!$value = $inv->getValue()) {
+        $value = $filter->isIntrinsic()
+            ? $this->getIntrinsicValue($invocation->list, $filter)
+            : $this->processRuntimeValue($invocation->getValue(), $invocation->list, $filter);
+
+        if (!$value) {
             return;
         }
 
-        $colField = $qb->column($field);
-
-        if (\count($value) < 2)
-        {
-            $qb->where("LOWER(TRIM({$colField})) = :value")
-                ->setParameter('value', \reset($value));
-        }
-        /** @mago-expect lint:no-else-clause This else clause is fine. */
-        else
-        {
-            $qb->where("LOWER(TRIM({$colField})) IN (:values)")
-                ->setParameter('values', $value);
-        }
+        $builder->add(FieldValueChoiceFilterType::class, [
+            'field' => $field,
+            'values' => $value,
+        ]);
     }
 
-    public function processRuntimeValue(mixed $value, ListSpecification $list, FilterDefinition $filter): ?array
+    public function processRuntimeValue(mixed $value, ListSpecification $list, ConfiguredFilter $filter): ?array
     {
         return $this->extractSubmittedData((array) $value) ?? $this->extractPreselectData($filter);
     }
 
-    public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): ?array
+    public function getIntrinsicValue(ListSpecification $list, ConfiguredFilter $filter): ?array
     {
         return $this->extractPreselectData($filter);
     }
 
-    public function extractPreselectData(FilterDefinition $filter): ?array
+    public function extractPreselectData(ConfiguredFilter $filter): ?array
     {
         if (!$preselect = $filter->preselect) {
             return null;
@@ -118,7 +116,7 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         return $submittedData;
     }
 
-    public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void
+    public function hydrateForm(FormInterface $field, ListSpecification $list, ConfiguredFilter $filter): void
     {
         if ($field->isSubmitted()) {
             return;

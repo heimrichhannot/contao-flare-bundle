@@ -16,6 +16,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use Symfony\Component\Form\FormInterface;
 
 /**
  * @phpstan-template FormOptionsShape of array{

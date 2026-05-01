@@ -9,7 +9,6 @@ use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Resolver\FilterValueResolver;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
@@ -37,7 +36,6 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
     {
         return [
             FilterElementRegistry::class,
-            FilterValueResolver::class,
             ListQueryDirector::class,
             ProjectorRegistry::class,
             RequestStack::class,
@@ -66,19 +64,9 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
      */
     abstract public function project(ListSpecification $list, ContextInterface $context): ViewInterface;
 
-    public function resolveFilterValues(ListSpecification $spec, array $runtimeValues): array
-    {
-        return $this->getFilterValueResolver()->resolve($spec, $runtimeValues);
-    }
-
     protected function getFilterElementRegistry(): FilterElementRegistry
     {
         return $this->container->get(FilterElementRegistry::class);
-    }
-
-    protected function getFilterValueResolver(): FilterValueResolver
-    {
-        return $this->container->get(FilterValueResolver::class);
     }
 
     protected function getListQueryDirector(): ListQueryDirector

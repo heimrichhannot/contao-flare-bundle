@@ -10,12 +10,11 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
-use HeimrichHannot\FlareBundle\FilterType\SimpleEquationFilterType;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Filter\Type\SimpleEquationFilterType;
+use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
-use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE, isTargeted: true)]
 class SimpleEquationElement extends AbstractFilterElement
@@ -25,24 +24,19 @@ class SimpleEquationElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
     {
-        if (!($operand = $inv->filter->equationLeft)
-            || !$op = SqlEquationOperator::match($inv->filter->equationOperator))
+        if (!($operand = $invocation->filter->equationLeft)
+            || !$op = SqlEquationOperator::match($invocation->filter->equationOperator))
         {
             throw new FilterException('Invalid filter configuration.');
         }
 
-        $filter = new SimpleEquationFilterType();
-        $resolver = new OptionsResolver();
-        $filter->configureOptions($resolver);
-        $options = $resolver->resolve([
+        $builder->add(SimpleEquationFilterType::class, [
             'operand_left' => $operand,
             'operator' => $op,
-            'operand_right' => $inv->filter->equationRight,
+            'operand_right' => $invocation->filter->equationRight,
         ]);
-
-        $filter->buildQuery($qb, $options);
     }
 
     #[AsFilterCallback(self::TYPE, 'fields.equationLeft.options')]
@@ -66,8 +60,8 @@ class SimpleEquationElement extends AbstractFilterElement
         ?string              $equationLeft = null,
         ?SqlEquationOperator $equationOperator = null,
         mixed                $equationRight = null,
-    ): FilterDefinition {
-        $definition = new FilterDefinition(
+    ): ConfiguredFilter {
+        $definition = new ConfiguredFilter(
             type: static::TYPE,
             intrinsic: true,
         );

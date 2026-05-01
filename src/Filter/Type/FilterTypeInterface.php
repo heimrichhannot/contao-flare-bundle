@@ -4,22 +4,19 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Type;
 
-use HeimrichHannot\FlareBundle\Filter\FilterBuilder;
-use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
+#[AutoconfigureTag(self::TAG)]
 interface FilterTypeInterface
 {
+    public const TAG = 'huh.flare.filter_type';
+
     /**
      * Configures the options for this type.
      */
     public function configureOptions(OptionsResolver $resolver): void;
-
-    /**
-     * Builds the filter.
-     */
-    public function buildFilter(FilterBuilder $builder, FilterInvocation $inv): void;
 
     /**
      * Builds the filter query.

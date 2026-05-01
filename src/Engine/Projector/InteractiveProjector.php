@@ -50,8 +50,7 @@ class InteractiveProjector extends AbstractProjector
 
         // collect filter values from form data
         $form = $this->createForm($list, $context);
-        $runtimeValues = $this->mapFormDataToFilterKeys($list, $form);
-        $filterValues = $this->resolveFilterValues($list, $runtimeValues);
+        $filterValues = $this->mapFormDataToFilterKeys($list, $form);
 
         // pagination setup
         $totalItems = $this->createAggregationView($list, $context, $filterValues)->getCount();
@@ -135,9 +134,9 @@ class InteractiveProjector extends AbstractProjector
         $filterElementRegistry = $this->getFilterElementRegistry();
 
         $data = [];
-        foreach ($list->getFilters()->getIterator() as $filterDefinition)
+        foreach ($list->getFilters()->getIterator() as $configuredFilter)
         {
-            if (!$filterElement = $filterElementRegistry->get($filterDefinition->getType())?->getService()) {
+            if (!$filterElement = $filterElementRegistry->get($configuredFilter->getElementType())?->getService()) {
                 continue;
             }
 
@@ -145,15 +144,9 @@ class InteractiveProjector extends AbstractProjector
                 continue;
             }
 
-            if ($filterDefinition->isIntrinsic()) {
-                continue;
-            }
+            $filterName = $configuredFilter->getAlias();
 
-            if (!$filterName = $filterDefinition->getAlias()) {
-                throw new FlareException(message: 'Non-intrinsic filter must provide a form field name.');
-            }
-
-            if (!$form->has($filterName)) {
+            if (!$filterName || !$form->has($filterName)) {
                 continue;
             }
 
@@ -163,7 +156,7 @@ class InteractiveProjector extends AbstractProjector
             }
             catch (OutOfBoundsException $exception)
             {
-                $filterSourceId = $filterDefinition->getDataSource()->getFilterIdentifier();
+                $filterSourceId = $configuredFilter->getDataSource()?->getFilterIdentifier();
 
                 throw new FlareException(
                     message: 'Filter form does not contain field: ' . $filterName,
@@ -173,12 +166,11 @@ class InteractiveProjector extends AbstractProjector
                 );
             }
 
-            $filterElement->hydrateForm($field, $list, $filterDefinition);
+            $filterElement->hydrateForm($field, $list, $configuredFilter);
 
             $data[$filterName] = $field->getData();
         }
 
-        // This might not be necessary, but $form->getData() should return all child data as well.
         $form->setData(\array_merge($form->getData() ?? [], $data));
     }
 
@@ -188,9 +180,9 @@ class InteractiveProjector extends AbstractProjector
 
         $filterElementRegistry = $this->getFilterElementRegistry();
 
-        foreach ($list->getFilters()->all() as $key => $definition)
+        foreach ($list->getFilters()->all() as $key => $configuredFilter)
         {
-            $alias = $definition->getAlias();
+            $alias = $configuredFilter->getAlias();
 
             if (\is_null($alias)) {
                 continue;
@@ -201,7 +193,7 @@ class InteractiveProjector extends AbstractProjector
             }
 
             $field = $form->get($alias);
-            $filterElement = $filterElementRegistry->get($definition->getType())?->getService();
+            $filterElement = $filterElementRegistry->get($configuredFilter->getElementType())?->getService();
 
             $values[$key] = $filterElement instanceof FormDataContract
                 ? $filterElement->extractFormData($field)

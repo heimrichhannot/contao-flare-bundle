@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Event;
 
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class FilterDefinitionCreatedEvent extends Event
+class ConfiguredFilterCreatedEvent extends Event
 {
     public function __construct(
-        public FilterDefinition $filterDefinition,
+        public ConfiguredFilter $configuredFilter,
     ) {}
 }

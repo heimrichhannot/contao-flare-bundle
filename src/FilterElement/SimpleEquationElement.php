@@ -10,12 +10,11 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Filter\Type\SimpleEquationFilterType;
+use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
-use Symfony\Component\OptionsResolver\Options;
-use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE, isTargeted: true)]
 class SimpleEquationElement extends AbstractFilterElement
@@ -25,59 +24,25 @@ class SimpleEquationElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
     {
-        if (!($operand = $inv->filter->equationLeft)
-            || !$op = SqlEquationOperator::match($inv->filter->equationOperator))
+        if (!($operand = $invocation->filter->equationLeft)
+            || !$op = SqlEquationOperator::match($invocation->filter->equationOperator))
         {
             throw new FilterException('Invalid filter configuration.');
         }
 
-        $operand = $qb->column($operand);
-
-        $where = match ($op) {
-            SqlEquationOperator::EQUALS => $qb->expr()->eq($operand, ':eq_right'),
-            SqlEquationOperator::NOT_EQUALS => $qb->expr()->neq($operand, ':eq_right'),
-            SqlEquationOperator::GREATER_THAN => $qb->expr()->gt($operand, ':eq_right'),
-            SqlEquationOperator::GREATER_THAN_EQUALS => $qb->expr()->gte($operand, ':eq_right'),
-            SqlEquationOperator::LESS_THAN => $qb->expr()->lt($operand, ':eq_right'),
-            SqlEquationOperator::LESS_THAN_EQUALS => $qb->expr()->lte($operand, ':eq_right'),
-            SqlEquationOperator::LIKE => $qb->expr()->like($operand, ':eq_right'),
-            SqlEquationOperator::NOT_LIKE => $qb->expr()->notLike($operand, ':eq_right'),
-            SqlEquationOperator::IS_NULL => $qb->expr()->isNull($operand),
-            SqlEquationOperator::IS_NOT_NULL => $qb->expr()->isNotNull($operand),
-            default => null,
-        };
-
-        if (!$where) {
-            throw new FilterException('Invalid filter configuration: Operator not supported.');
-        }
-
-        $qb->where($where);
-
-        if (!$op->isUnary()) {
-            $qb->setParameter(':eq_right', $inv->filter->equationRight ?: '');
-        }
+        $builder->add(SimpleEquationFilterType::class, [
+            'operand_left' => $operand,
+            'operator' => $op,
+            'operand_right' => $invocation->filter->equationRight,
+        ]);
     }
 
     #[AsFilterCallback(self::TYPE, 'fields.equationLeft.options')]
     public function getEquationLeftOptions(string $targetTable): array
     {
         return DcaHelper::getFieldOptions($targetTable);
-    }
-
-    public function configureOptions(OptionsResolver $resolver): void
-    {
-        $resolver->define('left')->required()->allowedTypes('string');
-
-        $resolver->define('operator')
-            ->required()
-            ->allowedTypes('string', SqlEquationOperator::class)
-            ->allowedValues(static fn (SqlEquationOperator|string $value): bool => (bool) SqlEquationOperator::match($value))
-            ->normalize(static fn (Options $resolver, SqlEquationOperator|string $value): ?SqlEquationOperator => SqlEquationOperator::match($value))
-        ;
-
-        $resolver->define('right')->default(null)->allowedTypes('string', 'null');
     }
 
     public function getPalette(PaletteConfig $config): ?string
@@ -95,8 +60,8 @@ class SimpleEquationElement extends AbstractFilterElement
         ?string              $equationLeft = null,
         ?SqlEquationOperator $equationOperator = null,
         mixed                $equationRight = null,
-    ): FilterDefinition {
-        $definition = new FilterDefinition(
+    ): ConfiguredFilter {
+        $definition = new ConfiguredFilter(
             type: static::TYPE,
             intrinsic: true,
         );

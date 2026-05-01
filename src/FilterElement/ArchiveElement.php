@@ -8,7 +8,6 @@ use Contao\DataContainer;
 use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
-use Doctrine\DBAL\ArrayParameterType;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract;
@@ -16,7 +15,9 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
+use HeimrichHannot\FlareBundle\Filter\Type\ArchiveFilterType;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
@@ -24,8 +25,7 @@ use HeimrichHannot\FlareBundle\InferPtable\PtableInferrableInterface;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -46,19 +46,24 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
     {
+        $filter = $invocation->filter;
+
         /** @var Model[] $selectedModels */
-        $selectedModels = $inv->getValue() ?? [];
-        $inferrer = $this->getPtableInferrer($inv->list);
+        $selectedModels = $filter->isIntrinsic()
+            ? $this->getIntrinsicValue($invocation->list, $filter)
+            : $this->processRuntimeValue($invocation->getValue(), $invocation->list, $filter);
+
+        $inferrer = $this->getPtableInferrer($invocation->list);
 
         if (!$selectedModels)
         {
-            if ($inv->filter->useWhitelistForOptionsOnly) {
+            if ($filter->useWhitelistForOptionsOnly) {
                 return;
             }
 
-            $qb::abort();
+            $builder->abort();
         }
 
         if ($inferrer->getDcaMainPtable())
@@ -67,8 +72,10 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
                 throw new FilterException('No valid parent archive ids extracted.');
             }
 
-            $qb->where($qb->expr()->in($qb->column('pid'), ':pids'))
-                ->setParameter('pids', $pids, ArrayParameterType::INTEGER);
+            $builder->add(ArchiveFilterType::class, [
+                'field' => 'pid',
+                'parent_ids' => $pids,
+            ]);
 
             return;
         }
@@ -93,16 +100,16 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
             }
         }
 
-        $this->relationElement->filterDynamicPtableField(
-            qb: $qb,
-            filter: $inv->filter,
+        $this->relationElement->addDynamicPtableFilter(
+            builder: $builder,
+            filter: $filter,
             fieldDynamicPtable: 'ptable',
             fieldPid: 'pid',
             submittedData: $grouped,
         );
     }
 
-    protected function getWhitelistedParentIds(ListSpecification $list, FilterDefinition $filter): ?array
+    protected function getWhitelistedParentIds(ListSpecification $list, ConfiguredFilter $filter): ?array
     {
         $inferrer = $this->getPtableInferrer($list);
 
@@ -120,7 +127,7 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
         return $this->getParentIdsFromGroupWhitelistBlob($filter->groupWhitelistParents);
     }
 
-    protected function getWhitelistedParents(ListSpecification $list, FilterDefinition $filter): array
+    protected function getWhitelistedParents(ListSpecification $list, ConfiguredFilter $filter): array
     {
         $inferrer = $this->getPtableInferrer($list);
 
@@ -142,7 +149,7 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
     /**
      * @return Model[]
      */
-    public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): array
+    public function getIntrinsicValue(ListSpecification $list, ConfiguredFilter $filter): array
     {
         return $this->getWhitelistedParents($list, $filter);
     }
@@ -150,7 +157,7 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
     /**
      * @return Model[]
      */
-    public function processRuntimeValue(mixed $value, ListSpecification $list, FilterDefinition $filter): array
+    public function processRuntimeValue(mixed $value, ListSpecification $list, ConfiguredFilter $filter): array
     {
         $values = $this->normalizeFilterValue($value);
 
@@ -552,7 +559,7 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
         return $allParents;
     }
 
-    public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void
+    public function hydrateForm(FormInterface $field, ListSpecification $list, ConfiguredFilter $filter): void
     {
         if (!$preselect = StringUtil::deserialize($filter->preselect ?: null, true))
         {

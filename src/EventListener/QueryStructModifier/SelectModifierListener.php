@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\EventListener\QueryStructModifier;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Exception as DBALException;
 use HeimrichHannot\FlareBundle\Event\ModifyListQueryStructEvent;
-use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
@@ -18,7 +18,7 @@ readonly class SelectModifierListener
     ) {}
 
     /**
-     * @throws AbortFilteringException
+     * @throws DBALException
      */
     public function __invoke(ModifyListQueryStructEvent $event): void
     {
@@ -27,12 +27,12 @@ readonly class SelectModifierListener
         if ($event->config->isCounting)
         {
             $struct->setSelect(\sprintf(
-                "COUNT(%s) AS %s",
-                (\count($struct->getJoins()) < 1)
-                    ? '*'
-                    : \sprintf('DISTINCT(%s)', $this->connection->quoteIdentifier(TableAliasRegistry::ALIAS_MAIN . '.id')),
-                $this->connection->quoteIdentifier('count')
+                "COUNT(DISTINCT(%s)) AS %s",
+                $this->connection->quoteIdentifier(TableAliasRegistry::ALIAS_MAIN . '.id'),
+                $this->connection->quoteIdentifier('count'),
             ));
+
+            $struct->setGroupBy(null);
 
             return;
         }

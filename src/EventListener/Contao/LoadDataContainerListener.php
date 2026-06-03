@@ -43,28 +43,19 @@ readonly class LoadDataContainerListener
             return;
         }
 
-        $model = match ($table) {
-            $filterTable => FilterModel::findByPk($id),
-            $listTable => ListModel::findByPk($id),
+        [$modelType, $prefix, $container] = match ($table) {
+            $filterTable => [FilterModel::findByPk($id)?->type, 'filter.', $this->filterContainer],
+            $listTable => [ListModel::findByPk($id)?->type, 'list.', $this->listContainer],
+            default => [null, null, null],
         };
 
-        if (!$model || !$model->type) {
+        if (!$modelType || $prefix || !$container) {
             return;
         }
 
-        $prefix = match ($table) {
-            $filterTable => 'filter.',
-            $listTable => 'list.',
-        };
-
-        if (!$callbacks = $this->registry->getNamespace($prefix . $model->type)) {
+        if (!$callbacks = $this->registry->getNamespace($prefix . $modelType)) {
             return;
         }
-
-        $container = match ($table) {
-            $filterTable => $this->filterContainer,
-            $listTable => $this->listContainer,
-        };
 
         // @phpstan-ignore function.alreadyNarrowedType
         if (!\is_subclass_of($container, FlareCallbackContainerInterface::class)) {

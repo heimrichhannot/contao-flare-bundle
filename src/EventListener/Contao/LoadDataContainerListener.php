@@ -28,7 +28,10 @@ readonly class LoadDataContainerListener
      */
     public function __invoke(string $table): void
     {
-        if ($table !== 'tl_flare_filter' && $table !== 'tl_flare_list') {
+        $filterTable = FilterModel::getTable();
+        $listTable = ListModel::getTable();
+
+        if ($table !== $filterTable && $table !== $listTable) {
             return;
         }
 
@@ -41,8 +44,8 @@ readonly class LoadDataContainerListener
         }
 
         $model = match ($table) {
-            'tl_flare_filter' => FilterModel::findByPk($id),
-            'tl_flare_list' => ListModel::findByPk($id),
+            $filterTable => FilterModel::findByPk($id),
+            $listTable => ListModel::findByPk($id),
         };
 
         if (!$model || !$model->type) {
@@ -50,8 +53,8 @@ readonly class LoadDataContainerListener
         }
 
         $prefix = match ($table) {
-            'tl_flare_filter' => 'filter.',
-            'tl_flare_list' => 'list.',
+            $filterTable => 'filter.',
+            $listTable => 'list.',
         };
 
         if (!$callbacks = $this->registry->getNamespace($prefix . $model->type)) {
@@ -59,8 +62,8 @@ readonly class LoadDataContainerListener
         }
 
         $container = match ($table) {
-            'tl_flare_filter' => $this->filterContainer,
-            'tl_flare_list' => $this->listContainer,
+            $filterTable => $this->filterContainer,
+            $listTable => $this->listContainer,
         };
 
         // @phpstan-ignore function.alreadyNarrowedType

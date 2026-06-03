@@ -200,12 +200,32 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NULL default ''",
     ],
+    'jumpToListView' => [
+        'exclude' => true,
+        'inputType' => 'pageTree',
+        'foreignKey' => 'tl_page.title',
+        'eval' => ['fieldType' => 'radio', 'tl_class' => 'clr w50'],
+        'sql' => [
+            'type' => 'integer',
+            'unsigned' => true,
+            'length' => 10,
+            'notnull' => false,
+            'default' => null,
+        ],
+        'relation' => ['type' => 'hasOne', 'load' => 'lazy'],
+    ],
     'jumpToReader' => [
         'exclude' => true,
         'inputType' => 'pageTree',
         'foreignKey' => 'tl_page.title',
-        'eval' => ['fieldType' => 'radio', 'tl_class' => 'clr'],
-        'sql' => "int(10) unsigned NOT NULL default 0",
+        'eval' => ['fieldType' => 'radio', 'tl_class' => 'w50'],
+        'sql' => [
+            'type' => 'integer',
+            'unsigned' => true,
+            'length' => 10,
+            'notnull' => false,
+            'default' => null,
+        ],
         'relation' => ['type' => 'hasOne', 'load' => 'lazy'],
     ],
     'sortSettings' => [
@@ -297,7 +317,7 @@ $dca['fields']['comments_sendNativeEmails'] = [
 $dca['palettes'] = [
     '__selector__' => ['type', 'whichPtable'],
     '__prefix__' => '{title_legend},title,type',
-    '__suffix__' => '{flare_defaults_legend},sortSettings;{flare_reader_legend},jumpToReader;{advanced_legend:hide};{publish_legend},published',
+    '__suffix__' => '{flare_defaults_legend},sortSettings;{flare_jump_legend},jumpToListView,jumpToReader;{advanced_legend:hide};{publish_legend},published',
 ];
 
 $dca['palettes']['default'] = Str::mergePalettes($dca['palettes']['__prefix__'], $dca['palettes']['__suffix__']);

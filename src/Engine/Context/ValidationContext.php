@@ -26,6 +26,7 @@ readonly class ValidationContext implements
     public function __construct(
         private ?\Closure                   $entryCache = null,
         #[Assert\PositiveOrZero] public int $jumpToReaderPageId = 0,
+        #[Assert\PositiveOrZero] public int $jumpToListViewPageId = 0,
         #[Assert\NotBlank] private string   $autoItemField = 'id',
         private array                       $filterValues = [],
     ) {
@@ -68,6 +69,7 @@ readonly class ValidationContext implements
         return new self(
             entryCache: $this->entryCache,
             jumpToReaderPageId: $this->jumpToReaderPageId,
+            jumpToListViewPageId: $this->jumpToListViewPageId,
             autoItemField: $this->autoItemField,
             filterValues: $values,
         );

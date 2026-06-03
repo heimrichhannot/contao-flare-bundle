@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Engine\Context\Factory;
 
 use Contao\ContentModel;
+use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
@@ -22,15 +23,15 @@ readonly class InteractiveContextFactory
 
     public function createFromContent(ContentModel $contentModel, ListModel $listModel): InteractiveContext
     {
-        $filterFormName = $contentModel->flare_formName ?: 'fl' . $listModel->id;
+        $filterFormName = $contentModel->{ContentContainer::FIELD_FORM_NAME} ?: ('fl' . $listModel->id);
 
         $paginatorConfig = new PaginatorConfig(
-            itemsPerPage: (int) ($contentModel->flare_itemsPerPage ?: 0),
+            itemsPerPage: (int) ($contentModel->{ContentContainer::FIELD_ITEMS_PER_PAGE} ?: 0),
         );
 
         $sortOrderSequence = $this->sortOrderSequenceFactory->createFromListModel($listModel);
 
-        $jumpToReaderPageId = (int) ($listModel->jumpToReader ?: $contentModel->flare_jumpToReader);
+        $jumpToReaderPageId = (int) ($contentModel->{ContentContainer::FIELD_JUMP_TO_READER} ?: $listModel->jumpToReader);
 
         $fieldAutoItem = DcaHelper::tryGetColumnName(
             $listModel->dc,
@@ -42,7 +43,7 @@ readonly class InteractiveContextFactory
             paginatorConfig: $paginatorConfig,
             sortOrderSequence: $sortOrderSequence,
             contentModelId: (int) $contentModel->id,
-            formActionPage: (int) $contentModel->flare_jumpTo,
+            formActionPage: (int) $contentModel->{ContentContainer::FIELD_JUMP_TO},
             formName: $filterFormName,
             jumpToReaderPageId: $jumpToReaderPageId,
             autoItemField: $fieldAutoItem,

@@ -29,10 +29,11 @@ $lang['sortSettings__column'] = ['Column', 'Please choose the column by which th
 $lang['sortSettings__direction'] = ['Sorting Direction', 'Please choose the sorting direction.'];
 ###< flare_defaults_legend ###
 
-###> flare_reader_legend ###
-$lang['flare_reader_legend'] = 'Reader Settings';
-$lang['jumpToReader'] = ['Detail Reader Page', 'Please choose the page to which visitors are redirected when clicking on a list entry.'];
-###< flare_reader_legend ###
+###> flare_jump_legend ###
+$lang['flare_jump_legend'] = 'Link Settings';
+$lang['jumpToListView'] = ['Default List View Page', 'Page opened when clicking the back button.'];
+$lang['jumpToReader'] = ['Default Detail Reader Page', 'Page opened when clicking a list entry.'];
+###< flare_jump_legend ###
 
 ###> meta_legend ###
 $lang['meta_legend'] = 'Meta Settings';

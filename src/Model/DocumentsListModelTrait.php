@@ -13,7 +13,8 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property bool $comments_enabled
  * @property bool $comments_sendNativeEmails
  * @property string $fieldAutoItem
- * @property string $jumpToReader
+ * @property ?int $jumpToReader
+ * @property ?int $jumpToListView
  * @property array $sortSettings
  * @property string $metaTitleFormat
  * @property string $metaDescriptionFormat

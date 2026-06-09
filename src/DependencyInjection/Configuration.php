@@ -14,7 +14,6 @@ final class Configuration implements ConfigurationInterface
         $treeBuilder = new TreeBuilder('huh_flare');
         $rootNode = $treeBuilder->getRootNode();
 
-        // @phpstan-ignore class.notFound
         $rootNode
             ->children()
                 ->arrayNode('format_label_defaults')

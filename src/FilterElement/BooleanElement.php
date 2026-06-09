@@ -6,7 +6,6 @@ namespace HeimrichHannot\FlareBundle\FilterElement;
 
 use Contao\Controller;
 use Contao\Message;
-use Doctrine\DBAL\ParameterType;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
@@ -15,10 +14,11 @@ use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
 use HeimrichHannot\FlareBundle\Enum\BoolMode;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
+use HeimrichHannot\FlareBundle\Filter\Type\BooleanFilterType;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 
@@ -35,28 +35,34 @@ class BooleanElement extends AbstractFilterElement implements IntrinsicValueCont
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
     {
-        if (!$targetField = $inv->filter->fieldGeneric) {
-            $qb->abort();
+        $filter = $invocation->filter;
+
+        if (!$targetField = $filter->fieldGeneric) {
+            $builder->abort();
         }
 
-        $value = $inv->getValue();
+        $value = $filter->isIntrinsic()
+            ? $this->getIntrinsicValue($invocation->list, $filter)
+            : $this->processRuntimeValue($invocation->getValue(), $invocation->list, $filter);
 
         if ($value === null) {
             return;
         }
 
-        $qb->where($qb->expr()->eq($qb->column($targetField), ':val'))
-            ->setParameter('val', $value ? '1' : '', ParameterType::STRING);
+        $builder->add(BooleanFilterType::class, [
+            'field' => $targetField,
+            'value' => $value,
+        ]);
     }
 
-    public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): bool
+    public function getIntrinsicValue(ListSpecification $list, ConfiguredFilter $filter): bool
     {
         return (bool) $this->normalizeValue($filter->preselect);
     }
 
-    public function processRuntimeValue(mixed $value, ListSpecification $list, FilterDefinition $filter): ?bool
+    public function processRuntimeValue(mixed $value, ListSpecification $list, ConfiguredFilter $filter): ?bool
     {
         $mode = BoolMode::tryFrom($filter->boolMode ?: '') ?? BoolMode::BINARY;
 
@@ -166,8 +172,8 @@ class BooleanElement extends AbstractFilterElement implements IntrinsicValueCont
     public static function define(
         ?string $targetField = null,
         ?bool $expectedValue = null,
-    ): FilterDefinition {
-        $definition = new FilterDefinition(
+    ): ConfiguredFilter {
+        $definition = new ConfiguredFilter(
             type: static::TYPE,
             intrinsic: true,
         );

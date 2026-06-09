@@ -7,9 +7,10 @@ namespace HeimrichHannot\FlareBundle\FilterElement;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
+use HeimrichHannot\FlareBundle\Filter\Type\DateRangeFilterType as DateRangeQueryFilterType;
 use HeimrichHannot\FlareBundle\Form\Type\DateRangeFilterType;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 
 #[AsFilterElement(
     type: self::TYPE,
@@ -23,28 +24,19 @@ class DateRangeElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
     {
-        $value = $inv->getValue();
+        $value = (array) ($invocation->getValue() ?: []);
 
-        if (!$field = $inv->filter->fieldGeneric) {
+        if (!$field = $invocation->filter->fieldGeneric) {
             throw new FilterException('Set fieldGeneric in filter model.');
         }
 
-        $from = $value['from'] ?? null;
-        $to = $value['to'] ?? null;
-
-        $colField = $qb->column($field);
-
-        if ($from instanceof \DateTimeInterface) {
-            $qb->where($qb->expr()->gte($colField, ':from'))
-                ->setParameter('from', $from->getTimestamp());
-        }
-
-        if ($to instanceof \DateTimeInterface) {
-            $qb->where($qb->expr()->lte($colField, ':to'))
-                ->setParameter('to', $to->getTimestamp());
-        }
+        $builder->add(DateRangeQueryFilterType::class, [
+            'field' => $field,
+            'from' => $value['from'] ?? null,
+            'to' => $value['to'] ?? null,
+        ]);
     }
 
     public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void

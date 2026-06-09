@@ -41,7 +41,7 @@ readonly class FilterFormFactory
             'csrf_protection'    => false,
             'translation_domain' => 'flare_form',
             'attr' => [
-                'data-flare-keep-query' => 'true',
+                'data-flare-form' => 'keep-query',
             ],
         ];
 

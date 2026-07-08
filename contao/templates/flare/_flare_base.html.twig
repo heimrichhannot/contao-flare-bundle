@@ -1,13 +1,11 @@
 {% types {
     element_css_classes?: 'string',
     class?: 'string',
-    flare_css_classes?: 'string|string[][]',
-    base_class_attr: 'array',
+    flare_css_classes?: 'string|string[]',
     html_class: 'string',
     html_id?: 'string',
 } %}
-{% set base_class_attr = ['block', element_css_classes ?? class ?? '', flare_css_classes ?? ''] %}
-{% set html_class = flare_str.htmlJoinClasses(base_class_attr) %}
+{% set html_class = flare_str.htmlJoinClasses('block', element_css_classes ?? class ?? '', flare_css_classes ?? '') %}
 {% set html_id = element_html_id|default(null) %}
 <div class="{{ html_class|trim }}"{% if html_id is not null %} id="{{ html_id }}"{% elseif cssID|default %}{{ cssID|raw }}{% endif %}>
     {% block wrapper %}

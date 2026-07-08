@@ -1,6 +1,8 @@
 {# @var \HeimrichHannot\FlareBundle\Engine\Engine flare #}
 {% extends '@Contao/flare/_flare_base.html.twig' %}
 
+{% set flare_css_classes = [flare_css_classes ?? '', 'flare-listview', 'content-flare-listview'] %}
+
 {# @var \HeimrichHannot\FlareBundle\Engine\View\InteractiveView flare_list #}
 {% set flare_list = flare.createView %}
 

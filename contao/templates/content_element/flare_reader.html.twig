@@ -3,6 +3,8 @@
 {# @var \Contao\Model model #}
 {% extends '@Contao/flare/_flare_base.html.twig' %}
 
+{% set flare_css_classes = [flare_css_classes ?? '', 'flare-reader', 'content-flare-reader'] %}
+
 {% block content %}
 
     <div style="color: #800; background: #fdd; padding: 1rem;">

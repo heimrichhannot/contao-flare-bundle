@@ -38,6 +38,14 @@ jobs:
       - name: Validate composer.json
         run: composer validate --strict
 
+      # Contao 4.13 pulls in spomky-labs/otphp ^10.0 transitively, and every
+      # available 10.x release carries a security advisory. Composer refuses to
+      # resolve advisory-affected packages by default, which breaks this
+      # dry-run resolvability check for a transitive constraint we don't control.
+      # Disable the advisory block for this ephemeral CI checkout only.
+      - name: Allow advisory-affected transitive dependencies
+        run: composer config --no-plugins policy.advisories.block false
+
       - name: Check dependency resolution
         run: >-
           composer update --dry-run --no-progress --prefer-dist

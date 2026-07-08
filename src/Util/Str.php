@@ -139,7 +139,7 @@ final readonly class Str
 
     public static function random(int $length = 10, ?string $chars = null): string
     {
-        $chars ??= '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $chars ??= self::CHARS_ALPHANUMERIC;
         $max = \mb_strlen($chars, '8bit') - 1;
         $rand = '';
 
@@ -293,5 +293,40 @@ final readonly class Str
         }
 
         return null;
+    }
+
+    public static function htmlListClasses(string|array|null ...$classes): array
+    {
+        if (!$classes) {
+            return [];
+        }
+
+        $normalClasses = [];
+        $flatClasses = Arr::flatten($classes);
+
+        foreach ($flatClasses as $class)
+        {
+            if ($class instanceof \Closure) {
+                $class = $class();
+            }
+
+            if (!$class) {
+                continue;
+            }
+
+            if (!\is_scalar($class) && !$class instanceof \Stringable) {
+                continue;
+            }
+
+            $split = \explode(' ', (string) $class);
+            \array_push($normalClasses, ...$split);
+        }
+
+        return \array_values(\array_unique(\array_filter($normalClasses)));
+    }
+
+    public static function htmlJoinClasses(string|array|null ...$classes): string
+    {
+        return \implode(' ', self::htmlListClasses(...$classes));
     }
 }

@@ -25,7 +25,7 @@
         "symfony/serializer": "^5.4 || ^6.0 || ^7.0",
         "symfony/string": "^5.2 || ^6.0 || ^7.0",
         "symfony/validator": "^5.4 || ^6.0 || ^7.0",
-        "twig/twig": "^3.0"
+        "twig/twig": "^3.13"
     },
     "require-dev": {
         "contao/test-case": "^4.0 || ^5.0",

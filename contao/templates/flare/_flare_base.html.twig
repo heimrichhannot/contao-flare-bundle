@@ -1,4 +1,13 @@
-{% set html_class = ('flare-listview content-flare-listview block ' ~ element_css_classes|default(class|default('')) ~ ' ' ~ flare_css_classes|default('')) %}
+{% types {
+    element_css_classes?: 'string',
+    class?: 'string',
+    flare_css_classes?: 'string|string[][]',
+    base_class_attr: 'array',
+    html_class: 'string',
+    html_id?: 'string',
+} %}
+{% set base_class_attr = ['block', element_css_classes ?? class ?? '', flare_css_classes ?? ''] %}
+{% set html_class = flare_str.htmlJoinClasses(base_class_attr) %}
 {% set html_id = element_html_id|default(null) %}
 <div class="{{ html_class|trim }}"{% if html_id is not null %} id="{{ html_id }}"{% elseif cssID|default %}{{ cssID|raw }}{% endif %}>
     {% block wrapper %}

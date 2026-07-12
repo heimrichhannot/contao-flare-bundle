@@ -49,7 +49,7 @@ readonly class LoadDataContainerListener
             default => [null, null, null],
         };
 
-        if (!$modelType || $prefix || !$container) {
+        if (!$modelType || !$prefix || !$container) {
             return;
         }
 

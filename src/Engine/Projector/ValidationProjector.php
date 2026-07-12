@@ -35,7 +35,7 @@ class ValidationProjector extends AbstractProjector
         \assert($context instanceof ValidationContext, '$config must be an instance of ValidationConfig');
 
         $readerUrlConfig = $context->createReaderUrlConfig();
-        $autoItemField = $readerUrlConfig?->autoItemField ?? $context->getAutoItemField();
+        $autoItemField = $readerUrlConfig->autoItemField ?? $context->getAutoItemField();
 
         $loader = $this->createLoader(new ValidationLoaderConfig(
             list: $list,

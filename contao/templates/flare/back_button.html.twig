@@ -1,0 +1,25 @@
+{# @var \HeimrichHannot\FlareBundle\Reader\BackLink|null back_link #}
+{#
+    Back-to-list button component.
+
+    Renders a link to the configured list view page. The FLARE frontend script
+    upgrades the link to document.referrer when the reader was opened from the
+    list view, preserving its filter and pagination query parameters.
+
+    Variables:
+        back_link          ?BackLink  pass flare_reader.backLink
+        url                string     explicit fallback URL (wins over back_link)
+        label              string     button text, defaults to a translated "Back to list"
+        allow_any_referrer bool       accept any same-origin referrer, not just the configured page
+        link_class         string     extra CSS classes on the anchor
+#}
+{% set back_url = url|default(back_link.url ?? null) %}
+{% set allow_any = allow_any_referrer|default(false) %}
+{% block back_button %}
+    {% if back_url or allow_any %}
+        <a{% if back_url %} href="{{ back_url }}"{% else %} hidden{% endif %}
+           class="flare_back_button{% if link_class|default %} {{ link_class }}{% endif %}"
+           data-flare-back-button="{{ allow_any ? 'any-referrer' : 'strict' }}"
+        >{{ label|default('reader.back_to_list'|trans({}, 'flare')) }}</a>
+    {% endif %}
+{% endblock %}

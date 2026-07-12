@@ -1,0 +1,17 @@
+{# @var \HeimrichHannot\FlareBundle\Reader\BackLink|null back_link #}
+{#
+    Bootstrap 5 variant of the back-to-list button component.
+
+    Same contract as @Contao/flare/back_button.html.twig, plus:
+        btnClass  string  Bootstrap button classes, defaults to "btn btn-outline-secondary"
+#}
+{% set back_url = url|default(back_link.url ?? null) %}
+{% set allow_any = allow_any_referrer|default(false) %}
+{% block back_button %}
+    {% if back_url or allow_any %}
+        <a{% if back_url %} href="{{ back_url }}"{% else %} hidden{% endif %}
+           class="{{ btnClass|default('btn btn-outline-secondary') }}{% if link_class|default %} {{ link_class }}{% endif %}"
+           data-flare-back-button="{{ allow_any ? 'any-referrer' : 'strict' }}"
+        >{{ label|default('reader.back_to_list'|trans({}, 'flare')) }}</a>
+    {% endif %}
+{% endblock %}

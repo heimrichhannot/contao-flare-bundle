@@ -5,12 +5,18 @@
  * on-submit or reset of a GET form marked with data-flare-form="keep-query",
  * the form's own parameters are stripped from the action URL, the current
  * form data is re-appended (submit only), and the browser navigates there.
+ *
+ * Upgrades back-to-list buttons marked with data-flare-back-button:
+ * when document.referrer qualifies as the originating list view, the anchor's
+ * href is replaced with the referrer URL so the list view's filter and
+ * pagination query parameters are preserved.
  */
 (() => {
     'use strict';
 
     const KEEP_QUERY_SELECTOR = '[data-flare-form="keep-query"]';
     const QUERY_FIELD_SELECTOR = '[data-flare-form="query-field"]';
+    const BACK_BUTTON_SELECTOR = '[data-flare-back-button]';
 
     function stripOwnParams(searchParams, form) {
         const fieldNames = Array.from(form.querySelectorAll(QUERY_FIELD_SELECTOR)).map((field) => field.name);
@@ -65,6 +71,61 @@
         }
     }
 
+    function normalizePathname(pathname) {
+        // strip a single trailing slash so "/list/" matches "/list"
+        return pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+    }
+
+    function getQualifyingReferrer(anchor) {
+        if (!document.referrer) {
+            return null;
+        }
+
+        let referrer;
+        try {
+            referrer = new URL(document.referrer);
+        } catch {
+            return null;
+        }
+
+        if (referrer.origin !== window.location.origin) {
+            return null;
+        }
+
+        if (referrer.href === window.location.href) {
+            // never link back to the current page itself
+            return null;
+        }
+
+        if (anchor.getAttribute('data-flare-back-button') === 'any-referrer') {
+            return referrer;
+        }
+
+        // strict mode: the referrer path must match the configured list view page's path,
+        // which is the path of the server-rendered fallback href
+        const fallbackHref = anchor.getAttribute('href');
+        if (!fallbackHref) {
+            return null;
+        }
+
+        const fallback = new URL(fallbackHref, window.location.href);
+
+        return normalizePathname(referrer.pathname) === normalizePathname(fallback.pathname) ? referrer : null;
+    }
+
+    function initBackButtons() {
+        for (const anchor of document.querySelectorAll(BACK_BUTTON_SELECTOR)) {
+            const referrer = getQualifyingReferrer(anchor);
+            if (!referrer) {
+                // keep the server-rendered fallback href; anchors without href stay hidden
+                continue;
+            }
+
+            anchor.href = referrer.href;
+            anchor.hidden = false;
+        }
+    }
+
     function onDocumentReady(callback) {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', callback);
@@ -73,5 +134,8 @@
         }
     }
 
-    onDocumentReady(initKeepQueryForms);
+    onDocumentReady(() => {
+        initKeepQueryForms();
+        initBackButtons();
+    });
 })();

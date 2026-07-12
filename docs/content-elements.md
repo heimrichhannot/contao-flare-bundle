@@ -18,6 +18,9 @@ It asks you to provide a **form name**, which is used to identify the filter for
 The form name is also used to store the filter state in the URL query parameters, allowing users to bookmark or share
 the filtered view.
 
+The list view element can also **override the detail reader page** configured on the list, in case the same list is
+shown in multiple places with different reader pages.
+
 ### Separating Filter Form and List
 
 The same mechanism can be leveraged to **separate filter form and listing** into multiple content elements, allowing you to
@@ -30,6 +33,9 @@ Selecting the **Detail reader <span style={{opacity:.6}}>[FLARE]</span>** option
 that is part of a list. This content element uses Contao's standard **auto-item** feature to determine
 which entity to display from a unique ID or alias in the URL. Which field is used as the auto-item is defined in the
 list configuration.
+
+The reader element can **override the list view page** configured on the list, which is used as the fallback target of
+the [back-to-list button](./templating.mdx#back-to-list-button).
 
 ## Default Templates
 

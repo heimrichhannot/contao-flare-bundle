@@ -8,8 +8,8 @@ Using Flare is simple: define a list, add filters, and display it on your page.
 
 ## The 5-Step Setup
 
-1. **Create a List Configuration**: Go to <strong>Layout → Lists&nbsp;&nbsp;<span style={{ opacity: .6 }}>FLARE</span></strong>&ensp;in the Contao backend.
-2. **Configure the List**: Select the List Type (e.g., News, Generic Data Container) and configure the relevant fields.
+1. **Create a List Configuration**: Go to <strong>Layout → Listings&nbsp;&nbsp;<span style={{ opacity: .6 }}>FLARE</span></strong>&ensp;in the Contao backend.
+2. **Configure the List**: Select the List Type (e.g., News, Events, Data Container) and configure the relevant fields.
 3. **Add Filter Elements**: Each list is an archive of filters. Add filters as children to your list.
 4. **Display the List**: Add a **Flare List View** content element to any page and select your list configuration.
 5. **Add a Reader (Optional)**: If you need detail pages, add a **Flare Reader** content element to a separate page and select your list configuration.
@@ -53,3 +53,7 @@ In Flare, a filter can be marked as **Intrinsic**:
 5. Flare will show a dropdown of news archives and list only published the news articles belonging to the selected archive.
 
 > In case of the the News list type, a `published` filter is added by default. If you add your own published filter, it will replace the default one.
+
+Besides **News** and the generic **Data Container** type, Flare ships an **Events** list type for
+`tl_calendar_events`, which becomes available when the Contao calendar bundle is installed.
+See [Integrations](integrations/) for details.

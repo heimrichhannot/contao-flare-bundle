@@ -31,7 +31,7 @@ The system is based on a strict separation of responsibilities:
     - `InteractiveContext`: For HTML lists with pagination and forms.
     - `AggregationContext`: For counting or statistical calculations.
     - `ValidationContext`: For checking if specific IDs are valid within the filter scope.
-    - `ExportContext`: (Future) For CSV/Excel downloads.
+    - `ExportContext`: (Planned) For CSV/Excel downloads. An `ExportProjector` and `ExportView` already exist, but no export context is wired up yet.
 
 ### 3. Engine (`Engine`)
 - **Type:** Stateful Orchestrator.
@@ -47,13 +47,13 @@ The system is based on a strict separation of responsibilities:
 - **Type:** Stateful Data Object (Result).
 - **Responsibility:** Holds the results of the projection.
 - **Usage:** Passed to Twig templates or returned by an API.
-- **API:** Provides access to the processed data (e.g., `getEntries()`, `getPagination()`, `getCount()`).
+- **API:** Provides access to the processed data. `ViewInterface` itself is an empty marker interface — the actual API lives on the concrete views and differs per context: `InteractiveView` offers `getEntries()`, `getPaginator()`, `getCount()`, `getForm()`, and more, while `AggregationView` only exposes `getCount()`.
 
 ## The Flow
 
 1. You create or load a **Specification**.
 2. You define a **Context** (e.g., `InteractiveContext` with pagination settings).
-3. You instantiate an **Engine** with both: `$engine = new Engine($context, $spec, $registry);`.
+3. You create an **Engine** from both via the factory service: `$engine = $engineFactory->createEngine($context, $spec);`.
 4. You call `$view = $engine->createView();`.
 5. The Engine delegates the work to a **Projector**, which returns the **View**.
 

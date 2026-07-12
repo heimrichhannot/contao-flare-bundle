@@ -341,13 +341,16 @@ the view.
 {% do flare.addMod(mod_type, mod_options) %}
 ```
 
+The options dictionary may be omitted for mods that don't define any options: `flare.addMod(mod_type)`.
+(Both built-in mods have required options, so they are always called with a dictionary.)
+
 For example, add filters dynamically or change the paginator url query parameter.
 
 ```twig
 {%
     set modded_view = flare
         .addMod('equation', { ... })
-        .addMod('query_param', { ... })
+        .addMod('page_param', { ... })
         .createView()
 %}
 ```
@@ -372,12 +375,12 @@ element and display the different lists with different mods.
     - `operator` (string): the operator, e.g. `=`, `>=`, `LIKE`, etc.,
     - `operand2`: the second operand, e.g., a string to match, a number to compare, an ID, etc.
 
-#### Form: Query parameter
+#### Paginator: Page parameter
 
 To add individual paginators to multiple lists created in one template, use this mod to change the query parameter
 used for pagination.
 
-- **Mod type:** `query_param`
+- **Mod type:** `page_param`
 - **Mod options:**
     - `param` (string): the query parameter name.
 
@@ -407,7 +410,7 @@ used for pagination.
 
     {% set list_view = flare
         .addMod('equation', { operand1: 'medium', operator: '=', operand2: 'video' })
-        .addMod('query_param', { param: 'video_page' })
+        .addMod('page_param', { param: 'video_page' })
         .createView()
     %}
     {{ _self.render_list(list_view, 'Videos') }}
@@ -415,7 +418,7 @@ used for pagination.
     {% set list_view = flare
         .clearMods()
         .addMod('equation', { operand1: 'medium', operator: '=', operand2: 'podcast' })
-        .addMod('query_param', { param: 'podcast_page' })
+        .addMod('page_param', { param: 'podcast_page' })
         .createView()
     %}
     {{ _self.render_list(list_view, 'Podcasts') }}
@@ -443,7 +446,7 @@ Resulting in an exception like this:
 
 ## Twig Helpers
 
-Flare currently registers these Twig functions:
+Flare currently registers these Twig functions (see the [Twig functions reference](reference/twig.md)):
 
 - `flare_content(model)` for rendering the content elements belonging to the model.
 - `flare_enclosure(model|entry_row, string field = "enclosure")` for retreiving file enclosure data as you would with
@@ -452,6 +455,8 @@ Flare currently registers these Twig functions:
   ```
 - `flare_enclosure_files(model|enclosure_array)` (deprecated, will be removed in v0.2): retreives a collection of `Contao\FilesModel` instances
   for the given model or an imediate array of enclosure data.
+- `flare_project(list_specification, context)` for running a projection directly from a template: returns the view
+  for the given `ListSpecification` and context configuration, without going through a content element's engine.
 - `flare_schema_org(?model = null)` (uses model from context if not provided): prints the JSON-LD schema markup for the given model in a reader context.
   The data can be influenced using the `ReaderSchemaOrgEvent`.
 

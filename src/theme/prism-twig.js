@@ -14,7 +14,7 @@ export default function loadTwigGrammar(Prism) {
             pattern: /("|')(?:\\.|(?!\1)[^\\\r\n])*\1/,
             greedy: true
         },
-        'keyword': /\b(?:extends|block|endblock|set|if|endif|else|elseif|for|endfor|in|macro|endmacro|import|from|include|use|spaceless|endspaceless|filter|endfilter|do|flush|with|without|as|add|endadd|to)\b/,
+        'keyword': /\b(?:extends|block|endblock|set|if|endif|else|elseif|for|endfor|in|macro|endmacro|import|from|include|use|spaceless|endspaceless|filter|endfilter|do|flush|with|without|as|add|endadd|to|form_theme)\b/,
         'boolean': /\b(?:true|false|null)\b/i,
         'number': /\b0x[\dA-Fa-f]+|(?:\b\d+(?:\.\d*)?|\B\.\d+)(?:[Ee][-+]?\d+)?/,
         'operator': /\b(?:and|or|not|b-and|b-xor|b-or|is(?:\s+not)?|matches|starts\s+with|ends\s+with|same\s+as|default|defined|divisible\s+by|empty|even|iterable|odd)\b|[=<>]=?|!=|\*\*?|\/\/?|\?:?|[-+~%|]/,

@@ -5,6 +5,15 @@ sidebar_position: 2
 
 # Context-Aware Filter Invocation
 
+:::danger[Deprecated]
+
+The `#[AsFilterInvoker]` attribute is **deprecated** and will be removed in a future version.
+Define your filter's invocation logic in the filter element's `__invoke` method instead
+(see [Custom Filter Elements](../dev/filter-elements/index.md)).
+This page is kept as a reference for existing installations.
+
+:::
+
 ## 1. Overview
 
 This document outlines the architecture of the filter invocation system.
@@ -57,7 +66,7 @@ It supports class and method targets.
 The `filterType` is inferred from the class.
 
 ```php
-// In: src/FilterElement/BooleanElement.php
+// Illustrative example — the built-in filter elements only define __invoke
 #[AsFilterElement(...)]
 class BooleanElement extends AbstractFilterElement
 {

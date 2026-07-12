@@ -33,12 +33,13 @@ To prevent ambiguous column errors during joins, all tables in Flare MUST be ali
 The primary table of any list is always aliased as `main`. This is defined in `TableAliasRegistry::ALIAS_MAIN`.
 
 ### Quoting Columns
-When writing query parts (e.g., in a List Type or Filter Element), you should use the `column()` helper to ensure correct aliasing:
+When writing query parts in a Filter Element, use the `FilterQueryBuilder`'s `column()` helper to ensure correct quoting and aliasing, and always bind values as parameters:
 
 ```php
-// In a service using QueryHelperTrait
-$qb->where($this->column('published'), '1');
-// Results in: WHERE main.published = '1'
+// Inside a filter element's invoker
+$qb->where($qb->expr()->eq($qb->column('published'), ':val'))
+    ->setParameter('val', '1');
+// Results in: WHERE `main`.`published` = :val
 ```
 
 ### Automatic Join Resolution

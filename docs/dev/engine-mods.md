@@ -18,9 +18,10 @@ Mods are registered as tagged services (`flare.engine_mod`) and resolved through
 The flow:
 
 1. Template calls `flare.addMod('type', { ... })` — the type and config are stored on the engine.
+   The config dictionary is optional and defaults to `{}` for mods without options.
 2. Template calls `flare.createView()` — the engine clones itself, iterates over queued mods, resolves each from the
    registry, and calls `ModInterface::apply()`.
-3. `apply()` resolves the options via Symfony's `OptionsResolver` and delegates to the mod's logic.
+3. `apply()` runs the mod's logic — `AbstractMod` first resolves the options via Symfony's `OptionsResolver`.
 4. The mod manipulates the cloned engine (its `ListSpecification`, `ContextInterface`, etc.).
 5. After all mods have been applied, the engine projects the view.
 
@@ -100,13 +101,13 @@ namespace HeimrichHannot\FlareBundle\Engine\Mod;
 interface ModInterface
 {
     public static function getType(): string;
-    public function configureOptions(OptionsResolver $resolver): void;
     public function apply(Engine $engine, array $options): void;
 }
 ```
 
 When implementing the interface directly, you must handle option resolution yourself in `apply()`. `AbstractMod` does
-this for you — it resolves options via `configureOptions()` and then calls `__invoke()` with the resolved array.
+this for you — it defines an overridable `configureOptions()` hook, resolves the options with it, and then calls
+`__invoke()` with the resolved array.
 
 ## `AbstractMod`
 
@@ -145,7 +146,7 @@ $engine->getList()->getFilters()->set('my_filter', $filterDefinition);
 ```php
 $context = $engine->getContext();
 if ($context instanceof PaginatedContextInterface) {
-    $context->pageParam = 'my_page';
+    $context->setPaginatorQueryParameter('my_page');
 }
 ```
 

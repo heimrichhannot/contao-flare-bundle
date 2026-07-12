@@ -25,6 +25,6 @@ php vendor/bin/contao-console contao:migrate
 
 ## 3. Configuration
 
-Flare is fully integrated into the Contao backend. You can find the main configuration under <strong>Layout → Lists&nbsp;&nbsp;<span style={{ opacity: .6 }}>FLARE</span></strong>.
+Flare is fully integrated into the Contao backend. You can find the main configuration under <strong>Layout → Listings&nbsp;&nbsp;<span style={{ opacity: .6 }}>FLARE</span></strong>.
 
 No additional bundle configuration with config files is required for basic usage.

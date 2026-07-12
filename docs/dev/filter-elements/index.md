@@ -1,6 +1,8 @@
 # Custom Filter Elements
 
 Filter Elements define how a filter value (from a form or context) is applied to the SQL query.
+For the filter elements that ship with Flare, see the
+[built-in filter elements reference](../../reference/filter-elements.md).
 
 ## 1. Registration (`#[AsFilterElement]`)
 
@@ -35,8 +37,11 @@ class MyCustomFilterElement extends AbstractFilterElement
 ### Attribute Parameters:
 - **`type`**: Unique identifier for the filter type.
 - **`formType`**: The Symfony Form Type class used for this filter in the frontend.
-- **`palette`**: (Optional) Specific DCA palette for filter configuration.
+- **`palette`**: (Optional) The full palette definition shown in the filter's backend configuration — a string of
+  DCA legends and field names, e.g. `'{filter_legend},fieldGeneric,preselect'`. The referenced fields must exist
+  in the `tl_flare_filter` DCA. This is **not** the name of a palette.
 - **`isTargeted`**: (Optional) Boolean. If true, the filter expects a specific table alias.
+- **`method`**: (Optional) The method to invoke on the service when the filter is applied. Defaults to `__invoke`.
 
 ## 2. The `FilterQueryBuilder`
 
@@ -65,6 +70,12 @@ public function __invoke(FilterInvocation $invocation, FilterQueryBuilder $qb): 
 }
 ```
 
-## 3. Context-Specific Invokers
+## 3. Context-Specific Invokers (deprecated)
 
-If your filter needs different logic depending on the context (e.g., a "Search" filter that behaves differently in an "Interactive" list vs. an "API" context), you can use the `#[AsFilterInvoker]` attribute on specific methods. See [Filter Invocation](../../spec/invoker.md) for details.
+:::caution[Deprecated]
+
+The `#[AsFilterInvoker]` attribute for context-specific invocation logic is deprecated and will be removed in a
+future version. Branch on the context inside your `__invoke` method instead. See
+[Filter Invocation](../../spec/invoker.md) for the legacy reference.
+
+:::

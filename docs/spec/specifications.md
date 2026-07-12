@@ -31,7 +31,7 @@ A `FilterDefinition` describes a single filter criteria.
 - **`type`**: The filter element type (e.g., `flare_bool`, `flare_select`).
 - **`intrinsic`**: Boolean indicating if the filter is "hidden" (applied automatically without user interaction).
 - **`alias`**: The unique identifier for this filter within the collection.
-- **`targetAlias`**: The SQL table alias this filter should target (defaults to `main`).
+- **`targetAlias`**: The SQL table alias this filter should target. Defaults to `null`, which resolves to `main` when the filter is executed. Use `forceTargetAlias(string $alias)` to pin a filter to a specific alias (`isTargetingForced()` tells you whether that happened).
 
 ## 4. Filter Definition Collection (`FilterDefinitionCollection`)
 

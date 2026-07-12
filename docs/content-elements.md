@@ -10,7 +10,7 @@ These content elements are designed to work seamlessly with the list and filter 
 
 ## List View
 
-Selecting the **List View <span style={{opacity:.6}}>[FLARE]</span>** option in the content element configuration allows you to display a list of entities
+Selecting the **List view <span style={{opacity:.6}}>[FLARE]</span>** option in the content element configuration allows you to display a list of entities
 based on a specific list configuration. This content element will render the filter form and the list of entities
 according to the selected configuration, including pagination.
 
@@ -26,7 +26,7 @@ that you select the appropriate **form-only or list-only templates** in the resp
 
 ## Detail Reader
 
-Selecting the **Detail Reader <span style={{opacity:.6}}>[FLARE]</span>** option in the content element config allows you to display a single entity
+Selecting the **Detail reader <span style={{opacity:.6}}>[FLARE]</span>** option in the content element config allows you to display a single entity
 that is part of a list. This content element uses Contao's standard **auto-item** feature to determine
 which entity to display from a unique ID or alias in the URL. Which field is used as the auto-item is defined in the
 list configuration.

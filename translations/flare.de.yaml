@@ -1,4 +1,5 @@
 reader:
+    back_to_list: "Zurück zur Liste"
     default_template:
         warning: "Standard-Template ausgewählt"
         description: "Bitte erstellen/wählen Sie ein benutzerdefiniertes Template für diesen FLARE-Reader."

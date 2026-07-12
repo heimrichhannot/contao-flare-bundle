@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Engine\View;
 
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderInterface;
+use HeimrichHannot\FlareBundle\Reader\BackLink;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
 
 class ValidationView implements ViewInterface
@@ -21,7 +22,13 @@ class ValidationView implements ViewInterface
         private readonly ReaderUrlGeneratorInterface $readerUrlGenerator,
         private readonly string                      $table,
         private readonly string                      $autoItemField,
+        private readonly ?BackLink                   $backLink = null,
     ) {}
+
+    public function getBackLink(): ?BackLink
+    {
+        return $this->backLink;
+    }
 
     public function getEntry(int $id): ?array
     {

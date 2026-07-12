@@ -1,4 +1,5 @@
 reader:
+    back_to_list: "Back to list"
     default_template:
         warning: "Default template selected"
         description: "Please create/select a custom template for this FLARE reader."

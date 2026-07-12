@@ -1,10 +1,12 @@
 {% extends '@Contao/block_searchable.html5' %}
 
+{% set flare_list = flare.createView %}
+
 {% block content %}
 
     {% block list %}
 
-        {% for entry in flare.entries %}
+        {% for entry in flare_list.entries %}
             <details>
                 {# (entry.headline is defined) ? (entry.headline|flare_fmt_headline_value|default('<' ~ loop.index ~ '>')) : #}
                 <summary>#{{ entry.id }} {{ entry.title ?? (entry.email ?? entry.alias ?? ('<' ~ loop.index ~ '>')) }}</summary>

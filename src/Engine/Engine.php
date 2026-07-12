@@ -56,7 +56,7 @@ final class Engine
     /**
      * @api
      */
-    public function addMod(string $modType, array $config): self
+    public function addMod(string $modType, array $config = []): self
     {
         $this->mods[] = [
             'type' => $modType,

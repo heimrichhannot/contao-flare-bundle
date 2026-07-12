@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Attribute;
 
+/**
+ * @deprecated Define filter invocation via the filter element's `__invoke` method instead. Removal pending for v0.2.
+ */
 #[\Attribute(\Attribute::TARGET_CLASS | \Attribute::TARGET_METHOD | \Attribute::IS_REPEATABLE)]
 class AsFilterInvoker
 {

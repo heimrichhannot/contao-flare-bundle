@@ -16,6 +16,6 @@ E-Mail: <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#100;&#x72;&#101;&#x73
 <br/>Webseite: <a href="https://www.heimrich-hannot.de">www.heimrich-hannot.de</a>
 
 **Registergericht:** Amtsgericht Dresden
-<br/>**Registernummer:** HR B 10877
+<br/>**Registernummer:** HRB 10877
 <br/>**Umsatzsteuer-Identifikationsnummer** gemäß § 27a
-Umsatzsteuergesetz: DE 168016090
+Umsatzsteuergesetz: DE168016090

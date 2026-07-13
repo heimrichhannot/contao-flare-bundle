@@ -48,7 +48,7 @@ class FilterOptionsResolver
             throw new FilterException(
                 \sprintf('[FLARE] Invalid filter config for element "%s": %s', $element::class, $e->getMessage()),
                 previous: $e,
-                method: $element::class . '::configureConfig',
+                method: $element::class . '::configureOptions',
                 source: $filter->source,
             );
         }

@@ -71,11 +71,6 @@
         }
     }
 
-    function normalizePathname(pathname) {
-        // strip a single trailing slash so "/list/" matches "/list"
-        return pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
-    }
-
     function getQualifyingReferrer(anchor) {
         if (!document.referrer) {
             return null;
@@ -109,6 +104,11 @@
         }
 
         const fallback = new URL(fallbackHref, window.location.href);
+
+        // strip a single trailing slash so "/list/" matches "/list"
+        const normalizePathname = (pathname) => pathname.length > 1 && pathname.endsWith('/')
+            ? pathname.slice(0, -1)
+            : pathname;
 
         return normalizePathname(referrer.pathname) === normalizePathname(fallback.pathname) ? referrer : null;
     }

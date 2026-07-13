@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-abstract class AbstractFilterFilterElement implements
+abstract class AbstractFilterElement implements
     FilterElementInterface, FilterElementOptionsInterface, IsSupportedContract, DcaContract
 {
     abstract public function configureOptions(OptionsResolver $resolver): void;

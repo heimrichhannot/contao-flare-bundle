@@ -14,7 +14,7 @@ use HeimrichHannot\FlareBundle\Filter\Type\PublishedFilterType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE, intrinsicOnly: true)]
-class PublishedFilterElement extends AbstractFilterFilterElement
+class PublishedFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_published';
 

@@ -31,7 +31,7 @@ final readonly class ListSpecificationFactory
 
         // Automatically collect filters (delegate to FilterCollectorRegistry)
         foreach ($this->collectFilters($dataSource) as $key => $filter) {
-            $specification->addFilter($filter, $key);
+            $specification->addFilter($filter, (string) $key);
         }
 
         $specification->setProperties($dataSource->getListData());
@@ -42,7 +42,7 @@ final readonly class ListSpecificationFactory
     }
 
     /**
-     * @return array<string, \HeimrichHannot\FlareBundle\Filter\Filter>
+     * @return array<string|int, \HeimrichHannot\FlareBundle\Filter\Filter>
      */
     private function collectFilters(ListDataSourceInterface $dataSource): array
     {

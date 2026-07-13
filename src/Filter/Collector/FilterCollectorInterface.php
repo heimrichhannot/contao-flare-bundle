@@ -14,7 +14,7 @@ interface FilterCollectorInterface
     public function supports(ListDataSourceInterface $dataSource): bool;
 
     /**
-     * @return array<string, Filter>|null Filters keyed by their list-specification key.
+     * @return array<string|int, Filter>|null Filters keyed by their list-specification key.
      */
     public function collect(ListDataSourceInterface $dataSource): ?array;
 }

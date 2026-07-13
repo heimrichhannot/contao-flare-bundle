@@ -129,7 +129,7 @@ final class PtableInferrer
     /**
      * @throws InferenceException
      * @deprecated Use {@see self::getInferredPtable()} instead. Return type will change to void. Visibility will
-     *     change to private.
+     *     change to private. Changes pending for v0.2.
      */
     #[\ReturnTypeWillChange]
     public function infer(): ?string

@@ -17,7 +17,7 @@ final readonly class FilterContext
     public const FORM_ATTRIBUTE = 'flare.filter_context';
 
     /** Conventional local child name for single-field filter elements. */
-    public const FIELD_VALUE = 'value';
+    public const FIELD_VALUE = 'v';
 
     /**
      * @param array<string, mixed> $config Resolved canonical config of the filter.

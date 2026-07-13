@@ -8,6 +8,7 @@ use Contao\Model;
 use HeimrichHannot\FlareBundle\Contract\LabelableInterface;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\Form\ChoiceList\Loader\CallbackChoiceLoader;
 use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -45,6 +46,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * Group support ({@see addGroup()}, {@see removeGroup()}) is reserved and not yet implemented.
  *
  * @mago-expect lint:too-many-properties
+ * @mago-expect lint:too-many-methods
  */
 class ChoicesBuilder
 {
@@ -270,6 +272,11 @@ class ChoicesBuilder
         }
 
         return $choices;
+    }
+
+    public function buildCallbackChoiceLoader(): CallbackChoiceLoader
+    {
+        return new CallbackChoiceLoader($this->buildChoices(...));
     }
 
     /** @api */

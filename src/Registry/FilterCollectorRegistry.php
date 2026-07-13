@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Registry;
 
-use HeimrichHannot\FlareBundle\FilterCollector\FilterCollectorInterface;
+use HeimrichHannot\FlareBundle\Filter\Collector\FilterCollectorInterface;
 use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
 use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
 

@@ -2,10 +2,8 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\FilterElement;
+namespace HeimrichHannot\FlareBundle\Filter\Element;
 
-use HeimrichHannot\FlareBundle\Contract\DcaContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -23,7 +21,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsFilterElement(type: self::TYPE)]
-class CalendarCurrentElement extends AbstractFilterElement implements ConfigContract, DcaContract
+class CalendarCurrentFilterElement extends AbstractFilterFilterElement
 {
     public const TYPE = 'flare_calendar_current';
 
@@ -31,7 +29,7 @@ class CalendarCurrentElement extends AbstractFilterElement implements ConfigCont
         private readonly TranslatorInterface $translator,
     ) {}
 
-    public function configureConfig(OptionsResolver $resolver): void
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('is_limited')->default(false)->allowedTypes('bool');
@@ -136,7 +134,7 @@ class CalendarCurrentElement extends AbstractFilterElement implements ConfigCont
         ]);
     }
 
-    public function configureDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilder $dca, DcaContext $context): void
     {
         $palette = '{date_start_legend},configureStart,hasExtendedEvents;{date_stop_legend},configureStop;';
 

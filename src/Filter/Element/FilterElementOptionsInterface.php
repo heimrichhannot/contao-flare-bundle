@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Contract\FilterElement;
+namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -12,12 +12,12 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  * The element owns both the schema and the translation from the stored DCA row into
  * canonical config values, so its runtime methods never touch storage column names.
  */
-interface ConfigContract
+interface FilterElementOptionsInterface
 {
     /**
      * Declares the canonical config schema, mirroring how filter types configure their options.
      */
-    public function configureConfig(OptionsResolver $resolver): void;
+    public function configureOptions(OptionsResolver $resolver): void;
 
     /**
      * Translates a stored tl_flare_filter row into canonical config values (unresolved).

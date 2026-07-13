@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Registry;
 
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\FilterElement\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use Psr\Log\LoggerInterface;
 
 /**

@@ -2,13 +2,11 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\FilterElement;
+namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\Contract\DcaContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -29,7 +27,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE)]
-class ArchiveElement extends AbstractFilterElement implements ConfigContract, DcaContract
+class ArchiveElement extends AbstractFilterFilterElement
 {
     public const TYPE = 'flare_archive';
 
@@ -39,7 +37,7 @@ class ArchiveElement extends AbstractFilterElement implements ConfigContract, Dc
         private readonly ChoicesBuilderFactory $choicesBuilderFactory,
     ) {}
 
-    public function configureConfig(OptionsResolver $resolver): void
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('whitelist_parents')->default([])->allowedTypes('int[]');
@@ -412,7 +410,7 @@ class ArchiveElement extends AbstractFilterElement implements ConfigContract, Dc
         return $this->_inferrer[$cacheKey] = new PtableInferrer($inferrable, $list->dc);
     }
 
-    public function configureDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilder $dca, DcaContext $context): void
     {
         if (!$filterModel = $context->filterModel) {
             return;

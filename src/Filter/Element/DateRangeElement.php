@@ -2,10 +2,8 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\FilterElement;
+namespace HeimrichHannot\FlareBundle\Filter\Element;
 
-use HeimrichHannot\FlareBundle\Contract\DcaContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -22,7 +20,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsFilterElement(type: self::TYPE)]
-class DateRangeElement extends AbstractFilterElement implements ConfigContract, DcaContract
+class DateRangeElement extends AbstractFilterFilterElement
 {
     public const TYPE = 'flare_dateRange';
 
@@ -30,7 +28,7 @@ class DateRangeElement extends AbstractFilterElement implements ConfigContract, 
         private readonly TranslatorInterface $translator,
     ) {}
 
-    public function configureConfig(OptionsResolver $resolver): void
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('field')->default(null)->allowedTypes('string', 'null');
@@ -83,7 +81,7 @@ class DateRangeElement extends AbstractFilterElement implements ConfigContract, 
         ]);
     }
 
-    public function configureDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilder $dca, DcaContext $context): void
     {
         $dca->palette('fieldGeneric');
     }

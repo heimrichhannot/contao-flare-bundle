@@ -2,14 +2,12 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\FilterElement;
+namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Contao\Controller;
 use Contao\DataContainer;
 use Contao\StringUtil;
 use Contao\System;
-use HeimrichHannot\FlareBundle\Contract\DcaContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -23,7 +21,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE)]
-class DcaSelectFieldElement extends AbstractFilterElement implements ConfigContract, DcaContract
+class DcaSelectFieldElement extends AbstractFilterFilterElement
 {
     public const TYPE = 'flare_dcaSelectField';
 
@@ -31,7 +29,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements ConfigContr
         private readonly ChoicesBuilderFactory $choicesBuilderFactory,
     ) {}
 
-    public function configureConfig(OptionsResolver $resolver): void
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('field')->default(null)->allowedTypes('string', 'null');
@@ -46,6 +44,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements ConfigContr
     public function configFromRow(array $row): array
     {
         $isMultiple = (bool) ($row['isMultiple'] ?? false);
+        $preselect = ($row['preselect'] ?? null) ?: null;
 
         return [
             'intrinsic' => (bool) ($row['intrinsic'] ?? false),
@@ -56,8 +55,8 @@ class DcaSelectFieldElement extends AbstractFilterElement implements ConfigContr
             'label' => ($row['label'] ?? null) ?: null,
             'placeholder' => ($row['placeholder'] ?? null) ?: null,
             'preselect' => $isMultiple
-                ? StringUtil::deserialize(($row['preselect'] ?? null) ?: null)
-                : (($row['preselect'] ?? null) ?: null),
+                ? StringUtil::deserialize($preselect)
+                : $preselect,
         ];
     }
 
@@ -69,16 +68,17 @@ class DcaSelectFieldElement extends AbstractFilterElement implements ConfigContr
             return;
         }
 
-        $options = $this->getOptions($context->list->dc, $config['field']);
+        $defaultPlaceholder = $config['is_mandatory'] ? 'empty_option.prompt' : 'empty_option.no_selection';
 
         $formOptions = [
             'label' => $config['label'] ?: false,
             'multiple' => $config['is_multiple'],
             'expanded' => $config['is_expanded'],
             'required' => $config['is_mandatory'],
-            'placeholder' => $config['placeholder']
-                ?: ($config['is_mandatory'] ? 'empty_option.prompt' : 'empty_option.no_selection'),
+            'placeholder' => $config['placeholder'] ?: $defaultPlaceholder,
         ];
+
+        $options = $this->getOptions($context->list->dc, $config['field']);
 
         if (!\is_null($options))
         {
@@ -205,7 +205,7 @@ class DcaSelectFieldElement extends AbstractFilterElement implements ConfigContr
         return $toKey($value);
     }
 
-    public function configureDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilder $dca, DcaContext $context): void
     {
         $intrinsic = (bool) $context->filterModel?->intrinsic;
 

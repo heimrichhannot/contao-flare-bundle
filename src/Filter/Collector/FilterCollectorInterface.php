@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\FilterCollector;
+namespace HeimrichHannot\FlareBundle\Filter\Collector;
 
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;

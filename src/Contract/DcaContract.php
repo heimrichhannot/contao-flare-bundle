@@ -15,5 +15,5 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
  */
 interface DcaContract
 {
-    public function configureDca(DcaBuilder $dca, DcaContext $context): void;
+    public function buildDca(DcaBuilder $dca, DcaContext $context): void;
 }

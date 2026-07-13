@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Query\Executor;
 
-use HeimrichHannot\FlareBundle\Event\FilterElementBuiltEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementBuildingEvent;
+use HeimrichHannot\FlareBundle\Event\FilterElementBuiltEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilder;
-use HeimrichHannot\FlareBundle\Filter\FilterConfigResolver;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterCall;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\OptionsResolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
@@ -28,7 +28,7 @@ readonly class FilterExecutor
 {
     public function __construct(
         private EventDispatcherInterface  $eventDispatcher,
-        private FilterConfigResolver      $filterConfigResolver,
+        private FilterOptionsResolver     $filterConfigResolver,
         private FilterElementRegistry     $filterElementRegistry,
         private FilterElementResolver     $filterElementResolver,
         private FilterQueryBuilderFactory $filterQueryBuilderFactory,

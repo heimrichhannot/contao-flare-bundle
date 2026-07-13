@@ -4,43 +4,104 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
+use HeimrichHannot\FlareBundle\Contract\DcaContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
-use HeimrichHannot\FlareBundle\Filter\Type\DateRangeFilterType as DateRangeQueryFilterType;
-use HeimrichHannot\FlareBundle\Form\Type\DateRangeFilterType;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\Type\DateRangeFilterType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormError;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
+use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
-#[AsFilterElement(
-    type: self::TYPE,
-    palette: 'fieldGeneric',
-    formType: DateRangeFilterType::class,
-)]
-class DateRangeElement extends AbstractFilterElement
+#[AsFilterElement(type: self::TYPE)]
+class DateRangeElement extends AbstractFilterElement implements ConfigContract, DcaContract
 {
     public const TYPE = 'flare_dateRange';
+
+    public function __construct(
+        private readonly TranslatorInterface $translator,
+    ) {}
+
+    public function configureConfig(OptionsResolver $resolver): void
+    {
+        $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
+        $resolver->define('field')->default(null)->allowedTypes('string', 'null');
+    }
+
+    public function configFromRow(array $row): array
+    {
+        return [
+            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
+            'field' => ($row['fieldGeneric'] ?? null) ?: null,
+        ];
+    }
+
+    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
+    {
+        if ($context->config['intrinsic']) {
+            return;
+        }
+
+        $builder->add('from', DateType::class, [
+            'widget' => 'single_text',
+            'label' => 'label.date_range.from',
+            'html5' => true,
+            'required' => false,
+        ]);
+
+        $builder->add('to', DateType::class, [
+            'widget' => 'single_text',
+            'label' => 'label.date_range.to',
+            'html5' => true,
+            'required' => false,
+        ]);
+
+        $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validateRange(...));
+    }
 
     /**
      * @throws FilterException
      */
-    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
     {
-        $value = (array) ($invocation->getValue() ?: []);
-
-        if (!$field = $invocation->filter->fieldGeneric) {
+        if (!$field = $context->config['field']) {
             throw new FilterException('Set fieldGeneric in filter model.');
         }
 
-        $builder->add(DateRangeQueryFilterType::class, [
+        $builder->add(DateRangeFilterType::class, [
             'field' => $field,
-            'from' => $value['from'] ?? null,
-            'to' => $value['to'] ?? null,
+            'from' => $data['from'] ?? null,
+            'to' => $data['to'] ?? null,
         ]);
     }
 
-    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
+    public function configureDca(DcaBuilder $dca, DcaContext $context): void
     {
-        $event->options['required'] = false;
+        $dca->palette('fieldGeneric');
+    }
+
+    /**
+     * Ensures `from` <= `to`, replicating the former compound form type's callback constraint.
+     */
+    private function validateRange(FormEvent $event): void
+    {
+        $form = $event->getForm();
+
+        $from = $form->has('from') ? $form->get('from')->getData() : null;
+        $to = $form->has('to') ? $form->get('to')->getData() : null;
+
+        if ($from instanceof \DateTimeInterface && $to instanceof \DateTimeInterface && $from > $to) {
+            $form->get('from')->addError(new FormError(
+                $this->translator->trans('flare.form.date_range.to_greater_than_from', [], 'validators'),
+            ));
+        }
     }
 }

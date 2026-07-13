@@ -8,7 +8,5 @@ interface ServiceDescriptorInterface
 {
     public function getAttributes(): array;
 
-    public function getMethod(): ?string;
-
     public function getService(): object;
 }

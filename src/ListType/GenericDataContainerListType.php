@@ -9,15 +9,17 @@ use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\CoreBundle\String\SimpleTokenParser;
 use Contao\DataContainer;
 use Contao\Message;
-use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
+use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-#[AsListType(type: self::TYPE, palette: self::DEFAULT_PALETTE)]
-class GenericDataContainerListType extends AbstractListType implements DataContainerContract
+#[AsListType(type: self::TYPE)]
+class GenericDataContainerListType extends AbstractListType implements DataContainerContract, DcaContract
 {
     public const TYPE = 'flare_generic_dc';
     public const DEFAULT_PALETTE = <<<'PALETTE'
@@ -46,12 +48,13 @@ class GenericDataContainerListType extends AbstractListType implements DataConta
         return $row['dc'] ?? '';
     }
 
-    public function getPalette(PaletteConfig $config): ?string
+    public function configureDca(DcaBuilder $dca, DcaContext $context): void
     {
-        $listModel = $config->getListModel();
+        $listModel = $context->listModel;
 
         if (!$listModel->hasParent) {
-            return null;
+            $dca->palette(self::DEFAULT_PALETTE);
+            return;
         }
 
         $pm = PaletteManipulator::create()
@@ -92,6 +95,6 @@ class GenericDataContainerListType extends AbstractListType implements DataConta
             $listModel->whichPtable_disableAutoOption();
         }
 
-        return $pm->applyToString(self::DEFAULT_PALETTE);
+        $dca->palette($pm->applyToString(self::DEFAULT_PALETTE));
     }
 }

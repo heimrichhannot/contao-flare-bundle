@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\FilterCollector;
 
-use HeimrichHannot\FlareBundle\Collection\ConfiguredFilterCollection;
+use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
@@ -13,5 +13,8 @@ interface FilterCollectorInterface
 {
     public function supports(ListDataSourceInterface $dataSource): bool;
 
-    public function collect(ListDataSourceInterface $dataSource): ?ConfiguredFilterCollection;
+    /**
+     * @return array<string, Filter>|null Filters keyed by their list-specification key.
+     */
+    public function collect(ListDataSourceInterface $dataSource): ?array;
 }

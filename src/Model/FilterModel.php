@@ -8,13 +8,12 @@ use Contao\Model;
 use Contao\Model\Collection;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrableInterface;
-use HeimrichHannot\FlareBundle\Specification\DataSource\FilterDataSourceInterface;
 
 /**
  * Class FilterModel
  */
 #[\AllowDynamicProperties]
-class FilterModel extends Model implements FilterDataSourceInterface, PtableInferrableInterface
+class FilterModel extends Model implements PtableInferrableInterface
 {
     use DocumentsFilterModelTrait, PtableInferrableTrait;
 

@@ -27,7 +27,7 @@ Deployment is automatic: pushing to `docs/main` triggers `.github/workflows/depl
 - Files prefixed with `_` (e.g. `docs/dev/contracts/_options-interface.md`) are partials: excluded from the sidebar and imported into other `.mdx` pages.
 - `.mdx` pages import React components, e.g. `docs/dev/callbacks.mdx` renders callback reference entries with `src/components/CallbackDoc` — add new callback docs through that component rather than hand-written markup.
 - `src/theme/` — swizzled Prism setup. Twig syntax highlighting is a custom grammar in `prism-twig.js`, loaded via `prism-include-languages.ts`; `php`, `php-extras`, and `phpdoc` are enabled in `docusaurus.config.js`.
-- `src/pages/` — non-doc pages (landing page `index.js`, `imprint.md`).
+- `src/pages/` — non-doc pages (landing page `index.js`, `imprint.md`). The landing page's "Documentation" button resolves the latest docs version dynamically via `useLatestVersion()` — no hard-coded version path.
 
 ## Versioning
 
@@ -37,6 +37,7 @@ The docs are versioned (Docusaurus docs versioning, version dropdown in the navb
 - `versioned_docs/version-0.1/` (+ `versioned_sidebars/`, `versions.json`) is the released v0.1 snapshot, labeled "v0.1 (latest)", served at `/docs/v0.1/`. **Fixes to released docs must be made here** — and also in `docs/` if they apply to the upcoming version too.
 - Bare `/docs/...` URLs (including pre-versioning inbound links like `/docs/intro`) redirect to the latest stable version via `@docusaurus/plugin-client-redirects`; the mirrored paths derive from the `latestDocsPath` constant in `docusaurus.config.js`.
 - Everything under `src/` (e.g. `src/components/CallbackDoc`) is shared across **all** versions — versioned pages import it live via `@site/...`, so component changes must stay backward compatible with the props used in old snapshots.
+- The version badge above doc page titles is deliberately hidden (`.theme-doc-version-badge` in `src/css/custom.css`) — the navbar dropdown and the unreleased banner already communicate the version. Don't "restore" it.
 
 Release procedure (when v0.2 ships):
 

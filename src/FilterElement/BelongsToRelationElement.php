@@ -6,20 +6,23 @@ namespace HeimrichHannot\FlareBundle\FilterElement;
 
 use Contao\Message;
 use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
+use HeimrichHannot\FlareBundle\Contract\DcaContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\BelongsToRelationFilterType;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
-use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-#[AsFilterElement(type: self::TYPE)]
-class BelongsToRelationElement extends AbstractFilterElement
+#[AsFilterElement(type: self::TYPE, intrinsicOnly: true)]
+class BelongsToRelationElement extends AbstractFilterElement implements ConfigContract, DcaContract
 {
     public const TYPE = 'flare_relation_belongsTo';
 
@@ -27,20 +30,43 @@ class BelongsToRelationElement extends AbstractFilterElement
         private readonly TranslatorInterface $trans,
     ) {}
 
+    public function configureConfig(OptionsResolver $resolver): void
+    {
+        $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
+        $resolver->define('field_pid')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('which_ptable')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('whitelist_parents')->default([])->allowedTypes('array');
+        $resolver->define('group_whitelist_parents')->default([])->allowedTypes('array');
+    }
+
+    public function configFromRow(array $row): array
+    {
+        $whitelistParents = StringUtil::deserialize($row['whitelistParents'] ?? null);
+        $groupWhitelistParents = StringUtil::deserialize($row['groupWhitelistParents'] ?? null);
+
+        return [
+            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
+            'field_pid' => ($row['fieldPid'] ?? null) ?: null,
+            'which_ptable' => ($row['whichPtable'] ?? null) ?: null,
+            'whitelist_parents' => $whitelistParents ? (array) $whitelistParents : [],
+            'group_whitelist_parents' => \is_array($groupWhitelistParents) ? $groupWhitelistParents : [],
+        ];
+    }
+
     /**
      * @throws FilterException
      */
-    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
     {
-        $filter = $invocation->filter;
+        $config = $context->config;
 
-        if (!$fieldPid = $filter->fieldPid)
+        if (!$fieldPid = $config['field_pid'])
         {
             throw new FilterException('No parent field defined.');
         }
 
-        $inferrable = PtableInferrableFactory::createFromListModelLike($invocation->list);
-        $inferrer = new PtableInferrer($inferrable, $invocation->list->dc);
+        $inferrable = PtableInferrableFactory::createFromListModelLike($context->list);
+        $inferrer = new PtableInferrer($inferrable, $context->list->dc);
 
         try
         {
@@ -57,19 +83,19 @@ class BelongsToRelationElement extends AbstractFilterElement
             $builder->add(BelongsToRelationFilterType::class, [
                 'field_pid' => $fieldPid,
                 'field_dynamic_ptable' => $fieldDynamicPtable,
-                'parent_groups' => $this->getDynamicParentGroups($filter),
+                'parent_groups' => $this->getDynamicParentGroups($config['group_whitelist_parents']),
             ]);
 
             return;
         }
 
-        if (!$ptable || !$whitelistParents = StringUtil::deserialize($filter->whitelistParents)) {
+        if (!$ptable || !$whitelistParents = $config['whitelist_parents']) {
             throw new FilterException('No whitelisted parents.');
         }
 
         $builder->add(BelongsToRelationFilterType::class, [
             'field_pid' => $fieldPid,
-            'whitelist' => (array) $whitelistParents,
+            'whitelist' => $whitelistParents,
         ]);
     }
 
@@ -81,10 +107,13 @@ class BelongsToRelationElement extends AbstractFilterElement
      *       'tl_news' => [2, 3, 4, ...],
      *   ];
      * ```
+     *
+     * @param array $groupWhitelistParents Deserialized group whitelist, as stored in the
+     *   `group_whitelist_parents` config key.
      */
     public function addDynamicPtableFilter(
         FilterBuilderInterface $builder,
-        ConfiguredFilter       $filter,
+        array                  $groupWhitelistParents,
         string                 $fieldDynamicPtable,
         string                 $fieldPid,
         ?array                 $submittedData = null,
@@ -92,18 +121,17 @@ class BelongsToRelationElement extends AbstractFilterElement
         $builder->add(BelongsToRelationFilterType::class, [
             'field_pid' => $fieldPid,
             'field_dynamic_ptable' => $fieldDynamicPtable,
-            'parent_groups' => $this->getDynamicParentGroups($filter),
+            'parent_groups' => $this->getDynamicParentGroups($groupWhitelistParents),
             'submitted_data' => $submittedData,
         ]);
     }
 
-    public function getDynamicParentGroups(ConfiguredFilter $filter): array
+    /**
+     * @param array $parentGroups Deserialized group whitelist, as stored in the
+     *   `group_whitelist_parents` config key.
+     */
+    public function getDynamicParentGroups(array $parentGroups): array
     {
-        if (!$parentGroups = StringUtil::deserialize($filter->groupWhitelistParents))
-        {
-            return [];
-        }
-
         $groups = [];
 
         foreach (\array_values($parentGroups) as $group)
@@ -130,21 +158,25 @@ class BelongsToRelationElement extends AbstractFilterElement
         return $groups;
     }
 
-    public function getPalette(PaletteConfig $config): ?string
+    public function configureDca(DcaBuilder $dca, DcaContext $context): void
     {
-        $listModel = $config->getListModel();
-        $filterModel = $config->getFilterModel();
+        $listModel = $context->listModel;
+        $filterModel = $context->filterModel;
 
-        if (!$filterModel) {
+        if (!$filterModel)
+        {
             Message::addError($this->trans->trans('errors.missing_model', [], 'flare'));
-            return '';
+            $dca->palette('');
+            return;
         }
 
-        if (!$listModel->dc) {
+        if (!$listModel->dc)
+        {
             Message::addError($this->trans->trans('errors.missing_datacontainer', [
                 '%id%' => $listModel->id,
             ], 'flare'));
-            return '';
+            $dca->palette('');
+            return;
         }
 
         $palette = '{filter_legend},fieldPid,whichPtable';
@@ -192,6 +224,6 @@ class BelongsToRelationElement extends AbstractFilterElement
             $palette .= ',whitelistParents';
         }
 
-        return $palette;
+        $dca->palette($palette);
     }
 }

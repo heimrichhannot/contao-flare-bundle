@@ -13,6 +13,11 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 class FilterBuilder implements FilterBuilderInterface
 {
     /**
+     * @var array<class-string<FilterTypeInterface>, OptionsResolver>
+     */
+    private static array $resolvers = [];
+
+    /**
      * @var FilterCall[]
      */
     private array $calls = [];
@@ -34,14 +39,18 @@ class FilterBuilder implements FilterBuilderInterface
             throw new FilterException(\sprintf('No FLARE filter type service registered for "%s".', $type));
         }
 
-        $resolver = new OptionsResolver();
-        $filterType->configureOptions($resolver);
+        if (!isset(self::$resolvers[$type]))
+        {
+            $resolver = new OptionsResolver();
+            $filterType->configureOptions($resolver);
+            self::$resolvers[$type] = $resolver;
+        }
 
         $this->calls[] = new FilterCall(
             type: $filterType,
             typeClass: $type,
             targetAlias: $targetAlias ?: $this->defaultTargetAlias,
-            options: $resolver->resolve($options),
+            options: self::$resolvers[$type]->resolve($options),
         );
 
         return $this;

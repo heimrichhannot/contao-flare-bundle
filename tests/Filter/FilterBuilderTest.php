@@ -91,4 +91,7 @@ final class TestFilterType extends AbstractFilterType
 
 final class UnknownFilterType extends AbstractFilterType
 {
+    public function buildQuery(FilterQueryBuilder $builder, array $options): void
+    {
+    }
 }

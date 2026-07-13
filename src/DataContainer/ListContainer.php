@@ -8,111 +8,19 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
-use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
-use HeimrichHannot\FlareBundle\Registry\FlareCallbackRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
-use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
-class ListContainer implements FlareCallbackContainerInterface
+class ListContainer
 {
     public const TABLE_NAME = 'tl_flare_list';
-    public const CALLBACK_PREFIX = 'list';
 
     public function __construct(
-        private readonly Connection              $connection,
-        private readonly FlareCallbackRegistry   $callbackRegistry,
-        private readonly ListTypeRegistry        $listTypeRegistry,
+        private readonly Connection       $connection,
+        private readonly ListTypeRegistry $listTypeRegistry,
     ) {}
-
-    /* ============================= *
-     *  CALLBACK HANDLING            *
-     * ============================= */
-    // <editor-fold desc="Callback Handling">
-
-    public function handleConfigOnLoad(?DataContainer $dc, string $target): void
-    {
-        if (!$listModel = $this->getListModelFromDataContainer($dc)) {
-            return;
-        }
-
-        $namespace = static::CALLBACK_PREFIX . '.' . $listModel->type;
-
-        $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
-        $callbacks = \array_reverse($callbacks);
-
-        CallbackHelper::call($callbacks, [], [
-            ListModel::class  => $listModel,
-            DataContainer::class  => $dc,
-        ]);
-    }
-
-    /**
-     * @throws \RuntimeException
-     */
-    public function handleFieldOptions(?DataContainer $dc, string $target): array
-    {
-        if (!$listModel = $this->getListModelFromDataContainer($dc)) {
-            return [];
-        }
-
-        $namespace = static::CALLBACK_PREFIX . '.' . $listModel->type;
-
-        $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
-
-        return CallbackHelper::firstReturn($callbacks, [], [
-            ListModel::class  => $listModel,
-            DataContainer::class  => $dc,
-        ]) ?? [];
-    }
-
-    /**
-     * @throws \RuntimeException
-     */
-    public function handleLoadField(mixed $value, ?DataContainer $dc, string $target): mixed
-    {
-        return $this->handleValueCallback($value, $dc, $target);
-    }
-
-    /**
-     * @throws \RuntimeException
-     */
-    public function handleSaveField(mixed $value, ?DataContainer $dc, string $target): mixed
-    {
-        return $this->handleValueCallback($value, $dc, $target);
-    }
-
-    /**
-     * @throws \RuntimeException
-     */
-    public function handleValueCallback(mixed $value, ?DataContainer $dc, string $target): mixed
-    {
-        if (!$listModel = $this->getListModelFromDataContainer($dc)) {
-            return $value;
-        }
-
-        $namespace =  static::CALLBACK_PREFIX . '.' . $listModel->type;
-
-        $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
-
-        return CallbackHelper::firstReturn($callbacks, [$value], [
-            ListModel::class  => $listModel,
-            DataContainer::class  => $dc,
-        ]) ?? $value;
-    }
-
-    public function getListModelFromDataContainer(?DataContainer $dc): ?ListModel
-    {
-        if (!$dc?->id) {
-            return null;
-        }
-
-        return ListModel::findByPk($dc->id);
-    }
-
-    // </editor-fold>
 
     /* ============================= *
      *  CONFIG                       *

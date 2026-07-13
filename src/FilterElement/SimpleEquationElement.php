@@ -4,76 +4,97 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
-use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
+use HeimrichHannot\FlareBundle\Contract\DcaContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\SimpleEquationFilterType;
-use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
-#[AsFilterElement(type: self::TYPE, isTargeted: true)]
-class SimpleEquationElement extends AbstractFilterElement
+#[AsFilterElement(type: self::TYPE, intrinsicOnly: true, isTargeted: true)]
+class SimpleEquationElement extends AbstractFilterElement implements ConfigContract, DcaContract
 {
     public const TYPE = 'flare_equation_simple';
+
+    public function configureConfig(OptionsResolver $resolver): void
+    {
+        $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
+        $resolver->define('left')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('operator')->default(null)->allowedTypes(SqlEquationOperator::class, 'null');
+        $resolver->define('right')->default(null);
+    }
+
+    public function configFromRow(array $row): array
+    {
+        $operator = $row['equationOperator'] ?? null;
+
+        return [
+            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
+            'left' => ($row['equationLeft'] ?? null) ?: null,
+            'operator' => $operator ? SqlEquationOperator::match($operator) : null,
+            'right' => $row['equationRight'] ?? null,
+        ];
+    }
 
     /**
      * @throws FilterException
      */
-    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
     {
-        if (!($operand = $invocation->filter->equationLeft)
-            || !$op = SqlEquationOperator::match($invocation->filter->equationOperator))
-        {
+        $config = $context->config;
+
+        if (!($operand = $config['left']) || !($op = $config['operator'])) {
             throw new FilterException('Invalid filter configuration.');
         }
 
         $builder->add(SimpleEquationFilterType::class, [
             'operand_left' => $operand,
             'operator' => $op,
-            'operand_right' => $invocation->filter->equationRight,
+            'operand_right' => $config['right'],
         ]);
     }
 
-    #[AsFilterCallback(self::TYPE, 'fields.equationLeft.options')]
-    public function getEquationLeftOptions(string $targetTable): array
+    public function configureDca(DcaBuilder $dca, DcaContext $context): void
     {
-        return DcaHelper::getFieldOptions($targetTable);
+        $operatorValue = $context->filterModel?->equationOperator;
+        $operator = $operatorValue ? SqlEquationOperator::match($operatorValue) : null;
+
+        $dca->palette($operator?->isUnary()
+            ? '{flare_simple_equation_legend},equationLeft,equationOperator'
+            : '{flare_simple_equation_legend},equationLeft,equationOperator,equationRight');
+
+        $dca->field('equationLeft')
+            ->options(fn (): array => DcaHelper::getFieldOptions($context->getTargetTable()));
     }
 
-    public function getPalette(PaletteConfig $config): ?string
-    {
-        $filterModel = $config->getFilterModel();
-
-        if (SqlEquationOperator::match($filterModel?->equationOperator)?->isUnary()) {
-            return '{flare_simple_equation_legend},equationLeft,equationOperator';
-        }
-
-        return '{flare_simple_equation_legend},equationLeft,equationOperator,equationRight';
-    }
-
+    /**
+     * @throws FlareException
+     */
     public static function define(
         ?string              $equationLeft = null,
         ?SqlEquationOperator $equationOperator = null,
         mixed                $equationRight = null,
-    ): ConfiguredFilter {
-        $definition = new ConfiguredFilter(
-            type: static::TYPE,
-            intrinsic: true,
-        );
-
+    ): Filter {
         if (!$equationLeft || !$equationOperator || (!$equationOperator->isUnary() && $equationRight === null)) {
             throw new FlareException('Invalid filter definition for SimpleEquationElement.');
         }
 
-        $definition->equationLeft = $equationLeft;
-        $definition->equationOperator = $equationOperator->value;
-        $definition->equationRight = $equationRight;
-
-        return $definition;
+        return new Filter(
+            element: static::TYPE,
+            config: [
+                'intrinsic' => true,
+                'left' => $equationLeft,
+                'operator' => $equationOperator,
+                'right' => $equationRight,
+            ],
+        );
     }
 }

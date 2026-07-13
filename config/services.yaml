@@ -9,9 +9,14 @@ services:
     HeimrichHannot\FlareBundle\:
         resource: ../src
         exclude:
-            - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Dto,Engine,Event,Integration,Model,Trait,Util}
+            - ../src/{Contao,ContaoManager,Contract,DependencyInjection,Dto,Engine,Event,Integration,Model,Trait,Util}
             - ../src/{Filter,Form,InferPtable,List,Paginator,Query,Sort,Specification}/*.php
+            - ../src/DataContainer/Builder
+            - ../src/FilterElement/CallbackFilterElement.php
             - ../src/Registry/Descriptor
+
+    # Manually registered because top-level src/Filter/*.php files are excluded above
+    HeimrichHannot\FlareBundle\Filter\FilterConfigResolver: ~
 
     HeimrichHannot\FlareBundle\Engine\:
         resource: ../src/Engine

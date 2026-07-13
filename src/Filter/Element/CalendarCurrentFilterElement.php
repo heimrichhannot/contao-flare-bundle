@@ -21,7 +21,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsFilterElement(type: self::TYPE)]
-class CalendarCurrentFilterElement extends AbstractFilterFilterElement
+class CalendarCurrentFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_calendar_current';
 

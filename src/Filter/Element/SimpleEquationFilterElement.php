@@ -18,7 +18,7 @@ use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE, intrinsicOnly: true, isTargeted: true)]
-class SimpleEquationFilterElement extends AbstractFilterFilterElement
+class SimpleEquationFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_equation_simple';
 

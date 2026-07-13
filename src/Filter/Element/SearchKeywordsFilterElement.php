@@ -16,7 +16,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE, isTargeted: true)]
-class SearchKeywordsFilterElement extends AbstractFilterFilterElement
+class SearchKeywordsFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_search_keywords';
 

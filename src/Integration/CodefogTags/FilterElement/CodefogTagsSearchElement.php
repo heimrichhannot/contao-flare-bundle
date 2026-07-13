@@ -7,11 +7,11 @@ namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE, isTargeted: true)]
-class CodefogTagsSearchElement extends AbstractFilterFilterElement
+class CodefogTagsSearchElement extends AbstractFilterElement
 {
     public const TYPE = 'cfg_tags_search';
 

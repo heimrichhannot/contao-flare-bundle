@@ -53,7 +53,15 @@ final readonly class Filter
      */
     public function withConfig(array $config): self
     {
-        return new self($this->element, $config, $this->data, $this->alias, $this->targetAlias, $this->targetingForced, $this->source);
+        return new self(
+            element: $this->element,
+            config: $config,
+            data: $this->data,
+            alias: $this->alias,
+            targetAlias: $this->targetAlias,
+            targetingForced: $this->targetingForced,
+            source: $this->source,
+        );
     }
 
     /**
@@ -61,22 +69,54 @@ final readonly class Filter
      */
     public function withData(?array $data): self
     {
-        return new self($this->element, $this->config, $data, $this->alias, $this->targetAlias, $this->targetingForced, $this->source);
+        return new self(
+            element: $this->element,
+            config: $this->config,
+            data: $data,
+            alias: $this->alias,
+            targetAlias: $this->targetAlias,
+            targetingForced: $this->targetingForced,
+            source: $this->source,
+        );
     }
 
     public function withAlias(?string $alias): self
     {
-        return new self($this->element, $this->config, $this->data, $alias, $this->targetAlias, $this->targetingForced, $this->source);
+        return new self(
+            element: $this->element,
+            config: $this->config,
+            data: $this->data,
+            alias: $alias,
+            targetAlias: $this->targetAlias,
+            targetingForced: $this->targetingForced,
+            source: $this->source,
+        );
     }
 
     public function withTargetAlias(?string $targetAlias, bool $forced = true): self
     {
-        return new self($this->element, $this->config, $this->data, $this->alias, $targetAlias, !\is_null($targetAlias) && $forced, $this->source);
+        return new self(
+            element: $this->element,
+            config: $this->config,
+            data: $this->data,
+            alias: $this->alias,
+            targetAlias: $targetAlias,
+            targetingForced: !\is_null($targetAlias) && $forced,
+            source: $this->source,
+        );
     }
 
     public function withSource(?string $source): self
     {
-        return new self($this->element, $this->config, $this->data, $this->alias, $this->targetAlias, $this->targetingForced, $source);
+        return new self(
+            element: $this->element,
+            config: $this->config,
+            data: $this->data,
+            alias: $this->alias,
+            targetAlias: $this->targetAlias,
+            targetingForced: $this->targetingForced,
+            source: $source
+        );
     }
 
     /**

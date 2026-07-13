@@ -137,3 +137,9 @@
 .text--muted {
     color: var(--grayscale-500) !important;
 }
+
+/* The version is already shown in the navbar dropdown (and unreleased
+   versions get the banner), so hide the redundant badge above page titles. */
+.theme-doc-version-badge {
+    display: none;
+}

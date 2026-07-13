@@ -39,11 +39,12 @@ The docs are versioned (Docusaurus docs versioning, version dropdown in the navb
 - Everything under `src/` (e.g. `src/components/CallbackDoc`) is shared across **all** versions — versioned pages import it live via `@site/...`, so component changes must stay backward compatible with the props used in old snapshots.
 - The version badge above doc page titles is deliberately hidden (`.theme-doc-version-badge` in `src/css/custom.css`) — the navbar dropdown and the unreleased banner already communicate the version. Don't "restore" it.
 
-Release procedure (when v0.2 ships):
+Release procedure (when v0.2 ships): **no snapshot yet.** After release, `docs/` stays the actively-edited home of the v0.2 docs for a long time; v0.3 is not on the horizon, so don't prematurely open a v0.3 cycle. Config-only change in `docusaurus.config.js`:
 
-1. `npm run docusaurus docs:version 0.2` — snapshots `docs/` into `versioned_docs/version-0.2/`.
-2. In `docusaurus.config.js`: set `lastVersion: '0.2'`; add `'0.2': { label: 'v0.2 (latest)', path: 'v0.2' }` to `versions`; relabel `'0.1'` to plain `'v0.1'`; retarget `current` to the next cycle (`label: 'v0.3 (next)', path: 'v0.3'`); bump `latestDocsPath` to `/docs/v0.2/`.
-3. `npm run build` to verify, then commit (do not push — see Constraints).
+1. Set `lastVersion: 'current'`; relabel `current` to `'v0.2 (latest)'` (path stays `'v0.2'` — the unreleased banner disappears automatically once `current` is the latest version); relabel `'0.1'` to plain `'v0.1'`; bump `latestDocsPath` to `/docs/v0.2/`.
+2. `npm run build` to verify, then commit (do not push — see Constraints).
+
+Only when work on a v0.3 actually starts (not before): `npm run docusaurus docs:version 0.2` to snapshot, then in the config set `lastVersion: '0.2'`, add `'0.2': { label: 'v0.2 (latest)', path: 'v0.2' }` to `versions`, and retarget `current` to `{ label: 'v0.3 (next)', path: 'v0.3' }`.
 
 ## Constraints
 

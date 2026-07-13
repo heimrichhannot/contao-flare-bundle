@@ -19,6 +19,11 @@ const config = {
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
     v4: true, // Improve compatibility with the upcoming Docusaurus v4
+    faster: {
+      // The SWC HTML minifier decodes character references, which would undo
+      // the spam-protection entity obfuscation on src/pages/imprint.md
+      swcHtmlMinimizer: false,
+    },
   },
 
   // Set the production url of your site here
@@ -130,7 +135,7 @@ const config = {
             ],
           }
         ],
-        copyright: `Copyright © ${new Date().getFullYear()}, Heimrich & Hannot GmbH.`,
+        copyright: `Copyright © ${new Date().getFullYear()} &centerdot; Heimrich & Hannot GmbH`,
       },
       prism: {
         theme: prismThemes.oneLight,

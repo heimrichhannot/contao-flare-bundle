@@ -22,7 +22,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE)]
-class FieldValueChoiceElement extends AbstractFilterElement
+class FieldValueChoiceFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_fieldValueChoice';
 

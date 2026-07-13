@@ -20,7 +20,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE, isTargeted: true)]
-class BooleanElement extends AbstractFilterElement
+class BooleanFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_bool';
 

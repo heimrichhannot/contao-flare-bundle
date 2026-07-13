@@ -18,9 +18,6 @@ It asks you to provide a **form name**, which is used to identify the filter for
 The form name is also used to store the filter state in the URL query parameters, allowing users to bookmark or share
 the filtered view.
 
-The list view element can also **override the detail reader page** configured on the list, in case the same list is
-shown in multiple places with different reader pages.
-
 ### Separating Filter Form and List
 
 The same mechanism can be leveraged to **separate filter form and listing** into multiple content elements, allowing you to
@@ -34,8 +31,20 @@ that is part of a list. This content element uses Contao's standard **auto-item*
 which entity to display from a unique ID or alias in the URL. Which field is used as the auto-item is defined in the
 list configuration.
 
-The reader element can **override the list view page** configured on the list, which is used as the fallback target of
-the [back-to-list button](./templating.mdx#back-to-list-button).
+## Linking Between List and Reader
+
+Which pages list entries and readers link to is configured on the list configuration under **Link Settings**:
+
+- **Default Detail Reader Page**: the page opened when clicking a list entry.
+- **Default List View Page**: the page opened when clicking a reader's back-to-list button.
+
+Both defaults can be overridden per content element: the **List view** element offers **Override Detail Reader Page**,
+and the **Detail reader** element offers **Override Back to List View Page**. A content element override takes
+precedence over the list configuration's default.
+
+The back-to-list button preserves the list view's filter and pagination state, including when navigating between
+reader pages. See [Templating / Back-to-List Button](templating.mdx#back-to-list-button) for how to render and
+customize it.
 
 ## Default Templates
 

@@ -260,11 +260,10 @@ The reader content element injects these variables:
 - `content_model`: the `tl_content` model of the current content element
 - `headline`: the normalized Contao headline data
 - `comments`: optional comments data when the comments integration attaches it
-- `flare_reader.backLink`: a `BackLink` object with the absolute `url` of the configured list view page (the content
-  element setting overrides the list setting), or `null` when no page is configured — used by the back-button component
 
 The reader template can also use `flare_reader.to(id)` if you need to generate reader links from within the validation
-view, i.e., linking to other entries of the same list.
+view, i.e., linking to other entries of the same list. `flare_reader.backLink` exposes the link back to the configured
+list view page (see [Back-to-List Button](#back-to-list-button)).
 
 :::note
 Within a reader template, creating a separate view with `flare.createView` is typically not necessary.
@@ -274,45 +273,32 @@ In a `ValidationView`, no Symfony form is available for filtering, meaning you _
 similar.
 :::
 
-## Back to List Button
+### Back-to-List Button
 
-A reader template can opt in to a "back to list" button that returns visitors to the list view they came from,
-**preserving the list view's filter and pagination query parameters**.
+Reader templates can render a back-to-list button that returns visitors to the list view **with their filter and
+pagination state intact**. The default reader template includes it like this:
 
 ```twig
-{{ include('@Contao/flare/back_button.html.twig', {
-    back_link: flare_reader.backLink
-}) }}
+{{ include('@Contao/flare/back_button.html.twig', { back_link: flare_reader.backLink }, with_context = false) }}
 ```
 
-The default reader template already contains this include as an example — keep it when copying the template as a
-starting point for your own variant.
+`flare_reader.backLink` points to the configured list view page — the list configuration's **Default List View Page**
+or the reader content element's **Override Back to List View Page** (the element override wins). See
+[Content Elements](content-elements.md#linking-between-list-and-reader) for the configuration side.
+Without a configured page (and without `allow_any_referrer`), the component renders nothing.
 
-### Variables
+#### How It Works
 
-| Variable             | Type        | Default                     | Meaning                                                          |
-|----------------------|-------------|-----------------------------|------------------------------------------------------------------|
-| `back_link`          | `?BackLink` | —                           | Pass `flare_reader.backLink`; provides the fallback URL          |
-| `url`                | `string`    | `back_link.url`             | Explicit fallback URL (wins over `back_link`)                    |
-| `label`              | `string`    | translated `"Back to list"` | Button text                                                      |
-| `allow_any_referrer` | `bool`      | `false`                     | Accept any same-origin referrer, not just the configured page    |
-| `link_class`         | `string`    | `''`                        | Extra CSS classes on the anchor                                  |
+The component renders a regular link to the configured list view page. The FLARE frontend script then upgrades that
+link in the browser:
 
-### How the back link is resolved
-
-The server renders the button with a fallback URL: the list view page configured on the reader content element
-(*Override Back to List View Page*), falling back to the *Default List View Page* of the list configuration.
-
-The FLARE frontend script then upgrades the link in the browser: when `document.referrer` is same-origin and — in the
-default strict mode — its path matches the configured page's path, the button links to the exact referrer URL,
-including all filter and pagination query parameters of the originating list view.
-
-With `allow_any_referrer: true`, any same-origin referrer is accepted. This preserves filters even when the list is
-embedded on a page other than the configured one, but the button may then also link to pages that are not list views
-(e.g. a sibling reader page the visitor came from).
-
-If the reader was not opened from a qualifying page, the button links to the configured page without parameters.
-If neither a qualifying referrer nor a configured page exists, nothing is rendered.
+1. When the reader was opened **from the list view** (the referrer's path matches the configured page), the link is
+   replaced with the full referrer URL, so the list view's filter and pagination query parameters are preserved.
+   The qualifying list view URL is also remembered per browser tab (`sessionStorage`).
+2. When the visitor navigates **from one reader page to another** — e.g. via "similar entries" links generated with
+   `flare_reader.to(id)` — the referrer no longer qualifies, and the remembered list view URL is restored instead,
+   keeping the original filter and pagination state.
+3. Without JavaScript or `sessionStorage`, the link simply points to the configured list view page.
 
 :::note
 The referrer is evaluated in the browser, so the back button is fully compatible with the Contao page cache: the
@@ -321,10 +307,32 @@ cached reader HTML is identical for all visitors. Under a restrictive `Referrer-
 (`strict-origin-when-cross-origin`) sends full same-origin referrers, so no configuration is needed.
 :::
 
-### Bootstrap 5 variant
+#### Variables
 
-`@Contao/flare/back_button/bs5.html.twig` uses the same variables and additionally supports `btnClass`
-(default: `btn btn-outline-secondary`).
+| Variable | Type | Description |
+|---|---|---|
+| `back_link` | `?BackLink` | Pass `flare_reader.backLink`. |
+| `url` | `string` | Explicit fallback URL (wins over `back_link`). |
+| `label` | `string` | Button text, defaults to a translated "Back to list". |
+| `aria_label` | `string` | Link `aria-label`; defaults to `label` if set, a translated "Back to list" otherwise. |
+| `allow_any_referrer` | `bool` | Accept any same-origin referrer, not just the configured list view page. The button then also works without a configured page and stays hidden until the script upgrades it. |
+| `base_class` | `string` | Base CSS classes on the anchor (default `flare_back-button`). |
+| `link_class` | `string` | Extra CSS classes on the anchor. |
+| `hide_without_url` | `bool` | Hide the anchor while no URL is available (default `true`); set to `false` to keep it visible, e.g. styled as disabled. |
+| `no_url_class` | `string` | CSS classes applied while no URL is available; the frontend script removes them when it upgrades the link. |
+
+#### Bootstrap 5 Variant
+
+`@Contao/flare/back_button/bs5.html.twig` extends the base component and only swaps the styling: `btnClass`
+(default `btn btn-outline-secondary`) replaces `base_class`, and `no_url_class` defaults to Bootstrap's `disabled`
+class. For example, to render the button visible-but-disabled instead of hidden while no URL is available:
+
+```twig
+{{ include('@Contao/flare/back_button/bs5.html.twig', {
+    back_link: flare_reader.backLink,
+    hide_without_url: false,
+}, with_context = false) }}
+```
 
 ## Block Structure
 

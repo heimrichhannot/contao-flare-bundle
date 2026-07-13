@@ -29,10 +29,11 @@ $lang['sortSettings__column'] = ['Spalte', 'Bitte wählen Sie die Spalte, nach d
 $lang['sortSettings__direction'] = ['Sortierreihenfolge', 'Bitte wählen Sie die Sortierreihenfolge.'];
 ###< flare_defaults_legend ###
 
-###> flare_reader_legend ###
-$lang['flare_reader_legend'] = 'Leser-Einstellungen';
-$lang['jumpToReader'] = ['Detailleserseite', 'Bitte wählen Sie die Seite aus, zu der Besucher weitergeleitet werden, wenn sie auf einen Listeneintrag klicken.'];
-###< flare_reader_legend ###
+###> flare_jump_legend ###
+$lang['flare_jump_legend'] = 'Link-Einstellungen';
+$lang['jumpToListView'] = ['Standard Listenansicht-Seite', 'Seite, die beim Klick auf den Zurück-Button geöffnet wird.'];
+$lang['jumpToReader'] = ['Standard Detailleser-Seite', 'Seite, die beim Klick auf einen Listeneintrag geöffnet wird.'];
+###< flare_jump_legend ###
 
 ###> meta_legend ###
 $lang['meta_legend'] = 'Meta-Einstellungen';

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Context;
 
+use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
+use HeimrichHannot\FlareBundle\Reader\BackLink;
 use Symfony\Component\Validator\Constraints as Assert;
 
 readonly class ValidationContext implements
@@ -26,10 +28,29 @@ readonly class ValidationContext implements
     public function __construct(
         private ?\Closure                   $entryCache = null,
         #[Assert\PositiveOrZero] public int $jumpToReaderPageId = 0,
+        #[Assert\PositiveOrZero] public int $jumpToListViewPageId = 0,
         #[Assert\NotBlank] private string   $autoItemField = 'id',
         private array                       $filterValues = [],
     ) {
         $this->paginatorConfig = new PaginatorConfig(itemsPerPage: 1);
+    }
+
+    public function createBackLink(): ?BackLink
+    {
+        if (!$this->jumpToListViewPageId) {
+            return null;
+        }
+
+        if (!$pageModel = PageModel::findByPk($this->jumpToListViewPageId)) {
+            return null;
+        }
+
+        return BackLink::fromPage($pageModel);
+    }
+
+    public function getAutoItemField(): string
+    {
+        return $this->autoItemField;
     }
 
     public function getEntryCache(): array
@@ -68,6 +89,7 @@ readonly class ValidationContext implements
         return new self(
             entryCache: $this->entryCache,
             jumpToReaderPageId: $this->jumpToReaderPageId,
+            jumpToListViewPageId: $this->jumpToListViewPageId,
             autoItemField: $this->autoItemField,
             filterValues: $values,
         );

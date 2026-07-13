@@ -7,6 +7,8 @@
 
 {% block content %}
 
+    {{ include('@Contao/flare/back_button.html.twig', { back_link: flare_reader.backLink }, with_context = false) }}
+
     <div style="color: #800; background: #fdd; padding: 1rem;">
         <strong>{{ 'reader.default_template.warning'|trans({}, 'flare') }}</strong>
         <br><small>{{ 'reader.default_template.description'|trans({}, 'flare') }}</small>

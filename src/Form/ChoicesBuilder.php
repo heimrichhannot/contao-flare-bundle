@@ -61,9 +61,9 @@ class ChoicesBuilder
      */
     public const EMPTY_CHOICE_VALUE_ALTERNATIVE = '__';
 
-    /** @var array<string, Model|LabelableInterface|string> $choices */
+    /** @var array<string|int, Model|LabelableInterface|string> $choices */
     private array $choices = [];
-    /** @var array<string, callable|string|null> $choiceValues */
+    /** @var array<string|int, callable|string|null> $choiceValues */
     private array $choiceValues = [];
     private array $groups = [];
     // @phpstan-ignore property.onlyWritten
@@ -130,14 +130,14 @@ class ChoicesBuilder
     }
 
     /** @api */
-    public function getChoice(string $key): Model|LabelableInterface|string|null
+    public function getChoice(string|int $key): Model|LabelableInterface|string|null
     {
         return $this->choices[$key] ?? null;
     }
 
     /** @api */
     public function add(
-        string                          $alias,
+        string|int                      $alias,
         Model|LabelableInterface|string $choice,
         mixed                           $value = null,
         string|null                     $group = null,
@@ -266,7 +266,7 @@ class ChoicesBuilder
 
         foreach ($this->choices as $alias => $choice)
         {
-            $choices['c_' . $alias] = $choice;
+            $choices[$alias] = $choice;
         }
 
         return $choices;
@@ -293,7 +293,7 @@ class ChoicesBuilder
     /** @api */
     public function buildChoiceLabelCallback(): callable
     {
-        return function (mixed $choice, string $key, mixed $value): TranslatableMessage|string {
+        return function (mixed $choice, string|int $key, mixed $value): TranslatableMessage|string {
             if ($key === self::EMPTY_CHOICE)
             {
                 return $this->buildChoiceLabel($this->emptyOptionLabel, '', $this->emptyOptionValue);
@@ -304,11 +304,11 @@ class ChoicesBuilder
     }
 
     /** @api */
-    public function buildChoiceLabel(mixed $choice, string $key, mixed $value): TranslatableMessage|string
+    public function buildChoiceLabel(mixed $choice, string|int $key, mixed $value): TranslatableMessage|string
     {
         $params = [
             '%@choice%' => Str::wrap($choice),
-            '%@key%' => Str::wrap($key),
+            '%@key%' => (string) $key,
             '%@value%' => Str::wrap($value),
             '%@type%' => \gettype($choice),
             '%@class%' => \is_object($choice) ? \get_class($choice) : null,

@@ -10,6 +10,7 @@ use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
+use HeimrichHannot\FlareBundle\Reader\BackLink;
 use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
@@ -34,7 +35,7 @@ class ValidationProjector extends AbstractProjector
         \assert($context instanceof ValidationContext, '$config must be an instance of ValidationConfig');
 
         $readerUrlConfig = $context->createReaderUrlConfig();
-        $autoItemField = $readerUrlConfig->autoItemField;
+        $autoItemField = $readerUrlConfig->autoItemField ?? $context->getAutoItemField();
 
         $loader = $this->createLoader(new ValidationLoaderConfig(
             list: $list,
@@ -49,6 +50,7 @@ class ValidationProjector extends AbstractProjector
             readerUrlGenerator: $readerUrlGenerator,
             table: $list->dc,
             autoItemField: $autoItemField,
+            backLink: $context->createBackLink(),
         );
     }
 
@@ -62,12 +64,14 @@ class ValidationProjector extends AbstractProjector
         ReaderUrlGeneratorInterface $readerUrlGenerator,
         string                      $table,
         string                      $autoItemField,
+        ?BackLink                   $backLink = null,
     ): ValidationView {
         return new ValidationView(
             loader: $loader,
             readerUrlGenerator: $readerUrlGenerator,
             table: $table,
             autoItemField: $autoItemField,
+            backLink: $backLink,
         );
     }
 }

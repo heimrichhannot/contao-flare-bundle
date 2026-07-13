@@ -1,0 +1,39 @@
+{# @var \HeimrichHannot\FlareBundle\Reader\BackLink|null back_link #}
+{#
+    Back-to-list button component.
+
+    Renders a link to the configured list view page. The FLARE frontend script
+    upgrades the link to document.referrer when the reader was opened from the
+    list view, preserving its filter and pagination query parameters. The
+    qualifying list view URL is remembered per browser tab (sessionStorage),
+    so the button keeps pointing at the filtered list when navigating from
+    one reader page to another (e.g. via "similar items" links).
+
+    Variables:
+        back_link          ?BackLink  pass flare_reader.backLink
+        url                string     explicit fallback URL (wins over back_link)
+        label              string     button text, defaults to a translated "Back to list"
+        aria_label         string     link aria-label, defaults to label if set, translated "Back to list" otherwise
+        allow_any_referrer bool       accept any same-origin referrer, not just the configured page
+        base_class         string     base CSS classes on the anchor (default "flare_back-button")
+        link_class         string     extra CSS classes on the anchor
+        hide_without_url   bool       hide the anchor while no URL is available (default true);
+                                      set to false to keep it visible, e.g. styled as disabled
+        no_url_class       string     CSS classes applied while no URL is available; the frontend
+                                      script removes them when it upgrades the link
+#}
+{% set back_url = url|default(back_link.url ?? null) %}
+{% set allow_any = allow_any_referrer|default(false) %}
+{% set base_class = base_class ?? 'flare_back-button' %}
+{% set hide_without_url = hide_without_url ?? true %}
+{% set no_url_class = no_url_class ?? null %}
+{% block back_button %}
+    {% if back_url or allow_any %}
+        <a{% if back_url %} href="{{ back_url }}"{% elseif hide_without_url %} hidden{% endif %}
+           class="{{ base_class }}{% if link_class|default %} {{ link_class }}{% endif %}{% if not back_url and no_url_class %} {{ no_url_class }}{% endif %}"
+           aria-label="{{ aria_label|default(label|default('reader.back_to_list'|trans({}, 'flare'))) }}"
+           data-flare-back-button="{{ allow_any ? 'any-referrer' : 'strict' }}"
+           {%- if not back_url and no_url_class %} data-flare-back-button-no-url-class="{{ no_url_class }}"{% endif %}
+        >{{ label|default('reader.back_to_list'|trans({}, 'flare')) }}</a>
+    {% endif %}
+{% endblock %}

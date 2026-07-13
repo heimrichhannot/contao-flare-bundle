@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Engine\Context\Factory;
 
 use Contao\ContentModel;
+use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -20,7 +21,8 @@ readonly class ValidationContextFactory
 
     public function createFromContent(ContentModel $contentModel, ListModel $listModel): ValidationContext
     {
-        $jumpToReaderPageId = (int) ($listModel->jumpToReader ?: $contentModel->flare_jumpToReader);
+        $jumpToReaderPageId = (int) ($contentModel->{ContentContainer::FIELD_JUMP_TO_READER} ?: $listModel->jumpToReader);
+        $jumpToListViewPageId = (int) ($contentModel->{ContentContainer::FIELD_JUMP_TO_LISTVIEW} ?: $listModel->jumpToListView);
 
         $fieldAutoItem = DcaHelper::tryGetColumnName(
             $listModel->dc,
@@ -30,6 +32,7 @@ readonly class ValidationContextFactory
 
         $config = new ValidationContext(
             jumpToReaderPageId: $jumpToReaderPageId,
+            jumpToListViewPageId: $jumpToListViewPageId,
             autoItemField: $fieldAutoItem,
         );
 

@@ -1,0 +1,12 @@
+{# @var \HeimrichHannot\FlareBundle\Reader\BackLink|null back_link #}
+{#
+    Bootstrap 5 variant of the back-to-list button component.
+
+    Same contract as @Contao/flare/back_button.html.twig, plus:
+        btnClass  string  Bootstrap button classes, defaults to "btn btn-outline-secondary"
+
+    no_url_class defaults to Bootstrap's "disabled" class here.
+#}
+{% extends '@Contao/flare/back_button.html.twig' %}
+{% set base_class = btnClass|default('btn btn-outline-secondary') %}
+{% set no_url_class = no_url_class ?? 'disabled' %}

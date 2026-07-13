@@ -50,13 +50,14 @@ $dca['fields'][$itemsPerPage = ContentContainer::FIELD_ITEMS_PER_PAGE] = [
     'sql' => "int(10) unsigned NOT NULL default 0",
 ];
 
-$dca['fields'][$jumpTo = ContentContainer::FIELD_JUMP_TO] = [
+###> jump to page fields ###
+$fieldJumpTo = [
     'inputType' => 'pageTree',
     'foreignKey' => 'tl_page.title',
     'eval' => [
         'mandatory' => false,
         'fieldType' => 'radio',
-        'tl_class' => 'w50'
+        'tl_class' => 'w50',
     ],
     'sql' => [
         'type' => 'integer',
@@ -67,6 +68,10 @@ $dca['fields'][$jumpTo = ContentContainer::FIELD_JUMP_TO] = [
     ],
     'relation' => ['type' => 'hasOne', 'load' => 'lazy'],
 ];
+$dca['fields'][$jumpTo = ContentContainer::FIELD_JUMP_TO] = $fieldJumpTo;
+$dca['fields'][$jumpToReader = ContentContainer::FIELD_JUMP_TO_READER] = $fieldJumpTo;
+$dca['fields'][$jumpToListView = ContentContainer::FIELD_JUMP_TO_LISTVIEW] = $fieldJumpTo;
+###< jump to page fields ###
 
 $dca['fields'][$dcMultilingualDisplay = ContentContainer::FIELD_DC_MULTILINGUAL_DISPLAY] = [
     'inputType' => 'select',
@@ -86,8 +91,9 @@ $commonPaletteEnd = '{template_legend:hide},customTpl;'
 
 $dca['palettes'][ListViewController::TYPE] = '{type_legend},type,headline;'
     . "{flare_list_legend},$list,$formName,$itemsPerPage,$jumpTo;"
+    . "{flare_reader_legend},$jumpToReader;"
     . $commonPaletteEnd;
 
 $dca['palettes'][ReaderController::TYPE] = '{type_legend},type,headline;'
-    . "{flare_list_legend},$list;"
+    . "{flare_list_legend},$list,$jumpToListView;"
     . $commonPaletteEnd;

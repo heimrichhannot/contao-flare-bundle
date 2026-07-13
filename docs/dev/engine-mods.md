@@ -43,6 +43,8 @@ namespace App\Flare\Mod;
 
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Engine\Mod\AbstractMod;
+use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
+use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class BooleanTrueMod extends AbstractMod
@@ -60,10 +62,10 @@ class BooleanTrueMod extends AbstractMod
 
     public function __invoke(Engine $engine, array $options): void
     {
-        $engine->getList()->getFilters()->add(
-            \HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement::define(
+        $engine->getList()->addFilter(
+            SimpleEquationFilterElement::define(
                 equationLeft: $options['field'],
-                equationOperator: '=',
+                equationOperator: SqlEquationOperator::EQUALS,
                 equationRight: '1',
             )
         );
@@ -129,16 +131,23 @@ The `Engine` passed to your mod exposes:
 
 ### Common operations
 
-**Add a filter:**
+**Add a filter** (a [`Filter`](../spec/filtering.md#1-the-filter-value-object) value object; keyed by its
+alias, or an auto-generated key):
 
 ```php
-$engine->getList()->getFilters()->add($filterDefinition);
+$engine->getList()->addFilter($filter);
 ```
 
-**Add a named filter** (replaceable by name):
+**Add a named filter** (an existing key is replaced):
 
 ```php
-$engine->getList()->getFilters()->set('my_filter', $filterDefinition);
+$engine->getList()->addFilter($filter, 'my_filter');
+```
+
+**Remove a filter by key:**
+
+```php
+$engine->getList()->removeFilter('my_filter');
 ```
 
 **Change the pagination query parameter:**

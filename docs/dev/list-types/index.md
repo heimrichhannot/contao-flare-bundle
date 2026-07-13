@@ -23,9 +23,13 @@ class MyCustomListType extends AbstractListType
 ### Attribute Parameters:
 - **`type`**: Unique identifier for the list type.
 - **`dataContainer`**: The main database table (e.g., `tl_news`).
-- **`palette`**: (Optional) The full palette definition shown in the list's backend configuration — a string of
-  DCA legends and field names, e.g. `'{filter_legend},whichPtable'`. The referenced fields must exist in the
-  `tl_flare_list` DCA. This is **not** the name of a palette.
+
+:::info[Changed in v0.2]
+
+The `palette` parameter was removed — backend palettes are now built in
+[`buildDca()`](#3-backend-configuration-builddca).
+
+:::
 
 ## 2. Configuring the Query (`ConfigureQueryContract`)
 
@@ -69,18 +73,25 @@ public function configureBaseQuery(SqlQueryStruct $struct): void
 }
 ```
 
-## 3. Custom Palettes
+## 3. Backend Configuration (`buildDca`)
 
-If your list type requires specific configuration fields in the Contao backend, pass the palette definition —
-the legends and fields to display — directly in the attribute:
+If your list type requires specific configuration fields in the Contao backend, implement
+`Contract\DcaContract` and declare the palette — the legends and fields to display — in `buildDca()`:
 
 ```php
-#[AsListType(
-    type: 'my_custom_list',
-    dataContainer: 'tl_my_table',
-    palette: '{my_legend},myCustomField,anotherField'
-)]
+use HeimrichHannot\FlareBundle\Contract\DcaContract;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
+
+class MyCustomListType extends AbstractListType implements DcaContract
+{
+    public function buildDca(DcaBuilder $dca, DcaContext $context): void
+    {
+        $dca->palette('{my_legend},myCustomField,anotherField');
+    }
+}
 ```
 
 The referenced fields must be defined in the `tl_flare_list` DCA (e.g., in your extension's
-`contao/dca/tl_flare_list.php`).
+`contao/dca/tl_flare_list.php`). See the [Backend DCA Building guide](../dca-builder.md) for the full
+`DcaBuilder` API, including per-field tweaks and palette prefixes/suffixes.

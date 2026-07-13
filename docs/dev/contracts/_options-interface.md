@@ -27,14 +27,15 @@ public function configureOptions(OptionsResolver $resolver): void
 
 ## Important distinction
 
-This contract is not the same as `FormTypeOptionsContract`.
+This contract is not the same as `FilterElementOptionsInterface`.
 
-- Use `OptionsInterface` to define and validate custom option structures with `OptionsResolver`.
-- Use `FormTypeOptionsContract` to build Symfony form field options for a rendered filter field.
+- Use `Filter\Element\FilterElementOptionsInterface` for a filter element's canonical config schema — it is
+  resolved by FLARE's filter pipeline and pairs `configureOptions()` with `configFromRow()`.
+- `Contract\OptionsInterface` is a generic marker for any service that wants to expose an
+  `OptionsResolver`-based option schema.
 
 ## Current state in this repository
 
-`AbstractFilterElement` implements this interface with a no-op method, and `SimpleEquationElement` overrides it.
-
-At the moment, there is no internal runtime call site in `src/` that invokes `OptionsInterface::configureOptions()`
-directly. Treat it as part of Flare's extensibility surface for code that wants to resolve custom options explicitly.
+At the moment, there is no implementor and no internal runtime call site in `src/` that invokes
+`OptionsInterface::configureOptions()` directly. Treat it as part of Flare's extensibility surface for code
+that wants to resolve custom options explicitly.

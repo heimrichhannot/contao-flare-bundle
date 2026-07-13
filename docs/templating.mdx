@@ -446,6 +446,22 @@ used for pagination.
 - **Mod options:**
     - `param` (string): the query parameter name.
 
+### Adding Ad-Hoc Filters from Twig
+
+Beyond mods, you can add individual filters to the list specification directly, using the `flare_make_filter()`
+helper together with `flare.list.addFilter(...)`:
+
+```twig
+{% do flare.list.addFilter(
+    flare_make_filter('flare_bool', { intrinsic: true, field: 'featured', preselect: true })
+) %}
+{% set flare_list = flare.createView %}
+```
+
+The first argument is a registered filter element type alias (config keys follow the element's canonical
+config schema) or a `FilterTypeInterface` class-string (config keys are the type's options). See
+[Custom Filter Types](dev/filter-types.md) for details.
+
 ### Examples
 
 ```twig
@@ -515,8 +531,9 @@ Flare currently registers these Twig functions (see the [Twig functions referenc
   ```php
   \Contao\Controller::addEnclosuresToTemplate(...)
   ```
-- `flare_enclosure_files(model|enclosure_array)` (deprecated, will be removed in v0.2): retreives a collection of `Contao\FilesModel` instances
-  for the given model or an imediate array of enclosure data.
+- `flare_make_filter(type, config = [], data = null, alias = null)` for creating a `Filter` from a registered
+  filter element type alias (e.g. `'flare_bool'`) or a `FilterTypeInterface` class-string; add it to a list via
+  `flare.list.addFilter(...)` — see [ad-hoc filters](#adding-ad-hoc-filters-from-twig).
 - `flare_project(list_specification, context)` for running a projection directly from a template: returns the view
   for the given `ListSpecification` and context configuration, without going through a content element's engine.
 - `flare_schema_org(?model = null)` (uses model from context if not provided): prints the JSON-LD schema markup for the given model in a reader context.

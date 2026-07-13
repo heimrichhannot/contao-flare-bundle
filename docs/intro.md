@@ -18,5 +18,5 @@ Built on a modern, decoupled architecture, Flare provides a flexible and develop
 - **Custom Pagination**: Built-in paginator that is robust and easy to style (Twig-based).
 - **Detail Views (Readers)**: Full support for individual entity views using Contao's `auto_item` feature.
 - **Developer First**: PHP 8 attributes (`#[AsListType]`, `#[AsFilterElement]`) for rapid development and clear code discovery.
-- **Extensible**: Easy to add custom list types, filter elements, and global query manipulations via events.
+- **Extensible**: Easy to add custom list types, filter elements, reusable filter types, and global query manipulations via events.
 - **No Modules Required**: Everything is managed via Content Elements and backend configurations.

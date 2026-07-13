@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 7
 ---
 
 # Events Reference
@@ -9,7 +9,7 @@ Flare provides several events to hook into the list and reader lifecycle.
 ## 1. Query Modification
 
 ### `ModifyListQueryStructEvent`
-Dispatched after the base query is built and filters are invoked, but before the SQL is executed.
+Dispatched after the base query is built and filters are applied, but before the SQL is executed.
 - **Use Case:** Global query manipulation (multi-tenancy, custom sorting).
 - **Class:** `HeimrichHannot\FlareBundle\Event\ModifyListQueryStructEvent`
 
@@ -18,17 +18,18 @@ Dispatched after the `TableAliasRegistry` and base `SqlQueryStruct` are initiali
 - **Use Case:** Registering additional table joins or setting up the initial query structure.
 - **Class:** `HeimrichHannot\FlareBundle\Event\QueryBaseInitializedEvent`
 
-## 2. Specification & Definition Lifecycle
+## 2. Specification & Filter Collection Lifecycle
 
 ### `ListSpecificationCreatedEvent`
 Dispatched when a `ListSpecification` object has been created from its data source (e.g. `tl_flare_list` model).
 - **Use Case:** Modifying the list configuration dynamically at runtime.
 - **Class:** `HeimrichHannot\FlareBundle\Event\ListSpecificationCreatedEvent`
 
-### `FilterDefinitionCreatedEvent`
-Dispatched when a `FilterDefinition` has been created.
-- **Use Case:** Modifying filter element configuration.
-- **Class:** `HeimrichHannot\FlareBundle\Event\FilterDefinitionCreatedEvent`
+### `FilterCollectedEvent`
+Dispatched for every filter collected from the database, before it is added to the list specification.
+- **Use Case:** Replacing or reconfiguring a filter based on its `tl_flare_filter` record.
+- **Class:** `HeimrichHannot\FlareBundle\Event\FilterCollectedEvent`
+- **Properties:** `filter` (mutable `Filter` — assign a replacement), `model` (readonly `FilterModel`)
 
 ## 3. List View Lifecycle
 
@@ -56,17 +57,20 @@ Dispatched when Schema.org JSON-LD data is generated for a reader page.
 - **Use Case:** Adding or modifying structured data.
 - **Class:** `HeimrichHannot\FlareBundle\Event\ReaderSchemaOrgEvent`
 
-## 5. Filter Invocation Lifecycle
+## 5. Filter Build Lifecycle
 
-### `FilterElementInvokingEvent`
-Dispatched before a filter is executed.
-- **Use Case:** Skipping specific filters or swapping the invoker callback.
-- **Class:** `HeimrichHannot\FlareBundle\Event\FilterElementInvokingEvent`
+### `FilterElementBuildingEvent`
+Dispatched before a filter element's `buildFilter()` runs.
+- **Use Case:** Skipping specific filters conditionally, or inspecting the filter context.
+- **Class:** `HeimrichHannot\FlareBundle\Event\FilterElementBuildingEvent`
+- **API:** `getContext(): FilterContext`, `getBuilder(): FilterBuilderInterface`, `getData(): array`,
+  `shouldBuild(): bool` / `setShouldBuild(bool)` — set to `false` to skip the element's `buildFilter()`.
 
-### `FilterElementInvokedEvent`
-Dispatched after a filter has been executed.
-- **Use Case:** Reacting to applied filters or inspecting the modified query builder.
-- **Class:** `HeimrichHannot\FlareBundle\Event\FilterElementInvokedEvent`
+### `FilterElementBuiltEvent`
+Dispatched after a filter element's `buildFilter()` ran.
+- **Use Case:** Reacting to applied filters or adding further filter-type calls.
+- **Class:** `HeimrichHannot\FlareBundle\Event\FilterElementBuiltEvent`
+- **API:** `getContext(): FilterContext`, `getBuilder(): FilterBuilderInterface`, `getData(): array`
 
 ## 6. Filter Form Lifecycle
 
@@ -76,30 +80,31 @@ Dispatched while the filter form is being built, exposing the `FormBuilderInterf
 - **Class:** `HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent`
 - **Properties:** `listSpecification`, `formName`, `formBuilder`
 
-### `FilterFormChildOptionsEvent`
-Dispatched when the form type options for a single filter's child form are being gathered.
-- **Use Case:** Modifying the options of one filter's form field (attributes, label, choices).
-- **Class:** `HeimrichHannot\FlareBundle\Event\FilterFormChildOptionsEvent`
-- **Properties:** `listSpecification`, `filterDefinition`, `parentFormName`, `formName`, `options`
+### `FilterElementFormBuiltEvent`
+Dispatched after a filter element built its form children on the per-filter compound sub-builder, before it
+is mounted onto the root form.
+- **Use Case:** Adding, removing, or replacing one filter's form children (re-adding a same-named child
+  overwrites it), or preventing the sub-form from being mounted at all.
+- **Class:** `HeimrichHannot\FlareBundle\Event\FilterElementFormBuiltEvent`
+- **API:** `getBuilder(): FormBuilderInterface`, `getContext(): FilterContext`, `cancel()` / `isCancelled()`
 
-## 7. Other Events
+## 7. Backend DCA Lifecycle
+
+### `ElementDcaEvent`
+Dispatched after an element's or list type's `buildDca()` ran, before the collected configuration is applied
+to the live DCA.
+- **Use Case:** Modifying the backend palette or fields of a list type or filter element from outside its
+  class — see [Backend DCA Building](./dca-builder.md#5-modifying-another-types-dca).
+- **Class:** `HeimrichHannot\FlareBundle\Event\ElementDcaEvent`
+- **Properties:** `dca` (readonly `DcaBuilder`), `context` (readonly `DcaContext`)
+
+## 8. Other Events
 
 ### `DetailsPageUrlGeneratedEvent`
 Dispatched when a URL to a details (reader) page is generated.
 - **Class:** `HeimrichHannot\FlareBundle\Event\DetailsPageUrlGeneratedEvent`
 
-### `FilterElementFormTypeOptionsEvent`
-Dispatched when the options for a filter's Symfony Form Type are being gathered.
-- **Use Case:** Dynamically adding attributes or choices to the frontend filter form.
-- **Class:** `HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent`
-
-### `PaletteEvent`
-Dispatched when the backend palette for a list or filter configuration is being resolved.
-- **Use Case:** Modifying the DCA palette of a list type or filter element from outside its class.
-- **Class:** `HeimrichHannot\FlareBundle\Event\PaletteEvent`
-- **API:** `getPaletteContainer()` (list or filter), `getPaletteConfig()`/`setPaletteConfig()`, `getPalette()`/`setPalette()`
-
-## 8. Named Events (Aliased Dispatch)
+## 9. Named Events (Aliased Dispatch)
 
 Several events are re-dispatched under a dynamic name after the base event, so listeners can target
 one specific filter type, form, or list type without checking inside a generic listener. The event
@@ -107,13 +112,13 @@ object is identical to the base event.
 
 | Named event pattern | Base event |
 |---|---|
-| `flare.filter_element.{type}.invoking` | `FilterElementInvokingEvent` |
-| `flare.filter_element.{type}.invoked` | `FilterElementInvokedEvent` |
+| `flare.filter_element.{type}.building` | `FilterElementBuildingEvent` |
+| `flare.filter_element.{type}.built` | `FilterElementBuiltEvent` |
+| `flare.filter_element.{type}.form_built` | `FilterElementFormBuiltEvent` |
 | `flare.form.{formName}.build` | `FilterFormBuildEvent` |
-| `flare.form.{parentFormName}.child.{formName}.options` | `FilterFormChildOptionsEvent` |
 | `flare.list_type.{type}.list_specification_created` | `ListSpecificationCreatedEvent` |
-| `flare.filter_element.{type}.palette` | `PaletteEvent` (filter palettes) |
-| `flare.list.{type}.palette` | `PaletteEvent` (list palettes) |
+| `flare.filter_element.{type}.dca` | `ElementDcaEvent` (filter elements) |
+| `flare.list.{type}.dca` | `ElementDcaEvent` (list types) |
 
 Example — listen only to the build of the form named `my_form`:
 

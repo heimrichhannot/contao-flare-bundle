@@ -33,10 +33,10 @@ To prevent ambiguous column errors during joins, all tables in Flare MUST be ali
 The primary table of any list is always aliased as `main`. This is defined in `TableAliasRegistry::ALIAS_MAIN`.
 
 ### Quoting Columns
-When writing query parts in a Filter Element, use the `FilterQueryBuilder`'s `column()` helper to ensure correct quoting and aliasing, and always bind values as parameters:
+When writing query parts in a [Filter Type](../dev/filter-types.md), use the `FilterQueryBuilder`'s `column()` helper to ensure correct quoting and aliasing, and always bind values as parameters:
 
 ```php
-// Inside a filter element's invoker
+// Inside a filter type's buildQuery()
 $qb->where($qb->expr()->eq($qb->column('published'), ':val'))
     ->setParameter('val', '1');
 // Results in: WHERE `main`.`published` = :val
@@ -47,7 +47,7 @@ The `TableAliasRegistry` keeps track of all available joins. When a filter or li
 
 ## 4. `ModifyListQueryStructEvent`
 
-This event is the primary hook for global query manipulation. It is dispatched after the base query is built and filters are invoked, but before the final SQL is executed.
+This event is the primary hook for global query manipulation. It is dispatched after the base query is built and filters are applied, but before the final SQL is executed.
 
 **Event:** `HeimrichHannot\FlareBundle\Event\ModifyListQueryStructEvent`
 

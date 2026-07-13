@@ -3,7 +3,7 @@ title: Specifications
 sidebar_position: 4
 ---
 
-# Specifications & Filter Collections
+# Specifications & Filters
 
 ## 1. Overview
 
@@ -16,37 +16,48 @@ The `ListSpecification` defines the base configuration for a data list.
 **Class:** `HeimrichHannot\FlareBundle\Specification\ListSpecification`
 
 ### Key Properties:
-- **`type`**: The machine name of the list type (e.g., `news`, `member`).
+- **`type`**: The machine name of the list type (e.g., `flare_news`, `flare_generic_dc`).
 - **`dc`**: The Data Container (usually the database table name).
 - **`dataSource`**: An optional `ListDataSourceInterface` (often wrapping a Contao Model).
-- **`filters`**: A `FilterDefinitionCollection` containing all associated filters.
+- **filters**: A keyed map (`array<string, Filter>`) of the list's filters.
 
-## 3. Filter Definition (`FilterDefinition`)
+## 3. Filters (`Filter`)
 
-A `FilterDefinition` describes a single filter criteria.
+Each entry in the specification's filter map is an immutable
+`HeimrichHannot\FlareBundle\Filter\Filter` value object pairing a filter element with its canonical config —
+see the [Filter Pipeline](./filtering.md#1-the-filter-value-object) for the full property and factory
+reference.
 
-**Class:** `HeimrichHannot\FlareBundle\Specification\FilterDefinition`
+Key points at the specification level:
 
-### Key Properties:
-- **`type`**: The filter element type (e.g., `flare_bool`, `flare_select`).
-- **`intrinsic`**: Boolean indicating if the filter is "hidden" (applied automatically without user interaction).
-- **`alias`**: The unique identifier for this filter within the collection.
-- **`targetAlias`**: The SQL table alias this filter should target. Defaults to `null`, which resolves to `main` when the filter is executed. Use `forceTargetAlias(string $alias)` to pin a filter to a specific alias (`isTargetingForced()` tells you whether that happened).
+- **`element`**: A registered element type alias (e.g. `flare_bool`) or an inline element instance.
+- **`alias`**: The filter's form name.
+- **`targetAlias`**: The SQL table alias the filter should target. Defaults to `null`, which resolves to
+  `main` when the filter is executed. Use `withTargetAlias(string $alias)` to pin a filter to a specific
+  alias — it returns a **new** instance, since `Filter` is immutable.
 
-## 4. Filter Definition Collection (`FilterDefinitionCollection`)
+## 4. The Filter API
 
-The `FilterDefinitionCollection` is an associative container for `FilterDefinition` objects.
+Filters are indexed by a unique string key, which allows for powerful manipulation:
 
-### Indexing and Overriding
-Filters in the collection are indexed by a unique key (string). This allows for powerful manipulation:
+```php
+public function getFilters(): array;                                    // array<string, Filter>
+public function getFilter(string $key): ?Filter;
+public function addFilter(Filter $filter, ?string $key = null): static;
+public function removeFilter(string $key): static;
+public function hasFilterOfType(string $elementType): bool;
+```
 
-- **Adding Filters:** Use `add(FilterDefinition ...$item)` to add filters with auto-generated keys.
-- **Overriding Filters:** Use `set(string $key, FilterDefinition $filter)` to replace a filter at a specific index. This is useful when you want a database-driven filter to be replaced by a more specific manual filter sharing the same name.
-- **Retrieving Filters:** Use `get(string $key)` or `all()` to access the definitions.
-
-### Filtering the Filters
-You can check for specific filter types using `hasType(string $type)`.
+- **Adding filters:** `addFilter($filter)` keys the filter by its alias, or auto-generates a key for
+  alias-less filters.
+- **Overriding filters:** `addFilter($filter, 'published')` replaces an existing `'published'` entry — this
+  is how a manual filter overrides a database-driven filter sharing the same key (e.g. the default
+  `published` filter that the News list type adds).
+- **Checking for element types:** `hasFilterOfType('flare_bool')` checks whether any filter uses the given
+  element type.
 
 ## 5. Persistence & Hashing
 
-Both `ListSpecification` and `FilterDefinition` implement a `hash()` method. This is used by the `Engine` and `Projector` to determine if the configuration has changed, which is crucial for caching and identifying unique list states (e.g., for pagination parameters).
+`ListSpecification::hash()` produces a stable hash from the list's type, data container, and each filter's
+`Filter::fingerprint()`. The `Engine` and `Projector` use it to determine if the configuration has changed,
+which is crucial for caching and identifying unique list states (e.g., for pagination parameters).

@@ -21,7 +21,8 @@ The system is based on a strict separation of responsibilities:
 
 ### 1. Specification (`ListSpecification`)
 - **Type:** Value Object / Domain Object.
-- **Responsibility:** Contains the static configuration of a list (e.g., table name, base query, filters).
+- **Responsibility:** Contains the static configuration of a list (e.g., table name, base query, filters —
+  a keyed map of immutable [`Filter` value objects](./filtering.md#1-the-filter-value-object)).
 - **Function:** Abstractly defines the data source without knowing the execution context.
 
 ### 2. Context (`ContextInterface`)

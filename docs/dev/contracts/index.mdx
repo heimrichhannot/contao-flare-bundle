@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 6
 ---
 
 # Contracts Reference
@@ -14,15 +14,14 @@ the contracts that matter for your type.
 Contracts are grouped into three categories:
 
 ## 1. Filter Element Contracts
-- [**`FormDataContract`**](./form-data-contract.md): Control how the runtime value is extracted from the submitted
-  form field.
-- [**`FormTypeOptionsContract`**](./form-type-options-contract.md): Dynamically modify Symfony form field options and
-  generated choices.
-- [**`HydrateFormContract`**](./hydrate-form-contract.md): Hydrate non-submitted form fields for non-intrinsic filters.
-- [**`IntrinsicValueContract`**](./intrinsic-value-contract.md): Provide values for intrinsic filters when no runtime
-  value exists.
-- [**`RuntimeValueContract`**](./runtime-value-contract.md): Normalize runtime values before the filter invoker sees
-  them.
+
+The element lifecycle interfaces live in `HeimrichHannot\FlareBundle\Filter\Element\` and are covered in
+depth by the [custom filter elements guide](../filter-elements/index.md):
+
+- **`FilterElementInterface`**: The core contract every element implements — `buildForm()` adds the
+  frontend form controls, `buildFilter()` translates config and submitted data into filter-type calls.
+- **`FilterElementOptionsInterface`**: Declares the element's canonical config schema
+  (`configureOptions()`) and maps stored `tl_flare_filter` rows onto it (`configFromRow()`).
 
 ## 2. List Type Contracts
 - [**`ConfigureQueryContract`**](./configure-query-contract.md): Register joins and customize the base SQL query.
@@ -30,9 +29,9 @@ Contracts are grouped into three categories:
   editing.
 
 ## 3. General Contracts
+- [**`DcaContract`**](./dca-contract.md): Assemble the type's backend palette and DCA field tweaks at runtime.
 - [**`IsSupportedContract`**](./is-supported-contract.md): Hide unsupported services from bundle integrations that check
   availability.
-- [**`PaletteContract`**](./palette-contract.md): Return or adjust Contao DCA palette strings during palette building.
 {/*
   * - [**`OptionsInterface`**](./options-interface.md): Define and validate custom options with Symfony's `OptionsResolver`.
   * - [**`LabelableInterface`**](./labelable-interface.md): Supply custom translation parameters for dynamically rendered choice labels. This interface is currently marked experimental.

@@ -72,6 +72,7 @@ readonly class ElementDcaListener
             $type = (string) ($filterModel->type ?? '');
             $service = $this->filterElementRegistry->get($type)?->getService();
         }
+        /** @mago-expect lint:no-else-clause This else clause is fine. */
         else
         {
             $filterModel = null;

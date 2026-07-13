@@ -105,7 +105,7 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterFilterElement impleme
                 $choicesBuilder->add((string) $value, (string) $label, (int) $value);
             }
 
-            $formOptions['choice_loader'] = new CallbackChoiceLoader(static fn (): array => $choicesBuilder->buildChoices());
+            $formOptions['choice_loader'] = $choicesBuilder->buildCallbackChoiceLoader();
             $formOptions['choice_label'] = $choicesBuilder->buildChoiceLabelCallback();
             $formOptions['choice_value'] = $choicesBuilder->buildChoiceValueCallback();
 

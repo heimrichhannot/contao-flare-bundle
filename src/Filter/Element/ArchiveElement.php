@@ -21,7 +21,6 @@ use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\Str;
-use Symfony\Component\Form\ChoiceList\Loader\CallbackChoiceLoader;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -91,6 +90,24 @@ class ArchiveElement extends AbstractFilterFilterElement
         $inferrer = $this->getPtableInferrer($context->list);
 
         $choices = $this->choicesBuilderFactory->createChoicesBuilder()->enable();
+        $builder->setAttribute('flare.choices_builder', $choices);
+
+        $formOptions = [
+            'label' => false,
+            'required' => $config['is_mandatory'],
+            'multiple' => $config['is_multiple'],
+            'expanded' => $config['is_expanded'],
+            'choice_loader' => $choices->buildCallbackChoiceLoader(),
+            'choice_label' => $choices->buildChoiceLabelCallback(),
+            'choice_value' => $choices->buildChoiceValueCallback(),
+        ];
+
+        $data = $this->buildPreselectData($context->list, $config['preselect']);
+        if (!\is_null($data) && \count($data)) {
+            $formOptions['data'] = $data;
+        }
+
+        $builder->add(FilterContext::FIELD_VALUE, ChoiceType::class, $formOptions);
 
         if ($config['has_empty_option'])
         {
@@ -115,59 +132,43 @@ class ArchiveElement extends AbstractFilterFilterElement
             {
                 $choices->add((string) $parent->id, $parent);
             }
+
+            return;
         }
-        else
+
+        if (!$inferrer->isDcaDynamicPtable())
+            // no valid ptable available
         {
-            if (!$inferrer->isDcaDynamicPtable())
-                // no valid ptable available
-            {
-                throw new FilterException('No valid ptable found.');
-            }
-
-            /**
-             * ## We are dealing with a _dynamic ptable_ henceforth.
-             */
-
-            if (!$groups = $config['group_whitelist_parents'])
-            {
-                throw new FilterException('No whitelisted parents defined.');
-            }
-
-            foreach ($groups as $group)
-            {
-                $table = $group['table'];
-
-                foreach ($this->fetchParents($table, $group['ids']) ?? [] as $parent)
-                {
-                    $choices->add(\sprintf('%s.%s', $table, $parent->id), $parent);
-                }
-
-                $choices->setLabelForTable($group['label'], $table);
-            }
-
-            if (!$choices->count()) {
-                throw new FilterException('No valid whitelisted parents defined.');
-            }
-
-            $choices->setModelSuffix('(%@name%)');
+            throw new FilterException('No valid ptable found.');
         }
 
-        $formOptions = [
-            'label' => false,
-            'required' => $config['is_mandatory'],
-            'multiple' => $config['is_multiple'],
-            'expanded' => $config['is_expanded'],
-            'choice_loader' => new CallbackChoiceLoader(static fn (): array => $choices->buildChoices()),
-            'choice_label' => $choices->buildChoiceLabelCallback(),
-            'choice_value' => $choices->buildChoiceValueCallback(),
-        ];
+        /**
+         * ## We are dealing with a _dynamic ptable_ henceforth.
+         */
 
-        if (null !== $data = $this->buildPreselectData($context->list, $config['preselect'])) {
-            $formOptions['data'] = $data;
+        if (!$groups = $config['group_whitelist_parents'])
+        {
+            throw new FilterException('No whitelisted parents defined.');
         }
 
-        $builder->setAttribute('flare.choices_builder', $choices);
-        $builder->add(FilterContext::FIELD_VALUE, ChoiceType::class, $formOptions);
+        foreach ($groups as $group)
+        {
+            $table = $group['table'];
+
+            $parents = $this->fetchParents($table, $group['ids'])?->getModels() ?? [];
+
+            foreach ($parents as $parent) {
+                $choices->add(\sprintf('%s.%s', $table, $parent->id), $parent);
+            }
+
+            $choices->setLabelForTable($group['label'], $table);
+        }
+
+        if (!$choices->count()) {
+            throw new FilterException('No valid whitelisted parents defined.');
+        }
+
+        $choices->setModelSuffix('(%@name%)');
     }
 
     /**

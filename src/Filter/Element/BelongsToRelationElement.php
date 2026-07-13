@@ -132,7 +132,7 @@ class BelongsToRelationElement extends AbstractFilterFilterElement
     {
         $groups = [];
 
-        foreach (\array_values($parentGroups) as $group)
+        foreach ($parentGroups as $group)
         {
             if (!($g_tablePtable = $group['tablePtable'] ?? null)
                 || !($g_whitelistParents = $group['whitelistParents'] ?? null)
@@ -170,9 +170,7 @@ class BelongsToRelationElement extends AbstractFilterFilterElement
 
         if (!$listModel->dc)
         {
-            Message::addError($this->trans->trans('errors.missing_datacontainer', [
-                '%id%' => $listModel->id,
-            ], 'flare'));
+            Message::addError($this->trans->trans('errors.missing_datacontainer', ['%id%' => $listModel->id], 'flare'));
             $dca->palette('');
             return;
         }

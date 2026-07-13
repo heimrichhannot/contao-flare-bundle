@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
+use Contao\Controller;
 use Contao\DataContainer;
 use Contao\StringUtil;
 use Doctrine\DBAL\Connection;
@@ -27,14 +28,15 @@ use Symfony\Component\Form\FormInterface;
 
 #[AsFilterElement(
     type: self::TYPE,
-    palette: '{filter_legend},fieldGeneric,isMultiple,preselect',
+    palette: '{filter_legend},fieldGeneric,isMultiple,isExpanded,preselect',
     formType: ChoiceType::class,
 )]
 class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFormContract, IntrinsicValueContract
 {
     public const TYPE = 'flare_fieldValueChoice';
 
-    private array $valueCache = [];
+    private array $foreignValueCache = [];
+    private array $localValueCache = [];
 
     public function __construct(
         private readonly Connection $connection,
@@ -75,12 +77,17 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
 
     public function processRuntimeValue(mixed $value, ListSpecification $list, FilterDefinition $filter): ?array
     {
-        return $this->extractSubmittedData((array) $value) ?? $this->extractPreselectData($filter);
+        return $this->extractSubmittedData((array) $value);
     }
 
     public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): ?array
     {
         return $this->extractPreselectData($filter);
+    }
+
+    public function extractFormData(FormInterface $form): mixed
+    {
+        return $form->getViewData();
     }
 
     public function extractPreselectData(FilterDefinition $filter): ?array
@@ -111,11 +118,7 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
             static fn(string $value): bool => $value !== '' && $value !== ChoicesBuilder::EMPTY_CHOICE,
         );
 
-        if (!$submittedData) {
-            return null;
-        }
-
-        return $submittedData;
+        return $submittedData ?: null;
     }
 
     public function hydrateForm(FormInterface $field, ListSpecification $list, FilterDefinition $filter): void
@@ -128,11 +131,20 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
             return;
         }
 
-        if (!$filter->isMultiple) {
-            $preselect = \reset($preselect);
+        $choices = $field->getConfig()->getOption('choices') ?? [];
+
+        $data = [];
+        foreach ($preselect as $alias) {
+            if ($choice = $choices[$alias] ?? null) {
+                $data[] = $choice;
+            }
         }
 
-        $field->setData($preselect);
+        if (!$filter->isMultiple) {
+            $data = \reset($data);
+        }
+
+        $field->setData($data);
     }
 
     public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
@@ -144,17 +156,28 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         $table = $event->list->dc;
         $field = $event->filter->fieldGeneric ?: '';
 
-        $values = $this->getDistinctValues($table, $field);
-
-        foreach ($values as $value) {
-            $choices->add((string) $value, (string) $value);
+        if (!\is_null($foreignValues = $this->getForeignValues($table, $field)))
+        {
+            // TODO: display of frontend form values should be configurable
+            foreach ($foreignValues as $id => $label) {
+                $choices->add((string) $id, (string) $label, $id);
+            }
+        }
+        /** @mago-expect lint:no-else-clause This else clause is fine. */
+        else
+        {
+            foreach ($this->getLocalValues($table, $field) as $value) {
+                $choices->add((string) $value, (string) $value, $value);
+            }
         }
 
         $event->options['multiple'] = (bool) $event->filter->isMultiple;
+        $event->options['expanded'] = (bool) $event->filter->isExpanded;
         $event->options['required'] = false;
     }
 
     #[AsFilterCallback(self::TYPE, 'fields.isMultiple.load')]
+    #[AsFilterCallback(self::TYPE, 'fields.isExpanded.load')]
     public function onLoad_isMultiple(
         mixed          $value,
         ?DataContainer $dc,
@@ -166,7 +189,8 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         }
 
         $dca = &$GLOBALS['TL_DCA'][$dcTable]['fields'][$dcField];
-        $dca['eval']['submitOnChange'] = true;
+        $dca['eval']['submitOnChange'] = $dcField === 'isMultiple';
+        $dca['eval']['tl_class'] = 'cbx m12 w25';
 
         return $value;
     }
@@ -187,30 +211,77 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
             return $value;
         }
 
-        $dca = &$GLOBALS['TL_DCA'][$dcTable]['fields'][$dcField];
+        $flareDca = &$GLOBALS['TL_DCA'][$dcTable]['fields'][$dcField];
 
         $choices = $this->choicesBuilderFactory
             ->createChoicesBuilder()
             ->setModelSuffix('[%id%]')
             ->enable();
 
-        $dca['inputType'] = 'select';
-        $dca['eval']['multiple'] = $filterModel->isMultiple;
-        $dca['eval']['chosen'] = true;
-        $dca['eval']['includeBlankOption'] = true;
-        $dca['options_callback'] = static fn(DataContainer $dc): array => $choices->buildOptions();
+        Controller::loadDataContainer($table);
 
-        foreach ($this->getDistinctValues($table, $valueField) as $option) {
-            $choices->add($option, $option);
+        if (!\is_null($foreignValues = $this->getForeignValues($table, $valueField)))
+        {
+            foreach ($foreignValues as $id => $label) {
+                $choices->add((string) $id, (string) $label, $id);
+            }
         }
+        /** @mago-expect lint:no-else-clause This else clause is fine. */
+        else
+        {
+            foreach ($this->getLocalValues($table, $valueField) as $option) {
+                $choices->add((string) $option, (string) $option, $option);
+            }
+        }
+
+        $flareDca['inputType'] = 'select';
+        $flareDca['eval']['multiple'] = $filterModel->isMultiple;
+        $flareDca['eval']['chosen'] = true;
+        $flareDca['eval']['includeBlankOption'] = true;
+        $flareDca['options_callback'] = static fn (DataContainer $dc): array => $choices->buildOptions();
 
         return $value;
     }
 
-    private function getDistinctValues(string $table, string $field): array
+    private function getForeignValues(string $table, string $field): ?array
     {
-        if (isset($this->valueCache[$table][$field])) {
-            return $this->valueCache[$table][$field];
+        if (isset($this->foreignValueCache[$table][$field])) {
+            return $this->foreignValueCache[$table][$field];
+        }
+
+        $dca = $GLOBALS['TL_DCA'][$table]['fields'][$field] ?? [];
+
+        if (!$foreignKey = $dca['foreignKey'] ?? null) {
+            return null;
+        }
+
+        [$foreignTable, $foreignDisplayColumn] = \explode('.', $foreignKey, 2);
+
+        if (!$foreignTable || !$foreignDisplayColumn) {
+            return null;
+        }
+
+        $foreignTable = $this->connection->quoteIdentifier($foreignTable);
+        $foreignDisplayColumn = $this->connection->quoteIdentifier($foreignDisplayColumn);
+        $foreignField = $this->connection->quoteIdentifier($dca['relation']['field'] ?? 'id');
+
+        // The string-concatenation happens directly in SQL, producing a key-value pair for each option in the format:
+        //   `{id} => "{value} [{id}]"` (where `{value}` is the display column value, e.g., `tl_user.name`)
+        $sql = <<<SQL
+            SELECT {$foreignField} AS `id`,
+                   CONCAT({$foreignDisplayColumn}, ' [', {$foreignField}, ']') AS `label`
+              FROM {$foreignTable}
+             WHERE `tstamp` > 0
+             ORDER BY `label`
+        SQL;
+
+        return $this->foreignValueCache[$table][$field] = $this->connection->fetchAllKeyValue($sql);
+    }
+
+    private function getLocalValues(string $table, string $field): array
+    {
+        if (isset($this->localValueCache[$table][$field])) {
+            return $this->localValueCache[$table][$field];
         }
 
         if (!$field || !$table) {
@@ -220,13 +291,20 @@ class FieldValueChoiceElement extends AbstractFilterElement implements HydrateFo
         $qTable = $this->connection->quoteIdentifier($table);
         $qField = $this->connection->quoteIdentifier($field);
 
-        $sql = "SELECT DISTINCT {$qField} AS value FROM {$qTable} WHERE {$qField} IS NOT NULL ORDER BY {$qField}";
+        $sql = <<<SQL
+            SELECT DISTINCT
+                CAST({$qField} AS CHAR) AS `value`
+              FROM {$qTable}
+             WHERE {$qField} IS NOT NULL
+              AND `tstamp` > 0
+             ORDER BY `value`;
+        SQL;
 
         $values = \array_values(\array_filter(
             $this->connection->fetchFirstColumn($sql),
             static fn (mixed $v): bool => (!\is_string($v) || \trim($v) !== '')
         ));
 
-        return $this->valueCache[$table][$field] = $values;
+        return $this->localValueCache[$table][$field] = $values;
     }
 }

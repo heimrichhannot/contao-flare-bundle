@@ -266,7 +266,7 @@ class ChoicesBuilder
 
         foreach ($this->choices as $alias => $choice)
         {
-            $choices['c_' . $alias] = $choice;
+            $choices[$alias] = $choice;
         }
 
         return $choices;

@@ -14,6 +14,7 @@ final class Configuration implements ConfigurationInterface
         $treeBuilder = new TreeBuilder('huh_flare');
         $rootNode = $treeBuilder->getRootNode();
 
+        // @phpstan-ignore class.notFound (PHPStan 1.x cannot parse symfony/config 7.4 template defaults)
         $rootNode
             ->children()
                 ->arrayNode('format_label_defaults')

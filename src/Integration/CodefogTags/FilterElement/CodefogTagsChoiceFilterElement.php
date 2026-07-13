@@ -19,13 +19,12 @@ use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegi
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Form\ChoiceList\Loader\CallbackChoiceLoader;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE, isTargeted: true)]
-class CodefogTagsChoiceFilterElement extends AbstractFilterFilterElement implements FilterElementOptionsInterface, DcaContract
+class CodefogTagsChoiceFilterElement extends AbstractFilterFilterElement
 {
     public const TYPE = 'cfg_tags_choice';
 

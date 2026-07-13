@@ -4,13 +4,13 @@ use HeimrichHannot\FlareBundle\Filter\Element;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement as CodefogTagsElement;
 
 return [
-    Element\ArchiveElement::TYPE => 'Archiv',
-    Element\BelongsToRelationElement::TYPE => 'Relation: Gehört zu',
-    Element\BooleanElement::TYPE => 'Boolescher Eigenschaftswert',
+    Element\ArchiveFilterElement::TYPE => 'Archiv',
+    Element\BelongsToRelationFilterElement::TYPE => 'Relation: Gehört zu',
+    Element\BooleanFilterElement::TYPE => 'Boolescher Eigenschaftswert',
     Element\CalendarCurrentFilterElement::TYPE => 'Kalender-Zeitfenster',
-    Element\DateRangeElement::TYPE => 'Datumsbereich',
-    Element\DcaSelectFieldElement::TYPE => 'DCA-Feld Optionsauswahl',
-    Element\FieldValueChoiceElement::TYPE => 'DCA-Feld Feldwerte-Auswahl (beta)',
+    Element\DateRangeFilterElement::TYPE => 'Datumsbereich',
+    Element\DcaSelectFieldFilterElement::TYPE => 'DCA-Feld Optionsauswahl',
+    Element\FieldValueChoiceFilterElement::TYPE => 'DCA-Feld Feldwerte-Auswahl (beta)',
     Element\PublishedFilterElement::TYPE => 'Veröffentlicht',
     Element\SimpleEquationFilterElement::TYPE => 'Einfache Gleichung',
     Element\SearchKeywordsFilterElement::TYPE => 'Stichwortsuche',

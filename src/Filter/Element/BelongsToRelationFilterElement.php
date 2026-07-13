@@ -20,7 +20,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsFilterElement(type: self::TYPE, intrinsicOnly: true)]
-class BelongsToRelationElement extends AbstractFilterElement
+class BelongsToRelationFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_relation_belongsTo';
 

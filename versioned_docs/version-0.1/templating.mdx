@@ -1,0 +1,538 @@
+---
+title: Templating
+sidebar_position: 5
+---
+
+# Templating
+
+Flare's content elements render Twig templates. A Flare `Engine` object is made availble as `flare` variable in those
+templates to interface with the list or reader in the current context.
+
+:::tip
+Use the bundled templates as your starting point. They reflect the current runtime API.
+:::
+
+## Quick Start
+
+:::info
+**When upgrading to Flare v0.1**&ensp;&ndash;&ensp;Older Flare documentation referred to Twig helpers such as `flare_form(...)`, `flare_make_list(...)`,
+and direct access to `flare.entries`. These functions and accessors are no longer available.
+:::
+
+- `flare` is the engine injected by the content element controller
+- `flare.createView` creates the runtime view object for the current context
+  ```twig
+  {% set flare_view = flare.createView %}
+  ```
+- Reader templates work with a `ValidationView`
+- List templates work with an `InteractiveView`<br />
+  Within an `InteractiveView`:
+    - Create the list view:
+      ```twig
+      {% set flare_list = flare.createView %}
+      ```
+    - Create the Symfony Form views for filtering:
+      ```twig
+      {% set form = flare_list.form.createView %}
+      ```
+    - Access entries:
+      ```twig
+      {% for entry in flare_list.entries %}
+        <h3>{{ entry.headline }}</h3>
+      {% endfor %}
+      ```
+    - Display a paginator:
+      ```twig
+      {{ include('@Contao/flare/paginator.html.twig', { paginator: flare_list.paginator }) }}
+      ```
+
+## Template Locations
+
+### Bundled Templates
+
+The bundled templates live in:
+
+```text
+vendor/heimrichhannot/contao-flare-bundle/contao/templates/
+```
+
+The main content element templates are:
+
+```text
+vendor/heimrichhannot/contao-flare-bundle/contao/templates/content_element/flare_listview.html.twig
+vendor/heimrichhannot/contao-flare-bundle/contao/templates/content_element/flare_reader.html.twig
+```
+
+Related partials live in:
+
+```text
+vendor/heimrichhannot/contao-flare-bundle/contao/templates/flare/
+```
+
+### Custom Templates
+
+To override or extend the provided templates, create Twig files in a Twig template directory of your Contao
+installation. Assuming there is a `.twig-root` file in `contao/templates/`, a typical structure looks like this:
+
+```text
+contao/templates/content_element/{flare_listview,flare_reader}/my_variant.html.twig
+```
+
+You can then select the variant via the content element's `customTpl` field.
+
+## List View Templating
+
+The default list template creates an interactive view first and then renders the filter form, entries, and paginator
+from that view.
+
+```twig title="contao/templates/content_element/flare_listview/my_variant.html.twig"
+{% extends "@Contao/content_element/flare_listview.html.twig" %}
+
+{% set flare_list = flare.createView %}
+
+{% block filter %}
+    {% set form = flare_list.form.createView %}
+
+    {{ form_start(form) }}
+        {{ form_widget(form) }}
+        <button type="submit">{{ 'submit'|trans({}, 'flare_form') }}</button>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block list %}
+    {% for entry in flare_list.entries %}
+        {% set href = flare_list.to(entry.id) %}
+
+        <article>
+            <h3>
+                {% if href %}
+                    <a href="{{ href }}">{{ entry.headline ?? entry.title ?? '' }}</a>
+                {% else %}
+                    {{ entry.headline ?? entry.title ?? '' }}
+                {% endif %}
+            </h3>
+        </article>
+    {% else %}
+        <p>No entries found.</p>
+    {% endfor %}
+{% endblock %}
+
+{% block pagination %}
+    {{ include('@Contao/flare/paginator.html.twig', {
+        paginator: flare_list.paginator
+    }) }}
+{% endblock %}
+```
+
+### Available Variables in List Templates
+
+The list content element injects these template variables:
+
+- `flare`: the `Engine`
+- `content_model`: the `tl_content` model of the current content element
+- `headline`: the normalized Contao headline data
+
+After creating the view with `flare.createView`, you typically work with:
+
+- `flare_list.form`: the Symfony form object
+- `flare_list.entries`: the current result set
+- `flare_list.models`: the current result set as Contao models
+- `flare_list.paginator`: the paginator
+- `flare_list.count`: the total result count
+- `flare_list.to(id)`: the reader URL for an entry, if configured
+- `flare_list.model(id)`: the `Contao\Model` instance for a specific entry
+
+### Entries and Models
+
+In list templates, `flare_list.entries` yields associative arrays for the current result set.
+
+If you need access to the full model collection directly, use `flare_list.models`:
+
+```twig
+{% for model in flare_list.models %}
+    <h3>{{ model.headline ?? model.title ?? '' }}</h3>
+{% endfor %}
+```
+
+If you need models only occasionally, you can still iterate over `flare_list.entries` and resolve a specific model from
+the current entry:
+
+```twig
+{% for entry in flare_list.entries %}
+    {% set model = flare_list.model(entry.id) %}
+    <h3>{{ model.headline ?? entry.headline ?? '' }}</h3>
+{% endfor %}
+```
+
+Under the hood, `flare_list.model(id)` may resolve each model from the cache or from the database individually,
+while `flare_list.models` resolves all models at once. In any case, models are registered from the raw result set (i.e.
+`flare_list.entries`) and cached for later use, eliminating unnecessary database queries.
+
+:::note
+- Use `flare_list.entries` when the raw result data is sufficient.
+- If you only need models occasionally throughout the loop, using `flare_list.model(entry.id)` is perfectly fine.
+- If you need models throughout the whole loop, `flare_list.models` is the better choice than resolving each model individually.
+:::
+
+### Customizing the Filter Form
+
+The filter form is a normal Symfony form. Create the form view from `flare_list.form` and apply form themes as usual.
+
+```twig
+{# assuming {% set flare_list = flare.createView %} has been defined #}
+{% set form = flare_list.form.createView %}
+```
+
+You can access individual form fields by their field name. That field name is also used for the submitted query
+parameter. For example, if a field is named `search`, you can access it as `form.search`:
+
+```twig
+{% set search_field = form.search %}
+{{ form_row(search_field) }}
+```
+
+```twig
+{% block filter %}
+    {% set flare_list = flare.createView %}
+    {% set form = flare_list.form.createView %}
+
+    {% form_theme form with [
+        'bootstrap_5_layout.html.twig',
+        'form/my_symfony_form_theme.html.twig',
+    ] %}
+
+    {{ form_start(form) }}
+
+        {% set search_field = form.search %}
+
+        <div class="my-form-fields">
+            <div class="my-custom-search-field">
+                {{ form_row(search_field) }}
+            </div>
+            {{ form_rest(form) }}
+        </div>
+
+        {% block submit %}
+            <button type="submit">Apply filter</button>
+        {% endblock %}
+
+        {% block reset %}
+            <button type="reset" class="visually-hidden-focusable">Reset filter</button>
+        {% endblock %}
+
+    {{ form_end(form) }}
+{% endblock %}
+```
+
+:::info
+Because form themes are standard Symfony form themes, place them in `templates/form/` relative to the project root, not
+in the Contao templates directory.
+:::
+
+## Reader Templating
+
+The reader content element renders a single model. Its default template extends the same base template as the list
+view, but works with reader-specific variables.
+
+```twig title="contao/templates/content_element/flare_reader/my_variant.html.twig"
+{% extends "@Contao/content_element/flare_reader.html.twig" %}
+
+{% block content %}
+    <article>
+        <h1>{{ model.headline ?? model.title ?? '' }}</h1>
+
+        {% if model.teaser %}
+            <div>
+                {{ model.teaser|raw }}
+            </div>
+        {% endif %}
+    </article>
+{% endblock %}
+```
+
+### Available Variables in Reader Templates
+
+The reader content element injects these variables:
+
+- `flare`: the `Engine`
+- `flare_reader`: the pre-defined `ValidationView` created from `flare`
+- `model`: the resolved `Contao\Model` for the current reader item
+- `content_model`: the `tl_content` model of the current content element
+- `headline`: the normalized Contao headline data
+- `comments`: optional comments data when the comments integration attaches it
+
+The reader template can also use `flare_reader.to(id)` if you need to generate reader links from within the validation
+view, i.e., linking to other entries of the same list. `flare_reader.backLink` exposes the link back to the configured
+list view page (see [Back-to-List Button](#back-to-list-button)).
+
+:::note
+Within a reader template, creating a separate view with `flare.createView` is typically not necessary.
+Instead of a `flare_list` variable, you can use `flare_reader` directly.
+
+In a `ValidationView`, no Symfony form is available for filtering, meaning you _cannot_ use `flare_reader.form` or
+similar.
+:::
+
+### Back-to-List Button
+
+Reader templates can render a back-to-list button that returns visitors to the list view **with their filter and
+pagination state intact**. The default reader template includes it like this:
+
+```twig
+{{ include('@Contao/flare/back_button.html.twig', { back_link: flare_reader.backLink }, with_context = false) }}
+```
+
+`flare_reader.backLink` points to the configured list view page — the list configuration's **Default List View Page**
+or the reader content element's **Override Back to List View Page** (the element override wins). See
+[Content Elements](content-elements.md#linking-between-list-and-reader) for the configuration side.
+Without a configured page (and without `allow_any_referrer`), the component renders nothing.
+
+#### How It Works
+
+The component renders a regular link to the configured list view page. The FLARE frontend script then upgrades that
+link in the browser:
+
+1. When the reader was opened **from the list view** (the referrer's path matches the configured page), the link is
+   replaced with the full referrer URL, so the list view's filter and pagination query parameters are preserved.
+   The qualifying list view URL is also remembered per browser tab (`sessionStorage`).
+2. When the visitor navigates **from one reader page to another** — e.g. via "similar entries" links generated with
+   `flare_reader.to(id)` — the referrer no longer qualifies, and the remembered list view URL is restored instead,
+   keeping the original filter and pagination state.
+3. Without JavaScript or `sessionStorage`, the link simply points to the configured list view page.
+
+:::note
+The referrer is evaluated in the browser, so the back button is fully compatible with the Contao page cache: the
+cached reader HTML is identical for all visitors. Under a restrictive `Referrer-Policy` (e.g. `origin` or
+`no-referrer`), the button gracefully degrades to the configured fallback URL. The browser default
+(`strict-origin-when-cross-origin`) sends full same-origin referrers, so no configuration is needed.
+:::
+
+#### Variables
+
+| Variable | Type | Description |
+|---|---|---|
+| `back_link` | `?BackLink` | Pass `flare_reader.backLink`. |
+| `url` | `string` | Explicit fallback URL (wins over `back_link`). |
+| `label` | `string` | Button text, defaults to a translated "Back to list". |
+| `aria_label` | `string` | Link `aria-label`; defaults to `label` if set, a translated "Back to list" otherwise. |
+| `allow_any_referrer` | `bool` | Accept any same-origin referrer, not just the configured list view page. The button then also works without a configured page and stays hidden until the script upgrades it. |
+| `base_class` | `string` | Base CSS classes on the anchor (default `flare_back-button`). |
+| `link_class` | `string` | Extra CSS classes on the anchor. |
+| `hide_without_url` | `bool` | Hide the anchor while no URL is available (default `true`); set to `false` to keep it visible, e.g. styled as disabled. |
+| `no_url_class` | `string` | CSS classes applied while no URL is available; the frontend script removes them when it upgrades the link. |
+
+#### Bootstrap 5 Variant
+
+`@Contao/flare/back_button/bs5.html.twig` extends the base component and only swaps the styling: `btnClass`
+(default `btn btn-outline-secondary`) replaces `base_class`, and `no_url_class` defaults to Bootstrap's `disabled`
+class. For example, to render the button visible-but-disabled instead of hidden while no URL is available:
+
+```twig
+{{ include('@Contao/flare/back_button/bs5.html.twig', {
+    back_link: flare_reader.backLink,
+    hide_without_url: false,
+}, with_context = false) }}
+```
+
+## Block Structure
+
+These are the main blocks available for extension.
+
+### Base Template
+
+`@Contao/flare/_flare_base.html.twig` defines:
+
+- `wrapper`
+- `headline`
+- `content`
+- `footer`
+
+### List Template
+
+`@Contao/content_element/flare_listview.html.twig` adds:
+
+- `content_start`
+- `filter`
+- `list`
+- `pagination`
+- `content_end`
+
+### Reader Template
+
+`@Contao/content_element/flare_reader.html.twig` mainly customizes:
+
+- `content`
+- `footer`
+
+## Paginator Templates
+
+Flare ships several paginator templates.
+
+### Default paginator
+
+```twig
+{{ include('@Contao/flare/paginator.html.twig', {
+    paginator: flare_list.paginator
+}) }}
+```
+
+The default paginator supports `use_default_styles`:
+
+```twig
+{{ include('@Contao/flare/paginator.html.twig', {
+    paginator: flare_list.paginator,
+    use_default_styles: true
+}) }}
+```
+
+### Bootstrap 5 variants
+
+Flare also ships:
+
+- `@Contao/flare/paginator/bs5.html.twig`
+- `@Contao/flare/paginator/bs5_extended.html.twig`
+
+These are useful if you want predefined Bootstrap-compatible paginator markup.
+
+## Modding the Flare Engine
+
+Influencing list filtering or filter form rendering is possible by adding mods to the `flare` engine before creating
+the view.
+
+```twig
+{% do flare.addMod(mod_type, mod_options) %}
+```
+
+The options dictionary may be omitted for mods that don't define any options: `flare.addMod(mod_type)`.
+(Both built-in mods have required options, so they are always called with a dictionary.)
+
+For example, add filters dynamically or change the paginator url query parameter.
+
+```twig
+{%
+    set modded_view = flare
+        .addMod('equation', { ... })
+        .addMod('page_param', { ... })
+        .createView()
+%}
+```
+
+If you want to create multiple views consecutively with different mods, use `flare.clearMods()` to clear the current
+mod stack and start fresh.
+
+See the [Developers / Engine Mods](dev/engine-mods) page to learn more about mods and how to create custom ones.
+
+### Bundled Mods
+
+Currently, only the following few mods are built-in.
+
+#### Filter: Simple equation
+
+Useful for showing multiple lists of different archives or categories on the same page. Just use one list view content
+element and display the different lists with different mods.
+
+- **Mod type:** `equation`
+- **Mod options:**
+    - `operand1` (string): the database column name to filter on,
+    - `operator` (string): the operator, e.g. `=`, `>=`, `LIKE`, etc.,
+    - `operand2`: the second operand, e.g., a string to match, a number to compare, an ID, etc.
+
+#### Paginator: Page parameter
+
+To add individual paginators to multiple lists created in one template, use this mod to change the query parameter
+used for pagination.
+
+- **Mod type:** `page_param`
+- **Mod options:**
+    - `param` (string): the query parameter name.
+
+### Examples
+
+```twig
+{# @var \HeimrichHannot\FlareBundle\Engine\Engine flare #}
+{% extends '@Contao/content_element/flare_listview.html.twig' %}
+
+{# @var \HeimrichHannot\FlareBundle\Engine\View\InteractiveView flare_list #}
+{% set flare_list = flare.createView %}
+{% set form = flare_list.form.createView %}
+
+{% macro render_list(list_view, headline) %}
+    <article class="flare-listview content-flare-listview block">
+        <h2>{{ headline }}</h2>
+        {% for entry in list_view.entries %}
+            {# Render the entry here #}
+        {% endfor %}
+        <footer>
+            {{ include('@Contao/flare/paginator.html.twig', { paginator: list_view.paginator }) }}
+        </footer>
+    </article>
+{% endmacro %}
+
+{% block list %}
+
+    {% set list_view = flare
+        .addMod('equation', { operand1: 'medium', operator: '=', operand2: 'video' })
+        .addMod('page_param', { param: 'video_page' })
+        .createView()
+    %}
+    {{ _self.render_list(list_view, 'Videos') }}
+
+    {% set list_view = flare
+        .clearMods()
+        .addMod('equation', { operand1: 'medium', operator: '=', operand2: 'podcast' })
+        .addMod('page_param', { param: 'podcast_page' })
+        .createView()
+    %}
+    {{ _self.render_list(list_view, 'Podcasts') }}
+
+{% endblock %}
+```
+
+### Debugging
+
+We are working on improving ways to explore and document the available options per mod.
+
+:::tip
+Providing an empty or malconfigured config dictionary will typically raise an exception informing you
+on required and available option keys.
+
+```twig
+{% do flare.addMod('equation', { what: 'ever' }).createView %}
+```
+
+Resulting in an exception like this:
+
+<pre style={{ whiteSpace: 'wrap' }}>An exception has been thrown during the rendering of a template
+    ("The option "what" does not exist. Defined options are: "name", "operand1", "operand2", "operator".")</pre>
+:::
+
+## Twig Helpers
+
+Flare currently registers these Twig functions (see the [Twig functions reference](reference/twig.md)):
+
+- `flare_content(model)` for rendering the content elements belonging to the model.
+- `flare_enclosure(model|entry_row, string field = "enclosure")` for retreiving file enclosure data as you would with
+  ```php
+  \Contao\Controller::addEnclosuresToTemplate(...)
+  ```
+- `flare_enclosure_files(model|enclosure_array)` (deprecated, will be removed in v0.2): retreives a collection of `Contao\FilesModel` instances
+  for the given model or an imediate array of enclosure data.
+- `flare_project(list_specification, context)` for running a projection directly from a template: returns the view
+  for the given `ListSpecification` and context configuration, without going through a content element's engine.
+- `flare_schema_org(?model = null)` (uses model from context if not provided): prints the JSON-LD schema markup for the given model in a reader context.
+  The data can be influenced using the `ReaderSchemaOrgEvent`.
+
+## Comments Integration
+
+Comments are not universally available. They are attached by Flare's comments integration when the current list and
+reader setup supports them.
+
+The default reader template renders comments in its `footer` block if comments data is present:
+
+```twig
+{% block footer %}
+    {% if comments|default(false) %}
+        {{ include('@Contao/flare/comments/basic.html.twig', comments) }}
+    {% endif %}
+{% endblock %}
+```

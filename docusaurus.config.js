@@ -10,6 +10,10 @@ import { themes as prismThemes } from 'prism-react-renderer';
 
 const uriPath = 'contao-flare-bundle'
 
+// Docs path of the latest stable version — bump when cutting a new release
+// with `npm run docusaurus docs:version <x>` (see AGENTS.md).
+const latestDocsPath = '/docs/v0.1/'
+
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Contao Flare Bundle',
@@ -54,6 +58,30 @@ const config = {
     locales: ['en'],
   },
 
+  plugins: [
+    [
+      '@docusaurus/plugin-client-redirects',
+      /** @type {import('@docusaurus/plugin-client-redirects').Options} */
+      ({
+        // Bare /docs (no version segment) has no page of its own.
+        redirects: [
+          {
+            from: '/docs',
+            to: `${latestDocsPath}intro`,
+          },
+        ],
+        // Mirror every latest-stable route to its unversioned /docs/... URL,
+        // so bare links and pre-versioning inbound links keep resolving.
+        createRedirects(existingPath) {
+          if (existingPath.includes(latestDocsPath)) {
+            return [existingPath.replace(latestDocsPath, '/docs/')];
+          }
+          return undefined;
+        },
+      }),
+    ],
+  ],
+
   presets: [
     [
       'classic',
@@ -65,6 +93,17 @@ const config = {
           // Remove this to remove the "edit this page" links.
           editUrl:
             'https://github.com/heimrichhannot/contao-flare-bundle/tree/docs/main/',
+          lastVersion: '0.1',
+          versions: {
+            '0.1': {
+              label: 'v0.1 (latest)',
+              path: 'v0.1',
+            },
+            current: {
+              label: 'v0.2 (next)',
+              path: 'v0.2',
+            },
+          },
         },
         blog: false/*{
           showReadingTime: true,
@@ -107,6 +146,11 @@ const config = {
             label: 'Documentation',
           },
           /*{to: '/blog', label: 'Blog', position: 'left'},*/
+          {
+            type: 'docsVersionDropdown',
+            position: 'right',
+            dropdownActiveClassDisabled: true,
+          },
           {
             href: 'https://github.com/heimrichhannot/contao-flare-bundle',
             label: 'GitHub',

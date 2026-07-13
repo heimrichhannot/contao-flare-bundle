@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection ClassMethodNameMatchesFieldNameInspection */
 
 declare(strict_types=1);
 
@@ -10,7 +10,7 @@ use Contao\DataContainer;
  * Fluent per-type tweaks for a single DCA field definition. Only applied while a record
  * of the configuring type is being edited, so shared fields stay untouched for other types.
  */
-final class DcaFieldBuilder
+final class DcaFieldBuilder implements DcaFieldBuilderInterface
 {
     private array $definition = [];
 

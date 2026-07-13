@@ -95,7 +95,7 @@ readonly class ElementDcaListener
         $dca = new DcaBuilder();
 
         if ($service instanceof DcaContract) {
-            $service->configureDca($dca, $context);
+            $service->buildDca($dca, $context);
         }
 
         $this->eventDispatcher->dispatch(new ElementDcaEvent($dca, $context));

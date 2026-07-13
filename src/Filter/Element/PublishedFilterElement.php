@@ -2,10 +2,8 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\FilterElement;
+namespace HeimrichHannot\FlareBundle\Filter\Element;
 
-use HeimrichHannot\FlareBundle\Contract\DcaContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -16,11 +14,11 @@ use HeimrichHannot\FlareBundle\Filter\Type\PublishedFilterType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE, intrinsicOnly: true)]
-class PublishedElement extends AbstractFilterElement implements ConfigContract, DcaContract
+class PublishedFilterElement extends AbstractFilterFilterElement
 {
     public const TYPE = 'flare_published';
 
-    public function configureConfig(OptionsResolver $resolver): void
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('published_field')->default(null)->allowedTypes('string', 'null');
@@ -57,7 +55,7 @@ class PublishedElement extends AbstractFilterElement implements ConfigContract, 
         ]);
     }
 
-    public function configureDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilder $dca, DcaContext $context): void
     {
         $dca->palette('{filter_legend},usePublished,useStart,useStop');
     }

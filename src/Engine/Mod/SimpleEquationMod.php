@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Engine\Mod;
 
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
-use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
+use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class SimpleEquationMod extends AbstractMod
@@ -21,7 +21,7 @@ class SimpleEquationMod extends AbstractMod
         $operator = SqlEquationOperator::match($options['operator'])
             ?? throw new \InvalidArgumentException('Invalid equation operator provided');
 
-        $filter = SimpleEquationElement::define(
+        $filter = SimpleEquationFilterElement::define(
             equationLeft: $options['operand1'],
             equationOperator: $operator,
             equationRight: $options['operand2'],

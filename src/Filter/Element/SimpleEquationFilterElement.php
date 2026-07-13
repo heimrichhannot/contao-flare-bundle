@@ -2,10 +2,8 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\FilterElement;
+namespace HeimrichHannot\FlareBundle\Filter\Element;
 
-use HeimrichHannot\FlareBundle\Contract\DcaContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -20,11 +18,11 @@ use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE, intrinsicOnly: true, isTargeted: true)]
-class SimpleEquationElement extends AbstractFilterElement implements ConfigContract, DcaContract
+class SimpleEquationFilterElement extends AbstractFilterFilterElement
 {
     public const TYPE = 'flare_equation_simple';
 
-    public function configureConfig(OptionsResolver $resolver): void
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('left')->default(null)->allowedTypes('string', 'null');
@@ -62,7 +60,7 @@ class SimpleEquationElement extends AbstractFilterElement implements ConfigContr
         ]);
     }
 
-    public function configureDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilder $dca, DcaContext $context): void
     {
         $operatorValue = $context->filterModel?->equationOperator;
         $operator = $operatorValue ? SqlEquationOperator::match($operatorValue) : null;

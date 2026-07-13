@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterCallback;
 
 use HeimrichHannot\FlareBundle\Event\ElementDcaEvent;
-use HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement\CodefogTagsChoiceElement;
+use HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement\CodefogTagsChoiceFilterElement;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement\CodefogTagsSearchElement;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegistry;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
@@ -14,7 +14,7 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
  * Restricts the targetAlias options of the Codefog tags filter elements to the
  * active tags relations of the edited list.
  */
-#[AsEventListener('flare.filter_element.' . CodefogTagsChoiceElement::TYPE . '.dca')]
+#[AsEventListener('flare.filter_element.' . CodefogTagsChoiceFilterElement::TYPE . '.dca')]
 #[AsEventListener('flare.filter_element.' . CodefogTagsSearchElement::TYPE . '.dca')]
 readonly class TargetAliasCallback
 {

@@ -15,11 +15,11 @@ use HeimrichHannot\FlareBundle\Event\DetailsPageUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Event\FetchAutoItemEvent;
 use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
 use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
-use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
+use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
 use HeimrichHannot\FlareBundle\ListType\DcMultilingualListType;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
-use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;
 use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
+use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;
 use HeimrichHannot\FlareBundle\Util\DcMultilingualHelper;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
@@ -132,7 +132,7 @@ class ChangelanguageListener
         if ($lang !== $langFallback && $dcMultilingualDisplay === DcMultilingualHelper::DISPLAY_LOCALIZED)
             // localized list view
         {
-            $configuredFilter = SimpleEquationElement::define(
+            $configuredFilter = SimpleEquationFilterElement::define(
                 equationLeft: DcMultilingualHelper::getPidColumn($table),
                 equationOperator: SqlEquationOperator::GREATER_THAN,
                 equationRight: '0'
@@ -140,7 +140,7 @@ class ChangelanguageListener
             $configuredFilter->forceTargetAlias('translation');
         }
 
-        $configuredFilter ??= SimpleEquationElement::define(
+        $configuredFilter ??= SimpleEquationFilterElement::define(
             equationLeft: DcMultilingualHelper::getPidColumn($table),
             equationOperator: SqlEquationOperator::EQUALS,
             equationRight: '0'

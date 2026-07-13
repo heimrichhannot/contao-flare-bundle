@@ -2,14 +2,12 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\FilterElement;
+namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Contao\Controller;
 use Contao\DataContainer;
 use Contao\StringUtil;
 use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\Contract\DcaContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -25,7 +23,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE)]
-class FieldValueChoiceElement extends AbstractFilterElement implements ConfigContract, DcaContract
+class FieldValueChoiceElement extends AbstractFilterFilterElement
 {
     public const TYPE = 'flare_fieldValueChoice';
 
@@ -37,7 +35,7 @@ class FieldValueChoiceElement extends AbstractFilterElement implements ConfigCon
         private readonly ChoicesBuilderFactory $choicesBuilderFactory,
     ) {}
 
-    public function configureConfig(OptionsResolver $resolver): void
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('field')->default(null)->allowedTypes('string', 'null');
@@ -110,7 +108,7 @@ class FieldValueChoiceElement extends AbstractFilterElement implements ConfigCon
         ]);
     }
 
-    public function configureDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilder $dca, DcaContext $context): void
     {
         $dca->palette('{filter_legend},fieldGeneric,isMultiple,isExpanded,preselect');
 

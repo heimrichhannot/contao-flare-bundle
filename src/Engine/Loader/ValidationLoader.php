@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Engine\Loader;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
+use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
@@ -35,7 +35,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
             // IMPORTANT: clone the spec to not modify the original, i.e., when adding the id filter
             $list = clone $this->config->list;
 
-            $idDefinition = SimpleEquationElement::define(
+            $idDefinition = SimpleEquationFilterElement::define(
                 equationLeft: 'id',
                 equationOperator: SqlEquationOperator::EQUALS,
                 equationRight: $id,
@@ -69,7 +69,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
             // IMPORTANT: clone the spec to not modify the original
             $list = clone $this->config->list;
 
-            $autoItemDefinition = SimpleEquationElement::define(
+            $autoItemDefinition = SimpleEquationFilterElement::define(
                 equationLeft: $this->config->autoItemField,
                 equationOperator: SqlEquationOperator::EQUALS,
                 equationRight: $autoItem,

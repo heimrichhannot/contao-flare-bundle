@@ -6,14 +6,14 @@ namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement;
 
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementOptionsInterface;
 use HeimrichHannot\FlareBundle\Filter\Type\IntegerIdChoiceFilterType;
-use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegistry;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
@@ -25,7 +25,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE, isTargeted: true)]
-class CodefogTagsChoiceElement extends AbstractFilterElement implements ConfigContract, DcaContract
+class CodefogTagsChoiceFilterElement extends AbstractFilterFilterElement implements FilterElementOptionsInterface, DcaContract
 {
     public const TYPE = 'cfg_tags_choice';
 
@@ -36,7 +36,7 @@ class CodefogTagsChoiceElement extends AbstractFilterElement implements ConfigCo
         private readonly LoggerInterface             $logger,
     ) {}
 
-    public function configureConfig(OptionsResolver $resolver): void
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('preselect')->default([])->allowedTypes('int[]');
@@ -70,13 +70,14 @@ class CodefogTagsChoiceElement extends AbstractFilterElement implements ConfigCo
             return;
         }
 
+        $placeholderFallback = $config['is_mandatory'] ? 'empty_option.prompt' : 'empty_option.no_selection';
+
         $formOptions = [
             'label' => $config['label'] ?: false,
             'multiple' => $config['is_multiple'],
             'expanded' => $config['is_expanded'],
             'required' => $config['is_mandatory'],
-            'placeholder' => $config['placeholder']
-                ?: ($config['is_mandatory'] ? 'empty_option.prompt' : 'empty_option.no_selection'),
+            'placeholder' => $config['placeholder'] ?: $placeholderFallback,
         ];
 
         if ($preselect = $config['preselect']) {
@@ -118,9 +119,11 @@ class CodefogTagsChoiceElement extends AbstractFilterElement implements ConfigCo
     {
         $config = $context->config;
 
+        $preselect = $config['preselect'] ?: null;
+
         /** @var ?array $tagIds */
         $tagIds = $config['intrinsic']
-            ? ($config['preselect'] ?: null)
+            ? $preselect
             : $this->processRuntimeValue($data[FilterContext::FIELD_VALUE] ?? null);
 
         if (!$tagIds) {
@@ -133,7 +136,7 @@ class CodefogTagsChoiceElement extends AbstractFilterElement implements ConfigCo
         ]);
     }
 
-    public function configureDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilder $dca, DcaContext $context): void
     {
         $dca->palette('{form_legend},label,isMandatory,isMultiple,isExpanded;{filter_legend},preselect');
 

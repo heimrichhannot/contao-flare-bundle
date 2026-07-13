@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Registry\Descriptor;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Compiler\RegisterFilterElementsPass;
 use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ServiceDescriptorInterface;
-use HeimrichHannot\FlareBundle\FilterElement\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 
 class FilterElementDescriptor implements ServiceDescriptorInterface
 {

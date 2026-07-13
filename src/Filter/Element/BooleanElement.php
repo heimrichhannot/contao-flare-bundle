@@ -2,12 +2,10 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\FilterElement;
+namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Contao\Controller;
 use Contao\Message;
-use HeimrichHannot\FlareBundle\Contract\DcaContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -22,11 +20,11 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE, isTargeted: true)]
-class BooleanElement extends AbstractFilterElement implements ConfigContract, DcaContract
+class BooleanElement extends AbstractFilterFilterElement
 {
     public const TYPE = 'flare_bool';
 
-    public function configureConfig(OptionsResolver $resolver): void
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('field')->default(null)->allowedTypes('string', 'null');
@@ -38,26 +36,27 @@ class BooleanElement extends AbstractFilterElement implements ConfigContract, Dc
 
     public function configFromRow(array $row): array
     {
+        $label = $row['label'] ?? null;
+        $title = $row['title'] ?? null;
+
         return [
             'intrinsic' => (bool) ($row['intrinsic'] ?? false),
             'field' => ($row['fieldGeneric'] ?? null) ?: null,
             'preselect' => $this->normalizeValue($row['preselect'] ?? null),
             'mode' => BoolMode::tryFrom($row['boolMode'] ?? '') ?? BoolMode::BINARY,
             'binary_choices' => BoolBinaryChoices::tryFrom($row['boolBinaryChoices'] ?? '') ?? BoolBinaryChoices::NULL_TRUE,
-            'label' => ($row['label'] ?? null) ?: (($row['title'] ?? null) ?: null),
+            'label' => $label ?: $title ?: null,
         ];
     }
 
     public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
     {
-        $config = $context->config;
-
-        if ($config['intrinsic']) {
+        if ($context->config['intrinsic']) {
             return;
         }
 
         $builder->add(FilterContext::FIELD_VALUE, CheckboxType::class, [
-            'label' => $config['label'] ?? 'CBX',
+            'label' => $context->config['label'] ?? 'CBX',
             'required' => false,
         ]);
     }
@@ -110,7 +109,7 @@ class BooleanElement extends AbstractFilterElement implements ConfigContract, Dc
         return \filter_var($value, \FILTER_VALIDATE_BOOLEAN, \FILTER_NULL_ON_FAILURE);
     }
 
-    public function configureDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilder $dca, DcaContext $context): void
     {
         $intrinsic = (bool) $context->filterModel?->intrinsic;
 
@@ -141,7 +140,7 @@ class BooleanElement extends AbstractFilterElement implements ConfigContract, Dc
         }
     }
 
-    public function getFieldGenericOptions(string $targetTable): array
+    protected function getFieldGenericOptions(string $targetTable): array
     {
         Controller::loadDataContainer($targetTable);
 

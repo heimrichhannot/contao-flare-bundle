@@ -15,9 +15,9 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-final class FilterConfigResolverTest extends TestCase
+final class FilterOptionsResolverTest extends TestCase
 {
-    public function testResolvesConfigThroughElementSchema(): void
+    public function testResolvesOptionsThroughElementSchema(): void
     {
         $resolver = new FilterOptionsResolver();
         $element = new ElementConfigAwareElement();
@@ -28,7 +28,7 @@ final class FilterConfigResolverTest extends TestCase
         self::assertFalse($config['intrinsic']);
     }
 
-    public function testReturnsConfigVerbatimWithoutConfigContract(): void
+    public function testReturnsOptionsVerbatimWithoutOptionsContract(): void
     {
         $resolver = new FilterOptionsResolver();
         $element = new PlainElement();

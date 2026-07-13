@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
 services:
     _defaults:
         autowire:      true
@@ -14,9 +15,6 @@ services:
             - ../src/DataContainer/Builder
             - ../src/FilterElement/CallbackFilterElement.php
             - ../src/Registry/Descriptor
-
-    # Manually registered because top-level src/Filter/*.php files are excluded above
-    HeimrichHannot\FlareBundle\Filter\FilterConfigResolver: ~
 
     HeimrichHannot\FlareBundle\Engine\:
         resource: ../src/Engine

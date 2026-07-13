@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
-use HeimrichHannot\FlareBundle\FilterElement\CallbackFilterElement;
-use HeimrichHannot\FlareBundle\FilterElement\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\Element\CallbackFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 
 /**
  * Immutable runtime representation of a single filter within a list.
@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\FilterElement\FilterElementInterface;
  * Pairs a filter element (registered type string or inline instance) with its canonical,
  * element-defined configuration. Contains no DCA/storage specifics — translating a stored
  * row into config is the element's responsibility
- * ({@see \HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract}).
+ * ({@see \HeimrichHannot\FlareBundle\Filter\Element\FilterElementOptionsInterface}).
  */
 final readonly class Filter
 {

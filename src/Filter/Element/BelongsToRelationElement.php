@@ -2,12 +2,10 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\FilterElement;
+namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Contao\Message;
 use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\Contract\DcaContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -22,7 +20,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsFilterElement(type: self::TYPE, intrinsicOnly: true)]
-class BelongsToRelationElement extends AbstractFilterElement implements ConfigContract, DcaContract
+class BelongsToRelationElement extends AbstractFilterFilterElement
 {
     public const TYPE = 'flare_relation_belongsTo';
 
@@ -30,7 +28,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements ConfigCo
         private readonly TranslatorInterface $trans,
     ) {}
 
-    public function configureConfig(OptionsResolver $resolver): void
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('field_pid')->default(null)->allowedTypes('string', 'null');
@@ -158,7 +156,7 @@ class BelongsToRelationElement extends AbstractFilterElement implements ConfigCo
         return $groups;
     }
 
-    public function configureDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilder $dca, DcaContext $context): void
     {
         $listModel = $context->listModel;
         $filterModel = $context->filterModel;

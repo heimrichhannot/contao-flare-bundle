@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection ClassMethodNameMatchesFieldNameInspection */
 
 declare(strict_types=1);
 
@@ -8,11 +8,11 @@ use HeimrichHannot\FlareBundle\Util\Str;
 
 /**
  * Collects per-type DCA configuration (palette and field tweaks) declared by an element's
- * {@see \HeimrichHannot\FlareBundle\Contract\DcaContract::configureDca()} and by
+ * {@see \HeimrichHannot\FlareBundle\Contract\DcaContract::buildDca()} and by
  * {@see \HeimrichHannot\FlareBundle\Event\ElementDcaEvent} listeners, then materializes
  * it into the live `$GLOBALS['TL_DCA']` array.
  */
-final class DcaBuilder
+final class DcaBuilder implements DcaBuilderInterface
 {
     private ?string $palette = null;
 

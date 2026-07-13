@@ -10,8 +10,8 @@ use HeimrichHannot\FlareBundle\Engine\Context\Interface\FormContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormBuiltEvent;
 use HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\FilterConfigResolver;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\OptionsResolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Registry\FilterElementResolver;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\Str;
@@ -24,7 +24,7 @@ readonly class FilterFormFactory
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
-        private FilterConfigResolver     $filterConfigResolver,
+        private FilterOptionsResolver    $filterConfigResolver,
         private FilterElementResolver    $filterElementResolver,
         private FormFactoryInterface     $formFactory,
     ) {}

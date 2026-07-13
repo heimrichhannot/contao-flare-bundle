@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\FilterCollector;
+namespace HeimrichHannot\FlareBundle\Filter\Collector;
 
 use Contao\Controller;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementOptionsInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\FilterElementResolver;
@@ -60,7 +60,7 @@ readonly class ListModelFilterCollector implements FilterCollectorInterface
                 continue;
             }
 
-            $config = $element instanceof ConfigContract
+            $config = $element instanceof FilterElementOptionsInterface
                 ? $element->configFromRow($model->row())
                 : $model->row();
 

@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Event\ListSpecificationCreatedEvent;
-use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
+use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
 use HeimrichHannot\FlareBundle\ListType\AbstractListType;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Query\SqlJoinStruct;
@@ -23,7 +23,7 @@ class EventsListType extends AbstractListType implements DcaContract
     public const DATA_CONTAINER = 'tl_calendar_events';
     public const ALIAS_ARCHIVE = 'events_archive';
 
-    public function configureDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilder $dca, DcaContext $context): void
     {
         $dca->suffix(static function (string $suffix): string {
             if (!$suffix) {
@@ -60,8 +60,8 @@ class EventsListType extends AbstractListType implements DcaContract
 
         $spec = $config->listSpecification;
 
-        if (!$spec->hasFilterOfType(PublishedElement::TYPE)) {
-            $spec->addFilter(PublishedElement::define());
+        if (!$spec->hasFilterOfType(PublishedFilterElement::TYPE)) {
+            $spec->addFilter(PublishedFilterElement::define());
         }
     }
 }

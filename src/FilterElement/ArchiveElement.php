@@ -4,35 +4,32 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
-use Contao\DataContainer;
 use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
+use HeimrichHannot\FlareBundle\Contract\DcaContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\ArchiveFilterType;
+use HeimrichHannot\FlareBundle\Filter\Type\BelongsToRelationFilterType;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
-use HeimrichHannot\FlareBundle\InferPtable\PtableInferrableInterface;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
-use HeimrichHannot\FlareBundle\Model\FilterModel;
-use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\Str;
+use Symfony\Component\Form\ChoiceList\Loader\CallbackChoiceLoader;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
-#[AsFilterElement(type: self::TYPE, formType: ChoiceType::class)]
-class ArchiveElement extends AbstractFilterElement implements HydrateFormContract, IntrinsicValueContract
+#[AsFilterElement(type: self::TYPE)]
+class ArchiveElement extends AbstractFilterElement implements ConfigContract, DcaContract
 {
     public const TYPE = 'flare_archive';
 
@@ -40,26 +37,158 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
 
     public function __construct(
         private readonly ChoicesBuilderFactory $choicesBuilderFactory,
-        private readonly BelongsToRelationElement $relationElement,
     ) {}
+
+    public function configureConfig(OptionsResolver $resolver): void
+    {
+        $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
+        $resolver->define('whitelist_parents')->default([])->allowedTypes('int[]');
+        $resolver->define('group_whitelist_parents')->default([])->allowedTypes('array');
+        $resolver->define('use_whitelist_for_options_only')->default(false)->allowedTypes('bool');
+        $resolver->define('format_label')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('has_empty_option')->default(false)->allowedTypes('bool');
+        $resolver->define('format_empty_option')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('is_mandatory')->default(false)->allowedTypes('bool');
+        $resolver->define('is_multiple')->default(false)->allowedTypes('bool');
+        $resolver->define('is_expanded')->default(false)->allowedTypes('bool');
+        $resolver->define('preselect')->default([])->allowedTypes('array');
+    }
+
+    public function configFromRow(array $row): array
+    {
+        $formatLabel = ($row['formatLabel'] ?? null) === 'custom'
+            ? ($row['formatLabelCustom'] ?? null)
+            : ($row['formatLabel'] ?? null);
+
+        $formatEmptyOption = ($row['formatEmptyOption'] ?? null) === 'custom'
+            ? ($row['formatEmptyOptionCustom'] ?? null)
+            : ($row['formatEmptyOption'] ?? null);
+
+        return [
+            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
+            'whitelist_parents' => $this->normalizeIds($row['whitelistParents'] ?? null),
+            'group_whitelist_parents' => $this->normalizeGroups($row['groupWhitelistParents'] ?? null),
+            'use_whitelist_for_options_only' => (bool) ($row['useWhitelistForOptionsOnly'] ?? false),
+            'format_label' => $formatLabel ?: null,
+            'has_empty_option' => (bool) ($row['hasEmptyOption'] ?? false),
+            'format_empty_option' => $formatEmptyOption ?: null,
+            'is_mandatory' => (bool) ($row['isMandatory'] ?? false),
+            'is_multiple' => (bool) ($row['isMultiple'] ?? false),
+            'is_expanded' => (bool) ($row['isExpanded'] ?? false),
+            'preselect' => StringUtil::deserialize(($row['preselect'] ?? null) ?: null, true),
+        ];
+    }
 
     /**
      * @throws FilterException
      */
-    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
+    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
     {
-        $filter = $invocation->filter;
+        $config = $context->config;
+
+        if ($config['intrinsic']) {
+            return;
+        }
+
+        $inferrer = $this->getPtableInferrer($context->list);
+
+        $choices = $this->choicesBuilderFactory->createChoicesBuilder()->enable();
+
+        if ($config['has_empty_option'])
+        {
+            $emptyOptionValue = ($config['is_expanded'] && $config['is_multiple'])
+                ? ChoicesBuilder::EMPTY_CHOICE_VALUE_ALTERNATIVE
+                : null;
+
+            $choices->setEmptyOption($config['format_empty_option'] ?: true, $emptyOptionValue);
+        }
+
+        if ($ptable = $inferrer->getDcaMainPtable())
+        {
+            $choices->setLabel($config['format_label'] ?: null);
+
+            $parents = $this->fetchParents($ptable, $config['whitelist_parents']);
+
+            if (!$parents) {
+                throw new FilterException('No whitelisted parents defined or parent table class invalid.');
+            }
+
+            foreach ($parents as $parent)
+            {
+                $choices->add((string) $parent->id, $parent);
+            }
+        }
+        else
+        {
+            if (!$inferrer->isDcaDynamicPtable())
+                // no valid ptable available
+            {
+                throw new FilterException('No valid ptable found.');
+            }
+
+            /**
+             * ## We are dealing with a _dynamic ptable_ henceforth.
+             */
+
+            if (!$groups = $config['group_whitelist_parents'])
+            {
+                throw new FilterException('No whitelisted parents defined.');
+            }
+
+            foreach ($groups as $group)
+            {
+                $table = $group['table'];
+
+                foreach ($this->fetchParents($table, $group['ids']) ?? [] as $parent)
+                {
+                    $choices->add(\sprintf('%s.%s', $table, $parent->id), $parent);
+                }
+
+                $choices->setLabelForTable($group['label'], $table);
+            }
+
+            if (!$choices->count()) {
+                throw new FilterException('No valid whitelisted parents defined.');
+            }
+
+            $choices->setModelSuffix('(%@name%)');
+        }
+
+        $formOptions = [
+            'label' => false,
+            'required' => $config['is_mandatory'],
+            'multiple' => $config['is_multiple'],
+            'expanded' => $config['is_expanded'],
+            'choice_loader' => new CallbackChoiceLoader(static fn (): array => $choices->buildChoices()),
+            'choice_label' => $choices->buildChoiceLabelCallback(),
+            'choice_value' => $choices->buildChoiceValueCallback(),
+        ];
+
+        if (null !== $data = $this->buildPreselectData($context->list, $config['preselect'])) {
+            $formOptions['data'] = $data;
+        }
+
+        $builder->setAttribute('flare.choices_builder', $choices);
+        $builder->add(FilterContext::FIELD_VALUE, ChoiceType::class, $formOptions);
+    }
+
+    /**
+     * @throws FilterException
+     */
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    {
+        $config = $context->config;
 
         /** @var Model[] $selectedModels */
-        $selectedModels = $filter->isIntrinsic()
-            ? $this->getIntrinsicValue($invocation->list, $filter)
-            : $this->processRuntimeValue($invocation->getValue(), $invocation->list, $filter);
+        $selectedModels = $config['intrinsic']
+            ? $this->getWhitelistedParents($context->list, $config)
+            : $this->processRuntimeValue($data[FilterContext::FIELD_VALUE] ?? null, $context->list, $config);
 
-        $inferrer = $this->getPtableInferrer($invocation->list);
+        $inferrer = $this->getPtableInferrer($context->list);
 
         if (!$selectedModels)
         {
-            if ($filter->useWhitelistForOptionsOnly) {
+            if ($config['use_whitelist_for_options_only']) {
                 return;
             }
 
@@ -100,22 +229,42 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
             }
         }
 
-        $this->relationElement->addDynamicPtableFilter(
-            builder: $builder,
-            filter: $filter,
-            fieldDynamicPtable: 'ptable',
-            fieldPid: 'pid',
-            submittedData: $grouped,
-        );
+        $builder->add(BelongsToRelationFilterType::class, [
+            'field_pid' => 'pid',
+            'field_dynamic_ptable' => 'ptable',
+            'parent_groups' => $this->getDynamicParentGroups($config),
+            'submitted_data' => $grouped,
+        ]);
     }
 
-    protected function getWhitelistedParentIds(ListSpecification $list, ConfiguredFilter $filter): ?array
+    /**
+     * @return array<int, array{table: string, ids: int[]}>
+     */
+    protected function getDynamicParentGroups(array $config): array
+    {
+        $groups = [];
+
+        foreach ($config['group_whitelist_parents'] as $group)
+        {
+            $groups[] = [
+                'table' => $group['table'],
+                'ids' => $group['ids'],
+            ];
+        }
+
+        return $groups;
+    }
+
+    /**
+     * @return array<string, int[]>|int[] Parent IDs, either flat (main ptable) or mapped by table (dynamic ptable).
+     */
+    protected function getWhitelistedParentIds(ListSpecification $list, array $config): array
     {
         $inferrer = $this->getPtableInferrer($list);
 
         if ($inferrer->getDcaMainPtable())
         {
-            return $this->getParentIdsFromWhitelistBlob($filter->whitelistParents);
+            return $config['whitelist_parents'];
         }
 
         if (!$inferrer->isDcaDynamicPtable())
@@ -124,16 +273,27 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
             return [];
         }
 
-        return $this->getParentIdsFromGroupWhitelistBlob($filter->groupWhitelistParents);
+        $tableToParentIds = [];
+
+        foreach ($config['group_whitelist_parents'] as $group)
+        {
+            $tableToParentIds[$group['table']] ??= [];
+            \array_push($tableToParentIds[$group['table']], ...$group['ids']);
+        }
+
+        return $tableToParentIds;
     }
 
-    protected function getWhitelistedParents(ListSpecification $list, ConfiguredFilter $filter): array
+    /**
+     * @return Model[]
+     */
+    protected function getWhitelistedParents(ListSpecification $list, array $config): array
     {
         $inferrer = $this->getPtableInferrer($list);
 
         if ($ptable = $inferrer->getDcaMainPtable())
         {
-            $parents = $this->getParentsFromWhitelistBlob($ptable, $filter->whitelistParents);
+            $parents = $this->fetchParents($ptable, $config['whitelist_parents']);
             return $parents?->getModels() ?? [];
         }
 
@@ -143,37 +303,44 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
             return [];
         }
 
-        return $this->getParentsFromGroupWhitelistBlob($filter->groupWhitelistParents);
+        $allParents = [];
+
+        foreach ($this->getWhitelistedParentIds($list, $config) as $table => $parentIds)
+        {
+            if (!$parentIds = \array_unique($parentIds)) {
+                continue;
+            }
+
+            if (!$coll = $this->fetchParents((string) $table, $parentIds)) {
+                continue;
+            }
+
+            \array_push($allParents, ...$coll->getModels());
+        }
+
+        return $allParents;
     }
 
     /**
      * @return Model[]
      */
-    public function getIntrinsicValue(ListSpecification $list, ConfiguredFilter $filter): array
-    {
-        return $this->getWhitelistedParents($list, $filter);
-    }
-
-    /**
-     * @return Model[]
-     */
-    public function processRuntimeValue(mixed $value, ListSpecification $list, ConfiguredFilter $filter): array
+    public function processRuntimeValue(mixed $value, ListSpecification $list, array $config): array
     {
         $values = $this->normalizeFilterValue($value);
 
         // If no value is selected, or the empty option is selected, and the filter
         // applies not only to form options, we must filter by all whitelisted archives.
-        $useFullWhitelist = (!$values || $values === true) && !$filter->useWhitelistForOptionsOnly;
+        $useFullWhitelist = (!$values || $values === true) && !$config['use_whitelist_for_options_only'];
 
         if ($useFullWhitelist) {
-            return $this->getWhitelistedParents($list, $filter);
+            return $this->getWhitelistedParents($list, $config);
         }
 
         if (!$values || $values === true) {
             return [];
         }
 
-        if (!$allowedParentIds = $this->getWhitelistedParentIds($list, $filter)) {
+        if (!$allowedParentIds = $this->getWhitelistedParentIds($list, $config)) {
             return [];
         }
 
@@ -245,13 +412,13 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
         return $this->_inferrer[$cacheKey] = new PtableInferrer($inferrable, $list->dc);
     }
 
-    public function getPalette(PaletteConfig $config): ?string
+    public function configureDca(DcaBuilder $dca, DcaContext $context): void
     {
-        if (!$filterModel = $config->getFilterModel()) {
-            return null;
+        if (!$filterModel = $context->filterModel) {
+            return;
         }
 
-        $inferrer = new PtableInferrer($filterModel, $config->getListModel()->dc);
+        $inferrer = new PtableInferrer($filterModel, $context->listModel->dc);
 
         $palettes = [];
 
@@ -278,146 +445,34 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
             $palettes[] = $palette;
         }
 
-        if (!$palettes) {
-            return null;
-        }
+        $dca->palette($palettes ? Str::mergePalettes(...$palettes) : null);
 
-        return Str::mergePalettes(...$palettes);
+        $dca->field('preselect')
+            ->inputType('select')
+            ->eval([
+                'multiple' => (bool) $filterModel->isMultiple,
+                'chosen' => true,
+                'includeBlankOption' => true,
+            ])
+            ->options(fn (): array => $this->getPreselectOptions($inferrer, $filterModel->row()));
     }
 
     /**
-     * @throws FilterException
+     * Builds the backend options for the preselect field from the whitelisted parents.
+     *
+     * @param array<string, mixed> $row
      */
-    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
+    private function getPreselectOptions(PtableInferrer $inferrer, array $row): array
     {
-        $filter = $event->filter;
-
-        $dataSource = $filter->getDataSource();
-        if (!$dataSource instanceof PtableInferrableInterface) {
-            return;
-        }
-
-        $inferrer = new PtableInferrer($dataSource, $event->list->dc);
-
-        $choices = $event->choicesBuilder->enable();
-
-        $event->options['required'] = (bool) $filter->isMandatory;
-        $event->options['multiple'] = (bool) $filter->isMultiple;
-        $event->options['expanded'] = (bool) $filter->isExpanded;
-
-        if ($filter->hasEmptyOption)
-        {
-            $emptyOptionLabel = ($filter->formatEmptyOption === 'custom')
-                ? $filter->formatEmptyOptionCustom
-                : $filter->formatEmptyOption;
-
-            $emptyOptionValue = ($filter->isExpanded && $filter->isMultiple)
-                ? ChoicesBuilder::EMPTY_CHOICE_VALUE_ALTERNATIVE
-                : null;
-
-            $choices->setEmptyOption($emptyOptionLabel ?: true, $emptyOptionValue);
-        }
-
-        if ($ptable = $inferrer->getDcaMainPtable())
-        {
-            $label = ($filter->formatLabel === 'custom')
-                ? $filter->formatLabelCustom
-                : $filter->formatLabel;
-
-            $label = $label ?: null;
-
-            $choices->setLabel($label);
-
-            $parents = $this->getParentsFromWhitelistBlob($ptable, $filter->whitelistParents);
-
-            if (!$parents) {
-                throw new FilterException('No whitelisted parents defined or parent table class invalid.');
-            }
-
-            foreach ($parents as $parent)
-            {
-                $choices->add((string) $parent->id, $parent);
-            }
-
-            return;
-        }
-
-        if (!$inferrer->isDcaDynamicPtable())
-            // no valid ptable available
-        {
-            throw new FilterException('No valid ptable found.');
-        }
-
-        /**
-         * ## We are dealing with a _dynamic ptable_ henceforth.
-         */
-
-        if (!$groupWhitelist = StringUtil::deserialize($filter->groupWhitelistParents, true))
-        {
-            throw new FilterException('No whitelisted parents defined.');
-        }
-
-        foreach ($groupWhitelist as $group)
-        {
-            $table = $group['tablePtable'] ?? null;
-            $whitelistParents = $group['whitelistParents'] ?? null;
-
-            if (!$table || !$whitelistParents) {
-                continue;
-            }
-
-            $parents = $this->getParentsFromWhitelistBlob($table, $whitelistParents);
-
-            foreach ($parents as $parent)
-            {
-                $choices->add(\sprintf('%s.%s', $table, $parent->id), $parent);
-            }
-
-            $formatLabel = $group['formatLabel'] ?? null;
-            $formatLabel = ($formatLabel === 'custom')
-                ? ($group['formatLabelCustom'] ?? null)
-                : $formatLabel;
-            $formatLabel = $formatLabel ?: null;
-
-            $choices->setLabelForTable($formatLabel, $table);
-        }
-
-        if (!$choices->count()) {
-            throw new FilterException('No valid whitelisted parents defined.');
-        }
-
-        $choices->setModelSuffix('(%@name%)');
-    }
-
-    #[AsFilterCallback(self::TYPE, 'fields.preselect.load')]
-    public function onLoad_preselect(
-        mixed          $value,
-        ?DataContainer $dc,
-        FilterModel    $filterModel,
-        ListModel $listModel
-    ): mixed {
-        if (!$dc) {
-            return [];
-        }
-
-        $dca = &$GLOBALS['TL_DCA'][$dc->table]['fields'][$dc->field];
-
-        $inferrer = new PtableInferrer($filterModel, $listModel->dc);
         $choices = $this->choicesBuilderFactory
             ->createChoicesBuilder()
             ->setModelSuffix('[%id%]')
             ->enable();
 
-        $dca['inputType'] = 'select';
-        $dca['eval']['multiple'] = $filterModel->isMultiple;
-        $dca['eval']['chosen'] = true;
-        $dca['eval']['includeBlankOption'] = true;
-        $dca['options_callback'] = static fn (DataContainer $dc): array => $choices->buildOptions();
-
         if ($ptable = $inferrer->getDcaMainPtable())
         {
-            if (!$parents = $this->getParentsFromWhitelistBlob($ptable, $filterModel->whitelistParents)) {
-                return $value;
+            if (!$parents = $this->fetchParents($ptable, $this->normalizeIds($row['whitelistParents'] ?? null))) {
+                return $choices->buildOptions();
             }
 
             foreach ($parents as $parent)
@@ -425,156 +480,49 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
                 $choices->add(\sprintf('%s.%s', $ptable, $parent->id), $parent);
             }
 
-            return $value;
+            return $choices->buildOptions();
         }
 
         if ($inferrer->isDcaDynamicPtable())
         {
             $choices->setModelSuffix('[%@table%.id=%id%]');
 
-            if (!$groupWhitelist = StringUtil::deserialize($filterModel->groupWhitelistParents)) {
-                return $value;
-            }
-
-            foreach ($groupWhitelist as $group)
+            foreach ($this->normalizeGroups($row['groupWhitelistParents'] ?? null) as $group)
             {
-                $parents = $this->getParentsFromWhitelistBlob(
-                    table: $table = $group['tablePtable'] ?? null,
-                    blob: $group['whitelistParents'] ?? null
-                );
-
-                if (!$parents) {
+                if (!$parents = $this->fetchParents($group['table'], $group['ids'])) {
                     continue;
                 }
 
                 foreach ($parents as $parent)
                 {
-                    $choices->add(\sprintf('%s.%s', $table, $parent->id), $parent);
+                    $choices->add(\sprintf('%s.%s', $group['table'], $parent->id), $parent);
                 }
             }
         }
 
-        return $value;
+        return $choices->buildOptions();
     }
 
     /**
-     * @return int[]|null
+     * Resolves the configured preselection (numeric IDs or "table.id" references) into models,
+     * to be used as the choice field's initial data.
+     *
+     * @return Model[]|null
      */
-    protected function getParentIdsFromWhitelistBlob(?string $blob): ?array
+    private function buildPreselectData(ListSpecification $list, array $preselect): ?array
     {
-        if (!$whitelist = StringUtil::deserialize($blob, true)) {
+        if (!$preselect) {
             return null;
         }
 
-        if (!$whitelist = \array_unique(\array_filter(\array_map('\intval', $whitelist)))) {
-            return null;
-        }
-
-        return \array_values($whitelist);
-    }
-
-    protected function getParentsFromWhitelistBlob(?string $table, ?string $blob): ?Collection
-    {
-        if (!$table || !$blob) {
-            return null;
-        }
-
-        if (!$parentModelClass = Model::getClassFromTable($table)) {
-            return null;
-        }
-
-        if (!\class_exists($parentModelClass)) {
-            return null;
-        }
-
-        $whitelist = $this->getParentIdsFromWhitelistBlob($blob);
-
-        return $parentModelClass::findMultipleByIds($whitelist);
-    }
-
-    /**
-     * @return array<string, int[]> Returns an array mapping table names to parent IDs
-     */
-    protected function getParentIdsFromGroupWhitelistBlob(?string $blob): array
-    {
-        $groupWhitelist = StringUtil::deserialize($blob, true);
-
-        $tableToParentIds = [];
-
-        foreach ($groupWhitelist as $group)
-        {
-            if (!\is_array($group)) {
-                continue;
-            }
-
-            $table = $group['tablePtable'] ?? null;
-            $whitelistParentsBlob = $group['whitelistParents'] ?? null;
-
-            if (!$table || !$whitelistParentsBlob) {
-                continue;
-            }
-
-            if (!$parentIds = $this->getParentIdsFromWhitelistBlob($whitelistParentsBlob)) {
-                continue;
-            }
-
-            $tableToParentIds[$table] ??= [];
-            \array_push($tableToParentIds[$table], ...$parentIds);
-        }
-
-        return $tableToParentIds;
-    }
-
-    /**
-     * @param string|null $blob
-     * @return Model[]
-     */
-    protected function getParentsFromGroupWhitelistBlob(?string $blob): array
-    {
-        $tableToParentIds = $this->getParentIdsFromGroupWhitelistBlob($blob);
-
-        $allParents = [];
-
-        foreach ($tableToParentIds as $table => $parentIds)
-        {
-            if (!$parentModelClass = Model::getClassFromTable($table)) {
-                continue;
-            }
-
-            if (!\class_exists($parentModelClass)) {
-                continue;
-            }
-
-            if (!$parentIds = \array_unique($parentIds)) {
-                continue;
-            }
-
-            if (!$coll = $parentModelClass::findMultipleByIds($parentIds)) {
-                continue;
-            }
-
-            \array_push($allParents, ...$coll->getModels());
-        }
-
-        return $allParents;
-    }
-
-    public function hydrateForm(FormInterface $field, ListSpecification $list, ConfiguredFilter $filter): void
-    {
-        if (!$preselect = StringUtil::deserialize($filter->preselect ?: null, true))
-        {
-            return;
-        }
-
-        $ptableInferrer = static function () use (&$ptableInferrer, $list): PtableInferrer {
-            $inferrable = PtableInferrableFactory::createFromListModelLike($list);
-            $inferrer = new PtableInferrer($inferrable, $list->dc);
+        $ptableInferrer = function () use (&$ptableInferrer, $list): PtableInferrer {
+            $inferrer = $this->getPtableInferrer($list);
             $ptableInferrer = static fn (): PtableInferrer => $inferrer;
             return $inferrer;
         };
 
         $ptable = static function () use (&$ptable, $ptableInferrer): string {
-            $pt = $ptableInferrer()->getDcaMainPtable();
+            $pt = (string) $ptableInferrer()->getDcaMainPtable();
             $ptable = static fn (): string => $pt;
             return $pt;
         };
@@ -638,6 +586,80 @@ class ArchiveElement extends AbstractFilterElement implements HydrateFormContrac
             \array_push($data, ...$models);
         }
 
-        $field->setData($data);
+        return $data;
+    }
+
+    /**
+     * @param int[] $ids
+     */
+    protected function fetchParents(?string $table, array $ids): ?Collection
+    {
+        if (!$table || !$ids) {
+            return null;
+        }
+
+        if (!$parentModelClass = Model::getClassFromTable($table)) {
+            return null;
+        }
+
+        if (!\class_exists($parentModelClass)) {
+            return null;
+        }
+
+        return $parentModelClass::findMultipleByIds(\array_values($ids));
+    }
+
+    /**
+     * @return int[]
+     */
+    private function normalizeIds(mixed $blob): array
+    {
+        if (!$whitelist = StringUtil::deserialize($blob, true)) {
+            return [];
+        }
+
+        return \array_values(\array_unique(\array_filter(\array_map('\intval', $whitelist))));
+    }
+
+    /**
+     * Canonicalizes the serialized group widget blob into a list of
+     * `{table: string, ids: int[], label: ?string}` groups.
+     *
+     * @return array<int, array{table: string, ids: int[], label: string|null}>
+     */
+    private function normalizeGroups(mixed $blob): array
+    {
+        $groups = [];
+
+        foreach (StringUtil::deserialize($blob, true) as $group)
+        {
+            if (!\is_array($group)) {
+                continue;
+            }
+
+            $table = $group['tablePtable'] ?? null;
+            $whitelistParentsBlob = $group['whitelistParents'] ?? null;
+
+            if (!$table || !$whitelistParentsBlob) {
+                continue;
+            }
+
+            if (!$ids = $this->normalizeIds($whitelistParentsBlob)) {
+                continue;
+            }
+
+            $formatLabel = $group['formatLabel'] ?? null;
+            $formatLabel = ($formatLabel === 'custom')
+                ? ($group['formatLabelCustom'] ?? null)
+                : $formatLabel;
+
+            $groups[] = [
+                'table' => (string) $table,
+                'ids' => $ids,
+                'label' => $formatLabel ?: null,
+            ];
+        }
+
+        return $groups;
     }
 }

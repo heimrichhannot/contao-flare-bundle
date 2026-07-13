@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
-use HeimrichHannot\FlareBundle\Contract\FilterElement\FormDataContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\AggregationContextFactory;
 use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
@@ -23,7 +21,6 @@ use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
-use Symfony\Component\Form\Exception\OutOfBoundsException;
 use Symfony\Component\Form\FormInterface;
 
 /**
@@ -50,7 +47,7 @@ class InteractiveProjector extends AbstractProjector
 
         // collect filter values from form data
         $form = $this->createForm($list, $context);
-        $filterValues = $this->mapFormDataToFilterKeys($list, $form);
+        $filterValues = $this->collectFilterData($list, $form);
 
         // pagination setup
         $totalItems = $this->createAggregationView($list, $context, $filterValues)->getCount();
@@ -117,90 +114,29 @@ class InteractiveProjector extends AbstractProjector
         $form = $this->filterFormFactory->create($list, $context);
         $form->handleRequest($this->getCurrentRequest());
 
-        $this->hydrateForm($form, $list);
-
         return $form;
     }
 
     /**
-     * @throws FlareException If the form does not contain the filter field.
+     * Collects each filter's submitted form data (the compound child's data array),
+     * keyed by the filter's list-specification key.
+     *
+     * @return array<string|int, array<string, mixed>>
      */
-    private function hydrateForm(FormInterface $form, ListSpecification $list): void
+    protected function collectFilterData(ListSpecification $list, FormInterface $form): array
     {
-        if ($form->isSubmitted()) {
-            return;
-        }
-
-        $filterElementRegistry = $this->getFilterElementRegistry();
-
         $data = [];
-        foreach ($list->getFilters()->getIterator() as $configuredFilter)
+
+        foreach ($list->getFilters() as $key => $filter)
         {
-            if (!$filterElement = $filterElementRegistry->get($configuredFilter->getElementType())?->getService()) {
+            if (!$filter->alias || !$form->has($filter->alias)) {
                 continue;
             }
 
-            if (!$filterElement instanceof HydrateFormContract) {
-                continue;
-            }
-
-            $filterName = $configuredFilter->getAlias();
-
-            if (!$filterName || !$form->has($filterName)) {
-                continue;
-            }
-
-            try
-            {
-                $field = $form->get($filterName);
-            }
-            catch (OutOfBoundsException $exception)
-            {
-                $filterSourceId = $configuredFilter->getDataSource()?->getFilterIdentifier();
-
-                throw new FlareException(
-                    message: 'Filter form does not contain field: ' . $filterName,
-                    previous: $exception,
-                    method: __METHOD__,
-                    source: $filterSourceId ? \sprintf('tl_flare_filter.id=%s', $filterSourceId) : 'filter inlined'
-                );
-            }
-
-            $filterElement->hydrateForm($field, $list, $configuredFilter);
-
-            $data[$filterName] = $field->getData();
+            $data[$key] = (array) $form->get($filter->alias)->getData();
         }
 
-        $form->setData(\array_merge($form->getData() ?? [], $data));
-    }
-
-    protected function mapFormDataToFilterKeys(ListSpecification $list, FormInterface $form): array
-    {
-        $values = [];
-
-        $filterElementRegistry = $this->getFilterElementRegistry();
-
-        foreach ($list->getFilters()->all() as $key => $configuredFilter)
-        {
-            $alias = $configuredFilter->getAlias();
-
-            if (\is_null($alias)) {
-                continue;
-            }
-
-            if (!$form->has($alias)) {
-                continue;
-            }
-
-            $field = $form->get($alias);
-            $filterElement = $filterElementRegistry->get($configuredFilter->getElementType())?->getService();
-
-            $values[$key] = $filterElement instanceof FormDataContract
-                ? $filterElement->extractFormData($field)
-                : $field->getData();
-        }
-
-        return $values;
+        return $data;
     }
 
     /**

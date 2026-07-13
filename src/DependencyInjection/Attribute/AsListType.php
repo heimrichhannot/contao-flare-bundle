@@ -14,12 +14,10 @@ class AsListType
     public function __construct(
         ?string           $type = null,
         string|array|null $dataContainer = null,
-        string|null       $palette = null,
         mixed             ...$attributes
     ) {
         $attributes['type'] = $type ?? $attributes['alias'] ?? null;
         $attributes['dataContainer'] = $dataContainer;
-        $attributes['palette'] = $palette;
 
         $this->attributes = $attributes;
     }

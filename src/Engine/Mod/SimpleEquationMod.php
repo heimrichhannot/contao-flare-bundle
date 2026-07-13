@@ -24,14 +24,7 @@ class SimpleEquationMod extends AbstractMod
             equationRight: $options['operand2'],
         );
 
-        $filters = $engine->getList()->getFilters();
-
-        if ($name = $options['name']) {
-            $filters->set($name, $filter);
-            return;
-        }
-
-        $filters->add($filter);
+        $engine->getList()->addFilter($filter, $options['name'] ?: null);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

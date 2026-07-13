@@ -5,38 +5,76 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\FilterElement;
 
 use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract;
+use HeimrichHannot\FlareBundle\Contract\DcaContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\SearchKeywordsFilterType;
-use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
-#[AsFilterElement(
-    type: self::TYPE,
-    formType: TextType::class,
-    isTargeted: true,
-)]
-class SearchKeywordsElement extends AbstractFilterElement implements IntrinsicValueContract
+#[AsFilterElement(type: self::TYPE, isTargeted: true)]
+class SearchKeywordsElement extends AbstractFilterElement implements ConfigContract, DcaContract
 {
     public const TYPE = 'flare_search_keywords';
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
+    public function configureConfig(OptionsResolver $resolver): void
     {
-        $filter = $invocation->filter;
-        $value = $filter->isIntrinsic()
-            ? $this->getIntrinsicValue($invocation->list, $filter)
-            : $invocation->getValue();
+        $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
+        $resolver->define('columns')->default([])->allowedTypes('array');
+        $resolver->define('prefill')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('label')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('placeholder')->default(null)->allowedTypes('string', 'null');
+    }
+
+    public function configFromRow(array $row): array
+    {
+        return [
+            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
+            'columns' => StringUtil::deserialize($row['columnsGeneric'] ?? null, true),
+            'prefill' => ($row['prefill'] ?? null) ?: null,
+            'label' => ($row['label'] ?? null) ?: null,
+            'placeholder' => ($row['placeholder'] ?? null) ?: null,
+        ];
+    }
+
+    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
+    {
+        $config = $context->config;
+
+        if ($config['intrinsic']) {
+            return;
+        }
+
+        $options = [
+            'label' => $config['label'] ?? 'label.text',
+            'required' => false,
+        ];
+
+        if ($config['placeholder']) {
+            $options['attr']['placeholder'] = $config['placeholder'];
+        }
+
+        $builder->add(FilterContext::FIELD_VALUE, TextType::class, $options);
+    }
+
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    {
+        $config = $context->config;
+
+        $value = $config['intrinsic']
+            ? $config['prefill']
+            : ($data[FilterContext::FIELD_VALUE] ?? null);
 
         if (!$value || !\is_string($value)) {
             return;
         }
 
-        if (!$columns = StringUtil::deserialize($filter->columnsGeneric, true)) {
+        if (!$columns = $config['columns']) {
             return;
         }
 
@@ -46,33 +84,12 @@ class SearchKeywordsElement extends AbstractFilterElement implements IntrinsicVa
         ]);
     }
 
-    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
-    {
-        $event->options['label'] = 'label.text';
-        $event->options['required'] = false;
-
-        if ($label = $event->filter->label) {
-            $event->options['label'] = $label;
-        }
-
-        if ($placeholder = $event->filter->placeholder) {
-            $event->options['attr']['placeholder'] = $placeholder;
-        }
-    }
-
-    public function getIntrinsicValue(ListSpecification $list, ConfiguredFilter $filter): ?string
-    {
-        return $filter->prefill ?: null;
-    }
-
-    public function getPalette(PaletteConfig $config): ?string
+    public function configureDca(DcaBuilder $dca, DcaContext $context): void
     {
         $palette = '{filter_legend},columnsGeneric';
 
-        if ($config->getFilterModel()->intrinsic) {
-            return $palette . ',prefill';
-        }
-
-        return $palette . ';{form_legend},label,placeholder';
+        $dca->palette($context->filterModel?->intrinsic
+            ? $palette . ',prefill'
+            : $palette . ';{form_legend},label,placeholder');
     }
 }

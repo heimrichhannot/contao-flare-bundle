@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListType;
 
-use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
+use HeimrichHannot\FlareBundle\Contract\DcaContract;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Event\ListSpecificationCreatedEvent;
 use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
@@ -15,24 +17,25 @@ use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsListType(type: self::TYPE, dataContainer: self::DATA_CONTAINER)]
-class EventsListType extends AbstractListType
+class EventsListType extends AbstractListType implements DcaContract
 {
     public const TYPE = 'flare_events';
     public const DATA_CONTAINER = 'tl_calendar_events';
     public const ALIAS_ARCHIVE = 'events_archive';
 
-    public function getPalette(PaletteConfig $config): ?string
+    public function configureDca(DcaBuilder $dca, DcaContext $context): void
     {
-        if ($suffix = $config->getSuffix())
-        {
+        $dca->suffix(static function (string $suffix): string {
+            if (!$suffix) {
+                return $suffix;
+            }
+
             $suffix = \str_replace('sortSettings', '', $suffix);
             $suffix = \preg_replace('/(?:^|;)\{[^}]*},*(?:;|$)/', ';', $suffix);
             $suffix = \preg_replace('/;{2,}/', ';', $suffix);
-            $suffix = \trim($suffix, ';');
-            $config->setSuffix($suffix);
-        }
 
-        return null;
+            return \trim($suffix, ';');
+        });
     }
 
     public function configureTableRegistry(TableAliasRegistry $registry): void
@@ -55,10 +58,10 @@ class EventsListType extends AbstractListType
             return;
         }
 
-        $filters = $config->listSpecification->getFilters();
+        $spec = $config->listSpecification;
 
-        if (!$filters->hasType(PublishedElement::TYPE)) {
-            $filters->add(PublishedElement::define());
+        if (!$spec->hasFilterOfType(PublishedElement::TYPE)) {
+            $spec->addFilter(PublishedElement::define());
         }
     }
 }

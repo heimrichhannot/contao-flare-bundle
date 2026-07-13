@@ -104,6 +104,18 @@ final readonly class Str
         return $db_or_col_name && \preg_match('/^[A-Za-z_]\w*$/', $db_or_col_name);
     }
 
+    /**
+     * Whether the given name is a valid, non-empty Symfony form name.
+     * Mirrors {@see \Symfony\Component\Form\FormConfigBuilder::isValidName()} except that
+     * empty names are rejected. Generated filter aliases like "_.tl_flare_filter.42" fail
+     * this check by design and therefore never mount form children.
+     */
+    public static function isValidFormName(?string $name): bool
+    {
+        return $name !== null && $name !== ''
+            && \preg_match('/^[a-zA-Z0-9_][a-zA-Z0-9_\-:]*$/D', $name) === 1;
+    }
+
     public static function wrap(mixed $value): string
     {
         if (\is_null($value)) {

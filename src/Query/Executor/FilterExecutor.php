@@ -9,17 +9,18 @@ use HeimrichHannot\FlareBundle\Event\FilterElementBuildingEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilder;
+use HeimrichHannot\FlareBundle\Filter\FilterConfigResolver;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterCall;
-use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
-use HeimrichHannot\FlareBundle\FilterElement\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Registry\FilterElementResolver;
 use HeimrichHannot\FlareBundle\Registry\FilterTypeRegistry;
-use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -27,7 +28,9 @@ readonly class FilterExecutor
 {
     public function __construct(
         private EventDispatcherInterface  $eventDispatcher,
+        private FilterConfigResolver      $filterConfigResolver,
         private FilterElementRegistry     $filterElementRegistry,
+        private FilterElementResolver     $filterElementResolver,
         private FilterQueryBuilderFactory $filterQueryBuilderFactory,
         private FilterTypeRegistry        $filterTypeRegistry,
     ) {}
@@ -42,24 +45,26 @@ readonly class FilterExecutor
     public function invokeFilters(ListQueryConfig $options): array
     {
         $list = $options->list;
-        $context = $options->context;
 
         $filterQueryBuilders = [];
 
-        /**
-         * @var int|string $key
-         * @var ConfiguredFilter $filter
-         */
-        foreach ($list->getFilters()->all() as $key => $filter)
+        foreach ($list->getFilters() as $key => $filter)
         {
-            $invocation = new FilterInvocation(
-                filter: $filter,
+            if (!$element = $this->filterElementResolver->resolve($filter)) {
+                continue;
+            }
+
+            $context = new FilterContext(
                 list: $list,
-                context: $context,
-                value: $options->filterValues[$key] ?? null,
+                filter: $filter,
+                config: $this->filterConfigResolver->resolve($filter, $element),
+                engineContext: $options->context,
+                key: $key,
             );
 
-            if (!$builders = $this->invokeFilter($invocation)) {
+            $data = (array) ($options->filterValues[$key] ?? $filter->data ?? []);
+
+            if (!$builders = $this->invokeFilter($filter, $context, $data)) {
                 continue;
             }
 
@@ -70,16 +75,17 @@ readonly class FilterExecutor
     }
 
     /**
+     * @param array<string, mixed> $data
+     *
+     * @return FilterQueryBuilder[]
+     *
      * @throws AbortFilteringException
      * @throws FilterException
      * @throws FlareException
      */
-    /**
-     * @return FilterQueryBuilder[]
-     */
-    public function invokeFilter(FilterInvocation $invocation): array
+    public function invokeFilter(Filter $filter, FilterContext $context, array $data = []): array
     {
-        if (!Str::isValidSqlName($table = $invocation->list->dc))
+        if (!Str::isValidSqlName($table = $context->list->dc))
         {
             throw new FlareException(\sprintf(
                 '[FLARE] ListSpecification data container cannot be used as SQL table identifier: "%s"',
@@ -87,30 +93,23 @@ readonly class FilterExecutor
             ), method: __METHOD__);
         }
 
-        $filter = $invocation->filter;
-        $context = $invocation->context;
-
-        if (!$filterElementDescriptor = $this->filterElementRegistry->get($filter->getElementType())) {
+        if (!$element = $this->filterElementResolver->resolve($filter)) {
             return [];
         }
 
-        $filterElement = $filterElementDescriptor->getService();
-        if (!$filterElement instanceof FilterElementInterface) {
-            return [];
-        }
+        $descriptor = ($type = $filter->getElementType()) ? $this->filterElementRegistry->get($type) : null;
 
         $targetAlias = TableAliasRegistry::ALIAS_MAIN;
-        if ($filterElementDescriptor->isTargeted() || $filter->isTargetingForced()) {
-            $targetAlias = $filter->getTargetAlias() ?: TableAliasRegistry::ALIAS_MAIN;
+        if ($descriptor?->isTargeted() || $filter->targetingForced) {
+            $targetAlias = $filter->targetAlias ?: TableAliasRegistry::ALIAS_MAIN;
         }
 
         $builder = new FilterBuilder($this->filterTypeRegistry, $targetAlias);
 
         $event = $this->eventDispatcher->dispatch(new FilterElementBuildingEvent(
-            invocation: $invocation,
             context: $context,
             builder: $builder,
-            shouldBuild: true,
+            data: $data,
         ));
 
         if (!$event->shouldBuild()) {
@@ -119,7 +118,7 @@ readonly class FilterExecutor
 
         try
         {
-            $filterElement->buildFilter($builder, $invocation);
+            $element->buildFilter($builder, $context, $data);
         }
         catch (AbortFilteringException $e)
         {
@@ -127,23 +126,23 @@ readonly class FilterExecutor
         }
         catch (FilterException $e)
         {
-            throw $this->createCallbackException($e, $filter, $filterElement);
+            throw $this->createFilterException($e, $filter, $element::class . '::buildFilter');
         }
         catch (\Throwable $e)
         {
             throw new FilterException($e->getMessage(), code: $e->getCode(), previous: $e, method: __METHOD__);
         }
 
-        $this->eventDispatcher->dispatch(new FilterElementBuiltEvent($invocation, $builder));
+        $this->eventDispatcher->dispatch(new FilterElementBuiltEvent($context, $builder, $data));
 
-        return $this->buildQueryBuilders($builder->all(), $filter, $filterElement);
+        return $this->buildQueryBuilders($builder->all(), $filter);
     }
 
     /**
      * @param FilterCall[] $calls
      * @return FilterQueryBuilder[]
      */
-    private function buildQueryBuilders(array $calls, ConfiguredFilter $filter, object $filterElement): array
+    private function buildQueryBuilders(array $calls, Filter $filter): array
     {
         $filterQueryBuilders = [];
 
@@ -161,11 +160,11 @@ readonly class FilterExecutor
             }
             catch (FilterException $e)
             {
-                throw $this->createCallbackException($e, $filter, $call->type);
+                throw $this->createFilterException($e, $filter, $call->typeClass . '::buildQuery');
             }
             catch (\Throwable $e)
             {
-                throw new FilterException($e->getMessage(), code: $e->getCode(), previous: $e, method: $filterElement::class);
+                throw new FilterException($e->getMessage(), code: $e->getCode(), previous: $e, method: $call->typeClass);
             }
 
             $filterQueryBuilders[] = $filterQueryBuilder;
@@ -174,47 +173,14 @@ readonly class FilterExecutor
         return $filterQueryBuilders;
     }
 
-    private function createCallbackException(
-        FilterException  $e,
-        ConfiguredFilter $filter,
-        mixed            $callback
-    ): FilterException {
-        if (!$errorMethod = $e->getMethod())
-        {
-            $serviceId = null;
-            $method = '___UNKNOWN___';
-
-            if (\is_object($callback))
-            {
-                $serviceId = $callback::class;
-                $method = '::__invoke';
-            }
-
-            if (!$serviceId && \is_callable($callback))
-            {
-                try
-                {
-                    $reflection = new \ReflectionFunction($callback);
-                    $serviceId = $reflection->getClosureScopeClass()?->getName() ?? 'Closure';
-                    $method = '::' . $reflection->getName();
-                }
-                /** @mago-expect lint:no-empty-catch-clause ReflectionException is safely ignored here */
-                catch (\ReflectionException) {}
-            }
-
-            if (!$serviceId)
-            {
-                $serviceId = \gettype($callback);
-                $method = '()';
-            }
-
-            $errorMethod = $serviceId . $method;
-        }
+    private function createFilterException(FilterException $e, Filter $filter, string $fallbackMethod): FilterException
+    {
+        $errorMethod = $e->getMethod() ?: $fallbackMethod;
 
         return new FilterException(
             \sprintf('[FLARE] Query denied: %s / Callback: %s', $e->getMessage(), $errorMethod),
             code: $e->getCode(), previous: $e, method: $errorMethod,
-            source: \sprintf('tl_flare_filter.id=%s', $filter->getDataSource()?->getFilterIdentifier() ?: '0'),
+            source: $filter->source ?: 'filter inlined',
         );
     }
 }

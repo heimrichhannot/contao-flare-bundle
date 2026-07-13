@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Specification\Factory;
 
-use HeimrichHannot\FlareBundle\Collection\ConfiguredFilterCollection;
 use HeimrichHannot\FlareBundle\Event\ListSpecificationCreatedEvent;
 use HeimrichHannot\FlareBundle\Registry\FilterCollectorRegistry;
 use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
@@ -24,15 +23,16 @@ final readonly class ListSpecificationFactory
 
     public function create(ListDataSourceInterface $dataSource): ListSpecification
     {
-        // Automatically collect filters (delegate to FilterCollectorRegistry)
-        $filterCollection = $this->collectFilters($dataSource);
-
         $specification = new ListSpecification(
             type: $dataSource->getListType(),
             dc: $dataSource->getListTable(),
             dataSource: $dataSource,
-            filters: $filterCollection,
         );
+
+        // Automatically collect filters (delegate to FilterCollectorRegistry)
+        foreach ($this->collectFilters($dataSource) as $key => $filter) {
+            $specification->addFilter($filter, $key);
+        }
 
         $specification->setProperties($dataSource->getListData());
 
@@ -41,14 +41,11 @@ final readonly class ListSpecificationFactory
         return $event->listSpecification;
     }
 
-    private function collectFilters(ListDataSourceInterface $dataSource): ConfiguredFilterCollection
+    /**
+     * @return array<string, \HeimrichHannot\FlareBundle\Filter\Filter>
+     */
+    private function collectFilters(ListDataSourceInterface $dataSource): array
     {
-        $collector = $this->filterCollectors->match($dataSource);
-
-        if (!$collector) {
-            return new ConfiguredFilterCollection();
-        }
-
-        return $collector->collect($dataSource) ?? new ConfiguredFilterCollection();
+        return $this->filterCollectors->match($dataSource)?->collect($dataSource) ?? [];
     }
 }

@@ -13,7 +13,7 @@ use Contao\NewsArchiveModel;
 use Contao\NewsModel;
 use Contao\UserModel;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\Event\PaletteEvent;
+use HeimrichHannot\FlareBundle\Event\ElementDcaEvent;
 use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\Model\ContentModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -103,18 +103,18 @@ readonly class ContaoCommentsListener
     /**
      * Attach the comments_enabled field to the flare_news palette.
      */
-    #[AsEventListener('flare.list.flare_news.palette')]
-    public function onListPalette(PaletteEvent $event): void
+    #[AsEventListener('flare.list.flare_news.dca')]
+    public function onListDca(ElementDcaEvent $event): void
     {
         $pm = PaletteManipulator::create()
             ->addLegend('comments_legend')
             ->addField('comments_enabled', 'comments_legend', PaletteManipulator::POSITION_APPEND);
 
-        if ($event->getPaletteConfig()->getListModel()->comments_enabled) {
+        if ($event->context->listModel->comments_enabled) {
             $pm->addField('comments_sendNativeEmails', 'comments_legend', PaletteManipulator::POSITION_APPEND);
         }
 
-        $event->setPalette($pm->applyToString($event->getPalette()));
+        $event->dca->palette($pm->applyToString((string) $event->dca->getPalette()));
     }
 
     /**

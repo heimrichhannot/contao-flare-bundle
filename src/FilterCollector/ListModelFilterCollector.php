@@ -5,18 +5,22 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\FilterCollector;
 
 use Contao\Controller;
-use HeimrichHannot\FlareBundle\Collection\ConfiguredFilterCollection;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
+use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
+use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Registry\FilterElementResolver;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
-use HeimrichHannot\FlareBundle\Specification\Factory\ConfiguredFilterFactory;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class ListModelFilterCollector implements FilterCollectorInterface
 {
     public function __construct(
-        private ConfiguredFilterFactory $configuredFilterFactory,
-        private ListTypeRegistry $listTypeRegistry,
+        private EventDispatcherInterface $eventDispatcher,
+        private FilterElementResolver    $filterElementResolver,
+        private ListTypeRegistry         $listTypeRegistry,
     ) {}
 
     public function supports(ListDataSourceInterface $dataSource): bool
@@ -24,7 +28,7 @@ readonly class ListModelFilterCollector implements FilterCollectorInterface
         return $dataSource instanceof ListModel;
     }
 
-    public function collect(ListDataSourceInterface $dataSource): ?ConfiguredFilterCollection
+    public function collect(ListDataSourceInterface $dataSource): ?array
     {
         if (!$dataSource instanceof ListModel) {
             throw new \InvalidArgumentException('The given data source is not a list model.');
@@ -40,25 +44,39 @@ readonly class ListModelFilterCollector implements FilterCollectorInterface
 
         Controller::loadDataContainer($table);
 
-        /** @var \Traversable<int, FilterModel> $filterModels */
-        $filterModels = FilterModel::findByPid($dataSource->id, published: true);
-        $collection = new ConfiguredFilterCollection();
+        $filters = [];
 
-        foreach ($filterModels as $filterModel)
+        /** @var FilterModel $model */
+        foreach (FilterModel::findByPid((int) $dataSource->id, published: true) as $model)
             // Collect filters defined in the backend
         {
-            if (!$filterModel->published) {
+            if (!$model->published) {
                 continue;
             }
 
-            $configuredFilter = $this->configuredFilterFactory->create($filterModel);
+            $source = "{$model::getTable()}.{$model->id}";
 
-            $key = $configuredFilter->getAlias()
-                ?: "_.{$filterModel::getTable()}.{$filterModel->id}";
+            if (!$element = $this->filterElementResolver->resolveType($model->getFilterType(), $source)) {
+                continue;
+            }
 
-            $collection->set($key, $configuredFilter);
+            $config = $element instanceof ConfigContract
+                ? $element->configFromRow($model->row())
+                : $model->row();
+
+            $filter = new Filter(
+                element: $model->getFilterType(),
+                config: $config,
+                alias: $model->getFilterFormName() ?: "_.{$source}",
+                targetAlias: $model->getFilterTargetAlias() ?: null,
+                source: $source,
+            );
+
+            $filter = $this->eventDispatcher->dispatch(new FilterCollectedEvent($filter, $model))->filter;
+
+            $filters[$filter->alias] = $filter;
         }
 
-        return $collection;
+        return $filters;
     }
 }

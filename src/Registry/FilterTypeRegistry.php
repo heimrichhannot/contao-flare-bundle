@@ -15,7 +15,7 @@ class FilterTypeRegistry
     private array $types;
 
     public function __construct(
-        #[TaggedIterator(FilterTypeInterface::TAG)]
+        #[TaggedIterator(FilterTypeInterface::FLARE_FILTER_TYPE_TAG)]
         private readonly iterable $filterTypes,
     ) {}
 
@@ -42,7 +42,12 @@ class FilterTypeRegistry
 
             foreach ($this->filterTypes as $filterType) {
                 if (!$filterType instanceof FilterTypeInterface) {
-                    continue;
+                    throw new \LogicException(\sprintf(
+                        'Service "%s" is tagged "%s" but does not implement %s.',
+                        $filterType::class,
+                        FilterTypeInterface::FLARE_FILTER_TYPE_TAG,
+                        FilterTypeInterface::class,
+                    ));
                 }
 
                 $this->types[$filterType::class] = $filterType;

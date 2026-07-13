@@ -41,7 +41,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
                 equationRight: $id,
             );
 
-            $list->getFilters()->add($idDefinition);
+            $list->addFilter($idDefinition);
 
             return $this->executeQuery($list, $this->config->context);
         }
@@ -75,7 +75,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
                 equationRight: $autoItem,
             );
 
-            $list->getFilters()->add($autoItemDefinition);
+            $list->addFilter($autoItemDefinition);
 
             return $this->executeQuery($list, $this->config->context);
         }

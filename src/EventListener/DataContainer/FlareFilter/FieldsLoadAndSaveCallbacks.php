@@ -79,7 +79,7 @@ readonly class FieldsLoadAndSaveCallbacks
             return $value;
         }
 
-        if ($this->filterElementRegistry->get($row['type'] ?? null)?->isIntrinsicRequired())
+        if ($this->filterElementRegistry->get($row['type'] ?? null)?->isIntrinsicOnly())
         {
             $eval = &$GLOBALS['TL_DCA'][self::TABLE_NAME]['fields']['intrinsic']['eval'];
 
@@ -98,7 +98,7 @@ readonly class FieldsLoadAndSaveCallbacks
             return $value;
         }
 
-        if ($this->filterElementRegistry->get($row['type'] ?? null)?->isIntrinsicRequired()) {
+        if ($this->filterElementRegistry->get($row['type'] ?? null)?->isIntrinsicOnly()) {
             return '1';
         }
 

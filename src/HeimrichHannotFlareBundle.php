@@ -46,7 +46,6 @@ final class HeimrichHannotFlareBundle extends Bundle
         ###< Integrations ###
 
         ###> Fill Registries ###
-        $container->addCompilerPass(new DependencyInjection\Compiler\RegisterFlareCallbacksPass());
         $container->addCompilerPass(new DependencyInjection\Compiler\RegisterFilterElementsPass());
         $container->addCompilerPass(new DependencyInjection\Compiler\RegisterListTypesPass());
         ###< Fill Registries ###

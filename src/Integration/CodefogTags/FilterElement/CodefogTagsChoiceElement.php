@@ -5,47 +5,123 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement;
 
 use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
+use HeimrichHannot\FlareBundle\Contract\DcaContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\ConfigContract;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\IntegerIdChoiceFilterType;
 use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
+use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegistry;
-use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
-use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Form\ChoiceList\Loader\CallbackChoiceLoader;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
-#[AsFilterElement(
-    type: self::TYPE,
-    palette: '{form_legend},label,isMandatory,isMultiple,isExpanded;{filter_legend},preselect',
-    formType: ChoiceType::class,
-    isTargeted: true,
-)]
-class CodefogTagsChoiceElement extends AbstractFilterElement implements HydrateFormContract, IntrinsicValueContract
+#[AsFilterElement(type: self::TYPE, isTargeted: true)]
+class CodefogTagsChoiceElement extends AbstractFilterElement implements ConfigContract, DcaContract
 {
     public const TYPE = 'cfg_tags_choice';
 
     public function __construct(
+        private readonly ChoicesBuilderFactory       $choicesBuilderFactory,
         private readonly CfgTagsJoinsRegistry        $joinsRegistry,
         private readonly ListExecutionContextFactory $listExecutionContextFactory,
         private readonly LoggerInterface             $logger,
     ) {}
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
+    public function configureConfig(OptionsResolver $resolver): void
     {
+        $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
+        $resolver->define('preselect')->default([])->allowedTypes('int[]');
+        $resolver->define('is_mandatory')->default(false)->allowedTypes('bool');
+        $resolver->define('is_multiple')->default(false)->allowedTypes('bool');
+        $resolver->define('is_expanded')->default(false)->allowedTypes('bool');
+        $resolver->define('label')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('placeholder')->default(null)->allowedTypes('string', 'null');
+    }
+
+    public function configFromRow(array $row): array
+    {
+        return [
+            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
+            'preselect' => $this->normalizeValueArray(
+                StringUtil::deserialize(($row['preselect'] ?? null) ?: null, true)
+            ),
+            'is_mandatory' => (bool) ($row['isMandatory'] ?? false),
+            'is_multiple' => (bool) ($row['isMultiple'] ?? false),
+            'is_expanded' => (bool) ($row['isExpanded'] ?? false),
+            'label' => ($row['label'] ?? null) ?: null,
+            'placeholder' => ($row['placeholder'] ?? null) ?: null,
+        ];
+    }
+
+    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
+    {
+        $config = $context->config;
+
+        if ($config['intrinsic']) {
+            return;
+        }
+
+        $formOptions = [
+            'label' => $config['label'] ?: false,
+            'multiple' => $config['is_multiple'],
+            'expanded' => $config['is_expanded'],
+            'required' => $config['is_mandatory'],
+            'placeholder' => $config['placeholder']
+                ?: ($config['is_mandatory'] ? 'empty_option.prompt' : 'empty_option.no_selection'),
+        ];
+
+        if ($preselect = $config['preselect']) {
+            $formOptions['data'] = $config['is_multiple'] ? $preselect : \reset($preselect);
+        }
+
+        $executionContext = $this->listExecutionContextFactory->create($context->list);
+
+        $optValues = $this->getOptions(
+            executionContext: $executionContext,
+            targetAlias: $context->filter->targetAlias,
+            listInfo: \sprintf(
+                '%s (ID %s)',
+                $context->list->type,
+                (string) ($context->list->getDataSource()?->getListProperty('id') ?? 'N/A'),
+            ),
+            filterInfo: \sprintf('%s (%s)', self::TYPE, $context->filter->source ?? 'inlined'),
+        );
+
+        if (!\is_null($optValues))
+        {
+            $choicesBuilder = $this->choicesBuilderFactory->createChoicesBuilder()->enable();
+
+            foreach ($optValues as $value => $label) {
+                $choicesBuilder->add((string) $value, (string) $label, (int) $value);
+            }
+
+            $formOptions['choice_loader'] = new CallbackChoiceLoader(static fn (): array => $choicesBuilder->buildChoices());
+            $formOptions['choice_label'] = $choicesBuilder->buildChoiceLabelCallback();
+            $formOptions['choice_value'] = $choicesBuilder->buildChoiceValueCallback();
+
+            $builder->setAttribute('flare.choices_builder', $choicesBuilder);
+        }
+
+        $builder->add(FilterContext::FIELD_VALUE, ChoiceType::class, $formOptions);
+    }
+
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    {
+        $config = $context->config;
+
         /** @var ?array $tagIds */
-        $tagIds = $invocation->filter->isIntrinsic()
-            ? $this->getIntrinsicValue($invocation->list, $invocation->filter)
-            : $this->processRuntimeValue($invocation->getValue(), $invocation->list, $invocation->filter);
+        $tagIds = $config['intrinsic']
+            ? ($config['preselect'] ?: null)
+            : $this->processRuntimeValue($data[FilterContext::FIELD_VALUE] ?? null);
 
         if (!$tagIds) {
             return;
@@ -57,41 +133,32 @@ class CodefogTagsChoiceElement extends AbstractFilterElement implements HydrateF
         ]);
     }
 
-    public function hydrateForm(FormInterface $field, ListSpecification $list, ConfiguredFilter $filter): void
+    public function configureDca(DcaBuilder $dca, DcaContext $context): void
     {
-        if ($field->isSubmitted()) {
-            return;
-        }
+        $dca->palette('{form_legend},label,isMandatory,isMultiple,isExpanded;{filter_legend},preselect');
 
-        if (!$preselect = $this->getIntrinsicValue($list, $filter)) {
-            return;
-        }
+        $dca->field('isMultiple')
+            ->eval(['submitOnChange' => true]);
 
-        if (!$filter->isMultiple) {
-            $preselect = \reset($preselect);
-        }
+        $dca->field('preselect')
+            ->inputType('select')
+            ->eval([
+                'includeBlankOption' => true,
+                'multiple' => (bool) $context->filterModel?->isMultiple,
+                'chosen' => true,
+            ])
+            ->options(function () use ($context): array {
+                if (!$executionContext = $context->getExecutionContext()) {
+                    return [];
+                }
 
-        $field->setData($preselect);
-    }
-
-    #[AsFilterCallback(self::TYPE, 'config.onload')]
-    public function onLoadConfig(FilterModel $filterModel): void
-    {
-        $table = FilterModel::getTable();
-        $fields = &$GLOBALS['TL_DCA'][$table]['fields'];
-
-        ###> isMultiple
-        $field = &$fields['isMultiple'];
-        $field['eval']['submitOnChange'] = true;
-        ###< isMultiple
-
-        ###> preselect
-        $field = &$fields['preselect'];
-        $field['inputType'] = 'select';
-        $field['eval']['includeBlankOption'] = true;
-        $field['eval']['multiple'] = $filterModel->isMultiple;
-        $field['eval']['chosen'] = true;
-        ###< preselect
+                return $this->getOptions(
+                    executionContext: $executionContext,
+                    targetAlias: (string) ($context->filterModel->targetAlias ?? ''),
+                    listInfo: \sprintf('%s (ID %s)', $context->listModel->type, $context->listModel->id),
+                    filterInfo: \sprintf('%s (ID %s)', $context->type, (string) ($context->filterModel->id ?? 'N/A')),
+                ) ?? [];
+            });
     }
 
     private function normalizeValueArray(array $values): array
@@ -99,14 +166,7 @@ class CodefogTagsChoiceElement extends AbstractFilterElement implements HydrateF
         return \array_values(\array_unique(\array_filter(\array_map('\intval', $values))));
     }
 
-    public function getIntrinsicValue(ListSpecification $list, ConfiguredFilter $filter): ?array
-    {
-        return $this->normalizeValueArray(
-            StringUtil::deserialize($filter->preselect ?: null, true)
-        ) ?: null;
-    }
-
-    public function processRuntimeValue(mixed $value, ListSpecification $list, ConfiguredFilter $filter): ?array
+    public function processRuntimeValue(mixed $value): ?array
     {
         if (!$value = StringUtil::deserialize($value)) {
             return null;
@@ -124,53 +184,26 @@ class CodefogTagsChoiceElement extends AbstractFilterElement implements HydrateF
         return null;
     }
 
-    public function handleFormTypeOptions(FilterElementFormTypeOptionsEvent $event): void
-    {
-        $list = $event->list;
-        $filter = $event->filter;
-
-        $emptyPlaceholder = $filter->isMandatory ? 'empty_option.prompt' : 'empty_option.no_selection';
-
-        $options = $this->defaultFormTypeOptions($filter, [
-            'multiple',
-            'expanded',
-            'required',
-            'placeholder' => $emptyPlaceholder,
-            'label' => null,
-        ]);
-
-        $event->options = \array_merge($event->options, $options);
-
-        $context = $this->listExecutionContextFactory->create($list);
-
-        if (\is_null($optValues = $this->getOptions($list, $filter, $context))) {
-            return;
-        }
-
-        $choices = $event->choicesBuilder->enable();
-
-        foreach ($optValues as $value => $label) {
-            $choices->add((string) $value, (string) $label, (int) $value);
-        }
-    }
-
-    #[AsFilterCallback(self::TYPE, 'fields.preselect.options')]
-    public function getOptions(ListSpecification $list, ConfiguredFilter $filter, ListExecutionContext $context): ?array
-    {
-        $targetAlias = $filter->getTargetAlias();
-
+    /**
+     * Builds the tag options of the single active Codefog tags relation. Doubles as the
+     * backend options provider for the preselect field and the runtime choices source.
+     */
+    public function getOptions(
+        ListExecutionContext $executionContext,
+        ?string              $targetAlias,
+        string               $listInfo = 'N/A',
+        string               $filterInfo = 'N/A',
+    ): ?array {
         $activeTagsAliases = \array_intersect_key(
             $this->joinsRegistry->all(),
-            \array_flip($context->tableAliasRegistry->getAliases()),
+            \array_flip($executionContext->tableAliasRegistry->getAliases()),
         );
 
         if (\count($activeTagsAliases) !== 1) {
             $this->logger->warning(\sprintf(
                 '[FLARE] Cannot determine single target table for tags filter on '
-                . 'list %s (ID %s), filter %s (ID %s), targetAlias %s',
-                $list->type, (string) ($list->getDataSource()?->getListProperty('id') ?? 'N/A'),
-                $filter->type, (string) ($filter->getDataSource()?->getFilterProperty('id') ?? 'N/A'),
-                $targetAlias,
+                . 'list %s, filter %s, targetAlias %s',
+                $listInfo, $filterInfo, $targetAlias,
             ));
             return null;
         }

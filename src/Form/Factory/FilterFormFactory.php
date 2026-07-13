@@ -7,13 +7,14 @@ namespace HeimrichHannot\FlareBundle\Form\Factory;
 use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\Interface\FormContextInterface;
+use HeimrichHannot\FlareBundle\Event\FilterElementFormBuiltEvent;
 use HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\FilterElement\FilterElementContext;
-use HeimrichHannot\FlareBundle\FilterElement\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Form\FilterFormBuilder;
-use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Filter\FilterConfigResolver;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Registry\FilterElementResolver;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
@@ -22,9 +23,9 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 readonly class FilterFormFactory
 {
     public function __construct(
-        private ChoicesBuilderFactory    $choicesBuilderFactory,
         private EventDispatcherInterface $eventDispatcher,
-        private FilterElementRegistry    $filterElementRegistry,
+        private FilterConfigResolver     $filterConfigResolver,
+        private FilterElementResolver    $filterElementResolver,
         private FormFactoryInterface     $formFactory,
     ) {}
 
@@ -38,7 +39,6 @@ readonly class FilterFormFactory
         }
 
         $name = $context->getFormName();
-        $filters = $list->getFilters();
 
         $formOptions = [
             'method'             => 'GET',
@@ -54,32 +54,46 @@ readonly class FilterFormFactory
         }
 
         $builder = $this->formFactory->createNamedBuilder($name, FormType::class, null, $formOptions);
-        $filterFormBuilder = new FilterFormBuilder(
-            rootBuilder: $builder,
-            choicesBuilderFactory: $this->choicesBuilderFactory,
-            eventDispatcher: $this->eventDispatcher,
-        );
+        $builder->setAttribute('flare.list', $list);
+        $builder->setAttribute('flare.engine_context', $context);
 
-        foreach ($filters->getIterator() as $configuredFilter)
+        foreach ($list->getFilters() as $key => $filter)
         {
-            if (!$configuredFilter->getElementType()) {
+            if (!Str::isValidFormName($filter->alias)) {
                 continue;
             }
 
-            if (!$descriptor = $this->filterElementRegistry->get($configuredFilter->getElementType())) {
+            if (!$element = $this->filterElementResolver->resolve($filter)) {
                 continue;
             }
 
-            $element = $descriptor->getService();
+            $filterContext = new FilterContext(
+                list: $list,
+                filter: $filter,
+                config: $this->filterConfigResolver->resolve($filter, $element),
+                engineContext: $context,
+                key: $key,
+            );
 
-            if ($element instanceof FilterElementInterface) {
-                $element->buildForm($filterFormBuilder, new FilterElementContext(
-                    list: $list,
-                    filter: $configuredFilter,
-                    engineContext: $context,
-                    descriptor: $descriptor,
-                ));
+            $child = $builder->create($filter->alias, FormType::class, [
+                'inherit_data' => false,
+                'label'        => false,
+                'required'     => false,
+            ]);
+            $child->setAttribute(FilterContext::FORM_ATTRIBUTE, $filterContext);
+
+            $element->buildForm($child, $filterContext);
+
+            /** @var FilterElementFormBuiltEvent $event */
+            $event = $this->eventDispatcher->dispatch(new FilterElementFormBuiltEvent($child, $filterContext));
+
+            if ($event->isCancelled() || $child->count() === 0)
+                // Empty compound children are never mounted.
+            {
+                continue;
             }
+
+            $builder->add($child);
         }
 
         /*

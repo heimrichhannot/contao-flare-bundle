@@ -20,7 +20,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsFilterElement(type: self::TYPE)]
-class DateRangeElement extends AbstractFilterElement
+class DateRangeFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_dateRange';
 

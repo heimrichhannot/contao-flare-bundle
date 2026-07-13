@@ -20,7 +20,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE)]
-class DcaSelectFieldElement extends AbstractFilterElement
+class DcaSelectFieldFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_dcaSelectField';
 

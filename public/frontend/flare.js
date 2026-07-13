@@ -9,7 +9,9 @@
  * Upgrades back-to-list buttons marked with data-flare-back-button:
  * when document.referrer qualifies as the originating list view, the anchor's
  * href is replaced with the referrer URL so the list view's filter and
- * pagination query parameters are preserved.
+ * pagination query parameters are preserved. Qualifying list view URLs are
+ * also remembered per browser tab (sessionStorage), so the button keeps
+ * pointing at the filtered list when navigating between reader pages.
  */
 (() => {
     'use strict';
@@ -17,6 +19,7 @@
     const KEEP_QUERY_SELECTOR = '[data-flare-form="keep-query"]';
     const QUERY_FIELD_SELECTOR = '[data-flare-form="query-field"]';
     const BACK_BUTTON_SELECTOR = '[data-flare-back-button]';
+    const BACK_STORAGE_PREFIX = 'flare:back:';
 
     function stripOwnParams(searchParams, form) {
         const fieldNames = Array.from(form.querySelectorAll(QUERY_FIELD_SELECTOR)).map((field) => field.name);
@@ -71,7 +74,18 @@
         }
     }
 
-    function getQualifyingReferrer(anchor) {
+    // strip a single trailing slash so "/list/" matches "/list"
+    function normalizePathname(pathname) {
+        return pathname.length > 1 && pathname.endsWith('/')
+            ? pathname.slice(0, -1)
+            : pathname;
+    }
+
+    function matchesPathname(url, other) {
+        return normalizePathname(url.pathname) === normalizePathname(other.pathname);
+    }
+
+    function getReferrerUrl() {
         if (!document.referrer) {
             return null;
         }
@@ -92,38 +106,101 @@
             return null;
         }
 
-        if (anchor.getAttribute('data-flare-back-button') === 'any-referrer') {
-            return referrer;
-        }
+        return referrer;
+    }
 
-        // strict mode: the referrer path must match the configured list view page's path,
-        // which is the path of the server-rendered fallback href
-        const fallbackHref = anchor.getAttribute('href');
-        if (!fallbackHref) {
+    function sessionStorageSet(key, href) {
+        try {
+            window.sessionStorage.setItem(key, href);
+        } catch {
+            // sessionStorage unavailable (e.g., blocked by browser settings)
+        }
+    }
+
+    function sessionStorageGet(key) {
+        try {
+            return window.sessionStorage.getItem(key);
+        } catch {
+            return null;
+        }
+    }
+
+    function readStoredBackUrl(key, fallback) {
+        const stored = sessionStorageGet(key);
+        if (!stored) {
             return null;
         }
 
-        const fallback = new URL(fallbackHref, window.location.href);
+        let url;
+        try {
+            url = new URL(stored);
+        } catch {
+            return null;
+        }
 
-        // strip a single trailing slash so "/list/" matches "/list"
-        const normalizePathname = (pathname) => pathname.length > 1 && pathname.endsWith('/')
-            ? pathname.slice(0, -1)
-            : pathname;
+        if (url.origin !== window.location.origin
+            || url.href === window.location.href
+            || !matchesPathname(url, fallback)
+        ) {
+            return null;
+        }
 
-        return normalizePathname(referrer.pathname) === normalizePathname(fallback.pathname) ? referrer : null;
+        return url;
+    }
+
+    function upgradeBackButton(anchor, href) {
+        anchor.href = href;
+        anchor.hidden = false;
+
+        // drop the template's "no URL available" styling, if any
+        const noUrlClass = anchor.getAttribute('data-flare-back-button-no-url-class');
+        if (noUrlClass) {
+            anchor.classList.remove(...noUrlClass.split(/\s+/).filter(Boolean));
+        }
+    }
+
+    function initBackButton(anchor, referrer) {
+        // the server-rendered fallback href is the configured list view page's URL
+        let fallback = null;
+        const fallbackHref = anchor.getAttribute('href');
+        if (fallbackHref) {
+            try {
+                fallback = new URL(fallbackHref, window.location.href);
+            } catch {
+                // keep null
+            }
+        }
+
+        const storageKey = fallback ? (BACK_STORAGE_PREFIX + normalizePathname(fallback.pathname)) : null;
+
+        if (fallback && referrer && matchesPathname(referrer, fallback)) {
+            // arrived from the configured list view page: link back to it with its
+            // query parameters intact and remember it for reader-to-reader navigation
+            sessionStorageSet(storageKey, referrer.href);
+            upgradeBackButton(anchor, referrer.href);
+            return;
+        }
+
+        if (referrer && anchor.getAttribute('data-flare-back-button') === 'any-referrer') {
+            upgradeBackButton(anchor, referrer.href);
+            return;
+        }
+
+        // no qualifying referrer (e.g. navigated from one reader page to another):
+        // restore the list view URL remembered for this list page, if any
+        const stored = storageKey ? readStoredBackUrl(storageKey, fallback) : null;
+        if (stored) {
+            upgradeBackButton(anchor, stored.href);
+            // return;
+        }
+
+        // keep the server-rendered fallback href; anchors without href stay hidden
     }
 
     function initBackButtons() {
-        for (const anchor of document.querySelectorAll(BACK_BUTTON_SELECTOR)) {
-            const referrer = getQualifyingReferrer(anchor);
-            if (!referrer) {
-                // keep the server-rendered fallback href; anchors without href stay hidden
-                continue;
-            }
-
-            anchor.href = referrer.href;
-            anchor.hidden = false;
-        }
+        const referrer = getReferrerUrl();
+        document.querySelectorAll(BACK_BUTTON_SELECTOR)
+            .forEach((anchor) => initBackButton(anchor, referrer))
     }
 
     function onDocumentReady(callback) {

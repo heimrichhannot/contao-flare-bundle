@@ -15,7 +15,6 @@ use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\DcaSelectFilterType;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
-use Symfony\Component\Form\ChoiceList\Loader\CallbackChoiceLoader;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -88,7 +87,7 @@ class DcaSelectFieldElement extends AbstractFilterFilterElement
                 $choicesBuilder->add((string) $value, (string) $label);
             }
 
-            $formOptions['choice_loader'] = new CallbackChoiceLoader(static fn (): array => $choicesBuilder->buildChoices());
+            $formOptions['choice_loader'] = $choicesBuilder->buildCallbackChoiceLoader();
             $formOptions['choice_label'] = $choicesBuilder->buildChoiceLabelCallback();
             $formOptions['choice_value'] = $choicesBuilder->buildChoiceValueCallback();
 
@@ -240,6 +239,7 @@ class DcaSelectFieldElement extends AbstractFilterFilterElement
                 ->merge(['reference' => $optionsField['reference'] ?? []])
                 ->options(fn (): array => $this->tryGetOptionsFromField($table, $optionsField) ?? []);
         }
+        /** @mago-expect lint:no-else-clause This else clause is fine. */
         else
         {
             $preselect->options([]);

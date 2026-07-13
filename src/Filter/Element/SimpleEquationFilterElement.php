@@ -70,7 +70,7 @@ class SimpleEquationFilterElement extends AbstractFilterFilterElement
             : '{flare_simple_equation_legend},equationLeft,equationOperator,equationRight');
 
         $dca->field('equationLeft')
-            ->options(fn (): array => DcaHelper::getFieldOptions($context->getTargetTable()));
+            ->options(static fn (): array => DcaHelper::getFieldOptions($context->getTargetTable()));
     }
 
     /**

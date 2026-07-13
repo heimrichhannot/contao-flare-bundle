@@ -1,0 +1,24 @@
+<?php
+
+declare(strict_types=1);
+
+namespace HeimrichHannot\FlareBundle\EventListener\NamedDispatch;
+
+use HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+
+readonly class FilterFormListener
+{
+    public function __construct(
+        private EventDispatcherInterface $eventDispatcher,
+    ) {}
+
+    #[AsEventListener(priority: -200)]
+    public function onFilterFormBuildEvent(FilterFormBuildEvent $event): void
+    {
+        $eventName = "flare.form.{$event->formName}.build";
+
+        $this->eventDispatcher->dispatch(event: $event, eventName: $eventName);
+    }
+}

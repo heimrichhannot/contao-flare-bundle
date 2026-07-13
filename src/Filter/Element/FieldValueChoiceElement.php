@@ -17,7 +17,6 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\FieldValueChoiceFilterType;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
-use Symfony\Component\Form\ChoiceList\Loader\CallbackChoiceLoader;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -73,7 +72,7 @@ class FieldValueChoiceElement extends AbstractFilterFilterElement
             'multiple' => $config['multiple'],
             'expanded' => $config['expanded'],
             'required' => false,
-            'choice_loader' => new CallbackChoiceLoader(static fn (): array => $choicesBuilder->buildChoices()),
+            'choice_loader' => $choicesBuilder->buildCallbackChoiceLoader(),
             'choice_label' => $choicesBuilder->buildChoiceLabelCallback(),
             'choice_value' => $choicesBuilder->buildChoiceValueCallback(),
             'data' => $this->buildPreselectData($choicesBuilder, $config),

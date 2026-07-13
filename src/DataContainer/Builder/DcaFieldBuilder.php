@@ -94,6 +94,7 @@ final class DcaFieldBuilder implements DcaFieldBuilderInterface
             $definition['options'] = $this->options;
             unset($definition['options_callback']);
         }
+        /** @mago-expect lint:no-else-clause This else clause is fine. */
         elseif (\is_callable($this->options))
         {
             $options = $this->options;

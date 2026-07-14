@@ -7,6 +7,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Element;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicContract;
 use HeimrichHannot\FlareBundle\Contract\IsSupportedContract;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
@@ -20,7 +21,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 abstract class AbstractFilterElement implements
-    FilterElementInterface, OptionsContract, TransformerContract, IsSupportedContract, DcaContract
+    FilterElementInterface, IntrinsicContract, DcaContract, IsSupportedContract, OptionsContract, TransformerContract
 {
     abstract public function configureOptions(OptionsResolver $resolver): void;
 
@@ -47,5 +48,10 @@ abstract class AbstractFilterElement implements
     public function isSupported(): bool
     {
         return true;
+    }
+
+    public function isOnlyIntrinsic(): bool
+    {
+        return false;
     }
 }

@@ -21,7 +21,7 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-#[AsFilterElement(type: self::TYPE, intrinsicOnly: true)]
+#[AsFilterElement(type: self::TYPE)]
 class BelongsToRelationFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_relation_belongsTo';
@@ -29,6 +29,11 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
     public function __construct(
         private readonly TranslatorInterface $trans,
     ) {}
+
+    public function isOnlyIntrinsic(): bool
+    {
+        return true;
+    }
 
     public function configureOptions(OptionsResolver $resolver): void
     {

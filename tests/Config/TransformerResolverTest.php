@@ -13,7 +13,7 @@ final class TransformerResolverTest extends TestCase
     public function testResolvesRegisteredSourceClass(): void
     {
         $transformers = new TransformerResolver();
-        $transformer = static function (object $source, ConfigBuilder $config): void {};
+        $transformer = static function (ConfigBuilder $config, object $source): void {};
 
         $result = $transformers->for(SourceA::class, $transformer);
 
@@ -24,7 +24,7 @@ final class TransformerResolverTest extends TestCase
     public function testResolvesSubclassSources(): void
     {
         $transformers = new TransformerResolver();
-        $transformer = static function (object $source, ConfigBuilder $config): void {};
+        $transformer = static function (ConfigBuilder $config, object $source): void {};
 
         $transformers->for(SourceA::class, $transformer);
 
@@ -34,8 +34,8 @@ final class TransformerResolverTest extends TestCase
     public function testReRegistrationOverrides(): void
     {
         $transformers = new TransformerResolver();
-        $first = static function (object $source, ConfigBuilder $config): void {};
-        $second = static function (object $source, ConfigBuilder $config): void {};
+        $first = static function (ConfigBuilder $config, object $source): void {};
+        $second = static function (ConfigBuilder $config, object $source): void {};
 
         $transformers->for(SourceA::class, $first);
         $transformers->for(SourceA::class, $second);
@@ -46,7 +46,7 @@ final class TransformerResolverTest extends TestCase
     public function testReturnsNullWithoutMatch(): void
     {
         $transformers = new TransformerResolver();
-        $transformers->for(SourceA::class, static function (object $source, ConfigBuilder $config): void {});
+        $transformers->for(SourceA::class, static function (ConfigBuilder $config, object $source): void {});
 
         self::assertNull($transformers->resolve(new SourceB()));
     }
@@ -54,8 +54,8 @@ final class TransformerResolverTest extends TestCase
     public function testExactClassMatchWinsOverEarlierBaseClassRegistration(): void
     {
         $transformers = new TransformerResolver();
-        $base = static function (object $source, ConfigBuilder $config): void {};
-        $specific = static function (object $source, ConfigBuilder $config): void {};
+        $base = static function (ConfigBuilder $config, object $source): void {};
+        $specific = static function (ConfigBuilder $config, object $source): void {};
 
         $transformers->for(SourceA::class, $base);
         $transformers->for(SourceASub::class, $specific);

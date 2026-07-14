@@ -95,7 +95,7 @@ final class ArchiveFilterElementTest extends TestCase
         $transformer = $transformers->resolve($model = new FilterModelStub($row));
         self::assertNotNull($transformer);
 
-        $transformer($model, $config = new ConfigBuilder());
+        $transformer($config = new ConfigBuilder(), $model);
 
         return $config->all();
     }

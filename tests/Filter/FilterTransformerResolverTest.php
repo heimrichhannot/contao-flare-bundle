@@ -62,7 +62,7 @@ final class FilterTransformerResolverTest extends TestCase
             static function (FilterTransformerEvent $event): void {
                 $event->transformers->for(
                     \stdClass::class,
-                    static fn (object $source, ConfigBuilder $config) => $config->set('external', true),
+                    static fn (ConfigBuilder $config, object $source) => $config->set('external', true),
                 );
             },
         );
@@ -86,7 +86,7 @@ final class TransformingElement implements FilterElementInterface, TransformerCo
 {
     public function configureTransformers(TransformerResolver $resolver): void
     {
-        $resolver->for(RowSource::class, static function (RowSource $source, ConfigBuilder $config): void {
+        $resolver->for(RowSource::class, static function (ConfigBuilder $config, RowSource $source): void {
             foreach ($source->row as $key => $value) {
                 $config->set($key, $value);
             }

@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Registry;
+namespace HeimrichHannot\FlareBundle\Filter\Resolver;
 
-use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use Psr\Log\LoggerInterface;
 
 /**

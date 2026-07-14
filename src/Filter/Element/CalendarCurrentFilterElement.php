@@ -95,7 +95,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
         $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validateRange(...));
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
         $config = $context->config;
 
@@ -103,7 +103,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
             return;
         }
 
-        $value = $this->processRuntimeValue($data) ?? [];
+        $value = $this->processRuntimeValue($values) ?? [];
         $from = $value['from'] ?? null;
         $to = $value['to'] ?? null;
 

@@ -42,7 +42,7 @@ abstract class AbstractFilterElement implements
 
     public function buildForm(FormBuilderInterface $builder, FilterContext $context): void {}
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void {}
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void {}
 
     public function isSupported(): bool
     {

@@ -58,7 +58,7 @@ class BooleanFilterElement extends AbstractFilterElement
         ]);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
         $config = $context->config;
 
@@ -68,7 +68,7 @@ class BooleanFilterElement extends AbstractFilterElement
 
         $value = $config['intrinsic']
             ? $config['preselect']
-            : $this->resolveRuntimeValue($data[FilterContext::FIELD_VALUE] ?? null, $config);
+            : $this->resolveRuntimeValue($values[FilterContext::FIELD_VALUE] ?? null, $config);
 
         if ($value === null) {
             return;

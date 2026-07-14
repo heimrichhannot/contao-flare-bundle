@@ -113,7 +113,7 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
         $builder->add(FilterContext::FIELD_VALUE, ChoiceType::class, $formOptions);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
         $config = $context->config;
 
@@ -122,7 +122,7 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
         /** @var ?array $tagIds */
         $tagIds = $config['intrinsic']
             ? $preselect
-            : $this->processRuntimeValue($data[FilterContext::FIELD_VALUE] ?? null);
+            : $this->processRuntimeValue($values[FilterContext::FIELD_VALUE] ?? null);
 
         if (!$tagIds) {
             return;

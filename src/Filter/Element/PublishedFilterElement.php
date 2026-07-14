@@ -42,7 +42,7 @@ class PublishedFilterElement extends AbstractFilterElement
             ->set('invert', (bool) $model->invertPublished);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
         $config = $context->config;
 

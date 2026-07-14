@@ -35,7 +35,7 @@ class BooleanFilterElement extends AbstractFilterElement
         $resolver->define('label')->default(null)->allowedTypes('string', 'null');
     }
 
-    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
         $config
             ->set('intrinsic', (bool) $model->intrinsic)

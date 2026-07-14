@@ -28,7 +28,7 @@ class PublishedFilterElement extends AbstractFilterElement
         $resolver->define('invert')->default(false)->allowedTypes('bool');
     }
 
-    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
         $usePublished = (bool) ($model->usePublished ?? true);
         $useStart = (bool) ($model->useStart ?? true);

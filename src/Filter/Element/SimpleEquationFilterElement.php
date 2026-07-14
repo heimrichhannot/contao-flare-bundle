@@ -30,7 +30,7 @@ class SimpleEquationFilterElement extends AbstractFilterElement
         $resolver->define('right')->default(null);
     }
 
-    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
         $config
             ->set('intrinsic', (bool) $model->intrinsic)

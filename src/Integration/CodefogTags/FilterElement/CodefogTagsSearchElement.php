@@ -32,7 +32,7 @@ class CodefogTagsSearchElement extends AbstractFilterElement
         // TODO: Implement configureOptions() method.
     }
 
-    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
         // TODO: Implement transformFilterModel() method.
     }

@@ -45,7 +45,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
         $resolver->define('preselect')->default(null)->allowedTypes('array', 'null');
     }
 
-    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
         $multiple = (bool) $model->isMultiple;
 

@@ -42,7 +42,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
         $resolver->define('preselect')->default(null);
     }
 
-    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
         $isMultiple = (bool) $model->isMultiple;
         $preselect = $model->preselect ?: null;

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Lists\Resolver;
 
-use HeimrichHannot\FlareBundle\Contract\OptionsInterface;
+use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Lists\BaseListOptions;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
  * Resolves a list's canonical config through the framework's base schema plus the list
- * type's declared schema ({@see OptionsInterface}). The combined resolver is memoized
+ * type's declared schema ({@see OptionsContract}). The combined resolver is memoized
  * per type class.
  */
 class ListOptionsResolver
@@ -37,7 +37,7 @@ class ListOptionsResolver
             $resolver = new OptionsResolver();
             BaseListOptions::configureOptions($resolver);
 
-            if ($typeService instanceof OptionsInterface) {
+            if ($typeService instanceof OptionsContract) {
                 $typeService->configureOptions($resolver);
             }
 

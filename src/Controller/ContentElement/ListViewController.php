@@ -47,7 +47,7 @@ final class ListViewController extends AbstractContentElementController
         private readonly EventDispatcherInterface  $eventDispatcher,
         private readonly InteractiveContextFactory $interactiveConfigFactory,
         private readonly KernelInterface           $kernel,
-        private readonly ListBuilderFactory  $listFactory,
+        private readonly ListBuilderFactory        $listFactory,
         private readonly LoggerInterface           $logger,
         private readonly ScopeMatcher              $scopeMatcher,
         private readonly SymfonyResponseTagger     $responseTagger,

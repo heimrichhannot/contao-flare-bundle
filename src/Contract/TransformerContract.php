@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Config\TransformerBuilder;
  * Implemented by filter elements and list types that own the translation from stored
  * sources (e.g. a DCA model) into their canonical config values.
  *
- * Like {@see OptionsInterface::configureOptions()}, this is declarative, memoizable setup —
+ * Like {@see OptionsContract::configureOptions()}, this is declarative, memoizable setup —
  * the configured transformers are cached per class and run by the framework whenever a
  * source needs translating.
  */

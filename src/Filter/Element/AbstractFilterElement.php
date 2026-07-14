@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerBuilder;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\Contract\IsSupportedContract;
-use HeimrichHannot\FlareBundle\Contract\OptionsInterface;
+use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
@@ -19,7 +19,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 abstract class AbstractFilterElement implements
-    FilterElementInterface, OptionsInterface, TransformerContract, IsSupportedContract, DcaContract
+    FilterElementInterface, OptionsContract, TransformerContract, IsSupportedContract, DcaContract
 {
     abstract public function configureOptions(OptionsResolver $resolver): void;
 

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\DateRangeFilterType;
@@ -34,12 +36,11 @@ class DateRangeFilterElement extends AbstractFilterElement
         $resolver->define('field')->default(null)->allowedTypes('string', 'null');
     }
 
-    public function configFromRow(array $row): array
+    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
     {
-        return [
-            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
-            'field' => ($row['fieldGeneric'] ?? null) ?: null,
-        ];
+        $config
+            ->set('intrinsic', (bool) $model->intrinsic)
+            ->set('field', $model->fieldGeneric ?: null);
     }
 
     public function buildForm(FormBuilderInterface $builder, FilterContext $context): void

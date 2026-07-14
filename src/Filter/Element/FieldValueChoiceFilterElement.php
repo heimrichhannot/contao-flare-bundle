@@ -8,6 +8,7 @@ use Contao\Controller;
 use Contao\DataContainer;
 use Contao\StringUtil;
 use Doctrine\DBAL\Connection;
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -17,6 +18,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\FieldValueChoiceFilterType;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -43,17 +45,16 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
         $resolver->define('preselect')->default(null)->allowedTypes('array', 'null');
     }
 
-    public function configFromRow(array $row): array
+    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
     {
-        $multiple = (bool) ($row['isMultiple'] ?? false);
+        $multiple = (bool) $model->isMultiple;
 
-        return [
-            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
-            'field' => ($row['fieldGeneric'] ?? null) ?: null,
-            'multiple' => $multiple,
-            'expanded' => (bool) ($row['isExpanded'] ?? false),
-            'preselect' => $this->normalizePreselect($row['preselect'] ?? null, $multiple),
-        ];
+        $config
+            ->set('intrinsic', (bool) $model->intrinsic)
+            ->set('field', $model->fieldGeneric ?: null)
+            ->set('multiple', $multiple)
+            ->set('expanded', (bool) $model->isExpanded)
+            ->set('preselect', $this->normalizePreselect($model->preselect, $multiple));
     }
 
     public function buildForm(FormBuilderInterface $builder, FilterContext $context): void

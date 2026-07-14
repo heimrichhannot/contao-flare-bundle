@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\SimpleEquationFilterType;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -30,16 +30,13 @@ class SimpleEquationFilterElement extends AbstractFilterElement
         $resolver->define('right')->default(null);
     }
 
-    public function configFromRow(array $row): array
+    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
     {
-        $operator = $row['equationOperator'] ?? null;
-
-        return [
-            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
-            'left' => ($row['equationLeft'] ?? null) ?: null,
-            'operator' => $operator ? SqlEquationOperator::match($operator) : null,
-            'right' => $row['equationRight'] ?? null,
-        ];
+        $config
+            ->set('intrinsic', (bool) $model->intrinsic)
+            ->set('left', $model->equationLeft ?: null)
+            ->set('operator', $model->equationOperator ? SqlEquationOperator::match($model->equationOperator) : null)
+            ->set('right', $model->equationRight);
     }
 
     /**
@@ -73,26 +70,4 @@ class SimpleEquationFilterElement extends AbstractFilterElement
             ->options(static fn (): array => DcaHelper::getFieldOptions($context->getTargetTable()));
     }
 
-    /**
-     * @throws FlareException
-     */
-    public static function define(
-        ?string              $equationLeft = null,
-        ?SqlEquationOperator $equationOperator = null,
-        mixed                $equationRight = null,
-    ): Filter {
-        if (!$equationLeft || !$equationOperator || (!$equationOperator->isUnary() && $equationRight === null)) {
-            throw new FlareException('Invalid filter definition for SimpleEquationElement.');
-        }
-
-        return new Filter(
-            element: static::TYPE,
-            config: [
-                'intrinsic' => true,
-                'left' => $equationLeft,
-                'operator' => $equationOperator,
-                'right' => $equationRight,
-            ],
-        );
-    }
 }

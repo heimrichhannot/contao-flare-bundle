@@ -10,9 +10,9 @@ use HeimrichHannot\FlareBundle\Engine\Context\Interface\FormContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormBuiltEvent;
 use HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterElementResolver;
-use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
@@ -24,7 +24,7 @@ readonly class FilterFormFactory
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
-        private FilterOptionsResolver    $filterConfigResolver,
+        private FilterContextFactory     $filterContextFactory,
         private FilterElementResolver    $filterElementResolver,
         private FormFactoryInterface     $formFactory,
     ) {}
@@ -67,13 +67,7 @@ readonly class FilterFormFactory
                 continue;
             }
 
-            $filterContext = new FilterContext(
-                list: $list,
-                filter: $filter,
-                config: $this->filterConfigResolver->resolve($filter, $element),
-                engineContext: $context,
-                key: $key,
-            );
+            $filterContext = $this->filterContextFactory->create($list, $filter, $element, $context, $key);
 
             $child = $builder->create($filter->alias, FormType::class, [
                 'inherit_data' => false,

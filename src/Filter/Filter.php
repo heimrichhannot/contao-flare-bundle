@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
-use HeimrichHannot\FlareBundle\Filter\Element\CallbackFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 
 /**
@@ -12,8 +11,8 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
  *
  * Pairs a filter element (registered type string or inline instance) with its canonical,
  * element-defined configuration. Contains no DCA/storage specifics — translating a stored
- * row into config is the element's responsibility
- * ({@see \HeimrichHannot\FlareBundle\Filter\Element\FilterElementOptionsInterface}).
+ * source into config is the element's transformer responsibility
+ * ({@see \HeimrichHannot\FlareBundle\Contract\TransformerContract}).
  */
 final readonly class Filter
 {
@@ -116,43 +115,6 @@ final readonly class Filter
             targetAlias: $this->targetAlias,
             targetingForced: $this->targetingForced,
             source: $source
-        );
-    }
-
-    /**
-     * Creates an inline filter from closures, without a registered element service.
-     *
-     * @param callable(FilterBuilderInterface, FilterContext, array<string, mixed>): void $buildFilter
-     * @param (callable(\Symfony\Component\Form\FormBuilderInterface, FilterContext): void)|null $buildForm
-     */
-    public static function fromCallback(
-        callable  $buildFilter,
-        ?callable $buildForm = null,
-        ?string   $alias = null,
-        ?string   $targetAlias = null,
-    ): self {
-        return new self(
-            element: new CallbackFilterElement($buildFilter(...), $buildForm ? $buildForm(...) : null),
-            alias: $alias,
-            targetAlias: $targetAlias,
-            targetingForced: !\is_null($targetAlias),
-        );
-    }
-
-    /**
-     * Creates an inline filter that applies a single filter type with the given options —
-     * no registered element, no DB row.
-     *
-     * @param class-string<Type\FilterTypeInterface> $filterTypeClass
-     * @param array<string, mixed> $options
-     */
-    public static function fromType(string $filterTypeClass, array $options = [], ?string $targetAlias = null): self
-    {
-        return self::fromCallback(
-            static function (FilterBuilderInterface $builder) use ($filterTypeClass, $options): void {
-                $builder->add($filterTypeClass, $options);
-            },
-            targetAlias: $targetAlias,
         );
     }
 

@@ -12,9 +12,9 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilder;
 use HeimrichHannot\FlareBundle\Filter\FilterCall;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterElementResolver;
-use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
@@ -28,7 +28,7 @@ readonly class FilterExecutor
 {
     public function __construct(
         private EventDispatcherInterface  $eventDispatcher,
-        private FilterOptionsResolver     $filterConfigResolver,
+        private FilterContextFactory      $filterContextFactory,
         private FilterElementRegistry     $filterElementRegistry,
         private FilterElementResolver     $filterElementResolver,
         private FilterQueryBuilderFactory $filterQueryBuilderFactory,
@@ -54,13 +54,7 @@ readonly class FilterExecutor
                 continue;
             }
 
-            $context = new FilterContext(
-                list: $list,
-                filter: $filter,
-                config: $this->filterConfigResolver->resolve($filter, $element),
-                engineContext: $options->context,
-                key: $key,
-            );
+            $context = $this->filterContextFactory->create($list, $filter, $element, $options->context, $key);
 
             $data = (array) ($options->filterValues[$key] ?? $filter->data ?? []);
 

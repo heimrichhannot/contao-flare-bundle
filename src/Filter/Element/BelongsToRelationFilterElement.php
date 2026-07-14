@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Contao\Message;
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -16,6 +17,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\BelongsToRelationFilterType;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -37,18 +39,17 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
         $resolver->define('group_whitelist_parents')->default([])->allowedTypes('array');
     }
 
-    public function configFromRow(array $row): array
+    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
     {
-        $whitelistParents = StringUtil::deserialize($row['whitelistParents'] ?? null);
-        $groupWhitelistParents = StringUtil::deserialize($row['groupWhitelistParents'] ?? null);
+        $whitelistParents = StringUtil::deserialize($model->whitelistParents);
+        $groupWhitelistParents = StringUtil::deserialize($model->groupWhitelistParents);
 
-        return [
-            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
-            'field_pid' => ($row['fieldPid'] ?? null) ?: null,
-            'which_ptable' => ($row['whichPtable'] ?? null) ?: null,
-            'whitelist_parents' => $whitelistParents ? (array) $whitelistParents : [],
-            'group_whitelist_parents' => \is_array($groupWhitelistParents) ? $groupWhitelistParents : [],
-        ];
+        $config
+            ->set('intrinsic', (bool) $model->intrinsic)
+            ->set('field_pid', $model->fieldPid ?: null)
+            ->set('which_ptable', $model->whichPtable ?: null)
+            ->set('whitelist_parents', $whitelistParents ? (array) $whitelistParents : [])
+            ->set('group_whitelist_parents', \is_array($groupWhitelistParents) ? $groupWhitelistParents : []);
     }
 
     /**

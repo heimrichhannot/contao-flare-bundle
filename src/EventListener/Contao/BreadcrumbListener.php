@@ -18,7 +18,7 @@ use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
 use HeimrichHannot\FlareBundle\Exception\ViewException;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
-use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
+use HeimrichHannot\FlareBundle\Lists\Factory\ListBuilderFactory;
 use HeimrichHannot\FlareBundle\Util\Env;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -28,7 +28,7 @@ readonly class BreadcrumbListener
     public function __construct(
         private Connection               $connection,
         private EventDispatcherInterface $eventDispatcher,
-        private ListSpecificationFactory $listSpecificationFactory,
+        private ListBuilderFactory $listFactory,
         private ProjectorRegistry        $projectorRegistry,
         private ValidationContextFactory $validationContextFactory,
     ) {}
@@ -93,11 +93,11 @@ readonly class BreadcrumbListener
                 return $items;
             }
 
-            $listSpec = $this->listSpecificationFactory->create(dataSource: $listModel);
+            $listSpec = $this->listFactory->createFromListModel($listModel)->build();
 
             $validationContext = $this->validationContextFactory->createFromContent(
                 contentModel: $contentModel,
-                listModel: $listModel
+                list: $listSpec,
             );
 
             $validationProjector = $this->projectorRegistry->getProjectorFor($listSpec, $validationContext);
@@ -115,7 +115,7 @@ readonly class BreadcrumbListener
             $pageMetaEvent = $this->eventDispatcher->dispatch(new ReaderPageMetaEvent(
                 contentModel: $contentModel,
                 displayModel: $autoItemModel,
-                listSpecification: $listSpec,
+                list: $listSpec,
             ));
 
             $title = $pageMetaEvent->getPageMeta()->getTitle();

@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Registry\EngineModRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Lists\ListSpec;
 
 final readonly class EngineFactory
 {
@@ -19,14 +19,14 @@ final readonly class EngineFactory
 
     public function createEngine(
         ContextInterface $context,
-        ListSpecification $listSpecification,
+        ListSpec $list,
         array $mods = [],
     ): Engine {
         return new Engine(
             engineModRegistry: $this->engineModRegistry,
             projectorRegistry: $this->projectorRegistry,
             context: $context,
-            list: $listSpecification,
+            list: $list,
             mods: $mods,
         );
     }

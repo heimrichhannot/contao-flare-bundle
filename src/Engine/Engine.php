@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Registry\EngineModRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Lists\ListSpec;
 
 final class Engine
 {
@@ -17,7 +17,7 @@ final class Engine
         private readonly EngineModRegistry $engineModRegistry,
         private readonly ProjectorRegistry $projectorRegistry,
         private ContextInterface           $context,
-        private ListSpecification          $list,
+        private ListSpec                   $list,
         private array                      $mods = [],
     ) {}
 
@@ -26,9 +26,16 @@ final class Engine
         return $this->context;
     }
 
-    public function getList(): ListSpecification
+    public function getList(): ListSpec
     {
         return $this->list;
+    }
+
+    public function setList(ListSpec $list): self
+    {
+        $this->list = $list;
+
+        return $this;
     }
 
     /**
@@ -94,13 +101,13 @@ final class Engine
         return $this;
     }
 
-    public function with(?ContextInterface $context = null, ?ListSpecification $list = null, ?array $mods = null): self
+    public function with(?ContextInterface $context = null, ?ListSpec $list = null, ?array $mods = null): self
     {
         return new self(
             engineModRegistry: $this->engineModRegistry,
             projectorRegistry: $this->projectorRegistry,
             context: $context ?? clone $this->context,
-            list: $list ?? clone $this->list,
+            list: $list ?? $this->list,
             mods: $mods ?? $this->mods,
         );
     }
@@ -113,6 +120,5 @@ final class Engine
     public function __clone(): void
     {
         $this->context = clone $this->context;
-        $this->list = clone $this->list;
     }
 }

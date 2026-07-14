@@ -7,11 +7,13 @@ namespace HeimrichHannot\FlareBundle\Integration\Terminal42Languages\ListType;
 use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\CoreBundle\String\SimpleTokenParser;
 use Contao\DataContainer;
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\ListType\AbstractListType;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 
-#[AsListType(type: self::TYPE, palette: self::DEFAULT_PALETTE)]
+#[AsListType(type: self::TYPE)]
 class DcMultilingualListType extends AbstractListType implements DataContainerContract
 {
     public const TYPE = 'flare_generic_dc_multilingual';
@@ -38,5 +40,10 @@ class DcMultilingualListType extends AbstractListType implements DataContainerCo
     public function getDataContainerName(array $row, DataContainer $dc): string
     {
         return $row['dc'] ?? '';
+    }
+
+    protected function transformListModel(ListModel $model, ConfigBuilder $config): void
+    {
+        $config->set('genericPageMeta', true);
     }
 }

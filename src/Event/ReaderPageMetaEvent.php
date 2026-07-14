@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Event;
 use Contao\ContentModel;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Lists\ListSpec;
 
 class ReaderPageMetaEvent
 {
@@ -16,7 +16,7 @@ class ReaderPageMetaEvent
     public function __construct(
         private readonly ContentModel      $contentModel,
         private readonly Model             $displayModel,
-        private readonly ListSpecification $listSpecification,
+        private readonly ListSpec $list,
         ?ReaderPageMeta                    $pageMeta = null,
     ) {
         $this->pageMeta = $pageMeta ?? new ReaderPageMeta();
@@ -32,9 +32,9 @@ class ReaderPageMetaEvent
         return $this->displayModel;
     }
 
-    public function getListSpecification(): ListSpecification
+    public function getList(): ListSpec
     {
-        return $this->listSpecification;
+        return $this->list;
     }
 
     public function getPageMeta(): ReaderPageMeta

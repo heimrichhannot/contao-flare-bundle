@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Contract;
 
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-interface OptionsInterface
+interface OptionsContract
 {
     public function configureOptions(OptionsResolver $resolver): void;
 }

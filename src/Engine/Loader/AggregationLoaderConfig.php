@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Lists\ListSpec;
 readonly class AggregationLoaderConfig
 {
     public function __construct(
-        public ListSpec  $list,
+        public ListSpec           $list,
         public AggregationContext $context,
         public array              $filterValues,
     ) {}

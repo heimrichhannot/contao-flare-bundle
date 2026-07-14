@@ -95,10 +95,10 @@ readonly class ValidationLoader implements ValidationLoaderInterface
     /**
      * @throws \Exception
      */
-    private function executeQuery(ListSpec $spec, ValidationContext $context): ?array
+    private function executeQuery(ListSpec $list, ValidationContext $context): ?array
     {
         $qb = $this->listQueryDirector->createQueryBuilder(new ListQueryConfig(
-            list: $spec,
+            list: $list,
             context: $context,
             filterValues: $context->getFilterValues(),
         ));

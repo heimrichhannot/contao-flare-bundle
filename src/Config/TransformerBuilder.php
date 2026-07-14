@@ -30,13 +30,20 @@ final class TransformerBuilder
     }
 
     /**
-     * Returns the first registered transformer whose source class matches the given source,
-     * or null if none matches.
+     * Returns the transformer registered for the source's exact class, falling back to the
+     * first registration matching by inheritance (subclasses, interfaces); null if none matches.
+     * The exact-class fast path lets a specific registration win over an earlier base-class one.
+     *
+     * @param object $source The stored source object to be transformed.
      *
      * @return (callable(object, ConfigBuilder): void)|null
      */
     public function resolve(object $source): ?callable
     {
+        if ($transformer = $this->transformers[$source::class] ?? null) {
+            return $transformer;
+        }
+
         foreach ($this->transformers as $sourceClass => $transformer)
         {
             if ($source instanceof $sourceClass) {

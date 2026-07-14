@@ -17,11 +17,8 @@ final readonly class EngineFactory
         private ProjectorRegistry $projectorRegistry,
     ) {}
 
-    public function createEngine(
-        ContextInterface $context,
-        ListSpec $list,
-        array $mods = [],
-    ): Engine {
+    public function createEngine(ContextInterface $context, ListSpec $list, array $mods = []): Engine
+    {
         return new Engine(
             engineModRegistry: $this->engineModRegistry,
             projectorRegistry: $this->projectorRegistry,

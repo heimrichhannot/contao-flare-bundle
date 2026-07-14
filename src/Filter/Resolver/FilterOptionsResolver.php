@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Resolver;
 
-use HeimrichHannot\FlareBundle\Contract\OptionsInterface;
+use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
@@ -12,7 +12,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
  * Resolves a filter's canonical config through the element's declared schema.
- * Elements without an {@see OptionsInterface} receive their config verbatim (unvalidated).
+ * Elements without an {@see OptionsContract} receive their config verbatim (unvalidated).
  */
 class FilterOptionsResolver
 {
@@ -28,7 +28,7 @@ class FilterOptionsResolver
      */
     public function resolve(Filter $filter, FilterElementInterface $element): array
     {
-        if (!$element instanceof OptionsInterface) {
+        if (!$element instanceof OptionsContract) {
             return $filter->config;
         }
 

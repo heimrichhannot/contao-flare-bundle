@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\Resolver;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerBuilder;
+use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\FilterTransformerEvent;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
@@ -19,7 +20,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 class FilterTransformerResolver
 {
     /**
-     * @var array<class-string, TransformerBuilder>
+     * @var array<class-string, TransformerResolver>
      */
     private array $builders = [];
 
@@ -49,7 +50,7 @@ class FilterTransformerResolver
             return null;
         }
 
-        $transformer($source, $config = new ConfigBuilder());
+        $transformer($config = new ConfigBuilder(), $source);
 
         return $config->all();
     }

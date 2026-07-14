@@ -40,17 +40,19 @@ class NewsListType extends AbstractListType implements BuildListContract, DcaCon
 
     public function buildList(ListBuilder $builder): void
     {
-        if (!$builder->hasFilterOfType(PublishedFilterElement::TYPE)) {
-            $builder->addFilter(new Filter(
-                element: PublishedFilterElement::TYPE,
-                config: [
-                    'intrinsic' => true,
-                    'published_field' => 'published',
-                    'start_field' => 'start',
-                    'stop_field' => 'stop',
-                    'invert' => false,
-                ],
-            ));
+        if ($builder->hasFilterOfType(PublishedFilterElement::TYPE)) {
+            return;
         }
+
+        $builder->addFilter(new Filter(
+            element: PublishedFilterElement::TYPE,
+            config: [
+                'intrinsic' => true,
+                'published_field' => 'published',
+                'start_field' => 'start',
+                'stop_field' => 'stop',
+                'invert' => false,
+            ],
+        ));
     }
 }

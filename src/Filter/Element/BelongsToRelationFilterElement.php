@@ -39,7 +39,7 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
         $resolver->define('group_whitelist_parents')->default([])->allowedTypes('array');
     }
 
-    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
         $whitelistParents = StringUtil::deserialize($model->whitelistParents);
         $groupWhitelistParents = StringUtil::deserialize($model->groupWhitelistParents);

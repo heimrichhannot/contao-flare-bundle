@@ -28,7 +28,7 @@ readonly class RegisterTagsTablesListener
 
     public function __invoke(QueryBaseInitializedEvent $event): void
     {
-        $table = $event->listSpecification->dc;
+        $table = $event->list->dc;
         if (!$columns = $this->managersRegistry->fieldsOf($table)) {
             return;
         }

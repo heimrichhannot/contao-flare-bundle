@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Lists\ListSpec;
 
 /**
  * Builds the invocation context handed to filter elements, resolving the filter's
@@ -26,7 +26,7 @@ readonly class FilterContextFactory
      * @throws FilterException If the filter's config violates the element's schema
      */
     public function create(
-        ListSpecification      $list,
+        ListSpec      $list,
         Filter                 $filter,
         FilterElementInterface $element,
         ContextInterface       $engineContext,

@@ -21,7 +21,7 @@ use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
+use HeimrichHannot\FlareBundle\Lists\Factory\ListBuilderFactory;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -47,7 +47,7 @@ final class ListViewController extends AbstractContentElementController
         private readonly EventDispatcherInterface  $eventDispatcher,
         private readonly InteractiveContextFactory $interactiveConfigFactory,
         private readonly KernelInterface           $kernel,
-        private readonly ListSpecificationFactory  $listSpecificationFactory,
+        private readonly ListBuilderFactory  $listFactory,
         private readonly LoggerInterface           $logger,
         private readonly ScopeMatcher              $scopeMatcher,
         private readonly SymfonyResponseTagger     $responseTagger,
@@ -101,12 +101,12 @@ final class ListViewController extends AbstractContentElementController
 
         try
         {
+            $listSpec = $this->listFactory->createFromListModel($listModel)->build();
+
             $interactiveConfig = $this->interactiveConfigFactory->createFromContent(
                 contentModel: $contentModel,
-                listModel: $listModel,
+                list: $listSpec,
             );
-
-            $listSpec = $this->listSpecificationFactory->create(dataSource: $listModel);
 
             $engine = $this->engineFactory->createEngine($interactiveConfig, $listSpec);
         }

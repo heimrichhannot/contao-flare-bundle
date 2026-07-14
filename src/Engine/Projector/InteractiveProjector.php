@@ -20,7 +20,7 @@ use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Lists\ListSpec;
 use Symfony\Component\Form\FormInterface;
 
 /**
@@ -36,12 +36,12 @@ class InteractiveProjector extends AbstractProjector
         private readonly ReaderUrlGeneratorFactory $readerUrlGeneratorFactory,
     ) {}
 
-    public function supports(ListSpecification $list, ContextInterface $context): bool
+    public function supports(ListSpec $list, ContextInterface $context): bool
     {
         return $context instanceof InteractiveContext;
     }
 
-    public function project(ListSpecification $list, ContextInterface $context): InteractiveView
+    public function project(ListSpec $list, ContextInterface $context): InteractiveView
     {
         \assert($context instanceof InteractiveContext, '$config must be an instance of InteractiveConfig');
 
@@ -109,7 +109,7 @@ class InteractiveProjector extends AbstractProjector
     /**
      * @throws FlareException
      */
-    public function createForm(ListSpecification $list, InteractiveContext $context): FormInterface
+    public function createForm(ListSpec $list, InteractiveContext $context): FormInterface
     {
         $form = $this->filterFormFactory->create($list, $context);
         $form->handleRequest($this->getCurrentRequest());
@@ -123,11 +123,11 @@ class InteractiveProjector extends AbstractProjector
      *
      * @return array<string|int, array<string, mixed>>
      */
-    protected function collectFilterData(ListSpecification $list, FormInterface $form): array
+    protected function collectFilterData(ListSpec $list, FormInterface $form): array
     {
         $data = [];
 
-        foreach ($list->getFilters() as $key => $filter)
+        foreach ($list->filters as $key => $filter)
         {
             if (!$filter->alias || !$form->has($filter->alias)) {
                 continue;
@@ -143,7 +143,7 @@ class InteractiveProjector extends AbstractProjector
      * @throws FlareException
      */
     protected function createAggregationView(
-        ListSpecification  $spec,
+        ListSpec  $spec,
         InteractiveContext $interactiveConfig,
         array              $filterValues,
     ): AggregationView {

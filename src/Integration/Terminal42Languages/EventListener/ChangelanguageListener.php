@@ -54,9 +54,9 @@ class ChangelanguageListener
     #[AsEventListener]
     public function fetchAutoItem(FetchAutoItemEvent $event): void
     {
-        $list = $event->getListSpecification();
+        $list = $event->getList();
 
-        if ($list->type !== DcMultilingualListType::TYPE) {
+        if ($list->getTypeAlias() !== DcMultilingualListType::TYPE) {
             return;
         }
 

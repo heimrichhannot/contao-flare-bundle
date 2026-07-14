@@ -17,7 +17,7 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
+use HeimrichHannot\FlareBundle\Lists\Factory\ListBuilderFactory;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use HeimrichHannot\FlareBundle\Util\DcaFieldFilter;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
@@ -36,7 +36,7 @@ readonly class FieldsOptionsCallbacks
         private FilterContainer             $filterContainer,
         private FilterElementRegistry       $filterElementRegistry,
         private TranslatorInterface         $translator,
-        private ListSpecificationFactory    $listSpecificationFactory,
+        private ListBuilderFactory    $listFactory,
         private ListExecutionContextFactory $listExecutionContextFactory,
     ) {}
 
@@ -118,8 +118,8 @@ readonly class FieldsOptionsCallbacks
             return [];
         }
 
-        $listSpecification = $this->listSpecificationFactory->create($listModel);
-        $listExecutionContext = $this->listExecutionContextFactory->create($listSpecification);
+        $list = $this->listFactory->createFromListModel($listModel)->build();
+        $listExecutionContext = $this->listExecutionContextFactory->create($list);
 
         $table = $listExecutionContext->tableAliasRegistry
             ->getTable($filterModel->targetAlias ?: TableAliasRegistry::ALIAS_MAIN);
@@ -224,9 +224,9 @@ readonly class FieldsOptionsCallbacks
             return [];
         }
 
-        $listSpecification = $this->listSpecificationFactory->create($listModel);
+        $list = $this->listFactory->createFromListModel($listModel)->build();
 
-        $context = $this->listExecutionContextFactory->create($listSpecification);
+        $context = $this->listExecutionContextFactory->create($list);
         $tables = $context->tableAliasRegistry->getTables();
         $options = [];
 

@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Lists\ListSpec;
 
 readonly class ValidationLoader implements ValidationLoaderInterface
 {
@@ -33,9 +33,6 @@ readonly class ValidationLoader implements ValidationLoaderInterface
 
         try
         {
-            // IMPORTANT: clone the spec to not modify the original, i.e., when adding the id filter
-            $list = clone $this->config->list;
-
             $idDefinition = new Filter(
                 element: SimpleEquationFilterElement::TYPE,
                 config: [
@@ -46,7 +43,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
                 ],
             );
 
-            $list->addFilter($idDefinition);
+            $list = $this->config->list->withFilter($idDefinition);
 
             return $this->executeQuery($list, $this->config->context);
         }
@@ -71,9 +68,6 @@ readonly class ValidationLoader implements ValidationLoaderInterface
 
         try
         {
-            // IMPORTANT: clone the spec to not modify the original
-            $list = clone $this->config->list;
-
             $autoItemDefinition = new Filter(
                 element: SimpleEquationFilterElement::TYPE,
                 config: [
@@ -84,7 +78,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
                 ],
             );
 
-            $list->addFilter($autoItemDefinition);
+            $list = $this->config->list->withFilter($autoItemDefinition);
 
             return $this->executeQuery($list, $this->config->context);
         }
@@ -101,7 +95,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
     /**
      * @throws \Exception
      */
-    private function executeQuery(ListSpecification $spec, ValidationContext $context): ?array
+    private function executeQuery(ListSpec $spec, ValidationContext $context): ?array
     {
         $qb = $this->listQueryDirector->createQueryBuilder(new ListQueryConfig(
             list: $spec,

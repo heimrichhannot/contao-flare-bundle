@@ -22,19 +22,19 @@ readonly class GenericReaderPageMetaListener
 
     public function __invoke(ReaderPageMetaEvent $event): void
     {
-        $list = $event->getListSpecification();
+        $list = $event->getList();
         $contentModel = $event->getContentModel();
         $model = $event->getDisplayModel();
 
-        if (!$list->getProperty('eval_generic_page_meta')) {
+        if (!($list->config['genericPageMeta'] ?? false)) {
             return;
         }
 
         $pageMeta = $event->getPageMeta();
 
-        $titleFormat = $pageMeta->getTitle() ? null : $list->metaTitleFormat;
-        $descriptionFormat = $pageMeta->getDescription() ? null : $list->metaDescriptionFormat;
-        $robotsFormat = $pageMeta->getRobots() ? null : $list->metaRobotsFormat;
+        $titleFormat = $pageMeta->getTitle() ? null : $list->config['metaTitleFormat'];
+        $descriptionFormat = $pageMeta->getDescription() ? null : $list->config['metaDescriptionFormat'];
+        $robotsFormat = $pageMeta->getRobots() ? null : $list->config['metaRobotsFormat'];
 
         if (\is_null($titleFormat) && \is_null($descriptionFormat) && \is_null($robotsFormat)) {
             // skip if no data formats are available for the page
@@ -42,11 +42,11 @@ readonly class GenericReaderPageMetaListener
         }
 
         $tokens = [
-            'list.type' => $list->type,
+            'list.type' => $list->getTypeAlias() ?? $list->type::class,
             'list.dc' => $list->dc,
         ];
 
-        $this->addTokensFromProperties($tokens, $list->getProperties(), prefix: 'list');
+        $this->addTokensFromProperties($tokens, $list->config, prefix: 'list');
         $this->addTokensFromProperties($tokens, $contentModel->row(), prefix: 'ce');
         $this->addTokensFromProperties($tokens, $model->row());
 
@@ -78,11 +78,21 @@ readonly class GenericReaderPageMetaListener
     {
         foreach ($properties as $key => $value)
         {
-            if (!\is_scalar($value)) {
+            $path = \is_null($prefix) ? $key : "{$prefix}.{$key}";
+
+            if (\is_array($value))
+                // canonical config values are already deserialized
+            {
+                foreach (Arr::flatten($value, prefix: $path) as $flatKey => $flatValue) {
+                    $tokens[$flatKey] = $flatValue;
+                }
+
                 continue;
             }
 
-            $path = \is_null($prefix) ? $key : "{$prefix}.{$key}";
+            if (!\is_scalar($value)) {
+                continue;
+            }
 
             $tokens[$path] = $value;
 

@@ -48,7 +48,7 @@ readonly class FilterExecutor
 
         $filterQueryBuilders = [];
 
-        foreach ($list->getFilters() as $key => $filter)
+        foreach ($list->filters as $key => $filter)
         {
             if (!$element = $this->filterElementResolver->resolve($filter)) {
                 continue;
@@ -82,7 +82,7 @@ readonly class FilterExecutor
         if (!Str::isValidSqlName($table = $context->list->dc))
         {
             throw new FlareException(\sprintf(
-                '[FLARE] ListSpecification data container cannot be used as SQL table identifier: "%s"',
+                '[FLARE] ListSpec data container cannot be used as SQL table identifier: "%s"',
                 $table
             ), method: __METHOD__);
         }

@@ -9,6 +9,7 @@ use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\CoreBundle\String\SimpleTokenParser;
 use Contao\DataContainer;
 use Contao\Message;
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
@@ -16,6 +17,7 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsListType(type: self::TYPE)]
@@ -46,6 +48,11 @@ class GenericDataContainerListType extends AbstractListType implements DataConta
     public function getDataContainerName(array $row, DataContainer $dc): string
     {
         return $row['dc'] ?? '';
+    }
+
+    protected function transformListModel(ListModel $model, ConfigBuilder $config): void
+    {
+        $config->set('genericPageMeta', true);
     }
 
     public function buildDca(DcaBuilder $dca, DcaContext $context): void

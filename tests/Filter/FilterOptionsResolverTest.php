@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
-use HeimrichHannot\FlareBundle\Contract\OptionsInterface;
+use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
@@ -57,7 +57,7 @@ final class FilterOptionsResolverTest extends TestCase
     }
 }
 
-final class ElementConfigAwareElement implements FilterElementInterface, OptionsInterface
+final class ElementConfigAwareElement implements FilterElementInterface, OptionsContract
 {
     public function configureOptions(OptionsResolver $resolver): void
     {

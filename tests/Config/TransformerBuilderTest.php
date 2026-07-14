@@ -50,6 +50,19 @@ final class TransformerBuilderTest extends TestCase
 
         self::assertNull($transformers->resolve(new SourceB()));
     }
+
+    public function testExactClassMatchWinsOverEarlierBaseClassRegistration(): void
+    {
+        $transformers = new TransformerBuilder();
+        $base = static function (object $source, ConfigBuilder $config): void {};
+        $specific = static function (object $source, ConfigBuilder $config): void {};
+
+        $transformers->for(SourceA::class, $base);
+        $transformers->for(SourceASub::class, $specific);
+
+        self::assertSame($specific, $transformers->resolve(new SourceASub()));
+        self::assertSame($base, $transformers->resolve(new SourceA()));
+    }
 }
 
 class SourceA

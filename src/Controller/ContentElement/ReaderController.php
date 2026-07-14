@@ -112,14 +112,14 @@ final class ReaderController extends AbstractContentElementController
 
         try
         {
-            $listSpec = $this->listFactory->createFromListModel($listModel)->build();
+            $list = $this->listFactory->createFromListModel($listModel)->build();
 
             $validationContext = $this->validationContextFactory->createFromContent(
                 contentModel: $contentModel,
-                list: $listSpec,
+                list: $list,
             );
 
-            $engine = $this->engineFactory->createEngine($validationContext, $listSpec);
+            $engine = $this->engineFactory->createEngine($validationContext, $list);
 
             $validationView = $engine->createView();
 
@@ -133,14 +133,14 @@ final class ReaderController extends AbstractContentElementController
 
             $errData[] = "{$autoItemModel::getTable()}.id={$autoItemModel->id}";
 
-            $this->attributeResolver->store(new ReaderRequestAttribute($autoItemModel, $listSpec), $request);
+            $this->attributeResolver->store(new ReaderRequestAttribute($autoItemModel, $list), $request);
             $this->entityCacheTags->tagWith($autoItemModel);
 
             /** @var ReaderPageMetaEvent $pageMetaEvent $pageMetaEvent */
             $pageMetaEvent = $this->eventDispatcher->dispatch(new ReaderPageMetaEvent(
                 contentModel: $contentModel,
                 displayModel: $autoItemModel,
-                list: $listSpec,
+                list: $list,
             ));
             $pageMeta = $pageMetaEvent->getPageMeta();
         }
@@ -157,7 +157,7 @@ final class ReaderController extends AbstractContentElementController
                 contentModel: $contentModel,
                 context: $validationContext,
                 displayModel: $autoItemModel,
-                list: $listSpec,
+                list: $list,
                 pageMeta: $pageMeta,
                 template: $template,
             )

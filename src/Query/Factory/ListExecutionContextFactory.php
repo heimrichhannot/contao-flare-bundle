@@ -7,12 +7,12 @@ namespace HeimrichHannot\FlareBundle\Query\Factory;
 use HeimrichHannot\FlareBundle\Contract\ListType\BuildQueryContract;
 use HeimrichHannot\FlareBundle\Event\QueryBaseInitializedEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
 use HeimrichHannot\FlareBundle\Query\SqlQueryStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
-use HeimrichHannot\FlareBundle\List\ListSpec;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class ListExecutionContextFactory

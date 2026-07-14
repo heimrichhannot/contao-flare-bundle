@@ -10,7 +10,7 @@ use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
-use HeimrichHannot\FlareBundle\ListType\AbstractListType;
+use HeimrichHannot\FlareBundle\List\Type\AbstractListType;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 #[AsListType(type: self::TYPE)]

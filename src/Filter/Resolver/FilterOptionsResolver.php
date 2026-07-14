@@ -6,8 +6,8 @@ namespace HeimrichHannot\FlareBundle\Filter\Resolver;
 
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\Filter;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**

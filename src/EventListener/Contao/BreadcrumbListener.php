@@ -16,9 +16,9 @@ use HeimrichHannot\FlareBundle\Engine\Context\Factory\ValidationContextFactory;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
 use HeimrichHannot\FlareBundle\Exception\ViewException;
+use HeimrichHannot\FlareBundle\List\Factory\ListBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
-use HeimrichHannot\FlareBundle\List\Factory\ListBuilderFactory;
 use HeimrichHannot\FlareBundle\Util\Env;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 

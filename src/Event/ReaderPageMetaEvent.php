@@ -6,18 +6,18 @@ namespace HeimrichHannot\FlareBundle\Event;
 
 use Contao\ContentModel;
 use Contao\Model;
-use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 
 class ReaderPageMetaEvent
 {
     private ReaderPageMeta $pageMeta;
 
     public function __construct(
-        private readonly ContentModel      $contentModel,
-        private readonly Model             $displayModel,
-        private readonly ListSpec $list,
-        ?ReaderPageMeta                    $pageMeta = null,
+        private readonly ContentModel $contentModel,
+        private readonly Model        $displayModel,
+        private readonly ListSpec     $list,
+        ?ReaderPageMeta               $pageMeta = null,
     ) {
         $this->pageMeta = $pageMeta ?? new ReaderPageMeta();
     }

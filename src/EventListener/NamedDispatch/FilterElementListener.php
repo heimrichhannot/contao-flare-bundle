@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\EventListener\NamedDispatch;
 
-use HeimrichHannot\FlareBundle\Event\FilterElementBuiltEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementBuildingEvent;
+use HeimrichHannot\FlareBundle\Event\FilterElementBuiltEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormBuiltEvent;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;

@@ -28,7 +28,7 @@ final class BaseListOptionsTest extends TestCase
             'whichPtable' => 'auto',
         ]);
 
-        BaseListOptions::transform($model, $config = new ConfigBuilder());
+        BaseListOptions::transform($config = new ConfigBuilder(), $model);
         $all = $config->all();
 
         self::assertSame(5, $all['id']);
@@ -62,7 +62,7 @@ final class BaseListOptionsTest extends TestCase
     {
         $model = new ListModelStub(['id' => '3', 'title' => 'x', 'sortSettings' => '']);
 
-        BaseListOptions::transform($model, $config = new ConfigBuilder());
+        BaseListOptions::transform($config = new ConfigBuilder(), $model);
 
         $resolved = (new ListOptionsResolver())->resolve(null, $config->all());
 
@@ -73,6 +73,7 @@ final class BaseListOptionsTest extends TestCase
 
 class ListModelStub extends ListModel
 {
+    /** @noinspection PhpMissingParentConstructorInspection */
     public function __construct(array $row = [])
     {
         $this->arrData = $row;

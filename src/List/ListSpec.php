@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\List;
 
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\ListType\ListTypeInterface;
+use HeimrichHannot\FlareBundle\List\Type\ListTypeInterface;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 
 /**

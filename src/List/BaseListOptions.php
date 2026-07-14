@@ -42,7 +42,7 @@ final class BaseListOptions
         $resolver->define('genericPageMeta')->default(false)->allowedTypes('bool');
     }
 
-    public static function transform(ListModel $model, ConfigBuilder $config): void
+    public static function transform(ConfigBuilder $config, ListModel $model): void
     {
         $config
             ->set('id', $model->id ? (int) $model->id : null)

@@ -13,9 +13,9 @@ use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\GroupsEntriesTrait;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListType\EventsListType;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\Loader\EventsInteractiveLoader;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\View\InteractiveEventsView;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
 use Symfony\Component\Form\FormInterface;
 
 class EventsInteractiveProjector extends InteractiveProjector

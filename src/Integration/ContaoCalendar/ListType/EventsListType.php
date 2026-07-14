@@ -11,8 +11,8 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\ListType\AbstractListType;
 use HeimrichHannot\FlareBundle\List\ListBuilder;
+use HeimrichHannot\FlareBundle\List\Type\AbstractListType;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Query\SqlJoinStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
@@ -31,7 +31,7 @@ class EventsListType extends AbstractListType implements BuildListContract, DcaC
                 return $suffix;
             }
 
-            $suffix = \str_replace('sortSettings', '', $suffix);
+            $suffix = (string) \str_replace('sortSettings', '', $suffix);
             $suffix = \preg_replace('/(?:^|;)\{[^}]*},*(?:;|$)/', ';', $suffix);
             $suffix = \preg_replace('/;{2,}/', ';', $suffix);
 
@@ -54,17 +54,19 @@ class EventsListType extends AbstractListType implements BuildListContract, DcaC
 
     public function buildList(ListBuilder $builder): void
     {
-        if (!$builder->hasFilterOfType(PublishedFilterElement::TYPE)) {
-            $builder->addFilter(new Filter(
-                element: PublishedFilterElement::TYPE,
-                config: [
-                    'intrinsic' => true,
-                    'published_field' => 'published',
-                    'start_field' => 'start',
-                    'stop_field' => 'stop',
-                    'invert' => false,
-                ],
-            ));
+        if ($builder->hasFilterOfType(PublishedFilterElement::TYPE)) {
+            return;
         }
+
+        $builder->addFilter(new Filter(
+            element: PublishedFilterElement::TYPE,
+            config: [
+                'intrinsic' => true,
+                'published_field' => 'published',
+                'start_field' => 'start',
+                'stop_field' => 'stop',
+                'invert' => false,
+            ],
+        ));
     }
 }

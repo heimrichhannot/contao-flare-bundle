@@ -17,7 +17,7 @@ use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
 use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\ListType\DcMultilingualListType;
+use HeimrichHannot\FlareBundle\Integration\Terminal42Languages\ListType\DcMultilingualListType;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;

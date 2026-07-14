@@ -8,8 +8,8 @@ use Contao\ContentModel;
 use Contao\Model;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
-use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 use Symfony\Contracts\EventDispatcher\Event;
 
 class ReaderRenderEvent extends Event

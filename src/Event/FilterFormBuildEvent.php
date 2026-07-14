@@ -11,8 +11,8 @@ use Symfony\Contracts\EventDispatcher\Event;
 class FilterFormBuildEvent extends Event
 {
     public function __construct(
-        public readonly ListSpec $list,
-        public readonly string            $formName,
-        public FormBuilderInterface       $formBuilder,
+        public readonly ListSpec    $list,
+        public readonly string      $formName,
+        public FormBuilderInterface $formBuilder,
     ) {}
 }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\ListType;
+namespace HeimrichHannot\FlareBundle\List\Type;
 
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\Contract\ListType\BuildListContract;

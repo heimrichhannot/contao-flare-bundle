@@ -18,7 +18,7 @@ abstract class AbstractListType implements
     ListTypeInterface, OptionsContract, TransformerContract, Contract\ListType\BuildQueryContract
 {
     /**
-     * Declares the type's config schema on top of {@see \HeimrichHannot\FlareBundle\Lists\BaseListOptions}.
+     * Declares the type's config schema on top of {@see \HeimrichHannot\FlareBundle\List\BaseListOptions}.
      */
     public function configureOptions(OptionsResolver $resolver): void {}
 
@@ -29,7 +29,7 @@ abstract class AbstractListType implements
 
     /**
      * Translates a stored tl_flare_list model into the type's canonical config values (unresolved).
-     * Base columns are already translated by {@see \HeimrichHannot\FlareBundle\Lists\BaseListOptions}.
+     * Base columns are already translated by {@see \HeimrichHannot\FlareBundle\List\BaseListOptions}.
      */
     protected function transformListModel(ListModel $model, ConfigBuilder $config): void {}
 

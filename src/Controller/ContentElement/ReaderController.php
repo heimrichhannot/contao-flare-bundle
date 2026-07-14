@@ -28,7 +28,7 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 use HeimrichHannot\FlareBundle\Reader\ReaderRequestAttribute;
-use HeimrichHannot\FlareBundle\Lists\Factory\ListBuilderFactory;
+use HeimrichHannot\FlareBundle\List\Factory\ListBuilderFactory;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;

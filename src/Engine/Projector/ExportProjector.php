@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Engine\Projector;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ExportView;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
-use HeimrichHannot\FlareBundle\Lists\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 
 /**
  * @implements ProjectorInterface<ExportView>

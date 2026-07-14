@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Event;
 
-use HeimrichHannot\FlareBundle\Lists\ListBuilder;
+use HeimrichHannot\FlareBundle\List\ListBuilder;
 use Symfony\Contracts\EventDispatcher\Event;
 
 /**

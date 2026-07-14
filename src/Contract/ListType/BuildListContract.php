@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Contract\ListType;
 
-use HeimrichHannot\FlareBundle\Lists\ListBuilder;
+use HeimrichHannot\FlareBundle\List\ListBuilder;
 
 /**
  * Implemented by list types that take part in their list's build lifecycle —

@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Reader\Factory;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Reader\ReaderRequestAttribute;
-use HeimrichHannot\FlareBundle\Lists\Factory\ListBuilderFactory;
+use HeimrichHannot\FlareBundle\List\Factory\ListBuilderFactory;
 
 final readonly class ReaderRequestAttributeFactory
 {

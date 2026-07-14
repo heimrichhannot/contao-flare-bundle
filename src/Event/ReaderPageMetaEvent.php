@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Event;
 use Contao\ContentModel;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
-use HeimrichHannot\FlareBundle\Lists\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 
 class ReaderPageMetaEvent
 {

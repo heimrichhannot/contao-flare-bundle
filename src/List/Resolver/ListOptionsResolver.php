@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Lists\Resolver;
+namespace HeimrichHannot\FlareBundle\List\Resolver;
 
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Lists\BaseListOptions;
+use HeimrichHannot\FlareBundle\List\BaseListOptions;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**

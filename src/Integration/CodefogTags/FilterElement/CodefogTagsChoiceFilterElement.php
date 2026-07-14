@@ -46,7 +46,7 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
         $resolver->define('placeholder')->default(null)->allowedTypes('string', 'null');
     }
 
-    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
         $config
             ->set('intrinsic', (bool) $model->intrinsic)

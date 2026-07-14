@@ -42,7 +42,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 - `src/Filter/` — `Filter` DTO, elements (`Element/`), types (`Type/`), collector, resolvers
   (`FilterOptionsResolver`, `FilterTransformerResolver`, `FilterElementResolver`), `FilterContextFactory`
 - `src/Config/` — `ConfigBuilder` (fluent canonical-config accumulator; no cast helpers — transformers cast
-  declaratively off the typed model) and `TransformerBuilder` (source class → transformer map)
+  declaratively off the typed model) and `TransformerResolver` (source class → transformer map)
 - `src/Form/` — filter form building (FilterFormFactory etc.)
 - `src/Reader/` — reader/detail-page URL generation (`ReaderUrlGenerator`)
 - `src/InferPtable/` — parent-table inference for DCAs

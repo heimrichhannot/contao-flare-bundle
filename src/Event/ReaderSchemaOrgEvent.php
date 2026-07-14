@@ -12,7 +12,7 @@ class ReaderSchemaOrgEvent extends Event
 {
     public function __construct(
         public readonly ListSpec $list,
-        public readonly Model             $model,
-        public array                      $data = [],
+        public readonly Model    $model,
+        public array             $data = [],
     ) {}
 }

@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use PHPUnit\Framework\TestCase;
 
-final class TransformerBuilderTest extends TestCase
+final class TransformerResolverTest extends TestCase
 {
     public function testResolvesRegisteredSourceClass(): void
     {

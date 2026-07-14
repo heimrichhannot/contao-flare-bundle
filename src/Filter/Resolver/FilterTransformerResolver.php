@@ -6,7 +6,6 @@ namespace HeimrichHannot\FlareBundle\Filter\Resolver;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerResolver;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\FilterTransformerEvent;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
@@ -35,7 +34,7 @@ class FilterTransformerResolver
     {
         if (!isset($this->builders[$element::class]))
         {
-            $transformers = new TransformerBuilder();
+            $transformers = new TransformerResolver();
 
             if ($element instanceof TransformerContract) {
                 $element->configureTransformers($transformers);

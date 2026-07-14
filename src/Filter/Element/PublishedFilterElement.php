@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\PublishedFilterType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -27,19 +28,18 @@ class PublishedFilterElement extends AbstractFilterElement
         $resolver->define('invert')->default(false)->allowedTypes('bool');
     }
 
-    public function configFromRow(array $row): array
+    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
     {
-        $usePublished = $row['usePublished'] ?? true;
-        $useStart = $row['useStart'] ?? true;
-        $useStop = $row['useStop'] ?? true;
+        $usePublished = (bool) ($model->usePublished ?? true);
+        $useStart = (bool) ($model->useStart ?? true);
+        $useStop = (bool) ($model->useStop ?? true);
 
-        return [
-            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
-            'published_field' => $usePublished ? (($row['fieldPublished'] ?? null) ?: 'published') : null,
-            'start_field' => $useStart ? (($row['fieldStart'] ?? null) ?: 'start') : null,
-            'stop_field' => $useStop ? (($row['fieldStop'] ?? null) ?: 'stop') : null,
-            'invert' => (bool) ($row['invertPublished'] ?? false),
-        ];
+        $config
+            ->set('intrinsic', (bool) $model->intrinsic)
+            ->set('published_field', $usePublished ? ($model->fieldPublished ?: 'published') : null)
+            ->set('start_field', $useStart ? ($model->fieldStart ?: 'start') : null)
+            ->set('stop_field', $useStop ? ($model->fieldStop ?: 'stop') : null)
+            ->set('invert', (bool) $model->invertPublished);
     }
 
     public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
@@ -60,26 +60,4 @@ class PublishedFilterElement extends AbstractFilterElement
         $dca->palette('{filter_legend},usePublished,useStart,useStop');
     }
 
-    public static function define(
-        string|false|null $published = null,
-        string|false|null $start = null,
-        string|false|null $stop = null,
-        bool|null $invertPublished = null,
-    ): Filter {
-        $published ??= 'published';
-        $start ??= 'start';
-        $stop ??= 'stop';
-        $invertPublished ??= false;
-
-        return new Filter(
-            element: static::TYPE,
-            config: [
-                'intrinsic' => true,
-                'published_field' => $published ?: null,
-                'start_field' => $start ?: null,
-                'stop_field' => $stop ?: null,
-                'invert' => $published ? $invertPublished : false,
-            ],
-        );
-    }
 }

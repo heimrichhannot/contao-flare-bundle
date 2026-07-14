@@ -6,9 +6,9 @@ namespace HeimrichHannot\FlareBundle\Filter\Collector;
 
 use Contao\Controller;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
-use HeimrichHannot\FlareBundle\Filter\Element\FilterElementOptionsInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterElementResolver;
+use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
@@ -18,9 +18,10 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 readonly class ListModelFilterCollector implements FilterCollectorInterface
 {
     public function __construct(
-        private EventDispatcherInterface $eventDispatcher,
-        private FilterElementResolver    $filterElementResolver,
-        private ListTypeRegistry         $listTypeRegistry,
+        private EventDispatcherInterface  $eventDispatcher,
+        private FilterElementResolver     $filterElementResolver,
+        private FilterTransformerResolver $filterTransformerResolver,
+        private ListTypeRegistry          $listTypeRegistry,
     ) {}
 
     public function supports(ListDataSourceInterface $dataSource): bool
@@ -60,9 +61,8 @@ readonly class ListModelFilterCollector implements FilterCollectorInterface
                 continue;
             }
 
-            $config = $element instanceof FilterElementOptionsInterface
-                ? $element->configFromRow($model->row())
-                : $model->row();
+            $config = $this->filterTransformerResolver->transform($element, $model->getFilterType(), $model)
+                ?? $model->row();
 
             $filter = new Filter(
                 element: $model->getFilterType(),

@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\SearchKeywordsFilterType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -29,15 +31,14 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
         $resolver->define('placeholder')->default(null)->allowedTypes('string', 'null');
     }
 
-    public function configFromRow(array $row): array
+    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
     {
-        return [
-            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
-            'columns' => StringUtil::deserialize($row['columnsGeneric'] ?? null, true),
-            'prefill' => ($row['prefill'] ?? null) ?: null,
-            'label' => ($row['label'] ?? null) ?: null,
-            'placeholder' => ($row['placeholder'] ?? null) ?: null,
-        ];
+        $config
+            ->set('intrinsic', (bool) $model->intrinsic)
+            ->set('columns', StringUtil::deserialize($model->columnsGeneric, true))
+            ->set('prefill', $model->prefill ?: null)
+            ->set('label', $model->label ?: null)
+            ->set('placeholder', $model->placeholder ?: null);
     }
 
     public function buildForm(FormBuilderInterface $builder, FilterContext $context): void

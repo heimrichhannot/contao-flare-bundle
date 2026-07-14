@@ -16,6 +16,7 @@ use HeimrichHannot\FlareBundle\Event\FetchAutoItemEvent;
 use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
 use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\ListType\DcMultilingualListType;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
@@ -132,18 +133,26 @@ class ChangelanguageListener
         if ($lang !== $langFallback && $dcMultilingualDisplay === DcMultilingualHelper::DISPLAY_LOCALIZED)
             // localized list view
         {
-            $configuredFilter = SimpleEquationFilterElement::define(
-                equationLeft: DcMultilingualHelper::getPidColumn($table),
-                equationOperator: SqlEquationOperator::GREATER_THAN,
-                equationRight: '0'
+            $configuredFilter = new Filter(
+                element: SimpleEquationFilterElement::TYPE,
+                config: [
+                    'intrinsic' => true,
+                    'left' => DcMultilingualHelper::getPidColumn($table),
+                    'operator' => SqlEquationOperator::GREATER_THAN,
+                    'right' => '0',
+                ],
             );
-            $configuredFilter->forceTargetAlias('translation');
+            $configuredFilter = $configuredFilter->withTargetAlias('translation');
         }
 
-        $configuredFilter ??= SimpleEquationFilterElement::define(
-            equationLeft: DcMultilingualHelper::getPidColumn($table),
-            equationOperator: SqlEquationOperator::EQUALS,
-            equationRight: '0'
+        $configuredFilter ??= new Filter(
+            element: SimpleEquationFilterElement::TYPE,
+            config: [
+                'intrinsic' => true,
+                'left' => DcMultilingualHelper::getPidColumn($table),
+                'operator' => SqlEquationOperator::EQUALS,
+                'right' => '0',
+            ],
         );
 
         // $filters->add($this->filterContextManager->definitionToContext(

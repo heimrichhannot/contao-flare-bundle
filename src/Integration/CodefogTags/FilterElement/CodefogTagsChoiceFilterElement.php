@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement;
 
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -14,6 +15,7 @@ use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Type\IntegerIdChoiceFilterType;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegistry;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
 use Psr\Log\LoggerInterface;
@@ -44,19 +46,18 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
         $resolver->define('placeholder')->default(null)->allowedTypes('string', 'null');
     }
 
-    public function configFromRow(array $row): array
+    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
     {
-        return [
-            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
-            'preselect' => $this->normalizeValueArray(
-                StringUtil::deserialize(($row['preselect'] ?? null) ?: null, true)
-            ),
-            'is_mandatory' => (bool) ($row['isMandatory'] ?? false),
-            'is_multiple' => (bool) ($row['isMultiple'] ?? false),
-            'is_expanded' => (bool) ($row['isExpanded'] ?? false),
-            'label' => ($row['label'] ?? null) ?: null,
-            'placeholder' => ($row['placeholder'] ?? null) ?: null,
-        ];
+        $config
+            ->set('intrinsic', (bool) $model->intrinsic)
+            ->set('preselect', $this->normalizeValueArray(
+                StringUtil::deserialize($model->preselect ?: null, true)
+            ))
+            ->set('is_mandatory', (bool) $model->isMandatory)
+            ->set('is_multiple', (bool) $model->isMultiple)
+            ->set('is_expanded', (bool) $model->isExpanded)
+            ->set('label', $model->label ?: null)
+            ->set('placeholder', $model->placeholder ?: null);
     }
 
     public function buildForm(FormBuilderInterface $builder, FilterContext $context): void

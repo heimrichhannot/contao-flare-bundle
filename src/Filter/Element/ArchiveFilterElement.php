@@ -175,14 +175,14 @@ class ArchiveFilterElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
         $config = $context->config;
 
         /** @var Model[] $selectedModels */
         $selectedModels = $config['intrinsic']
             ? $this->getWhitelistedParents($context->list, $config)
-            : $this->processRuntimeValue($data[FilterContext::FIELD_VALUE] ?? null, $context->list, $config);
+            : $this->processRuntimeValue($values[FilterContext::FIELD_VALUE] ?? null, $context->list, $config);
 
         $inferrer = $this->getPtableInferrer($context->list);
 

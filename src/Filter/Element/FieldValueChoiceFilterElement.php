@@ -82,7 +82,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
         $builder->setAttribute('flare.choices_builder', $choicesBuilder);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
         if ($context->engineContext instanceof ValidationContext) {
             return;
@@ -96,7 +96,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
 
         $value = $config['intrinsic']
             ? $config['preselect']
-            : $this->normalizeRuntimeValue($data[FilterContext::FIELD_VALUE] ?? null, $context);
+            : $this->normalizeRuntimeValue($values[FilterContext::FIELD_VALUE] ?? null, $context);
 
         if (!$value) {
             return;

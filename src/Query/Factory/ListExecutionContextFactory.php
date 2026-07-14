@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Query\Factory;
 
-use HeimrichHannot\FlareBundle\Contract\ListType\ConfigureQueryContract;
+use HeimrichHannot\FlareBundle\Contract\ListType\BuildQueryContract;
 use HeimrichHannot\FlareBundle\Event\QueryBaseInitializedEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
@@ -56,9 +56,9 @@ readonly class ListExecutionContextFactory
             ->setSelect([TableAliasRegistry::ALIAS_MAIN . '.*'])
             ->setGroupBy([TableAliasRegistry::ALIAS_MAIN . '.id']);
 
-        if ($listType instanceof ConfigureQueryContract) {
-            $listType->configureTableRegistry($registry);
-            $listType->configureBaseQuery($struct);
+        if ($listType instanceof BuildQueryContract) {
+            $listType->buildTableRegistry($registry);
+            $listType->buildBaseQuery($struct);
         }
 
         $this->eventDispatcher->dispatch(new QueryBaseInitializedEvent(

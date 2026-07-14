@@ -7,9 +7,9 @@ namespace HeimrichHannot\FlareBundle\Contract\ListType;
 use HeimrichHannot\FlareBundle\Query\SqlQueryStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 
-interface ConfigureQueryContract
+interface BuildQueryContract
 {
-    public function configureTableRegistry(TableAliasRegistry $registry): void;
+    public function buildTableRegistry(TableAliasRegistry $registry): void;
 
-    public function configureBaseQuery(SqlQueryStruct $struct): void;
+    public function buildBaseQuery(SqlQueryStruct $struct): void;
 }

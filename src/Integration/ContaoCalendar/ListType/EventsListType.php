@@ -39,7 +39,7 @@ class EventsListType extends AbstractListType implements BuildListContract, DcaC
         });
     }
 
-    public function configureTableRegistry(TableAliasRegistry $registry): void
+    public function buildTableRegistry(TableAliasRegistry $registry): void
     {
         $fromAlias = TableAliasRegistry::ALIAS_MAIN;
 

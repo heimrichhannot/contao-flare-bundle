@@ -27,7 +27,7 @@ class NewsListType extends AbstractListType implements BuildListContract, DcaCon
         $dca->palette('{filter_legend},');
     }
 
-    public function configureTableRegistry(TableAliasRegistry $registry): void
+    public function buildTableRegistry(TableAliasRegistry $registry): void
     {
         $registry->registerJoin(new SqlJoinStruct(
             fromAlias: TableAliasRegistry::ALIAS_MAIN,

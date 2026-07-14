@@ -15,7 +15,7 @@ use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 abstract class AbstractListType implements
-    ListTypeInterface, OptionsInterface, TransformerContract, Contract\ListType\ConfigureQueryContract
+    ListTypeInterface, OptionsInterface, TransformerContract, Contract\ListType\BuildQueryContract
 {
     /**
      * Declares the type's config schema on top of {@see \HeimrichHannot\FlareBundle\Lists\BaseListOptions}.
@@ -33,7 +33,7 @@ abstract class AbstractListType implements
      */
     protected function transformListModel(ListModel $model, ConfigBuilder $config): void {}
 
-    public function configureTableRegistry(TableAliasRegistry $registry): void {}
+    public function buildTableRegistry(TableAliasRegistry $registry): void {}
 
-    public function configureBaseQuery(SqlQueryStruct $struct): void {}
+    public function buildBaseQuery(SqlQueryStruct $struct): void {}
 }

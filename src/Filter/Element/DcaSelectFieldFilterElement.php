@@ -15,7 +15,6 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\DcaSelectFilterType;
-use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -25,10 +24,6 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 class DcaSelectFieldFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_dcaSelectField';
-
-    public function __construct(
-        private readonly ChoicesBuilderFactory $choicesBuilderFactory,
-    ) {}
 
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -82,15 +77,13 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
 
         if (!\is_null($options))
         {
-            $choicesBuilder = $this->choicesBuilderFactory->createChoicesBuilder()->enable();
+            $choicesBuilder = $this->createChoicesBuilder();
 
             foreach ($options as $value => $label) {
                 $choicesBuilder->add((string) $value, (string) $label);
             }
 
-            $formOptions['choice_loader'] = $choicesBuilder->buildCallbackChoiceLoader();
-            $formOptions['choice_label'] = $choicesBuilder->buildChoiceLabelCallback();
-            $formOptions['choice_value'] = $choicesBuilder->buildChoiceValueCallback();
+            $choicesBuilder->applyFormOptions($formOptions);
 
             $builder->setAttribute('flare.choices_builder', $choicesBuilder);
         }

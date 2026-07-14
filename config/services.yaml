@@ -11,7 +11,7 @@ services:
         resource: ../src
         exclude:
             - ../src/{Config,Contao,ContaoManager,Contract,DependencyInjection,Dto,Engine,Event,Integration,Model,Trait,Util}
-            - ../src/{Filter,Form,InferPtable,List,Paginator,Query,Sort,Specification}/*.php
+            - ../src/{Filter,Form,InferPtable,List,Lists,Paginator,Query,Sort,Specification}/*.php
             - ../src/DataContainer/Builder
             - ../src/Registry/Descriptor
 

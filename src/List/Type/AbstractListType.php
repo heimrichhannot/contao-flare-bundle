@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\List\Type;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerResolver;
-use HeimrichHannot\FlareBundle\Contract;
+use HeimrichHannot\FlareBundle\Contract\ListType\BuildQueryContract;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\List\CallbackListModelTransformer;
@@ -16,7 +16,7 @@ use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 abstract class AbstractListType implements
-    ListTypeInterface, OptionsContract, TransformerContract, Contract\ListType\BuildQueryContract
+    ListTypeInterface, OptionsContract, TransformerContract, BuildQueryContract
 {
     /**
      * Declares the type's config schema on top of {@see \HeimrichHannot\FlareBundle\List\BaseListOptions}.

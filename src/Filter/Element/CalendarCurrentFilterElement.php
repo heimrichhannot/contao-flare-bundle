@@ -42,7 +42,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
         $resolver->define('has_extended_events')->default(false)->allowedTypes('bool');
     }
 
-    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
         $config
             ->set('intrinsic', (bool) $model->intrinsic)

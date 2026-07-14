@@ -17,12 +17,12 @@ class ReaderRenderEvent extends Event
     use ModifiesTemplateTrait;
 
     public function __construct(
-        private readonly ContentModel      $contentModel,
-        private readonly ContextInterface  $context,
-        private readonly Model             $displayModel,
-        private readonly ListSpec $list,
-        private ReaderPageMeta             $pageMeta,
-        private Template                   $template,
+        private readonly ContentModel     $contentModel,
+        private readonly ContextInterface $context,
+        private readonly Model            $displayModel,
+        private readonly ListSpec         $list,
+        private ReaderPageMeta            $pageMeta,
+        private Template                  $template,
     ) {}
 
     public function getContentModel(): ContentModel

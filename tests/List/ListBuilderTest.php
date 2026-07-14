@@ -70,7 +70,7 @@ final class ListBuilderTest extends TestCase
     public function testModelTransformationAndOverridePrecedence(): void
     {
         $type = new class extends AbstractListType {
-            protected function transformListModel(ListModel $model, ConfigBuilder $config): void
+            protected function transformListModel(ConfigBuilder $config, ListModel $model): void
             {
                 $config->set('genericPageMeta', true);
                 $config->set('title', 'from-transformer');

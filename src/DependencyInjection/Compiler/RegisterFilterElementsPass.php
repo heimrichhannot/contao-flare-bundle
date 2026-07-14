@@ -69,7 +69,6 @@ final class RegisterFilterElementsPass implements CompilerPassInterface
             $reference,
             $attributes,
             $attributes['isTargeted'] ?? null,
-            (bool) ($attributes['intrinsicOnly'] ?? false),
         ]);
 
         $serviceId = 'huh.flare.filter_element._config_' . ContainerBuilder::hash($definition);

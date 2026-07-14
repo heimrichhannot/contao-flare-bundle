@@ -56,7 +56,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 - `src/Controller/ContentElement/ListViewController.php` / `ReaderController.php` — frontend controllers
 
 **Extensibility via PHP 8 attributes** (compiler passes auto-register tagged services):
-- `#[AsFilterElement(type: '...', intrinsicOnly: ..., isTargeted: ...)]` — register a filter element
+- `#[AsFilterElement(type: '...', isTargeted: ...)]` — register a filter element
 - `#[AsListType(type: '...', dataContainer: '...')]` — register a list type
 
 Attributes are in `src/DependencyInjection/Attribute/`, compiler passes in `src/DependencyInjection/Compiler/`.

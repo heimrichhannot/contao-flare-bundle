@@ -14,10 +14,15 @@ use HeimrichHannot\FlareBundle\Filter\Type\PublishedFilterType;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-#[AsFilterElement(type: self::TYPE, intrinsicOnly: true)]
+#[AsFilterElement(type: self::TYPE)]
 class PublishedFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_published';
+
+    public function isOnlyIntrinsic(): bool
+    {
+        return true;
+    }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -33,12 +38,15 @@ class PublishedFilterElement extends AbstractFilterElement
         $usePublished = (bool) ($model->usePublished ?? true);
         $useStart = (bool) ($model->useStart ?? true);
         $useStop = (bool) ($model->useStop ?? true);
+        $fieldPublished = $model->fieldPublished ?: 'published';
+        $fieldStart = $model->fieldStart ?: 'start';
+        $fieldStop = $model->fieldStop ?: 'stop';
 
         $config
             ->set('intrinsic', (bool) $model->intrinsic)
-            ->set('published_field', $usePublished ? ($model->fieldPublished ?: 'published') : null)
-            ->set('start_field', $useStart ? ($model->fieldStart ?: 'start') : null)
-            ->set('stop_field', $useStop ? ($model->fieldStop ?: 'stop') : null)
+            ->set('published_field', $usePublished ? $fieldPublished : null)
+            ->set('start_field', $useStart ? $fieldStart : null)
+            ->set('stop_field', $useStop ? $fieldStop : null)
             ->set('invert', (bool) $model->invertPublished);
     }
 

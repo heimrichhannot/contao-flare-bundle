@@ -15,7 +15,6 @@ class FilterElementDescriptor implements ServiceDescriptorInterface
         private FilterElementInterface $service,
         private array                  $attributes = [],
         private ?bool                  $isTargeted = null,
-        private bool                   $intrinsicOnly = false,
     ) {}
 
     public function getService(): FilterElementInterface
@@ -41,13 +40,5 @@ class FilterElementDescriptor implements ServiceDescriptorInterface
     public function isTargeted(): ?bool
     {
         return $this->isTargeted;
-    }
-
-    /**
-     * Whether the element never renders a form control and must be configured intrinsically.
-     */
-    public function isIntrinsicOnly(): bool
-    {
-        return $this->intrinsicOnly;
     }
 }

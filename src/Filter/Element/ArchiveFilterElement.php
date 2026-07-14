@@ -8,7 +8,6 @@ use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;

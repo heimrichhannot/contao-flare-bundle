@@ -10,10 +10,9 @@ services:
     HeimrichHannot\FlareBundle\:
         resource: ../src
         exclude:
-            - ../src/{Contao,ContaoManager,Contract,DependencyInjection,Dto,Engine,Event,Integration,Model,Trait,Util}
+            - ../src/{Config,Contao,ContaoManager,Contract,DependencyInjection,Dto,Engine,Event,Integration,Model,Trait,Util}
             - ../src/{Filter,Form,InferPtable,List,Paginator,Query,Sort,Specification}/*.php
             - ../src/DataContainer/Builder
-            - ../src/FilterElement/CallbackFilterElement.php
             - ../src/Registry/Descriptor
 
     HeimrichHannot\FlareBundle\Engine\:

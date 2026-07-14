@@ -10,6 +10,7 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Event\ListSpecificationCreatedEvent;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\ListType\AbstractListType;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Query\SqlJoinStruct;
@@ -61,7 +62,16 @@ class EventsListType extends AbstractListType implements DcaContract
         $spec = $config->listSpecification;
 
         if (!$spec->hasFilterOfType(PublishedFilterElement::TYPE)) {
-            $spec->addFilter(PublishedFilterElement::define());
+            $spec->addFilter(new Filter(
+                element: PublishedFilterElement::TYPE,
+                config: [
+                    'intrinsic' => true,
+                    'published_field' => 'published',
+                    'start_field' => 'start',
+                    'stop_field' => 'stop',
+                    'invert' => false,
+                ],
+            ));
         }
     }
 }

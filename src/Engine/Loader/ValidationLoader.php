@@ -8,6 +8,7 @@ use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
@@ -35,10 +36,14 @@ readonly class ValidationLoader implements ValidationLoaderInterface
             // IMPORTANT: clone the spec to not modify the original, i.e., when adding the id filter
             $list = clone $this->config->list;
 
-            $idDefinition = SimpleEquationFilterElement::define(
-                equationLeft: 'id',
-                equationOperator: SqlEquationOperator::EQUALS,
-                equationRight: $id,
+            $idDefinition = new Filter(
+                element: SimpleEquationFilterElement::TYPE,
+                config: [
+                    'intrinsic' => true,
+                    'left' => 'id',
+                    'operator' => SqlEquationOperator::EQUALS,
+                    'right' => $id,
+                ],
             );
 
             $list->addFilter($idDefinition);
@@ -69,10 +74,14 @@ readonly class ValidationLoader implements ValidationLoaderInterface
             // IMPORTANT: clone the spec to not modify the original
             $list = clone $this->config->list;
 
-            $autoItemDefinition = SimpleEquationFilterElement::define(
-                equationLeft: $this->config->autoItemField,
-                equationOperator: SqlEquationOperator::EQUALS,
-                equationRight: $autoItem,
+            $autoItemDefinition = new Filter(
+                element: SimpleEquationFilterElement::TYPE,
+                config: [
+                    'intrinsic' => true,
+                    'left' => $this->config->autoItemField,
+                    'operator' => SqlEquationOperator::EQUALS,
+                    'right' => $autoItem,
+                ],
             );
 
             $list->addFilter($autoItemDefinition);

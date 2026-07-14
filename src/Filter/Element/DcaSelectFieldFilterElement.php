@@ -8,6 +8,7 @@ use Contao\Controller;
 use Contao\DataContainer;
 use Contao\StringUtil;
 use Contao\System;
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -15,6 +16,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\DcaSelectFilterType;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -40,23 +42,22 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
         $resolver->define('preselect')->default(null);
     }
 
-    public function configFromRow(array $row): array
+    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
     {
-        $isMultiple = (bool) ($row['isMultiple'] ?? false);
-        $preselect = ($row['preselect'] ?? null) ?: null;
+        $isMultiple = (bool) $model->isMultiple;
+        $preselect = $model->preselect ?: null;
 
-        return [
-            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
-            'field' => ($row['fieldGeneric'] ?? null) ?: null,
-            'is_multiple' => $isMultiple,
-            'is_expanded' => (bool) ($row['isExpanded'] ?? false),
-            'is_mandatory' => (bool) ($row['isMandatory'] ?? false),
-            'label' => ($row['label'] ?? null) ?: null,
-            'placeholder' => ($row['placeholder'] ?? null) ?: null,
-            'preselect' => $isMultiple
+        $config
+            ->set('intrinsic', (bool) $model->intrinsic)
+            ->set('field', $model->fieldGeneric ?: null)
+            ->set('is_multiple', $isMultiple)
+            ->set('is_expanded', (bool) $model->isExpanded)
+            ->set('is_mandatory', (bool) $model->isMandatory)
+            ->set('label', $model->label ?: null)
+            ->set('placeholder', $model->placeholder ?: null)
+            ->set('preselect', $isMultiple
                 ? StringUtil::deserialize($preselect)
-                : $preselect,
-        ];
+                : $preselect);
     }
 
     public function buildForm(FormBuilderInterface $builder, FilterContext $context): void

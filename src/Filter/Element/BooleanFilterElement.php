@@ -6,13 +6,14 @@ namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Contao\Controller;
 use Contao\Message;
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
 use HeimrichHannot\FlareBundle\Enum\BoolMode;
-use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\BooleanFilterType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -34,19 +35,15 @@ class BooleanFilterElement extends AbstractFilterElement
         $resolver->define('label')->default(null)->allowedTypes('string', 'null');
     }
 
-    public function configFromRow(array $row): array
+    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
     {
-        $label = $row['label'] ?? null;
-        $title = $row['title'] ?? null;
-
-        return [
-            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
-            'field' => ($row['fieldGeneric'] ?? null) ?: null,
-            'preselect' => $this->normalizeValue($row['preselect'] ?? null),
-            'mode' => BoolMode::tryFrom($row['boolMode'] ?? '') ?? BoolMode::BINARY,
-            'binary_choices' => BoolBinaryChoices::tryFrom($row['boolBinaryChoices'] ?? '') ?? BoolBinaryChoices::NULL_TRUE,
-            'label' => $label ?: $title ?: null,
-        ];
+        $config
+            ->set('intrinsic', (bool) $model->intrinsic)
+            ->set('field', $model->fieldGeneric ?: null)
+            ->set('preselect', $this->normalizeValue($model->preselect))
+            ->set('mode', BoolMode::tryFrom((string) $model->boolMode) ?? BoolMode::BINARY)
+            ->set('binary_choices', BoolBinaryChoices::tryFrom((string) $model->boolBinaryChoices) ?? BoolBinaryChoices::NULL_TRUE)
+            ->set('label', $model->label ?: $model->title ?: null);
     }
 
     public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
@@ -168,17 +165,4 @@ class BooleanFilterElement extends AbstractFilterElement
         return $options;
     }
 
-    public static function define(
-        ?string $targetField = null,
-        ?bool $expectedValue = null,
-    ): Filter {
-        return new Filter(
-            element: static::TYPE,
-            config: [
-                'intrinsic' => true,
-                'field' => $targetField,
-                'preselect' => (bool) $expectedValue,
-            ],
-        );
-    }
 }

@@ -6,11 +6,11 @@ namespace HeimrichHannot\FlareBundle\Filter\Collector;
 
 use Contao\Controller;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
-use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementOptionsInterface;
+use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\Resolver\FilterElementResolver;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Registry\FilterElementResolver;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;

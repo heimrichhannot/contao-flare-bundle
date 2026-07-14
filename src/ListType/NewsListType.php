@@ -5,19 +5,19 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\ListType;
 
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
+use HeimrichHannot\FlareBundle\Contract\ListType\BuildListContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
-use HeimrichHannot\FlareBundle\Event\ListSpecificationCreatedEvent;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Lists\ListBuilder;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Query\SqlJoinStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
-use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsListType(type: self::TYPE, dataContainer: 'tl_news')]
-class NewsListType extends AbstractListType implements DcaContract
+class NewsListType extends AbstractListType implements BuildListContract, DcaContract
 {
     public const TYPE = 'flare_news';
     public const ALIAS_ARCHIVE = 'news_archive';
@@ -38,17 +38,10 @@ class NewsListType extends AbstractListType implements DcaContract
         ));
     }
 
-    #[AsEventListener(priority: 200)]
-    public function onListSpecificationCreated(ListSpecificationCreatedEvent $config): void
+    public function buildList(ListBuilder $builder): void
     {
-        if ($config->listSpecification->type !== self::TYPE) {
-            return;
-        }
-
-        $spec = $config->listSpecification;
-
-        if (!$spec->hasFilterOfType(PublishedFilterElement::TYPE)) {
-            $spec->addFilter(new Filter(
+        if (!$builder->hasFilterOfType(PublishedFilterElement::TYPE)) {
+            $builder->addFilter(new Filter(
                 element: PublishedFilterElement::TYPE,
                 config: [
                     'intrinsic' => true,

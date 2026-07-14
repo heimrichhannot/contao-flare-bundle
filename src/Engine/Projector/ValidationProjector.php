@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
 use HeimrichHannot\FlareBundle\Reader\BackLink;
 use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Lists\ListSpec;
 
 /**
  * @implements ProjectorInterface<ValidationView>
@@ -25,12 +25,12 @@ class ValidationProjector extends AbstractProjector
         private readonly ReaderUrlGeneratorFactory $readerUrlGeneratorFactory,
     ) {}
 
-    public function supports(ListSpecification $list, ContextInterface $context): bool
+    public function supports(ListSpec $list, ContextInterface $context): bool
     {
         return $context instanceof ValidationContext;
     }
 
-    public function project(ListSpecification $list, ContextInterface $context): ValidationView
+    public function project(ListSpec $list, ContextInterface $context): ValidationView
     {
         \assert($context instanceof ValidationContext, '$config must be an instance of ValidationConfig');
 

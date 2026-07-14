@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Lists\ListSpec;
 
 /**
  * Invocation context handed to filter elements, both when building the form
@@ -21,13 +21,13 @@ final readonly class FilterContext
 
     /**
      * @param array<string, mixed> $config Resolved canonical config of the filter.
-     * @param string|int|null $key Key of the filter within {@see ListSpecification::getFilters()}.
+     * @param string|int|null $key Key of the filter within {@see ListSpec::$filters}.
      */
     public function __construct(
-        public ListSpecification $list,
-        public Filter            $filter,
-        public array             $config,
-        public ContextInterface  $engineContext,
-        public string|int|null   $key = null,
+        public ListSpec         $list,
+        public Filter           $filter,
+        public array            $config,
+        public ContextInterface $engineContext,
+        public string|int|null  $key = null,
     ) {}
 }

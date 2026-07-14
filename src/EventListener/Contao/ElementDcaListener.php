@@ -16,7 +16,7 @@ use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
-use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
+use HeimrichHannot\FlareBundle\Lists\Factory\ListBuilderFactory;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -35,7 +35,7 @@ readonly class ElementDcaListener
         private EventDispatcherInterface    $eventDispatcher,
         private FilterElementRegistry       $filterElementRegistry,
         private ListExecutionContextFactory $listExecutionContextFactory,
-        private ListSpecificationFactory    $listSpecificationFactory,
+        private ListBuilderFactory    $listFactory,
         private ListTypeRegistry            $listTypeRegistry,
         private RequestStack                $requestStack,
     ) {}
@@ -113,7 +113,7 @@ readonly class ElementDcaListener
     {
         try
         {
-            $specification = $this->listSpecificationFactory->create($listModel);
+            $specification = $this->listFactory->createFromListModel($listModel)->build();
 
             return $this->listExecutionContextFactory->create($specification);
         }

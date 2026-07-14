@@ -29,7 +29,7 @@ class SimpleEquationMod extends AbstractMod
             ],
         );
 
-        $engine->getList()->addFilter($filter, $options['name'] ?: null);
+        $engine->setList($engine->getList()->withFilter($filter, $options['name'] ?: null));
     }
 
     public function configureOptions(OptionsResolver $resolver): void

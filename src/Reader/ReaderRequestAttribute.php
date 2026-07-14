@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Reader;
 
 use Contao\Model;
-use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Lists\ListSpec;
 
 readonly class ReaderRequestAttribute
 {
     public function __construct(
-        private Model             $model,
-        private ListSpecification $listSpecification,
+        private Model    $model,
+        private ListSpec $list,
     ) {}
 
     public function getModel(): Model
@@ -20,20 +19,18 @@ readonly class ReaderRequestAttribute
         return $this->model;
     }
 
-    public function getListSpecification(): ListSpecification
+    public function getList(): ListSpec
     {
-        return $this->listSpecification;
+        return $this->list;
     }
 
     public function marshal(): array
     {
-        $dataSource = $this->listSpecification->getDataSource();
-
         return [
             'model_class' => $this->model::class,
             'model_table' => $this->model::getTable(),
             'model_id' => $this->model->id,
-            'list_id' => $dataSource instanceof ListModel ? $dataSource->id : null,
+            'list_id' => $this->list->config['id'] ?? null,
         ];
     }
 }

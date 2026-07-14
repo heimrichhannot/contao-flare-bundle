@@ -88,9 +88,9 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
             executionContext: $executionContext,
             targetAlias: $context->filter->targetAlias,
             listInfo: \sprintf(
-                '%s (ID %s)',
-                $context->list->type,
-                (string) ($context->list->getDataSource()?->getListProperty('id') ?? 'N/A'),
+                '%s (%s)',
+                $context->list->getTypeAlias() ?? 'inline',
+                (string) ($context->list->source ?? 'N/A'),
             ),
             filterInfo: \sprintf('%s (%s)', self::TYPE, $context->filter->source ?? 'inlined'),
         );

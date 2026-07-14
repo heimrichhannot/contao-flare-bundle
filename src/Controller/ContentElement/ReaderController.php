@@ -28,7 +28,7 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 use HeimrichHannot\FlareBundle\Reader\ReaderRequestAttribute;
-use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
+use HeimrichHannot\FlareBundle\Lists\Factory\ListBuilderFactory;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -48,7 +48,7 @@ final class ReaderController extends AbstractContentElementController
         private readonly EngineFactory                  $engineFactory,
         private readonly EntityCacheTags                $entityCacheTags,
         private readonly KernelInterface                $kernel,
-        private readonly ListSpecificationFactory       $listSpecificationFactory,
+        private readonly ListBuilderFactory       $listFactory,
         private readonly LoggerInterface                $logger,
         private readonly ReaderRequestAttributeResolver $attributeResolver,
         private readonly ResponseContextAccessor        $responseContextAccessor,
@@ -112,11 +112,11 @@ final class ReaderController extends AbstractContentElementController
 
         try
         {
-            $listSpec = $this->listSpecificationFactory->create(dataSource: $listModel);
+            $listSpec = $this->listFactory->createFromListModel($listModel)->build();
 
             $validationContext = $this->validationContextFactory->createFromContent(
                 contentModel: $contentModel,
-                listModel: $listModel
+                list: $listSpec,
             );
 
             $engine = $this->engineFactory->createEngine($validationContext, $listSpec);
@@ -140,7 +140,7 @@ final class ReaderController extends AbstractContentElementController
             $pageMetaEvent = $this->eventDispatcher->dispatch(new ReaderPageMetaEvent(
                 contentModel: $contentModel,
                 displayModel: $autoItemModel,
-                listSpecification: $listSpec,
+                list: $listSpec,
             ));
             $pageMeta = $pageMetaEvent->getPageMeta();
         }
@@ -157,7 +157,7 @@ final class ReaderController extends AbstractContentElementController
                 contentModel: $contentModel,
                 context: $validationContext,
                 displayModel: $autoItemModel,
-                listSpecification: $listSpec,
+                list: $listSpec,
                 pageMeta: $pageMeta,
                 template: $template,
             )

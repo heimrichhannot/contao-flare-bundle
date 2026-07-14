@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
 use HeimrichHannot\FlareBundle\Engine\Loader\AggregationLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\AggregationLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\AggregationView;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Lists\ListSpec;
 
 /**
  * @implements ProjectorInterface<AggregationView>
@@ -21,12 +21,12 @@ class AggregationProjector extends AbstractProjector
         private readonly LoaderFactory $loaderFactory,
     ) {}
 
-    public function supports(ListSpecification $list, ContextInterface $context): bool
+    public function supports(ListSpec $list, ContextInterface $context): bool
     {
         return $context instanceof AggregationContext;
     }
 
-    public function project(ListSpecification $list, ContextInterface $context): AggregationView
+    public function project(ListSpec $list, ContextInterface $context): AggregationView
     {
         \assert($context instanceof AggregationContext, '$config must be an instance of AggregationConfig');
 

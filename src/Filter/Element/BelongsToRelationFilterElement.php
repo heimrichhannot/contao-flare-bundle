@@ -64,7 +64,7 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
             throw new FilterException('No parent field defined.');
         }
 
-        $inferrable = PtableInferrableFactory::createFromListModelLike($context->list);
+        $inferrable = PtableInferrableFactory::createFromConfig($context->list->config);
         $inferrer = new PtableInferrer($inferrable, $context->list->dc);
 
         try

@@ -4,22 +4,17 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Sort\Factory;
 
-use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Lists\ListSpec;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Sort\SortOrder;
 use HeimrichHannot\FlareBundle\Sort\SortOrderSequence;
 
 final readonly class SortOrderSequenceFactory
 {
-    public function createFromListModel(ListModel $listModel): ?SortOrderSequence
+    public function createFromList(ListSpec $list): ?SortOrderSequence
     {
-        if (!$listModel->sortSettings) {
-            return null;
-        }
-
-        if (!$sortSettings = StringUtil::deserialize($listModel->sortSettings, true)) {
+        if (!$sortSettings = ($list->config['sortSettings'] ?? [])) {
             return null;
         }
 

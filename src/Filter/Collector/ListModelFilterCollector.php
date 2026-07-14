@@ -12,10 +12,13 @@ use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
-use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
-readonly class ListModelFilterCollector implements FilterCollectorInterface
+/**
+ * Collects the published tl_flare_filter rows of a list model as Filter DTOs,
+ * translating each row through its element's transformers.
+ */
+readonly class ListModelFilterCollector
 {
     public function __construct(
         private EventDispatcherInterface  $eventDispatcher,
@@ -24,22 +27,16 @@ readonly class ListModelFilterCollector implements FilterCollectorInterface
         private ListTypeRegistry          $listTypeRegistry,
     ) {}
 
-    public function supports(ListDataSourceInterface $dataSource): bool
+    /**
+     * @return array<string, Filter>|null
+     */
+    public function collect(ListModel $listModel): ?array
     {
-        return $dataSource instanceof ListModel;
-    }
-
-    public function collect(ListDataSourceInterface $dataSource): ?array
-    {
-        if (!$dataSource instanceof ListModel) {
-            throw new \InvalidArgumentException('The given data source is not a list model.');
-        }
-
-        if (!$dataSource->id || !$table = $dataSource->getTable()) {
+        if (!$listModel->id || !$table = $listModel::getTable()) {
             return null;
         }
 
-        if (!$this->listTypeRegistry->get($dataSource->getListType())?->getService()) {
+        if (!$this->listTypeRegistry->get((string) $listModel->type)?->getService()) {
             return null;
         }
 
@@ -48,7 +45,7 @@ readonly class ListModelFilterCollector implements FilterCollectorInterface
         $filters = [];
 
         /** @var FilterModel $model */
-        foreach (FilterModel::findByPid((int) $dataSource->id, published: true) as $model)
+        foreach (FilterModel::findByPid((int) $listModel->id, published: true) as $model)
             // Collect filters defined in the backend
         {
             if (!$model->published) {

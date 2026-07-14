@@ -21,7 +21,7 @@ use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Lists\ListSpec;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -258,7 +258,7 @@ class ArchiveFilterElement extends AbstractFilterElement
     /**
      * @return array<string, int[]>|int[] Parent IDs, either flat (main ptable) or mapped by table (dynamic ptable).
      */
-    protected function getWhitelistedParentIds(ListSpecification $list, array $config): array
+    protected function getWhitelistedParentIds(ListSpec $list, array $config): array
     {
         $inferrer = $this->getPtableInferrer($list);
 
@@ -287,7 +287,7 @@ class ArchiveFilterElement extends AbstractFilterElement
     /**
      * @return Model[]
      */
-    protected function getWhitelistedParents(ListSpecification $list, array $config): array
+    protected function getWhitelistedParents(ListSpec $list, array $config): array
     {
         $inferrer = $this->getPtableInferrer($list);
 
@@ -324,7 +324,7 @@ class ArchiveFilterElement extends AbstractFilterElement
     /**
      * @return Model[]
      */
-    public function processRuntimeValue(mixed $value, ListSpecification $list, array $config): array
+    public function processRuntimeValue(mixed $value, ListSpec $list, array $config): array
     {
         $values = $this->normalizeFilterValue($value);
 
@@ -400,7 +400,7 @@ class ArchiveFilterElement extends AbstractFilterElement
         return $arr;
     }
 
-    private function getPtableInferrer(ListSpecification $list): PtableInferrer
+    private function getPtableInferrer(ListSpec $list): PtableInferrer
     {
         $cacheKey = $list->hash();
 
@@ -408,7 +408,7 @@ class ArchiveFilterElement extends AbstractFilterElement
             return $this->_inferrer[$cacheKey];
         }
 
-        $inferrable = PtableInferrableFactory::createFromListModelLike($list);
+        $inferrable = PtableInferrableFactory::createFromConfig($list->config);
         return $this->_inferrer[$cacheKey] = new PtableInferrer($inferrable, $list->dc);
     }
 
@@ -509,7 +509,7 @@ class ArchiveFilterElement extends AbstractFilterElement
      *
      * @return Model[]|null
      */
-    private function buildPreselectData(ListSpecification $list, array $preselect): ?array
+    private function buildPreselectData(ListSpec $list, array $preselect): ?array
     {
         if (!$preselect) {
             return null;

@@ -9,7 +9,7 @@ use Contao\Model;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Lists\ListSpec;
 use Symfony\Contracts\EventDispatcher\Event;
 
 class ReaderRenderEvent extends Event
@@ -20,7 +20,7 @@ class ReaderRenderEvent extends Event
         private readonly ContentModel      $contentModel,
         private readonly ContextInterface  $context,
         private readonly Model             $displayModel,
-        private readonly ListSpecification $listSpecification,
+        private readonly ListSpec $list,
         private ReaderPageMeta             $pageMeta,
         private Template                   $template,
     ) {}
@@ -40,9 +40,9 @@ class ReaderRenderEvent extends Event
         return $this->displayModel;
     }
 
-    public function getListSpecification(): ListSpecification
+    public function getList(): ListSpec
     {
-        return $this->listSpecification;
+        return $this->list;
     }
 
     public function getPageMeta(): ReaderPageMeta

@@ -15,19 +15,19 @@ use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\Loader\EventsInteracti
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\View\InteractiveEventsView;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Lists\ListSpec;
 use Symfony\Component\Form\FormInterface;
 
 class EventsInteractiveProjector extends InteractiveProjector
 {
     use GroupsEntriesTrait;
 
-    public function supports(ListSpecification $list, ContextInterface $context): bool
+    public function supports(ListSpec $list, ContextInterface $context): bool
     {
-        return $list->type === EventsListType::TYPE && $context instanceof InteractiveContext;
+        return $list->getTypeAlias() === EventsListType::TYPE && $context instanceof InteractiveContext;
     }
 
-    public function priority(ListSpecification $list, ContextInterface $context): int
+    public function priority(ListSpec $list, ContextInterface $context): int
     {
         return 100;
     }

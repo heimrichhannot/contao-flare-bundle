@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Reader\Factory;
 
 use Contao\Model;
+use HeimrichHannot\FlareBundle\List\Factory\ListBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Reader\ReaderRequestAttribute;
-use HeimrichHannot\FlareBundle\List\Factory\ListBuilderFactory;
 
 final readonly class ReaderRequestAttributeFactory
 {

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\List\Factory;
 
 use HeimrichHannot\FlareBundle\Filter\Collector\ListModelFilterCollector;
-use HeimrichHannot\FlareBundle\ListType\ListTypeInterface;
 use HeimrichHannot\FlareBundle\List\ListBuilder;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
+use HeimrichHannot\FlareBundle\List\Type\ListTypeInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;

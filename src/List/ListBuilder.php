@@ -11,8 +11,8 @@ use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\ListType\ListTypeInterface;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
+use HeimrichHannot\FlareBundle\List\Type\ListTypeInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -141,7 +141,7 @@ final class ListBuilder
 
         if ($this->model)
         {
-            BaseListOptions::transform($this->model, $config);
+            BaseListOptions::transform($config, $this->model);
 
             if ($this->typeService instanceof TransformerContract)
             {

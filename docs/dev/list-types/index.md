@@ -8,7 +8,7 @@ To create a custom list type, annotate your class with the `#[AsListType]` attri
 
 ```php
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
-use HeimrichHannot\FlareBundle\ListType\AbstractListType;
+use HeimrichHannot\FlareBundle\List\Type\AbstractListType;
 
 #[AsListType(
     type: 'my_custom_list',

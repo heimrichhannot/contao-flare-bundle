@@ -22,9 +22,9 @@ interface FilterElementInterface
     /**
      * Translates canonical config and runtime data into filter type calls.
      *
-     * @param array<string, mixed> $data Submitted form data of this filter's compound child (keyed by
+     * @param array<string, mixed> $values Submitted form data of this filter's compound child (keyed by
      *   the local child names added in buildForm()) or a programmatically set data bag; empty array
      *   when neither exists (e.g. non-interactive contexts).
      */
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void;
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void;
 }

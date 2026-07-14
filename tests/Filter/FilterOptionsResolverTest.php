@@ -69,7 +69,7 @@ final class ElementConfigAwareElement implements FilterElementInterface, Options
     {
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
     }
 }
@@ -80,7 +80,7 @@ final class PlainElement implements FilterElementInterface
     {
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
     }
 }

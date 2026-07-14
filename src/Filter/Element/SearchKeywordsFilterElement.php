@@ -61,13 +61,13 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
         $builder->add(FilterContext::FIELD_VALUE, TextType::class, $options);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
         $config = $context->config;
 
         $value = $config['intrinsic']
             ? $config['prefill']
-            : ($data[FilterContext::FIELD_VALUE] ?? null);
+            : ($values[FilterContext::FIELD_VALUE] ?? null);
 
         if (!$value || !\is_string($value)) {
             return;

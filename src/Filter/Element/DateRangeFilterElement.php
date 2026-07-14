@@ -34,6 +34,8 @@ class DateRangeFilterElement extends AbstractFilterElement
     {
         $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('field')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('from_enabled')->default(true)->allowedTypes('bool');
+        $resolver->define('to_enabled')->default(true)->allowedTypes('bool');
     }
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
@@ -49,19 +51,23 @@ class DateRangeFilterElement extends AbstractFilterElement
             return;
         }
 
-        $builder->add('from', DateType::class, [
-            'widget' => 'single_text',
-            'label' => 'label.date_range.from',
-            'html5' => true,
-            'required' => false,
-        ]);
+        if ($context->config['from_enabled']) {
+            $builder->add('from', DateType::class, [
+                'widget' => 'single_text',
+                'label' => 'label.date_range.from',
+                'html5' => true,
+                'required' => false,
+            ]);
+        }
 
-        $builder->add('to', DateType::class, [
-            'widget' => 'single_text',
-            'label' => 'label.date_range.to',
-            'html5' => true,
-            'required' => false,
-        ]);
+        if ($context->config['to_enabled']) {
+            $builder->add('to', DateType::class, [
+                'widget' => 'single_text',
+                'label' => 'label.date_range.to',
+                'html5' => true,
+                'required' => false,
+            ]);
+        }
 
         $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validateRange(...));
     }
@@ -69,7 +75,7 @@ class DateRangeFilterElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
         if (!$field = $context->config['field']) {
             throw new FilterException('Set fieldGeneric in filter model.');
@@ -77,8 +83,8 @@ class DateRangeFilterElement extends AbstractFilterElement
 
         $builder->add(DateRangeFilterType::class, [
             'field' => $field,
-            'from' => $data['from'] ?? null,
-            'to' => $data['to'] ?? null,
+            'from' => $values['from'] ?? null,
+            'to' => $values['to'] ?? null,
         ]);
     }
 

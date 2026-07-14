@@ -102,14 +102,14 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
         $builder->add(FilterContext::FIELD_VALUE, ChoiceType::class, $formOptions);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
         $config = $context->config;
         $options = $this->getOptions($context->list->dc, $config['field']) ?? [];
 
         $selected = $config['intrinsic']
             ? $config['preselect']
-            : $this->normalizeSubmittedValue($data[FilterContext::FIELD_VALUE] ?? null, $options);
+            : $this->normalizeSubmittedValue($values[FilterContext::FIELD_VALUE] ?? null, $options);
 
         if (!$selected) {
             return;

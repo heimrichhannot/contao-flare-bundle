@@ -97,7 +97,7 @@ final class TransformingElement implements FilterElementInterface, TransformerCo
     {
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
     }
 }
@@ -108,7 +108,7 @@ final class PlainTransformerlessElement implements FilterElementInterface
     {
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
     }
 }

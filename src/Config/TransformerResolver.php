@@ -8,10 +8,10 @@ namespace HeimrichHannot\FlareBundle\Config;
  * Maps source classes to transformers translating a stored source object into canonical
  * config values. Configured declaratively per element/type class and extensible via events.
  */
-final class TransformerBuilder
+final class TransformerResolver
 {
     /**
-     * @var array<class-string, callable(object, ConfigBuilder): void>
+     * @var array<class-string, TransformerInterface|(callable(object, ConfigBuilder): void)>
      */
     private array $transformers = [];
 
@@ -20,9 +20,9 @@ final class TransformerBuilder
      * the previous transformer, so event listeners can override element defaults.
      *
      * @param class-string $sourceClass
-     * @param callable(object $source, ConfigBuilder $config): void $transformer
+     * @param TransformerInterface|callable(ConfigBuilder $config, object $source): void $transformer
      */
-    public function for(string $sourceClass, callable $transformer): self
+    public function for(string $sourceClass, TransformerInterface|callable $transformer): self
     {
         $this->transformers[$sourceClass] = $transformer;
 
@@ -36,9 +36,9 @@ final class TransformerBuilder
      *
      * @param object $source The stored source object to be transformed.
      *
-     * @return (callable(object, ConfigBuilder): void)|null
+     * @return TransformerInterface|(callable(ConfigBuilder $config, object $source): void)|null
      */
-    public function resolve(object $source): ?callable
+    public function resolve(object $source): TransformerInterface|callable|null
     {
         if ($transformer = $this->transformers[$source::class] ?? null) {
             return $transformer;

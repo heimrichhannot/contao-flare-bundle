@@ -50,7 +50,7 @@ class GenericDataContainerListType extends AbstractListType implements DataConta
         return $row['dc'] ?? '';
     }
 
-    protected function transformListModel(ListModel $model, ConfigBuilder $config): void
+    protected function transformListModel(ConfigBuilder $config, ListModel $model): void
     {
         $config->set('genericPageMeta', true);
     }

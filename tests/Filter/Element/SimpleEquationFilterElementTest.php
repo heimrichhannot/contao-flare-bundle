@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Filter\Element;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerBuilder;
+use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -67,7 +67,7 @@ final class SimpleEquationFilterElementTest extends TestCase
     {
         $element = new SimpleEquationFilterElement();
 
-        $transformers = new TransformerBuilder();
+        $transformers = new TransformerResolver();
         $element->configureTransformers($transformers);
 
         $transformer = $transformers->resolve($model = new FilterModelStub($row));

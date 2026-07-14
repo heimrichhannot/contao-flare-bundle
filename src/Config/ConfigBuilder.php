@@ -9,7 +9,7 @@ namespace HeimrichHannot\FlareBundle\Config;
  * ({@see \HeimrichHannot\FlareBundle\Contract\TransformerContract}). Casting, deserialization,
  * and enum parsing happen declaratively at the call site — this builder only collects.
  */
-final class ConfigBuilder
+final class ConfigBuilder implements ConfigBuilderInterface
 {
     /**
      * @var array<string, mixed>
@@ -21,6 +21,11 @@ final class ConfigBuilder
         $this->config[$key] = $value;
 
         return $this;
+    }
+
+    public function get(string $key): mixed
+    {
+        return $this->config[$key] ?? null;
     }
 
     /**

@@ -17,10 +17,15 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-#[AsFilterElement(type: self::TYPE, intrinsicOnly: true, isTargeted: true)]
+#[AsFilterElement(type: self::TYPE, isTargeted: true)]
 class SimpleEquationFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_equation_simple';
+
+    public function isOnlyIntrinsic(): bool
+    {
+        return true;
+    }
 
     public function configureOptions(OptionsResolver $resolver): void
     {

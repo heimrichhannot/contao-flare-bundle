@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\List;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerBuilder;
+use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\ListType\BuildListContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
@@ -24,7 +24,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  * base translation, the type's model transformers, and explicit {@see set()} overrides —
  * resolved through the base and type schemas.
  */
-final class ListBuilder
+final class ListBuilder implements ListBuilderInterface
 {
     /**
      * @var array<string, Filter>
@@ -114,6 +114,11 @@ final class ListBuilder
         return $this->filters;
     }
 
+    public function getFilter(string $key): ?Filter
+    {
+        return $this->filters[$key] ?? null;
+    }
+
     public function hasFilterOfType(string $elementType): bool
     {
         foreach ($this->filters as $filter)
@@ -145,11 +150,11 @@ final class ListBuilder
 
             if ($this->typeService instanceof TransformerContract)
             {
-                $transformers = new TransformerBuilder();
+                $transformers = new TransformerResolver();
                 $this->typeService->configureTransformers($transformers);
 
                 if ($transformer = $transformers->resolve($this->model)) {
-                    $transformer($this->model, $config);
+                    $transformer($config, $this->model);
                 }
             }
         }

@@ -8,6 +8,7 @@ use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
+use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -53,7 +54,7 @@ class ArchiveFilterElement extends AbstractFilterElement
         $resolver->define('preselect')->default([])->allowedTypes('array');
     }
 
-    protected function transformFilterModel(FilterModel $model, ConfigBuilder $config): void
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
         $formatLabel = $model->formatLabel === 'custom'
             ? $model->formatLabelCustom

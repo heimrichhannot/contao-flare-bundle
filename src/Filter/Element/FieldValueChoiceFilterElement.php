@@ -68,16 +68,17 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
         $choicesBuilder = $this->createChoices($context->list->dc, (string) ($config['field'] ?? ''))
             ->setEmptyOption(!$config['multiple']);
 
-        $builder->add(FilterContext::FIELD_VALUE, ChoiceType::class, [
+        $formOptions = [
             'label' => false,
             'multiple' => $config['multiple'],
             'expanded' => $config['expanded'],
             'required' => false,
-            'choice_loader' => $choicesBuilder->buildCallbackChoiceLoader(),
-            'choice_label' => $choicesBuilder->buildChoiceLabelCallback(),
-            'choice_value' => $choicesBuilder->buildChoiceValueCallback(),
             'data' => $this->buildPreselectData($choicesBuilder, $config),
-        ]);
+        ];
+
+        $choicesBuilder->applyFormOptions($formOptions);
+
+        $builder->add(FilterContext::FIELD_VALUE, ChoiceType::class, $formOptions);
 
         $builder->setAttribute('flare.choices_builder', $choicesBuilder);
     }
@@ -134,7 +135,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
 
                 return $this->createChoices($table, $valueField)
                     ->setModelSuffix('[%id%]')
-                    ->buildOptions();
+                    ->buildContaoOptions();
             });
     }
 
@@ -144,9 +145,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
      */
     private function createChoices(string $table, string $field): ChoicesBuilder
     {
-        $choices = $this->choicesBuilderFactory
-            ->createChoicesBuilder()
-            ->enable();
+        $choices = $this->choicesBuilderFactory->createChoicesBuilder();
 
         if (!\is_null($foreignValues = $this->getForeignValues($table, $field)))
         {
@@ -236,8 +235,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
             return $preselect;
         }
 
-        if ($multiple
-            || (\is_string($preselect) && \preg_match('/^a:\d+:\{.*}$/', $preselect)))
+        if ($multiple || (\is_string($preselect) && \preg_match('/^a:\d+:\{.*}$/', $preselect)))
         {
             return StringUtil::deserialize($preselect, true);
         }

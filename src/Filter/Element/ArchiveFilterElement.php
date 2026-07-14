@@ -17,7 +17,6 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\ArchiveFilterType;
 use HeimrichHannot\FlareBundle\Filter\Type\BelongsToRelationFilterType;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
-use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 use HeimrichHannot\FlareBundle\List\ListSpec;
@@ -33,10 +32,6 @@ class ArchiveFilterElement extends AbstractFilterElement
     public const TYPE = 'flare_archive';
 
     private array $_inferrer = [];
-
-    public function __construct(
-        private readonly ChoicesBuilderFactory $choicesBuilderFactory,
-    ) {}
 
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -90,23 +85,20 @@ class ArchiveFilterElement extends AbstractFilterElement
 
         $inferrer = $this->getPtableInferrer($context->list);
 
-        $choices = $this->choicesBuilderFactory->createChoicesBuilder()->enable();
-        $builder->setAttribute('flare.choices_builder', $choices);
-
         $formOptions = [
             'label' => false,
             'required' => $config['is_mandatory'],
             'multiple' => $config['is_multiple'],
             'expanded' => $config['is_expanded'],
-            'choice_loader' => $choices->buildCallbackChoiceLoader(),
-            'choice_label' => $choices->buildChoiceLabelCallback(),
-            'choice_value' => $choices->buildChoiceValueCallback(),
         ];
 
         $data = $this->buildPreselectData($context->list, $config['preselect']);
         if (!\is_null($data) && \count($data)) {
             $formOptions['data'] = $data;
         }
+
+        $choices = $this->createChoicesBuilder()->applyFormOptions($formOptions);
+        $builder->setAttribute('flare.choices_builder', $choices);
 
         $builder->add(FilterContext::FIELD_VALUE, ChoiceType::class, $formOptions);
 
@@ -464,15 +456,12 @@ class ArchiveFilterElement extends AbstractFilterElement
      */
     private function getPreselectOptions(PtableInferrer $inferrer, array $row): array
     {
-        $choices = $this->choicesBuilderFactory
-            ->createChoicesBuilder()
-            ->setModelSuffix('[%id%]')
-            ->enable();
+        $choices = $this->createChoicesBuilder()->setModelSuffix('[%id%]');
 
         if ($ptable = $inferrer->getDcaMainPtable())
         {
             if (!$parents = $this->fetchParents($ptable, $this->normalizeIds($row['whitelistParents'] ?? null))) {
-                return $choices->buildOptions();
+                return $choices->buildContaoOptions();
             }
 
             foreach ($parents as $parent)
@@ -480,7 +469,7 @@ class ArchiveFilterElement extends AbstractFilterElement
                 $choices->add(\sprintf('%s.%s', $ptable, $parent->id), $parent);
             }
 
-            return $choices->buildOptions();
+            return $choices->buildContaoOptions();
         }
 
         if ($inferrer->isDcaDynamicPtable())
@@ -500,7 +489,7 @@ class ArchiveFilterElement extends AbstractFilterElement
             }
         }
 
-        return $choices->buildOptions();
+        return $choices->buildContaoOptions();
     }
 
     /**

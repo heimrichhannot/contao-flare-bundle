@@ -118,8 +118,8 @@ class InteractiveProjector extends AbstractProjector
     }
 
     /**
-     * Collects each filter's submitted form data (the compound child's data array),
-     * keyed by the filter's list-specification key.
+     * Collects each filter's form data (the compound child's data array), keyed by the
+     * filter's list-specification key.
      *
      * @return array<string|int, array<string, mixed>>
      */
@@ -133,7 +133,25 @@ class InteractiveProjector extends AbstractProjector
                 continue;
             }
 
-            $data[$key] = (array) $form->get($filter->alias)->getData();
+            $child = $form->get($filter->alias);
+
+            if ($form->isSubmitted())
+            {
+                $data[$key] = (array) $child->getData();
+                continue;
+            }
+
+            // Unsubmitted forms never map the fields' default data (e.g., preselects) back onto
+            // the compound filter child, so collect the defaults from the fields directly.
+            // Filters without defaults stay unset here, so Filter::$data can take over.
+            $values = \array_filter(
+                \array_map(static fn (FormInterface $field): mixed => $field->getData(), $child->all()),
+                static fn (mixed $value): bool => !\is_null($value),
+            );
+
+            if ($values) {
+                $data[$key] = $values;
+            }
         }
 
         return $data;

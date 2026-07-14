@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Registry;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Projector\ProjectorInterface;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Lists\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
 
 readonly class ProjectorRegistry

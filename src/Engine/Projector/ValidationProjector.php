@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
 use HeimrichHannot\FlareBundle\Reader\BackLink;
 use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
-use HeimrichHannot\FlareBundle\Lists\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 
 /**
  * @implements ProjectorInterface<ValidationView>

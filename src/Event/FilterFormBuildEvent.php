@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Event;
 
-use HeimrichHannot\FlareBundle\Lists\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Contracts\EventDispatcher\Event;
 

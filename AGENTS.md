@@ -18,7 +18,7 @@ The core execution flow is:
 
 ```
 ContentElement Controller
-  → ListBuilderFactory::createFromListModel(...)->build() — builds the immutable ListSpec (src/Lists/)
+  → ListBuilderFactory::createFromListModel(...)->build() — builds the immutable ListSpec (src/List/)
     → EngineFactory → Engine
       → Context (Interactive / Validation / Aggregation) — src/Engine/Context/
         → Loader (src/Engine/Loader/) + Mods (src/Engine/Mod/)
@@ -36,7 +36,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 (`buildDca`, `buildForm`, `buildFilter`, `buildList`, `buildTableRegistry`/`buildBaseQuery`).
 
 **Notable subsystems** (beyond the flow above):
-- `src/Lists/` — `ListSpec` (immutable list DTO: type, dc, filters, canonical config, source), `ListBuilder`
+- `src/List/` — `ListSpec` (immutable list DTO: type, dc, filters, canonical config, source), `ListBuilder`
   (build lifecycle: type's `buildList()` hook → `ListBuildEvent` → config assembly → schema resolution),
   `BaseListOptions` (framework-owned base schema for tl_flare_list columns)
 - `src/Filter/` — `Filter` DTO, elements (`Element/`), types (`Type/`), collector, resolvers

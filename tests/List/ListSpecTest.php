@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Tests\Lists;
+namespace HeimrichHannot\FlareBundle\Tests\List;
 
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Lists\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use PHPUnit\Framework\TestCase;
 
 final class ListSpecTest extends TestCase

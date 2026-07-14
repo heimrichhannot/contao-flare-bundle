@@ -20,7 +20,7 @@ use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
-use HeimrichHannot\FlareBundle\Lists\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use Symfony\Component\Form\FormInterface;
 
 /**

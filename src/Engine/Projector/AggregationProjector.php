@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
 use HeimrichHannot\FlareBundle\Engine\Loader\AggregationLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\AggregationLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\AggregationView;
-use HeimrichHannot\FlareBundle\Lists\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 
 /**
  * @implements ProjectorInterface<AggregationView>

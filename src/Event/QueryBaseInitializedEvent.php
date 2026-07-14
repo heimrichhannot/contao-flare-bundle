@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Event;
 
 use HeimrichHannot\FlareBundle\Query\SqlQueryStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
-use HeimrichHannot\FlareBundle\Lists\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use Symfony\Contracts\EventDispatcher\Event;
 
 class QueryBaseInitializedEvent extends Event

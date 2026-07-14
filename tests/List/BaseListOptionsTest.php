@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Tests\Lists;
+namespace HeimrichHannot\FlareBundle\Tests\List;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Lists\BaseListOptions;
-use HeimrichHannot\FlareBundle\Lists\Resolver\ListOptionsResolver;
+use HeimrichHannot\FlareBundle\List\BaseListOptions;
+use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use PHPUnit\Framework\TestCase;
 

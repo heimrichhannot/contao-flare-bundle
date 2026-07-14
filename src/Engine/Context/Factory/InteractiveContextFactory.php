@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Engine\Context\Factory;
 use Contao\ContentModel;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
-use HeimrichHannot\FlareBundle\Lists\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Sort\Factory\SortOrderSequenceFactory;
 use Symfony\Component\Validator\Exception\ValidationFailedException;

@@ -9,7 +9,7 @@ use Contao\Model;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
-use HeimrichHannot\FlareBundle\Lists\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use Symfony\Contracts\EventDispatcher\Event;
 
 class ReaderRenderEvent extends Event

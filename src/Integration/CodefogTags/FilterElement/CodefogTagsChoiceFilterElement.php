@@ -13,7 +13,6 @@ use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\IntegerIdChoiceFilterType;
-use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
@@ -29,7 +28,6 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
     public const TYPE = 'cfg_tags_choice';
 
     public function __construct(
-        private readonly ChoicesBuilderFactory       $choicesBuilderFactory,
         private readonly CfgTagsJoinsRegistry        $joinsRegistry,
         private readonly ListExecutionContextFactory $listExecutionContextFactory,
         private readonly LoggerInterface             $logger,
@@ -97,15 +95,11 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
 
         if (!\is_null($optValues))
         {
-            $choicesBuilder = $this->choicesBuilderFactory->createChoicesBuilder()->enable();
+            $choicesBuilder = $this->createChoicesBuilder()->applyFormOptions($formOptions);
 
             foreach ($optValues as $value => $label) {
                 $choicesBuilder->add((string) $value, (string) $label, (int) $value);
             }
-
-            $formOptions['choice_loader'] = $choicesBuilder->buildCallbackChoiceLoader();
-            $formOptions['choice_label'] = $choicesBuilder->buildChoiceLabelCallback();
-            $formOptions['choice_value'] = $choicesBuilder->buildChoiceValueCallback();
 
             $builder->setAttribute('flare.choices_builder', $choicesBuilder);
         }

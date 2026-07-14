@@ -164,5 +164,4 @@ class BooleanFilterElement extends AbstractFilterElement
 
         return $options;
     }
-
 }

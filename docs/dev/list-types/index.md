@@ -7,14 +7,14 @@ List Types define the source of data for a list and how the base query should be
 To create a custom list type, annotate your class with the `#[AsListType]` attribute. Your class should ideally extend `AbstractListType` to inherit default behavior.
 
 ```php
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
-use HeimrichHannot\FlareBundle\List\Type\AbstractListType;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
+use HeimrichHannot\FlareBundle\List\Type\AbstractListDriver;
 
-#[AsListType(
+#[AsListDriver(
     type: 'my_custom_list',
     dataContainer: 'tl_my_table'
 )]
-class MyCustomListType extends AbstractListType
+class MyCustomListType extends AbstractListDriver
 {
     // ...
 }
@@ -82,18 +82,18 @@ The built-in news list type uses this to guarantee a published-state filter:
 use HeimrichHannot\FlareBundle\Contract\ListType\BuildListContract;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\List\ListBuilder;
+use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
 
 class MyCustomListType extends AbstractListType implements BuildListContract
 {
-    public function buildList(ListBuilder $builder): void
+    public function buildList(ListSpecBuilder $builder): void
     {
         if ($builder->hasFilterOfType(PublishedFilterElement::TYPE)) {
             return;
         }
 
         $builder->addFilter(new Filter(
-            element: PublishedFilterElement::TYPE,
+            type: PublishedFilterElement::TYPE,
             config: [
                 'intrinsic' => true,
                 'published_field' => 'published',

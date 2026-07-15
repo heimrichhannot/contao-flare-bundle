@@ -119,7 +119,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 
 $filter = new Filter(
-    element: new class implements FilterElementInterface {
+    type: new class implements FilterElementInterface {
         public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 
         public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void

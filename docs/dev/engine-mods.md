@@ -64,7 +64,7 @@ class BooleanTrueMod extends AbstractMod
     public function __invoke(Engine $engine, array $options): void
     {
         $filter = new Filter(
-            element: SimpleEquationFilterElement::TYPE,
+            type: SimpleEquationFilterElement::TYPE,
             config: [
                 'intrinsic' => true,
                 'left' => $options['field'],

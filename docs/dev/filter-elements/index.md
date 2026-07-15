@@ -286,7 +286,7 @@ use HeimrichHannot\FlareBundle\Filter\Element\BooleanFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 
 $filter = new Filter(
-    element: BooleanFilterElement::TYPE,
+    type: BooleanFilterElement::TYPE,
     config: [
         'intrinsic' => true,
         'field' => 'featured',

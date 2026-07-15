@@ -117,7 +117,7 @@ final class ListBuilderTest extends TestCase
     ): ListBuilder {
         return new ListBuilder(
             optionsResolver: new ListOptionsResolver(new SchemaResolver()),
-            transformerResolver: new ListTransformerResolver(),
+            transformerResolver: new ListTransformerResolver($dispatcher),
             eventDispatcher: $dispatcher,
             type: 'test_type',
             typeService: $typeService,

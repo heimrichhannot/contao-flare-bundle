@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
+use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
@@ -19,7 +20,7 @@ final class FilterOptionsResolverTest extends TestCase
 {
     public function testResolvesOptionsThroughElementSchema(): void
     {
-        $resolver = new FilterOptionsResolver();
+        $resolver = new FilterOptionsResolver(new SchemaResolver());
         $element = new ElementConfigAwareElement();
 
         $config = $resolver->resolve(new Filter(element: 'test', config: ['field' => 'title']), $element);
@@ -30,7 +31,7 @@ final class FilterOptionsResolverTest extends TestCase
 
     public function testReturnsOptionsVerbatimWithoutOptionsContract(): void
     {
-        $resolver = new FilterOptionsResolver();
+        $resolver = new FilterOptionsResolver(new SchemaResolver());
         $element = new PlainElement();
 
         $config = ['anything' => 'goes', 'unvalidated' => true];
@@ -40,7 +41,7 @@ final class FilterOptionsResolverTest extends TestCase
 
     public function testWrapsSchemaViolationsInFilterException(): void
     {
-        $resolver = new FilterOptionsResolver();
+        $resolver = new FilterOptionsResolver(new SchemaResolver());
         $element = new ElementConfigAwareElement();
         $filter = new Filter(element: 'test', config: ['unknown_key' => 1], source: 'tl_flare_filter.42');
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\List;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
+use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Contract\ListType\BuildListContract;
 use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -114,7 +115,7 @@ final class ListBuilderTest extends TestCase
         ?ListModel      $model = null,
     ): ListBuilder {
         return new ListBuilder(
-            optionsResolver: new ListOptionsResolver(),
+            optionsResolver: new ListOptionsResolver(new SchemaResolver()),
             eventDispatcher: $dispatcher,
             type: 'test_type',
             typeService: $typeService,

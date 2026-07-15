@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Resolver;
 
+use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
  * Resolves a filter's canonical config through the element's declared schema.
@@ -16,10 +16,9 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  */
 class FilterOptionsResolver
 {
-    /**
-     * @var array<class-string, OptionsResolver>
-     */
-    private array $resolvers = [];
+    public function __construct(
+        private readonly SchemaResolver $schemaResolver,
+    ) {}
 
     /**
      * @return array<string, mixed>
@@ -32,16 +31,9 @@ class FilterOptionsResolver
             return $filter->config;
         }
 
-        if (!isset($this->resolvers[$element::class]))
-        {
-            $resolver = new OptionsResolver();
-            $element->configureOptions($resolver);
-            $this->resolvers[$element::class] = $resolver;
-        }
-
         try
         {
-            return $this->resolvers[$element::class]->resolve($filter->config);
+            return $this->schemaResolver->resolve($element::class, $element->configureOptions(...), $filter->config);
         }
         catch (\Throwable $e)
         {

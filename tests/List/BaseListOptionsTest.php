@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\List;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
+use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\List\BaseListOptions;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -47,7 +48,7 @@ final class BaseListOptionsTest extends TestCase
 
     public function testSchemaProvidesDefaultsForEmptyConfig(): void
     {
-        $resolved = (new ListOptionsResolver())->resolve(null, []);
+        $resolved = (new ListOptionsResolver(new SchemaResolver()))->resolve(null, []);
 
         self::assertNull($resolved['id']);
         self::assertSame('', $resolved['title']);
@@ -64,7 +65,7 @@ final class BaseListOptionsTest extends TestCase
 
         BaseListOptions::transform($config = new ConfigBuilder(), $model);
 
-        $resolved = (new ListOptionsResolver())->resolve(null, $config->all());
+        $resolved = (new ListOptionsResolver(new SchemaResolver()))->resolve(null, $config->all());
 
         self::assertSame(3, $resolved['id']);
         self::assertSame([], $resolved['sortSettings']);

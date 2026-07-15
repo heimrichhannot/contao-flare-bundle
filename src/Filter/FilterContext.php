@@ -14,10 +14,16 @@ use HeimrichHannot\FlareBundle\List\ListSpec;
 final readonly class FilterContext
 {
     /** Attribute-bag key under which this context is stored on the per-filter form builder. */
-    public const FORM_ATTRIBUTE = 'flare.filter_context';
+    public const ATTR_SELF = 'flare.filter_context';
 
-    /** Conventional local child name for single-field filter elements. */
-    public const FIELD_VALUE = 'v';
+    /** Attribute-bag key marking a root form child as a flat-mounted single field. */
+    public const ATTR_SINGLE_FIELD = 'flare.single_field';
+
+    /**
+     * Canonical values-bag key under which a single-field filter's value reaches buildFilter(),
+     * regardless of whether the field was mounted flat or inside a compound filter form.
+     */
+    public const SINGLE_VALUE = '0';
 
     /**
      * @param array<string, mixed> $config Resolved canonical config of the filter.

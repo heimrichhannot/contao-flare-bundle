@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 
 interface FilterElementInterface
 {

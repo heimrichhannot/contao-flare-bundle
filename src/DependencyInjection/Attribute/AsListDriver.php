@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Attribute;
 
 #[\Attribute(\Attribute::TARGET_CLASS | \Attribute::IS_REPEATABLE)]
-class AsListType
+class AsListDriver
 {
     public const TAG = 'huh.flare.list_type';
 

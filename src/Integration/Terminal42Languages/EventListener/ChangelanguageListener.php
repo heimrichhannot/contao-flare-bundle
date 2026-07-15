@@ -56,7 +56,7 @@ class ChangelanguageListener
     {
         $list = $event->getList();
 
-        if ($list->getTypeAlias() !== DcMultilingualListType::TYPE) {
+        if ($list->type !== DcMultilingualListType::TYPE) {
             return;
         }
 

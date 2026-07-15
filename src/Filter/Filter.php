@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Filter;
 /**
  * Immutable runtime representation of a single filter within a list.
  *
- * Pairs a filter element (registered type string or inline instance) with its canonical,
+ * Pairs a filter element (referenced by its registered type alias) with its canonical,
  * element-defined configuration. Contains no DCA/storage specifics — translating a stored
  * source into config is the element's transformer responsibility
  * ({@see \HeimrichHannot\FlareBundle\Contract\TransformerContract}).
@@ -108,13 +108,12 @@ final readonly class Filter
     }
 
     /**
-     * Stable representation for hashing/caching. Inline elements are represented by their
-     * class name, which makes hashes of anonymous elements request-local.
+     * Stable representation for hashing/caching.
      */
     public function fingerprint(): array
     {
         return [
-            'element' => $this->type,
+            'type' => $this->type,
             'config' => $this->config,
             'data' => $this->data,
             'alias' => $this->alias,

@@ -53,7 +53,7 @@ final class ListTransformerResolverTest extends TestCase
 
         self::assertSame(1, $driver->configureCalls);
         self::assertCount(1, $dispatchedWith);
-        self::assertSame($driver, $dispatchedWith[0]->typeService);
+        self::assertSame($driver, $dispatchedWith[0]->driver);
         self::assertSame('test', $dispatchedWith[0]->type);
     }
 

@@ -18,9 +18,9 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\FieldValueChoiceFilterType;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE)]
@@ -57,7 +57,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
             ->set('preselect', $this->normalizePreselect($model->preselect, $multiple));
     }
 
-    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
+    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
     {
         $config = $context->config;
 
@@ -78,7 +78,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
 
         $choicesBuilder->applyFormOptions($formOptions);
 
-        $builder->add(FilterContext::FIELD_VALUE, ChoiceType::class, $formOptions);
+        $builder->single(ChoiceType::class, $formOptions);
 
         $builder->setAttribute('flare.choices_builder', $choicesBuilder);
     }
@@ -97,7 +97,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
 
         $value = $config['intrinsic']
             ? $config['preselect']
-            : $this->normalizeRuntimeValue($values[FilterContext::FIELD_VALUE] ?? null, $context);
+            : $this->normalizeRuntimeValue($values[FilterContext::SINGLE_VALUE] ?? null, $context);
 
         if (!$value) {
             return;

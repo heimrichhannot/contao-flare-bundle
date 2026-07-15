@@ -17,13 +17,13 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\ArchiveFilterType;
 use HeimrichHannot\FlareBundle\Filter\Type\BelongsToRelationFilterType;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE)]
@@ -75,7 +75,7 @@ class ArchiveFilterElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
+    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
     {
         $config = $context->config;
 
@@ -100,7 +100,7 @@ class ArchiveFilterElement extends AbstractFilterElement
         $choices = $this->createChoicesBuilder()->applyFormOptions($formOptions);
         $builder->setAttribute('flare.choices_builder', $choices);
 
-        $builder->add(FilterContext::FIELD_VALUE, ChoiceType::class, $formOptions);
+        $builder->single(ChoiceType::class, $formOptions);
 
         if ($config['has_empty_option'])
         {
@@ -174,7 +174,7 @@ class ArchiveFilterElement extends AbstractFilterElement
         /** @var Model[] $selectedModels */
         $selectedModels = $config['intrinsic']
             ? $this->getWhitelistedParents($context->list, $config)
-            : $this->processRuntimeValue($values[FilterContext::FIELD_VALUE] ?? null, $context->list, $config);
+            : $this->processRuntimeValue($values[FilterContext::SINGLE_VALUE] ?? null, $context->list, $config);
 
         $inferrer = $this->getPtableInferrer($context->list);
 

@@ -15,9 +15,9 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\DcaSelectFilterType;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE)]
@@ -55,7 +55,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
                 : $preselect);
     }
 
-    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
+    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
     {
         $config = $context->config;
 
@@ -92,7 +92,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
             $formOptions['data'] = $data;
         }
 
-        $builder->add(FilterContext::FIELD_VALUE, ChoiceType::class, $formOptions);
+        $builder->single(ChoiceType::class, $formOptions);
     }
 
     public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
@@ -102,7 +102,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
 
         $selected = $config['intrinsic']
             ? $config['preselect']
-            : $this->normalizeSubmittedValue($values[FilterContext::FIELD_VALUE] ?? null, $options);
+            : $this->normalizeSubmittedValue($values[FilterContext::SINGLE_VALUE] ?? null, $options);
 
         if (!$selected) {
             return;

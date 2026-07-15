@@ -81,12 +81,15 @@ Dispatched while the filter form is being built, exposing the `FormBuilderInterf
 - **Properties:** `listSpecification`, `formName`, `formBuilder`
 
 ### `FilterElementFormBuiltEvent`
-Dispatched after a filter element built its form children on the per-filter compound sub-builder, before it
-is mounted onto the root form.
+Dispatched after a filter element declared its fields on the collect-only per-filter builder, before the
+factory mounts them onto the root form (flat for `single()` fields without companions, nested compound
+otherwise).
 - **Use Case:** Adding, removing, or replacing one filter's form children (re-adding a same-named child
-  overwrites it), or preventing the sub-form from being mounted at all.
+  overwrites it), adjusting the single-field declaration via `single()`/`getSingle()`, or preventing the
+  filter from being mounted at all. Adding a child alongside a `single()` declaration switches the filter
+  to the nested compound layout.
 - **Class:** `HeimrichHannot\FlareBundle\Event\FilterElementFormBuiltEvent`
-- **API:** `getBuilder(): FormBuilderInterface`, `getContext(): FilterContext`, `cancel()` / `isCancelled()`
+- **API:** `getBuilder(): FilterFormBuilderInterface`, `getContext(): FilterContext`, `cancel()` / `isCancelled()`
 
 ## 7. Backend DCA Lifecycle
 

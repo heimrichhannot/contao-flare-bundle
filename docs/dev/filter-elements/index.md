@@ -46,7 +46,7 @@ the query translation always happens in [`buildFilter()`](#6-query-translation-b
 Every element implements `FilterElementInterface`:
 
 ```php
-public function buildForm(FormBuilderInterface $builder, FilterContext $context): void;
+public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void;
 
 public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void;
 ```
@@ -75,7 +75,7 @@ Both `buildForm()` and `buildFilter()` receive a `FilterContext`
 | `$context->config` | The **resolved** canonical config (validated against `configureOptions()`) |
 | `$context->engineContext` | The engine context (`ContextInterface`) — interactive, validation, ... |
 | `$context->key` | Key of the filter within `ListSpecification::getFilters()` |
-| `FilterContext::FIELD_VALUE` | Constant `'v'` — conventional local child name for single-field elements |
+| `FilterContext::DEFAULT_FIELD_NAME` | Constant `'_'` — canonical `$data` key under which a `single()` field's value reaches `buildFilter()` |
 | `FilterContext::FORM_ATTRIBUTE` | Attribute-bag key under which the context is stored on the per-filter form builder |
 
 ## 3. Config Schema (`configureOptions` + `configFromRow`)
@@ -117,37 +117,44 @@ callbacks and reacting to the record's state.
 
 ## 5. Form Building (`buildForm`)
 
-Each non-intrinsic filter gets its own compound sub-form named after the filter's form name. Your element
-adds children to it under **local names** — use `FilterContext::FIELD_VALUE` (`'v'`) for single-control
-elements. Add no children and the filter simply has no form representation.
+`buildForm()` receives a Flare-owned `FilterFormBuilderInterface`. **Single-field elements** declare their
+one control via `single()` — the field is then mounted flat on the root form under the filter's form name,
+so the query parameter reads `form[alias]=x`:
 
 ```php
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 
-public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
+public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
 {
     if ($context->config['intrinsic'] ?? false) {
         return; // intrinsic filters render no controls
     }
 
-    $builder->add(FilterContext::FIELD_VALUE, TextType::class, [
+    $builder->single(TextType::class, [
         'label' => $context->config['label'] ?? false,
         'required' => false,
     ]);
 }
 ```
 
-Pre-submission defaults go into the children's native `data` option. After your element built its children,
-a [`FilterElementFormBuiltEvent`](../events.md) is dispatched so third parties can adjust or cancel the
-sub-form.
+**Multi-field elements** `add()` children under local names instead (e.g. `'from'`/`'to'`); they mount as
+a compound sub-form named after the filter's form name (`form[alias][from]=x`). Declare no fields and the
+filter simply has no form representation.
+
+Pre-submission defaults go into the fields' native `data` option. Event listeners registered on the builder
+are replayed onto the mounted form; event subscribers are not supported and throw. After your element
+declared its fields, a [`FilterElementFormBuiltEvent`](../events.md) is dispatched so third parties can
+adjust or cancel the filter's form — adding a child alongside a `single()` declaration switches the filter
+to the compound layout, with the single field materialized under `FilterContext::DEFAULT_FIELD_NAME`.
 
 ## 6. Query Translation (`buildFilter`)
 
 `buildFilter()` turns config and data into one or more **filter-type calls** — it does not write SQL:
 
 - `$context->config` is the resolved canonical config.
-- `$data` holds the submitted form data, keyed by the local child names from `buildForm()`
-  (or the filter's programmatic data bag; an empty array otherwise).
+- `$data` holds the submitted form data, keyed by the local field names from `buildForm()` —
+  `single()` fields always arrive under `FilterContext::DEFAULT_FIELD_NAME`, regardless of how they
+  were mounted (or the filter's programmatic data bag; an empty array otherwise).
 - `$builder->add(SomeFilterType::class, $options, ?$targetAlias)` records a call; the options are validated
   against the filter type's own schema.
 - `$builder->abort()` stops filtering entirely and yields an empty result set.
@@ -155,7 +162,7 @@ sub-form.
 ```php
 public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
 {
-    if (!$value = $data[FilterContext::FIELD_VALUE] ?? null) {
+    if (!$value = $data[FilterContext::DEFAULT_FIELD_NAME] ?? null) {
         return; // nothing submitted — this filter adds no conditions
     }
 
@@ -178,8 +185,8 @@ use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\SimpleEquationFilterType;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: 'app_city', isTargeted: true)]
@@ -204,9 +211,9 @@ class CityFilterElement extends AbstractFilterElement
         $dca->palette('{filter_legend},fieldGeneric,label');
     }
 
-    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
+    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
     {
-        $builder->add(FilterContext::FIELD_VALUE, TextType::class, [
+        $builder->single(TextType::class, [
             'label' => $context->config['label'] ?? false,
             'required' => false,
         ]);
@@ -214,7 +221,7 @@ class CityFilterElement extends AbstractFilterElement
 
     public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
     {
-        if (!$value = $data[FilterContext::FIELD_VALUE] ?? null) {
+        if (!$value = $data[FilterContext::DEFAULT_FIELD_NAME] ?? null) {
             return;
         }
 

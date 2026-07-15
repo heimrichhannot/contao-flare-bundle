@@ -15,6 +15,7 @@ use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\AggregationView;
 use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Form\Factory\FilterFormFactory;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
@@ -118,8 +119,9 @@ class InteractiveProjector extends AbstractProjector
     }
 
     /**
-     * Collects each filter's form data (the compound child's data array), keyed by the
-     * filter's list-specification key.
+     * Collects each filter's form data, keyed by the filter's list-specification key.
+     * Flat-mounted single fields are normalized to the canonical values-bag shape
+     * `[FilterContext::DEFAULT_FIELD_NAME => value]` that buildFilter() consumes.
      *
      * @return array<string|int, array<string, mixed>>
      */
@@ -134,6 +136,19 @@ class InteractiveProjector extends AbstractProjector
             }
 
             $child = $form->get($filter->alias);
+
+            if ($child->getConfig()->getAttribute(FilterContext::ATTR_SINGLE_FIELD))
+            {
+                // Submitted value, or the field's configured default (e.g., a `preselect`) when
+                // unsubmitted. Unsubmitted null defaults stay unset, so Filter::$data can take over.
+                $value = $child->getData();
+
+                if ($form->isSubmitted() || !\is_null($value)) {
+                    $data[$key] = [FilterContext::SINGLE_VALUE => $value];
+                }
+
+                continue;
+            }
 
             if ($form->isSubmitted())
             {

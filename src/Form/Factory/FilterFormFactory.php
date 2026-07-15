@@ -13,8 +13,10 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterElementResolver;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Util\Str;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
@@ -69,25 +71,59 @@ readonly class FilterFormFactory
 
             $filterContext = $this->filterContextFactory->create($list, $filter, $element, $context, $key);
 
-            $child = $builder->create($filter->alias, FormType::class, [
-                'inherit_data' => false,
-                'label'        => false,
-                'required'     => false,
-            ]);
-            $child->setAttribute(FilterContext::FORM_ATTRIBUTE, $filterContext);
+            // Collect-only builder: never mounted itself; its single-field spec, children,
+            // attributes, and deferred listeners are transferred onto the mounted builder below.
+            $wrapper = new FilterFormBuilder($filter->alias, null, new EventDispatcher(), $this->formFactory);
+            $wrapper->setAttribute(FilterContext::ATTR_SELF, $filterContext);
 
-            $element->buildForm($child, $filterContext);
+            $element->buildForm($wrapper, $filterContext);
 
             /** @var FilterElementFormBuiltEvent $event */
-            $event = $this->eventDispatcher->dispatch(new FilterElementFormBuiltEvent($child, $filterContext));
+            $event = $this->eventDispatcher->dispatch(new FilterElementFormBuiltEvent($wrapper, $filterContext));
 
-            if ($event->isCancelled() || $child->count() === 0)
-                // Empty compound children are never mounted.
+            $single = $wrapper->getSingle();
+
+            if ($event->isCancelled() || (!$single && $wrapper->count() === 0))
+                // Filters without any form representation are never mounted.
             {
                 continue;
             }
 
-            $builder->add($child);
+            if ($single && $wrapper->count() === 0)
+                // Flat mount: the field lives at the root under the filter's alias.
+            {
+                $mount = $builder->create($filter->alias, $single['type'], $single['options']);
+                $mount->setAttribute(FilterContext::ATTR_SINGLE_FIELD, true);
+            }
+            /** @mago-expect lint:no-else-clause The mount decision is a genuine either-or. */
+            else
+                // Nested mount: real compound; a single() field materializes under the
+                // canonical field name alongside any explicitly added children.
+            {
+                $mount = $builder->create($filter->alias, FormType::class, [
+                    'inherit_data' => false,
+                    'label'        => false,
+                    'required'     => false,
+                ]);
+
+                if ($single) {
+                    $mount->add(FilterContext::SINGLE_VALUE, $single['type'], $single['options']);
+                }
+
+                foreach ($wrapper->all() as $childBuilder) {
+                    $mount->add($childBuilder);
+                }
+            }
+
+            foreach ($wrapper->getAttributes() as $attrName => $attrValue) {
+                $mount->setAttribute($attrName, $attrValue);
+            }
+
+            foreach ($wrapper->getDeferredListeners() as [$eventName, $listener, $priority]) {
+                $mount->addEventListener($eventName, $listener, $priority);
+            }
+
+            $builder->add($mount);
         }
 
         /*

@@ -19,8 +19,9 @@ final readonly class Filter
     /**
      * @param FilterElementInterface|string $element Registered element type alias or an inline element instance.
      * @param array<string, mixed> $config Canonical config (element-defined schema); scalars, arrays, and enums only.
-     * @param array<string, mixed>|null $data Runtime data bag, same shape buildFilter() receives.
-     *   Submitted form data takes precedence over this bag.
+     * @param array<string, mixed>|null $data Runtime data bag, same shape buildFilter() receives
+     *   (single-field elements read {@see FilterContext::SINGLE_VALUE}). Submitted form
+     *   data takes precedence over this bag.
      * @param string|null $alias Form name of the filter. An alias that is not a valid Symfony form
      *   name (e.g. the generated "_.{source}" fallback) never mounts form children.
      * @param string|null $targetAlias Table alias the filter's conditions apply to.

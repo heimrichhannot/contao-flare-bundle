@@ -19,8 +19,8 @@ use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
-use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Service\Attribute\Required;
 
@@ -48,7 +48,7 @@ abstract class AbstractFilterElement implements
 
     public function buildDca(DcaBuilder $dca, DcaContext $context): void {}
 
-    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void {}
+    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 
     public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void {}
 

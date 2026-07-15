@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
@@ -17,7 +17,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 
-final class RegisterListTypesPass implements CompilerPassInterface
+final class RegisterListDriversPass implements CompilerPassInterface
 {
     use PriorityTaggedServiceTrait;
 
@@ -27,7 +27,7 @@ final class RegisterListTypesPass implements CompilerPassInterface
             return;
         }
 
-        $tag = AsListType::TAG;
+        $tag = AsListDriver::TAG;
         $registry = $container->findDefinition(ListDriverRegistry::class);
 
         foreach ($this->findAndSortTaggedServices($tag, $container) as $reference)
@@ -92,7 +92,7 @@ final class RegisterListTypesPass implements CompilerPassInterface
 
         $className = $definition->getClass();
         $className = \ltrim(\strrchr($className, '\\'), '\\');
-        $className = Str::trimSubstrings($className, suffix: ['ListType', 'Type']);
+        $className = Str::trimSubstrings($className, suffix: ['ListDriver', 'Driver']);
 
         return Container::underscore($className);
     }

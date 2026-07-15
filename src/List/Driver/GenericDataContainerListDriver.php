@@ -2,26 +2,23 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\List\Type;
+namespace HeimrichHannot\FlareBundle\List\Driver;
 
 use Contao\CoreBundle\DataContainer\PaletteManipulator;
-use Contao\CoreBundle\String\HtmlDecoder;
-use Contao\CoreBundle\String\SimpleTokenParser;
 use Contao\DataContainer;
 use Contao\Message;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-#[AsListType(type: self::TYPE)]
-class GenericDataContainerListDriver extends AbstractListDriver implements DataContainerContract, DcaContract
+#[AsListDriver(type: self::TYPE)]
+class GenericDataContainerListDriver extends AbstractListDriver implements DataContainerContract
 {
     public const TYPE = 'flare_generic_dc';
     public const DEFAULT_PALETTE = <<<'PALETTE'
@@ -30,20 +27,8 @@ class GenericDataContainerListDriver extends AbstractListDriver implements DataC
         PALETTE;
 
     public function __construct(
-        private readonly HtmlDecoder         $htmlDecoder,
-        private readonly SimpleTokenParser   $simpleTokenParser,
         private readonly TranslatorInterface $trans,
     ) {}
-
-    protected function getHtmlDecoder(): HtmlDecoder
-    {
-        return $this->htmlDecoder;
-    }
-
-    protected function getSimpleTokenParser(): SimpleTokenParser
-    {
-        return $this->simpleTokenParser;
-    }
 
     public function getDataContainerName(array $row, DataContainer $dc): string
     {

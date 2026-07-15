@@ -1,11 +1,11 @@
 <?php
 
-use HeimrichHannot\FlareBundle\List\Type;
-use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListType\EventsListType;
+use HeimrichHannot\FlareBundle\List\Driver;
+use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListDriver\EventsListDriver;
 
 return [
-    Type\GenericDataContainerListDriver::TYPE => 'Data-Container',
-    Type\NewsListDriver::TYPE => 'Nachrichten',
+    Driver\GenericDataContainerListDriver::TYPE => 'Data-Container',
+    Driver\NewsListDriver::TYPE => 'Nachrichten',
 
-    EventsListType::TYPE => 'Events',
+    EventsListDriver::TYPE => 'Events',
 ];

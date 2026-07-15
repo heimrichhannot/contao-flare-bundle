@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\Projector\InteractiveProjector;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\GroupsEntriesTrait;
-use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListType\EventsListType;
+use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListDriver\EventsListDriver;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\Loader\EventsInteractiveLoader;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\View\InteractiveEventsView;
 use HeimrichHannot\FlareBundle\List\ListSpec;
@@ -24,7 +24,7 @@ class EventsInteractiveProjector extends InteractiveProjector
 
     public function supports(ListSpec $list, ContextInterface $context): bool
     {
-        return $list->type === EventsListType::TYPE && $context instanceof InteractiveContext;
+        return $list->type === EventsListDriver::TYPE && $context instanceof InteractiveContext;
     }
 
     public function priority(ListSpec $list, ContextInterface $context): int

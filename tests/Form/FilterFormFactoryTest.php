@@ -19,7 +19,7 @@ use HeimrichHannot\FlareBundle\Filter\Resolver\FilterElementResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\List\ListDriverReference;
 use HeimrichHannot\FlareBundle\List\ListSpec;
-use HeimrichHannot\FlareBundle\List\Type\ListDriverInterface;
+use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use PHPUnit\Framework\TestCase;

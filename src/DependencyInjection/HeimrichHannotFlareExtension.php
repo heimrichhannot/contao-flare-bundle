@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\DependencyInjection;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Util\Env;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ChildDefinition;
@@ -51,7 +51,7 @@ final class HeimrichHannotFlareExtension extends Extension implements PrependExt
         $container->setParameter($this->getAlias() . '.format_label_defaults', $flareConfig['format_label_defaults'] ?? []);
 
         $attributesForAutoconfiguration = [
-            AsListType::class => AsListType::TAG,
+            AsListDriver::class => AsListDriver::TAG,
             AsFilterElement::class => AsFilterElement::TAG,
         ];
 

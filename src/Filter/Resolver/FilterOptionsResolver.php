@@ -14,10 +14,10 @@ use HeimrichHannot\FlareBundle\Filter\Filter;
  * Resolves a filter's canonical config through the element's declared schema.
  * Elements without an {@see OptionsContract} receive their config verbatim (unvalidated).
  */
-class FilterOptionsResolver
+final readonly class FilterOptionsResolver
 {
     public function __construct(
-        private readonly SchemaResolver $schemaResolver,
+        private SchemaResolver $schemaResolver,
     ) {}
 
     /**

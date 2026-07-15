@@ -12,6 +12,7 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\ListBuilder;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
+use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\List\Type\AbstractListType;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use PHPUnit\Framework\TestCase;
@@ -116,6 +117,7 @@ final class ListBuilderTest extends TestCase
     ): ListBuilder {
         return new ListBuilder(
             optionsResolver: new ListOptionsResolver(new SchemaResolver()),
+            transformerResolver: new ListTransformerResolver(),
             eventDispatcher: $dispatcher,
             type: 'test_type',
             typeService: $typeService,

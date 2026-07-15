@@ -7,59 +7,74 @@ namespace HeimrichHannot\FlareBundle\Tests\List;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
+use HeimrichHannot\FlareBundle\Event\ListTransformerEvent;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
+use HeimrichHannot\FlareBundle\List\Type\ListTypeInterface;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 final class ListTransformerResolverTest extends TestCase
 {
     public function testTransformsSourceThroughDriverTransformers(): void
     {
-        $resolver = new ListTransformerResolver();
+        $resolver = new ListTransformerResolver(new EventDispatcher());
         $driver = new TransformingDriver();
 
-        $values = $resolver->transform($driver, new SourceStub('from-source'));
+        $values = $resolver->transform($driver, 'test', new SourceStub('from-source'));
 
         self::assertSame(['title' => 'from-source'], $values);
     }
 
-    public function testMemoizesTransformerMapPerDriverClass(): void
+    public function testReturnsNullWithoutMatchingTransformer(): void
     {
-        $resolver = new ListTransformerResolver();
+        $resolver = new ListTransformerResolver(new EventDispatcher());
+
+        self::assertNull($resolver->transform(new TransformingDriver(), 'test', new \stdClass()));
+        self::assertNull($resolver->transform(new TransformerlessDriver(), 'test', new SourceStub('x')));
+    }
+
+    public function testMemoizesMapAndDispatchesEventOncePerDriverClass(): void
+    {
+        $dispatchedWith = [];
+
+        $dispatcher = new EventDispatcher();
+        $dispatcher->addListener(
+            ListTransformerEvent::class,
+            static function (ListTransformerEvent $event) use (&$dispatchedWith): void {
+                $dispatchedWith[] = $event;
+            },
+        );
+
+        $resolver = new ListTransformerResolver($dispatcher);
         $driver = new TransformingDriver();
 
-        $resolver->transform($driver, new SourceStub('a'));
-        $resolver->transform($driver, new SourceStub('b'));
+        $resolver->transform($driver, 'test', new SourceStub('a'));
+        $resolver->transform($driver, 'test', new SourceStub('b'));
 
         self::assertSame(1, $driver->configureCalls);
+        self::assertCount(1, $dispatchedWith);
+        self::assertSame($driver, $dispatchedWith[0]->typeService);
+        self::assertSame('test', $dispatchedWith[0]->type);
     }
 
-    public function testReturnsNullWhenNoTransformerMatchesTheSource(): void
+    public function testEventListenersCanAddSourceCapabilities(): void
     {
-        $resolver = new ListTransformerResolver();
+        $dispatcher = new EventDispatcher();
+        $dispatcher->addListener(
+            ListTransformerEvent::class,
+            static function (ListTransformerEvent $event): void {
+                $event->transformers->for(
+                    \stdClass::class,
+                    static fn (ConfigBuilder $config, object $source) => $config->set('external', true),
+                );
+            },
+        );
 
-        self::assertNull($resolver->transform(new TransformingDriver(), new \stdClass()));
-    }
+        $resolver = new ListTransformerResolver($dispatcher);
 
-    public function testReturnsNullForDriversWithoutTransformerContract(): void
-    {
-        $resolver = new ListTransformerResolver();
+        $values = $resolver->transform(new TransformerlessDriver(), 'test', new \stdClass());
 
-        self::assertNull($resolver->transform(new \stdClass(), new SourceStub('x')));
-    }
-}
-
-final class TransformingDriver implements TransformerContract
-{
-    public int $configureCalls = 0;
-
-    public function configureTransformers(TransformerResolver $resolver): void
-    {
-        $this->configureCalls++;
-
-        $resolver->for(SourceStub::class, static function (ConfigBuilder $config, object $source): void {
-            \assert($source instanceof SourceStub);
-            $config->set('title', $source->title);
-        });
+        self::assertSame(['external' => true], $values);
     }
 }
 
@@ -68,4 +83,22 @@ final class SourceStub
     public function __construct(
         public readonly string $title,
     ) {}
+}
+
+final class TransformingDriver implements ListTypeInterface, TransformerContract
+{
+    public int $configureCalls = 0;
+
+    public function configureTransformers(TransformerResolver $resolver): void
+    {
+        $this->configureCalls++;
+
+        $resolver->for(SourceStub::class, static function (ConfigBuilder $config, SourceStub $source): void {
+            $config->set('title', $source->title);
+        });
+    }
+}
+
+final class TransformerlessDriver implements ListTypeInterface
+{
 }

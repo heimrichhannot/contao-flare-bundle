@@ -148,9 +148,13 @@ final class ListBuilder implements ListBuilderInterface
         {
             BaseListOptions::transform($config, $this->model);
 
-            if ($this->typeService)
+            if ($this->typeService instanceof ListTypeInterface)
             {
-                $transformed = $this->transformerResolver->transform($this->typeService, $this->model);
+                $transformed = $this->transformerResolver->transform(
+                    $this->typeService,
+                    $this->getTypeAlias(),
+                    $this->model,
+                );
 
                 foreach ($transformed ?? [] as $key => $value) {
                     $config->set($key, $value);

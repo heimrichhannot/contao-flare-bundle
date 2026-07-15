@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\List\Factory;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
-use HeimrichHannot\FlareBundle\List\Type\ListDriverInterface;
+use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 
 final readonly class ListSpecFactory
 {

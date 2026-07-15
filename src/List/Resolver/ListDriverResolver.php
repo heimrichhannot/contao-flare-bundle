@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\List\Resolver;
 
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\List\ListDriverReference;
-use HeimrichHannot\FlareBundle\List\Type\ListDriverInterface;
+use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 
 final readonly class ListDriverResolver

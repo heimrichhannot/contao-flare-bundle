@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
 use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
-use HeimrichHannot\FlareBundle\List\Type\ListDriverInterface;
+use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 

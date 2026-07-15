@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Registry\Descriptor;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ServiceDescriptorInterface;
-use HeimrichHannot\FlareBundle\List\Type\AbstractListDriver;
+use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
 
 class ListTypeDescriptor implements ServiceDescriptorInterface
 {

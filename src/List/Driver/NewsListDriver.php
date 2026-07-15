@@ -2,53 +2,38 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListType;
+namespace HeimrichHannot\FlareBundle\List\Driver;
 
-use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\Contract\ListType\BuildListContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
-use HeimrichHannot\FlareBundle\List\Type\AbstractListDriver;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Query\SqlJoinStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 
-#[AsListType(type: self::TYPE, dataContainer: self::DATA_CONTAINER)]
-class EventsListType extends AbstractListDriver implements BuildListContract, DcaContract
+#[AsListDriver(type: self::TYPE, dataContainer: 'tl_news')]
+class NewsListDriver extends AbstractListDriver implements BuildListContract
 {
-    public const TYPE = 'flare_events';
-    public const DATA_CONTAINER = 'tl_calendar_events';
-    public const ALIAS_ARCHIVE = 'events_archive';
+    public const TYPE = 'flare_news';
+    public const ALIAS_ARCHIVE = 'news_archive';
 
     public function buildDca(DcaBuilder $dca, DcaContext $context): void
     {
-        $dca->suffix(static function (string $suffix): string {
-            if (!$suffix) {
-                return $suffix;
-            }
-
-            $suffix = (string) \str_replace('sortSettings', '', $suffix);
-            $suffix = \preg_replace('/(?:^|;)\{[^}]*},*(?:;|$)/', ';', $suffix);
-            $suffix = \preg_replace('/;{2,}/', ';', $suffix);
-
-            return \trim($suffix, ';');
-        });
+        $dca->palette('{filter_legend},');
     }
 
     public function buildTableRegistry(TableAliasRegistry $registry): void
     {
-        $fromAlias = TableAliasRegistry::ALIAS_MAIN;
-
         $registry->registerJoin(new SqlJoinStruct(
-            fromAlias: $fromAlias,
+            fromAlias: TableAliasRegistry::ALIAS_MAIN,
             joinType: JoinTypeEnum::INNER,
-            table: 'tl_calendar',
+            table: 'tl_news_archive',
             joinAlias: self::ALIAS_ARCHIVE,
-            condition: $registry->makeJoinOn(self::ALIAS_ARCHIVE, 'id', $fromAlias, 'pid')
+            condition: $registry->makeJoinOn(self::ALIAS_ARCHIVE, 'id', TableAliasRegistry::ALIAS_MAIN, 'pid')
         ));
     }
 

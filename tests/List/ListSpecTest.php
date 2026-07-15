@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Tests\List;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\ListDriverReference;
 use HeimrichHannot\FlareBundle\List\ListSpec;
-use HeimrichHannot\FlareBundle\List\Type\ListDriverInterface;
+use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use PHPUnit\Framework\TestCase;
 
 final class ListSpecTest extends TestCase

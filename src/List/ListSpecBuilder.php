@@ -144,11 +144,7 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
         {
             BaseListOptions::transform($config, $this->model);
 
-            $transformed = $this->transformerResolver->transform(
-                $driver,
-                $this->getType(),
-                $this->model,
-            );
+            $transformed = $this->transformerResolver->transform($this->driverReference, $this->model);
 
             foreach ($transformed ?? [] as $key => $value) {
                 $config->set($key, $value);

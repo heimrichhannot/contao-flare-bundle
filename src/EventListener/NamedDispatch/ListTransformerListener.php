@@ -17,10 +17,13 @@ readonly class ListTransformerListener
     #[AsEventListener(priority: -200)]
     public function __invoke(ListTransformerEvent $event): void
     {
-        if (!$event->type) {
+        if ($event->reference->inline) {
             return;
         }
 
-        $this->eventDispatcher->dispatch(event: $event, eventName: "flare.list.{$event->type}.transformers");
+        $this->eventDispatcher->dispatch(
+            event: $event,
+            eventName: "flare.list.{$event->reference->type}.transformers",
+        );
     }
 }

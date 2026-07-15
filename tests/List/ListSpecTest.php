@@ -17,7 +17,7 @@ final class ListSpecTest extends TestCase
         static $driver = null;
         $driver ??= new class implements ListDriverInterface {};
 
-        return new ListDriverReference(type: 'test', driver: $driver);
+        return ListDriverReference::registered('test', $driver);
     }
 
     public function testWithFilterKeysByAliasByDefault(): void

@@ -17,10 +17,12 @@ readonly class ListBuildListener
     #[AsEventListener(priority: -200)]
     public function __invoke(ListBuildEvent $event): void
     {
-        if (!$type = $event->builder->getType()) {
+        $reference = $event->builder->getDriverReference();
+
+        if ($reference->inline) {
             return;
         }
 
-        $this->eventDispatcher->dispatch(event: $event, eventName: "flare.list.{$type}.build");
+        $this->eventDispatcher->dispatch(event: $event, eventName: "flare.list.{$reference->type}.build");
     }
 }

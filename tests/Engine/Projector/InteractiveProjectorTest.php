@@ -51,7 +51,7 @@ final class InteractiveProjectorTest extends TestCase
 
     private function listWithFilter(string $key, string $alias): ListSpec
     {
-        $reference = new ListDriverReference(type: 'test', driver: new class implements ListDriverInterface {});
+        $reference = ListDriverReference::registered('test', new class implements ListDriverInterface {});
 
         return new ListSpec(reference: $reference, dc: 'tl_test', filters: [
             $key => new Filter(type: 'test_element', alias: $alias),

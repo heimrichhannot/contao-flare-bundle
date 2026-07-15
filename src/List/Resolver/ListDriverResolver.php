@@ -29,10 +29,7 @@ final readonly class ListDriverResolver
 
     private function resolveInstance(ListDriverInterface $driver): ListDriverReference
     {
-        return new ListDriverReference(
-            type: \get_class($driver),
-            driver: $driver,
-        );
+        return ListDriverReference::inline($driver);
     }
 
     /**
@@ -47,9 +44,6 @@ final readonly class ListDriverResolver
             ));
         }
 
-        return new ListDriverReference(
-            type: $type,
-            driver: $descriptor->getService(),
-        );
+        return ListDriverReference::registered($type, $descriptor->getService());
     }
 }

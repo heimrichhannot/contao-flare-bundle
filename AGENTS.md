@@ -91,8 +91,9 @@ Attributes are in `src/DependencyInjection/Attribute/`, compiler passes in `src/
 
 ## Testing & CI
 
-*   **There is currently no test suite**: no `tests/` directory, no `phpunit.xml`, no test CI workflow — even though PHPUnit is in `require-dev` and `tests/` is referenced in `autoload-dev` and `mago.toml`. Don't look for tests or invent a `make test` target.
+*   **Unit tests** live in `tests/` (PHPUnit 9, configured via `phpunit.xml.dist`); run them with `make php vendor/bin/phpunit`. There is no `make test` target.
 *   CI workflows in `.github/workflows/`:
+    *   `phpunit.yaml` — PHPUnit test suite
     *   `phpstan.yaml` — PHPStan analysis
     *   `mago.yaml` — Mago lint (`--minimum-fail-level note`, PHP 8.2–8.5)
     *   `compatibility.yaml` — `composer validate` + dependency-resolution matrix (PHP 8.2–8.5 × Contao 4.13/5.x)

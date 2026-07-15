@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Form;
+namespace HeimrichHannot\FlareBundle\Filter;
 
 use Symfony\Component\Form\FormBuilderInterface;
 
@@ -13,7 +13,7 @@ use Symfony\Component\Form\FormBuilderInterface;
  * itself as a single-field filter via {@see single()}. Single fields are mounted flat on the
  * root filter form under the filter's alias (query parameter `form[alias]=x`), while their
  * submitted value is always handed back to buildFilter() under
- * {@see \HeimrichHannot\FlareBundle\Filter\FilterContext::SINGLE_VALUE}.
+ * {@see FilterContext::SINGLE_VALUE}.
  */
 interface FilterFormBuilderInterface extends FormBuilderInterface
 {

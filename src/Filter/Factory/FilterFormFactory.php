@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Form\Factory;
+namespace HeimrichHannot\FlareBundle\Filter\Factory;
 
 use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
@@ -10,14 +10,14 @@ use HeimrichHannot\FlareBundle\Engine\Context\Interface\FormContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormBuiltEvent;
 use HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterElementResolver;
-use HeimrichHannot\FlareBundle\Form\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
+use Symfony\Component\Form\FormBuilder;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -144,6 +144,7 @@ readonly class FilterFormFactory
             formBuilder: $builder,
         ));
 
+        /** @var FormBuilder $builder */
         $builder = $formBuildEvent->formBuilder;
 
         return $builder->getForm();

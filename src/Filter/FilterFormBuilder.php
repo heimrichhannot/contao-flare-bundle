@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Form;
+namespace HeimrichHannot\FlareBundle\Filter;
 
 use Symfony\Component\Form\FormBuilder;
 

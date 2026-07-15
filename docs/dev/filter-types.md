@@ -116,7 +116,7 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 
 $filter = new Filter(
     element: new class implements FilterElementInterface {

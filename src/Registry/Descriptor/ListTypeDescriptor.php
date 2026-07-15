@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Registry\Descriptor;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ServiceDescriptorInterface;
-use HeimrichHannot\FlareBundle\List\Type\AbstractListType;
+use HeimrichHannot\FlareBundle\List\Type\AbstractListDriver;
 
 class ListTypeDescriptor implements ServiceDescriptorInterface
 {
@@ -17,7 +17,7 @@ class ListTypeDescriptor implements ServiceDescriptorInterface
 
     /**
      * @noinspection PhpDocSignatureInspection
-     * @return AbstractListType|object
+     * @return AbstractListDriver|object
      */
     public function getService(): object
     {

@@ -134,7 +134,7 @@ class ChangelanguageListener
             // localized list view
         {
             $configuredFilter = new Filter(
-                element: SimpleEquationFilterElement::TYPE,
+                type: SimpleEquationFilterElement::TYPE,
                 config: [
                     'intrinsic' => true,
                     'left' => DcMultilingualHelper::getPidColumn($table),
@@ -146,7 +146,7 @@ class ChangelanguageListener
         }
 
         $configuredFilter ??= new Filter(
-            element: SimpleEquationFilterElement::TYPE,
+            type: SimpleEquationFilterElement::TYPE,
             config: [
                 'intrinsic' => true,
                 'left' => DcMultilingualHelper::getPidColumn($table),

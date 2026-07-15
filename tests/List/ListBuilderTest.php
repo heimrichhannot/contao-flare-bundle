@@ -10,10 +10,10 @@ use HeimrichHannot\FlareBundle\Contract\ListType\BuildListContract;
 use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\List\ListBuilder;
+use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
-use HeimrichHannot\FlareBundle\List\Type\AbstractListType;
+use HeimrichHannot\FlareBundle\List\Type\AbstractListDriver;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -27,16 +27,16 @@ final class ListBuilderTest extends TestCase
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(ListBuildEvent::class, static function (ListBuildEvent $event) use (&$dispatchedWith): void {
             $dispatchedWith = $event->builder;
-            $event->builder->addFilter(new Filter(element: 'from_event', alias: 'via_event'));
+            $event->builder->addFilter(new Filter(type: 'from_event', alias: 'via_event'));
         });
 
-        $type = new class extends AbstractListType implements BuildListContract {
+        $type = new class extends AbstractListDriver implements BuildListContract {
             public int $buildListCalls = 0;
 
-            public function buildList(ListBuilder $builder): void
+            public function buildList(ListSpecBuilder $builder): void
             {
                 $this->buildListCalls++;
-                $builder->addFilter(new Filter(element: 'from_hook', alias: 'via_hook'));
+                $builder->addFilter(new Filter(type: 'from_hook', alias: 'via_hook'));
             }
         };
 
@@ -53,8 +53,8 @@ final class ListBuilderTest extends TestCase
     {
         $builder = $this->createBuilder(new EventDispatcher());
 
-        $builder->addFilter(new Filter(element: 'a', alias: 'x'));
-        $builder->addFilter(new Filter(element: 'b'));
+        $builder->addFilter(new Filter(type: 'a', alias: 'x'));
+        $builder->addFilter(new Filter(type: 'b'));
         $builder->removeFilter('x');
 
         self::assertTrue($builder->hasFilterOfType('b'));
@@ -71,7 +71,7 @@ final class ListBuilderTest extends TestCase
 
     public function testModelTransformationAndOverridePrecedence(): void
     {
-        $type = new class extends AbstractListType {
+        $type = new class extends AbstractListDriver {
             protected function transformListModel(ConfigBuilder $config, ListModel $model): void
             {
                 $config->set('genericPageMeta', true);
@@ -114,13 +114,13 @@ final class ListBuilderTest extends TestCase
         EventDispatcher $dispatcher,
         ?object         $typeService = null,
         ?ListModel      $model = null,
-    ): ListBuilder {
-        return new ListBuilder(
+    ): ListSpecBuilder {
+        return new ListSpecBuilder(
             optionsResolver: new ListOptionsResolver(new SchemaResolver()),
             transformerResolver: new ListTransformerResolver($dispatcher),
             eventDispatcher: $dispatcher,
             type: 'test_type',
-            typeService: $typeService,
+            driverService: $typeService,
             dc: 'tl_test',
             model: $model,
             source: 'tl_flare_list.9',

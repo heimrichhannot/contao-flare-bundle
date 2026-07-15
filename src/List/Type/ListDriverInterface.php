@@ -7,4 +7,4 @@ namespace HeimrichHannot\FlareBundle\List\Type;
 /**
  * Marker for FLARE list types — registered via #[AsListType] or used inline on a ListSpec.
  */
-interface ListTypeInterface {}
+interface ListDriverInterface {}

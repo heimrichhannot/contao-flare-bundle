@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
@@ -23,12 +23,12 @@ final class RegisterListTypesPass implements CompilerPassInterface
 
     public function process(ContainerBuilder $container): void
     {
-        if (!$container->hasDefinition(ListTypeRegistry::class)) {
+        if (!$container->hasDefinition(ListDriverRegistry::class)) {
             return;
         }
 
         $tag = AsListType::TAG;
-        $registry = $container->findDefinition(ListTypeRegistry::class);
+        $registry = $container->findDefinition(ListDriverRegistry::class);
 
         foreach ($this->findAndSortTaggedServices($tag, $container) as $reference)
         {

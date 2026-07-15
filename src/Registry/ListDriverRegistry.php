@@ -12,7 +12,7 @@ use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
  *
  * @template TDescriptor of ListTypeDescriptor
  */
-class ListTypeRegistry extends AbstractServiceDescriptorRegistry
+class ListDriverRegistry extends AbstractServiceDescriptorRegistry
 {
     public function getDescriptorClass(): string
     {

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\List;
 
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\List\Type\ListTypeInterface;
+use HeimrichHannot\FlareBundle\List\Type\ListDriverInterface;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 
 /**
@@ -19,29 +19,25 @@ use HeimrichHannot\FlareBundle\Util\DcaHelper;
  */
 final readonly class ListSpec
 {
+    public string $type;
+    public ListDriverInterface $driver;
+
     /**
-     * @param ListTypeInterface|string $type Registered list type alias or an inline instance.
+     * @param ListDriverReference $reference Registered list type alias and driver.
      * @param string $dc Main data container table of the list.
      * @param array<string, Filter> $filters
      * @param array<string, mixed> $config Canonical config, resolved through the base and type schemas.
      * @param string|null $source Provenance for error messages, e.g. "tl_flare_list.5".
      */
     public function __construct(
-        public ListTypeInterface|string $type,
-        public string                   $dc,
-        public array                    $filters = [],
-        public array                    $config = [],
-        public ?string                  $source = null,
-    ) {}
-
-    public function getTypeAlias(): ?string
-    {
-        return \is_string($this->type) ? $this->type : null;
-    }
-
-    public function getTypeInstance(): ?ListTypeInterface
-    {
-        return $this->type instanceof ListTypeInterface ? $this->type : null;
+        public ListDriverReference $reference,
+        public string              $dc,
+        public array               $filters = [],
+        public array               $config = [],
+        public ?string             $source = null,
+    ) {
+        $this->type = $this->reference->type;
+        $this->driver = $this->reference->driver;
     }
 
     /**
@@ -77,7 +73,7 @@ final readonly class ListSpec
     public function withFilters(array $filters): self
     {
         return new self(
-            type: $this->type,
+            reference: $this->reference,
             dc: $this->dc,
             filters: $filters,
             config: $this->config,
@@ -91,7 +87,7 @@ final readonly class ListSpec
     public function withConfig(array $config): self
     {
         return new self(
-            type: $this->type,
+            reference: $this->reference,
             dc: $this->dc,
             filters: $this->filters,
             config: $config,
@@ -103,7 +99,7 @@ final readonly class ListSpec
     {
         foreach ($this->filters as $filter)
         {
-            if ($filter->getElementType() === $elementType) {
+            if ($filter->type === $elementType) {
                 return true;
             }
         }
@@ -123,7 +119,8 @@ final readonly class ListSpec
     public function hash(): string
     {
         return \sha1(\serialize([
-            $this->getTypeAlias() ?? $this->type::class,
+            \get_class($this->driver),
+            $this->type,
             $this->dc,
             $this->source,
             $this->config,

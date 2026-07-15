@@ -15,8 +15,8 @@ use HeimrichHannot\FlareBundle\Query\SqlQueryStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-abstract class AbstractListType implements
-    ListTypeInterface, OptionsContract, TransformerContract, BuildQueryContract
+abstract class AbstractListDriver implements
+    ListDriverInterface, OptionsContract, TransformerContract, BuildQueryContract
 {
     /**
      * Declares the type's config schema on top of {@see \HeimrichHannot\FlareBundle\List\BaseListOptions}.

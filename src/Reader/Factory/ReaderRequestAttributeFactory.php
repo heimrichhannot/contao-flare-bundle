@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Reader\Factory;
 
 use Contao\Model;
-use HeimrichHannot\FlareBundle\List\Factory\ListBuilderFactory;
+use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Reader\ReaderRequestAttribute;
 
 final readonly class ReaderRequestAttributeFactory
 {
     public function __construct(
-        private ListBuilderFactory $listFactory,
+        private ListSpecBuilderFactory $listFactory,
     ) {}
 
     public function createFromData(array $data): ?ReaderRequestAttribute

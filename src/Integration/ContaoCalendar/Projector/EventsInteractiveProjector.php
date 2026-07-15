@@ -24,7 +24,7 @@ class EventsInteractiveProjector extends InteractiveProjector
 
     public function supports(ListSpec $list, ContextInterface $context): bool
     {
-        return $list->getTypeAlias() === EventsListType::TYPE && $context instanceof InteractiveContext;
+        return $list->type === EventsListType::TYPE && $context instanceof InteractiveContext;
     }
 
     public function priority(ListSpec $list, ContextInterface $context): int

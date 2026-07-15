@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\ListTransformerEvent;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
-use HeimrichHannot\FlareBundle\List\Type\ListTypeInterface;
+use HeimrichHannot\FlareBundle\List\Type\ListDriverInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
@@ -85,7 +85,7 @@ final class SourceStub
     ) {}
 }
 
-final class TransformingDriver implements ListTypeInterface, TransformerContract
+final class TransformingDriver implements ListDriverInterface, TransformerContract
 {
     public int $configureCalls = 0;
 
@@ -99,6 +99,6 @@ final class TransformingDriver implements ListTypeInterface, TransformerContract
     }
 }
 
-final class TransformerlessDriver implements ListTypeInterface
+final class TransformerlessDriver implements ListDriverInterface
 {
 }

@@ -16,7 +16,7 @@ use HeimrichHannot\FlareBundle\Engine\Context\Factory\ValidationContextFactory;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
 use HeimrichHannot\FlareBundle\Exception\ViewException;
-use HeimrichHannot\FlareBundle\List\Factory\ListBuilderFactory;
+use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Util\Env;
@@ -28,7 +28,7 @@ readonly class BreadcrumbListener
     public function __construct(
         private Connection               $connection,
         private EventDispatcherInterface $eventDispatcher,
-        private ListBuilderFactory $listFactory,
+        private ListSpecBuilderFactory   $listFactory,
         private ProjectorRegistry        $projectorRegistry,
         private ValidationContextFactory $validationContextFactory,
     ) {}

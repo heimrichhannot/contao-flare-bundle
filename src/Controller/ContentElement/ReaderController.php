@@ -24,7 +24,7 @@ use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
 use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\ViewException;
-use HeimrichHannot\FlareBundle\List\Factory\ListBuilderFactory;
+use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 use HeimrichHannot\FlareBundle\Reader\ReaderRequestAttribute;
@@ -48,7 +48,7 @@ final class ReaderController extends AbstractContentElementController
         private readonly EngineFactory                  $engineFactory,
         private readonly EntityCacheTags                $entityCacheTags,
         private readonly KernelInterface                $kernel,
-        private readonly ListBuilderFactory       $listFactory,
+        private readonly ListSpecBuilderFactory         $listFactory,
         private readonly LoggerInterface                $logger,
         private readonly ReaderRequestAttributeResolver $attributeResolver,
         private readonly ResponseContextAccessor        $responseContextAccessor,

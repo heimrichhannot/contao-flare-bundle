@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Filter\Resolver\FilterElementResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -24,7 +24,7 @@ readonly class ListModelFilterCollector
         private EventDispatcherInterface  $eventDispatcher,
         private FilterElementResolver     $filterElementResolver,
         private FilterTransformerResolver $filterTransformerResolver,
-        private ListTypeRegistry          $listTypeRegistry,
+        private ListDriverRegistry        $listTypeRegistry,
     ) {}
 
     /**
@@ -62,7 +62,7 @@ readonly class ListModelFilterCollector
                 ?? $model->row();
 
             $filter = new Filter(
-                element: $model->getFilterType(),
+                type: $model->getFilterType(),
                 config: $config,
                 alias: $model->getFilterFormName() ?: "_.{$source}",
                 targetAlias: $model->getFilterTargetAlias() ?: null,

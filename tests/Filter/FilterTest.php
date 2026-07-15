@@ -13,23 +13,9 @@ use Symfony\Component\Form\FormBuilderInterface;
 
 final class FilterTest extends TestCase
 {
-    public function testElementUnionAccessors(): void
-    {
-        $typed = new Filter(element: 'flare_bool');
-
-        self::assertSame('flare_bool', $typed->getElementType());
-        self::assertNull($typed->getElementInstance());
-
-        $instance = $this->createInlineElement();
-        $inline = new Filter(element: $instance);
-
-        self::assertNull($inline->getElementType());
-        self::assertSame($instance, $inline->getElementInstance());
-    }
-
     public function testWithersPreserveOtherFields(): void
     {
-        $filter = new Filter(element: 'test', config: ['a' => 1], alias: 'foo', source: 'tl_flare_filter.1');
+        $filter = new Filter(type: 'test', config: ['a' => 1], alias: 'foo', source: 'tl_flare_filter.1');
 
         $withData = $filter->withData(['value' => 42]);
 
@@ -49,7 +35,7 @@ final class FilterTest extends TestCase
     public function testFingerprintRepresentsInlineElementsByClass(): void
     {
         $instance = $this->createInlineElement();
-        $filter = new Filter(element: $instance);
+        $filter = new Filter(type: $instance);
 
         self::assertSame($instance::class, $filter->fingerprint()['element']);
     }

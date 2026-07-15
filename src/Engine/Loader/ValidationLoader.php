@@ -34,7 +34,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
         try
         {
             $idDefinition = new Filter(
-                element: SimpleEquationFilterElement::TYPE,
+                type: SimpleEquationFilterElement::TYPE,
                 config: [
                     'intrinsic' => true,
                     'left' => 'id',
@@ -69,7 +69,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
         try
         {
             $autoItemDefinition = new Filter(
-                element: SimpleEquationFilterElement::TYPE,
+                type: SimpleEquationFilterElement::TYPE,
                 config: [
                     'intrinsic' => true,
                     'left' => $this->config->autoItemField,

@@ -14,7 +14,7 @@ final class ListSpecTest extends TestCase
     {
         $spec = new ListSpec(type: 'test', dc: 'tl_test');
 
-        $spec = $spec->withFilter(new Filter(element: 'flare_bool', alias: 'foo'));
+        $spec = $spec->withFilter(new Filter(type: 'flare_bool', alias: 'foo'));
 
         self::assertArrayHasKey('foo', $spec->filters);
     }
@@ -22,7 +22,7 @@ final class ListSpecTest extends TestCase
     public function testWithFilterAcceptsExplicitKey(): void
     {
         $spec = (new ListSpec(type: 'test', dc: 'tl_test'))
-            ->withFilter(new Filter(element: 'flare_bool', alias: 'foo'), 'custom');
+            ->withFilter(new Filter(type: 'flare_bool', alias: 'foo'), 'custom');
 
         self::assertArrayHasKey('custom', $spec->filters);
         self::assertArrayNotHasKey('foo', $spec->filters);
@@ -31,16 +31,16 @@ final class ListSpecTest extends TestCase
     public function testWithFilterGeneratesCollisionFreeKeysForAliasLessFilters(): void
     {
         $spec = (new ListSpec(type: 'test', dc: 'tl_test'))
-            ->withFilter(new Filter(element: 'a'))
-            ->withFilter(new Filter(element: 'b'));
+            ->withFilter(new Filter(type: 'a'))
+            ->withFilter(new Filter(type: 'b'));
 
         self::assertArrayHasKey('_generated_0', $spec->filters);
         self::assertArrayHasKey('_generated_1', $spec->filters);
 
-        $spec = $spec->withoutFilter('_generated_0')->withFilter(new Filter(element: 'c'));
+        $spec = $spec->withoutFilter('_generated_0')->withFilter(new Filter(type: 'c'));
 
-        self::assertSame('c', $spec->filters['_generated_0']->element);
-        self::assertSame('b', $spec->filters['_generated_1']->element);
+        self::assertSame('c', $spec->filters['_generated_0']->type);
+        self::assertSame('b', $spec->filters['_generated_1']->type);
     }
 
     public function testModifiersAreImmutable(): void
@@ -48,7 +48,7 @@ final class ListSpecTest extends TestCase
         $original = new ListSpec(type: 'test', dc: 'tl_test', config: ['id' => 1]);
 
         $modified = $original
-            ->withFilter(new Filter(element: 'a', alias: 'x'))
+            ->withFilter(new Filter(type: 'a', alias: 'x'))
             ->withConfig(['id' => 2]);
 
         self::assertSame([], $original->filters);
@@ -61,7 +61,7 @@ final class ListSpecTest extends TestCase
     public function testHasFilterOfType(): void
     {
         $spec = (new ListSpec(type: 'test', dc: 'tl_test'))
-            ->withFilter(new Filter(element: 'flare_published', alias: 'p'));
+            ->withFilter(new Filter(type: 'flare_published', alias: 'p'));
 
         self::assertTrue($spec->hasFilterOfType('flare_published'));
         self::assertFalse($spec->hasFilterOfType('flare_bool'));
@@ -77,7 +77,7 @@ final class ListSpecTest extends TestCase
         self::assertNotSame($make()->hash(), $make(source: 'tl_flare_list.5')->hash());
         self::assertNotSame(
             $make()->hash(),
-            $make()->withFilter(new Filter(element: 'a', alias: 'x'))->hash(),
+            $make()->withFilter(new Filter(type: 'a', alias: 'x'))->hash(),
         );
     }
 }

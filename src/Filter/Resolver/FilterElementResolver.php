@@ -13,7 +13,7 @@ use Psr\Log\LoggerInterface;
  * Resolves the filter element responsible for a filter: an inline instance wins,
  * otherwise the element is looked up in the registry by its type alias.
  */
-readonly class FilterElementResolver
+final readonly class FilterElementResolver
 {
     public function __construct(
         private FilterElementRegistry $filterElementRegistry,
@@ -22,11 +22,7 @@ readonly class FilterElementResolver
 
     public function resolve(Filter $filter): ?FilterElementInterface
     {
-        if ($instance = $filter->getElementInstance()) {
-            return $instance;
-        }
-
-        return $this->resolveType($filter->getElementType(), $filter->source);
+        return $this->resolveType($filter->type, $filter->source);
     }
 
     public function resolveType(?string $type, ?string $source = null): ?FilterElementInterface

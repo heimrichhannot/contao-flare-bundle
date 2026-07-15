@@ -12,13 +12,13 @@ use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
 use HeimrichHannot\FlareBundle\Query\SqlQueryStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
-use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class ListExecutionContextFactory
 {
     public function __construct(
-        private ListTypeRegistry         $listTypeRegistry,
+        private ListDriverRegistry       $listTypeRegistry,
         private EventDispatcherInterface $eventDispatcher,
     ) {}
 
@@ -27,24 +27,20 @@ readonly class ListExecutionContextFactory
      */
     public function create(ListSpec $list): ListExecutionContext
     {
-        $listTypeDescriptor = null;
-        $listType = $list->getTypeInstance();
+        $driver = $list->driver;
 
-        if (!$listType)
+        if (!$mainTable = $list->dc)
         {
-            $listTypeDescriptor = $this->listTypeRegistry->get($list->getTypeAlias());
-            if (!$listTypeDescriptor instanceof ListTypeDescriptor) {
+            $listTypeDescriptor = $this->listTypeRegistry->get($list->type);
+
+            if (!$listTypeDescriptor instanceof ListTypeDescriptor
+                || !$mainTable = $listTypeDescriptor->getDataContainer())
+            {
                 throw new FlareException(
-                    \sprintf('No list type registered for type "%s".', $list->getTypeAlias() ?? ''),
+                    \sprintf('Failed to evaluate data container table of list "%s".', $list->type),
                     method: __METHOD__,
                 );
             }
-
-            $listType = $listTypeDescriptor->getService();
-        }
-
-        if (!$mainTable = $list->dc ?: $listTypeDescriptor?->getDataContainer()) {
-            throw new FlareException('No data container table set.', method: __METHOD__);
         }
 
         $registry = new TableAliasRegistry();
@@ -56,9 +52,9 @@ readonly class ListExecutionContextFactory
             ->setSelect([TableAliasRegistry::ALIAS_MAIN . '.*'])
             ->setGroupBy([TableAliasRegistry::ALIAS_MAIN . '.id']);
 
-        if ($listType instanceof BuildQueryContract) {
-            $listType->buildTableRegistry($registry);
-            $listType->buildBaseQuery($struct);
+        if ($driver instanceof BuildQueryContract) {
+            $driver->buildTableRegistry($registry);
+            $driver->buildBaseQuery($struct);
         }
 
         $this->eventDispatcher->dispatch(new QueryBaseInitializedEvent(

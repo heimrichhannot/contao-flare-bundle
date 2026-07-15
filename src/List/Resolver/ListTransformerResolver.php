@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\ListTransformerEvent;
-use HeimrichHannot\FlareBundle\List\Type\ListTypeInterface;
+use HeimrichHannot\FlareBundle\List\Type\ListDriverInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -21,7 +21,7 @@ final class ListTransformerResolver
     /**
      * @var array<class-string, TransformerResolver>
      */
-    private array $builders = [];
+    private array $resolvers = [];
 
     public function __construct(
         private readonly EventDispatcherInterface $eventDispatcher,
@@ -30,22 +30,22 @@ final class ListTransformerResolver
     /**
      * @return array<string, mixed>|null Canonical config values, or null when no transformer matches the source.
      */
-    public function transform(ListTypeInterface $typeService, ?string $type, object $source): ?array
+    public function transform(ListDriverInterface $driver, ?string $type, object $source): ?array
     {
-        if (!isset($this->builders[$typeService::class]))
+        if (!isset($this->resolvers[$driver::class]))
         {
-            $transformers = new TransformerResolver();
+            $resolver = new TransformerResolver();
 
-            if ($typeService instanceof TransformerContract) {
-                $typeService->configureTransformers($transformers);
+            if ($driver instanceof TransformerContract) {
+                $driver->configureTransformers($resolver);
             }
 
-            $this->eventDispatcher->dispatch(new ListTransformerEvent($transformers, $typeService, $type));
+            $this->eventDispatcher->dispatch(new ListTransformerEvent($resolver, $driver, $type));
 
-            $this->builders[$typeService::class] = $transformers;
+            $this->resolvers[$driver::class] = $resolver;
         }
 
-        if (!$transformer = $this->builders[$typeService::class]->resolve($source)) {
+        if (!$transformer = $this->resolvers[$driver::class]->resolve($source)) {
             return null;
         }
 

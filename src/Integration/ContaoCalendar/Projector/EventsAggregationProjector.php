@@ -20,7 +20,7 @@ class EventsAggregationProjector extends AggregationProjector
 
     public function supports(ListSpec $list, ContextInterface $context): bool
     {
-        return $list->getTypeAlias() === EventsListType::TYPE && $context instanceof AggregationContext;
+        return $list->type === EventsListType::TYPE && $context instanceof AggregationContext;
     }
 
     public function priority(ListSpec $list, ContextInterface $context): int

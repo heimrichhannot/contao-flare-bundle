@@ -21,7 +21,7 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsListType(type: self::TYPE)]
-class GenericDataContainerListType extends AbstractListType implements DataContainerContract, DcaContract
+class GenericDataContainerListDriver extends AbstractListDriver implements DataContainerContract, DcaContract
 {
     public const TYPE = 'flare_generic_dc';
     public const DEFAULT_PALETTE = <<<'PALETTE'

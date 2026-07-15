@@ -8,6 +8,7 @@ use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\List\BaseListOptions;
+use HeimrichHannot\FlareBundle\List\Type\ListDriverInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
@@ -28,7 +29,7 @@ final readonly class ListOptionsResolver
      *
      * @throws FlareException If the config does not satisfy the schema.
      */
-    public function resolve(?object $driverService, array $config, ?string $source = null): array
+    public function resolve(?ListDriverInterface $driverService, array $config, ?string $source = null): array
     {
         $configure = static function (OptionsResolver $resolver) use ($driverService): void {
             BaseListOptions::configureOptions($resolver);

@@ -9,7 +9,7 @@ use Contao\DataContainer;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
-use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
@@ -18,8 +18,8 @@ class ListContainer
     public const TABLE_NAME = 'tl_flare_list';
 
     public function __construct(
-        private readonly Connection       $connection,
-        private readonly ListTypeRegistry $listTypeRegistry,
+        private readonly Connection         $connection,
+        private readonly ListDriverRegistry $listTypeRegistry,
     ) {}
 
     /* ============================= *

@@ -23,7 +23,7 @@ final class FilterOptionsResolverTest extends TestCase
         $resolver = new FilterOptionsResolver(new SchemaResolver());
         $element = new ElementConfigAwareElement();
 
-        $config = $resolver->resolve(new Filter(element: 'test', config: ['field' => 'title']), $element);
+        $config = $resolver->resolve(new Filter(type: 'test', config: ['field' => 'title']), $element);
 
         self::assertSame('title', $config['field']);
         self::assertFalse($config['intrinsic']);
@@ -36,14 +36,14 @@ final class FilterOptionsResolverTest extends TestCase
 
         $config = ['anything' => 'goes', 'unvalidated' => true];
 
-        self::assertSame($config, $resolver->resolve(new Filter(element: 'test', config: $config), $element));
+        self::assertSame($config, $resolver->resolve(new Filter(type: 'test', config: $config), $element));
     }
 
     public function testWrapsSchemaViolationsInFilterException(): void
     {
         $resolver = new FilterOptionsResolver(new SchemaResolver());
         $element = new ElementConfigAwareElement();
-        $filter = new Filter(element: 'test', config: ['unknown_key' => 1], source: 'tl_flare_filter.42');
+        $filter = new Filter(type: 'test', config: ['unknown_key' => 1], source: 'tl_flare_filter.42');
 
         try
         {

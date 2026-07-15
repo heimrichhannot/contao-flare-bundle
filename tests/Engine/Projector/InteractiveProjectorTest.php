@@ -50,7 +50,7 @@ final class InteractiveProjectorTest extends TestCase
     private function listWithFilter(string $key, string $alias): ListSpec
     {
         return new ListSpec(type: 'test', dc: 'tl_test', filters: [
-            $key => new Filter(element: 'test_element', alias: $alias),
+            $key => new Filter(type: 'test_element', alias: $alias),
         ]);
     }
 

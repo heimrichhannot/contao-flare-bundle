@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Form;
 
+use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\Interface\FormContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormBuiltEvent;
@@ -48,7 +49,7 @@ final class FilterFormFactoryTest extends TestCase
 
         return new FilterFormFactory(
             eventDispatcher: $this->eventDispatcher,
-            filterContextFactory: new FilterContextFactory(new FilterOptionsResolver()),
+            filterContextFactory: new FilterContextFactory(new FilterOptionsResolver(new SchemaResolver())),
             filterElementResolver: new FilterElementResolver(new FilterElementRegistry(), new NullLogger()),
             formFactory: $formFactory,
         );

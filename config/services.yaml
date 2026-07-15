@@ -27,6 +27,10 @@ services:
     HeimrichHannot\FlareBundle\Util\Env: ~
     HeimrichHannot\FlareBundle\Util\Str: ~
 
+    # Not shared: each consumer keeps its own per-key schema memoization space
+    HeimrichHannot\FlareBundle\Config\SchemaResolver:
+        shared: false
+
 #    bind:
 #      $projectDir: '%kernel.project_dir%'
 #      $csrfTokenName: '%contao.csrf_token_name%'

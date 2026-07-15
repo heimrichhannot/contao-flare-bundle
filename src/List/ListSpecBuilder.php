@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
-use HeimrichHannot\FlareBundle\List\Type\ListTypeInterface;
+use HeimrichHannot\FlareBundle\List\Type\ListDriverInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -23,7 +23,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  * base translation, the type's model transformers, and explicit {@see set()} overrides —
  * resolved through the base and type schemas.
  */
-final class ListBuilder implements ListBuilderInterface
+final class ListSpecBuilder implements ListSpecBuilderInterface
 {
     /**
      * @var array<string, Filter>
@@ -41,26 +41,20 @@ final class ListBuilder implements ListBuilderInterface
         private readonly ListOptionsResolver      $optionsResolver,
         private readonly ListTransformerResolver  $transformerResolver,
         private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly ListTypeInterface|string $type,
-        private readonly ?object                  $typeService,
+        private readonly ListDriverReference      $driverReference,
         private readonly string                   $dc,
         private readonly ?ListModel               $model = null,
         private readonly ?string                  $source = null,
     ) {}
 
-    public function getType(): ListTypeInterface|string
+    public function getDriverReference(): ListDriverReference
     {
-        return $this->type;
+        return $this->driverReference;
     }
 
-    public function getTypeAlias(): ?string
+    public function getType(): string
     {
-        return \is_string($this->type) ? $this->type : null;
-    }
-
-    public function getTypeService(): ?object
-    {
-        return $this->typeService;
+        return $this->driverReference->type;
     }
 
     public function getDc(): string
@@ -123,7 +117,7 @@ final class ListBuilder implements ListBuilderInterface
     {
         foreach ($this->filters as $filter)
         {
-            if ($filter->getElementType() === $elementType) {
+            if ($filter->type === $elementType) {
                 return true;
             }
         }
@@ -136,8 +130,10 @@ final class ListBuilder implements ListBuilderInterface
      */
     public function build(): ListSpec
     {
-        if ($this->typeService instanceof BuildListContract) {
-            $this->typeService->buildList($this);
+        $driver = $this->driverReference->driver;
+
+        if ($driver instanceof BuildListContract) {
+            $driver->buildList($this);
         }
 
         $this->eventDispatcher->dispatch(new ListBuildEvent($this));
@@ -148,17 +144,14 @@ final class ListBuilder implements ListBuilderInterface
         {
             BaseListOptions::transform($config, $this->model);
 
-            if ($this->typeService instanceof ListTypeInterface)
-            {
-                $transformed = $this->transformerResolver->transform(
-                    $this->typeService,
-                    $this->getTypeAlias(),
-                    $this->model,
-                );
+            $transformed = $this->transformerResolver->transform(
+                $driver,
+                $this->getType(),
+                $this->model,
+            );
 
-                foreach ($transformed ?? [] as $key => $value) {
-                    $config->set($key, $value);
-                }
+            foreach ($transformed ?? [] as $key => $value) {
+                $config->set($key, $value);
             }
         }
 
@@ -167,10 +160,10 @@ final class ListBuilder implements ListBuilderInterface
         }
 
         return new ListSpec(
-            type: $this->type,
+            reference: $this->driverReference,
             dc: $this->dc,
             filters: $this->filters,
-            config: $this->optionsResolver->resolve($this->typeService, $config->all(), $this->source),
+            config: $this->optionsResolver->resolve($driver, $config->all(), $this->source),
             source: $this->source,
         );
     }

@@ -19,7 +19,7 @@ readonly class FilterElementListener
     #[AsEventListener(priority: -200)]
     public function onFilterElementBuiltEvent(FilterElementBuiltEvent $event): void
     {
-        if (!$type = $event->getContext()->filter->getElementType()) {
+        if (!$type = $event->getContext()->filter->type) {
             return;
         }
 
@@ -29,7 +29,7 @@ readonly class FilterElementListener
     #[AsEventListener(priority: -200)]
     public function onFilterElementBuildingEvent(FilterElementBuildingEvent $event): void
     {
-        if (!$type = $event->getContext()->filter->getElementType()) {
+        if (!$type = $event->getContext()->filter->type) {
             return;
         }
 
@@ -39,7 +39,7 @@ readonly class FilterElementListener
     #[AsEventListener(priority: -200)]
     public function onFilterElementFormBuiltEvent(FilterElementFormBuiltEvent $event): void
     {
-        if (!$type = $event->getContext()->filter->getElementType()) {
+        if (!$type = $event->getContext()->filter->type) {
             return;
         }
 

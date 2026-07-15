@@ -17,7 +17,7 @@ readonly class ListBuildListener
     #[AsEventListener(priority: -200)]
     public function __invoke(ListBuildEvent $event): void
     {
-        if (!$type = $event->builder->getTypeAlias()) {
+        if (!$type = $event->builder->getType()) {
             return;
         }
 

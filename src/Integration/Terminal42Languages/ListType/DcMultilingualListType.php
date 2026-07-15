@@ -10,11 +10,11 @@ use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
-use HeimrichHannot\FlareBundle\List\Type\AbstractListType;
+use HeimrichHannot\FlareBundle\List\Type\AbstractListDriver;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 #[AsListType(type: self::TYPE)]
-class DcMultilingualListType extends AbstractListType implements DataContainerContract
+class DcMultilingualListType extends AbstractListDriver implements DataContainerContract
 {
     public const TYPE = 'flare_generic_dc_multilingual';
     public const DEFAULT_PALETTE = <<<'PALETTE'

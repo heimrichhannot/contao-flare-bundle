@@ -11,7 +11,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
  * Framework-owned base schema and translation for every list. Applied unconditionally by
- * {@see Resolver\ListOptionsResolver} and {@see ListBuilder} before the list type's own
+ * {@see Resolver\ListOptionsResolver} and {@see ListSpecBuilder} before the list type's own
  * schema and transformers run, so framework consumers (page meta, comments, contexts)
  * can rely on these keys regardless of the type implementation.
  *

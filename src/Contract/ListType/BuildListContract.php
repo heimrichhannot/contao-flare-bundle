@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Contract\ListType;
 
-use HeimrichHannot\FlareBundle\List\ListBuilder;
+use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
 
 /**
  * Implemented by list types that take part in their list's build lifecycle —
@@ -12,5 +12,5 @@ use HeimrichHannot\FlareBundle\List\ListBuilder;
  */
 interface BuildListContract
 {
-    public function buildList(ListBuilder $builder): void;
+    public function buildList(ListSpecBuilder $builder): void;
 }

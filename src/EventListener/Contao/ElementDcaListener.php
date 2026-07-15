@@ -10,13 +10,13 @@ use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\Event\ElementDcaEvent;
-use HeimrichHannot\FlareBundle\List\Factory\ListBuilderFactory;
+use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -35,8 +35,8 @@ readonly class ElementDcaListener
         private EventDispatcherInterface    $eventDispatcher,
         private FilterElementRegistry       $filterElementRegistry,
         private ListExecutionContextFactory $listExecutionContextFactory,
-        private ListBuilderFactory          $listFactory,
-        private ListTypeRegistry            $listTypeRegistry,
+        private ListSpecBuilderFactory      $listFactory,
+        private ListDriverRegistry          $listTypeRegistry,
         private RequestStack                $requestStack,
     ) {}
 

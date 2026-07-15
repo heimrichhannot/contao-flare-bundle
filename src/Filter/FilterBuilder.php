@@ -15,7 +15,7 @@ class FilterBuilder implements FilterBuilderInterface
     /**
      * @var array<class-string<FilterTypeInterface>, OptionsResolver>
      */
-    private static array $resolvers = [];
+    private static array $optionsResolvers = [];
 
     /**
      * @var FilterCall[]
@@ -39,18 +39,18 @@ class FilterBuilder implements FilterBuilderInterface
             throw new FilterException(\sprintf('No FLARE filter type service registered for "%s".', $type));
         }
 
-        if (!isset(self::$resolvers[$type]))
+        if (!isset(self::$optionsResolvers[$type]))
         {
             $resolver = new OptionsResolver();
             $filterType->configureOptions($resolver);
-            self::$resolvers[$type] = $resolver;
+            self::$optionsResolvers[$type] = $resolver;
         }
 
         $this->calls[] = new FilterCall(
             type: $filterType,
             typeClass: $type,
             targetAlias: $targetAlias ?: $this->defaultTargetAlias,
-            options: self::$resolvers[$type]->resolve($options),
+            options: self::$optionsResolvers[$type]->resolve($options),
         );
 
         return $this;

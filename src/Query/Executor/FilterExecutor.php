@@ -91,7 +91,7 @@ readonly class FilterExecutor
             return [];
         }
 
-        $descriptor = ($type = $filter->getElementType()) ? $this->filterElementRegistry->get($type) : null;
+        $descriptor = $this->filterElementRegistry->get($filter->type);
 
         $targetAlias = TableAliasRegistry::ALIAS_MAIN;
         if ($descriptor?->isTargeted() || $filter->targetingForced) {

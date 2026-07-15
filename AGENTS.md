@@ -101,8 +101,9 @@ are in `src/Event/`. Prefer events over overriding services for customization.
 
 ## Testing & CI
 
-*   **Unit tests** live in `tests/` (PHPUnit 9); run them with `make php vendor/bin/phpunit tests`. There is no `phpunit.xml` and no test CI workflow yet, and no `make test` target.
+*   **Unit tests** live in `tests/` (PHPUnit 9, configured via `phpunit.xml.dist`); run them with `make php vendor/bin/phpunit`. There is no `make test` target.
 *   CI workflows in `.github/workflows/`:
+    *   `phpunit.yaml` — PHPUnit test suite
     *   `phpstan.yaml` — PHPStan analysis
     *   `mago.yaml` — Mago lint (`--minimum-fail-level note`, PHP 8.2–8.5)
     *   `compatibility.yaml` — `composer validate` + dependency-resolution matrix (PHP 8.2–8.5 × Contao 4.13/5.x)

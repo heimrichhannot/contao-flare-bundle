@@ -10,8 +10,8 @@ use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use Psr\Log\LoggerInterface;
 
 /**
- * Resolves the filter element responsible for a filter: an inline instance wins,
- * otherwise the element is looked up in the registry by its type alias.
+ * Resolves the filter element responsible for a filter by looking up its type alias
+ * in the registry.
  */
 final readonly class FilterElementResolver
 {
@@ -34,7 +34,7 @@ final readonly class FilterElementResolver
             $this->logger->warning(\sprintf(
                 '[FLARE] No filter element registered for type "%s" — filter skipped. (%s)',
                 $type,
-                $source ?: 'filter inlined',
+                $source ?: 'no source',
             ));
 
             return null;

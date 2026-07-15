@@ -17,7 +17,10 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterElementResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
+use HeimrichHannot\FlareBundle\List\ListDriverReference;
 use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\Type\ListDriverInterface;
+use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -33,10 +36,14 @@ use Symfony\Component\Security\Csrf\CsrfTokenManager;
 final class FilterFormFactoryTest extends TestCase
 {
     private EventDispatcher $eventDispatcher;
+    private FilterElementRegistry $elementRegistry;
+    private int $elementCount = 0;
 
     protected function setUp(): void
     {
         $this->eventDispatcher = new EventDispatcher();
+        $this->elementRegistry = new FilterElementRegistry();
+        $this->elementCount = 0;
     }
 
     private function createFactory(): FilterFormFactory
@@ -50,14 +57,18 @@ final class FilterFormFactoryTest extends TestCase
         return new FilterFormFactory(
             eventDispatcher: $this->eventDispatcher,
             filterContextFactory: new FilterContextFactory(new FilterOptionsResolver(new SchemaResolver())),
-            filterElementResolver: new FilterElementResolver(new FilterElementRegistry(), new NullLogger()),
+            filterElementResolver: new FilterElementResolver($this->elementRegistry, new NullLogger()),
             formFactory: $formFactory,
         );
     }
 
     private function createForm(array $filters): FormInterface
     {
-        $list = new ListSpec(type: 'test', dc: 'tl_test', filters: $filters);
+        $list = new ListSpec(
+            reference: new ListDriverReference(type: 'test', driver: new class implements ListDriverInterface {}),
+            dc: 'tl_test',
+            filters: $filters,
+        );
 
         $context = new class implements ContextInterface, FormContextInterface {
             public static function getContextType(): string
@@ -80,11 +91,13 @@ final class FilterFormFactoryTest extends TestCase
     }
 
     /**
+     * Registers an element building its form via the given callable; returns its type alias.
+     *
      * @param callable(FilterFormBuilderInterface, FilterContext): void $buildForm
      */
-    private function element(callable $buildForm): FilterElementInterface
+    private function element(callable $buildForm): string
     {
-        return new class($buildForm) implements FilterElementInterface {
+        $element = new class($buildForm) implements FilterElementInterface {
             /** @var callable */
             private $buildForm;
 
@@ -100,6 +113,11 @@ final class FilterFormFactoryTest extends TestCase
 
             public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void {}
         };
+
+        $type = 'element_' . ++$this->elementCount;
+        $this->elementRegistry->add($type, new FilterElementDescriptor($element));
+
+        return $type;
     }
 
     public function testSingleFieldMountsFlatUnderTheAlias(): void

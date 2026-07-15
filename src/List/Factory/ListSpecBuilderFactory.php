@@ -14,8 +14,8 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
- * Creates ListBuilders — from a stored tl_flare_list model with its published filters
- * pre-added, or programmatically from a type and data container.
+ * Creates ListSpecBuilders — from a stored tl_flare_list model with its published filters
+ * pre-added, or programmatically from a driver and data container.
  */
 final readonly class ListSpecBuilderFactory
 {

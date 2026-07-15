@@ -20,7 +20,7 @@ final readonly class ListSpecFactory
      */
     public function create(
         ListDriverInterface|string $driver,
-        ?string                    $dc = null,
+        string                     $dc,
         array                      $filters = [],
         array                      $config = [],
         ?string                    $source = null,

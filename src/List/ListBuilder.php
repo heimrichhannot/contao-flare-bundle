@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\List;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\ListType\BuildListContract;
-use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
+use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\List\Type\ListTypeInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -40,6 +39,7 @@ final class ListBuilder implements ListBuilderInterface
 
     public function __construct(
         private readonly ListOptionsResolver      $optionsResolver,
+        private readonly ListTransformerResolver  $transformerResolver,
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly ListTypeInterface|string $type,
         private readonly ?object                  $typeService,
@@ -148,13 +148,12 @@ final class ListBuilder implements ListBuilderInterface
         {
             BaseListOptions::transform($config, $this->model);
 
-            if ($this->typeService instanceof TransformerContract)
+            if ($this->typeService)
             {
-                $transformers = new TransformerResolver();
-                $this->typeService->configureTransformers($transformers);
+                $transformed = $this->transformerResolver->transform($this->typeService, $this->model);
 
-                if ($transformer = $transformers->resolve($this->model)) {
-                    $transformer($config, $this->model);
+                foreach ($transformed ?? [] as $key => $value) {
+                    $config->set($key, $value);
                 }
             }
         }

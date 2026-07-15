@@ -7,6 +7,7 @@ namespace HeimrichHannot\FlareBundle\List\Factory;
 use HeimrichHannot\FlareBundle\Filter\Collector\ListModelFilterCollector;
 use HeimrichHannot\FlareBundle\List\ListBuilder;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
+use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\List\Type\ListTypeInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
@@ -22,6 +23,7 @@ final readonly class ListBuilderFactory
         private EventDispatcherInterface $eventDispatcher,
         private ListModelFilterCollector $filterCollector,
         private ListOptionsResolver      $listOptionsResolver,
+        private ListTransformerResolver  $listTransformerResolver,
         private ListTypeRegistry         $listTypeRegistry,
     ) {}
 
@@ -37,6 +39,7 @@ final readonly class ListBuilderFactory
 
         return new ListBuilder(
             optionsResolver: $this->listOptionsResolver,
+            transformerResolver: $this->listTransformerResolver,
             eventDispatcher: $this->eventDispatcher,
             type: $type,
             typeService: $typeService,

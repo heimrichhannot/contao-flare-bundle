@@ -121,9 +121,9 @@ final class ListSpecBuilderTest extends TestCase
             optionsResolver: new ListOptionsResolver(new SchemaResolver()),
             transformerResolver: new ListTransformerResolver($dispatcher),
             eventDispatcher: $dispatcher,
-            driverReference: new ListDriverReference(
-                type: 'test_type',
-                driver: $driver ?? new class implements ListDriverInterface {},
+            driverReference: ListDriverReference::registered(
+                'test_type',
+                $driver ?? new class implements ListDriverInterface {},
             ),
             dc: 'tl_test',
             model: $model,

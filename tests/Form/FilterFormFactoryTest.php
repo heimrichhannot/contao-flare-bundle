@@ -65,7 +65,7 @@ final class FilterFormFactoryTest extends TestCase
     private function createForm(array $filters): FormInterface
     {
         $list = new ListSpec(
-            reference: new ListDriverReference(type: 'test', driver: new class implements ListDriverInterface {}),
+            reference: ListDriverReference::registered('test', new class implements ListDriverInterface {}),
             dc: 'tl_test',
             filters: $filters,
         );

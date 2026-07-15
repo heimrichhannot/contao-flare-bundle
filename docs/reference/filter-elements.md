@@ -10,7 +10,7 @@ any are applied without a user-facing form field (typically as intrinsic filters
 | `flare_archive` | Archive | `ChoiceType` | Filter by parent archive (e.g. news archives). |
 | `flare_bool` | Boolean property value | `CheckboxType` | Filter on a boolean column. |
 | `flare_calendar_current` | Calendar time window | 2× `DateType` (from/to) | Time-window filter for calendar events, recurring-aware. |
-| `flare_dateRange` | Date range | 2× `DateType` (from/to) | Filter a date column by from/to values. |
+| `flare_dateRange` | Date range | 2× `DateType` (from/to) | Filter a date column by from/to values; either field can be disabled via the `from_enabled`/`to_enabled` config options. |
 | `flare_dcaSelectField` | DCA field options selection | `ChoiceType` | Choices from a DCA select field's options. |
 | `flare_equation_simple` | Simple equation | — | Intrinsic `column <operator> value` condition. |
 | `flare_fieldValueChoice` | DCA field value selection (beta) | `ChoiceType` | Choices from the distinct values of a column. |

@@ -2,8 +2,8 @@
 
 | Type | Backend label | Data container | Class |
 |---|---|---|---|
-| `flare_generic_dc` | Data Container | user-selected | `HeimrichHannot\FlareBundle\ListType\GenericDataContainerListType` |
-| `flare_news` | News | `tl_news` | `HeimrichHannot\FlareBundle\ListType\NewsListType` |
+| `flare_generic_dc` | Data Container | user-selected | `HeimrichHannot\FlareBundle\List\Type\GenericDataContainerListType` |
+| `flare_news` | News | `tl_news` | `HeimrichHannot\FlareBundle\List\Type\NewsListType` |
 | `flare_events` | Events | `tl_calendar_events` | `HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListType\EventsListType` |
 
 ## Notes

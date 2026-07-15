@@ -6,8 +6,7 @@ Flare registers the following Twig functions (see also [Templating](../templatin
 |---|---|
 | `flare_content(model)` | Renders the content elements belonging to the given model. |
 | `flare_enclosure(model\|entry_row, field = "enclosure")` | Retrieves file enclosure data, like `Contao\Controller::addEnclosuresToTemplate()`. |
-| `flare_make_filter(type, config = [], data = null, alias = null)` | Creates a [`Filter`](../spec/filtering.md#1-the-filter-value-object) from a registered filter element type alias (e.g. `'flare_bool'`) or a `FilterTypeInterface` class-string; add it to a list via `flare.list.addFilter(...)`. |
-| `flare_project(list_specification, context)` | Runs a projection directly: returns the view for the given `ListSpecification` and context configuration. |
+| `flare_project(list_spec, context)` | Runs a projection directly: returns the view for the given [`ListSpec`](../spec/specifications.md) and context configuration. |
 | `flare_schema_org(model = null)` | Prints JSON-LD schema markup for the given model (falls back to the context's model) in a reader context. Influence the data via `ReaderSchemaOrgEvent`. |
 
 ## Debugging: Symfony Profiler

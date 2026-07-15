@@ -19,7 +19,7 @@ The system is based on a strict separation of responsibilities:
 
 ## The 5 Core Components
 
-### 1. Specification (`ListSpecification`)
+### 1. Specification (`ListSpec`)
 - **Type:** Value Object / Domain Object.
 - **Responsibility:** Contains the static configuration of a list (e.g., table name, base query, filters —
   a keyed map of immutable [`Filter` value objects](./filtering.md#1-the-filter-value-object)).

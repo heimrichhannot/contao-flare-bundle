@@ -20,19 +20,29 @@ depth by the [custom filter elements guide](../filter-elements/index.md):
 
 - **`FilterElementInterface`**: The core contract every element implements — `buildForm()` adds the
   frontend form controls, `buildFilter()` translates config and submitted data into filter-type calls.
-- **`FilterElementOptionsInterface`**: Declares the element's canonical config schema
-  (`configureOptions()`) and maps stored `tl_flare_filter` rows onto it (`configFromRow()`).
+- **`IntrinsicContract`** (`Contract\FilterElement\`): Marks an element as always intrinsic via
+  `isOnlyIntrinsic()` — it never renders form controls, and the backend forces the intrinsic flag on its
+  filter records.
 
 ## 2. List Type Contracts
-- [**`ConfigureQueryContract`**](./configure-query-contract.md): Register joins and customize the base SQL query.
+- [**`BuildQueryContract`**](./build-query-contract.md): Register joins and customize the base SQL query.
+- **`BuildListContract`**: Take part in the list build lifecycle — `buildList(ListBuilder)` adds filters or
+  config overrides before the `ListSpec` is built (see the [custom list types guide](../list-types/index.md)).
 - [**`DataContainerContract`**](./data-container-contract.md): Resolve the list record's `dc` value during backend
   editing.
 
 ## 3. General Contracts
+
+These apply to filter elements and list types alike:
+
+- **`OptionsContract`**: Declare a canonical config schema with Symfony's `OptionsResolver`
+  (`configureOptions()`).
+- **`TransformerContract`**: Declare per-source transformers translating a stored source (e.g. a DCA
+  model) into canonical config values (`configureTransformers()`).
 - [**`DcaContract`**](./dca-contract.md): Assemble the type's backend palette and DCA field tweaks at runtime.
 - [**`IsSupportedContract`**](./is-supported-contract.md): Hide unsupported services from bundle integrations that check
   availability.
 {/*
-  * - [**`OptionsInterface`**](./options-interface.md): Define and validate custom options with Symfony's `OptionsResolver`.
+  * - [**`OptionsContract`**](./options-interface.md): Define and validate custom options with Symfony's `OptionsResolver`.
   * - [**`LabelableInterface`**](./labelable-interface.md): Supply custom translation parameters for dynamically rendered choice labels. This interface is currently marked experimental.
   */}

@@ -1,8 +1,8 @@
-# OptionsInterface
+# OptionsContract
 
-The `OptionsInterface` lets a service define and validate custom options with Symfony's `OptionsResolver`.
+The `OptionsContract` lets a service declare a canonical config schema with Symfony's `OptionsResolver`.
 
-**Interface:** `HeimrichHannot\FlareBundle\Contract\OptionsInterface`
+**Interface:** `HeimrichHannot\FlareBundle\Contract\OptionsContract`
 
 ## Method
 
@@ -25,17 +25,14 @@ public function configureOptions(OptionsResolver $resolver): void
 }
 ```
 
-## Important distinction
+## Current runtime usage
 
-This contract is not the same as `FilterElementOptionsInterface`.
+- **Filter elements** (`AbstractFilterElement`) declare their canonical config schema through this
+  contract; FLARE's `FilterOptionsResolver` resolves every filter's config against it. The schema is
+  paired with the element's transformers (`TransformerContract`), which translate stored sources onto it.
+- **List types** (`AbstractListType`) declare their type schema through this contract; it is resolved on
+  top of the framework-owned `BaseListOptions` schema by the `ListOptionsResolver`.
+- **Filter types** declare `configureOptions()` directly on `FilterTypeInterface` (not via this
+  contract); the options passed to `FilterBuilderInterface::add()` are validated against it.
 
-- Use `Filter\Element\FilterElementOptionsInterface` for a filter element's canonical config schema — it is
-  resolved by FLARE's filter pipeline and pairs `configureOptions()` with `configFromRow()`.
-- `Contract\OptionsInterface` is a generic marker for any service that wants to expose an
-  `OptionsResolver`-based option schema.
-
-## Current state in this repository
-
-At the moment, there is no implementor and no internal runtime call site in `src/` that invokes
-`OptionsInterface::configureOptions()` directly. Treat it as part of Flare's extensibility surface for code
-that wants to resolve custom options explicitly.
+`configureOptions()` is declarative, memoizable setup — it runs once per class, not per record.

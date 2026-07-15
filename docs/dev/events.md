@@ -18,18 +18,28 @@ Dispatched after the `TableAliasRegistry` and base `SqlQueryStruct` are initiali
 - **Use Case:** Registering additional table joins or setting up the initial query structure.
 - **Class:** `HeimrichHannot\FlareBundle\Event\QueryBaseInitializedEvent`
 
-## 2. Specification & Filter Collection Lifecycle
+## 2. List Build & Filter Collection Lifecycle
 
-### `ListSpecificationCreatedEvent`
-Dispatched when a `ListSpecification` object has been created from its data source (e.g. `tl_flare_list` model).
-- **Use Case:** Modifying the list configuration dynamically at runtime.
-- **Class:** `HeimrichHannot\FlareBundle\Event\ListSpecificationCreatedEvent`
+### `ListBuildEvent`
+Dispatched while a list is being built into its [`ListSpec`](../spec/specifications.md) — after the
+type's `buildList()` hook and before the config is resolved.
+- **Use Case:** Adding or removing filters and setting canonical config overrides at runtime.
+- **Class:** `HeimrichHannot\FlareBundle\Event\ListBuildEvent`
+- **Properties:** `builder` (readonly `ListBuilder` — `addFilter()`, `removeFilter()`, `set()`, ...)
 
 ### `FilterCollectedEvent`
-Dispatched for every filter collected from the database, before it is added to the list specification.
+Dispatched for every filter collected from the database, before it is added to the list.
 - **Use Case:** Replacing or reconfiguring a filter based on its `tl_flare_filter` record.
 - **Class:** `HeimrichHannot\FlareBundle\Event\FilterCollectedEvent`
 - **Properties:** `filter` (mutable `Filter` — assign a replacement), `model` (readonly `FilterModel`)
+
+### `FilterTransformerEvent`
+Dispatched once per filter element class when its transformer map is configured.
+- **Use Case:** Registering transformers for additional source classes, or replacing the element's
+  `FilterModel` transformer (re-registering a source class overrides the element's default).
+- **Class:** `HeimrichHannot\FlareBundle\Event\FilterTransformerEvent`
+- **Properties:** `transformers` (readonly `TransformerResolver`), `element` (readonly
+  `FilterElementInterface`), `type` (readonly `?string`)
 
 ## 3. List View Lifecycle
 
@@ -78,7 +88,7 @@ Dispatched after a filter element's `buildFilter()` ran.
 Dispatched while the filter form is being built, exposing the `FormBuilderInterface`.
 - **Use Case:** Adding, removing, or reconfiguring form children of the filter form.
 - **Class:** `HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent`
-- **Properties:** `listSpecification`, `formName`, `formBuilder`
+- **Properties:** `list` (readonly `ListSpec`), `formName`, `formBuilder`
 
 ### `FilterElementFormBuiltEvent`
 Dispatched after a filter element declared its fields on the collect-only per-filter builder, before the
@@ -118,8 +128,9 @@ object is identical to the base event.
 | `flare.filter_element.{type}.building` | `FilterElementBuildingEvent` |
 | `flare.filter_element.{type}.built` | `FilterElementBuiltEvent` |
 | `flare.filter_element.{type}.form_built` | `FilterElementFormBuiltEvent` |
+| `flare.filter_element.{type}.transformers` | `FilterTransformerEvent` |
 | `flare.form.{formName}.build` | `FilterFormBuildEvent` |
-| `flare.list_type.{type}.list_specification_created` | `ListSpecificationCreatedEvent` |
+| `flare.list.{type}.build` | `ListBuildEvent` |
 | `flare.filter_element.{type}.dca` | `ElementDcaEvent` (filter elements) |
 | `flare.list.{type}.dca` | `ElementDcaEvent` (list types) |
 

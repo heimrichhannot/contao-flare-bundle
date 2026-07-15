@@ -1,8 +1,8 @@
-# ConfigureQueryContract
+# BuildQueryContract
 
-The `ConfigureQueryContract` defines how a list type registers joins and customizes its base SQL query structure.
+The `BuildQueryContract` defines how a list type registers joins and customizes its base SQL query structure.
 
-**Interface:** `HeimrichHannot\FlareBundle\Contract\ListType\ConfigureQueryContract`
+**Interface:** `HeimrichHannot\FlareBundle\Contract\ListType\BuildQueryContract`
 
 `AbstractListType` already implements this contract with no-op methods, so most list types only override the parts they
 need.
@@ -11,21 +11,21 @@ need.
 
 Before your methods run, Flare creates the query context with:
 
-- A main table taken from `ListSpecification::$dc` or the `dataContainer` configured on the list type descriptor
+- A main table taken from `ListSpec::$dc` or the `dataContainer` configured on the list type descriptor
 - `main` as the default table alias
 - `SELECT main.*`
 - `GROUP BY main.id`
 
 Then Flare:
 
-1. Calls `configureTableRegistry()`
-2. Calls `configureBaseQuery()`
+1. Calls `buildTableRegistry()`
+2. Calls `buildBaseQuery()`
 3. Dispatches `QueryBaseInitializedEvent`
 4. Re-adds `main.id AS id` to the select list for internal processing
 
 ## Methods
 
-### `configureTableRegistry(TableAliasRegistry $registry): void`
+### `buildTableRegistry(TableAliasRegistry $registry): void`
 
 Use this method to register joins and additional aliases on the `TableAliasRegistry`.
 
@@ -34,7 +34,7 @@ use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Query\SqlJoinStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 
-public function configureTableRegistry(TableAliasRegistry $registry): void
+public function buildTableRegistry(TableAliasRegistry $registry): void
 {
     $registry->registerJoin(new SqlJoinStruct(
         fromAlias: TableAliasRegistry::ALIAS_MAIN,
@@ -46,7 +46,7 @@ public function configureTableRegistry(TableAliasRegistry $registry): void
 }
 ```
 
-### `configureBaseQuery(SqlQueryStruct $struct): void`
+### `buildBaseQuery(SqlQueryStruct $struct): void`
 
 Use this method to modify the pre-seeded `SqlQueryStruct`, for example by adding select fields, conditions, sorting, or
 custom grouping.
@@ -54,7 +54,7 @@ custom grouping.
 ```php
 use HeimrichHannot\FlareBundle\Query\SqlQueryStruct;
 
-public function configureBaseQuery(SqlQueryStruct $struct): void
+public function buildBaseQuery(SqlQueryStruct $struct): void
 {
     $select = $struct->getSelect() ?? [];
     $select[] = 'member.username AS author_name';

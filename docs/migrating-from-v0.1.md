@@ -28,7 +28,7 @@ For the exhaustive list of deleted APIs, see [Removed in v0.2](./removed-in-v0.2
 
 | v0.1 | v0.2 |
 |---|---|
-| `#[AsFilterElement(type:, formType:, palette:, method:, isTargeted:)]` | `#[AsFilterElement(type:, intrinsicOnly:, isTargeted:)]` — form type moves into `buildForm()`, palette into `buildDca()`, the invoked method is always `buildFilter()` |
+| `#[AsFilterElement(type:, formType:, palette:, method:, isTargeted:)]` | `#[AsFilterElement(type:, isTargeted:)]` — form type moves into `buildForm()`, palette into `buildDca()`, the invoked method is always `buildFilter()`; always-intrinsic elements implement `IntrinsicContract` |
 | `#[AsListType(type:, dataContainer:, palette:)]` | `#[AsListType(type:, dataContainer:)]` — palette moves into `buildDca()` |
 | `#[AsFilterInvoker]` | Removed — branch on `$context->engineContext` inside `buildFilter()` |
 | `#[AsFilterCallback]`, `#[AsListCallback]`, `#[AsFlareCallback]` | Removed — use [`buildDca()` / `ElementDcaEvent`](./dev/dca-builder.md) |
@@ -40,25 +40,27 @@ lifecycle methods (see the [custom filter elements guide](./dev/filter-elements/
 
 | v0.1 | v0.2 |
 |---|---|
-| `formType:` attribute parameter | `buildForm(FormBuilderInterface $builder, FilterContext $context): void` — add form children under local names |
-| `__invoke(FilterInvocation, FilterQueryBuilder)` | `buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void` — emit filter-type calls instead of writing SQL |
+| `formType:` attribute parameter | `buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void` — declare one field via `single()` or add children under local names |
+| `__invoke(FilterInvocation, FilterQueryBuilder)` | `buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void` — emit filter-type calls instead of writing SQL |
 | SQL written directly in the element | A [`FilterTypeInterface`](./dev/filter-types.md) service; the element calls `$builder->add(MyFilterType::class, [...])` |
-| `FilterInvocation->getValue()` | `$data` (submitted form data by local child name) and `$context->config` (resolved config) |
+| `FilterInvocation->getValue()` | `$values` (submitted form data by local child name; `single()` fields under `FilterContext::SINGLE_VALUE`) and `$context->config` (resolved config) |
 | `FilterQueryBuilder::abort()` in the element | `$builder->abort()` on the `FilterBuilderInterface` (filter types may still use `FilterQueryBuilder::abort()`) |
 
 ## Contracts
 
 | v0.1 contract | v0.2 equivalent |
 |---|---|
-| `FormDataContract::extractFormData()` | Read `$data` in `buildFilter()` — it contains the compound child's submitted data |
+| `FormDataContract::extractFormData()` | Read `$values` in `buildFilter()` — it contains the filter's submitted data |
 | `RuntimeValueContract::processRuntimeValue()` | Normalize values inside `buildFilter()` |
 | `IntrinsicValueContract::getIntrinsicValue()` | Read `$context->config` in `buildFilter()` (intrinsic values are config) |
-| `HydrateFormContract::hydrateForm()` | Pass defaults via the children's `data` option in `buildForm()` |
+| `HydrateFormContract::hydrateForm()` | Pass defaults via the fields' `data` option in `buildForm()` |
 | `FormTypeOptionsContract::handleFormTypeOptions()` | Build options directly in `buildForm()`; third parties use `FilterElementFormBuiltEvent` |
 | `PaletteContract::getPalette()` | [`DcaContract::buildDca()`](./dev/contracts/dca-contract.md) |
 
-New interfaces: `FilterElementInterface` (required), `FilterElementOptionsInterface` (config schema),
-`DcaContract` (backend DCA). `AbstractFilterElement` implements all of them plus `IsSupportedContract`.
+New interfaces: `FilterElementInterface` (required), `OptionsContract` (config schema),
+`TransformerContract` (source-to-config translation), `DcaContract` (backend DCA), and
+`IntrinsicContract` (always-intrinsic marker). `AbstractFilterElement` implements all of them plus
+`IsSupportedContract`.
 
 ## Events
 
@@ -73,21 +75,26 @@ New interfaces: `FilterElementInterface` (required), `FilterElementOptionsInterf
 
 `flare.form.{formName}.build` (`FilterFormBuildEvent`) is unchanged.
 
-## ListSpecification
+## ListSpecification → ListSpec
 
-Filters are now a keyed `array<string, Filter>` instead of a `FilterDefinitionCollection`:
+`ListSpecification` is replaced by the immutable `List\ListSpec`, built by the `List\ListBuilder`
+(see [List Specs & Filters](./spec/specifications.md)). Filters are a keyed `array<string, Filter>`
+instead of a `FilterDefinitionCollection`. While a list is being built (a list type's `buildList()` hook
+or a `ListBuildEvent` listener), use the mutable builder; on a finished spec, use the withers:
 
 | v0.1 | v0.2 |
 |---|---|
-| `$spec->getFilters()->add($definition)` | `$spec->addFilter($filter)` |
-| `$spec->getFilters()->set('name', $definition)` | `$spec->addFilter($filter, 'name')` — an existing key is replaced |
-| `$spec->getFilters()->hasType('flare_bool')` | `$spec->hasFilterOfType('flare_bool')` |
-| — | `$spec->getFilter('name')`, `$spec->removeFilter('name')` |
+| `$spec->getFilters()->add($definition)` | `$builder->addFilter($filter)` while building; `$spec = $spec->withFilter($filter)` afterwards |
+| `$spec->getFilters()->set('name', $definition)` | `$builder->addFilter($filter, 'name')` / `$spec->withFilter($filter, 'name')` — an existing key is replaced |
+| `$spec->getFilters()->hasType('flare_bool')` | `hasFilterOfType('flare_bool')` on builder or spec |
+| — | `$builder->getFilter('name')`, `$builder->removeFilter('name')`, `$spec->withoutFilter('name')` |
 | `$definition->forceTargetAlias('alias')` | `$filter->withTargetAlias('alias')` — **returns a new instance** (`Filter` is immutable) |
 
 Element `define()` factories (e.g. `PublishedFilterElement::define()`,
-`SimpleEquationFilterElement::define(...)`) now return `Filter` instead of `FilterDefinition`; their
-signatures are unchanged.
+`SimpleEquationFilterElement::define(...)`) were removed: construct a
+[`Filter`](./dev/filter-elements/index.md#9-inline-filters-without-a-service) directly with the element's
+type alias and canonical config, e.g.
+`new Filter(element: PublishedFilterElement::TYPE, config: ['intrinsic' => true, ...])`.
 
 ## Before / After
 
@@ -119,9 +126,9 @@ class CityFilterElement extends AbstractFilterElement
         $resolver->define('field')->default('city')->allowedTypes('string');
     }
 
-    public function configFromRow(array $row): array
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        return ['field' => ($row['fieldGeneric'] ?? null) ?: 'city'];
+        $config->set('field', $model->fieldGeneric ?: 'city');
     }
 
     public function buildDca(DcaBuilder $dca, DcaContext $context): void
@@ -129,14 +136,14 @@ class CityFilterElement extends AbstractFilterElement
         $dca->palette('{filter_legend},fieldGeneric');
     }
 
-    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
+    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
     {
-        $builder->add(FilterContext::FIELD_VALUE, TextType::class, ['required' => false]);
+        $builder->single(TextType::class, ['required' => false]);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
-        if (!$value = $data[FilterContext::FIELD_VALUE] ?? null) {
+        if (!$value = $values[FilterContext::SINGLE_VALUE] ?? null) {
             return;
         }
 

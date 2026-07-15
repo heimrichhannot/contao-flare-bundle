@@ -15,7 +15,8 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - `#[AsListCallback]`
 - `#[AsFlareCallback]` (internal base attribute)
 - Parameters removed from kept attributes: `#[AsFilterElement]` lost `palette`, `formType`, and `method`
-  (and gained `intrinsicOnly`); `#[AsListType]` lost `palette`
+  (always-intrinsic elements now implement `Contract\FilterElement\IntrinsicContract` instead);
+  `#[AsListType]` lost `palette`
 
 ## Classes
 

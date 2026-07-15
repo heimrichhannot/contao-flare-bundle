@@ -6,7 +6,7 @@ sidebar_position: 10
 
 Engine mods allow developers to manipulate the Flare `Engine` before a view is created. They are applied in Twig
 templates via `flare.addMod(type, options)` and executed during `flare.createView()`. Mods can add filters, change
-pagination parameters, or modify any other aspect of the engine's context or list specification.
+pagination parameters, or modify any other aspect of the engine's context or list spec.
 
 See the [Templating](../templating#modding-the-flare-engine) page for usage in Twig.
 
@@ -22,7 +22,7 @@ The flow:
 2. Template calls `flare.createView()` — the engine clones itself, iterates over queued mods, resolves each from the
    registry, and calls `ModInterface::apply()`.
 3. `apply()` runs the mod's logic — `AbstractMod` first resolves the options via Symfony's `OptionsResolver`.
-4. The mod manipulates the cloned engine (its `ListSpecification`, `ContextInterface`, etc.).
+4. The mod manipulates the cloned engine (its `ListSpec`, `ContextInterface`, etc.).
 5. After all mods have been applied, the engine projects the view.
 
 ## Creating a Custom Mod
@@ -45,6 +45,7 @@ use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Engine\Mod\AbstractMod;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Filter;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class BooleanTrueMod extends AbstractMod
@@ -62,13 +63,17 @@ class BooleanTrueMod extends AbstractMod
 
     public function __invoke(Engine $engine, array $options): void
     {
-        $engine->getList()->addFilter(
-            SimpleEquationFilterElement::define(
-                equationLeft: $options['field'],
-                equationOperator: SqlEquationOperator::EQUALS,
-                equationRight: '1',
-            )
+        $filter = new Filter(
+            element: SimpleEquationFilterElement::TYPE,
+            config: [
+                'intrinsic' => true,
+                'left' => $options['field'],
+                'operator' => SqlEquationOperator::EQUALS,
+                'right' => '1',
+            ],
         );
+
+        $engine->setList($engine->getList()->withFilter($filter));
     }
 }
 ```
@@ -126,7 +131,9 @@ this for you — it defines an overridable `configureOptions()` hook, resolves t
 
 The `Engine` passed to your mod exposes:
 
-- `$engine->getList()` — the `ListSpecification`, giving access to filters, sorting, and table configuration.
+- `$engine->getList()` / `$engine->setList()` — the [`ListSpec`](../spec/specifications.md), giving access
+  to filters, config, and table setup. `ListSpec` is immutable: derive a new spec with its `with*()`
+  methods and set it back on the engine.
 - `$engine->getContext()` — the `ContextInterface`, giving access to request-level state like pagination parameters.
 
 ### Common operations
@@ -135,19 +142,19 @@ The `Engine` passed to your mod exposes:
 alias, or an auto-generated key):
 
 ```php
-$engine->getList()->addFilter($filter);
+$engine->setList($engine->getList()->withFilter($filter));
 ```
 
 **Add a named filter** (an existing key is replaced):
 
 ```php
-$engine->getList()->addFilter($filter, 'my_filter');
+$engine->setList($engine->getList()->withFilter($filter, 'my_filter'));
 ```
 
 **Remove a filter by key:**
 
 ```php
-$engine->getList()->removeFilter('my_filter');
+$engine->setList($engine->getList()->withoutFilter('my_filter'));
 ```
 
 **Change the pagination query parameter:**

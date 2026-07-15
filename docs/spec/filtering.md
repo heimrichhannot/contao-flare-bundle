@@ -16,7 +16,7 @@ As of v0.2, FLARE's filtering follows an **element-owned architecture** built on
 The pipeline, end to end:
 
 ```
-tl_flare_filter rows ──(collector + configFromRow)──▶ Filter[] on the ListSpecification
+tl_flare_filter rows ──(collector + transformers)──▶ Filter[] on the ListSpec
                                                           │
                              form building: buildForm() per filter ──▶ Symfony filter form
                                                           │
@@ -46,59 +46,40 @@ Constructor properties:
 Because `Filter` is immutable, all modification happens through withers that return a new instance:
 `withConfig()`, `withData()`, `withAlias()`, `withTargetAlias(?string, bool $forced = true)`, `withSource()`.
 
-Two static factories create filters without a database row:
-
-```php
-use HeimrichHannot\FlareBundle\Filter\Filter;
-
-// Apply a single filter type with options — no registered element needed:
-Filter::fromType(MinPriceFilterType::class, ['field' => 'price', 'min' => 10]);
-
-// Full control via closures (query building + optional form building):
-Filter::fromCallback(
-    buildFilter: function (FilterBuilderInterface $builder, FilterContext $context, array $data): void { /* ... */ },
-    buildForm: function (FormBuilderInterface $builder, FilterContext $context): void { /* ... */ },
-);
-```
-
-Both are backed by the internal `CallbackFilterElement`. `Filter::fingerprint()` returns a stable
-representation used by `ListSpecification::hash()` for caching and pagination identity.
+Filters are created without a database row by constructing them directly — with a registered element type
+alias or an inline element instance — see
+[Inline Filters](../dev/filter-elements/index.md#9-inline-filters-without-a-service).
+`Filter::fingerprint()` returns a stable representation used by `ListSpec::hash()` for caching and
+pagination identity.
 
 ## 2. Collection
 
-Filter collectors turn a list's data source into filters. They implement
-`Filter\Collector\FilterCollectorInterface` (auto-tagged `flare.filter_collector`):
-
-```php
-public function supports(ListDataSourceInterface $dataSource): bool;
-
-/** @return array<string|int, Filter>|null */
-public function collect(ListDataSourceInterface $dataSource): ?array;
-```
-
-The built-in `ListModelFilterCollector` reads the published `tl_flare_filter` rows of a list; each row is
-translated into canonical config by its element's `configFromRow()`. For every collected filter, a
-`FilterCollectedEvent` is dispatched before it is added to the specification — listeners may replace the
-(mutable) `$event->filter`, e.g. to change its config or target alias.
+The `ListModelFilterCollector` (`Filter\Collector\`) reads the published `tl_flare_filter` rows of a
+`tl_flare_list` record; each row is translated into canonical config by its element's transformers
+(the `configureTransformers()` map, usually the `transformFilterModel()` hook — see
+[Config Schema](../dev/filter-elements/index.md#3-config-schema-configureoptions--configuretransformers)).
+For every collected filter, a `FilterCollectedEvent` is dispatched before it is added to the list —
+listeners may replace the (mutable) `$event->filter`, e.g. to change its config or target alias.
 
 ## 3. Form Building
 
-For each non-intrinsic filter whose alias is a valid Symfony form name, the `FilterFormFactory` creates a
-compound child form (named after the filter's alias) and hands its builder to the element's `buildForm()`.
-The element adds its own children under local names — by convention `FilterContext::FIELD_VALUE` (`'v'`)
-for single-control elements.
+For each non-intrinsic filter whose alias is a valid Symfony form name, the `FilterFormFactory` hands a
+collect-only per-filter builder (`FilterFormBuilderInterface`) to the element's `buildForm()`.
+**Single-field elements** declare their one control via `single()` — it is mounted flat on the root form
+under the filter's alias (`form[alias]=x`). **Multi-field elements** `add()` children under local names,
+which mount as a compound sub-form (`form[alias][from]=x`).
 
 The per-filter builder carries the `FilterContext` in its attribute bag under
-`FilterContext::FORM_ATTRIBUTE`. After the element built its children, a `FilterElementFormBuiltEvent` is
-dispatched — listeners can add, remove, or replace children, or `cancel()` the child entirely. Children
-without any fields are not mounted onto the root form.
+`FilterContext::ATTR_SELF`. After the element built its fields, a `FilterElementFormBuiltEvent` is
+dispatched — listeners can add, remove, or replace children, adjust the `single()` declaration, or
+`cancel()` the filter's form entirely. Filters that declare no fields are not mounted onto the root form.
 
 ## 4. Query Building
 
-When a projector executes the list query, the `FilterExecutor` processes each filter on the specification:
+When a projector executes the list query, the `FilterExecutor` processes each filter on the spec:
 
 1. The filter's `config` is resolved against the element's `configureOptions()` schema
-   (via `FilterOptionsResolver`; elements without `FilterElementOptionsInterface` get their config verbatim).
+   (via `FilterOptionsResolver`; elements without `OptionsContract` get their config verbatim).
 2. A `FilterElementBuildingEvent` is dispatched — listeners may inspect the `FilterContext` and skip the
    filter via `setShouldBuild(false)`.
 3. The element's `buildFilter()` runs. It translates config + data into one or more **filter-type calls**

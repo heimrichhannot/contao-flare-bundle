@@ -1,9 +1,9 @@
 # Built-in Filter Types
 
 Filter types are reusable query-fragment builders in the namespace `HeimrichHannot\FlareBundle\Filter\Type\`.
-They are consumed by filter elements (via `FilterBuilderInterface::add()`), programmatically
-(`Filter::fromType()`), or from Twig (`flare_make_filter()`) — see the
-[filter types guide](../dev/filter-types.md).
+They are consumed by filter elements (via `FilterBuilderInterface::add()`) — including
+[inline filters](../dev/filter-elements/index.md#9-inline-filters-without-a-service) added
+programmatically — see the [filter types guide](../dev/filter-types.md).
 
 Options are validated against each type's `configureOptions()` schema. Required options have no default.
 

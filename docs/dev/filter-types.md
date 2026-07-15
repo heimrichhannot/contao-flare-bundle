@@ -10,8 +10,8 @@ conditions are written into the SQL query — [filter elements](./filter-element
 directly; they translate their configuration and form data into *calls* to filter types.
 
 Because filter types are stateless services with option-validated inputs, the same type can be reused by
-multiple filter elements, added programmatically via `Filter::fromType()`, or invoked
-[straight from Twig](../templating.mdx#twig-helpers) with `flare_make_filter()`.
+multiple filter elements or invoked from an
+[inline filter](./filter-elements/index.md#9-inline-filters-without-a-service) added programmatically.
 
 For the filter types that ship with FLARE, see the [built-in filter types reference](../reference/filter-types.md).
 
@@ -98,31 +98,39 @@ That's it — no attribute, no manual registration.
 **From a filter element**, inside `buildFilter()`:
 
 ```php
-public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
 {
     $builder->add(MinPriceFilterType::class, [
         'field' => $context->config['field'],
-        'min' => (int) ($data['v'] ?? 0),
+        'min' => (int) ($values[FilterContext::SINGLE_VALUE] ?? 0),
     ]);
 }
 ```
 
-**Programmatically**, as a standalone filter on a list specification:
+**Programmatically**, via an [inline filter](./filter-elements/index.md#9-inline-filters-without-a-service)
+whose element emits the call — added to a list through `ListBuilder::addFilter()` or
+`ListSpec::withFilter()`:
 
 ```php
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 
-$listSpecification->addFilter(
-    Filter::fromType(MinPriceFilterType::class, ['field' => 'price', 'min' => 10])
+$filter = new Filter(
+    element: new class implements FilterElementInterface {
+        public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
+
+        public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
+        {
+            $builder->add(MinPriceFilterType::class, ['field' => 'price', 'min' => 10]);
+        }
+    },
 );
 ```
 
-**From Twig**, via the `flare_make_filter()` helper:
+**From Twig**, use [engine mods](./engine-mods.md) — e.g. the built-in `equation` mod — to add filters to
+a rendered list.
 
-```twig
-{% do flare.list.addFilter(
-    flare_make_filter('App\\Flare\\FilterType\\MinPriceFilterType', { field: 'price', min: 10 })
-) %}
-```
-
-The options passed in all three cases are validated against the type's `configureOptions()` schema.
+The options passed to `add()` are always validated against the type's `configureOptions()` schema.

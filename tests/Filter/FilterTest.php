@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
-use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Form\FormBuilderInterface;
 
 final class FilterTest extends TestCase
 {
@@ -32,24 +28,15 @@ final class FilterTest extends TestCase
         self::assertFalse($filter->targetingForced);
     }
 
-    public function testFingerprintRepresentsInlineElementsByClass(): void
+    public function testFingerprintReflectsIdentityAndContent(): void
     {
-        $instance = $this->createInlineElement();
-        $filter = new Filter(type: $instance);
+        $filter = new Filter(type: 'test', config: ['a' => 1], alias: 'foo');
 
-        self::assertSame($instance::class, $filter->fingerprint()['element']);
-    }
+        $fingerprint = $filter->fingerprint();
 
-    private function createInlineElement(): FilterElementInterface
-    {
-        return new class implements FilterElementInterface {
-            public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
-            {
-            }
-
-            public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
-            {
-            }
-        };
+        self::assertSame('test', $fingerprint['type']);
+        self::assertSame(['a' => 1], $fingerprint['config']);
+        self::assertSame('foo', $fingerprint['alias']);
+        self::assertNotSame($fingerprint, $filter->withConfig(['a' => 2])->fingerprint());
     }
 }

@@ -10,15 +10,17 @@ use HeimrichHannot\FlareBundle\Contract\ListType\BuildListContract;
 use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\List\ListDriverReference;
 use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\List\Type\AbstractListDriver;
+use HeimrichHannot\FlareBundle\List\Type\ListDriverInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
-final class ListBuilderTest extends TestCase
+final class ListSpecBuilderTest extends TestCase
 {
     public function testBuildInvokesTypeHookAndDispatchesEvent(): void
     {
@@ -40,7 +42,7 @@ final class ListBuilderTest extends TestCase
             }
         };
 
-        $builder = $this->createBuilder($dispatcher, typeService: $type);
+        $builder = $this->createBuilder($dispatcher, driver: $type);
         $spec = $builder->build();
 
         self::assertSame(1, $type->buildListCalls);
@@ -81,7 +83,7 @@ final class ListBuilderTest extends TestCase
 
         $builder = $this->createBuilder(
             new EventDispatcher(),
-            typeService: $type,
+            driver: $type,
             model: new ListModelStub(['id' => '9', 'title' => 'from-model']),
         );
 
@@ -111,16 +113,18 @@ final class ListBuilderTest extends TestCase
     }
 
     private function createBuilder(
-        EventDispatcher $dispatcher,
-        ?object         $typeService = null,
-        ?ListModel      $model = null,
+        EventDispatcher      $dispatcher,
+        ?ListDriverInterface $driver = null,
+        ?ListModel           $model = null,
     ): ListSpecBuilder {
         return new ListSpecBuilder(
             optionsResolver: new ListOptionsResolver(new SchemaResolver()),
             transformerResolver: new ListTransformerResolver($dispatcher),
             eventDispatcher: $dispatcher,
-            type: 'test_type',
-            driverService: $typeService,
+            driverReference: new ListDriverReference(
+                type: 'test_type',
+                driver: $driver ?? new class implements ListDriverInterface {},
+            ),
             dc: 'tl_test',
             model: $model,
             source: 'tl_flare_list.9',

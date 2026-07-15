@@ -7,7 +7,9 @@ namespace HeimrichHannot\FlareBundle\Tests\Engine\Projector;
 use HeimrichHannot\FlareBundle\Engine\Projector\InteractiveProjector;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\List\ListDriverReference;
 use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\Type\ListDriverInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -49,7 +51,9 @@ final class InteractiveProjectorTest extends TestCase
 
     private function listWithFilter(string $key, string $alias): ListSpec
     {
-        return new ListSpec(type: 'test', dc: 'tl_test', filters: [
+        $reference = new ListDriverReference(type: 'test', driver: new class implements ListDriverInterface {});
+
+        return new ListSpec(reference: $reference, dc: 'tl_test', filters: [
             $key => new Filter(type: 'test_element', alias: $alias),
         ]);
     }

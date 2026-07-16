@@ -85,7 +85,7 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
         $optValues = $this->getOptions(
             executionContext: $executionContext,
             targetAlias: $context->filter->targetAlias,
-            listInfo: \sprintf('%s (%s)', $context->list->type, (string) ($context->list->source ?? 'N/A')),
+            listInfo: \sprintf('%s (%s)', \get_class($context->list->driver), (string) ($context->list->source ?? 'N/A')),
             filterInfo: \sprintf('%s (%s)', self::TYPE, $context->filter->source ?? 'inlined'),
         );
 

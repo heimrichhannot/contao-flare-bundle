@@ -8,5 +8,5 @@ use Contao\DataContainer;
 
 interface DataContainerContract
 {
-    public function getDataContainerName(array $row, DataContainer $dc): string;
+    public function resolveDataContainerTable(array $row, DataContainer $dc): string;
 }

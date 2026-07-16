@@ -46,7 +46,7 @@ class ListContainer
         $service = $listTypeConfig->getService();
 
         if (($service instanceof DataContainerContract)
-            && !$expectedDataContainer = $service->getDataContainerName($row, $dc))
+            && !$expectedDataContainer = $service->resolveDataContainerTable($row, $dc))
         {
             return;
         }

@@ -121,7 +121,7 @@ class InteractiveProjector extends AbstractProjector
     /**
      * Collects each filter's form data, keyed by the filter's list-specification key.
      * Flat-mounted single fields are normalized to the canonical values-bag shape
-     * `[FilterContext::DEFAULT_FIELD_NAME => value]` that buildFilter() consumes.
+     * `[FilterContext::SINGLE_VALUE => value]` that buildFilter() consumes.
      *
      * @return array<string|int, array<string, mixed>>
      */

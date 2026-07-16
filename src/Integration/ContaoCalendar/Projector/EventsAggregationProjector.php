@@ -20,7 +20,7 @@ class EventsAggregationProjector extends AggregationProjector
 
     public function supports(ListSpec $list, ContextInterface $context): bool
     {
-        return $list->type === EventsListDriver::TYPE && $context instanceof AggregationContext;
+        return $list->driver instanceof EventsListDriver && $context instanceof AggregationContext;
     }
 
     public function priority(ListSpec $list, ContextInterface $context): int

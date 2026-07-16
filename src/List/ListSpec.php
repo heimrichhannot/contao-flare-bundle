@@ -19,6 +19,10 @@ use HeimrichHannot\FlareBundle\Util\DcaHelper;
  */
 final readonly class ListSpec
 {
+    /**
+     * @deprecated
+     * @var string $type
+     */
     public string $type;
     public ListDriverInterface $driver;
 

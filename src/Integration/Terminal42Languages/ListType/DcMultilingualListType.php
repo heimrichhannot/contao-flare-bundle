@@ -37,7 +37,7 @@ class DcMultilingualListType extends AbstractListDriver implements DataContainer
         return $this->simpleTokenParser;
     }
 
-    public function getDataContainerName(array $row, DataContainer $dc): string
+    public function resolveDataContainerTable(array $row, DataContainer $dc): string
     {
         return $row['dc'] ?? '';
     }

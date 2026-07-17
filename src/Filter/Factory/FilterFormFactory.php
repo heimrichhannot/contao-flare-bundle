@@ -21,7 +21,7 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
-readonly class FilterFormFactory
+final readonly class FilterFormFactory
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,

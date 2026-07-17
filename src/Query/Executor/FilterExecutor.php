@@ -73,7 +73,7 @@ readonly class FilterExecutor
      */
     public function invokeFilter(Filter $filter, FilterContext $context, array $data = []): array
     {
-        if (!Str::isValidSqlName($table = $context->list->getDataContainerName()))
+        if (!Str::isValidSqlName($table = $context->list->dc))
         {
             throw new FlareException(\sprintf(
                 '[FLARE] ListSpec data container cannot be used as SQL table identifier: "%s"',

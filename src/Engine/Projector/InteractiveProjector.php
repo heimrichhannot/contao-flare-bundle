@@ -79,7 +79,7 @@ class InteractiveProjector extends AbstractProjector
             form: $form,
             paginator: $paginator,
             readerUrlGenerator: $readerUrlGenerator,
-            table: $list->getDataContainerName(),
+            table: $list->dc,
             totalItems: $totalItems,
         );
     }

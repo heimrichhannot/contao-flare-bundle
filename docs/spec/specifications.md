@@ -18,7 +18,7 @@ stored `tl_flare_list` row into config is the job of the [build lifecycle](#3-bu
 ### Key Properties:
 - **`driver`**: The list driver instance (`ListDriverInterface`) — a registered service (e.g. the
   `flare_news` driver) or an inline instance.
-- **`dc`** / **`getDataContainerName()`**: The main data container table of the list. It is definitively
+- **`dc`**: The main data container table of the list. It is definitively
   resolved at creation time — via the driver's `getDataContainerName(array $config)` — and baked into the
   canonical config (`config['dc']`); a spec with an unresolvable table cannot be created.
 - **`filters`**: A keyed map (`array<string, Filter>`) of the list's filters.
@@ -85,7 +85,6 @@ Key points at the spec level:
 
 ## 5. Persistence & Hashing
 
-`ListSpec::hash()` produces a stable hash from the list's driver class, source, config (which includes the
-data container), and each filter's `Filter::fingerprint()`. The `Engine` and `Projector` use it to determine
-if the configuration has changed, which is crucial for caching and identifying unique list states (e.g., for
-pagination parameters).
+`ListSpec::hash()` produces a stable hash from the list's type, data container, source, config, and each
+filter's `Filter::fingerprint()`. The `Engine` and `Projector` use it to determine if the configuration has
+changed, which is crucial for caching and identifying unique list states (e.g., for pagination parameters).

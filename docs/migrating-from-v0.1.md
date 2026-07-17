@@ -84,7 +84,7 @@ New interfaces: `FilterElementInterface` (required), `OptionsContract` (config s
 (see [List Specs & Filters](./spec/specifications.md)); programmatic construction goes through the
 `ListSpecFactory` service, which accepts a driver instance or a registered type alias and resolves the
 list's data container definitively. The spec carries the driver instance as `$spec->driver`; the main
-table is `$spec->getDataContainerName()`. Filters are a keyed `array<string, Filter>`
+table is `$spec->dc`. Filters are a keyed `array<string, Filter>`
 instead of a `FilterDefinitionCollection`. While a list is being built (a driver's `buildList()` hook
 or a `ListBuildEvent` listener), use the mutable builder; on a finished spec, use the withers:
 
@@ -97,11 +97,10 @@ or a `ListBuildEvent` listener), use the mutable builder; on a finished spec, us
 | `$definition->forceTargetAlias('alias')` | `$filter->withTargetAlias('alias')` — **returns a new instance** (`Filter` is immutable) |
 
 Element `define()` factories (e.g. `PublishedFilterElement::define()`,
-`SimpleEquationFilterElement::define(...)`) were removed: create a
-[`Filter`](./dev/filter-elements/index.md#9-inline-filters-without-a-service) through the `FilterFactory`
-service with the element's type alias and canonical config, e.g.
-`$filterFactory->create(element: PublishedFilterElement::TYPE, config: ['intrinsic' => true, ...])` —
-or construct `new Filter(element: $elementInstance, ...)` directly around an element instance.
+`SimpleEquationFilterElement::define(...)`) were removed: construct a
+[`Filter`](./dev/filter-elements/index.md#9-inline-filters-without-a-service) directly with the element's
+type alias and canonical config, e.g.
+`new Filter(element: PublishedFilterElement::TYPE, config: ['intrinsic' => true, ...])`.
 
 ## Before / After
 

@@ -92,7 +92,7 @@ or a `ListBuildEvent` listener), use the mutable builder; on a finished spec, us
 |---|---|
 | `$spec->getFilters()->add($definition)` | `$builder->addFilter($filter)` while building; `$spec = $spec->withFilter($filter)` afterwards |
 | `$spec->getFilters()->set('name', $definition)` | `$builder->addFilter($filter, 'name')` / `$spec->withFilter($filter, 'name')` — an existing key is replaced |
-| `$spec->getFilters()->hasType('flare_bool')` | `hasFilterOfType('flare_bool')` on builder or spec |
+| `$spec->getFilters()->hasType('flare_bool')` | `hasFilterInstance(BooleanFilterElement::class)` on builder or spec |
 | — | `$builder->getFilter('name')`, `$builder->removeFilter('name')`, `$spec->withoutFilter('name')` |
 | `$definition->forceTargetAlias('alias')` | `$filter->withTargetAlias('alias')` — **returns a new instance** (`Filter` is immutable) |
 

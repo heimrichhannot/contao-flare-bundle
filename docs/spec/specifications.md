@@ -33,7 +33,7 @@ public function withFilter(Filter $filter, ?string $key = null): self;
 public function withoutFilter(string $key): self;
 public function withFilters(array $filters): self;
 public function withConfig(array $config): self;
-public function hasFilterOfType(string $elementType): bool;
+public function hasFilterInstance(string $class): bool;
 ```
 
 - **Adding filters:** `withFilter($filter)` keys the filter by its alias, or auto-generates a key for
@@ -41,8 +41,8 @@ public function hasFilterOfType(string $elementType): bool;
 - **Overriding filters:** `withFilter($filter, 'published')` replaces an existing `'published'` entry —
   this is how a manual filter overrides a database-driven filter sharing the same key (e.g. the default
   `published` filter that the News list driver adds).
-- **Checking for element types:** `hasFilterOfType('flare_bool')` checks whether any filter uses the given
-  element type.
+- **Checking for element classes:** `hasFilterInstance(BooleanFilterElement::class)` checks whether any
+  filter's element is an instance of the given class or interface.
 
 ## 3. Building a List (`ListSpecBuilder`)
 

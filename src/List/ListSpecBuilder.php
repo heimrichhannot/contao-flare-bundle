@@ -8,6 +8,7 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildListContract;
 use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
@@ -102,11 +103,14 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
         return $this->filters[$key] ?? null;
     }
 
-    public function hasFilterOfType(string $elementType): bool
+    /**
+     * @param class-string<FilterElementInterface> $class
+     */
+    public function hasFilterInstance(string $class): bool
     {
         foreach ($this->filters as $filter)
         {
-            if ($filter->type === $elementType) {
+            if ($filter->element instanceof $class) {
                 return true;
             }
         }

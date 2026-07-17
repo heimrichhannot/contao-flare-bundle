@@ -108,12 +108,11 @@ resolved.
 The built-in news list driver uses this to guarantee a published-state filter:
 
 ```php
-use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildListContract;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
 
-class MyCustomListDriver extends AbstractListDriver implements BuildListContract
+class MyCustomListDriver extends AbstractListDriver
 {
     public function __construct(
         private readonly FilterFactory $filterFactory,
@@ -193,11 +192,10 @@ If your list driver requires specific configuration fields in the Contao backend
 `Contract\DcaContract` and declare the palette — the legends and fields to display — in `buildDca()`:
 
 ```php
-use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 
-class MyCustomListDriver extends AbstractListDriver implements DcaContract
+class MyCustomListDriver extends AbstractListDriver
 {
     public function buildDca(DcaBuilder $dca, DcaContext $context): void
     {

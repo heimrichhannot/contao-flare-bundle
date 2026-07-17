@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Query\Factory;
 
-use HeimrichHannot\FlareBundle\Contract\ListType\BuildQueryContract;
+use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildQueryContract;
 use HeimrichHannot\FlareBundle\Event\QueryBaseInitializedEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\List\ListSpec;

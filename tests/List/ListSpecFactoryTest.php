@@ -36,7 +36,7 @@ final class ListSpecFactoryTest extends TestCase
         self::assertSame('tl_test', $spec->getDataContainerName());
         self::assertSame('tl_test', $spec->config['dc']);
         self::assertSame('My List', $spec->config['title']);
-        self::assertFalse($spec->config['published']); // schema default applied
+        self::assertFalse($spec->config['genericPageMeta']); // schema default applied
         self::assertSame('tl_flare_list.1', $spec->source);
     }
 

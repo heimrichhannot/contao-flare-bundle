@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\List\Driver;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
-use HeimrichHannot\FlareBundle\Contract\ListType\BuildQueryContract;
+use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildQueryContract;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;

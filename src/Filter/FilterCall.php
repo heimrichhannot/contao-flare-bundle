@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\Filter\Type\FilterTypeInterface;
 
-readonly class FilterCall
+final readonly class FilterCall
 {
     public function __construct(
         public FilterTypeInterface $type,

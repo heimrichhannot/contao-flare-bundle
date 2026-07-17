@@ -15,7 +15,7 @@ use Symfony\Component\Form\FormBuilder;
  * listeners onto a real builder. Children created through add()/create() are real, factory-built
  * builders because they route through the injected form factory.
  */
-class FilterFormBuilder extends FormBuilder implements FilterFormBuilderInterface
+final class FilterFormBuilder extends FormBuilder implements FilterFormBuilderInterface
 {
     /** @var array{type: class-string, options: array<string, mixed>}|null */
     private ?array $single = null;

@@ -33,10 +33,10 @@ final class BaseListOptionsTest extends TestCase
         BaseListOptions::transform($config = new ConfigBuilder(), $model);
         $all = $config->all();
 
-        self::assertSame(5, $all['id']);
+        self::assertArrayNotHasKey('id', $all);
+        self::assertArrayNotHasKey('published', $all);
         self::assertSame('tl_news', $all['dc']);
         self::assertSame('My List', $all['title']);
-        self::assertTrue($all['published']);
         self::assertNull($all['jumpToListView']);
         self::assertSame(12, $all['jumpToReader']);
         self::assertSame([['column' => 'title', 'direction' => 'ASC']], $all['sortSettings']);
@@ -52,10 +52,8 @@ final class BaseListOptionsTest extends TestCase
     {
         $resolved = (new ListOptionsResolver(new SchemaResolver()))->resolve(null, []);
 
-        self::assertNull($resolved['id']);
         self::assertSame('', $resolved['dc']);
         self::assertSame('', $resolved['title']);
-        self::assertFalse($resolved['published']);
         self::assertSame([], $resolved['sortSettings']);
         self::assertNull($resolved['metaTitleFormat']);
         self::assertSame('', $resolved['whichPtable']);
@@ -70,7 +68,7 @@ final class BaseListOptionsTest extends TestCase
 
         $resolved = (new ListOptionsResolver(new SchemaResolver()))->resolve(null, $config->all());
 
-        self::assertSame(3, $resolved['id']);
+        self::assertSame('x', $resolved['title']);
         self::assertSame([], $resolved['sortSettings']);
     }
 }

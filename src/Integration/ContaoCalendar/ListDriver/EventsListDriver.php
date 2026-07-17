@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListDriver;
 
-use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildListContract;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
@@ -17,7 +16,7 @@ use HeimrichHannot\FlareBundle\Query\SqlJoinStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 
 #[AsListDriver(type: self::TYPE, dataContainer: self::DATA_CONTAINER)]
-class EventsListDriver extends AbstractListDriver implements BuildListContract
+class EventsListDriver extends AbstractListDriver
 {
     public const TYPE = 'flare_events';
     public const DATA_CONTAINER = 'tl_calendar_events';
@@ -27,7 +26,7 @@ class EventsListDriver extends AbstractListDriver implements BuildListContract
         private readonly FilterFactory $filterFactory,
     ) {}
 
-    public function buildDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
         $dca->suffix(static function (string $suffix): string {
             if (!$suffix) {

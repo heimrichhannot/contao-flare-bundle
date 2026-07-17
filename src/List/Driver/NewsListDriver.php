@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\List\Driver;
 
-use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildListContract;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
@@ -16,7 +15,7 @@ use HeimrichHannot\FlareBundle\Query\SqlJoinStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 
 #[AsListDriver(type: self::TYPE, dataContainer: 'tl_news')]
-class NewsListDriver extends AbstractListDriver implements BuildListContract
+class NewsListDriver extends AbstractListDriver
 {
     public const TYPE = 'flare_news';
     public const ALIAS_ARCHIVE = 'news_archive';
@@ -25,7 +24,7 @@ class NewsListDriver extends AbstractListDriver implements BuildListContract
         private readonly FilterFactory $filterFactory,
     ) {}
 
-    public function buildDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
         $dca->palette('{filter_legend},');
     }

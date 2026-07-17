@@ -7,19 +7,21 @@ namespace HeimrichHannot\FlareBundle\List\Driver;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
+use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildListContract;
 use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildQueryContract;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\List\CallbackListModelTransformer;
+use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\SqlQueryStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 abstract class AbstractListDriver implements
-    ListDriverInterface, BuildQueryContract, DcaContract, OptionsContract, TransformerContract
+    ListDriverInterface, BuildListContract, BuildQueryContract, DcaContract, OptionsContract, TransformerContract
 {
     public function getDataContainerName(array $config): string
     {
@@ -45,9 +47,11 @@ abstract class AbstractListDriver implements
      */
     protected function transformListModel(ConfigBuilder $config, ListModel $model): void {}
 
-    public function buildDca(DcaBuilder $dca, DcaContext $context): void {}
+    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void {}
 
     public function buildTableRegistry(TableAliasRegistry $registry): void {}
 
     public function buildBaseQuery(SqlQueryStruct $struct): void {}
+
+    public function buildList(ListSpecBuilder $builder): void {}
 }

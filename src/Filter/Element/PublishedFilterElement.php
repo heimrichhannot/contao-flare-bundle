@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
@@ -63,7 +63,7 @@ class PublishedFilterElement extends AbstractFilterElement
         ]);
     }
 
-    public function buildDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
         $dca->palette('{filter_legend},usePublished,useStart,useStop');
     }

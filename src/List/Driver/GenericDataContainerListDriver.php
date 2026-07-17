@@ -9,7 +9,7 @@ use Contao\DataContainer;
 use Contao\Message;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Contract\ListDriver\DataContainerContract;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
@@ -40,7 +40,7 @@ class GenericDataContainerListDriver extends AbstractListDriver implements DataC
         $config->set('genericPageMeta', true);
     }
 
-    public function buildDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
         $listModel = $context->listModel;
 

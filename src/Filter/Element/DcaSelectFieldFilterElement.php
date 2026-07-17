@@ -9,7 +9,7 @@ use Contao\DataContainer;
 use Contao\StringUtil;
 use Contao\System;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
@@ -198,7 +198,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
         return $toKey($value);
     }
 
-    public function buildDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
         $intrinsic = (bool) $context->filterModel?->intrinsic;
 

@@ -12,7 +12,7 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicContract;
 use HeimrichHannot\FlareBundle\Contract\IsSupportedContract;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\Filter\CallbackFilterModelTransformer;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
@@ -46,7 +46,7 @@ abstract class AbstractFilterElement implements
      */
     abstract protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void;
 
-    public function buildDca(DcaBuilder $dca, DcaContext $context): void {}
+    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void {}
 
     public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 

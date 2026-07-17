@@ -8,7 +8,7 @@ use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
@@ -404,7 +404,7 @@ class ArchiveFilterElement extends AbstractFilterElement
         return $this->_inferrer[$cacheKey] = new PtableInferrer($inferrable, $list->dc);
     }
 
-    public function buildDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
         if (!$filterModel = $context->filterModel) {
             return;

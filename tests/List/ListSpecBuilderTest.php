@@ -50,7 +50,7 @@ final class ListSpecBuilderTest extends TestCase
             $event->builder->addFilter(self::filter('from_event', 'via_event'));
         });
 
-        $driver = new class extends AbstractListDriver implements BuildListContract {
+        $driver = new class extends AbstractListDriver {
             public int $buildListCalls = 0;
 
             public function buildList(ListSpecBuilder $builder): void

@@ -65,7 +65,7 @@ class ChangelanguageListener
             return;
         }
 
-        $table = $list->getDataContainerName();
+        $table = $list->dc;
 
         $this->applyMlQueriesIfNecessary(
             $event->getListQueryBuilder(),

@@ -26,7 +26,7 @@ readonly class ListExecutionContextFactory
     {
         $driver = $list->driver;
 
-        if (!$mainTable = $list->getDataContainerName())
+        if (!$mainTable = $list->dc)
         {
             throw new FlareException(
                 \sprintf('Failed to evaluate data container table of list "%s".', $list->source ?? \get_class($driver)),

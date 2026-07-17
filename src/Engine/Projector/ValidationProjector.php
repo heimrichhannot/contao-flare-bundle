@@ -48,7 +48,7 @@ class ValidationProjector extends AbstractProjector
         return $this->createView(
             loader: $loader,
             readerUrlGenerator: $readerUrlGenerator,
-            table: $list->getDataContainerName(),
+            table: $list->dc,
             autoItemField: $autoItemField,
             backLink: $context->createBackLink(),
         );

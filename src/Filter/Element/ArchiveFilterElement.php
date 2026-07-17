@@ -401,7 +401,7 @@ class ArchiveFilterElement extends AbstractFilterElement
         }
 
         $inferrable = PtableInferrableFactory::createFromConfig($list->config);
-        return $this->_inferrer[$cacheKey] = new PtableInferrer($inferrable, $list->getDataContainerName());
+        return $this->_inferrer[$cacheKey] = new PtableInferrer($inferrable, $list->dc);
     }
 
     public function buildDca(DcaBuilder $dca, DcaContext $context): void

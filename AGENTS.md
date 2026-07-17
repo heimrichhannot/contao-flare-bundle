@@ -91,7 +91,7 @@ Attributes are in `src/DependencyInjection/Attribute/`, compiler passes in `src/
 
 ## Testing & CI
 
-*   **Unit tests** live in `tests/` (PHPUnit 9, configured via `phpunit.xml.dist`); run them with `make php vendor/bin/phpunit`. There is no `make test` target.
+*   **Unit tests** live in `tests/` (PHPUnit 9, configured via `phpunit.xml.dist`); run them with `make test` (optionally passing phpunit args, e.g. `make test tests/SomeTest.php`).
 *   CI workflows in `.github/workflows/`:
     *   `phpunit.yaml` — PHPUnit test suite
     *   `phpstan.yaml` — PHPStan analysis

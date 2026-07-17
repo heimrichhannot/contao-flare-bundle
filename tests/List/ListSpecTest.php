@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\List;
 
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
@@ -96,13 +97,14 @@ final class ListSpecTest extends TestCase
         self::assertArrayHasKey('x', $modified->filters);
     }
 
-    public function testHasFilterOfType(): void
+    public function testHasFilterInstance(): void
     {
         $spec = (new ListSpec(driver: self::driver()))
-            ->withFilter(self::filter('flare_published', 'p'));
+            ->withFilter(new Filter(element: new StubFilterElement(), alias: 'p'));
 
-        self::assertTrue($spec->hasFilterOfType('flare_published'));
-        self::assertFalse($spec->hasFilterOfType('flare_bool'));
+        self::assertTrue($spec->hasFilterInstance(StubFilterElement::class));
+        self::assertTrue($spec->hasFilterInstance(FilterElementInterface::class));
+        self::assertFalse($spec->hasFilterInstance(PublishedFilterElement::class));
     }
 
     public function testHashIsStableAndChangesWithContent(): void

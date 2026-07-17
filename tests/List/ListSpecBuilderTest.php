@@ -73,12 +73,12 @@ final class ListSpecBuilderTest extends TestCase
     {
         $builder = $this->createBuilder(new EventDispatcher());
 
-        $builder->addFilter(self::filter('a', 'x'));
+        $builder->addFilter(new Filter(element: new StubFilterElement(), alias: 'x'));
         $builder->addFilter(self::filter('b'));
         $builder->removeFilter('x');
 
-        self::assertTrue($builder->hasFilterOfType('b'));
-        self::assertFalse($builder->hasFilterOfType('a'));
+        self::assertTrue($builder->hasFilterInstance(FilterElementInterface::class));
+        self::assertFalse($builder->hasFilterInstance(StubFilterElement::class));
 
         $spec = $builder->build();
 

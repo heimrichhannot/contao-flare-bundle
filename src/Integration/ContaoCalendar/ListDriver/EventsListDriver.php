@@ -57,7 +57,7 @@ class EventsListDriver extends AbstractListDriver implements BuildListContract
 
     public function buildList(ListSpecBuilder $builder): void
     {
-        if ($builder->hasFilterOfType(PublishedFilterElement::TYPE)) {
+        if ($builder->hasFilterInstance(PublishedFilterElement::class)) {
             return;
         }
 

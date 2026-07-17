@@ -17,6 +17,7 @@ final class BaseListOptionsTest extends TestCase
     {
         $model = new ListModelStub([
             'id' => '5',
+            'dc' => 'tl_news',
             'title' => 'My List',
             'published' => '1',
             'jumpToListView' => '',
@@ -33,6 +34,7 @@ final class BaseListOptionsTest extends TestCase
         $all = $config->all();
 
         self::assertSame(5, $all['id']);
+        self::assertSame('tl_news', $all['dc']);
         self::assertSame('My List', $all['title']);
         self::assertTrue($all['published']);
         self::assertNull($all['jumpToListView']);
@@ -51,6 +53,7 @@ final class BaseListOptionsTest extends TestCase
         $resolved = (new ListOptionsResolver(new SchemaResolver()))->resolve(null, []);
 
         self::assertNull($resolved['id']);
+        self::assertSame('', $resolved['dc']);
         self::assertSame('', $resolved['title']);
         self::assertFalse($resolved['published']);
         self::assertSame([], $resolved['sortSettings']);

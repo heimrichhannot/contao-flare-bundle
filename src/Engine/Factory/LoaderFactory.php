@@ -10,11 +10,13 @@ use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoader;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoader;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderConfig;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 
 final readonly class LoaderFactory
 {
     public function __construct(
+        private FilterFactory     $filterFactory,
         private ListQueryDirector $listQueryDirector,
     ) {}
 
@@ -38,6 +40,7 @@ final readonly class LoaderFactory
     {
         return new ValidationLoader(
             config: $config,
+            filterFactory: $this->filterFactory,
             listQueryDirector: $this->listQueryDirector,
         );
     }

@@ -16,7 +16,7 @@ use HeimrichHannot\FlareBundle\Event\FetchAutoItemEvent;
 use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
 use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Integration\Terminal42Languages\ListType\DcMultilingualListType;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
@@ -38,6 +38,7 @@ class ChangelanguageListener
 
     public function __construct(
         private readonly Connection                     $connection,
+        private readonly FilterFactory                  $filterFactory,
         private readonly ReaderRequestAttributeResolver $attributeResolver,
         private readonly RequestStack                   $requestStack,
     ) {}
@@ -56,7 +57,7 @@ class ChangelanguageListener
     {
         $list = $event->getList();
 
-        if ($list->type !== DcMultilingualListType::TYPE) {
+        if (!$list->driver instanceof DcMultilingualListType) {
             return;
         }
 
@@ -64,7 +65,7 @@ class ChangelanguageListener
             return;
         }
 
-        $table = $list->dc;
+        $table = $list->getDataContainerName();
 
         $this->applyMlQueriesIfNecessary(
             $event->getListQueryBuilder(),
@@ -133,8 +134,8 @@ class ChangelanguageListener
         if ($lang !== $langFallback && $dcMultilingualDisplay === DcMultilingualHelper::DISPLAY_LOCALIZED)
             // localized list view
         {
-            $configuredFilter = new Filter(
-                type: SimpleEquationFilterElement::TYPE,
+            $configuredFilter = $this->filterFactory->create(
+                element: SimpleEquationFilterElement::TYPE,
                 config: [
                     'intrinsic' => true,
                     'left' => DcMultilingualHelper::getPidColumn($table),
@@ -145,8 +146,8 @@ class ChangelanguageListener
             $configuredFilter = $configuredFilter->withTargetAlias('translation');
         }
 
-        $configuredFilter ??= new Filter(
-            type: SimpleEquationFilterElement::TYPE,
+        $configuredFilter ??= $this->filterFactory->create(
+            element: SimpleEquationFilterElement::TYPE,
             config: [
                 'intrinsic' => true,
                 'left' => DcMultilingualHelper::getPidColumn($table),

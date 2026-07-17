@@ -8,7 +8,6 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\ListTransformerEvent;
-use HeimrichHannot\FlareBundle\List\ListDriverReference;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use PHPUnit\Framework\TestCase;
@@ -19,9 +18,8 @@ final class ListTransformerResolverTest extends TestCase
     public function testTransformsSourceThroughDriverTransformers(): void
     {
         $resolver = new ListTransformerResolver(new EventDispatcher());
-        $reference = ListDriverReference::registered('test', new TransformingDriver());
 
-        $values = $resolver->transform($reference, new SourceStub('from-source'));
+        $values = $resolver->transform(new TransformingDriver(), new SourceStub('from-source'));
 
         self::assertSame(['title' => 'from-source'], $values);
     }
@@ -30,14 +28,8 @@ final class ListTransformerResolverTest extends TestCase
     {
         $resolver = new ListTransformerResolver(new EventDispatcher());
 
-        self::assertNull($resolver->transform(
-            ListDriverReference::registered('test', new TransformingDriver()),
-            new \stdClass(),
-        ));
-        self::assertNull($resolver->transform(
-            ListDriverReference::registered('test', new TransformerlessDriver()),
-            new SourceStub('x'),
-        ));
+        self::assertNull($resolver->transform(new TransformingDriver(), new \stdClass()));
+        self::assertNull($resolver->transform(new TransformerlessDriver(), new SourceStub('x')));
     }
 
     public function testMemoizesMapAndDispatchesEventOncePerDriverClass(): void
@@ -54,39 +46,13 @@ final class ListTransformerResolverTest extends TestCase
 
         $resolver = new ListTransformerResolver($dispatcher);
         $driver = new TransformingDriver();
-        $reference = ListDriverReference::registered('test', $driver);
 
-        $resolver->transform($reference, new SourceStub('a'));
-        $resolver->transform($reference, new SourceStub('b'));
+        $resolver->transform($driver, new SourceStub('a'));
+        $resolver->transform($driver, new SourceStub('b'));
 
         self::assertSame(1, $driver->configureCalls);
         self::assertCount(1, $dispatchedWith);
-        self::assertSame($reference, $dispatchedWith[0]->reference);
-        self::assertSame($driver, $dispatchedWith[0]->reference->driver);
-        self::assertSame('test', $dispatchedWith[0]->reference->type);
-    }
-
-    public function testInlineReferenceCarriesOverIntoTheEvent(): void
-    {
-        $dispatchedWith = [];
-
-        $dispatcher = new EventDispatcher();
-        $dispatcher->addListener(
-            ListTransformerEvent::class,
-            static function (ListTransformerEvent $event) use (&$dispatchedWith): void {
-                $dispatchedWith[] = $event;
-            },
-        );
-
-        $resolver = new ListTransformerResolver($dispatcher);
-        $driver = new TransformingDriver();
-        $reference = ListDriverReference::inline($driver);
-
-        $resolver->transform($reference, new SourceStub('a'));
-
-        self::assertCount(1, $dispatchedWith);
-        self::assertSame($reference, $dispatchedWith[0]->reference);
-        self::assertTrue($dispatchedWith[0]->reference->inline);
+        self::assertSame($driver, $dispatchedWith[0]->driver);
     }
 
     public function testEventListenersCanAddSourceCapabilities(): void
@@ -104,10 +70,7 @@ final class ListTransformerResolverTest extends TestCase
 
         $resolver = new ListTransformerResolver($dispatcher);
 
-        $values = $resolver->transform(
-            ListDriverReference::registered('test', new TransformerlessDriver()),
-            new \stdClass(),
-        );
+        $values = $resolver->transform(new TransformerlessDriver(), new \stdClass());
 
         self::assertSame(['external' => true], $values);
     }
@@ -124,6 +87,11 @@ final class TransformingDriver implements ListDriverInterface, TransformerContra
 {
     public int $configureCalls = 0;
 
+    public function getDataContainerName(array $config): string
+    {
+        return (string) ($config['dc'] ?? '');
+    }
+
     public function configureTransformers(TransformerResolver $resolver): void
     {
         $this->configureCalls++;
@@ -136,4 +104,8 @@ final class TransformingDriver implements ListDriverInterface, TransformerContra
 
 final class TransformerlessDriver implements ListDriverInterface
 {
+    public function getDataContainerName(array $config): string
+    {
+        return (string) ($config['dc'] ?? '');
+    }
 }

@@ -11,37 +11,40 @@ use HeimrichHannot\FlareBundle\Util\DcaHelper;
 /**
  * Immutable runtime representation of a list.
  *
- * Pairs a list type (registered alias or inline instance) with its main data container,
- * its filters, and its canonical, validated configuration. Contains no DCA/storage
- * specifics — translating a stored tl_flare_list row into config is the responsibility
- * of {@see BaseListOptions} and the list type's transformers
+ * Pairs a list driver (registered service or inline instance) with its filters and its
+ * canonical, validated configuration. Contains no DCA/storage specifics — translating a
+ * stored tl_flare_list row into config is the responsibility of {@see BaseListOptions}
+ * and the driver's transformers
  * ({@see \HeimrichHannot\FlareBundle\Contract\TransformerContract}).
+ *
+ * Use {@see Factory\ListSpecFactory} to create instances — it resolves the config schema
+ * and guarantees a well-defined data container.
  */
 final readonly class ListSpec
 {
-    /**
-     * @deprecated
-     * @var string $type
-     */
-    public string $type;
-    public ListDriverInterface $driver;
+    public string $dc;
 
     /**
-     * @param ListDriverReference $reference Registered list type alias and driver.
-     * @param string $dc Main data container table of the list.
+     * @param ListDriverInterface $driver List driver service (registered or inline).
      * @param array<string, Filter> $filters
-     * @param array<string, mixed> $config Canonical config, resolved through the base and type schemas.
+     * @param array<string, mixed> $config Canonical config, resolved through the base and driver schemas.
      * @param string|null $source Provenance for error messages, e.g. "tl_flare_list.5".
      */
     public function __construct(
-        public ListDriverReference $reference,
-        public string              $dc,
+        public ListDriverInterface $driver,
         public array               $filters = [],
         public array               $config = [],
         public ?string             $source = null,
     ) {
-        $this->type = $this->reference->type;
-        $this->driver = $this->reference->driver;
+        $this->dc = (string) ($this->config['dc'] ?? '');
+    }
+
+    /**
+     * Returns the main data container table of the list.
+     */
+    public function getDataContainerName(): string
+    {
+        return $this->dc;
     }
 
     /**
@@ -77,8 +80,7 @@ final readonly class ListSpec
     public function withFilters(array $filters): self
     {
         return new self(
-            reference: $this->reference,
-            dc: $this->dc,
+            driver: $this->driver,
             filters: $filters,
             config: $this->config,
             source: $this->source,
@@ -91,8 +93,7 @@ final readonly class ListSpec
     public function withConfig(array $config): self
     {
         return new self(
-            reference: $this->reference,
-            dc: $this->dc,
+            driver: $this->driver,
             filters: $this->filters,
             config: $config,
             source: $this->source,
@@ -113,10 +114,12 @@ final readonly class ListSpec
 
     public function getAutoItemField(): string
     {
+        $dc = $this->getDataContainerName();
+
         return DcaHelper::tryGetColumnName(
-            $this->dc,
+            $dc,
             (string) ($this->config['fieldAutoItem'] ?? ''),
-            DcaHelper::tryGetColumnName($this->dc, 'alias', 'id'),
+            DcaHelper::tryGetColumnName($dc, 'alias', 'id'),
         );
     }
 
@@ -124,8 +127,6 @@ final readonly class ListSpec
     {
         return \sha1(\serialize([
             \get_class($this->driver),
-            $this->type,
-            $this->dc,
             $this->source,
             $this->config,
             \array_map(static fn (Filter $filter): array => $filter->fingerprint(), $this->filters),

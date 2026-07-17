@@ -9,19 +9,19 @@ use HeimrichHannot\FlareBundle\Contract\ListType\BuildListContract;
 use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
-use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
+use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
+use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Configures a list and its filters, then builds the immutable {@see ListSpec}.
  *
- * Build order: the type's {@see BuildListContract::buildList()} hook, the
+ * Build order: the driver's {@see BuildListContract::buildList()} hook, the
  * {@see ListBuildEvent} (named dispatch `flare.list.{type}.build`), then config assembly —
- * base translation, the type's model transformers, and explicit {@see set()} overrides —
- * resolved through the base and type schemas.
+ * base translation, the driver's model transformers, and explicit {@see set()} overrides —
+ * handed to {@see ListSpecFactory} for schema resolution and construction.
  */
 final class ListSpecBuilder implements ListSpecBuilderInterface
 {
@@ -38,28 +38,17 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
     private int $generatedFilterKeys = 0;
 
     public function __construct(
-        private readonly ListOptionsResolver      $optionsResolver,
+        private readonly ListSpecFactory          $specFactory,
         private readonly ListTransformerResolver  $transformerResolver,
         private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly ListDriverReference      $driverReference,
-        private readonly string                   $dc,
+        private readonly ListDriverInterface      $driver,
         private readonly ?ListModel               $model = null,
         private readonly ?string                  $source = null,
     ) {}
 
-    public function getDriverReference(): ListDriverReference
+    public function getDriver(): ListDriverInterface
     {
-        return $this->driverReference;
-    }
-
-    public function getType(): string
-    {
-        return $this->driverReference->type;
-    }
-
-    public function getDc(): string
-    {
-        return $this->dc;
+        return $this->driver;
     }
 
     public function getModel(): ?ListModel
@@ -73,7 +62,7 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
     }
 
     /**
-     * Sets a canonical config value, overriding base translation and type transformers.
+     * Sets a canonical config value, overriding base translation and driver transformers.
      */
     public function set(string $key, mixed $value): self
     {
@@ -126,11 +115,12 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
     }
 
     /**
-     * @throws FlareException If the resulting config does not satisfy the schema.
+     * @throws FlareException If the resulting config does not satisfy the schema or no data
+     *                        container can be determined.
      */
     public function build(): ListSpec
     {
-        $driver = $this->driverReference->driver;
+        $driver = $this->driver;
 
         if ($driver instanceof BuildListContract) {
             $driver->buildList($this);
@@ -144,7 +134,7 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
         {
             BaseListOptions::transform($config, $this->model);
 
-            $transformed = $this->transformerResolver->transform($this->driverReference, $this->model);
+            $transformed = $this->transformerResolver->transform($driver, $this->model);
 
             foreach ($transformed ?? [] as $key => $value) {
                 $config->set($key, $value);
@@ -155,11 +145,10 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
             $config->set($key, $value);
         }
 
-        return new ListSpec(
-            reference: $this->driverReference,
-            dc: $this->dc,
+        return $this->specFactory->create(
+            driver: $driver,
             filters: $this->filters,
-            config: $this->optionsResolver->resolve($driver, $config->all(), $this->source),
+            config: $config->all(),
             source: $this->source,
         );
     }

@@ -12,7 +12,6 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
-use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
@@ -35,7 +34,6 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
     public static function getSubscribedServices(): array
     {
         return [
-            FilterElementRegistry::class,
             ListQueryDirector::class,
             ProjectorRegistry::class,
             RequestStack::class,
@@ -63,11 +61,6 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
      * @throws FlareException Thrown if the projector does not support the provided list context and configuration.
      */
     abstract public function project(ListSpec $list, ContextInterface $context): ViewInterface;
-
-    protected function getFilterElementRegistry(): FilterElementRegistry
-    {
-        return $this->container->get(FilterElementRegistry::class);
-    }
 
     protected function getListQueryDirector(): ListQueryDirector
     {

@@ -21,6 +21,11 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 abstract class AbstractListDriver implements
     ListDriverInterface, BuildQueryContract, DcaContract, OptionsContract, TransformerContract
 {
+    public function getDataContainerName(array $config): string
+    {
+        return (string) ($config['dc'] ?? '');
+    }
+
     /**
      * Declares the type's config schema on top of {@see \HeimrichHannot\FlareBundle\List\BaseListOptions}.
      */

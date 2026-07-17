@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
-use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
-use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\DependencyInjection\ChildDefinition;
@@ -15,7 +13,6 @@ use Symfony\Component\DependencyInjection\Compiler\PriorityTaggedServiceTrait;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
-use Symfony\Component\DependencyInjection\Reference;
 
 final class RegisterListDriversPass implements CompilerPassInterface
 {
@@ -32,10 +29,6 @@ final class RegisterListDriversPass implements CompilerPassInterface
 
         foreach ($this->findAndSortTaggedServices($tag, $container) as $reference)
         {
-            if (\str_starts_with((string) $reference, 'huh.flare.list_type._')) {
-                continue;
-            }
-
             $definition = $container->findDefinition((string) $reference);
             $tags = $definition->getTag($tag);
             $definition->clearTag($tag);
@@ -43,40 +36,22 @@ final class RegisterListDriversPass implements CompilerPassInterface
             foreach ($tags as $attributes)
             {
                 $type = $this->getListTypeName($definition, $attributes);
-                $attributes['type'] = $type;
 
                 $serviceId = 'huh.flare.list_type.' . $type;
 
                 $childDefinition = new ChildDefinition((string) $reference);
                 $childDefinition->setPublic(true);
 
-                $config = $this->getListTypeConfig($container, $reference, $attributes);
+                /** @see AsListDriver::__construct */
+                $attribute = new Definition(AsListDriver::class, [$type, $attributes['dataContainer'] ?? null]);
 
-                /** @see FilterElementRegistry::add() */
-                $registry->addMethodCall('add', [$type, $config]);
+                /** @see ListDriverRegistry::add() */
+                $registry->addMethodCall('add', [$reference, $attribute, $type]);
 
                 $childDefinition->setTags($definition->getTags());
                 $container->setDefinition($serviceId, $childDefinition);
             }
         }
-    }
-
-    protected function getListTypeConfig(
-        ContainerBuilder $container,
-        Reference        $reference,
-        array            $attributes
-    ): Reference {
-        /** @see ListTypeDescriptor::__construct */
-        $definition = new Definition(ListTypeDescriptor::class, [
-            $reference,
-            $attributes,
-            $attributes['dataContainer'] ?? null,
-        ]);
-
-        $serviceId = 'huh.flare.list_type._config_' . ContainerBuilder::hash($definition);
-        $container->setDefinition($serviceId, $definition);
-
-        return new Reference($serviceId);
     }
 
     protected function getListTypeName(Definition $definition, array $attributes): string

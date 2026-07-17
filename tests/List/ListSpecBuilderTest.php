@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\List;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
-use HeimrichHannot\FlareBundle\Contract\ListType\BuildListContract;
+use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildListContract;
 use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
@@ -103,14 +103,14 @@ final class ListSpecBuilderTest extends TestCase
         $builder = $this->createBuilder(
             new EventDispatcher(),
             driver: $driver,
-            model: new ListModelStub(['id' => '9', 'title' => 'from-model']),
+            model: new ListModelStub(['dc' => 'tl_test', 'title' => 'from-model']),
         );
 
         $builder->set('title', 'from-override');
 
         $config = $builder->build()->config;
 
-        self::assertSame(9, $config['id']);                    // base transformation
+        self::assertSame('tl_test', $config['dc']);            // base transformation
         self::assertTrue($config['genericPageMeta']);          // driver transformer over base
         self::assertSame('from-override', $config['title']);   // explicit override wins
     }
@@ -160,7 +160,7 @@ final class ListSpecBuilderTest extends TestCase
             transformerResolver: new ListTransformerResolver($dispatcher),
             eventDispatcher: $dispatcher,
             driver: $driver ?? new class extends AbstractListDriver {},
-            model: $model,
+            model: $model ?? new ListModelStub(['dc' => 'tl_test']),
             source: 'tl_flare_list.9',
         );
     }

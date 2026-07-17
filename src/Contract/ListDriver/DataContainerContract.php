@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Contract\ListType;
+namespace HeimrichHannot\FlareBundle\Contract\ListDriver;
 
 use Contao\DataContainer;
 

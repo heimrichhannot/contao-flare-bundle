@@ -11,14 +11,11 @@ use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
 use HeimrichHannot\FlareBundle\Query\SqlQueryStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
-use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
-use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class ListExecutionContextFactory
 {
     public function __construct(
-        private ListDriverRegistry       $listTypeRegistry,
         private EventDispatcherInterface $eventDispatcher,
     ) {}
 
@@ -29,18 +26,12 @@ readonly class ListExecutionContextFactory
     {
         $driver = $list->driver;
 
-        if (!$mainTable = $list->dc)
+        if (!$mainTable = $list->getDataContainerName())
         {
-            $listTypeDescriptor = $this->listTypeRegistry->get($list->type);
-
-            if (!$listTypeDescriptor instanceof ListTypeDescriptor
-                || !$mainTable = $listTypeDescriptor->getDataContainer())
-            {
-                throw new FlareException(
-                    \sprintf('Failed to evaluate data container table of list "%s".', $list->type),
-                    method: __METHOD__,
-                );
-            }
+            throw new FlareException(
+                \sprintf('Failed to evaluate data container table of list "%s".', $list->source ?? \get_class($driver)),
+                method: __METHOD__,
+            );
         }
 
         $registry = new TableAliasRegistry();

@@ -4,35 +4,63 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\List;
 
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\List\ListDriverReference;
+use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use PHPUnit\Framework\TestCase;
 
 final class ListSpecTest extends TestCase
 {
-    private static function reference(): ListDriverReference
+    private static function driver(): ListDriverInterface
     {
         static $driver = null;
-        $driver ??= new class implements ListDriverInterface {};
 
-        return ListDriverReference::registered('test', $driver);
+        return $driver ??= new class implements ListDriverInterface {
+            public function getDataContainerName(array $config): string
+            {
+                return (string) ($config['dc'] ?? '');
+            }
+        };
+    }
+
+    private static function filter(string $type, ?string $alias = null): Filter
+    {
+        static $element = null;
+
+        $element ??= new class implements FilterElementInterface {
+            public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
+
+            public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void {}
+        };
+
+        return new Filter(element: $element, type: $type, alias: $alias);
+    }
+
+    public function testDataContainerNameComesFromConfig(): void
+    {
+        $spec = new ListSpec(driver: self::driver(), config: ['dc' => 'tl_test']);
+
+        self::assertSame('tl_test', $spec->getDataContainerName());
+        self::assertSame('', (new ListSpec(driver: self::driver()))->getDataContainerName());
     }
 
     public function testWithFilterKeysByAliasByDefault(): void
     {
-        $spec = new ListSpec(reference: self::reference(), dc: 'tl_test');
+        $spec = new ListSpec(driver: self::driver());
 
-        $spec = $spec->withFilter(new Filter(type: 'flare_bool', alias: 'foo'));
+        $spec = $spec->withFilter(self::filter('flare_bool', 'foo'));
 
         self::assertArrayHasKey('foo', $spec->filters);
     }
 
     public function testWithFilterAcceptsExplicitKey(): void
     {
-        $spec = (new ListSpec(reference: self::reference(), dc: 'tl_test'))
-            ->withFilter(new Filter(type: 'flare_bool', alias: 'foo'), 'custom');
+        $spec = (new ListSpec(driver: self::driver()))
+            ->withFilter(self::filter('flare_bool', 'foo'), 'custom');
 
         self::assertArrayHasKey('custom', $spec->filters);
         self::assertArrayNotHasKey('foo', $spec->filters);
@@ -40,14 +68,14 @@ final class ListSpecTest extends TestCase
 
     public function testWithFilterGeneratesCollisionFreeKeysForAliasLessFilters(): void
     {
-        $spec = (new ListSpec(reference: self::reference(), dc: 'tl_test'))
-            ->withFilter(new Filter(type: 'a'))
-            ->withFilter(new Filter(type: 'b'));
+        $spec = (new ListSpec(driver: self::driver()))
+            ->withFilter(self::filter('a'))
+            ->withFilter(self::filter('b'));
 
         self::assertArrayHasKey('_generated_0', $spec->filters);
         self::assertArrayHasKey('_generated_1', $spec->filters);
 
-        $spec = $spec->withoutFilter('_generated_0')->withFilter(new Filter(type: 'c'));
+        $spec = $spec->withoutFilter('_generated_0')->withFilter(self::filter('c'));
 
         self::assertSame('c', $spec->filters['_generated_0']->type);
         self::assertSame('b', $spec->filters['_generated_1']->type);
@@ -55,10 +83,10 @@ final class ListSpecTest extends TestCase
 
     public function testModifiersAreImmutable(): void
     {
-        $original = new ListSpec(reference: self::reference(), dc: 'tl_test', config: ['id' => 1]);
+        $original = new ListSpec(driver: self::driver(), config: ['id' => 1]);
 
         $modified = $original
-            ->withFilter(new Filter(type: 'a', alias: 'x'))
+            ->withFilter(self::filter('a', 'x'))
             ->withConfig(['id' => 2]);
 
         self::assertSame([], $original->filters);
@@ -70,8 +98,8 @@ final class ListSpecTest extends TestCase
 
     public function testHasFilterOfType(): void
     {
-        $spec = (new ListSpec(reference: self::reference(), dc: 'tl_test'))
-            ->withFilter(new Filter(type: 'flare_published', alias: 'p'));
+        $spec = (new ListSpec(driver: self::driver()))
+            ->withFilter(self::filter('flare_published', 'p'));
 
         self::assertTrue($spec->hasFilterOfType('flare_published'));
         self::assertFalse($spec->hasFilterOfType('flare_bool'));
@@ -80,14 +108,14 @@ final class ListSpecTest extends TestCase
     public function testHashIsStableAndChangesWithContent(): void
     {
         $make = static fn (array $config = [], ?string $source = null): ListSpec =>
-            new ListSpec(reference: self::reference(), dc: 'tl_test', config: $config, source: $source);
+            new ListSpec(driver: self::driver(), config: $config, source: $source);
 
         self::assertSame($make()->hash(), $make()->hash());
         self::assertNotSame($make()->hash(), $make(config: ['id' => 1])->hash());
         self::assertNotSame($make()->hash(), $make(source: 'tl_flare_list.5')->hash());
         self::assertNotSame(
             $make()->hash(),
-            $make()->withFilter(new Filter(type: 'a', alias: 'x'))->hash(),
+            $make()->withFilter(self::filter('a', 'x'))->hash(),
         );
     }
 }

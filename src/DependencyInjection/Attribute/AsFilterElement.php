@@ -9,19 +9,17 @@ class AsFilterElement
 {
     public const TAG = 'huh.flare.filter_element';
 
+    public ?string $type;
     public array $attributes;
 
-    /**
-     * @param ?string $type
-     * @param bool|null $isTargeted
-     * @param mixed ...$attributes
-     */
     public function __construct(
-        ?string $type = null,
-        ?bool   $isTargeted = null,
-        mixed   ...$attributes
+        ?string      $type = null,
+        public ?bool $isTargeted = null,
+        mixed        ...$attributes
     ) {
-        $attributes['type'] = $type ?? $attributes['alias'] ?? null;
+        $this->type = $type ?? $attributes['alias'] ?? null;
+
+        $attributes['type'] = $this->type;
         $attributes['isTargeted'] = $isTargeted;
 
         $this->attributes = $attributes;

@@ -15,15 +15,10 @@ use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Resolver\FilterElementResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
-use HeimrichHannot\FlareBundle\List\ListDriverReference;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
-use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -36,14 +31,10 @@ use Symfony\Component\Security\Csrf\CsrfTokenManager;
 final class FilterFormFactoryTest extends TestCase
 {
     private EventDispatcher $eventDispatcher;
-    private FilterElementRegistry $elementRegistry;
-    private int $elementCount = 0;
 
     protected function setUp(): void
     {
         $this->eventDispatcher = new EventDispatcher();
-        $this->elementRegistry = new FilterElementRegistry();
-        $this->elementCount = 0;
     }
 
     private function createFactory(): FilterFormFactory
@@ -57,17 +48,23 @@ final class FilterFormFactoryTest extends TestCase
         return new FilterFormFactory(
             eventDispatcher: $this->eventDispatcher,
             filterContextFactory: new FilterContextFactory(new FilterOptionsResolver(new SchemaResolver())),
-            filterElementResolver: new FilterElementResolver($this->elementRegistry, new NullLogger()),
             formFactory: $formFactory,
         );
     }
 
     private function createForm(array $filters): FormInterface
     {
+        $driver = new class implements ListDriverInterface {
+            public function getDataContainerName(array $config): string
+            {
+                return (string) ($config['dc'] ?? '');
+            }
+        };
+
         $list = new ListSpec(
-            reference: ListDriverReference::registered('test', new class implements ListDriverInterface {}),
-            dc: 'tl_test',
+            driver: $driver,
             filters: $filters,
+            config: ['dc' => 'tl_test'],
         );
 
         $context = new class implements ContextInterface, FormContextInterface {
@@ -91,13 +88,13 @@ final class FilterFormFactoryTest extends TestCase
     }
 
     /**
-     * Registers an element building its form via the given callable; returns its type alias.
+     * Creates an element building its form via the given callable.
      *
      * @param callable(FilterFormBuilderInterface, FilterContext): void $buildForm
      */
-    private function element(callable $buildForm): string
+    private function element(callable $buildForm): FilterElementInterface
     {
-        $element = new class($buildForm) implements FilterElementInterface {
+        return new class($buildForm) implements FilterElementInterface {
             /** @var callable */
             private $buildForm;
 
@@ -113,11 +110,6 @@ final class FilterFormFactoryTest extends TestCase
 
             public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void {}
         };
-
-        $type = 'element_' . ++$this->elementCount;
-        $this->elementRegistry->add($type, new FilterElementDescriptor($element));
-
-        return $type;
     }
 
     public function testSingleFieldMountsFlatUnderTheAlias(): void
@@ -128,7 +120,7 @@ final class FilterFormFactoryTest extends TestCase
             $builder->addEventListener(FormEvents::POST_SUBMIT, static function (): void {});
         });
 
-        $form = $this->createForm(['suche' => new Filter(type: $element, alias: 'suche')]);
+        $form = $this->createForm(['suche' => new Filter(element: $element, alias: 'suche')]);
 
         $this->assertTrue($form->has('suche'));
 
@@ -151,7 +143,7 @@ final class FilterFormFactoryTest extends TestCase
             $builder->add('extra', TextType::class, ['required' => false]);
         });
 
-        $form = $this->createForm(['suche' => new Filter(type: $element, alias: 'suche')]);
+        $form = $this->createForm(['suche' => new Filter(element: $element, alias: 'suche')]);
 
         $child = $form->get('suche');
 
@@ -169,7 +161,7 @@ final class FilterFormFactoryTest extends TestCase
             $builder->addEventListener(FormEvents::POST_SUBMIT, static function (): void {});
         });
 
-        $form = $this->createForm(['range' => new Filter(type: $element, alias: 'range')]);
+        $form = $this->createForm(['range' => new Filter(element: $element, alias: 'range')]);
 
         $child = $form->get('range');
 
@@ -186,7 +178,7 @@ final class FilterFormFactoryTest extends TestCase
     {
         $element = $this->element(static function (): void {});
 
-        $form = $this->createForm(['empty' => new Filter(type: $element, alias: 'empty')]);
+        $form = $this->createForm(['empty' => new Filter(element: $element, alias: 'empty')]);
 
         $this->assertFalse($form->has('empty'));
     }
@@ -197,7 +189,7 @@ final class FilterFormFactoryTest extends TestCase
             $builder->single(TextType::class);
         });
 
-        $form = $this->createForm(['x' => new Filter(type: $element, alias: '_.tl_flare_filter.1')]);
+        $form = $this->createForm(['x' => new Filter(element: $element, alias: '_.tl_flare_filter.1')]);
 
         $this->assertSame(0, \count($form));
     }
@@ -213,7 +205,7 @@ final class FilterFormFactoryTest extends TestCase
             $builder->single(TextType::class);
         });
 
-        $form = $this->createForm(['suche' => new Filter(type: $element, alias: 'suche')]);
+        $form = $this->createForm(['suche' => new Filter(element: $element, alias: 'suche')]);
 
         $this->assertFalse($form->has('suche'));
     }

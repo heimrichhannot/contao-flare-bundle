@@ -36,7 +36,7 @@ readonly class ElementDcaListener
         private FilterElementRegistry       $filterElementRegistry,
         private ListExecutionContextFactory $listExecutionContextFactory,
         private ListSpecBuilderFactory      $listFactory,
-        private ListDriverRegistry          $listTypeRegistry,
+        private ListDriverRegistry          $listDriverRegistry,
         private RequestStack                $requestStack,
     ) {}
 
@@ -70,7 +70,7 @@ readonly class ElementDcaListener
             $filterModel = FilterModel::findByPk($id);
             $listModel = $filterModel?->getRelated('pid');
             $type = (string) ($filterModel->type ?? '');
-            $service = $this->filterElementRegistry->get($type)?->getService();
+            $service = $this->filterElementRegistry->getService($type);
         }
         /** @mago-expect lint:no-else-clause This else clause is fine. */
         else
@@ -78,7 +78,7 @@ readonly class ElementDcaListener
             $filterModel = null;
             $listModel = ListModel::findByPk($id);
             $type = (string) ($listModel->type ?? '');
-            $service = $this->listTypeRegistry->get($type)?->getService();
+            $service = $this->listDriverRegistry->getService($type);
         }
 
         if (!$listModel instanceof ListModel || !$type || $type === 'default' || \str_starts_with($type, '__')) {

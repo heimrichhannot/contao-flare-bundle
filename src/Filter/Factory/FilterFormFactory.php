@@ -12,7 +12,6 @@ use HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
-use HeimrichHannot\FlareBundle\Filter\Resolver\FilterElementResolver;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -27,7 +26,6 @@ readonly class FilterFormFactory
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
         private FilterContextFactory     $filterContextFactory,
-        private FilterElementResolver    $filterElementResolver,
         private FormFactoryInterface     $formFactory,
     ) {}
 
@@ -65,9 +63,7 @@ readonly class FilterFormFactory
                 continue;
             }
 
-            if (!$element = $this->filterElementResolver->resolve($filter)) {
-                continue;
-            }
+            $element = $filter->element;
 
             $filterContext = $this->filterContextFactory->create($list, $filter, $element, $context, $key);
 

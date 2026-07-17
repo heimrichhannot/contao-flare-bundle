@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Engine\Projector;
 
 use HeimrichHannot\FlareBundle\Engine\Projector\InteractiveProjector;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\List\ListDriverReference;
+use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use PHPUnit\Framework\TestCase;
@@ -51,11 +53,22 @@ final class InteractiveProjectorTest extends TestCase
 
     private function listWithFilter(string $key, string $alias): ListSpec
     {
-        $reference = ListDriverReference::registered('test', new class implements ListDriverInterface {});
+        $driver = new class implements ListDriverInterface {
+            public function getDataContainerName(array $config): string
+            {
+                return (string) ($config['dc'] ?? '');
+            }
+        };
 
-        return new ListSpec(reference: $reference, dc: 'tl_test', filters: [
-            $key => new Filter(type: 'test_element', alias: $alias),
-        ]);
+        $element = new class implements FilterElementInterface {
+            public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
+
+            public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void {}
+        };
+
+        return new ListSpec(driver: $driver, filters: [
+            $key => new Filter(element: $element, type: 'test_element', alias: $alias),
+        ], config: ['dc' => 'tl_test']);
     }
 
     public function testFlatSubmittedValueIsKeyedCanonically(): void

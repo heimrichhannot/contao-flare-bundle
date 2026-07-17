@@ -43,7 +43,7 @@ readonly class GenericReaderPageMetaListener
 
         $tokens = [
             'list.driver_class' => \get_class($list->driver),
-            'list.dc' => $list->getDataContainerName(),
+            'list.dc' => $list->dc,
         ];
 
         $this->addTokensFromProperties($tokens, $list->config, prefix: 'list');

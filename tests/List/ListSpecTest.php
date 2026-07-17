@@ -44,8 +44,8 @@ final class ListSpecTest extends TestCase
     {
         $spec = new ListSpec(driver: self::driver(), config: ['dc' => 'tl_test']);
 
-        self::assertSame('tl_test', $spec->getDataContainerName());
-        self::assertSame('', (new ListSpec(driver: self::driver()))->getDataContainerName());
+        self::assertSame('tl_test', $spec->dc);
+        self::assertSame('', (new ListSpec(driver: self::driver()))->dc);
     }
 
     public function testWithFilterKeysByAliasByDefault(): void

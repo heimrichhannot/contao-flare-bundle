@@ -73,7 +73,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
             'placeholder' => $config['placeholder'] ?: $defaultPlaceholder,
         ];
 
-        $options = $this->getOptions($context->list->getDataContainerName(), $config['field']);
+        $options = $this->getOptions($context->list->dc, $config['field']);
 
         if (!\is_null($options))
         {
@@ -98,7 +98,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
     public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
         $config = $context->config;
-        $options = $this->getOptions($context->list->getDataContainerName(), $config['field']) ?? [];
+        $options = $this->getOptions($context->list->dc, $config['field']) ?? [];
 
         $selected = $config['intrinsic']
             ? $config['preselect']
@@ -120,7 +120,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
             $builder->abort();
         }
 
-        $dcaOptionsField = $this->getOptionsField($context->list->getDataContainerName(), $config['field']) ?? [];
+        $dcaOptionsField = $this->getOptionsField($context->list->dc, $config['field']) ?? [];
         $isMultiple = $dcaOptionsField['eval']['multiple'] ?? false;
 
         $builder->add(DcaSelectFilterType::class, [

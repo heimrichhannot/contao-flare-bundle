@@ -22,6 +22,9 @@ use HeimrichHannot\FlareBundle\Util\DcaHelper;
  */
 final readonly class ListSpec
 {
+    /**
+     * The main data container table of the list.
+     */
     public string $dc;
 
     /**
@@ -37,14 +40,6 @@ final readonly class ListSpec
         public ?string             $source = null,
     ) {
         $this->dc = (string) ($this->config['dc'] ?? '');
-    }
-
-    /**
-     * Returns the main data container table of the list.
-     */
-    public function getDataContainerName(): string
-    {
-        return $this->dc;
     }
 
     /**
@@ -114,7 +109,7 @@ final readonly class ListSpec
 
     public function getAutoItemField(): string
     {
-        $dc = $this->getDataContainerName();
+        $dc = $this->dc;
 
         return DcaHelper::tryGetColumnName(
             $dc,

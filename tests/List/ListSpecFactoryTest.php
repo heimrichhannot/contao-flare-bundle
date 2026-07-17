@@ -33,7 +33,7 @@ final class ListSpecFactoryTest extends TestCase
         );
 
         self::assertSame($driver, $spec->driver);
-        self::assertSame('tl_test', $spec->getDataContainerName());
+        self::assertSame('tl_test', $spec->dc);
         self::assertSame('tl_test', $spec->config['dc']);
         self::assertSame('My List', $spec->config['title']);
         self::assertFalse($spec->config['genericPageMeta']); // schema default applied
@@ -79,7 +79,7 @@ final class ListSpecFactoryTest extends TestCase
 
         $spec = $this->createFactory()->create(driver: $driver);
 
-        self::assertSame('tl_news', $spec->getDataContainerName());
+        self::assertSame('tl_news', $spec->dc);
         self::assertSame('tl_news', $spec->config['dc']);
     }
 }

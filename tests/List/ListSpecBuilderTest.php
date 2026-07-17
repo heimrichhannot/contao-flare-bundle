@@ -83,7 +83,7 @@ final class ListSpecBuilderTest extends TestCase
         $spec = $builder->build();
 
         self::assertSame($builder->getDriver(), $spec->driver);
-        self::assertSame('tl_test', $spec->getDataContainerName());
+        self::assertSame('tl_test', $spec->dc);
         self::assertSame('tl_test', $spec->config['dc']);
         self::assertSame('tl_flare_list.9', $spec->source);
         self::assertArrayHasKey('_generated_0', $spec->filters);

@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\ListTransformerEvent;
-use HeimrichHannot\FlareBundle\List\ListDriverReference;
+use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -30,10 +30,8 @@ final class ListTransformerResolver
     /**
      * @return array<string, mixed>|null Canonical config values, or null when no transformer matches the source.
      */
-    public function transform(ListDriverReference $reference, object $source): ?array
+    public function transform(ListDriverInterface $driver, object $source): ?array
     {
-        $driver = $reference->driver;
-
         if (!isset($this->resolvers[$driver::class]))
         {
             $resolver = new TransformerResolver();
@@ -42,7 +40,7 @@ final class ListTransformerResolver
                 $driver->configureTransformers($resolver);
             }
 
-            $this->eventDispatcher->dispatch(new ListTransformerEvent($resolver, $reference));
+            $this->eventDispatcher->dispatch(new ListTransformerEvent($resolver, $driver));
 
             $this->resolvers[$driver::class] = $resolver;
         }

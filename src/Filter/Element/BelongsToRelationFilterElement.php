@@ -70,7 +70,7 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
         }
 
         $inferrable = PtableInferrableFactory::createFromConfig($context->list->config);
-        $inferrer = new PtableInferrer($inferrable, $context->list->dc);
+        $inferrer = new PtableInferrer($inferrable, $context->list->getDataContainerName());
 
         try
         {

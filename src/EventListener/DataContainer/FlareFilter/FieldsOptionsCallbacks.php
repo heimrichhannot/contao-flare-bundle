@@ -45,9 +45,9 @@ readonly class FieldsOptionsCallbacks
     {
         $options = [];
 
-        foreach ($this->filterElementRegistry->all() as $type => $filterElementDescriptor)
+        foreach ($this->filterElementRegistry->keys() as $type)
         {
-            $filterElement = $filterElementDescriptor->getService();
+            $filterElement = $this->filterElementRegistry->getService($type);
 
             if ($filterElement instanceof IsSupportedContract && !$filterElement->isSupported())
             {

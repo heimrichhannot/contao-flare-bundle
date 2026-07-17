@@ -80,7 +80,7 @@ readonly class FieldsLoadAndSaveCallbacks
             return $value;
         }
 
-        $filterElement = $this->filterElementRegistry->get($row['type'] ?? null)?->getService();
+        $filterElement = $this->filterElementRegistry->getService($row['type'] ?? null);
 
         if ($filterElement instanceof IntrinsicContract && $filterElement->isOnlyIntrinsic())
         {
@@ -101,7 +101,7 @@ readonly class FieldsLoadAndSaveCallbacks
             return $value;
         }
 
-        $element = $this->filterElementRegistry->get($row['type'] ?? null)?->getService();
+        $element = $this->filterElementRegistry->getService($row['type'] ?? null);
 
         if ($element instanceof IntrinsicContract && $element->isOnlyIntrinsic()) {
             return '1';

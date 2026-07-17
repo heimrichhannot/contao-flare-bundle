@@ -65,7 +65,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
             return;
         }
 
-        $choicesBuilder = $this->createChoices($context->list->dc, (string) ($config['field'] ?? ''))
+        $choicesBuilder = $this->createChoices($context->list->getDataContainerName(), (string) ($config['field'] ?? ''))
             ->setEmptyOption(!$config['multiple']);
 
         $formOptions = [
@@ -203,7 +203,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
             return null;
         }
 
-        $choicesBuilder = $this->createChoices($context->list->dc, (string) ($context->config['field'] ?? ''));
+        $choicesBuilder = $this->createChoices($context->list->getDataContainerName(), (string) ($context->config['field'] ?? ''));
         $choices = $choicesBuilder->buildChoices();
         $toValue = $choicesBuilder->buildChoiceValueCallback();
 

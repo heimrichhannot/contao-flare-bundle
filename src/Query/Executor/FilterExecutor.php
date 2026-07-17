@@ -14,7 +14,6 @@ use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilder;
 use HeimrichHannot\FlareBundle\Filter\FilterCall;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\Resolver\FilterElementResolver;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
@@ -30,7 +29,6 @@ readonly class FilterExecutor
         private EventDispatcherInterface  $eventDispatcher,
         private FilterContextFactory      $filterContextFactory,
         private FilterElementRegistry     $filterElementRegistry,
-        private FilterElementResolver     $filterElementResolver,
         private FilterQueryBuilderFactory $filterQueryBuilderFactory,
         private FilterTypeRegistry        $filterTypeRegistry,
     ) {}
@@ -50,11 +48,7 @@ readonly class FilterExecutor
 
         foreach ($list->filters as $key => $filter)
         {
-            if (!$element = $this->filterElementResolver->resolve($filter)) {
-                continue;
-            }
-
-            $context = $this->filterContextFactory->create($list, $filter, $element, $options->context, $key);
+            $context = $this->filterContextFactory->create($list, $filter, $filter->element, $options->context, $key);
 
             $data = (array) ($options->filterValues[$key] ?? $filter->data ?? []);
 
@@ -79,7 +73,7 @@ readonly class FilterExecutor
      */
     public function invokeFilter(Filter $filter, FilterContext $context, array $data = []): array
     {
-        if (!Str::isValidSqlName($table = $context->list->dc))
+        if (!Str::isValidSqlName($table = $context->list->getDataContainerName()))
         {
             throw new FlareException(\sprintf(
                 '[FLARE] ListSpec data container cannot be used as SQL table identifier: "%s"',
@@ -87,14 +81,10 @@ readonly class FilterExecutor
             ), method: __METHOD__);
         }
 
-        if (!$element = $this->filterElementResolver->resolve($filter)) {
-            return [];
-        }
-
-        $descriptor = $this->filterElementRegistry->get($filter->type);
+        $isTargeted = $this->filterElementRegistry->getAttribute($filter->type)?->isTargeted;
 
         $targetAlias = TableAliasRegistry::ALIAS_MAIN;
-        if ($descriptor?->isTargeted() || $filter->targetingForced) {
+        if ($isTargeted || $filter->targetingForced) {
             $targetAlias = $filter->targetAlias ?: TableAliasRegistry::ALIAS_MAIN;
         }
 
@@ -112,7 +102,7 @@ readonly class FilterExecutor
 
         try
         {
-            $element->buildFilter($builder, $context, $data);
+            $filter->element->buildFilter($builder, $context, $data);
         }
         catch (AbortFilteringException $e)
         {
@@ -120,7 +110,7 @@ readonly class FilterExecutor
         }
         catch (FilterException $e)
         {
-            throw $this->createFilterException($e, $filter, $element::class . '::buildFilter');
+            throw $this->createFilterException($e, $filter, $filter->element::class . '::buildFilter');
         }
         catch (\Throwable $e)
         {

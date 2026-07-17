@@ -7,11 +7,12 @@ namespace HeimrichHannot\FlareBundle\Filter\Collector;
 use Contao\Controller;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\Resolver\FilterElementResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
+use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -22,9 +23,10 @@ readonly class ListModelFilterCollector
 {
     public function __construct(
         private EventDispatcherInterface  $eventDispatcher,
-        private FilterElementResolver     $filterElementResolver,
+        private FilterElementRegistry     $filterElementRegistry,
         private FilterTransformerResolver $filterTransformerResolver,
-        private ListDriverRegistry        $listTypeRegistry,
+        private ListDriverRegistry        $listDriverRegistry,
+        private LoggerInterface           $logger,
     ) {}
 
     /**
@@ -36,7 +38,7 @@ readonly class ListModelFilterCollector
             return null;
         }
 
-        if (!$this->listTypeRegistry->get((string) $listModel->type)?->getService()) {
+        if (!$this->listDriverRegistry->getService((string) $listModel->type)) {
             return null;
         }
 
@@ -53,8 +55,16 @@ readonly class ListModelFilterCollector
             }
 
             $source = "{$model::getTable()}.{$model->id}";
+            $type = $model->getFilterType();
 
-            if (!$element = $this->filterElementResolver->resolveType($model->getFilterType(), $source)) {
+            if (!$element = $this->filterElementRegistry->getService($type))
+            {
+                $this->logger->warning(\sprintf(
+                    '[FLARE] No filter element registered for type "%s" — filter skipped. (%s)',
+                    $type,
+                    $source,
+                ));
+
                 continue;
             }
 
@@ -62,6 +72,7 @@ readonly class ListModelFilterCollector
                 ?? $model->row();
 
             $filter = new Filter(
+                element: $element,
                 type: $model->getFilterType(),
                 config: $config,
                 alias: $model->getFilterFormName() ?: "_.{$source}",

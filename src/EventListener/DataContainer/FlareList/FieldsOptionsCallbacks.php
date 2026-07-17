@@ -26,7 +26,7 @@ readonly class FieldsOptionsCallbacks
     public function __construct(
         private ContaoFramework         $contaoFramework,
         private ListContainer           $listContainer,
-        private ListDriverRegistry      $listTypeRegistry,
+        private ListDriverRegistry      $listDriverRegistry,
         private ResourceFinderInterface $resourceFinder,
         private TranslatorInterface     $translator,
     ) {}
@@ -39,7 +39,7 @@ readonly class FieldsOptionsCallbacks
     {
         $options = [];
 
-        foreach ($this->listTypeRegistry->all() as $type => $listTypeConfig)
+        foreach ($this->listDriverRegistry->keys() as $type)
         {
             $options[$type] = $this->translator->trans($type, [], 'flare_list');
         }

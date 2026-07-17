@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Query\SqlJoinStruct;
@@ -20,6 +20,10 @@ class NewsListDriver extends AbstractListDriver implements BuildListContract
 {
     public const TYPE = 'flare_news';
     public const ALIAS_ARCHIVE = 'news_archive';
+
+    public function __construct(
+        private readonly FilterFactory $filterFactory,
+    ) {}
 
     public function buildDca(DcaBuilder $dca, DcaContext $context): void
     {
@@ -43,8 +47,8 @@ class NewsListDriver extends AbstractListDriver implements BuildListContract
             return;
         }
 
-        $builder->addFilter(new Filter(
-            type: PublishedFilterElement::TYPE,
+        $builder->addFilter($this->filterFactory->create(
+            element: PublishedFilterElement::TYPE,
             config: [
                 'intrinsic' => true,
                 'published_field' => 'published',

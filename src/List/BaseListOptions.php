@@ -21,9 +21,8 @@ final class BaseListOptions
 {
     public static function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('id')->default(null)->allowedTypes('int', 'null');
+        $resolver->define('dc')->default('')->allowedTypes('string')->required();
         $resolver->define('title')->default('')->allowedTypes('string');
-        $resolver->define('published')->default(false)->allowedTypes('bool');
         $resolver->define('jumpToListView')->default(null)->allowedTypes('int', 'null');
         $resolver->define('jumpToReader')->default(null)->allowedTypes('int', 'null');
         $resolver->define('sortSettings')->default([])->allowedTypes('array');
@@ -45,9 +44,8 @@ final class BaseListOptions
     public static function transform(ConfigBuilder $config, ListModel $model): void
     {
         $config
-            ->set('id', $model->id ? (int) $model->id : null)
+            ->set('dc', (string) $model->dc)
             ->set('title', (string) $model->title)
-            ->set('published', (bool) $model->published)
             ->set('jumpToListView', $model->jumpToListView ? (int) $model->jumpToListView : null)
             ->set('jumpToReader', $model->jumpToReader ? (int) $model->jumpToReader : null)
             ->set('sortSettings', StringUtil::deserialize($model->sortSettings, true))

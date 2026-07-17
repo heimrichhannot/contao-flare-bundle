@@ -5,15 +5,12 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\List;
 
 use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 interface ListSpecBuilderInterface
 {
-    public function getDriverReference(): ListDriverReference;
-
-    public function getType(): string;
-
-    public function getDc(): string;
+    public function getDriver(): ListDriverInterface;
 
     public function getModel(): ?ListModel;
 

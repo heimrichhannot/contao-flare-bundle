@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement;
 
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
@@ -124,7 +124,7 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
         ]);
     }
 
-    public function buildDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
         $dca->palette('{form_legend},label,isMandatory,isMultiple,isExpanded;{filter_legend},preselect');
 

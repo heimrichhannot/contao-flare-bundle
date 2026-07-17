@@ -1,10 +1,10 @@
 # Built-in List Types
 
-| Type | Backend label | Data container | Class |
+| Type | Backend label | Data container | Driver class |
 |---|---|---|---|
-| `flare_generic_dc` | Data Container | user-selected | `HeimrichHannot\FlareBundle\List\Type\GenericDataContainerListType` |
-| `flare_news` | News | `tl_news` | `HeimrichHannot\FlareBundle\List\Type\NewsListType` |
-| `flare_events` | Events | `tl_calendar_events` | `HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListType\EventsListType` |
+| `flare_generic_dc` | Data Container | user-selected | `HeimrichHannot\FlareBundle\List\Driver\GenericDataContainerListDriver` |
+| `flare_news` | News | `tl_news` | `HeimrichHannot\FlareBundle\List\Driver\NewsListDriver` |
+| `flare_events` | Events | `tl_calendar_events` | `HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListDriver\EventsListDriver` |
 
 ## Notes
 
@@ -17,4 +17,4 @@
   joins `tl_calendar` and also adds a default `published` filter. See
   [Integrations / Contao Calendar](../integrations/index.md#contao-calendar).
 
-To create your own list type, see [Developers / Custom List Types](../dev/list-types/index.md).
+To create your own, see [Developers / Custom List Drivers](../dev/list-types/index.md).

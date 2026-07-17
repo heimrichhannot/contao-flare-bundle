@@ -28,14 +28,15 @@ tl_flare_filter rows ──(collector + transformers)──▶ Filter[] on the L
 ## 1. The `Filter` Value Object
 
 `HeimrichHannot\FlareBundle\Filter\Filter` is the immutable runtime representation of a single filter within
-a list. It pairs an element (a registered type alias string, or an inline element instance) with its
-canonical, element-defined configuration — no DCA or storage specifics.
+a list. It pairs a filter element instance with its canonical, element-defined configuration — no DCA or
+storage specifics.
 
 Constructor properties:
 
 | Property | Description |
 |---|---|
-| `element` | Registered element type alias (e.g. `flare_bool`) or an inline `FilterElementInterface` instance |
+| `element` | The `FilterElementInterface` instance — a registered element service or an inline instance |
+| `type` | The registered element type alias (e.g. `flare_bool`), if the filter was created from one; used for the `flare.filter_element.{type}.*` named events and targeting lookups |
 | `config` | Canonical config following the element's schema; scalars, arrays, and enums only |
 | `data` | Optional runtime data bag, same shape `buildFilter()` receives; submitted form data takes precedence |
 | `alias` | Form name of the filter; an invalid Symfony form name never mounts form children |
@@ -46,11 +47,12 @@ Constructor properties:
 Because `Filter` is immutable, all modification happens through withers that return a new instance:
 `withConfig()`, `withData()`, `withAlias()`, `withTargetAlias(?string, bool $forced = true)`, `withSource()`.
 
-Filters are created without a database row by constructing them directly — with a registered element type
-alias or an inline element instance — see
+Filters are created without a database row through the `FilterFactory` service — which resolves a
+registered element type alias to its service — or by constructing a `Filter` directly around an inline
+element instance; see
 [Inline Filters](../dev/filter-elements/index.md#9-inline-filters-without-a-service).
-`Filter::fingerprint()` returns a stable representation used by `ListSpec::hash()` for caching and
-pagination identity.
+`Filter::fingerprint()` returns a stable representation (including the element's class) used by
+`ListSpec::hash()` for caching and pagination identity.
 
 ## 2. Collection
 

@@ -14,9 +14,10 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - `#[AsFilterCallback]`
 - `#[AsListCallback]`
 - `#[AsFlareCallback]` (internal base attribute)
+- `#[AsListType]` — renamed to `#[AsListDriver]` (see [behavioral notes](#behavioral-notes))
 - Parameters removed from kept attributes: `#[AsFilterElement]` lost `palette`, `formType`, and `method`
   (always-intrinsic elements now implement `Contract\FilterElement\IntrinsicContract` instead);
-  `#[AsListType]` lost `palette`
+  `#[AsListType]` lost `palette` on its way to becoming `#[AsListDriver]`
 
 ## Classes
 
@@ -70,6 +71,14 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - Filter element classes moved from `FilterElement\` to `Filter\Element\` and gained a `FilterElement`
   class-name suffix — a rename rather than a removal, but any `use` statement referencing the old FQCNs
   breaks. The backend `::TYPE` strings are unchanged, so **existing database records keep working**.
+- List types are now implemented by **list drivers** — again a rename rather than a removal:
+  `#[AsListType]` → `#[AsListDriver]`, `ListType\ListTypeInterface` → `List\Driver\ListDriverInterface`,
+  `ListType\AbstractListType` → `List\Driver\AbstractListDriver`, `Contract\ListType\*` →
+  `Contract\ListDriver\*`, and the built-in classes accordingly (e.g. `NewsListType` → `NewsListDriver`).
+  The registered type aliases are unchanged, so **existing database records keep working**.
+- `Contract\ListDriver\DataContainerContract::getDataContainerName()` was renamed to
+  `resolveDataContainerTable()`; `getDataContainerName(array $config)` now lives on
+  `ListDriverInterface` and resolves the list's runtime table from the canonical config.
 - Palettes for `tl_flare_filter` / `tl_flare_list` are no longer declared statically or via callback
   attributes; they are assembled at runtime by each type's `buildDca()`
   (see [Backend DCA Building](./dev/dca-builder.md)).

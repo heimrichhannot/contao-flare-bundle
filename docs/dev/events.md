@@ -22,10 +22,10 @@ Dispatched after the `TableAliasRegistry` and base `SqlQueryStruct` are initiali
 
 ### `ListBuildEvent`
 Dispatched while a list is being built into its [`ListSpec`](../spec/specifications.md) — after the
-type's `buildList()` hook and before the config is resolved.
+driver's `buildList()` hook and before the config is resolved.
 - **Use Case:** Adding or removing filters and setting canonical config overrides at runtime.
 - **Class:** `HeimrichHannot\FlareBundle\Event\ListBuildEvent`
-- **Properties:** `builder` (readonly `ListBuilder` — `addFilter()`, `removeFilter()`, `set()`, ...)
+- **Properties:** `builder` (readonly `ListSpecBuilder` — `addFilter()`, `removeFilter()`, `set()`, ...)
 
 ### `FilterCollectedEvent`
 Dispatched for every filter collected from the database, before it is added to the list.
@@ -40,6 +40,14 @@ Dispatched once per filter element class when its transformer map is configured.
 - **Class:** `HeimrichHannot\FlareBundle\Event\FilterTransformerEvent`
 - **Properties:** `transformers` (readonly `TransformerResolver`), `element` (readonly
   `FilterElementInterface`), `type` (readonly `?string`)
+
+### `ListTransformerEvent`
+Dispatched once per list driver class when its transformer map is configured.
+- **Use Case:** Registering transformers for additional source classes, or replacing the driver's
+  `ListModel` transformer.
+- **Class:** `HeimrichHannot\FlareBundle\Event\ListTransformerEvent`
+- **Properties:** `transformers` (readonly `TransformerResolver`), `driver` (readonly
+  `ListDriverInterface`)
 
 ## 3. List View Lifecycle
 
@@ -131,8 +139,21 @@ object is identical to the base event.
 | `flare.filter_element.{type}.transformers` | `FilterTransformerEvent` |
 | `flare.form.{formName}.build` | `FilterFormBuildEvent` |
 | `flare.list.{type}.build` | `ListBuildEvent` |
+| `flare.list.{type}.transformers` | `ListTransformerEvent` |
 | `flare.filter_element.{type}.dca` | `ElementDcaEvent` (filter elements) |
-| `flare.list.{type}.dca` | `ElementDcaEvent` (list types) |
+| `flare.list.{type}.dca` | `ElementDcaEvent` (list drivers) |
+
+How `{type}` is derived:
+
+- **`flare.list.{type}.build` / `.transformers`** look the driver instance up in the
+  `ListDriverRegistry` and fire once per type alias it is registered under (a driver registered under
+  several aliases dispatches once per alias). An inline driver instance that is not registered fires no
+  named events — the base event still fires.
+- **`flare.filter_element.{type}.building` / `.built` / `.form_built` / `.transformers`** use the
+  filter's `type` — the registered alias captured when the filter was created from one (e.g. via
+  `FilterFactory`). Filters constructed around a plain element instance have no `type` and fire no
+  named events.
+- **`.dca`** events run in the backend and use the type alias stored on the record being edited.
 
 Example — listen only to the build of the form named `my_form`:
 

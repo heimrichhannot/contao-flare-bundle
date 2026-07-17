@@ -4,10 +4,10 @@ sidebar_position: 6
 
 # Contracts Reference
 
-Flare exposes a set of small interfaces that opt a filter element, list type, or helper object into specific
+Flare exposes a set of small interfaces that opt a filter element, list driver, or helper object into specific
 behavior.
 
-Most custom filter elements extend `AbstractFilterElement` and most custom list types extend `AbstractListType`.
+Most custom filter elements extend `AbstractFilterElement` and most custom list drivers extend `AbstractListDriver`.
 Those base classes already implement several contracts with no-op or default behavior, so you only need to override
 the contracts that matter for your type.
 
@@ -24,16 +24,19 @@ depth by the [custom filter elements guide](../filter-elements/index.md):
   `isOnlyIntrinsic()` — it never renders form controls, and the backend forces the intrinsic flag on its
   filter records.
 
-## 2. List Type Contracts
+## 2. List Driver Contracts
+
+These live in `HeimrichHannot\FlareBundle\Contract\ListDriver\`:
+
 - [**`BuildQueryContract`**](./build-query-contract.md): Register joins and customize the base SQL query.
-- **`BuildListContract`**: Take part in the list build lifecycle — `buildList(ListBuilder)` adds filters or
-  config overrides before the `ListSpec` is built (see the [custom list types guide](../list-types/index.md)).
+- **`BuildListContract`**: Take part in the list build lifecycle — `buildList(ListSpecBuilder)` adds filters or
+  config overrides before the `ListSpec` is built (see the [custom list drivers guide](../list-types/index.md)).
 - [**`DataContainerContract`**](./data-container-contract.md): Resolve the list record's `dc` value during backend
   editing.
 
 ## 3. General Contracts
 
-These apply to filter elements and list types alike:
+These apply to filter elements and list drivers alike:
 
 - **`OptionsContract`**: Declare a canonical config schema with Symfony's `OptionsResolver`
   (`configureOptions()`).

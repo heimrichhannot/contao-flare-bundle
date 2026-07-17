@@ -1,17 +1,17 @@
 # BuildQueryContract
 
-The `BuildQueryContract` defines how a list type registers joins and customizes its base SQL query structure.
+The `BuildQueryContract` defines how a list driver registers joins and customizes its base SQL query structure.
 
-**Interface:** `HeimrichHannot\FlareBundle\Contract\ListType\BuildQueryContract`
+**Interface:** `HeimrichHannot\FlareBundle\Contract\ListDriver\BuildQueryContract`
 
-`AbstractListType` already implements this contract with no-op methods, so most list types only override the parts they
-need.
+`AbstractListDriver` already implements this contract with no-op methods, so most list drivers only override the parts
+they need.
 
 ## Lifecycle
 
 Before your methods run, Flare creates the query context with:
 
-- A main table taken from `ListSpec::$dc` or the `dataContainer` configured on the list type descriptor
+- The list's main table (`ListSpec::getDataContainerName()`, definitively resolved when the spec was created)
 - `main` as the default table alias
 - `SELECT main.*`
 - `GROUP BY main.id`

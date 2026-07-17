@@ -278,15 +278,16 @@ public function isOnlyIntrinsic(): bool
 ## 9. Inline Filters Without a Service
 
 `Filter` (`HeimrichHannot\FlareBundle\Filter\Filter`) is an immutable value object pairing a filter
-element — a registered type alias or an inline instance — with its canonical config. For one-off filters
-that don't warrant a registered element, construct one directly:
+element instance with its canonical config. For one-off filters that reuse a registered element, create
+one through the `FilterFactory` service (`HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory`) —
+it resolves a registered type alias to its element service and records the alias as the filter's `type`
+(which is what the `flare.filter_element.{type}.*` named events key on):
 
 ```php
 use HeimrichHannot\FlareBundle\Filter\Element\BooleanFilterElement;
-use HeimrichHannot\FlareBundle\Filter\Filter;
 
-$filter = new Filter(
-    type: BooleanFilterElement::TYPE,
+$filter = $this->filterFactory->create(
+    element: BooleanFilterElement::TYPE,
     config: [
         'intrinsic' => true,
         'field' => 'featured',
@@ -295,13 +296,18 @@ $filter = new Filter(
 );
 ```
 
+`create()` also accepts a `FilterElementInterface` instance — as does `new Filter(element: ...)`
+directly — for elements that are not registered as a service at all (see the anonymous-class example
+under [Consuming Filter Types](../filter-types.md#4-consuming-filter-types)). Such filters have no
+`type` alias and fire no named events.
+
 The `config` array must satisfy the element's `configureOptions()` schema — no DCA row or transformer is
 involved. An optional `data` bag supplies runtime values in the same shape `buildFilter()` receives
 (single-field elements read `FilterContext::SINGLE_VALUE`); submitted form data takes precedence over it.
 Use the `with*()` methods (`withConfig()`, `withData()`, `withAlias()`, `withTargetAlias()`, ...) to derive
 variants — `Filter` is immutable, so they return new instances.
 
-Add programmatic filters to a list while it is being built — from a list type's `buildList()` hook or a
-[`ListBuildEvent`](../events.md) listener via `ListBuilder::addFilter()` — or derive a new spec from an
-existing one via `ListSpec::withFilter()`. See [Custom List Types](../list-types/index.md) for the build
+Add programmatic filters to a list while it is being built — from a list driver's `buildList()` hook or a
+[`ListBuildEvent`](../events.md) listener via `ListSpecBuilder::addFilter()` — or derive a new spec from an
+existing one via `ListSpec::withFilter()`. See [Custom List Drivers](../list-types/index.md) for the build
 lifecycle.

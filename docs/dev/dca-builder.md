@@ -5,7 +5,7 @@ sidebar_position: 5
 
 # Backend DCA Building
 
-List types and filter elements assemble their backend palettes and field tweaks at runtime by implementing
+List drivers and filter elements assemble their backend palettes and field tweaks at runtime by implementing
 `Contract\DcaContract`:
 
 ```php
@@ -21,7 +21,8 @@ FLARE's `loadDataContainer` listener collects the configuration declared here (p
 
 :::info[Changed in v0.2]
 
-This replaces the removed `palette:` parameter of `#[AsFilterElement]` / `#[AsListType]` and the removed
+This replaces the removed `palette:` parameter of `#[AsFilterElement]` / `#[AsListType]` (now
+`#[AsListDriver]`) and the removed
 `#[AsFilterCallback]` / `#[AsListCallback]` DCA callback attributes. See
 [Migrating from v0.1](../migrating-from-v0.1.md) for the full mapping.
 
@@ -100,12 +101,12 @@ option lookups stay lazy.
 
 ## 5. Modifying Another Type's DCA
 
-To adjust the backend configuration of an element or list type you don't own, listen to `ElementDcaEvent`
+To adjust the backend configuration of an element or list driver you don't own, listen to `ElementDcaEvent`
 (`HeimrichHannot\FlareBundle\Event\ElementDcaEvent`, readonly properties `$dca` and `$context`). It is
 dispatched after the element's own `buildDca()` ran, under a name specific to the type:
 
 - `flare.filter_element.{type}.dca` for filter elements (on `tl_flare_filter`)
-- `flare.list.{type}.dca` for list types (on `tl_flare_list`)
+- `flare.list.{type}.dca` for list drivers (on `tl_flare_list`)
 
 ```php
 use HeimrichHannot\FlareBundle\Event\ElementDcaEvent;

@@ -108,7 +108,7 @@ public function buildFilter(FilterBuilderInterface $builder, FilterContext $cont
 ```
 
 **Programmatically**, via an [inline filter](./filter-elements/index.md#9-inline-filters-without-a-service)
-whose element emits the call — added to a list through `ListBuilder::addFilter()` or
+whose element emits the call — added to a list through `ListSpecBuilder::addFilter()` or
 `ListSpec::withFilter()`:
 
 ```php
@@ -119,7 +119,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 
 $filter = new Filter(
-    type: new class implements FilterElementInterface {
+    element: new class implements FilterElementInterface {
         public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 
         public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void

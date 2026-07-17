@@ -30,8 +30,8 @@ public function configureOptions(OptionsResolver $resolver): void
 - **Filter elements** (`AbstractFilterElement`) declare their canonical config schema through this
   contract; FLARE's `FilterOptionsResolver` resolves every filter's config against it. The schema is
   paired with the element's transformers (`TransformerContract`), which translate stored sources onto it.
-- **List types** (`AbstractListType`) declare their type schema through this contract; it is resolved on
-  top of the framework-owned `BaseListOptions` schema by the `ListOptionsResolver`.
+- **List drivers** (`AbstractListDriver`) declare their driver schema through this contract; it is resolved
+  on top of the framework-owned `BaseListOptions` schema by the `ListOptionsResolver`.
 - **Filter types** declare `configureOptions()` directly on `FilterTypeInterface` (not via this
   contract); the options passed to `FilterBuilderInterface::add()` are validated against it.
 

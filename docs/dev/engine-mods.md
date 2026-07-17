@@ -45,11 +45,15 @@ use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Engine\Mod\AbstractMod;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class BooleanTrueMod extends AbstractMod
 {
+    public function __construct(
+        private readonly FilterFactory $filterFactory,
+    ) {}
+
     public static function getType(): string
     {
         return 'app.boolean_true';
@@ -63,8 +67,8 @@ class BooleanTrueMod extends AbstractMod
 
     public function __invoke(Engine $engine, array $options): void
     {
-        $filter = new Filter(
-            type: SimpleEquationFilterElement::TYPE,
+        $filter = $this->filterFactory->create(
+            element: SimpleEquationFilterElement::TYPE,
             config: [
                 'intrinsic' => true,
                 'left' => $options['field'],

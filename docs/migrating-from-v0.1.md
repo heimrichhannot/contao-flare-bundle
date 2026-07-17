@@ -23,13 +23,16 @@ For the exhaustive list of deleted APIs, see [Removed in v0.2](./removed-in-v0.2
 | `Specification\FilterDefinition`, `Collection\FilterDefinitionCollection` | `Filter\Filter` — a single immutable value object; see [Filter Pipeline](./spec/filtering.md) |
 | `FilterCollector\*` | `Filter\Collector\*`; `collect()` now returns `array<string\|int, Filter>\|null` |
 | `Form\Type\DateRangeFilterType` (Symfony form type) | `Form\Type\DateRangeFormType` — renamed; note that `Filter\Type\DateRangeFilterType` now names a *query* filter type instead |
+| `ListType\ListTypeInterface`, `ListType\AbstractListType` | `List\Driver\ListDriverInterface`, `List\Driver\AbstractListDriver` — "list types" are implemented by **list drivers**; the registered type aliases (e.g. `flare_news`) are unchanged |
+| `ListType\NewsListType`, `ListType\GenericDataContainerListType`, ... | `List\Driver\NewsListDriver`, `List\Driver\GenericDataContainerListDriver`, ... — built-in drivers renamed accordingly (see [built-in list types](./reference/list-types.md)) |
+| `Contract\ListType\*` | `Contract\ListDriver\*`; `DataContainerContract::getDataContainerName()` is now `resolveDataContainerTable()` — the old name lives on `ListDriverInterface` and resolves the runtime table from canonical config |
 
 ## Attributes
 
 | v0.1 | v0.2 |
 |---|---|
 | `#[AsFilterElement(type:, formType:, palette:, method:, isTargeted:)]` | `#[AsFilterElement(type:, isTargeted:)]` — form type moves into `buildForm()`, palette into `buildDca()`, the invoked method is always `buildFilter()`; always-intrinsic elements implement `IntrinsicContract` |
-| `#[AsListType(type:, dataContainer:, palette:)]` | `#[AsListType(type:, dataContainer:)]` — palette moves into `buildDca()` |
+| `#[AsListType(type:, dataContainer:, palette:)]` | `#[AsListDriver(type:, dataContainer:)]` — renamed; palette moves into `buildDca()`; `dataContainer` is only a backend default for new records |
 | `#[AsFilterInvoker]` | Removed — branch on `$context->engineContext` inside `buildFilter()` |
 | `#[AsFilterCallback]`, `#[AsListCallback]`, `#[AsFlareCallback]` | Removed — use [`buildDca()` / `ElementDcaEvent`](./dev/dca-builder.md) |
 
@@ -77,9 +80,12 @@ New interfaces: `FilterElementInterface` (required), `OptionsContract` (config s
 
 ## ListSpecification → ListSpec
 
-`ListSpecification` is replaced by the immutable `List\ListSpec`, built by the `List\ListBuilder`
-(see [List Specs & Filters](./spec/specifications.md)). Filters are a keyed `array<string, Filter>`
-instead of a `FilterDefinitionCollection`. While a list is being built (a list type's `buildList()` hook
+`ListSpecification` is replaced by the immutable `List\ListSpec`, built by the `List\ListSpecBuilder`
+(see [List Specs & Filters](./spec/specifications.md)); programmatic construction goes through the
+`ListSpecFactory` service, which accepts a driver instance or a registered type alias and resolves the
+list's data container definitively. The spec carries the driver instance as `$spec->driver`; the main
+table is `$spec->getDataContainerName()`. Filters are a keyed `array<string, Filter>`
+instead of a `FilterDefinitionCollection`. While a list is being built (a driver's `buildList()` hook
 or a `ListBuildEvent` listener), use the mutable builder; on a finished spec, use the withers:
 
 | v0.1 | v0.2 |
@@ -91,10 +97,11 @@ or a `ListBuildEvent` listener), use the mutable builder; on a finished spec, us
 | `$definition->forceTargetAlias('alias')` | `$filter->withTargetAlias('alias')` — **returns a new instance** (`Filter` is immutable) |
 
 Element `define()` factories (e.g. `PublishedFilterElement::define()`,
-`SimpleEquationFilterElement::define(...)`) were removed: construct a
-[`Filter`](./dev/filter-elements/index.md#9-inline-filters-without-a-service) directly with the element's
-type alias and canonical config, e.g.
-`new Filter(element: PublishedFilterElement::TYPE, config: ['intrinsic' => true, ...])`.
+`SimpleEquationFilterElement::define(...)`) were removed: create a
+[`Filter`](./dev/filter-elements/index.md#9-inline-filters-without-a-service) through the `FilterFactory`
+service with the element's type alias and canonical config, e.g.
+`$filterFactory->create(element: PublishedFilterElement::TYPE, config: ['intrinsic' => true, ...])` —
+or construct `new Filter(element: $elementInstance, ...)` directly around an element instance.
 
 ## Before / After
 

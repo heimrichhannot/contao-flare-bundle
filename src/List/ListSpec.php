@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\List;
 
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
@@ -95,11 +96,14 @@ final readonly class ListSpec
         );
     }
 
-    public function hasFilterOfType(string $elementType): bool
+    /**
+     * @param class-string<FilterElementInterface> $class
+     */
+    public function hasFilterInstance(string $class): bool
     {
         foreach ($this->filters as $filter)
         {
-            if ($filter->type === $elementType) {
+            if ($filter->element instanceof $class) {
                 return true;
             }
         }

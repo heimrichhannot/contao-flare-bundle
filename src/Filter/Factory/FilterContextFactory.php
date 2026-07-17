@@ -16,7 +16,7 @@ use HeimrichHannot\FlareBundle\List\ListSpec;
  * Builds the invocation context handed to filter elements, resolving the filter's
  * canonical config through the element's declared schema.
  */
-readonly class FilterContextFactory
+final readonly class FilterContextFactory
 {
     public function __construct(
         private FilterOptionsResolver $filterOptionsResolver,

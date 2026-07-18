@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\DependencyInjection\Attribute;
 #[\Attribute(\Attribute::TARGET_CLASS | \Attribute::IS_REPEATABLE)]
 class AsListDriver
 {
-    public const TAG = 'huh.flare.list_type';
+    public const TAG = 'huh.flare.list_driver';
 
     public ?string $type;
     public array $attributes;

@@ -23,9 +23,9 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 abstract class AbstractListDriver implements
     ListDriverInterface, BuildListContract, BuildQueryContract, DcaContract, OptionsContract, TransformerContract
 {
-    public function getDataContainerName(array $config): string
+    public function resolveDcTable(string $type, array $config, array $attributes): string
     {
-        return (string) ($config['dc'] ?? '');
+        return ((string) ($config['dc'] ?? '') ?: (string) ($attributes['dataContainer'] ?? ''));
     }
 
     /**

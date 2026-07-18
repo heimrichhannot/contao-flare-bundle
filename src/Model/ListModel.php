@@ -19,6 +19,11 @@ class ListModel extends Model implements PtableInferrableInterface
 
     protected static $strTable = ListContainer::TABLE_NAME;
 
+    public function getListDriverType(): ?string
+    {
+        return $this->type;
+    }
+
     public function getAutoItemField(): string
     {
         return $this->fieldAutoItem ?: DcaHelper::tryGetColumnName($this->dc, 'alias', 'id');

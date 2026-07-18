@@ -18,6 +18,6 @@ class FilterTransformerEvent extends Event
     public function __construct(
         public readonly TransformerResolver    $transformers,
         public readonly FilterElementInterface $element,
-        public readonly ?string                $type,
+        public readonly string                 $type,
     ) {}
 }

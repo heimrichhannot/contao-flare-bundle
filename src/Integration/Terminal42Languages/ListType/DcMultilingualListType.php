@@ -8,13 +8,13 @@ use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\CoreBundle\String\SimpleTokenParser;
 use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Contract\ListDriver\DataContainerContract;
+use HeimrichHannot\FlareBundle\Contract\ListDriver\OnSubmitDcContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 #[AsListDriver(type: self::TYPE)]
-class DcMultilingualListType extends AbstractListDriver implements DataContainerContract
+class DcMultilingualListType extends AbstractListDriver implements OnSubmitDcContract
 {
     public const TYPE = 'flare_generic_dc_multilingual';
     public const DEFAULT_PALETTE = <<<'PALETTE'
@@ -37,7 +37,7 @@ class DcMultilingualListType extends AbstractListDriver implements DataContainer
         return $this->simpleTokenParser;
     }
 
-    public function resolveDataContainerTable(array $row, DataContainer $dc): string
+    public function resolveDcOnSubmit(array $row, DataContainer $dc): string
     {
         return $row['dc'] ?? '';
     }

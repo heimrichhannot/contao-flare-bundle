@@ -26,7 +26,7 @@ class FilterModel extends Model implements PtableInferrableInterface
         return \sprintf('%s.id=%s', static::$strTable, $this->id);
     }
 
-    public function getFilterType(): string
+    public function getFilterElementType(): string
     {
         return (string) $this->type;
     }

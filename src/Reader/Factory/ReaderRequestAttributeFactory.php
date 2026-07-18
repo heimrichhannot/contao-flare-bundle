@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Reader\Factory;
 
 use Contao\Model;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Reader\ReaderRequestAttribute;
 
 final readonly class ReaderRequestAttributeFactory
 {
-    public function __construct(
-        private ListSpecBuilderFactory $listFactory,
-    ) {}
+    public function createFromModels(Model $displayModel, ListModel $listModel): ReaderRequestAttribute
+    {
+        return new ReaderRequestAttribute($displayModel, $listModel);
+    }
 
     public function createFromData(array $data): ?ReaderRequestAttribute
     {
@@ -30,16 +30,14 @@ final readonly class ReaderRequestAttributeFactory
             return null;
         }
 
-        /** @var Model $model */
-        $model = $modelClass::findByPk($modelId);
+        /** @var Model $displayModel */
+        $displayModel = $modelClass::findByPk($modelId);
         $listModel = ListModel::findByPk($listId);
 
-        if (!$model || !$listModel) {
+        if (!$displayModel || !$listModel) {
             throw new \InvalidArgumentException('Invalid data for ReaderRequestAttribute unmarshalling.');
         }
 
-        $spec = $this->listFactory->createFromListModel($listModel)->build();
-
-        return new ReaderRequestAttribute($model, $spec);
+        return new ReaderRequestAttribute($displayModel, $listModel);
     }
 }

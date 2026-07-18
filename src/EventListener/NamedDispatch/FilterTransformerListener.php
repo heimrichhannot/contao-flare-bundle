@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\EventListener\NamedDispatch;
 
 use HeimrichHannot\FlareBundle\Event\FilterTransformerEvent;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -17,10 +18,6 @@ readonly class FilterTransformerListener
     #[AsEventListener(priority: -200)]
     public function __invoke(FilterTransformerEvent $event): void
     {
-        if (!$event->type) {
-            return;
-        }
-
         $this->eventDispatcher->dispatch(event: $event, eventName: "flare.filter_element.{$event->type}.transformers");
     }
 }

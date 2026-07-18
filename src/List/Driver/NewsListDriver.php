@@ -14,15 +14,21 @@ use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Query\SqlJoinStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 
-#[AsListDriver(type: self::TYPE, dataContainer: 'tl_news')]
+#[AsListDriver(type: self::TYPE, dataContainer: self::DATA_CONTAINER)]
 class NewsListDriver extends AbstractListDriver
 {
     public const TYPE = 'flare_news';
+    public const DATA_CONTAINER = 'tl_news';
     public const ALIAS_ARCHIVE = 'news_archive';
 
     public function __construct(
         private readonly FilterFactory $filterFactory,
     ) {}
+
+    public function resolveDcTable(string $type, array $config, array $attributes): string
+    {
+        return self::DATA_CONTAINER;
+    }
 
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {

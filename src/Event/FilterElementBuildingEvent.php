@@ -14,37 +14,9 @@ class FilterElementBuildingEvent extends Event
      * @param array<string, mixed> $data
      */
     public function __construct(
-        private readonly FilterContext          $context,
-        private readonly FilterBuilderInterface $builder,
-        private readonly array                  $data = [],
-        private bool                            $shouldBuild = true,
+        public readonly FilterContext          $context,
+        public readonly FilterBuilderInterface $builder,
+        public readonly array                  $data = [],
+        public bool                            $shouldBuild = true,
     ) {}
-
-    public function getContext(): FilterContext
-    {
-        return $this->context;
-    }
-
-    public function getBuilder(): FilterBuilderInterface
-    {
-        return $this->builder;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function getData(): array
-    {
-        return $this->data;
-    }
-
-    public function shouldBuild(): bool
-    {
-        return $this->shouldBuild;
-    }
-
-    public function setShouldBuild(bool $shouldBuild): void
-    {
-        $this->shouldBuild = $shouldBuild;
-    }
 }

@@ -11,39 +11,14 @@ use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 
 class ReaderPageMetaEvent
 {
-    private ReaderPageMeta $pageMeta;
+    public ReaderPageMeta $pageMeta;
 
     public function __construct(
-        private readonly ContentModel $contentModel,
-        private readonly Model        $displayModel,
-        private readonly ListSpec     $list,
-        ?ReaderPageMeta               $pageMeta = null,
+        public readonly ContentModel $contentModel,
+        public readonly Model        $displayModel,
+        public readonly ListSpec     $list,
+        ?ReaderPageMeta              $pageMeta = null,
     ) {
         $this->pageMeta = $pageMeta ?? new ReaderPageMeta();
-    }
-
-    public function getContentModel(): ContentModel
-    {
-        return $this->contentModel;
-    }
-
-    public function getDisplayModel(): Model
-    {
-        return $this->displayModel;
-    }
-
-    public function getList(): ListSpec
-    {
-        return $this->list;
-    }
-
-    public function getPageMeta(): ReaderPageMeta
-    {
-        return $this->pageMeta;
-    }
-
-    public function setPageMeta(ReaderPageMeta $pageMeta): void
-    {
-        $this->pageMeta = $pageMeta;
     }
 }

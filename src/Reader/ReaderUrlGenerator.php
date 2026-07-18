@@ -34,6 +34,6 @@ readonly class ReaderUrlGenerator implements ReaderUrlGeneratorInterface
             )
         );
 
-        return $event->getUrl();
+        return $event->url;
     }
 }

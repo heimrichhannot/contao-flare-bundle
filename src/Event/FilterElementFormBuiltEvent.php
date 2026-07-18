@@ -21,20 +21,10 @@ use Symfony\Contracts\EventDispatcher\Event;
 class FilterElementFormBuiltEvent extends Event
 {
     public function __construct(
-        private readonly FilterFormBuilderInterface $builder,
-        private readonly FilterContext              $context,
-        private bool                                $cancelled = false,
+        public readonly FilterFormBuilderInterface $builder,
+        public readonly FilterContext              $context,
+        private bool                               $cancelled = false,
     ) {}
-
-    public function getBuilder(): FilterFormBuilderInterface
-    {
-        return $this->builder;
-    }
-
-    public function getContext(): FilterContext
-    {
-        return $this->context;
-    }
 
     public function cancel(): void
     {

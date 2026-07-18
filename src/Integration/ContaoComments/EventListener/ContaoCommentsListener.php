@@ -32,8 +32,7 @@ readonly class ContaoCommentsListener
     #[AsEventListener]
     public function onReaderBuilt(ReaderRenderEvent $event): void
     {
-        $list = $event->getList();
-        if (!($list->config['comments_enabled'] ?? false)) {
+        if (!($event->list->config['comments_enabled'] ?? false)) {
             return;
         }
 
@@ -44,7 +43,7 @@ readonly class ContaoCommentsListener
         }
 
         /** @var NewsModel $newsModel */
-        $newsModel = $event->getDisplayModel();
+        $newsModel = $event->displayModel;
         if (!$newsModel instanceof NewsModel) {
             return;
         }
@@ -60,7 +59,7 @@ readonly class ContaoCommentsListener
 
         $notifies = [];
 
-        if ($list->config['comments_sendNativeEmails'] ?? false)
+        if ($event->list->config['comments_sendNativeEmails'] ?? false)
         {
             if ($archiveModel->notify !== 'notify_author'
                 && isset($GLOBALS['TL_ADMIN_EMAIL']))
@@ -78,7 +77,7 @@ readonly class ContaoCommentsListener
         $config = new \stdClass();
         $config->perPage = $archiveModel->perPage;
         $config->order = $archiveModel->sortOrder;
-        $config->template = $event->getContentModel()->com_template ?: null;
+        $config->template = $event->contentModel->com_template ?: null;
         $config->requireLogin = $archiveModel->requireLogin;
         $config->disableCaptcha = $archiveModel->disableCaptcha;
         $config->bbcode = $archiveModel->bbcode;

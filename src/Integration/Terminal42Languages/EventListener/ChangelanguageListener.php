@@ -210,21 +210,19 @@ class ChangelanguageListener
     #[AsEventListener(priority: 220)]
     public function onListViewDetailsPageUrlGenerated(DetailsPageUrlGeneratedEvent $event): void
     {
-        $eventPage = $event->getPage();
-
-        if (!$langPage = $this->findPageForLanguage($eventPage)) {
+        if (!$langPage = $this->findPageForLanguage($event->page)) {
             return;
         }
 
         /** @noinspection PhpCastIsUnnecessaryInspection */
-        if ((int) $langPage->id === (int) $eventPage->id) {
+        if ((int) $langPage->id === (int) $event->page->id) {
             return;
         }
 
-        $url = $langPage->getAbsoluteUrl('/' . Str::urlEncodePath($event->getAutoItem()));
+        $url = $langPage->getAbsoluteUrl('/' . Str::urlEncodePath($event->autoItem));
 
-        $event->setPage($langPage);
-        $event->setUrl($url);
+        $event->page = $langPage;
+        $event->url = $url;
     }
 
     private function findPageForLanguage(PageModel $page): ?PageModel

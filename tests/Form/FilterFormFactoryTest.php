@@ -55,7 +55,7 @@ final class FilterFormFactoryTest extends TestCase
     private function createForm(array $filters): FormInterface
     {
         $driver = new class implements ListDriverInterface {
-            public function getDataContainerName(array $config): string
+            public function resolveDcTable(string $type, array $config, array $attributes): string
             {
                 return (string) ($config['dc'] ?? '');
             }
@@ -63,8 +63,9 @@ final class FilterFormFactoryTest extends TestCase
 
         $list = new ListSpec(
             driver: $driver,
+            type: 'test_list',
+            dc: 'tl_test',
             filters: $filters,
-            config: ['dc' => 'tl_test'],
         );
 
         $context = new class implements ContextInterface, FormContextInterface {
@@ -120,7 +121,7 @@ final class FilterFormFactoryTest extends TestCase
             $builder->addEventListener(FormEvents::POST_SUBMIT, static function (): void {});
         });
 
-        $form = $this->createForm(['suche' => new Filter(element: $element, alias: 'suche')]);
+        $form = $this->createForm(['suche' => new Filter(element: $element, type: 'test_element', alias: 'suche')]);
 
         $this->assertTrue($form->has('suche'));
 
@@ -143,7 +144,7 @@ final class FilterFormFactoryTest extends TestCase
             $builder->add('extra', TextType::class, ['required' => false]);
         });
 
-        $form = $this->createForm(['suche' => new Filter(element: $element, alias: 'suche')]);
+        $form = $this->createForm(['suche' => new Filter(element: $element, type: 'test_element', alias: 'suche')]);
 
         $child = $form->get('suche');
 
@@ -161,7 +162,7 @@ final class FilterFormFactoryTest extends TestCase
             $builder->addEventListener(FormEvents::POST_SUBMIT, static function (): void {});
         });
 
-        $form = $this->createForm(['range' => new Filter(element: $element, alias: 'range')]);
+        $form = $this->createForm(['range' => new Filter(element: $element, type: 'test_element', alias: 'range')]);
 
         $child = $form->get('range');
 
@@ -178,7 +179,7 @@ final class FilterFormFactoryTest extends TestCase
     {
         $element = $this->element(static function (): void {});
 
-        $form = $this->createForm(['empty' => new Filter(element: $element, alias: 'empty')]);
+        $form = $this->createForm(['empty' => new Filter(element: $element, type: 'test_element', alias: 'empty')]);
 
         $this->assertFalse($form->has('empty'));
     }
@@ -189,7 +190,7 @@ final class FilterFormFactoryTest extends TestCase
             $builder->single(TextType::class);
         });
 
-        $form = $this->createForm(['x' => new Filter(element: $element, alias: '_.tl_flare_filter.1')]);
+        $form = $this->createForm(['x' => new Filter(element: $element, type: 'test_element', alias: '_.tl_flare_filter.1')]);
 
         $this->assertSame(0, \count($form));
     }
@@ -205,7 +206,7 @@ final class FilterFormFactoryTest extends TestCase
             $builder->single(TextType::class);
         });
 
-        $form = $this->createForm(['suche' => new Filter(element: $element, alias: 'suche')]);
+        $form = $this->createForm(['suche' => new Filter(element: $element, type: 'test_element', alias: 'suche')]);
 
         $this->assertFalse($form->has('suche'));
     }

@@ -8,9 +8,11 @@ use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
+use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 final class ListSpecFactoryTest extends TestCase
 {
@@ -19,6 +21,7 @@ final class ListSpecFactoryTest extends TestCase
         return new ListSpecFactory(
             $registry ?? new ListDriverRegistry(),
             new ListOptionsResolver(new SchemaResolver()),
+            new ListTransformerResolver(new EventDispatcher()),
         );
     }
 
@@ -71,7 +74,7 @@ final class ListSpecFactoryTest extends TestCase
     public function testDriverPinnedToATableDefinesTheDcRegardlessOfConfig(): void
     {
         $driver = new class extends AbstractListDriver {
-            public function getDataContainerName(array $config): string
+            public function resolveDcTable(string $type, array $config, array $attributes): string
             {
                 return 'tl_news';
             }
@@ -80,6 +83,6 @@ final class ListSpecFactoryTest extends TestCase
         $spec = $this->createFactory()->create(driver: $driver);
 
         self::assertSame('tl_news', $spec->dc);
-        self::assertSame('tl_news', $spec->config['dc']);
+        self::assertSame('', $spec->config['dc']); // dc lives on the spec; config keeps its own value
     }
 }

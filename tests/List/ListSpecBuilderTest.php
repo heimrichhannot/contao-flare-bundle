@@ -73,7 +73,7 @@ final class ListSpecBuilderTest extends TestCase
     {
         $builder = $this->createBuilder(new EventDispatcher());
 
-        $builder->addFilter(new Filter(element: new StubFilterElement(), alias: 'x'));
+        $builder->addFilter(new Filter(element: new StubFilterElement(), type: 'stub', alias: 'x'));
         $builder->addFilter(self::filter('b'));
         $builder->removeFilter('x');
 
@@ -119,7 +119,6 @@ final class ListSpecBuilderTest extends TestCase
     {
         $builder = new ListSpecBuilder(
             specFactory: self::specFactory(),
-            transformerResolver: new ListTransformerResolver(new EventDispatcher()),
             eventDispatcher: new EventDispatcher(),
             driver: new class extends AbstractListDriver {},
             source: 'tl_flare_list.9',
@@ -145,9 +144,13 @@ final class ListSpecBuilderTest extends TestCase
         }
     }
 
-    private static function specFactory(): ListSpecFactory
+    private static function specFactory(?EventDispatcher $dispatcher = null): ListSpecFactory
     {
-        return new ListSpecFactory(new ListDriverRegistry(), new ListOptionsResolver(new SchemaResolver()));
+        return new ListSpecFactory(
+            new ListDriverRegistry(),
+            new ListOptionsResolver(new SchemaResolver()),
+            new ListTransformerResolver($dispatcher ?? new EventDispatcher()),
+        );
     }
 
     private function createBuilder(
@@ -156,8 +159,7 @@ final class ListSpecBuilderTest extends TestCase
         ?ListModel           $model = null,
     ): ListSpecBuilder {
         return new ListSpecBuilder(
-            specFactory: self::specFactory(),
-            transformerResolver: new ListTransformerResolver($dispatcher),
+            specFactory: self::specFactory($dispatcher),
             eventDispatcher: $dispatcher,
             driver: $driver ?? new class extends AbstractListDriver {},
             model: $model ?? new ListModelStub(['dc' => 'tl_test']),

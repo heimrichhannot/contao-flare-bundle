@@ -48,7 +48,7 @@ readonly class FilterExecutor
 
         foreach ($list->filters as $key => $filter)
         {
-            $context = $this->filterContextFactory->create($list, $filter, $filter->element, $options->context, $key);
+            $context = $this->filterContextFactory->create($list, $filter, $options->context, $key);
 
             $data = (array) ($options->filterValues[$key] ?? $filter->data ?? []);
 

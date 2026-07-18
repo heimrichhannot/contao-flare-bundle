@@ -11,7 +11,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 #[AutoconfigureTag(self::FLARE_FILTER_TYPE_TAG)]
 interface FilterTypeInterface
 {
-    public const FLARE_FILTER_TYPE_TAG = 'huh.flare.filter_type';
+    public const FLARE_FILTER_TYPE_TAG = 'flare.filter_type';
 
     /**
      * Configures the options for this type.

@@ -37,7 +37,7 @@ final class RegisterListDriversPass implements CompilerPassInterface
             {
                 $type = $this->getListDriverName($definition, $attributes);
 
-                $serviceId = 'huh.flare.list_driver.' . $type;
+                $serviceId = 'flare.list_driver.' . $type;
 
                 $childDefinition = new ChildDefinition((string) $reference);
                 $childDefinition->setPublic(true);
@@ -46,7 +46,7 @@ final class RegisterListDriversPass implements CompilerPassInterface
                 $attribute = new Definition(AsListDriver::class, [$type, $attributes['dataContainer'] ?? null]);
 
                 /** @see ListDriverRegistry::add() */
-                $registry->addMethodCall('add', [$reference, $attribute, $type]);
+                $registry->addMethodCall('add', [$childDefinition, $attribute, $type]);
 
                 $childDefinition->setTags($definition->getTags());
                 $container->setDefinition($serviceId, $childDefinition);

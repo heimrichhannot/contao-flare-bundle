@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter\Collector;
+namespace HeimrichHannot\FlareBundle\List\Collector;
 
 use Contao\Controller;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -23,8 +23,7 @@ readonly class ListModelFilterCollector
 {
     public function __construct(
         private EventDispatcherInterface  $eventDispatcher,
-        private FilterElementRegistry     $filterElementRegistry,
-        private FilterTransformerResolver $filterTransformerResolver,
+        private FilterFactory             $filterFactory,
         private ListDriverRegistry        $listDriverRegistry,
         private LoggerInterface           $logger,
     ) {}
@@ -54,31 +53,22 @@ readonly class ListModelFilterCollector
                 continue;
             }
 
-            $source = "{$model::getTable()}.{$model->id}";
-            $type = $model->getFilterType();
-
-            if (!$element = $this->filterElementRegistry->getService($type))
+            try
+            {
+                $filter = $this->filterFactory->createFromFilterModel($model);
+            }
+            catch (FlareException $e)
             {
                 $this->logger->warning(\sprintf(
-                    '[FLARE] No filter element registered for type "%s" — filter skipped. (%s)',
-                    $type,
-                    $source,
+                    '[FLARE] Error while creating Filter of type "%s" on [%s.%s] -- [Message] %e',
+                    $model->getFilterElementType(),
+                    $listModel::getTable(),
+                    $listModel->id,
+                    $e->getMessage(),
                 ));
 
                 continue;
             }
-
-            $config = $this->filterTransformerResolver->transform($element, $model->getFilterType(), $model)
-                ?? $model->row();
-
-            $filter = new Filter(
-                element: $element,
-                type: $model->getFilterType(),
-                config: $config,
-                alias: $model->getFilterFormName() ?: "_.{$source}",
-                targetAlias: $model->getFilterTargetAlias() ?: null,
-                source: $source,
-            );
 
             $filter = $this->eventDispatcher->dispatch(new FilterCollectedEvent($filter, $model))->filter;
 

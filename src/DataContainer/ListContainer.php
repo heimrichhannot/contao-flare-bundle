@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\DataContainer;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\Contract\ListDriver\DataContainerContract;
+use HeimrichHannot\FlareBundle\Contract\ListDriver\OnSubmitDcContract;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
@@ -43,15 +43,19 @@ class ListContainer
             return;
         }
 
-        if (($service instanceof DataContainerContract)
-            && !$expectedDataContainer = $service->resolveDataContainerTable($row, $dc))
+        $expectedDataContainer = null;
+
+        if (($service instanceof OnSubmitDcContract)
+            && !$expectedDataContainer = $service->resolveDcOnSubmit($row, $dc))
         {
             return;
         }
 
         // if no data container is set, use the default data container of the list type
-        $default = $this->listDriverRegistry->getAttribute($type)?->dataContainer;
-        $expectedDataContainer ??= \is_string($default) ? $default : null;
+        if (!$expectedDataContainer) {
+            $default = $this->listDriverRegistry->getAttribute($type)?->dataContainer;
+            $expectedDataContainer = \is_string($default) ? $default : null;
+        }
 
         if (!$expectedDataContainer) {
             throw new BadRequestHttpException(\sprintf('No data container found for list type "%s".', $type));

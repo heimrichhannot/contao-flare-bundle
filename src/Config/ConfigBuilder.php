@@ -12,9 +12,9 @@ namespace HeimrichHannot\FlareBundle\Config;
 final class ConfigBuilder implements ConfigBuilderInterface
 {
     /**
-     * @var array<string, mixed>
+     * @param array<string, mixed> $config
      */
-    private array $config = [];
+    public function __construct(private array $config = []) {}
 
     public function set(string $key, mixed $value): self
     {

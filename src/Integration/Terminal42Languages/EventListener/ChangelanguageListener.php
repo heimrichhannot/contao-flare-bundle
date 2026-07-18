@@ -270,8 +270,8 @@ class ChangelanguageListener
             return;
         }
 
-        $table = $reader->getModel()::getTable();
-        $listModel = $reader->getListModel();
+        $table = $reader->displayModel::getTable();
+        $listModel = $reader->listModel;
 
         if ($listModel->dc !== $table) {
             return;

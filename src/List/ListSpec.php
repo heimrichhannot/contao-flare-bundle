@@ -20,28 +20,27 @@ use HeimrichHannot\FlareBundle\Util\DcaHelper;
  *
  * Use {@see Factory\ListSpecFactory} to create instances — it resolves the config schema
  * and guarantees a well-defined data container.
+ *
+ * @api
  */
 final readonly class ListSpec
 {
-    /**
-     * The main data container table of the list.
-     */
-    public string $dc;
-
     /**
      * @param ListDriverInterface $driver List driver service (registered or inline).
      * @param array<string, Filter> $filters
      * @param array<string, mixed> $config Canonical config, resolved through the base and driver schemas.
      * @param string|null $source Provenance for error messages, e.g. "tl_flare_list.5".
+     *
+     * @internal Use {@see Factory\ListSpecFactory} to create instances.
      */
     public function __construct(
         public ListDriverInterface $driver,
+        public string              $type,
+        public string              $dc,
         public array               $filters = [],
         public array               $config = [],
         public ?string             $source = null,
-    ) {
-        $this->dc = (string) ($this->config['dc'] ?? '');
-    }
+    ) {}
 
     /**
      * Adds a filter. The key defaults to the filter's alias; alias-less filters receive a generated key.
@@ -77,21 +76,10 @@ final readonly class ListSpec
     {
         return new self(
             driver: $this->driver,
+            type: $this->type,
+            dc: $this->dc,
             filters: $filters,
             config: $this->config,
-            source: $this->source,
-        );
-    }
-
-    /**
-     * @param array<string, mixed> $config
-     */
-    public function withConfig(array $config): self
-    {
-        return new self(
-            driver: $this->driver,
-            filters: $this->filters,
-            config: $config,
             source: $this->source,
         );
     }
@@ -126,6 +114,8 @@ final readonly class ListSpec
     {
         return \sha1(\serialize([
             \get_class($this->driver),
+            $this->type,
+            $this->dc,
             $this->source,
             $this->config,
             \array_map(static fn (Filter $filter): array => $filter->fingerprint(), $this->filters),

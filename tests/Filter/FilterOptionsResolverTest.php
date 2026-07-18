@@ -23,7 +23,7 @@ final class FilterOptionsResolverTest extends TestCase
         $resolver = new FilterOptionsResolver(new SchemaResolver());
         $element = new ElementConfigAwareElement();
 
-        $config = $resolver->resolve(new Filter(element: $element, type: 'test', config: ['field' => 'title']), $element);
+        $config = $resolver->resolve(new Filter(element: $element, type: 'test', config: ['field' => 'title']));
 
         self::assertSame('title', $config['field']);
         self::assertFalse($config['intrinsic']);
@@ -36,7 +36,7 @@ final class FilterOptionsResolverTest extends TestCase
 
         $config = ['anything' => 'goes', 'unvalidated' => true];
 
-        self::assertSame($config, $resolver->resolve(new Filter(element: $element, type: 'test', config: $config), $element));
+        self::assertSame($config, $resolver->resolve(new Filter(element: $element, type: 'test', config: $config)));
     }
 
     public function testWrapsSchemaViolationsInFilterException(): void
@@ -47,7 +47,7 @@ final class FilterOptionsResolverTest extends TestCase
 
         try
         {
-            $resolver->resolve($filter, $element);
+            $resolver->resolve($filter);
             self::fail('Expected FilterException.');
         }
         catch (FilterException $e)

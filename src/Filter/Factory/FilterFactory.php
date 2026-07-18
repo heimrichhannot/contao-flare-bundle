@@ -64,7 +64,7 @@ final readonly class FilterFactory
         $type = $this->resolveType($filterModel->getFilterElementType(), $source);
         $element = $this->resolveElement($type, $source);
 
-        $config = $this->filterTransformerResolver->transform($element, $type, $filterModel) ?? $filterModel->row();
+        $config = $this->filterTransformerResolver->transform($element, $type, $filterModel) ?? [];
 
         return new Filter(
             element: $element,

@@ -36,7 +36,7 @@ final class RegisterFilterElementsPass implements CompilerPassInterface
             {
                 $type = $this->getFilterElementType($definition, $attributes);
 
-                $serviceId = 'huh.flare.filter_element.' . $type;
+                $serviceId = 'flare.filter_element.' . $type;
 
                 $childDefinition = new ChildDefinition((string) $reference);
                 $childDefinition->setPublic(true);
@@ -45,7 +45,7 @@ final class RegisterFilterElementsPass implements CompilerPassInterface
                 $attribute = new Definition(AsFilterElement::class, [$type, $attributes['isTargeted'] ?? null]);
 
                 /** @see FilterElementRegistry::add() */
-                $registry->addMethodCall('add', [$reference, $attribute, $type]);
+                $registry->addMethodCall('add', [$childDefinition, $attribute, $type]);
 
                 $childDefinition->setTags($definition->getTags());
                 $container->setDefinition($serviceId, $childDefinition);

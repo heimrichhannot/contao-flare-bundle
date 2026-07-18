@@ -256,7 +256,9 @@ class ChoicesBuilder
                 return $this->emptyOptionValue;
             }
 
-            if (!$alias = \array_search($choice, $this->choices, true))
+            $alias = \array_search($choice, $this->choices, true);
+
+            if ($alias === false)
             {
                 return '';
             }

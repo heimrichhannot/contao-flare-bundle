@@ -81,7 +81,7 @@ final readonly class Str
         }
 
         if ($format) {
-            \array_walk($pieces, $format);
+            $pieces = \array_map($format, $pieces);
         }
 
         return \implode($glue, $pieces);
@@ -94,9 +94,12 @@ final readonly class Str
      */
     public static function mergePalettes(?string ...$palettes): string
     {
-        $palettes = \array_filter($palettes);
-        \array_walk($palettes, static fn (string $palette): string => \trim($palette, ";, \n\r\t\v\0"));
-        return \implode(';', \array_filter($palettes));
+        $palettes = \array_filter(\array_map(
+            static fn (string $palette): string => \trim($palette, ";, \n\r\t\v\0"),
+            $palettes,
+        ));
+
+        return \implode(';', $palettes);
     }
 
     public static function isValidSqlName(?string $db_or_col_name): bool

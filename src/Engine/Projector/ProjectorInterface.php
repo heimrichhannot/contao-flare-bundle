@@ -13,9 +13,11 @@ use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
  * @template TView of ViewInterface
  * @template TContext of ContextInterface
  */
-#[AutoconfigureTag('flare.projector')]
+#[AutoconfigureTag(self::FLARE_PROJECTOR_TAG)]
 interface ProjectorInterface
 {
+    public const FLARE_PROJECTOR_TAG = 'flare.projector';
+
     /**
      * Checks if this projector supports the given context configuration.
      */

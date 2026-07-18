@@ -219,7 +219,7 @@ class Paginator extends PaginatorConfig
      */
     public function makePageNumberWindow(int $padding): array
     {
-        $maxPages = \max($padding, 0) + 1; // Ensure at least one page is shown
+        $maxPages = 2 * \max($padding, 0) + 1; // Ensure at least one page is shown
         $start = \max(1, $this->currentPage - \floor($maxPages / 2));
         $end = \min($this->getLastPageNumber(), $start + $maxPages - 1);
 

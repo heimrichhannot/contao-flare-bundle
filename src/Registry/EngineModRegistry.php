@@ -12,7 +12,7 @@ class EngineModRegistry
     private array $resolved;
 
     public function __construct(
-        #[TaggedIterator('flare.engine_mod', defaultIndexMethod: 'getType')]
+        #[TaggedIterator(ModInterface::FLARE_ENGINE_MOD_TAG, defaultIndexMethod: 'getType')]
         private readonly iterable $mods,
     ) {}
 

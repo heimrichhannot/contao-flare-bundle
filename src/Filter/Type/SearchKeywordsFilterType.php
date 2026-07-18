@@ -29,7 +29,7 @@ class SearchKeywordsFilterType extends AbstractFilterType
         foreach ($searchTermGroups ?: [] as $i => $searchTermGroup)
         {
             if (!$searchTerms = $this->makeTerms($searchTermGroup)) {
-                return;
+                continue;
             }
 
             $and = [];

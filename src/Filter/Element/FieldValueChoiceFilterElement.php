@@ -264,6 +264,8 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
             return $this->foreignValueCache[$table][$field];
         }
 
+        Controller::loadDataContainer($table);
+
         $dca = $GLOBALS['TL_DCA'][$table]['fields'][$field] ?? [];
 
         if (!$foreignKey = $dca['foreignKey'] ?? null) {

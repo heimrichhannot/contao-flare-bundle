@@ -122,7 +122,7 @@ final class ListViewController extends AbstractContentElementController
             return $this->getErrorResponse($e);
         }
 
-        $this->responseTagger->addTags(['contao.db.' . $listModel->dc]);
+        $this->responseTagger->addTags(['contao.db.' . $engine->getList()->dc]);
 
         $event = $this->eventDispatcher->dispatch(
             new ListViewRenderEvent(

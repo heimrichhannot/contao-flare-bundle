@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Context;
 
-use Contao\ContentModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Sort\SortOrderSequence;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -32,15 +31,6 @@ class InteractiveContext implements
         #[Assert\NotBlank] public string          $autoItemField = 'id',
         public ?string                            $pageParam = null,
     ) {}
-
-    public function getContentModel(): ?ContentModel
-    {
-        if ($this->contentModelId === 0) {
-            return null;
-        }
-
-        return ContentModel::findByPk($this->contentModelId);
-    }
 
     public function getFormName(): string
     {

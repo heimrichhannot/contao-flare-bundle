@@ -10,11 +10,21 @@ use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 final class FilterFactoryTest extends TestCase
 {
+    private static function factory(?FilterElementRegistry $registry = null): FilterFactory
+    {
+        return new FilterFactory(
+            $registry ?? new FilterElementRegistry(),
+            new FilterTransformerResolver(new EventDispatcher()),
+        );
+    }
+
     private static function element(): FilterElementInterface
     {
         return new class implements FilterElementInterface {
@@ -31,7 +41,7 @@ final class FilterFactoryTest extends TestCase
         $registry = new FilterElementRegistry();
         $registry->add($element, null, 'my_element');
 
-        $filter = (new FilterFactory($registry))->create(
+        $filter = self::factory($registry)->create(
             element: 'my_element',
             config: ['a' => 1],
             alias: 'foo',
@@ -43,14 +53,14 @@ final class FilterFactoryTest extends TestCase
         self::assertSame('foo', $filter->alias);
     }
 
-    public function testCreatesFromInstanceWithoutType(): void
+    public function testCreatesFromInstanceUsingItsClassNameAsType(): void
     {
         $element = self::element();
 
-        $filter = (new FilterFactory(new FilterElementRegistry()))->create(element: $element);
+        $filter = self::factory()->create(element: $element);
 
         self::assertSame($element, $filter->element);
-        self::assertNull($filter->type);
+        self::assertSame(\get_class($element), $filter->type);
     }
 
     public function testThrowsForUnknownTypeAlias(): void
@@ -58,6 +68,6 @@ final class FilterFactoryTest extends TestCase
         $this->expectException(FlareException::class);
         $this->expectExceptionMessage('Filter element type "missing" not found');
 
-        (new FilterFactory(new FilterElementRegistry()))->create(element: 'missing');
+        self::factory()->create(element: 'missing');
     }
 }

@@ -23,7 +23,7 @@ final class FilterTransformerResolverTest extends TestCase
         $resolver = new FilterTransformerResolver(new EventDispatcher());
         $element = new TransformingElement();
 
-        $config = $resolver->transform($element, 'test', new RowSource(['value' => 'x']));
+        $config = $resolver->transform($element, 'transforming', new RowSource(['value' => 'x']));
 
         self::assertSame(['value' => 'x'], $config);
     }
@@ -32,8 +32,8 @@ final class FilterTransformerResolverTest extends TestCase
     {
         $resolver = new FilterTransformerResolver(new EventDispatcher());
 
-        self::assertNull($resolver->transform(new TransformingElement(), 'test', new \stdClass()));
-        self::assertNull($resolver->transform(new PlainTransformerlessElement(), 'test', new RowSource([])));
+        self::assertNull($resolver->transform(new TransformingElement(), 'transforming', new \stdClass()));
+        self::assertNull($resolver->transform(new PlainTransformerlessElement(), 'plain', new RowSource([])));
     }
 
     public function testMemoizesBuilderAndDispatchesEventOncePerElementClass(): void
@@ -48,8 +48,8 @@ final class FilterTransformerResolverTest extends TestCase
         $resolver = new FilterTransformerResolver($dispatcher);
         $element = new TransformingElement();
 
-        $resolver->transform($element, 'test', new RowSource([]));
-        $resolver->transform($element, 'test', new RowSource([]));
+        $resolver->transform($element, 'transforming', new RowSource([]));
+        $resolver->transform($element, 'transforming', new RowSource([]));
 
         self::assertSame(1, $dispatched);
     }
@@ -69,7 +69,7 @@ final class FilterTransformerResolverTest extends TestCase
 
         $resolver = new FilterTransformerResolver($dispatcher);
 
-        $config = $resolver->transform(new PlainTransformerlessElement(), 'test', new \stdClass());
+        $config = $resolver->transform(new PlainTransformerlessElement(), 'plain', new \stdClass());
 
         self::assertSame(['external' => true], $config);
     }

@@ -61,6 +61,8 @@ final class FilterTest extends TestCase
         self::assertSame('test', $fingerprint['type']);
         self::assertSame(['a' => 1], $fingerprint['config']);
         self::assertSame('foo', $fingerprint['alias']);
-        self::assertNotSame($fingerprint, $filter->withConfig(['a' => 2])->fingerprint());
+        $changedConfig = new Filter(element: self::element(), type: 'test', config: ['a' => 2], alias: 'foo');
+
+        self::assertNotSame($fingerprint, $changedConfig->fingerprint());
     }
 }

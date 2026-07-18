@@ -96,7 +96,7 @@ readonly class FilterExecutor
             data: $data,
         ));
 
-        if (!$event->shouldBuild()) {
+        if (!$event->shouldBuild) {
             return [];
         }
 

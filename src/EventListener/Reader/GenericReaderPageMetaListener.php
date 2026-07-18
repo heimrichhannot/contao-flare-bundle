@@ -22,15 +22,13 @@ readonly class GenericReaderPageMetaListener
 
     public function __invoke(ReaderPageMetaEvent $event): void
     {
-        $list = $event->getList();
-        $contentModel = $event->getContentModel();
-        $model = $event->getDisplayModel();
+        $list = $event->list;
 
         if (!($list->config['genericPageMeta'] ?? false)) {
             return;
         }
 
-        $pageMeta = $event->getPageMeta();
+        $pageMeta = $event->pageMeta;
 
         $titleFormat = $pageMeta->getTitle() ? null : $list->config['metaTitleFormat'];
         $descriptionFormat = $pageMeta->getDescription() ? null : $list->config['metaDescriptionFormat'];
@@ -47,8 +45,8 @@ readonly class GenericReaderPageMetaListener
         ];
 
         $this->addTokensFromProperties($tokens, $list->config, prefix: 'list');
-        $this->addTokensFromProperties($tokens, $contentModel->row(), prefix: 'ce');
-        $this->addTokensFromProperties($tokens, $model->row());
+        $this->addTokensFromProperties($tokens, $event->contentModel->row(), prefix: 'ce');
+        $this->addTokensFromProperties($tokens, $event->displayModel->row());
 
         if ($titleFormat)
         {

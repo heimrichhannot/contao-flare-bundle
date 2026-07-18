@@ -28,7 +28,6 @@ use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Reader\Factory\ReaderRequestAttributeFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
-use HeimrichHannot\FlareBundle\Reader\ReaderRequestAttribute;
 use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Psr\Log\LoggerInterface;
@@ -145,7 +144,7 @@ final class ReaderController extends AbstractContentElementController
                 displayModel: $autoItemModel,
                 list: $list,
             ));
-            $pageMeta = $pageMetaEvent->getPageMeta();
+            $pageMeta = $pageMetaEvent->pageMeta;
         }
         catch (FlareException $e)
         {
@@ -175,7 +174,7 @@ final class ReaderController extends AbstractContentElementController
         $data['headline'] = Str::normalizeHeadline($contentModel->headline ?: null);
         $template->setData($data);
 
-        $this->applyPageMeta($event->getPageMeta());
+        $this->applyPageMeta($event->pageMeta);
 
         try
         {

@@ -35,7 +35,7 @@ final class RegisterListDriversPass implements CompilerPassInterface
 
             foreach ($tags as $attributes)
             {
-                $type = $this->getListTypeName($definition, $attributes);
+                $type = $this->getListDriverName($definition, $attributes);
 
                 $serviceId = 'huh.flare.list_driver.' . $type;
 
@@ -54,7 +54,7 @@ final class RegisterListDriversPass implements CompilerPassInterface
         }
     }
 
-    protected function getListTypeName(Definition $definition, array $attributes): string
+    protected function getListDriverName(Definition $definition, array $attributes): string
     {
         if ($type = (string) ($attributes['type'] ?? ''))
         {

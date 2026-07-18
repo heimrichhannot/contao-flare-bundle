@@ -95,7 +95,7 @@ final class ListDriverRegistryTest extends TestCase
 
 class RegistryDriverStub implements ListDriverInterface
 {
-    public function getDataContainerName(array $config): string
+    public function resolveDcTable(string $type, array $config, array $attributes): string
     {
         return (string) ($config['dc'] ?? '');
     }

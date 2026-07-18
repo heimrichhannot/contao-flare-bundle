@@ -21,7 +21,7 @@ final class ListSpecTest extends TestCase
         static $driver = null;
 
         return $driver ??= new class implements ListDriverInterface {
-            public function getDataContainerName(array $config): string
+            public function resolveDcTable(string $type, array $config, array $attributes): string
             {
                 return (string) ($config['dc'] ?? '');
             }
@@ -41,27 +41,27 @@ final class ListSpecTest extends TestCase
         return new Filter(element: $element, type: $type, alias: $alias);
     }
 
-    public function testDataContainerNameComesFromConfig(): void
+    private static function spec(array $config = [], ?string $source = null): ListSpec
     {
-        $spec = new ListSpec(driver: self::driver(), config: ['dc' => 'tl_test']);
-
-        self::assertSame('tl_test', $spec->dc);
-        self::assertSame('', (new ListSpec(driver: self::driver()))->dc);
+        return new ListSpec(
+            driver: self::driver(),
+            type: 'test_list',
+            dc: 'tl_test',
+            config: $config,
+            source: $source,
+        );
     }
 
     public function testWithFilterKeysByAliasByDefault(): void
     {
-        $spec = new ListSpec(driver: self::driver());
-
-        $spec = $spec->withFilter(self::filter('flare_bool', 'foo'));
+        $spec = self::spec()->withFilter(self::filter('flare_bool', 'foo'));
 
         self::assertArrayHasKey('foo', $spec->filters);
     }
 
     public function testWithFilterAcceptsExplicitKey(): void
     {
-        $spec = (new ListSpec(driver: self::driver()))
-            ->withFilter(self::filter('flare_bool', 'foo'), 'custom');
+        $spec = self::spec()->withFilter(self::filter('flare_bool', 'foo'), 'custom');
 
         self::assertArrayHasKey('custom', $spec->filters);
         self::assertArrayNotHasKey('foo', $spec->filters);
@@ -69,7 +69,7 @@ final class ListSpecTest extends TestCase
 
     public function testWithFilterGeneratesCollisionFreeKeysForAliasLessFilters(): void
     {
-        $spec = (new ListSpec(driver: self::driver()))
+        $spec = self::spec()
             ->withFilter(self::filter('a'))
             ->withFilter(self::filter('b'));
 
@@ -84,23 +84,20 @@ final class ListSpecTest extends TestCase
 
     public function testModifiersAreImmutable(): void
     {
-        $original = new ListSpec(driver: self::driver(), config: ['id' => 1]);
+        $original = self::spec(config: ['id' => 1]);
 
-        $modified = $original
-            ->withFilter(self::filter('a', 'x'))
-            ->withConfig(['id' => 2]);
+        $modified = $original->withFilter(self::filter('a', 'x'));
 
         self::assertSame([], $original->filters);
-        self::assertSame(['id' => 1], $original->config);
         self::assertNotSame($original, $modified);
-        self::assertSame(['id' => 2], $modified->config);
+        self::assertSame(['id' => 1], $modified->config);
         self::assertArrayHasKey('x', $modified->filters);
     }
 
     public function testHasFilterInstance(): void
     {
-        $spec = (new ListSpec(driver: self::driver()))
-            ->withFilter(new Filter(element: new StubFilterElement(), alias: 'p'));
+        $spec = self::spec()
+            ->withFilter(new Filter(element: new StubFilterElement(), type: 'stub', alias: 'p'));
 
         self::assertTrue($spec->hasFilterInstance(StubFilterElement::class));
         self::assertTrue($spec->hasFilterInstance(FilterElementInterface::class));
@@ -110,7 +107,7 @@ final class ListSpecTest extends TestCase
     public function testHashIsStableAndChangesWithContent(): void
     {
         $make = static fn (array $config = [], ?string $source = null): ListSpec =>
-            new ListSpec(driver: self::driver(), config: $config, source: $source);
+            self::spec(config: $config, source: $source);
 
         self::assertSame($make()->hash(), $make()->hash());
         self::assertNotSame($make()->hash(), $make(config: ['id' => 1])->hash());

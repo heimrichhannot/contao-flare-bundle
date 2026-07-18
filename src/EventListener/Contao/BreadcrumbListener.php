@@ -118,7 +118,7 @@ readonly class BreadcrumbListener
                 list: $listSpec,
             ));
 
-            $title = $pageMetaEvent->getPageMeta()->getTitle();
+            $title = $pageMetaEvent->pageMeta->getTitle();
             $item = &$items[\count($items) - 1];
 
             if ($title && $item)

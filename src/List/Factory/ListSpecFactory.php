@@ -4,18 +4,14 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\List\Factory;
 
-use Contao\Controller;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\BaseListOptions;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
-use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 
@@ -114,7 +110,7 @@ final readonly class ListSpecFactory
         {
             throw new FlareException(\sprintf(
                 'A list driver instance or registered type alias must be provided%s.',
-                $source ? " ($source)" : '',
+                $source ? " ({$source})" : '',
             ), method: __METHOD__);
         }
 
@@ -134,7 +130,7 @@ final readonly class ListSpecFactory
             ?? throw new FlareException(\sprintf(
                 'List type "%s" not found%s.',
                 $driver,
-                $source ? " ($source)" : ''
+                $source ? " ({$source})" : ''
             ), method: __METHOD__);
     }
 
@@ -147,14 +143,14 @@ final readonly class ListSpecFactory
         string              $type,
         ?string             $source = null
     ): string {
-        $attributes = $this->listDriverRegistry->getAttribute($type)?->attributes ?? [];
+        $attributes = $this->listDriverRegistry->getAttribute($type)->attributes ?? [];
 
         if (!$dc = $driver->resolveDcTable($type, $config, $attributes))
         {
             throw new FlareException(\sprintf(
                 'Failed to evaluate data container table of list type "%s"%s.',
                 $type,
-                $source ? " ($source)" : ''
+                $source ? " ({$source})" : ''
             ), method: __METHOD__);
         }
 

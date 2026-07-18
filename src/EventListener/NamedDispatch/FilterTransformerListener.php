@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\EventListener\NamedDispatch;
 
 use HeimrichHannot\FlareBundle\Event\FilterTransformerEvent;
-use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 

@@ -85,7 +85,7 @@ final readonly class FilterFactory
         {
             throw new FlareException(\sprintf(
                 'A filter element instance or registered type alias must be provided%s.',
-                $source ? " ($source)" : ""
+                $source ? " ({$source})" : ""
             ), method: __METHOD__);
         }
 
@@ -105,7 +105,7 @@ final readonly class FilterFactory
             ?? throw new FlareException(\sprintf(
                 'Filter element type "%s" not found%s',
                 $element,
-                $source ? " ($source)" : ""
+                $source ? " ({$source})" : ""
             ), method: __METHOD__);
     }
 }

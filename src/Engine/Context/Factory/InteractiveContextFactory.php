@@ -23,7 +23,7 @@ readonly class InteractiveContextFactory
     public function createFromContent(ContentModel $contentModel, ListSpec $list): InteractiveContext
     {
         $filterFormName = $contentModel->{ContentContainer::FIELD_FORM_NAME}
-            ?: ('fl' . ($list->config['id'] ?? ''));
+            ?: ('fl' . ($contentModel->id ?? ''));
 
         $paginatorConfig = new PaginatorConfig(
             itemsPerPage: (int) ($contentModel->{ContentContainer::FIELD_ITEMS_PER_PAGE} ?: 0),

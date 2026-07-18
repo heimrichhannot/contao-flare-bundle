@@ -37,7 +37,7 @@ final class RegisterListDriversPass implements CompilerPassInterface
             {
                 $type = $this->getListTypeName($definition, $attributes);
 
-                $serviceId = 'huh.flare.list_type.' . $type;
+                $serviceId = 'huh.flare.list_driver.' . $type;
 
                 $childDefinition = new ChildDefinition((string) $reference);
                 $childDefinition->setPublic(true);

@@ -18,5 +18,6 @@ class ListTransformerEvent extends Event
     public function __construct(
         public readonly TransformerResolver $transformers,
         public readonly ListDriverInterface $driver,
+        public readonly string $type,
     ) {}
 }

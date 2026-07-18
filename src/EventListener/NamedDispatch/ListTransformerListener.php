@@ -13,19 +13,15 @@ readonly class ListTransformerListener
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
-        private ListDriverRegistry       $listDriverRegistry,
     ) {}
 
     #[AsEventListener(priority: -200)]
     public function __invoke(ListTransformerEvent $event): void
     {
-        foreach ($this->listDriverRegistry->getTypes($event->driver) as $type)
-        {
-            $this->eventDispatcher->dispatch(event: $event, eventName: "flare.list.{$type}.transformers");
-
-            if ($event->isPropagationStopped()) {
-                break;
-            }
+        if (!$event->type) {
+            return;
         }
+
+        $this->eventDispatcher->dispatch(event: $event, eventName: "flare.list.{$event->type}.transformers");
     }
 }

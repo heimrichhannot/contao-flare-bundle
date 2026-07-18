@@ -26,6 +26,7 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\ViewException;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\Reader\Factory\ReaderRequestAttributeFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 use HeimrichHannot\FlareBundle\Reader\ReaderRequestAttribute;
 use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;
@@ -50,6 +51,7 @@ final class ReaderController extends AbstractContentElementController
         private readonly KernelInterface                $kernel,
         private readonly ListSpecBuilderFactory         $listFactory,
         private readonly LoggerInterface                $logger,
+        private readonly ReaderRequestAttributeFactory  $attributeFactory,
         private readonly ReaderRequestAttributeResolver $attributeResolver,
         private readonly ResponseContextAccessor        $responseContextAccessor,
         private readonly ScopeMatcher                   $scopeMatcher,
@@ -133,7 +135,8 @@ final class ReaderController extends AbstractContentElementController
 
             $errData[] = "{$autoItemModel::getTable()}.id={$autoItemModel->id}";
 
-            $this->attributeResolver->store(new ReaderRequestAttribute($autoItemModel, $list), $request);
+            $attribute = $this->attributeFactory->createFromModels($autoItemModel, $listModel);
+            $this->attributeResolver->store($attribute, $request);
             $this->entityCacheTags->tagWith($autoItemModel);
 
             /** @var ReaderPageMetaEvent $pageMetaEvent $pageMetaEvent */

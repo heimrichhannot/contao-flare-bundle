@@ -8,7 +8,7 @@ use Contao\CoreBundle\DataContainer\PaletteManipulator;
 use Contao\DataContainer;
 use Contao\Message;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Contract\ListDriver\DataContainerContract;
+use HeimrichHannot\FlareBundle\Contract\ListDriver\OnSubmitDcContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
@@ -18,7 +18,7 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsListDriver(type: self::TYPE)]
-class GenericDataContainerListDriver extends AbstractListDriver implements DataContainerContract
+class GenericDataContainerListDriver extends AbstractListDriver implements OnSubmitDcContract
 {
     public const TYPE = 'flare_generic_dc';
     public const DEFAULT_PALETTE = <<<'PALETTE'
@@ -30,7 +30,7 @@ class GenericDataContainerListDriver extends AbstractListDriver implements DataC
         private readonly TranslatorInterface $trans,
     ) {}
 
-    public function resolveDataContainerTable(array $row, DataContainer $dc): string
+    public function resolveDcOnSubmit(array $row, DataContainer $dc): string
     {
         return $row['dc'] ?? '';
     }

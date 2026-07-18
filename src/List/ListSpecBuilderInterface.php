@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 
 interface ListSpecBuilderInterface
 {
-    public function getDriver(): ListDriverInterface;
+    public function getDriver(): ListDriverInterface|string;
 
     public function getModel(): ?ListModel;
 

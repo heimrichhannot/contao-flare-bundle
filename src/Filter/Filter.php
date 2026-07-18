@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
+use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 
 /**
@@ -14,14 +15,16 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
  * element's transformer responsibility
  * ({@see \HeimrichHannot\FlareBundle\Contract\TransformerContract}).
  *
- * Use {@see Factory\FilterFactory} to create filters from a registered type alias.
+ * Use {@see Factory\FilterFactory} to create instances.
+ *
+ * @api
  */
 final readonly class Filter
 {
     /**
      * @param FilterElementInterface $element Filter element service (registered or inline).
-     * @param string|null $type Registered element type alias, if known. Only used for named
-     *   event dispatch (`flare.filter_element.{type}.*`) and targeting lookups.
+     * @param string $type Registered element type alias. Only used for named event dispatch
+     *   (`flare.filter_element.{type}.*`) and targeting lookups.
      * @param array<string, mixed> $config Canonical config (element-defined schema); scalars, arrays, and enums only.
      * @param array<string, mixed>|null $data Runtime data bag, same shape buildFilter() receives
      *   (single-field elements read {@see FilterContext::SINGLE_VALUE}). Submitted form
@@ -31,10 +34,12 @@ final readonly class Filter
      * @param string|null $targetAlias Table alias the filter's conditions apply to.
      * @param bool $targetingForced Whether the target alias applies even if the element is not marked as targeted.
      * @param string|null $source Provenance for error messages, e.g. "tl_flare_filter.42".
+     *
+     * @internal Use {@see Factory\FilterFactory} to create instances.
      */
     public function __construct(
         public FilterElementInterface $element,
-        public ?string                $type = null,
+        public string                 $type,
         public array                  $config = [],
         public ?array                 $data = null,
         public ?string                $alias = null,
@@ -42,23 +47,6 @@ final readonly class Filter
         public bool                   $targetingForced = false,
         public ?string                $source = null,
     ) {}
-
-    /**
-     * @param array<string, mixed> $config
-     */
-    public function withConfig(array $config): self
-    {
-        return new self(
-            element: $this->element,
-            type: $this->type,
-            config: $config,
-            data: $this->data,
-            alias: $this->alias,
-            targetAlias: $this->targetAlias,
-            targetingForced: $this->targetingForced,
-            source: $this->source,
-        );
-    }
 
     /**
      * @param array<string, mixed>|null $data
@@ -102,20 +90,6 @@ final readonly class Filter
             targetAlias: $targetAlias,
             targetingForced: !\is_null($targetAlias) && $forced,
             source: $this->source,
-        );
-    }
-
-    public function withSource(?string $source): self
-    {
-        return new self(
-            element: $this->element,
-            type: $this->type,
-            config: $this->config,
-            data: $this->data,
-            alias: $this->alias,
-            targetAlias: $this->targetAlias,
-            targetingForced: $this->targetingForced,
-            source: $source,
         );
     }
 

@@ -26,6 +26,11 @@ class EventsListDriver extends AbstractListDriver
         private readonly FilterFactory $filterFactory,
     ) {}
 
+    public function resolveDcTable(string $type, array $config, array $attributes): string
+    {
+        return self::DATA_CONTAINER;
+    }
+
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
         $dca->suffix(static function (string $suffix): string {

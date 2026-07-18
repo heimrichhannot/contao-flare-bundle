@@ -30,9 +30,11 @@ final class FilterTransformerResolver
     /**
      * @return array<string, mixed>|null Canonical config values, or null when no transformer matches the source.
      */
-    public function transform(FilterElementInterface $element, ?string $elementType, object $source): ?array
+    public function transform(FilterElementInterface $element, string $type, object $source): ?array
     {
-        if (!isset($this->resolvers[$element::class]))
+        $cacheKey = \sprintf('%s@%s', $type, $element::class);
+
+        if (!isset($this->resolvers[$cacheKey]))
         {
             $resolver = new TransformerResolver();
 
@@ -40,12 +42,12 @@ final class FilterTransformerResolver
                 $element->configureTransformers($resolver);
             }
 
-            $this->eventDispatcher->dispatch(new FilterTransformerEvent($resolver, $element, $elementType));
+            $this->eventDispatcher->dispatch(new FilterTransformerEvent($resolver, $element, $type));
 
-            $this->resolvers[$element::class] = $resolver;
+            $this->resolvers[$cacheKey] = $resolver;
         }
 
-        if (!$transformer = $this->resolvers[$element::class]->resolve($source)) {
+        if (!$transformer = $this->resolvers[$cacheKey]->resolve($source)) {
             return null;
         }
 

@@ -30,9 +30,11 @@ final class ListTransformerResolver
     /**
      * @return array<string, mixed>|null Canonical config values, or null when no transformer matches the source.
      */
-    public function transform(ListDriverInterface $driver, object $source): ?array
+    public function transform(ListDriverInterface $driver, string $type, object $source): ?array
     {
-        if (!isset($this->resolvers[$driver::class]))
+        $cacheKey = \sprintf('%s@%s', $type, $driver::class);
+
+        if (!isset($this->resolvers[$cacheKey]))
         {
             $resolver = new TransformerResolver();
 
@@ -40,12 +42,12 @@ final class ListTransformerResolver
                 $driver->configureTransformers($resolver);
             }
 
-            $this->eventDispatcher->dispatch(new ListTransformerEvent($resolver, $driver));
+            $this->eventDispatcher->dispatch(new ListTransformerEvent($resolver, $driver, $type));
 
-            $this->resolvers[$driver::class] = $resolver;
+            $this->resolvers[$cacheKey] = $resolver;
         }
 
-        if (!$transformer = $this->resolvers[$driver::class]->resolve($source)) {
+        if (!$transformer = $this->resolvers[$cacheKey]->resolve($source)) {
             return null;
         }
 

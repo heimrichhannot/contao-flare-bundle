@@ -7,13 +7,23 @@ namespace HeimrichHannot\FlareBundle\DependencyInjection\Factory;
 use HeimrichHannot\FlareBundle\Util\Str;
 use function Symfony\Component\String\u;
 
-class TypeNameFactory
+final readonly class TypeNameFactory
 {
-    public static function createFilterElementType(string $className): string
+    private static function createType(string $className, array $suffixes): string
     {
         $shortName = \basename(\str_replace('\\', '/', $className));
-        $trimmedName = Str::trimSubstrings($shortName, suffix: ['Controller', 'FilterElement', 'Element']);
+        $trimmedName = Str::trimSubstrings($shortName, suffix: $suffixes);
 
         return u($trimmedName)->snake()->toString();
+    }
+
+    public static function createFilterElementType(string $className): string
+    {
+        return self::createType($className, ['Controller', 'FilterElement', 'Element']);
+    }
+
+    public static function createListDriverType(string $className): string
+    {
+        return self::createType($className, ['Controller', 'ListDriver', 'Driver']);
     }
 }

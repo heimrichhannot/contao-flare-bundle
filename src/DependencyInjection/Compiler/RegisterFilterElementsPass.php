@@ -7,7 +7,6 @@ namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\DependencyInjection\Factory\TypeNameFactory;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\PriorityTaggedServiceTrait;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -36,19 +35,17 @@ final class RegisterFilterElementsPass implements CompilerPassInterface
             {
                 $type = $this->getFilterElementType($definition, $attributes);
 
-                $serviceId = 'flare.filter_element.' . $type;
-
-                $childDefinition = new ChildDefinition((string) $reference);
-                $childDefinition->setPublic(true);
-
                 /** @see AsFilterElement::__construct */
                 $attribute = new Definition(AsFilterElement::class, [$type, $attributes['isTargeted'] ?? null]);
 
                 /** @see FilterElementRegistry::add() */
-                $registry->addMethodCall('add', [$childDefinition, $attribute, $type]);
+                $registry->addMethodCall('add', [$reference, $attribute, $type]);
 
-                $childDefinition->setTags($definition->getTags());
-                $container->setDefinition($serviceId, $childDefinition);
+                $serviceId = 'flare.filter_element.' . $type;
+
+                $container
+                    ->setAlias($serviceId, (string) $reference)
+                    ->setPublic(true);
             }
         }
     }

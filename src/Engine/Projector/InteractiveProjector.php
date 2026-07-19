@@ -8,7 +8,6 @@ use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\AggregationContextFactory;
 use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
 use HeimrichHannot\FlareBundle\Engine\Context\Interface\PaginatedContextInterface;
-use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveEmptyLoader;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
@@ -20,7 +19,6 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
-use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
 use Symfony\Component\Form\FormInterface;
 

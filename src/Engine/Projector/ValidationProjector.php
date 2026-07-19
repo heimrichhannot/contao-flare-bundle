@@ -6,13 +6,11 @@ namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
-use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Reader\BackLink;
-use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
 
 /**

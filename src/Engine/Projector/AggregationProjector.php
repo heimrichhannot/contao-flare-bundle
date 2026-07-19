@@ -6,7 +6,6 @@ namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
 use HeimrichHannot\FlareBundle\Engine\Context\AggregationContext;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
-use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
 use HeimrichHannot\FlareBundle\Engine\Loader\AggregationLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\AggregationLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\AggregationView;
@@ -17,10 +16,6 @@ use HeimrichHannot\FlareBundle\List\ListSpec;
  */
 class AggregationProjector extends AbstractProjector
 {
-    public function __construct(
-        private readonly LoaderFactory $loaderFactory,
-    ) {}
-
     public function supports(ListSpec $list, ContextInterface $context): bool
     {
         return $context instanceof AggregationContext;
@@ -41,7 +36,7 @@ class AggregationProjector extends AbstractProjector
 
     protected function createLoader(AggregationLoaderConfig $config): AggregationLoaderInterface
     {
-        return $this->loaderFactory->createAggregationLoader($config);
+        return $this->getLoaderFactory()->createAggregationLoader($config);
     }
 
     protected function createView(AggregationLoaderInterface $loader): AggregationView

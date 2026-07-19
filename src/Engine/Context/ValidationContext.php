@@ -29,7 +29,7 @@ readonly class ValidationContext implements
         private ?\Closure                   $entryCache = null,
         #[Assert\PositiveOrZero] public int $jumpToReaderPageId = 0,
         #[Assert\PositiveOrZero] public int $jumpToListViewPageId = 0,
-        #[Assert\NotBlank] private string   $autoItemField = 'id',
+        #[Assert\NotBlank] public string    $autoItemField = 'id',
         private array                       $filterValues = [],
     ) {
         $this->paginatorConfig = new PaginatorConfig(itemsPerPage: 1);
@@ -46,11 +46,6 @@ readonly class ValidationContext implements
         }
 
         return BackLink::fromPage($pageModel);
-    }
-
-    public function getAutoItemField(): string
-    {
-        return $this->autoItemField;
     }
 
     public function getEntryCache(): array

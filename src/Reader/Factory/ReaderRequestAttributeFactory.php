@@ -30,6 +30,10 @@ final readonly class ReaderRequestAttributeFactory
             return null;
         }
 
+        if ($modelClass::getTable() !== $modelTable) {
+            return null;
+        }
+
         /** @var Model $displayModel */
         $displayModel = $modelClass::findByPk($modelId);
         $listModel = ListModel::findByPk($listId);

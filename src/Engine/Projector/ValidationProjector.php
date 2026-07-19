@@ -20,11 +20,6 @@ use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
  */
 class ValidationProjector extends AbstractProjector
 {
-    public function __construct(
-        private readonly LoaderFactory             $loaderFactory,
-        private readonly ReaderUrlGeneratorFactory $readerUrlGeneratorFactory,
-    ) {}
-
     public function supports(ListSpec $list, ContextInterface $context): bool
     {
         return $context instanceof ValidationContext;
@@ -35,7 +30,7 @@ class ValidationProjector extends AbstractProjector
         \assert($context instanceof ValidationContext, '$config must be an instance of ValidationConfig');
 
         $readerUrlConfig = $context->createReaderUrlConfig();
-        $autoItemField = $readerUrlConfig->autoItemField ?? $context->getAutoItemField();
+        $autoItemField = $readerUrlConfig->autoItemField ?? $context->autoItemField;
 
         $loader = $this->createLoader(new ValidationLoaderConfig(
             list: $list,
@@ -43,7 +38,7 @@ class ValidationProjector extends AbstractProjector
             autoItemField: $autoItemField,
         ));
 
-        $readerUrlGenerator = $this->readerUrlGeneratorFactory->create($readerUrlConfig);
+        $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($readerUrlConfig);
 
         return $this->createView(
             loader: $loader,
@@ -56,7 +51,7 @@ class ValidationProjector extends AbstractProjector
 
     protected function createLoader(ValidationLoaderConfig $config): ValidationLoaderInterface
     {
-        return $this->loaderFactory->createValidationLoader($config);
+        return $this->getLoaderFactory()->createValidationLoader($config);
     }
 
     protected function createView(

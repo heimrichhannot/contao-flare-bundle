@@ -8,7 +8,6 @@ use Contao\Controller;
 use Contao\CoreBundle\DataContainer\PaletteManipulator;
 use Contao\DataContainer;
 use Contao\Message;
-use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Contract\ListDriver\OnSubmitDcContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
@@ -18,7 +17,6 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
-use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -32,7 +30,6 @@ class GenericDataContainerListDriver extends AbstractListDriver implements OnSub
         PALETTE;
 
     public function __construct(
-        private readonly Connection          $connection,
         private readonly TranslatorInterface $trans,
         private readonly ListContainer       $listContainer,
     ) {}

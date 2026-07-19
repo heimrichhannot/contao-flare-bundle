@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\DataContainer;
 
+use Contao\Controller;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\ListDriver\OnSubmitDcContract;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
@@ -21,6 +24,25 @@ class ListContainer
         private readonly Connection         $connection,
         private readonly ListDriverRegistry $listDriverRegistry,
     ) {}
+
+    public function hasFilterConfigured(ListModel $listModel, string $filterType): bool
+    {
+        $filterTable = FilterModel::getTable();
+
+        $result = $this->connection->createQueryBuilder()
+            ->select('1')
+            ->from($filterTable)
+            ->where('pid = :pid')
+            ->andWhere('published = 1')
+            ->andWhere('tstamp > 0')
+            ->andWhere('type = :type')
+            ->setMaxResults(1)
+            ->setParameter('pid', $listModel->id)
+            ->setParameter('type', $filterType)
+            ->executeQuery();
+
+        return (bool) $result->rowCount();
+    }
 
     /* ============================= *
      *  CONFIG                       *

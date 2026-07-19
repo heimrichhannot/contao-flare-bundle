@@ -9,6 +9,9 @@ list:
         warning: "Default template selected"
         description: "Please create/select a custom template for this FLARE list."
 
+    info:
+        no_published_filter: "Entries in this list have a publication status (%target%). No publication filter is configured to account for this."
+
 filter:
     limited_scope:
         single: "This filter is limited to the following scope: %scopes%"

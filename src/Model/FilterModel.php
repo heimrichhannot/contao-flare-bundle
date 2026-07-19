@@ -63,7 +63,7 @@ class FilterModel extends Model implements PtableInferrableInterface
     public static function findByPid(int $pid, ?bool $published = null): Collection
     {
         $result = $published !== null
-            ? static::findBy(['pid=?', 'published=?'], [$pid, $published], ['order' => 'sorting'])
+            ? static::findBy(['pid=?', 'published=?', 'tstamp>0'], [$pid, $published], ['order' => 'sorting'])
             : static::findBy(['pid=?'], [$pid], ['order' => 'sorting']);
 
         if (!$result) {

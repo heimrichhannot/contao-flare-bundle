@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\List\Driver;
 
+use Contao\Controller;
 use Contao\CoreBundle\DataContainer\PaletteManipulator;
 use Contao\DataContainer;
 use Contao\Message;
+use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Contract\ListDriver\OnSubmitDcContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
+use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -27,7 +32,9 @@ class GenericDataContainerListDriver extends AbstractListDriver implements OnSub
         PALETTE;
 
     public function __construct(
+        private readonly Connection          $connection,
         private readonly TranslatorInterface $trans,
+        private readonly ListContainer       $listContainer,
     ) {}
 
     public function resolveDcOnSubmit(array $row, DataContainer $dc): string
@@ -54,12 +61,11 @@ class GenericDataContainerListDriver extends AbstractListDriver implements OnSub
             ->addField('whichPtable', 'parent_legend', PaletteManipulator::POSITION_APPEND)
         ;
 
-        $table = $listModel->dc;
-
         $inferrer = new PtableInferrer($listModel, $listModel->dc);
 
         try
         {
+            $table = $listModel->dc;
             $ptable = $inferrer->getInferredPtable();
 
             Message::addInfo(match (true) {
@@ -87,6 +93,26 @@ class GenericDataContainerListDriver extends AbstractListDriver implements OnSub
             $listModel->whichPtable_disableAutoOption();
         }
 
+        $this->checkPublishedFilter($listModel);
+
         $dca->palette($pm->applyToString(self::DEFAULT_PALETTE));
+    }
+
+    private function checkPublishedFilter(ListModel $listModel): void
+    {
+        $displayTable = $listModel->dc;
+        Controller::loadDataContainer($displayTable);
+
+        if (!isset($GLOBALS['TL_DCA'][$displayTable]['fields']['published'])) {
+            return;
+        }
+
+        if ($this->listContainer->hasFilterConfigured($listModel, PublishedFilterElement::TYPE)) {
+            return;
+        }
+
+        Message::addInfo($this->trans->trans('list.info.no_published_filter', [
+            '%target%' => "{$displayTable}.published",
+        ], 'flare'));
     }
 }

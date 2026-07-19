@@ -9,6 +9,9 @@ list:
         warning: "Standard-Template ausgewählt"
         description: "Bitte erstellen/wählen Sie ein benutzerdefiniertes Template für diese FLARE-Liste."
 
+    info:
+        no_published_filter: "Einträge dieser Liste haben einen Veröffentlichungsstatus (%target%). Es ist kein Veröffentlicht-Filter konfiguriert, der dies berücksichtigt."
+
 filter:
     limited_scope:
         single: "Dieser Filter ist ausschließlich anwendbar auf: %scopes%"

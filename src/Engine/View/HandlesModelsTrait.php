@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\View;
 
+use Contao\Controller;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 
@@ -20,7 +21,11 @@ trait HandlesModelsTrait
         if ($model = $registry->fetch($table, $id_or_alias, strAlias: $column))
             // Contao native model cache
         {
-            return $model;
+            Controller::loadDataContainer($table);
+            
+            if (!isset($GLOBALS['TL_DCA'][$table]['fields']['published']) || $model->published) {
+                return $model;
+            }
         }
 
         $modelClass = Model::getClassFromTable($table);

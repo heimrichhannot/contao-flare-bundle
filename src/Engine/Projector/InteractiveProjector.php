@@ -32,9 +32,7 @@ class InteractiveProjector extends AbstractProjector
     public function __construct(
         private readonly AggregationContextFactory $aggregationConfigFactory,
         private readonly FilterFormFactory         $filterFormFactory,
-        private readonly LoaderFactory             $loaderFactory,
         private readonly PaginatorFactory          $paginatorFactory,
-        private readonly ReaderUrlGeneratorFactory $readerUrlGeneratorFactory,
     ) {}
 
     public function supports(ListSpec $list, ContextInterface $context): bool
@@ -72,7 +70,8 @@ class InteractiveProjector extends AbstractProjector
             $loader = $this->createLoader($config);
         }
 
-        $readerUrlGenerator = $this->readerUrlGeneratorFactory->create($context->createReaderUrlConfig());
+        $readerUrlConfig = $context->createReaderUrlConfig();
+        $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($readerUrlConfig);
 
         return $this->createView(
             loader: $loader,
@@ -86,7 +85,7 @@ class InteractiveProjector extends AbstractProjector
 
     protected function createLoader(InteractiveLoaderConfig $config): InteractiveLoaderInterface
     {
-        return $this->loaderFactory->createInteractiveLoader($config);
+        return $this->getLoaderFactory()->createInteractiveLoader($config);
     }
 
     protected function createView(

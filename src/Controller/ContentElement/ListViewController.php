@@ -212,17 +212,12 @@ final class ListViewController extends AbstractContentElementController
             return new Response($e->getMessage());
         }
 
-        if (($headline = StringUtil::deserialize($model->headline, true)) && isset($headline['value'])) {
-            $unit = ($headline['unit'] ?? null) ?: 'h2';
-            $hl = \sprintf('<%s>%s</%s>', $unit, $headline['value'], $unit);
-        }
-
         return new Response(\sprintf(
-            '%s%s <span class="tl_gray">[%s, %s]</span>',
-            $hl ?? '',
-            $listModel->title,
-            $this->translator->trans($listModel->type, [], 'flare_list'),
-            $listModel->dc
+            '<div>%s</div><span>%s</span> <span class="tl_gray">[%s, %s]</span>',
+            (string) Str::formatHeadline($model->headline),
+            \strip_tags((string) $listModel->title),
+            \strip_tags($this->translator->trans($listModel->type, [], 'flare_list')),
+            \strip_tags((string) $listModel->dc)
         ));
     }
 }

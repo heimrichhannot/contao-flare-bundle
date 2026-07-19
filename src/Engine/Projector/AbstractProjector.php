@@ -6,12 +6,14 @@ namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
 use Doctrine\DBAL\Query\QueryBuilder;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
+use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
@@ -35,7 +37,9 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
     {
         return [
             ListQueryDirector::class,
+            LoaderFactory::class,
             ProjectorRegistry::class,
+            ReaderUrlGeneratorFactory::class,
             RequestStack::class,
         ];
     }
@@ -65,6 +69,16 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
     protected function getListQueryDirector(): ListQueryDirector
     {
         return $this->container->get(ListQueryDirector::class);
+    }
+
+    protected function getLoaderFactory(): LoaderFactory
+    {
+        return $this->container->get(LoaderFactory::class);
+    }
+
+    protected function getReaderUrlGeneratorFactory(): ReaderUrlGeneratorFactory
+    {
+        return $this->container->get(ReaderUrlGeneratorFactory::class);
     }
 
     /**

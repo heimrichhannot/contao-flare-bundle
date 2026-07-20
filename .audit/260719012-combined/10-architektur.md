@@ -47,11 +47,13 @@ Doku-Drift gegen den aktuellen Code: `ListBuilderFactory` heißt `ListSpecBuilde
 > 
 > **Nutzer-Antwort: PaginatorConfig nun korrekt null-safe, ValidationContext no-op-Setter ist korrekt für den Zweck.** 
 
-## A-07: Stille Alias-Kollision im Filter-Collector — Minor (claude)
-
-`$filters[$filter->alias] = $filter;` — zwei publizierte Filter derselben Liste mit gleichem Formular-Alias überschreiben sich kommentarlos; nur der letzte wird angewendet. Ein Kollisions-Warning fehlt (das Factory-Fehler-Warning existiert dagegen).
-
-- `src/List/Collector/ListModelFilterCollector.php:75`
+> ## A-07: Stille Alias-Kollision im Filter-Collector — Minor (claude)
+> 
+> `$filters[$filter->alias] = $filter;` — zwei publizierte Filter derselben Liste mit gleichem Formular-Alias überschreiben sich kommentarlos; nur der letzte wird angewendet. Ein Kollisions-Warning fehlt (das Factory-Fehler-Warning existiert dagegen).
+> 
+> - `src/List/Collector/ListModelFilterCollector.php:75`
+> 
+> **Nutzer-Antwort: Im Backend wird nun ein Fehler ausgegeben, wenn zwei Filter mit demselben Alias publiziert werden.**
 
 ## A-08: `FlareException`: `method` vs. `source` inkonsistent — Minor (claude)
 

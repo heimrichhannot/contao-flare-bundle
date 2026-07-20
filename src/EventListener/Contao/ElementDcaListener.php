@@ -6,10 +6,13 @@ namespace HeimrichHannot\FlareBundle\EventListener\Contao;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use Contao\Input;
+use Contao\Message;
+use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\Event\ElementDcaEvent;
+use HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareFilter\ListCallbacks;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -19,6 +22,7 @@ use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Applies each element's backend configuration ({@see DcaContract::configureDca()}) and
@@ -29,15 +33,17 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  * of the previous palette assembly.
  */
 #[AsHook('loadDataContainer', priority: -100)]
-readonly class ElementDcaListener
+final readonly class ElementDcaListener
 {
     public function __construct(
+        private Connection                  $connection,
         private EventDispatcherInterface    $eventDispatcher,
         private FilterElementRegistry       $filterElementRegistry,
         private ListExecutionContextFactory $listExecutionContextFactory,
         private ListSpecBuilderFactory      $listFactory,
         private ListDriverRegistry          $listDriverRegistry,
         private RequestStack                $requestStack,
+        private TranslatorInterface         $translator,
     ) {}
 
     public function __invoke(string $table): void
@@ -74,9 +80,14 @@ readonly class ElementDcaListener
         else
         {
             $filterModel = null;
-            $listModel = ListModel::findByPk($id);
-            $type = (string) ($listModel->type ?? '');
-            $service = $this->listDriverRegistry->getService($type);
+
+            if ($listModel = ListModel::findByPk($id))
+            {
+                $type = (string) ($listModel->type ?? '');
+                $service = $this->listDriverRegistry->getService($type);
+
+                $this->checkDuplicateFilterAliases($listModel);
+            }
         }
 
         if (!$listModel instanceof ListModel || !$type || $type === 'default' || \str_starts_with($type, '__')) {
@@ -118,5 +129,40 @@ readonly class ElementDcaListener
         catch (\Throwable) {}
 
         return null;
+    }
+
+    private function checkDuplicateFilterAliases(ListModel $listModel): void
+    {
+        $qTable = $this->connection->quoteIdentifier(FilterModel::getTable());
+
+        $sql = <<<SQL
+            SELECT `formAlias`
+            FROM {$qTable}
+            WHERE `pid` = :pid
+              AND `published` = 1
+              AND `tstamp` > 0
+              AND `formAlias` IS NOT NULL
+              AND `formAlias` <> ''
+            GROUP BY `formAlias`
+            HAVING COUNT(*) > 1
+        SQL;
+
+        $duplicateFormAliases = $this->connection->fetchFirstColumn($sql, [
+            'pid' => $listModel->id,
+        ]);
+
+        if (!$duplicateFormAliases) {
+            return;
+        }
+
+        /** Used in {@see ListCallbacks} to notify user of duplicate filter aliases in the Contao backend. */
+        $GLOBALS['FLARE']['duplicate_filter_aliases'] = $duplicateFormAliases;
+
+        Message::addError($this->translator->trans('list.info.duplicate_filter_alias', [
+            '%alias%' => implode(', ', \array_map(
+                static fn (string $alias): string => "\"{$alias}\"",
+                $duplicateFormAliases
+            )),
+        ], 'flare'));
     }
 }

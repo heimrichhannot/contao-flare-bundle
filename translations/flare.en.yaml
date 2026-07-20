@@ -11,6 +11,7 @@ list:
 
     info:
         no_published_filter: "Entries in this list have a publication status (%target%). No publication filter is configured to account for this."
+        duplicate_filter_alias: "Duplicate filter aliases: %alias%. The last filter overwrites the previous ones with the same alias."
 
 filter:
     limited_scope:
@@ -29,6 +30,7 @@ filter:
         intrinsic:
             yes: "This filter is intrinsic"
             no: "This filter ist not intrinsic"
+        duplicate_alias: "This filter has the alias \"%alias%\", which is already used by another filter."
 
 errors:
     missing_model: 'List model or filter model not found.'

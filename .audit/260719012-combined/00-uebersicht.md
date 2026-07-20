@@ -26,7 +26,9 @@ Seit dem Audit-Datum wurden mehrere der ursprünglichen Top-Findings behoben —
 ### Vor dem Merge fixen
 
 1. **DBAL-Constraint `^2.13 || ^3.0` erlaubt Versionen ohne `ArrayParameterType`** → Fatal auf Contao 4.13; Fix ist eine Zeile: `^3.6 || ^4.0` (PS-03, C-05).
+   * Gefixt.
 2. **Render-Pfad-Stabilität:** `createView()` läuft erst im Template; Laufzeitfehler eines kaputten Filters reißt die Seite in einen 500er — `createView()` in den Controller ziehen bzw. `FlareException` beim Rendern abfangen; dazu 200-vs-500-Inkonsistenz Listview/Reader (PS-01, PS-05).
+   * Nein: Dieses Verhalten ist exakt richtig. Unbehandelte Exceptions sorgen für Fehler 500, auch vom Template aus.
 3. **Entry-Cache positional statt per ID indiziert** — falscher Datensatz im Reader-Pfad möglich, öffentliche API (PS-02).
 4. **Doku-`buildDca()`-Beispiele erzeugen Fatal Error** (konkrete Klasse statt `DcaBuilderInterface`; C-01).
 

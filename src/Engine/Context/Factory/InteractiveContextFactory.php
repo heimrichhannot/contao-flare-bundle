@@ -39,9 +39,9 @@ readonly class InteractiveContextFactory
         $config = new InteractiveContext(
             paginatorConfig: $paginatorConfig,
             sortOrderSequence: $sortOrderSequence,
+            formName: $filterFormName,
             contentModelId: (int) $contentModel->id,
             formActionPage: (int) $contentModel->{ContentContainer::FIELD_JUMP_TO},
-            formName: $filterFormName,
             jumpToReaderPageId: $jumpToReaderPageId,
             autoItemField: $fieldAutoItem,
         );

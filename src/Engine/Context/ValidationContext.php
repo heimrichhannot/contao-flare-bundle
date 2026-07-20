@@ -22,11 +22,7 @@ readonly class ValidationContext implements
         return 'validation';
     }
 
-    /**
-     * @param null|\Closure(): array $entryCache
-     */
     public function __construct(
-        private ?\Closure                   $entryCache = null,
         #[Assert\PositiveOrZero] public int $jumpToReaderPageId = 0,
         #[Assert\PositiveOrZero] public int $jumpToListViewPageId = 0,
         #[Assert\NotBlank] public string    $autoItemField = 'id',
@@ -46,17 +42,6 @@ readonly class ValidationContext implements
         }
 
         return BackLink::fromPage($pageModel);
-    }
-
-    public function getEntryCache(): array
-    {
-        if (!\is_callable($this->entryCache)) {
-            return [];
-        }
-
-        // Closure return value MUST NOT be cached locally, as it may change during runtime,
-        // e.g., when used with InteractiveProjection, entries are only available after a lazy fetch.
-        return \is_array($cache = ($this->entryCache)()) ? $cache : [];
     }
 
     public function getFilterValues(): array
@@ -82,7 +67,6 @@ readonly class ValidationContext implements
     public function withFilterValues(array $values): self
     {
         return new self(
-            entryCache: $this->entryCache,
             jumpToReaderPageId: $this->jumpToReaderPageId,
             jumpToListViewPageId: $this->jumpToListViewPageId,
             autoItemField: $this->autoItemField,

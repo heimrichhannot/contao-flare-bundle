@@ -18,25 +18,34 @@ Doku-Drift gegen den aktuellen Code: `ListBuilderFactory` heißt `ListSpecBuilde
 
 - `AGENTS.md:21,43,55,60,71`
 
-## A-03: Registry-Duplikation und heterogene Lookup-Semantik — Minor (claude)
+> ## A-03: Registry-Duplikation und heterogene Lookup-Semantik — Minor (claude)
+> 
+> `FilterElementRegistry` und `ListDriverRegistry` sind strukturell nahezu identisch (gleiches `add`/`remove`/`prune`/`typesByClass`-Muster) — Kandidat für Basis/Trait. Daneben drei weitere Stile: `FilterTypeRegistry` (TaggedIterator, Key = Klassenname), `EngineModRegistry` (TaggedIterator, `defaultIndexMethod: 'getType'`), `ProjectorRegistry` (`supports()`/`priority()`-Scan). Fünf Registries, vier Lookup-Semantiken.
+> 
+> - `src/Registry/FilterElementRegistry.php:39-57` vs. `src/Registry/ListDriverRegistry.php:34-52` · `src/Registry/FilterTypeRegistry.php:25-28,53` · `src/Registry/EngineModRegistry.php:15` · `src/Registry/ProjectorRegistry.php:28-63`
+> 
+> **Nutzer-Antwort: Das ist kein Design-Fehler, sondern eine Konvention. Einzelne Klassen sorgen für Typsicherheit. Die Klassen sind atomar und benötigen künftig keiner Feature-Erweiterung, daher keine gemeinsame Basisklasse.**
 
-`FilterElementRegistry` und `ListDriverRegistry` sind strukturell nahezu identisch (gleiches `add`/`remove`/`prune`/`typesByClass`-Muster) — Kandidat für Basis/Trait. Daneben drei weitere Stile: `FilterTypeRegistry` (TaggedIterator, Key = Klassenname), `EngineModRegistry` (TaggedIterator, `defaultIndexMethod: 'getType'`), `ProjectorRegistry` (`supports()`/`priority()`-Scan). Fünf Registries, vier Lookup-Semantiken.
+> ## A-04: `PaginatorConfig`: latenter `TypeError` in `count()` + deprecated `\Serializable` — Minor (claude)
+> 
+> `count(): int` gibt `getLastPageNumber(): ?int` zurück — `TypeError` bei `itemsPerPage < 1` oder unbekanntem `totalItems`. Zusätzlich implementiert die Klasse das deprecated `\Serializable`-Interface mit `serialize()`/`unserialize()` neben `__serialize`/`__unserialize`.
+> 
+> - `src/Paginator/PaginatorConfig.php:192-195` (`count()`), `:107-118` (`getLastPageNumber(): ?int`), `:7,197-205` (`\Serializable`)
+> 
+> **Nutzer-Antwort: TypeError erledigt, \Serializable ist nicht deprecated, siehe folgende Notiz.**
+> > As of PHP 8.1.0, a class which implements Serializable without also implementing __serialize() and __unserialize() will generate a deprecation warning.
 
-- `src/Registry/FilterElementRegistry.php:39-57` vs. `src/Registry/ListDriverRegistry.php:34-52` · `src/Registry/FilterTypeRegistry.php:25-28,53` · `src/Registry/EngineModRegistry.php:15` · `src/Registry/ProjectorRegistry.php:28-63`
+> ## A-05: `InteractiveProjector`: COUNT-Query läuft vor der Invalid-Form-Prüfung — Minor (claude)
+>
+> Die Aggregations-COUNT-Query (`src/Engine/Projector/InteractiveProjector.php:50`) wird ausgeführt, bevor geprüft wird, ob das Formular invalid submitted wurde (`:56-58`) — pro invalidem Submit eine unnötige Query. Zudem wird `totalItems` unverändert an die View durchgereicht, sodass diese `totalItems > 0` bei leerem `InteractiveEmptyLoader` meldet (`:74-81`).
+> 
+> **Nutzer-Antwort: Das ist kein Fehler. Da sich das Formular nicht auf die Aggregation-COUNT-Query auswirkt, muss die totale Anzahl der Elemente trotzdem berechnet werden.**
 
-## A-04: `PaginatorConfig`: latenter `TypeError` in `count()` + deprecated `\Serializable` — Minor (claude)
-
-`count(): int` gibt `getLastPageNumber(): ?int` zurück — `TypeError` bei `itemsPerPage < 1` oder unbekanntem `totalItems`. Zusätzlich implementiert die Klasse das deprecated `\Serializable`-Interface mit `serialize()`/`unserialize()` neben `__serialize`/`__unserialize`.
-
-- `src/Paginator/PaginatorConfig.php:192-195` (`count()`), `:107-118` (`getLastPageNumber(): ?int`), `:7,197-205` (`\Serializable`)
-
-## A-05: `InteractiveProjector`: COUNT-Query läuft vor der Invalid-Form-Prüfung — Minor (claude)
-
-Die Aggregations-COUNT-Query (`src/Engine/Projector/InteractiveProjector.php:50`) wird ausgeführt, bevor geprüft wird, ob das Formular invalid submitted wurde (`:56-58`) — pro invalidem Submit eine unnötige Query. Zudem wird `totalItems` unverändert an die View durchgereicht, sodass diese `totalItems > 0` bei leerem `InteractiveEmptyLoader` meldet (`:74-81`).
-
-## A-06: Context-Verträge mit kleinen LSP/ISP-Brüchen — Minor (claude)
-
-`InteractiveContext::getPaginatorConfig(): PaginatorConfig` gibt das nullable Property ungeprüft zurück — `TypeError` bei programmatischer Konstruktion ohne Validator-Lauf (`src/Engine/Context/InteractiveContext.php:25,45-48`). Die readonly `ValidationContext` trägt einen No-op-Setter `setPaginatorQueryParameter()`, weil `PaginatedContextInterface` ihn erzwingt (`src/Engine/Context/ValidationContext.php:77-80`).
+> ## A-06: Context-Verträge mit kleinen LSP/ISP-Brüchen — Minor (claude)
+> 
+> `InteractiveContext::getPaginatorConfig(): PaginatorConfig` gibt das nullable Property ungeprüft zurück — `TypeError` bei programmatischer Konstruktion ohne Validator-Lauf (`src/Engine/Context/InteractiveContext.php:25,45-48`). Die readonly `ValidationContext` trägt einen No-op-Setter `setPaginatorQueryParameter()`, weil `PaginatedContextInterface` ihn erzwingt (`src/Engine/Context/ValidationContext.php:77-80`).
+> 
+> **Nutzer-Antwort: PaginatorConfig nun korrekt null-safe, ValidationContext no-op-Setter ist korrekt für den Zweck.** 
 
 ## A-07: Stille Alias-Kollision im Filter-Collector — Minor (claude)
 

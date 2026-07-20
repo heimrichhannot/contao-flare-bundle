@@ -12,24 +12,33 @@ use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
+use HeimrichHannot\FlareBundle\Util\EntryCache;
 
 readonly class ValidationLoader implements ValidationLoaderInterface
 {
+    protected EntryCache $entryCache;
+
     public function __construct(
         private ValidationLoaderConfig $config,
         private FilterFactory          $filterFactory,
         private ListQueryDirector      $listQueryDirector,
-    ) {}
+    ) {
+        $this->entryCache = new EntryCache($this->config->list->dc);
+    }
+
+    public function getEntryCache(): EntryCache
+    {
+        return $this->entryCache;
+    }
 
     /**
      * @throws FlareException
      */
     public function fetchEntryById(int $id): ?array
     {
-        if ($hit = $this->config->context->getEntryCache()[$id] ?? null)
-            // Fast lane cache check
+        if ($this->entryCache->has($id))
         {
-            return $hit;
+            return $this->entryCache->get($id);
         }
 
         try
@@ -46,7 +55,17 @@ readonly class ValidationLoader implements ValidationLoaderInterface
 
             $list = $this->config->list->withFilter($idDefinition);
 
-            return $this->executeQuery($list, $this->config->context);
+            $entry = $this->executeQuery($list, $this->config->context);
+
+            $this->entryCache->add('id:' . $id, $entry);
+
+            if (($autoItemField = $this->config->autoItemField)
+                && ($autoItem = $entry[$autoItemField] ?? null))
+            {
+                $this->entryCache->add('autoItem:' . $autoItem, $entry);
+            }
+
+            return $entry;
         }
         catch (FlareException $e)
         {
@@ -67,6 +86,10 @@ readonly class ValidationLoader implements ValidationLoaderInterface
             return null;
         }
 
+        if ($entry = $this->entryCache->get('autoItem:' . $autoItem)) {
+            return $entry;
+        }
+
         try
         {
             $autoItemDefinition = $this->filterFactory->create(
@@ -81,7 +104,15 @@ readonly class ValidationLoader implements ValidationLoaderInterface
 
             $list = $this->config->list->withFilter($autoItemDefinition);
 
-            return $this->executeQuery($list, $this->config->context);
+            $entry = $this->executeQuery($list, $this->config->context);
+
+            $this->entryCache->add('autoItem:' . $autoItem, $entry);
+
+            if ($id = $entry['id'] ?? null) {
+                $this->entryCache->add('id:' . $id, $entry);
+            }
+
+            return $entry;
         }
         catch (FlareException $e)
         {

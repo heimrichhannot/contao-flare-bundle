@@ -22,14 +22,14 @@ class InteractiveContext implements
     }
 
     public function __construct(
-        #[Assert\NotNull] public ?PaginatorConfig $paginatorConfig = null,
-        public ?SortOrderSequence                 $sortOrderSequence = null,
-        #[Assert\PositiveOrZero] public int       $contentModelId = 0,
-        #[Assert\PositiveOrZero] public int       $formActionPage = 0,
-        #[Assert\NotBlank] public string          $formName = '',
-        #[Assert\PositiveOrZero] public int       $jumpToReaderPageId = 0,
-        #[Assert\NotBlank] public string          $autoItemField = 'id',
-        public ?string                            $pageParam = null,
+        public PaginatorConfig              $paginatorConfig,
+        public ?SortOrderSequence           $sortOrderSequence = null,
+        #[Assert\NotBlank] public string    $formName,
+        #[Assert\PositiveOrZero] public int $contentModelId = 0,
+        #[Assert\PositiveOrZero] public int $formActionPage = 0,
+        #[Assert\PositiveOrZero] public int $jumpToReaderPageId = 0,
+        #[Assert\NotBlank] public string    $autoItemField = 'id',
+        public ?string                      $pageParam = null,
     ) {}
 
     public function getFormName(): string
@@ -67,20 +67,15 @@ class InteractiveContext implements
         ?string          $formName = null,
         ?string          $pageParam = null,
     ): static {
-        $clone = clone $this;
-
-        if ($paginatorConfig !== null) {
-            $clone->paginatorConfig = $paginatorConfig;
-        }
-
-        if ($formName !== null) {
-            $clone->formName = $formName;
-        }
-
-        if ($pageParam !== null) {
-            $clone->pageParam = $pageParam;
-        }
-
-        return $clone;
+        return new self(
+            paginatorConfig: $paginatorConfig ?? $this->paginatorConfig,
+            sortOrderSequence: $this->sortOrderSequence,
+            formName: $formName ?? $this->formName,
+            contentModelId: $this->contentModelId,
+            formActionPage: $this->formActionPage,
+            jumpToReaderPageId: $this->jumpToReaderPageId,
+            autoItemField: $this->autoItemField,
+            pageParam: $pageParam ?? $this->pageParam
+        );
     }
 }

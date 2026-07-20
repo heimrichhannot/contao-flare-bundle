@@ -43,6 +43,9 @@ readonly class ListCallbacks
 
         $formFieldName = FilterModel::generateFormName($row);
 
+        $duplicateFilterAliases = $GLOBALS['FLARE']['duplicate_filter_aliases'] ?? [];
+        $duplicateFilterAliases = \array_fill_keys($duplicateFilterAliases, true);
+
         return $this->twig->render('@HeimrichHannotFlare/backend/be_filter_info.html.twig', [
             'row' => $row,
             'is_intrinsic' => $isIntrinsic,
@@ -50,6 +53,7 @@ readonly class ListCallbacks
             'title' => $title,
             'type_label' => $typeLabel,
             'form_alias' => $formFieldName,
+            'duplicate_filter_aliases' => $duplicateFilterAliases,
         ]);
     }
 }

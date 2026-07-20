@@ -11,6 +11,7 @@ list:
 
     info:
         no_published_filter: "Einträge dieser Liste haben einen Veröffentlichungsstatus (%target%). Es ist kein Veröffentlicht-Filter konfiguriert, der dies berücksichtigt."
+        duplicate_filter_alias: "Duplizierte Filter-Aliasse: %alias%. Der letzte Filter überschreibt vorherige mit dem gleichen Alias."
 
 filter:
     limited_scope:
@@ -29,6 +30,7 @@ filter:
         intrinsic:
             yes: "Dieser Filter ist intrinsisch"
             no: "Dieser Filter ist nicht intrinsisch"
+        duplicate_alias: "Dieser Filter hat den Alias \"%alias%\", der bereits von einem anderen Filter verwendet wird."
 
 errors:
     missing_model: 'Listen- oder Filtermodell nicht gefunden'

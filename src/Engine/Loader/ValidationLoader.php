@@ -127,7 +127,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
     /**
      * @throws \Exception
      */
-    private function executeQuery(ListSpec $list, ValidationContext $context): ?array
+    private function executeQuery(ListSpec $list, ValidationContext $context): array
     {
         $qb = $this->listQueryDirector->createQueryBuilder(new ListQueryConfig(
             list: $list,
@@ -145,6 +145,6 @@ readonly class ValidationLoader implements ValidationLoaderInterface
 
         $result->free();
 
-        return $entry ?: null;
+        return $entry ?: [];
     }
 }

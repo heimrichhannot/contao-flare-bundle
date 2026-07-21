@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\List;
 
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;

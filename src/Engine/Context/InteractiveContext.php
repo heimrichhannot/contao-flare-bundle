@@ -23,14 +23,16 @@ class InteractiveContext implements
 
     public function __construct(
         public PaginatorConfig              $paginatorConfig,
-        public ?SortOrderSequence           $sortOrderSequence = null,
         #[Assert\NotBlank] public string    $formName,
+        public ?SortOrderSequence           $sortOrderSequence = null,
         #[Assert\PositiveOrZero] public int $contentModelId = 0,
         #[Assert\PositiveOrZero] public int $formActionPage = 0,
         #[Assert\PositiveOrZero] public int $jumpToReaderPageId = 0,
         #[Assert\NotBlank] public string    $autoItemField = 'id',
         public ?string                      $pageParam = null,
-    ) {}
+    ) {
+        $this->initJumpToReaderPage();
+    }
 
     public function getFormName(): string
     {

@@ -3,6 +3,7 @@ reader:
     default_template:
         warning: "Standard-Template ausgewählt"
         description: "Bitte erstellen/wählen Sie ein benutzerdefiniertes Template für diesen FLARE-Reader."
+    invalid_list: "Keine gültige Liste ausgewählt"
 
 list:
     default_template:

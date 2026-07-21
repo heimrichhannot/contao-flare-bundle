@@ -16,6 +16,8 @@ readonly class ValidationContext implements
     use ReaderUrlConfigCreatorTrait;
 
     private PaginatorConfig $paginatorConfig;
+    private \Closure $jumpToListViewPage;
+    private \Closure $jumpToReaderPage;
 
     public static function getContextType(): string
     {
@@ -29,6 +31,14 @@ readonly class ValidationContext implements
         private array                       $filterValues = [],
     ) {
         $this->paginatorConfig = new PaginatorConfig(itemsPerPage: 1);
+
+        $this->jumpToListViewPage = function (): ?PageModel {
+            $pageModel = PageModel::findByPk($this->jumpToListViewPageId);
+            $this->jumpToListViewPage = static fn (): ?PageModel => $pageModel;
+            return $pageModel;
+        };
+
+        $this->initJumpToReaderPage();
     }
 
     public function createBackLink(): ?BackLink
@@ -37,7 +47,7 @@ readonly class ValidationContext implements
             return null;
         }
 
-        if (!$pageModel = PageModel::findByPk($this->jumpToListViewPageId)) {
+        if (!$pageModel = ($this->jumpToListViewPage)()) {
             return null;
         }
 

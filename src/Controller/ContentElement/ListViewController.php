@@ -215,6 +215,14 @@ final class ListViewController extends AbstractContentElementController
             return new Response($e->getMessage());
         }
 
+        if (!$listModel instanceof ListModel) {
+            return new Response(\sprintf(
+                '<div><strong class="tl_red">%s</strong></div><div>%s</div>',
+                $this->translator->trans('reader.invalid_list', [], 'flare'),
+                Str::formatHeadline($model->headline, withTags: true),
+            ));
+        }
+
         return new Response(\sprintf(
             '<div>%s</div><span>%s</span> <span class="tl_gray">[%s, %s]</span>',
             (string) Str::formatHeadline($model->headline),

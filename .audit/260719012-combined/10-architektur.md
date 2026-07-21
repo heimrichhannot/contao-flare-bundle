@@ -61,46 +61,60 @@ Doku-Drift gegen den aktuellen Code: `ListBuilderFactory` heißt `ListSpecBuilde
 >
 > **Nutzer-Antwort: Angeglichen -- method: __METHOD__, source, wenn verfügbar: table.id -- übertragen auf gesamte Codebase**
 
-## A-09: `symfony/event-dispatcher` nicht direkt deklariert — Minor (claude, reduzierter Umfang)
+> ## A-09: `symfony/event-dispatcher` nicht direkt deklariert — Minor (claude, reduzierter Umfang)
+>
+> `FilterFormFactory` instanziiert direkt `new EventDispatcher()` (`src/Filter/Factory/FilterFormFactory.php:17,70`), deklariert ist aber nur `symfony/event-dispatcher-contracts` (`composer.json:17`); das konkrete Paket kommt nur transitiv über `contao/core-bundle`.
+> 
+> **Nutzer-Antwort: Required in composer.json**
 
-`FilterFormFactory` instanziiert direkt `new EventDispatcher()` (`src/Filter/Factory/FilterFormFactory.php:17,70`), deklariert ist aber nur `symfony/event-dispatcher-contracts` (`composer.json:17`); das konkrete Paket kommt nur transitiv über `contao/core-bundle`.
+> ## A-10: `ValidationLoader::executeQuery()` liefert `[]` statt `null` bei abgebrochenem Query-Aufbau — Minor (claude)
+>
+> Bei `!$qb` wird `[]` zurückgegeben — harmlos (falsy), aber semantisch schief gegenüber dem `?array`-Vertrag, in dem `null` „nicht gefunden" bedeutet (`:117`: `return $entry ?: null;`).
+>
+> - `src/Engine/Loader/ValidationLoader.php:107-109`
+>
+> **Nutzer-Antwort: Return-type auf `array` angepasst.**
 
-## A-10: `ValidationLoader::executeQuery()` liefert `[]` statt `null` bei abgebrochenem Query-Aufbau — Minor (claude)
+> ## A-11: Query-Assemblierung lebt in Event-Listener-Prioritäten ohne zentrale Übersicht — Info (claude)
+> 
+> Select@490, Conditions@470, Page@430, Order@420, Join@-450; Integrations-Listener dazwischen (250/220/200/190/100). Die Gesamtordnung ist nirgends zentral dokumentiert (kein Pipeline-Kommentar im `ListQueryDirector`).
+> 
+> - `src/EventListener/QueryStructModifier/SelectModifierListener.php:13`, `ConditionsModifierListener.php:11`, `PageModifierListener.php:11`, `OrderModifierListener.php:12`, `JoinModifierListener.php:10` · `src/Integration/ContaoCalendar/EventListener/CountEventsModifierListener.php:14` u. a.
+> 
+> **Nutzer-Antwort: Das muss in einem zukünftigen PR nochmal überarbeitet werden.**
 
-Bei `!$qb` wird `[]` zurückgegeben — harmlos (falsy), aber semantisch schief gegenüber dem `?array`-Vertrag, in dem `null` „nicht gefunden" bedeutet (`:117`: `return $entry ?: null;`).
+> ## A-12: `ViewInterface` ist leerer Marker; Aufrufer müssen downcasten — Info (claude)
+>
+> Das Interface ist leer (`src/Engine/View/ViewInterface.php:7-9`); `ReaderController` downcastet auf `ValidationView` (`src/Controller/ContentElement/ReaderController.php:127`). Die `@template`-Annotationen sind nur mit dem `generics.noParent`-Ignore in PHPStan haltbar.
 
-- `src/Engine/Loader/ValidationLoader.php:107-109`
+> ## A-13: `#[TaggedIterator]` ist seit Symfony 7.1 deprecated — Info (claude)
+> 
+> Genutzt in drei Registries; relevant für Deprecation-Logs bei Support-Matrix ^5.4|^6|^7. Nachfolger `AutowireIterator` existiert erst ab 6.3 → für die Matrix ggf. `!tagged_iterator` in YAML.
+> 
+> - `src/Registry/EngineModRegistry.php:15` · `src/Registry/ProjectorRegistry.php:19` · `src/Registry/FilterTypeRegistry.php:18`
+>
+> **Nutzer-Antwort: Passt so.**
 
-## A-11: Query-Assemblierung lebt in Event-Listener-Prioritäten ohne zentrale Übersicht — Info (claude)
+> ## A-14: Statische Contao-Aufrufe in Context-DTOs — Info (claude, reduzierter Umfang)
+> 
+> `PageModel::findByPk` in wertartigen Context-Objekten — DB-Zugriffe, testfeindlich, aber Contao-idiomatisch.
+> 
+> - `src/Engine/Context/ReaderUrlConfigCreatorTrait.php:18` · `src/Engine/Context/ValidationContext.php:44`
+> 
+> **Nutzer-Antwort: Weiterhin statische Aufrufe, aber nun besser gekapselt.**
 
-Select@490, Conditions@470, Page@430, Order@420, Join@-450; Integrations-Listener dazwischen (250/220/200/190/100). Die Gesamtordnung ist nirgends zentral dokumentiert (kein Pipeline-Kommentar im `ListQueryDirector`).
+> ## A-15: Backend-Responses ohne Null-Check auf `$listModel` — Info (claude)
+> 
+> `getRelated()` kann `null` liefern; der Catch deckt nur Exceptions ab. Danach werden `$listModel->title` / `trans($listModel->type)` ungeprüft dereferenziert — in beiden Controllern. (Gelöschte/fehlende Liste → Backend-Crash; siehe auch SEC-03 in [30-sicherheit.md](30-sicherheit.md).)
+> 
+> - `src/Controller/ContentElement/ReaderController.php:220-236` (Zugriff `:232-233`) · `src/Controller/ContentElement/ListViewController.php:154-168` (Zugriff `:166-167`)
+> 
+> **Nutzer-Antwort: Good Catch! Ist jetzt mit einer entsprechenden Warnung gesichert.**
 
-- `src/EventListener/QueryStructModifier/SelectModifierListener.php:13`, `ConditionsModifierListener.php:11`, `PageModifierListener.php:11`, `OrderModifierListener.php:12`, `JoinModifierListener.php:10` · `src/Integration/ContaoCalendar/EventListener/CountEventsModifierListener.php:14` u. a.
-
-## A-12: `ViewInterface` ist leerer Marker; Aufrufer müssen downcasten — Info (claude)
-
-Das Interface ist leer (`src/Engine/View/ViewInterface.php:7-9`); `ReaderController` downcastet auf `ValidationView` (`src/Controller/ContentElement/ReaderController.php:127`). Die `@template`-Annotationen sind nur mit dem `generics.noParent`-Ignore in PHPStan haltbar.
-
-## A-13: `#[TaggedIterator]` ist seit Symfony 7.1 deprecated — Info (claude)
-
-Genutzt in drei Registries; relevant für Deprecation-Logs bei Support-Matrix ^5.4|^6|^7. Nachfolger `AutowireIterator` existiert erst ab 6.3 → für die Matrix ggf. `!tagged_iterator` in YAML.
-
-- `src/Registry/EngineModRegistry.php:15` · `src/Registry/ProjectorRegistry.php:19` · `src/Registry/FilterTypeRegistry.php:18`
-
-## A-14: Statische Contao-Aufrufe in Context-DTOs — Info (claude, reduzierter Umfang)
-
-`PageModel::findByPk` in wertartigen Context-Objekten — DB-Zugriffe, testfeindlich, aber Contao-idiomatisch.
-
-- `src/Engine/Context/ReaderUrlConfigCreatorTrait.php:18` · `src/Engine/Context/ValidationContext.php:44`
-
-## A-15: Backend-Responses ohne Null-Check auf `$listModel` — Info (claude)
-
-`getRelated()` kann `null` liefern; der Catch deckt nur Exceptions ab. Danach werden `$listModel->title` / `trans($listModel->type)` ungeprüft dereferenziert — in beiden Controllern. (Gelöschte/fehlende Liste → Backend-Crash; siehe auch SEC-03 in [30-sicherheit.md](30-sicherheit.md).)
-
-- `src/Controller/ContentElement/ReaderController.php:220-236` (Zugriff `:232-233`) · `src/Controller/ContentElement/ListViewController.php:154-168` (Zugriff `:166-167`)
-
-## A-16: `Engine`-Mods-API mischt Semantiken — Info (claude)
-
-`addMod()` appendet numerisch, `setMod()`/`unsetMod()` arbeiten mit String-Keys im selben Array; `unsetMod()` kann appendete Mods nicht adressieren — öffentlicher `@api`-Punkt.
-
-- `src/Engine/Engine.php:66-93`
+> ## A-16: `Engine`-Mods-API mischt Semantiken — Info (claude)
+> 
+> `addMod()` appendet numerisch, `setMod()`/`unsetMod()` arbeiten mit String-Keys im selben Array; `unsetMod()` kann appendete Mods nicht adressieren — öffentlicher `@api`-Punkt.
+> 
+> - `src/Engine/Engine.php:66-93`
+>
+> **Nutzer-Antwort: Das ist kein Fehler sondern explizit so gewollt. Der Nutzer hat die Wahl, Filter für mehrfache veränderung überschreibbar zu machen, oder nicht. In den meisten Fällen wird das nicht gebraucht, daher reicht Listenindexierung ohne Möglichkeit zur Änderung.**

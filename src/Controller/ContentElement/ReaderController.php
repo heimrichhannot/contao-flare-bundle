@@ -125,7 +125,7 @@ final class ReaderController extends AbstractContentElementController
             $validationView = $engine->createView();
 
             if (!$validationView instanceof ValidationView) {
-                throw ViewException::create(ValidationView::class, $validationView, __METHOD__);
+                throw ViewException::create(ValidationView::class, $validationView, method: __METHOD__);
             }
 
             if (!$autoItemModel = $validationView->getModelByAutoItem($autoItem)) {
@@ -224,6 +224,14 @@ final class ReaderController extends AbstractContentElementController
             $listModel = $model->getRelated(ContentContainer::FIELD_LIST);
         } catch (\Exception $e) {
             return new Response($e->getMessage());
+        }
+
+        if (!$listModel instanceof ListModel) {
+            return new Response(\sprintf(
+                '<div><strong class="tl_red">%s</strong></div><div>%s</div>',
+                $this->translator->trans('reader.invalid_list', [], 'flare'),
+                Str::formatHeadline($model->headline, withTags: true),
+            ));
         }
 
         return new Response(\sprintf(

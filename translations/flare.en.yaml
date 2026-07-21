@@ -3,6 +3,7 @@ reader:
     default_template:
         warning: "Default template selected"
         description: "Please create/select a custom template for this FLARE reader."
+    invalid_list: "No valid list selected"
 
 list:
     default_template:

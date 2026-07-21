@@ -9,13 +9,25 @@ use HeimrichHannot\FlareBundle\Reader\ReaderUrlConfig;
 
 trait ReaderUrlConfigCreatorTrait
 {
+    private \Closure $jumpToReaderPage;
+
+    final protected function initJumpToReaderPage(): void
+    {
+        $this->jumpToReaderPage = function (): ?PageModel {
+            $pageModel = PageModel::findByPk($this->jumpToReaderPageId);
+            $this->jumpToReaderPage = static fn (): ?PageModel => $pageModel;
+            return $pageModel;
+        };
+    }
+
+    protected function getJumpToReaderPage(): ?PageModel
+    {
+        return ($this->jumpToReaderPage)();
+    }
+
     public function createReaderUrlConfig(): ?ReaderUrlConfig
     {
-        if (!$this->jumpToReaderPageId) {
-            return null;
-        }
-
-        if (!$pageModel = PageModel::findByPk($this->jumpToReaderPageId)) {
+        if (!$pageModel = $this->getJumpToReaderPage()) {
             return null;
         }
 

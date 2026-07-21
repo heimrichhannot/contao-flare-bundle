@@ -44,7 +44,7 @@ class SimpleEquationFilterType extends AbstractFilterType
         $operator = SqlEquationOperator::match($options['operator']);
 
         if (!$operandLeft || !$operator instanceof SqlEquationOperator) {
-            throw new FilterException('Invalid filter configuration.');
+            throw new FilterException('Invalid filter configuration.', method: __METHOD__);
         }
 
         $operandLeft = $builder->column($operandLeft);
@@ -64,7 +64,10 @@ class SimpleEquationFilterType extends AbstractFilterType
         };
 
         if (!$where) {
-            throw new FilterException('Invalid filter configuration: Operator not supported.');
+            throw new FilterException(
+                'Invalid filter configuration: Operator not supported.',
+                method: __METHOD__,
+            );
         }
 
         $builder->where($where);

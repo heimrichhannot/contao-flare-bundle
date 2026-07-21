@@ -63,7 +63,7 @@ readonly class EventsAggregationLoader implements AggregationLoaderInterface
         }
         catch (\Throwable $e)
         {
-            throw new FlareException($e->getMessage(), $e->getCode(), $e, source: __METHOD__);
+            throw new FlareException($e->getMessage(), $e->getCode(), $e, method: __METHOD__);
         }
     }
 }

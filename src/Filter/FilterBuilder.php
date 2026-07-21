@@ -36,7 +36,10 @@ final class FilterBuilder implements FilterBuilderInterface
     public function add(string $type, array $options = [], ?string $targetAlias = null): static
     {
         if (!$filterType = $this->filterTypeRegistry->get($type)) {
-            throw new FilterException(\sprintf('No FLARE filter type service registered for "%s".', $type));
+            throw new FilterException(
+                \sprintf('No FLARE filter type service registered for "%s".', $type),
+                method: __METHOD__,
+            );
         }
 
         if (!isset(self::$optionsResolvers[$type]))

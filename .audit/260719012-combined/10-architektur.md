@@ -55,9 +55,11 @@ Doku-Drift gegen den aktuellen Code: `ListBuilderFactory` heißt `ListSpecBuilde
 > 
 > **Nutzer-Antwort: Im Backend wird nun ein Fehler ausgegeben, wenn zwei Filter mit demselben Alias publiziert werden.**
 
-## A-08: `FlareException`: `method` vs. `source` inkonsistent — Minor (claude)
-
-Die Exception bietet beide Parameter (`src/Exception/FlareException.php:17-18`), der Code nutzt beide uneinheitlich mit demselben Inhalt (`__METHOD__`): Loader nutzen `method:` (`src/Engine/Loader/InteractiveLoader.php:52`, `AggregationLoader.php:52`), Projector/Views/Calendar-Integration `source:` (`src/Engine/Projector/AbstractProjector.php:124`, `src/Engine/View/HandlesModelsTrait.php:33,42,57,66,75`, `src/Integration/ContaoCalendar/Loader/EventsAggregationLoader.php:66`), `ValidationLoader` keins von beiden (`src/Engine/Loader/ValidationLoader.php:57,92`).
+> ## A-08: `FlareException`: `method` vs. `source` inkonsistent — Minor (claude)
+> 
+> Die Exception bietet beide Parameter (`src/Exception/FlareException.php:17-18`), der Code nutzt beide uneinheitlich mit demselben Inhalt (`__METHOD__`): Loader nutzen `method:` (`src/Engine/Loader/InteractiveLoader.php:52`, `AggregationLoader.php:52`), Projector/Views/Calendar-Integration `source:` (`src/Engine/Projector/AbstractProjector.php:124`, `src/Engine/View/HandlesModelsTrait.php:33,42,57,66,75`, `src/Integration/ContaoCalendar/Loader/EventsAggregationLoader.php:66`), `ValidationLoader` keins von beiden (`src/Engine/Loader/ValidationLoader.php:57,92`).
+>
+> **Nutzer-Antwort: Angeglichen -- method: __METHOD__, source, wenn verfügbar: table.id -- übertragen auf gesamte Codebase**
 
 ## A-09: `symfony/event-dispatcher` nicht direkt deklariert — Minor (claude, reduzierter Umfang)
 

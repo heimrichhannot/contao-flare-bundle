@@ -118,7 +118,10 @@ class ArchiveFilterElement extends AbstractFilterElement
             $parents = $this->fetchParents($ptable, $config['whitelist_parents']);
 
             if (!$parents) {
-                throw new FilterException('No whitelisted parents defined or parent table class invalid.');
+                throw new FilterException(
+                    'No whitelisted parents defined or parent table class invalid.',
+                    method: __METHOD__,
+                );
             }
 
             foreach ($parents as $parent)
@@ -132,7 +135,7 @@ class ArchiveFilterElement extends AbstractFilterElement
         if (!$inferrer->isDcaDynamicPtable())
             // no valid ptable available
         {
-            throw new FilterException('No valid ptable found.');
+            throw new FilterException('No valid ptable found.', method: __METHOD__);
         }
 
         /**
@@ -141,7 +144,7 @@ class ArchiveFilterElement extends AbstractFilterElement
 
         if (!$groups = $config['group_whitelist_parents'])
         {
-            throw new FilterException('No whitelisted parents defined.');
+            throw new FilterException('No whitelisted parents defined.', method: __METHOD__);
         }
 
         foreach ($groups as $group)
@@ -158,7 +161,7 @@ class ArchiveFilterElement extends AbstractFilterElement
         }
 
         if (!$choices->count()) {
-            throw new FilterException('No valid whitelisted parents defined.');
+            throw new FilterException('No valid whitelisted parents defined.', method: __METHOD__);
         }
 
         $choices->setModelSuffix('(%@name%)');
@@ -190,7 +193,7 @@ class ArchiveFilterElement extends AbstractFilterElement
         if ($inferrer->getDcaMainPtable())
         {
             if (!$pids = \array_column($selectedModels, 'id')) {
-                throw new FilterException('No valid parent archive ids extracted.');
+                throw new FilterException('No valid parent archive ids extracted.', method: __METHOD__);
             }
 
             $builder->add(ArchiveFilterType::class, [
@@ -204,7 +207,7 @@ class ArchiveFilterElement extends AbstractFilterElement
         if (!$inferrer->isDcaDynamicPtable())
             // no valid ptable available
         {
-            throw new FilterException('No valid ptable found.');
+            throw new FilterException('No valid ptable found.', method: __METHOD__);
         }
 
         /**

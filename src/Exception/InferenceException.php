@@ -15,9 +15,10 @@ class InferenceException extends FlareException
         protected string $translationKey = '',
         protected array  $formatParams = [],
         int              $code = 0,
-        ?\Throwable      $previous = null
+        ?\Throwable      $previous = null,
+        ?string          $method = null,
     ) {
-        parent::__construct($message, $code, $previous);
+        parent::__construct($message, $code, $previous, $method);
     }
 
     public function getTranslationKey(): string

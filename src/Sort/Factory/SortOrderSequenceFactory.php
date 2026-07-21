@@ -38,11 +38,17 @@ final readonly class SortOrderSequenceFactory
         foreach ($settings as $item)
         {
             if (!\is_array($item) || \count($item) < 2 || \count($item) > 3) {
-                throw new FlareException('Invalid sort settings format. Expected array of arrays with two or three elements.');
+                throw new FlareException(
+                    'Invalid sort settings format. Expected array of arrays with two or three elements.',
+                    method: __METHOD__,
+                );
             }
 
             if (!isset($item['column'], $item['direction'])) {
-                throw new FlareException('Invalid sort settings format. Expected array with "column" and "direction" keys (optionally "alias").');
+                throw new FlareException(
+                    'Invalid sort settings format. Expected array with "column" and "direction" keys (optionally "alias").',
+                    method: __METHOD__,
+                );
             }
 
             ['column' => $column, 'direction' => $direction] = $item;

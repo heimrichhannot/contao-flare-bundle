@@ -96,7 +96,7 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
         catch (ContainerExceptionInterface $e)
         {
             throw new FlareException(\sprintf('Failed to locate service "%s"', ProjectorRegistry::class),
-                previous: $e, source: __METHOD__);
+                previous: $e, method: __METHOD__);
         }
     }
 
@@ -121,7 +121,7 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
         }
         catch (ContainerExceptionInterface $e)
         {
-            throw new FlareException('Request not available', previous: $e, source: __METHOD__);
+            throw new FlareException('Request not available', previous: $e, method: __METHOD__);
         }
 
         return $request;

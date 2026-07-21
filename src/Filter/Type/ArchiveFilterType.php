@@ -22,7 +22,7 @@ class ArchiveFilterType extends AbstractFilterType
         $ids = \array_values(\array_unique(\array_filter(\array_map('\intval', $options['parent_ids']))));
 
         if (!$ids) {
-            throw new FilterException('No valid parent archive ids extracted.');
+            throw new FilterException('No valid parent archive ids extracted.', method: __METHOD__);
         }
 
         $builder->where($builder->expr()->in($builder->column($options['field']), ':pids'))

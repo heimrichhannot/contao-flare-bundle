@@ -50,7 +50,10 @@ final class Engine
             ['type' => $type, 'config' => $config] = $modConf;
 
             $mod = $this->engineModRegistry->get($type)
-                ?? throw new FlareException(\sprintf('No FLARE engine mod registered with type "%s".', $type));
+                ?? throw new FlareException(
+                    \sprintf('No FLARE engine mod registered with type "%s".', $type),
+                    method: __METHOD__,
+                );
 
             $mod->apply($engine, $config);
         }

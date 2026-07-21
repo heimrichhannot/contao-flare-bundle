@@ -95,7 +95,7 @@ final class ReaderController extends AbstractContentElementController
             $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST);
 
             if (!$listModel instanceof ListModel) {
-                throw new FlareException('No list model found.');
+                throw new FlareException('No list model found.', method: __METHOD__);
             }
         }
         catch (\Exception $e)

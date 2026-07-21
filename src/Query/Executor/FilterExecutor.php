@@ -78,7 +78,7 @@ readonly class FilterExecutor
             throw new FlareException(\sprintf(
                 '[FLARE] ListSpec data container cannot be used as SQL table identifier: "%s"',
                 $table
-            ), method: __METHOD__);
+            ), method: __METHOD__, source: $filter->source ?: 'filter inlined');
         }
 
         $isTargeted = $this->filterElementRegistry->getAttribute($filter->type)?->isTargeted;
@@ -114,7 +114,8 @@ readonly class FilterExecutor
         }
         catch (\Throwable $e)
         {
-            throw new FilterException($e->getMessage(), code: $e->getCode(), previous: $e, method: __METHOD__);
+            throw new FilterException($e->getMessage(), code: $e->getCode(), previous: $e,
+                method: __METHOD__, source: $filter->source ?: 'filter inlined');
         }
 
         $this->eventDispatcher->dispatch(new FilterElementBuiltEvent($context, $builder, $data));
@@ -148,7 +149,8 @@ readonly class FilterExecutor
             }
             catch (\Throwable $e)
             {
-                throw new FilterException($e->getMessage(), code: $e->getCode(), previous: $e, method: $call->typeClass);
+                throw new FilterException($e->getMessage(), code: $e->getCode(), previous: $e,
+                    method: $call->typeClass, source: $filter->source ?: 'filter inlined');
             }
 
             $filterQueryBuilders[] = $filterQueryBuilder;

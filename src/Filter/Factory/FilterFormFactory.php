@@ -35,7 +35,10 @@ final readonly class FilterFormFactory
     public function create(ListSpec $list, FormContextInterface $context): FormInterface
     {
         if (!$context instanceof ContextInterface) {
-            throw new FlareException('Filter form context must implement ContextInterface.', method: __METHOD__);
+            throw new FlareException(
+                'Filter form context must implement ContextInterface.',
+                method: __METHOD__,
+            );
         }
 
         $name = $context->getFormName();

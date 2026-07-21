@@ -86,17 +86,23 @@ final class PtableInferrer
         }
 
         if (!$this->entityTable) {
-            throw new InferenceException('No entity table set');
+            throw new InferenceException('No entity table set', method: __METHOD__);
         }
 
         Controller::loadDataContainer($this->entityTable);
 
         if (!$dca = $GLOBALS['TL_DCA'][$this->entityTable] ?? null) {
-            throw new InferenceException(\sprintf('No data container array found for "%s"', $this->entityTable));
+            throw new InferenceException(
+                \sprintf('No data container array found for "%s"', $this->entityTable),
+                method: __METHOD__,
+            );
         }
 
         if (!\is_array($dca)) {
-            throw new \InvalidArgumentException(\sprintf('Invalid data container array for "%s"', $this->entityTable));
+            throw new \InvalidArgumentException(\sprintf(
+                'Invalid data container array for "%s"',
+                $this->entityTable
+            ));
         }
 
         return $this->entityDca = $dca;

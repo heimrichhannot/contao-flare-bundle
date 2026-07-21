@@ -87,7 +87,7 @@ final class ListViewController extends AbstractContentElementController
             $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST);
 
             if (!$listModel instanceof ListModel) {
-                throw new FilterException('No list model found.');
+                throw new FilterException('No list model found.', method: __METHOD__);
             }
         }
         catch (\Exception $e)
@@ -115,8 +115,12 @@ final class ListViewController extends AbstractContentElementController
         }
         catch (FlareException $e)
         {
-            $this->logger->error(\sprintf('%s (tl_content.id=%s, tl_flare_list.id=%s)', $e->getMessage(), $contentModel->id, $listModel->id),
-                ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
+            $this->logger->error(\sprintf(
+                '%s (tl_content.id=%s, tl_flare_list.id=%s)',
+                $e->getMessage(),
+                $contentModel->id,
+                $listModel->id
+            ), ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
 
             return $this->getErrorResponse($e);
         }

@@ -48,14 +48,17 @@ readonly class ListQueryDirector
             $filterQueryBuilders = $this->filterExecutor->invokeFilters($config);
             $filterQueries = $this->buildFilterQueries($filterQueryBuilders);
 
-            $this->eventDispatcher->dispatch(new ModifyListQueryStructEvent(
+            $event = new ModifyListQueryStructEvent(
                 filterQueries: $filterQueries,
                 config: $config,
                 tableAliasRegistry: $registry,
                 queryStruct: $struct,
-            ));
+            );
 
-            return $this->queryBuilderFactory->create($struct);
+            /** @var ModifyListQueryStructEvent $event */
+            $event = $this->eventDispatcher->dispatch($event);
+
+            return $this->queryBuilderFactory->create($event->queryStruct);
         }
         catch (AbortFilteringException $e)
         {

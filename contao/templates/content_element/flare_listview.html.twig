@@ -4,7 +4,7 @@
 {% set flare_css_classes = [flare_css_classes ?? '', 'flare-listview', 'content-flare-listview'] %}
 
 {# @var \HeimrichHannot\FlareBundle\Engine\View\InteractiveView flare_list #}
-{% set flare_list = flare.createView %}
+{% set flare_list = flare_list ?? flare.createView %}
 
 {% block content %}
 
@@ -32,7 +32,9 @@
 
         {{ form_start(form) }}
             {{ form_widget(form) }}
-            <button type="submit" class="btn btn-primary">{{ 'submit'|trans({}, 'flare_form') }}</button>
+            {% block filter_submit %}
+                <button type="submit" class="btn btn-primary">{{ 'submit'|trans({}, 'flare_form') }}</button>
+            {% endblock %}
         {{ form_end(form) }}
 
     {% endblock %}

@@ -1,9 +1,6 @@
 {% extends '@Contao/block_searchable.html5' %}
 
-{% set flare_list = flare.createView %}
-
 {% block content %}
-
     {% block list %}
 
         {% for entry in flare_list.entries %}
@@ -17,5 +14,4 @@
         {% endfor %}
 
     {% endblock %}
-
 {% endblock %}

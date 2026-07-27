@@ -36,7 +36,7 @@ final class Engine
      */
     public function createView(): ViewInterface
     {
-        $engine = \count($this->mods) ? clone $this : $this;
+        $engine = clone $this;
 
         foreach ($this->mods as $modConf)
         {

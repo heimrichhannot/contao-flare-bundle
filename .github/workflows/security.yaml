@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -62,7 +62,12 @@ jobs:
       image: semgrep/semgrep
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Run Semgrep
-        run: semgrep scan --config "p/phpcs-security-audit" --config "p/security-audit" --error
+        # generic.html-templates.security.var-in-href is a generic Flask/Django/Mustache
+        # rule with no awareness of Twig autoescaping. Every href it flags here is a
+        # router- or PageModel-generated URL. Its only accepted form is a global Twig
+        # function named literally `url_for`, which this bundle will not claim.
+        # Keep this command in sync with the semgrep-sec service in docker-compose.yml.
+        run: semgrep scan --config "p/phpcs-security-audit" --config "p/security-audit" --exclude-rule "generic.html-templates.security.var-in-href.var-in-href" --error

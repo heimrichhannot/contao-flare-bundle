@@ -21,6 +21,7 @@ use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;
 use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
 use HeimrichHannot\FlareBundle\Util\DcMultilingualHelper;
+use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Terminal42\ChangeLanguage\Event\ChangelanguageNavigationEvent;
@@ -110,7 +111,7 @@ class ChangelanguageListener
 
         return $lang === $langFallback;
     }
-    
+
     #[AsEventListener('flare.list.' . DcMultilingualListType::TYPE . '.fetch_count')]
     public function listViewFetchCountEvent(FetchCountEvent $event): void
     {
@@ -122,12 +123,12 @@ class ChangelanguageListener
         $this->applyMlQueriesIfNecessary($event->getListQueryBuilder(), $filters, $lang);
 
         $contentContext = $event->getContentContext();
-        
+
         $dcMultilingualDisplay = $event->getContentContext()->getContentModel()->flare_dcMultilingualDisplay
             ?: $filters->getListModel()->dcMultilingual_display;
 
         $filterDefinition = null;
-        
+
         if ($lang !== $langFallback && $dcMultilingualDisplay === DcMultilingualHelper::DISPLAY_LOCALIZED)
             // localized list view
         {
@@ -195,7 +196,7 @@ class ChangelanguageListener
         $listQueryBuilder->setTableAliasMandatory('translation');
         $listQueryBuilder->setGroupBy([]);
     }
-    
+
     #[AsEventListener(priority: 220)]
     public function onListViewDetailsPageUrlGenerated(DetailsPageUrlGeneratedEvent $event): void
     {
@@ -210,7 +211,7 @@ class ChangelanguageListener
             return;
         }
 
-        $url = $langPage->getAbsoluteUrl('/' . $event->getAutoItem());
+        $url = $langPage->getAbsoluteUrl('/' . Str::urlEncodePath($event->getAutoItem()));
 
         $event->setPage($langPage);
         $event->setUrl($url);

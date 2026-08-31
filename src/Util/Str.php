@@ -329,4 +329,31 @@ final readonly class Str
     {
         return \implode(' ', self::htmlListClasses(...$classes));
     }
+
+    /**
+     * Extracts the id value from Contao's legacy `cssID` template variable, which holds a
+     * pre-built attribute fragment (` id="foo"`) rather than a bare value.
+     *
+     * @param string|null $cssID The legacy attribute fragment, e.g. ` id="foo"`.
+     *
+     * @return string|null The id value, or null if the fragment is empty or unparsable.
+     */
+    public static function htmlExtractId(?string $cssID): ?string
+    {
+        if (!$cssID || !\preg_match('/\bid\s*=\s*("[^"]*"|\'[^\']*\'|[^\s"\'>]+)/i', $cssID, $matches)) {
+            return null;
+        }
+
+        return \trim($matches[1], '"\'') ?: null;
+    }
+
+    /**
+     * Percent-encodes a URL path while preserving its segment separators, so that values
+     * taken from the database (aliases containing spaces, `?` or `#`) cannot corrupt the
+     * structure of a generated URL.
+     */
+    public static function urlEncodePath(string $path): string
+    {
+        return \implode('/', \array_map(\rawurlencode(...), \explode('/', $path)));
+    }
 }

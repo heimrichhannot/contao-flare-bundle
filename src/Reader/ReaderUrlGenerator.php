@@ -7,6 +7,7 @@ namespace HeimrichHannot\FlareBundle\Reader;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Event\DetailsPageUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
+use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class ReaderUrlGenerator implements ReaderUrlGeneratorInterface
@@ -22,7 +23,7 @@ readonly class ReaderUrlGenerator implements ReaderUrlGeneratorInterface
             return null;
         }
 
-        $url = $this->config->readerPage->getAbsoluteUrl('/' . $autoItem);
+        $url = $this->config->readerPage->getAbsoluteUrl('/' . Str::urlEncodePath($autoItem));
 
         $event = $this->eventDispatcher->dispatch(
             new DetailsPageUrlGeneratedEvent(

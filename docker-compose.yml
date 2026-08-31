@@ -22,4 +22,8 @@ services:
       - .:/src
     working_dir: /src
     entrypoint: ["semgrep"]
-    command: ["scan", "--config", "p/phpcs-security-audit", "--config", "p/security-audit", "--error"]
+    # generic.html-templates.security.var-in-href is a generic Flask/Django/Mustache rule
+    # with no awareness of Twig autoescaping; every href it flags is a router- or
+    # PageModel-generated URL. Keep in sync with .github/workflows/security.yaml.
+    command: ["scan", "--config", "p/phpcs-security-audit", "--config", "p/security-audit",
+              "--exclude-rule", "generic.html-templates.security.var-in-href.var-in-href", "--error"]

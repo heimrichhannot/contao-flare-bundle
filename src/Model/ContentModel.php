@@ -15,7 +15,7 @@ use Contao\ContentModel as ContaoContentModel;
  * @property string $flare_formName
  * @property int    $flare_itemsPerPage
  * @property ?int   $flare_jumpTo
- * @property int    $flare_list
+ * @property int    $flare_listId
  */
 class ContentModel extends ContaoContentModel
 {

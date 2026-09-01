@@ -15,6 +15,7 @@ use Contao\Template;
 use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\InteractiveContextFactory;
 use HeimrichHannot\FlareBundle\Engine\Factory\EngineFactory;
+use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
@@ -35,6 +36,11 @@ use Twig\Error\RuntimeError;
 final class ListViewController extends AbstractContentElementController
 {
     public const TYPE = 'flare_listview';
+
+    /**
+     * Template variable holding the interactive view.
+     */
+    private const TEMPLATE_VAR_VIEW = 'flare_list';
 
     public function __construct(
         private readonly EngineFactory             $engineFactory,
@@ -129,6 +135,19 @@ final class ListViewController extends AbstractContentElementController
 
         $template = $event->getTemplate();
         $data = $template->getData();
+
+        try
+        {
+            $this->assertViewSlotIsFree($data);
+        }
+        catch (FlareException $e)
+        {
+            $this->logger->error(\sprintf('%s (tl_content.id=%s, tl_flare_list.id=%s)', $e->getMessage(), $contentModel->id, $listModel->id),
+                ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
+
+            return $this->getErrorResponse($e);
+        }
+
         $data['flare'] = $engine;
         $data['content_model'] = $contentModel;
         $data['headline'] = Str::normalizeHeadline($contentModel->headline ?: null);
@@ -150,6 +169,38 @@ final class ListViewController extends AbstractContentElementController
 
             throw $e;
         }
+    }
+
+    /**
+     * Asserts that nothing foreign occupies the view's template slot.
+     *
+     * The template resolves the view as `{% set flare_list = flare_list ?? flare.createView %}`, so any value already
+     * stored under that key silently wins over the view and every subsequent property access fails. The
+     * `tl_content.flare_list` column used to do exactly that whenever Contao spread the content row into the top-level
+     * template context; it has since been renamed to `flare_listId`. Fail loudly instead of rendering a broken element.
+     *
+     * @param array<string, mixed> $data
+     *
+     * @throws FlareException If the slot holds anything but null or an InteractiveView.
+     */
+    private function assertViewSlotIsFree(array $data): void
+    {
+        $current = $data[self::TEMPLATE_VAR_VIEW] ?? null;
+
+        if (null === $current || $current instanceof InteractiveView) {
+            return;
+        }
+
+        throw new FlareException(\sprintf(
+            'Template variable "%s" must be null or an instance of %s, got %s. If the column %s.%s still exists, '
+            . 'run "contao:migrate" to rename it to %s.',
+            self::TEMPLATE_VAR_VIEW,
+            InteractiveView::class,
+            \get_debug_type($current),
+            ContentContainer::TABLE_NAME,
+            self::TEMPLATE_VAR_VIEW,
+            ContentContainer::FIELD_LIST,
+        ));
     }
 
     protected function getBackendResponse(Template $template, ContentModel $model, Request $request): Response

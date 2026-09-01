@@ -8,8 +8,6 @@ import { themes as prismThemes } from 'prism-react-renderer';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
-const uriPath = 'contao-flare-bundle'
-
 // Docs path of the latest stable version — bump when cutting a new release
 // with `npm run docusaurus docs:version <x>` (see AGENTS.md).
 const latestDocsPath = '/docs/v0.1/'
@@ -31,16 +29,16 @@ const config = {
   },
 
   // Set the production url of your site here
-  url: 'https://heimrichhannot.github.io',
+  url: 'https://flare.heimrich-hannot.com',
   trailingSlash: false,
-  // Set the /<baseUrl>/ pathname under which your site is served
-  // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: `/${uriPath}/`,
+  // The site is served from the root of its own (custom) domain — see
+  // static/CNAME for the GitHub Pages custom-domain record.
+  baseUrl: '/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
   organizationName: 'heimrichhannot', // Usually your GitHub org/user name.
-  projectName: uriPath, // Usually your repo name.
+  projectName: 'contao-flare-bundle', // Usually your repo name.
   deploymentBranch: 'gh-pages', // The branch that GitHub pages will deploy from.
 
   onBrokenLinks: 'throw',

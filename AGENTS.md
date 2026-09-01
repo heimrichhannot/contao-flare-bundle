@@ -18,7 +18,7 @@ npm run clear      # clear Docusaurus caches
 
 There are no tests or linters; `npm run build` is the verification step.
 
-Deployment is automatic: pushing to `docs/main` triggers `.github/workflows/deploy.yaml`, which builds and deploys to GitHub Pages at `https://heimrichhannot.github.io/contao-flare-bundle/`. Do not use `npm run deploy` (the gh-pages branch flow is not used).
+Deployment is automatic: pushing to `docs/main` triggers `.github/workflows/deploy.yaml`, which builds and deploys to GitHub Pages at `https://flare.heimrich-hannot.com/` (custom domain; `static/CNAME` carries the record). Do not use `npm run deploy` (the gh-pages branch flow is not used).
 
 ## Structure
 
@@ -50,4 +50,4 @@ Only when work on a v0.3 actually starts (not before): `npm run docusaurus docs:
 
 - Committing with decent commit messages is fine, but never push — pushing `docs/main` deploys the live site.
 - Never touch the obfuscated mailto link in `src/pages/imprint.md` or the footer links in `docusaurus.config.js`. The email is spam-protected via HTML entity obfuscation, and `swcHtmlMinimizer` is deliberately disabled in the config to keep the minifier from decoding it — don't re-enable it.
-- The site is served under the `/contao-flare-bundle/` base URL; use root-relative links only through Docusaurus conventions (markdown links to doc IDs, `@site/` imports), not hard-coded absolute paths.
+- The site is served from the root of its own domain (`baseUrl: '/'`); still use root-relative links only through Docusaurus conventions (markdown links to doc IDs, `@site/` imports), not hard-coded absolute paths, so a future base-path change stays a config-only edit.

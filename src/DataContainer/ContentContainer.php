@@ -14,5 +14,5 @@ class ContentContainer
     public const FIELD_JUMP_TO = 'flare_jumpTo';
     public const FIELD_JUMP_TO_READER = 'flare_jumpToReader';
     public const FIELD_JUMP_TO_LISTVIEW = 'flare_jumpToListView';
-    public const FIELD_LIST = 'flare_list';
+    public const FIELD_LIST = 'flare_listId';
 }

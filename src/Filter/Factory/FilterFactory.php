@@ -95,8 +95,10 @@ final readonly class FilterFactory
     /**
      * @throws FlareException
      */
-    private function resolveElement(FilterElementInterface|string $element, ?string $source = null): FilterElementInterface
-    {
+    private function resolveElement(
+        FilterElementInterface|string $element,
+        ?string                       $source = null
+    ): FilterElementInterface {
         if ($element instanceof FilterElementInterface) {
             return $element;
         }

@@ -23,6 +23,18 @@ final class ConfigBuilder implements ConfigBuilderInterface
         return $this;
     }
 
+    public function unset(string $key): self
+    {
+        unset($this->config[$key]);
+
+        return $this;
+    }
+
+    public function has(string $key): bool
+    {
+        return \array_key_exists($key, $this->config);
+    }
+
     public function get(string $key): mixed
     {
         return $this->config[$key] ?? null;

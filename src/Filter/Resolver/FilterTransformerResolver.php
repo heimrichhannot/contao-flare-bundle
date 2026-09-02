@@ -51,7 +51,9 @@ final class FilterTransformerResolver
             return null;
         }
 
-        $transformer($config = new ConfigBuilder(), $source);
+        $config = new ConfigBuilder();
+
+        $transformer($config, $source);
 
         return $config->all();
     }

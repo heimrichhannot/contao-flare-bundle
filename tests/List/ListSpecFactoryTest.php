@@ -7,6 +7,7 @@ namespace HeimrichHannot\FlareBundle\Tests\List;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
+use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
@@ -18,10 +19,13 @@ final class ListSpecFactoryTest extends TestCase
 {
     private function createFactory(?ListDriverRegistry $registry = null): ListSpecFactory
     {
+        $registry ??= new ListDriverRegistry();
+
         return new ListSpecFactory(
-            $registry ?? new ListDriverRegistry(),
+            $registry,
             new ListOptionsResolver(new SchemaResolver()),
             new ListTransformerResolver(new EventDispatcher()),
+            new ListDriverResolver($registry),
         );
     }
 

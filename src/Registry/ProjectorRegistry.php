@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Registry;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Projector\ProjectorInterface;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
 
 readonly class ProjectorRegistry
@@ -16,7 +16,7 @@ readonly class ProjectorRegistry
      * @param iterable<ProjectorInterface> $projectors
      */
     public function __construct(
-        #[TaggedIterator('flare.projector')]
+        #[TaggedIterator(ProjectorInterface::FLARE_PROJECTOR_TAG)]
         private iterable $projectors,
     ) {}
 
@@ -26,9 +26,9 @@ readonly class ProjectorRegistry
      * @throws FlareException If no projector is found.
      */
     public function getProjectorFor(
-        ListSpecification $spec,
-        ContextInterface  $config,
-        ?array            $exclude = null
+        ListSpec         $list,
+        ContextInterface $config,
+        ?array           $exclude = null
     ): ProjectorInterface {
         $exclude = $exclude ? \array_fill_keys($exclude, true) : null;
         $winner = null;
@@ -40,11 +40,11 @@ readonly class ProjectorRegistry
                 continue;
             }
 
-            if (!$projector->supports($spec, $config)) {
+            if (!$projector->supports($list, $config)) {
                 continue;
             }
 
-            $priority = $projector->priority($spec, $config);
+            $priority = $projector->priority($list, $config);
 
             if ($priority > $highestPriority) {
                 $highestPriority = $priority;
@@ -56,7 +56,7 @@ readonly class ProjectorRegistry
             throw new FlareException(\sprintf(
                 'No projector found supporting context configuration "%s".',
                 \get_class($config)
-            ));
+            ), method: __METHOD__, source: $list->source ?? 'list inlined');
         }
 
         return $winner;

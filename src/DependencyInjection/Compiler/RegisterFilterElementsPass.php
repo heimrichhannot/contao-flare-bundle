@@ -6,14 +6,11 @@ namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\DependencyInjection\Factory\TypeNameFactory;
-use HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\PriorityTaggedServiceTrait;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
-use Symfony\Component\DependencyInjection\Reference;
 
 final class RegisterFilterElementsPass implements CompilerPassInterface
 {
@@ -30,10 +27,6 @@ final class RegisterFilterElementsPass implements CompilerPassInterface
 
         foreach ($this->findAndSortTaggedServices($tag, $container) as $reference)
         {
-            if (\str_starts_with((string) $reference, 'huh.flare.filter_element._')) {
-                continue;
-            }
-
             $definition = $container->findDefinition((string) $reference);
             $tags = $definition->getTag($tag);
             $definition->clearTag($tag);
@@ -41,43 +34,20 @@ final class RegisterFilterElementsPass implements CompilerPassInterface
             foreach ($tags as $attributes)
             {
                 $type = $this->getFilterElementType($definition, $attributes);
-                $attributes['type'] = $type;
 
-                $serviceId = 'huh.flare.filter_element.' . $type;
-
-                $childDefinition = new ChildDefinition((string) $reference);
-                $childDefinition->setPublic(true);
-
-                $config = $this->getFilterElementConfig($container, $reference, $attributes);
+                /** @see AsFilterElement::__construct */
+                $attribute = new Definition(AsFilterElement::class, [$type, $attributes['isTargeted'] ?? null]);
 
                 /** @see FilterElementRegistry::add() */
-                $registry->addMethodCall('add', [$type, $config]);
+                $registry->addMethodCall('add', [$reference, $attribute, $type]);
 
-                $childDefinition->setTags($definition->getTags());
-                $container->setDefinition($serviceId, $childDefinition);
+                $serviceId = 'flare.filter_element.' . $type;
+
+                $container
+                    ->setAlias($serviceId, (string) $reference)
+                    ->setPublic(true);
             }
         }
-    }
-
-    protected function getFilterElementConfig(
-        ContainerBuilder $container,
-        Reference        $reference,
-        array            $attributes
-    ): Reference {
-        /** @see \HeimrichHannot\FlareBundle\Registry\Descriptor\FilterElementDescriptor::__construct */
-        $definition = new Definition(FilterElementDescriptor::class, [
-            $reference,
-            $attributes,
-            $attributes['palette'] ?? null,
-            $attributes['formType'] ?? null,
-            $attributes['method'] ?? null,
-            $attributes['isTargeted'] ?? null,
-        ]);
-
-        $serviceId = 'huh.flare.filter_element._config_' . ContainerBuilder::hash($definition);
-        $container->setDefinition($serviceId, $definition);
-
-        return new Reference($serviceId);
     }
 
     protected function getFilterElementType(Definition $definition, array $attributes): string

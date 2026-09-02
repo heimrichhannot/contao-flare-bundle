@@ -11,7 +11,7 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Database;
 use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
-use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Util\DcaFieldFilter;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -26,7 +26,7 @@ readonly class FieldsOptionsCallbacks
     public function __construct(
         private ContaoFramework         $contaoFramework,
         private ListContainer           $listContainer,
-        private ListTypeRegistry        $listTypeRegistry,
+        private ListDriverRegistry      $listDriverRegistry,
         private ResourceFinderInterface $resourceFinder,
         private TranslatorInterface     $translator,
     ) {}
@@ -39,7 +39,7 @@ readonly class FieldsOptionsCallbacks
     {
         $options = [];
 
-        foreach ($this->listTypeRegistry->all() as $type => $listTypeConfig)
+        foreach ($this->listDriverRegistry->keys() as $type)
         {
             $options[$type] = $this->translator->trans($type, [], 'flare_list');
         }

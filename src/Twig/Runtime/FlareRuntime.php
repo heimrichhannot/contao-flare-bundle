@@ -14,9 +14,8 @@ use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Event\ReaderSchemaOrgEvent;
-use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\CallableWrapper;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Twig\Extension\RuntimeExtensionInterface;
@@ -28,27 +27,9 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
         private ProjectorRegistry        $projectorRegistry,
     ) {}
 
-    public function project(ListSpecification $spec, ContextInterface $config): ViewInterface
+    public function project(ListSpec $spec, ContextInterface $config): ViewInterface
     {
         return $this->projectorRegistry->getProjectorFor($spec, $config)->project($spec, $config);
-    }
-
-    /**
-     * @throws \InvalidArgumentException
-     */
-    public function getListModel(ListModel|string|int $listModel): ?ListModel
-    {
-        if ($listModel instanceof ListModel) {
-            return $listModel;
-        }
-
-        $listModel = ListModel::findByPk((int) $listModel);
-
-        if ($listModel instanceof ListModel) {
-            return $listModel;
-        }
-
-        throw new \InvalidArgumentException('Invalid list model');
     }
 
     public function getTlContent(Model $model): ?callable
@@ -121,7 +102,7 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
         return [];
     }
 
-    public function getSchemaOrg(array $context, ?Model $model = null, ?ListSpecification $list = null): ?array
+    public function getSchemaOrg(array $context, ?Model $model = null, ?ListSpec $list = null): ?array
     {
         $model ??= $context['model'] ?? null;
         if (!$model instanceof Model) {

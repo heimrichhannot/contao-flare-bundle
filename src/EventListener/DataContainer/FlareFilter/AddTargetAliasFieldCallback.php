@@ -9,13 +9,11 @@ use Contao\CoreBundle\DataContainer\PaletteManipulator;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
-use HeimrichHannot\FlareBundle\EventListener\DataContainer\AutoTypePalettesCallback;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 
 /**
  * Callback class that adds a targetAlias field to the filter palette when the filter type declares isTargeted.
- * > Required to load before {@see AutoTypePalettesCallback}, hence the priority.
  *
  * @internal For internal use only. Do not call this class or its methods directly.
  */
@@ -42,11 +40,7 @@ readonly class AddTargetAliasFieldCallback
             return;
         }
 
-        if (!$descriptor = $this->filterElementRegistry->get($filterModel->type)) {
-            return;
-        }
-
-        if (!$descriptor->isTargeted()) {
+        if (!$this->filterElementRegistry->getAttribute($filterModel->type)?->isTargeted) {
             return;
         }
 

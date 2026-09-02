@@ -7,45 +7,65 @@ namespace HeimrichHannot\FlareBundle\Engine\Loader;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Resolver\FilterValueResolver;
-use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
+use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Util\EntryCache;
 
 readonly class ValidationLoader implements ValidationLoaderInterface
 {
+    protected EntryCache $entryCache;
+
     public function __construct(
-        private FilterValueResolver    $filterValueResolver,
-        private ListQueryDirector      $listQueryDirector,
         private ValidationLoaderConfig $config,
-    ) {}
+        private FilterFactory          $filterFactory,
+        private ListQueryDirector      $listQueryDirector,
+    ) {
+        $this->entryCache = new EntryCache($this->config->list->dc);
+    }
+
+    public function getEntryCache(): EntryCache
+    {
+        return $this->entryCache;
+    }
 
     /**
      * @throws FlareException
      */
     public function fetchEntryById(int $id): ?array
     {
-        if ($hit = $this->config->context->getEntryCache()[$id] ?? null)
-            // Fast lane cache check
+        if ($this->entryCache->has($id))
         {
-            return $hit;
+            return $this->entryCache->get($id);
         }
 
         try
         {
-            // IMPORTANT: clone the spec to not modify the original, i.e., when adding the id filter
-            $list = clone $this->config->list;
-
-            $idDefinition = SimpleEquationElement::define(
-                equationLeft: 'id',
-                equationOperator: SqlEquationOperator::EQUALS,
-                equationRight: $id,
+            $idDefinition = $this->filterFactory->create(
+                element: SimpleEquationFilterElement::TYPE,
+                config: [
+                    'intrinsic' => true,
+                    'left' => 'id',
+                    'operator' => SqlEquationOperator::EQUALS,
+                    'right' => $id,
+                ],
             );
 
-            $list->getFilters()->add($idDefinition);
+            $list = $this->config->list->withFilter($idDefinition);
 
-            return $this->executeQuery($list, $this->config->context);
+            $entry = $this->executeQuery($list, $this->config->context);
+
+            $this->entryCache->add('id:' . $id, $entry);
+
+            if (($autoItemField = $this->config->autoItemField)
+                && ($autoItem = $entry[$autoItemField] ?? null))
+            {
+                $this->entryCache->add('autoItem:' . $autoItem, $entry);
+            }
+
+            return $entry;
         }
         catch (FlareException $e)
         {
@@ -53,7 +73,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
         }
         catch (\Throwable $e)
         {
-            throw new FlareException($e->getMessage(), $e->getCode(), $e);
+            throw new FlareException($e->getMessage(), $e->getCode(), $e, method: __METHOD__);
         }
     }
 
@@ -66,20 +86,33 @@ readonly class ValidationLoader implements ValidationLoaderInterface
             return null;
         }
 
+        if ($entry = $this->entryCache->get('autoItem:' . $autoItem)) {
+            return $entry;
+        }
+
         try
         {
-            // IMPORTANT: clone the spec to not modify the original
-            $list = clone $this->config->list;
-
-            $autoItemDefinition = SimpleEquationElement::define(
-                equationLeft: $this->config->autoItemField,
-                equationOperator: SqlEquationOperator::EQUALS,
-                equationRight: $autoItem,
+            $autoItemDefinition = $this->filterFactory->create(
+                element: SimpleEquationFilterElement::TYPE,
+                config: [
+                    'intrinsic' => true,
+                    'left' => $this->config->autoItemField,
+                    'operator' => SqlEquationOperator::EQUALS,
+                    'right' => $autoItem,
+                ],
             );
 
-            $list->getFilters()->add($autoItemDefinition);
+            $list = $this->config->list->withFilter($autoItemDefinition);
 
-            return $this->executeQuery($list, $this->config->context);
+            $entry = $this->executeQuery($list, $this->config->context);
+
+            $this->entryCache->add('autoItem:' . $autoItem, $entry);
+
+            if ($id = $entry['id'] ?? null) {
+                $this->entryCache->add('id:' . $id, $entry);
+            }
+
+            return $entry;
         }
         catch (FlareException $e)
         {
@@ -87,19 +120,19 @@ readonly class ValidationLoader implements ValidationLoaderInterface
         }
         catch (\Throwable $e)
         {
-            throw new FlareException($e->getMessage(), $e->getCode(), $e);
+            throw new FlareException($e->getMessage(), $e->getCode(), $e, method: __METHOD__);
         }
     }
 
     /**
      * @throws \Exception
      */
-    private function executeQuery(ListSpecification $spec, ValidationContext $config): ?array
+    private function executeQuery(ListSpec $list, ValidationContext $context): array
     {
         $qb = $this->listQueryDirector->createQueryBuilder(new ListQueryConfig(
-            list: $spec,
-            context: $config,
-            filterValues: $this->filterValueResolver->resolve($spec, $config->getFilterValues()),
+            list: $list,
+            context: $context,
+            filterValues: $context->getFilterValues(),
         ));
 
         if (!$qb) {
@@ -112,6 +145,6 @@ readonly class ValidationLoader implements ValidationLoaderInterface
 
         $result->free();
 
-        return $entry ?: null;
+        return $entry ?: [];
     }
 }

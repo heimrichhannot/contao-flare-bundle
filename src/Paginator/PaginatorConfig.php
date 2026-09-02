@@ -189,9 +189,14 @@ class PaginatorConfig implements \Countable, \Serializable, \Stringable
         );
     }
 
+    /**
+     * Get the number of pages.
+     *
+     * @return int The number of pages, or 1 if the total number of items is unknown.
+     */
     public function count(): int
     {
-        return $this->getLastPageNumber();
+        return $this->getLastPageNumber() ?? 1;
     }
 
     public function serialize(): string

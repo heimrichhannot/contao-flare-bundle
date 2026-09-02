@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Integration\ContaoCalendar\Loader;
 
-use HeimrichHannot\FlareBundle\Engine\Context\Interface\PaginatedContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Context\PaginatedContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\GroupsEntriesTrait;

@@ -8,13 +8,12 @@ use Contao\Model;
 use Contao\Model\Collection;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrableInterface;
-use HeimrichHannot\FlareBundle\Specification\DataSource\FilterDataSourceInterface;
 
 /**
  * Class FilterModel
  */
 #[\AllowDynamicProperties]
-class FilterModel extends Model implements FilterDataSourceInterface, PtableInferrableInterface
+class FilterModel extends Model implements PtableInferrableInterface
 {
     use DocumentsFilterModelTrait, PtableInferrableTrait;
 
@@ -27,7 +26,7 @@ class FilterModel extends Model implements FilterDataSourceInterface, PtableInfe
         return (string) $this->id;
     }
 
-    public function getFilterType(): string
+    public function getFilterElementType(): string
     {
         return (string) $this->type;
     }
@@ -64,7 +63,7 @@ class FilterModel extends Model implements FilterDataSourceInterface, PtableInfe
     public static function findByPid(int $pid, ?bool $published = null): Collection
     {
         $result = $published !== null
-            ? static::findBy(['pid=?', 'published=?'], [$pid, $published], ['order' => 'sorting'])
+            ? static::findBy(['pid=?', 'published=?', 'tstamp>0'], [$pid, $published], ['order' => 'sorting'])
             : static::findBy(['pid=?'], [$pid], ['order' => 'sorting']);
 
         if (!$result) {

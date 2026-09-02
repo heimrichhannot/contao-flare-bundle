@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
 services:
     _defaults:
         autowire:      true
@@ -9,9 +10,9 @@ services:
     HeimrichHannot\FlareBundle\:
         resource: ../src
         exclude:
-            - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Dto,Engine,Event,Integration,Model,Trait,Util}
-            - ../src/{Filter,Form,InferPtable,List,Paginator,Query,Sort,Specification}/*.php
-            - ../src/Registry/Descriptor
+            - ../src/{Config,Contao,ContaoManager,Contract,DependencyInjection,Dto,Engine,Event,Integration,Model,Trait,Util}
+            - ../src/{Filter,Form,InferPtable,List,Paginator,Query,Sort}/*.php
+            - ../src/DataContainer/Builder
 
     HeimrichHannot\FlareBundle\Engine\:
         resource: ../src/Engine
@@ -21,13 +22,13 @@ services:
             - ../src/Engine/Loader
             - ../src/Engine/View
 
-    HeimrichHannot\FlareBundle\Filter\Resolver\FilterInvokerResolver:
-        arguments:
-            $invokerLocator: null # populated by compiler pass
-
     # Util classes registered as twig globals must be defined as services
     HeimrichHannot\FlareBundle\Util\Env: ~
     HeimrichHannot\FlareBundle\Util\Str: ~
+
+    # Not shared: each consumer keeps its own per-key schema memoization space
+    HeimrichHannot\FlareBundle\Config\SchemaResolver:
+        shared: false
 
 #    bind:
 #      $projectDir: '%kernel.project_dir%'

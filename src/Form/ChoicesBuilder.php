@@ -8,6 +8,7 @@ use Contao\Model;
 use HeimrichHannot\FlareBundle\Contract\LabelableInterface;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\Form\ChoiceList\Loader\CallbackChoiceLoader;
 use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -44,7 +45,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  *
  * Group support ({@see addGroup()}, {@see removeGroup()}) is reserved and not yet implemented.
  *
- * @mago-expect lint:too-many-properties
+ * @mago-expect lint:too-many-methods
  */
 class ChoicesBuilder
 {
@@ -69,7 +70,6 @@ class ChoicesBuilder
     // @phpstan-ignore property.onlyWritten
     private array $choiceGroupMap = [];
     private string $modelSuffix = '';
-    private bool $enabled = false;
     private bool $emptyOption = false;
     private string $emptyOptionValue = self::EMPTY_CHOICE_VALUE_DEFAULT;
     private LabelableInterface|string|null $emptyOptionLabel = null;
@@ -171,36 +171,6 @@ class ChoicesBuilder
         return $this;
     }
 
-    /** @api */
-    public function setEnabled(bool $enabled): static
-    {
-        $this->enabled = $enabled;
-
-        return $this;
-    }
-
-    /** @api */
-    public function isEnabled(): bool
-    {
-        return $this->enabled;
-    }
-
-    /** @api */
-    public function enable(): static
-    {
-        $this->enabled = true;
-
-        return $this;
-    }
-
-    /** @api */
-    public function disable(): static
-    {
-        $this->enabled = false;
-
-        return $this;
-    }
-
     public function hasEmptyOption(): bool
     {
         return $this->emptyOption;
@@ -272,6 +242,11 @@ class ChoicesBuilder
         return $choices;
     }
 
+    public function buildCallbackChoiceLoader(): CallbackChoiceLoader
+    {
+        return new CallbackChoiceLoader($this->buildChoices(...));
+    }
+
     /** @api */
     public function buildChoiceValueCallback(): callable
     {
@@ -281,7 +256,9 @@ class ChoicesBuilder
                 return $this->emptyOptionValue;
             }
 
-            if (!$alias = \array_search($choice, $this->choices, true))
+            $alias = \array_search($choice, $this->choices, true);
+
+            if ($alias === false)
             {
                 return '';
             }
@@ -365,7 +342,7 @@ class ChoicesBuilder
      *
      * @api
      */
-    public function buildOptions(): array
+    public function buildContaoOptions(): array
     {
         $options = [];
 
@@ -380,6 +357,35 @@ class ChoicesBuilder
             $value = $this->choiceValues[$alias] ?? $choice;
             $options[$alias] = $labelFactory($choice, $alias, $value);
         }
+
+        return $options;
+    }
+
+    /**
+     * Apply options to a Symfony Forms-compatible options array for a form field.
+     *
+     * @param array &$options
+     * @return $this
+     */
+    public function applyFormOptions(array &$options): self
+    {
+        $options['choice_loader'] = $this->buildCallbackChoiceLoader();
+        $options['choice_label'] = $this->buildChoiceLabelCallback();
+        $options['choice_value'] = $this->buildChoiceValueCallback();
+
+        return $this;
+    }
+
+    /**
+     * Generate a Symfony Forms-compatible options array for a form field.
+     *
+     * @return array
+     */
+    public function buildFormOptions(): array
+    {
+        $options = [];
+
+        $this->applyFormOptions($options);
 
         return $options;
     }

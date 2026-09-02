@@ -22,12 +22,12 @@ readonly class EventsReaderPageMetaListener
         global $objPage;
 
         /** @var CalendarEventsModel $model */
-        $model = $event->getDisplayModel();
+        $model = $event->displayModel;
         if (!$model instanceof CalendarEventsModel) {
             return;
         }
 
-        $pageMeta = $event->getPageMeta();
+        $pageMeta = $event->pageMeta;
 
         $pageMeta->setTitle($this->htmlDecoder->inputEncodedToPlainText(
             Str::coalesce($model->pageTitle, $model->title, $objPage?->title) ?? ''
@@ -51,6 +51,6 @@ readonly class EventsReaderPageMetaListener
             $pageMeta->setRobots($robots);
         }
 
-        $event->setPageMeta($pageMeta);
+        $event->pageMeta = $pageMeta;
     }
 }

@@ -15,26 +15,11 @@ class ListViewRenderEvent extends Event
     use ModifiesTemplateTrait;
 
     public function __construct(
-        private readonly ContentModel $contentModel,
-        private readonly Engine       $engine,
-        private readonly ListModel    $listModel,
+        public readonly ContentModel $contentModel,
+        public readonly Engine       $engine,
+        public readonly ListModel    $listModel,
         private Template              $template,
     ) {}
-
-    public function getContentModel(): ContentModel
-    {
-        return $this->contentModel;
-    }
-
-    public function getEngine(): Engine
-    {
-        return $this->engine;
-    }
-
-    public function getListModel(): ListModel
-    {
-        return $this->listModel;
-    }
 
     public function getTemplate(): Template
     {

@@ -51,7 +51,10 @@ class FilterQueryBuilder
     public function column(string $column): string
     {
         if (!\preg_match('/^[a-zA-Z0-9_]+$/', $column)) {
-            throw new FilterException('Invalid column name: only alphanumeric characters and underscores are allowed.');
+            throw new FilterException(
+                'Invalid column name: only alphanumeric characters and underscores are allowed.',
+                method: __METHOD__,
+            );
         }
 
         return $this->connection->quoteIdentifier($this->alias() . '.' . $column);

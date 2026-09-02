@@ -6,11 +6,16 @@ namespace HeimrichHannot\FlareBundle\Engine\Mod;
 
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
-use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
+use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class SimpleEquationMod extends AbstractMod
 {
+    public function __construct(
+        private readonly FilterFactory $filterFactory,
+    ) {}
+
     public static function getType(): string
     {
         return 'equation';
@@ -18,20 +23,17 @@ class SimpleEquationMod extends AbstractMod
 
     public function __invoke(Engine $engine, array $options): void
     {
-        $filter = SimpleEquationElement::define(
-            equationLeft: $options['operand1'],
-            equationOperator: $options['operator'],
-            equationRight: $options['operand2'],
+        $filter = $this->filterFactory->create(
+            element: SimpleEquationFilterElement::TYPE,
+            config: [
+                'intrinsic' => true,
+                'left' => $options['operand1'],
+                'operator' => $options['operator'],
+                'right' => $options['operand2'],
+            ],
         );
 
-        $filters = $engine->getList()->getFilters();
-
-        if ($name = $options['name']) {
-            $filters->set($name, $filter);
-            return;
-        }
-
-        $filters->add($filter);
+        $engine->setList($engine->getList()->withFilter($filter, $options['name'] ?: null));
     }
 
     public function configureOptions(OptionsResolver $resolver): void

@@ -4,37 +4,43 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterCallback;
 
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
-use HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement\CodefogTagsChoiceElement;
+use HeimrichHannot\FlareBundle\Event\ElementDcaEvent;
+use HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement\CodefogTagsChoiceFilterElement;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement\CodefogTagsSearchElement;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegistry;
-use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
+/**
+ * Restricts the targetAlias options of the Codefog tags filter elements to the
+ * active tags relations of the edited list.
+ */
+#[AsEventListener('flare.filter_element.' . CodefogTagsChoiceFilterElement::TYPE . '.dca')]
+#[AsEventListener('flare.filter_element.' . CodefogTagsSearchElement::TYPE . '.dca')]
 readonly class TargetAliasCallback
 {
     public function __construct(
         private CfgTagsJoinsRegistry $joinsRegistry,
     ) {}
 
-    #[AsFilterCallback(CodefogTagsChoiceElement::TYPE, 'fields.targetAlias.options', priority: 20)]
-    #[AsFilterCallback(CodefogTagsSearchElement::TYPE, 'fields.targetAlias.options', priority: 20)]
-    public function onTargetAliasOptions(ListExecutionContext $context): ?array
+    public function __invoke(ElementDcaEvent $event): void
     {
-        $activeTagsAliases = \array_intersect_key(
-            $this->joinsRegistry->all(),
-            \array_flip($context->tableAliasRegistry->getAliases()),
-        );
-
-        if (!$activeTagsAliases) {
-            return null;
+        if (!$context = $event->context->getExecutionContext()) {
+            return;
         }
 
-        $options = [];
+        $event->dca->field('targetAlias')->options(function () use ($context): array {
+            $activeTagsAliases = \array_intersect_key(
+                $this->joinsRegistry->all(),
+                \array_flip($context->tableAliasRegistry->getAliases()),
+            );
 
-        foreach ($activeTagsAliases as $alias => $config) {
-            $options[$alias] = "{$alias} [tl_cfg_tag]";
-        }
+            $options = [];
 
-        return $options;
+            foreach ($activeTagsAliases as $alias => $config) {
+                $options[$alias] = "{$alias} [tl_cfg_tag]";
+            }
+
+            return $options;
+        });
     }
 }

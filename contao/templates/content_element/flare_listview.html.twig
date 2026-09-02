@@ -8,22 +8,6 @@
 
 {% block content %}
 
-    {#
-        set my_list_spec = flare_make_list({
-            dc: 'tl_news',
-            form_name: 'lieselotte',
-            items_per_page: 10,
-        })
-
-        my_list_spec.filters.add(flare_make_filter('eq', { id: 20 }))
-
-        set my_view = flare_project('interactive', my_list_spec, {});
-
-        my_view.form.createView
-        my_view.entries
-        my_view.paginator
-    #}
-
     {% block content_start %}{% endblock %}
 
     {% block filter %}
@@ -48,7 +32,7 @@
             <br><small>{{ 'list.default_template.description'|trans({}, 'flare') }}</small>
         </div>
 
-        {% if app.request.get('_preview') or app.debug %}
+        {% if app.debug %}
             {% for entry in flare_list.entries %}
                 <details>
                     <summary>#{{ entry.id }} <a href="{{ flare_list.to(entry.id) }}">{{ (entry.title ?? entry.email ?? entry.alias ?? null) ?: ('to reader <' ~ loop.index ~ '>') }}</a></summary>

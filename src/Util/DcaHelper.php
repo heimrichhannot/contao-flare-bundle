@@ -151,7 +151,7 @@ class DcaHelper
         }
 
         if ($regex = static::getSqlTypeRegex($expectedType)) {
-            return (bool)\preg_match($regex, $sql);
+            return (bool) \preg_match($regex, $sql);
         }
 
         return false;

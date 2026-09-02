@@ -4,13 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection;
 
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterCallback;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterInvoker;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFlareCallback;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListCallback;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
-use HeimrichHannot\FlareBundle\Registry\Descriptor\FlareCallbackDescriptor;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Util\Env;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ChildDefinition;
@@ -56,39 +51,18 @@ final class HeimrichHannotFlareExtension extends Extension implements PrependExt
         $container->setParameter($this->getAlias() . '.format_label_defaults', $flareConfig['format_label_defaults'] ?? []);
 
         $attributesForAutoconfiguration = [
-            AsListType::class => AsListType::TAG,
+            AsListDriver::class => AsListDriver::TAG,
             AsFilterElement::class => AsFilterElement::TAG,
-            AsFilterInvoker::class => AsFilterInvoker::TAG,
-            // todo(@ericges): remove callbacks in favor of events in v0.2.0
-            AsFlareCallback::class => FlareCallbackDescriptor::TAG,
-            AsFilterCallback::class => FlareCallbackDescriptor::TAG_FILTER_CALLBACK,
-            AsListCallback::class => FlareCallbackDescriptor::TAG_LIST_CALLBACK,
         ];
 
         foreach ($attributesForAutoconfiguration as $attributeClass => $tag)
         {
             $container->registerAttributeForAutoconfiguration(
                 $attributeClass,
-                static function (ChildDefinition $definition, object $attribute, \Reflector $reflector) use ($attributeClass, $tag): void {
+                static function (ChildDefinition $definition, object $attribute) use ($tag): void {
                     $tagAttributes = \property_exists($attribute, 'attributes')
                         ? $attribute->attributes
                         : \get_object_vars($attribute);
-
-                    if ($reflector instanceof \ReflectionMethod)
-                    {
-                        if (isset($tagAttributes['method'])) {
-                            throw new \LogicException(
-                                sprintf(
-                                    '%s attribute cannot declare a method on "%s::%s()".',
-                                    $attributeClass,
-                                    $reflector->getDeclaringClass()->getName(),
-                                    $reflector->getName()
-                                )
-                            );
-                        }
-
-                        $tagAttributes['method'] = $reflector->getName();
-                    }
 
                     $definition->addTag($tag, $tagAttributes);
                 }

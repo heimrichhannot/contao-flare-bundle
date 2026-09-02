@@ -21,7 +21,7 @@ class ViewException extends FlareException
 
         return new self(
             message: \sprintf('Expected instance of %s, got %s', $expectedClass, $type),
-            method: $method
+            method: $method,
         );
     }
 }

@@ -4,64 +4,43 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Context;
 
-use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Reader\BackLink;
+use HeimrichHannot\FlareBundle\Util\LazyPage;
 use Symfony\Component\Validator\Constraints as Assert;
 
 readonly class ValidationContext implements
     ContextInterface,
-    Interface\PaginatedContextInterface
+    PaginatedContextInterface
 {
     use ReaderUrlConfigCreatorTrait;
 
     private PaginatorConfig $paginatorConfig;
+    private LazyPage $jumpToListViewPage;
 
     public static function getContextType(): string
     {
         return 'validation';
     }
 
-    /**
-     * @param null|\Closure(): array $entryCache
-     */
     public function __construct(
-        private ?\Closure                   $entryCache = null,
         #[Assert\PositiveOrZero] public int $jumpToReaderPageId = 0,
         #[Assert\PositiveOrZero] public int $jumpToListViewPageId = 0,
-        #[Assert\NotBlank] private string   $autoItemField = 'id',
+        #[Assert\NotBlank] public string    $autoItemField = 'id',
         private array                       $filterValues = [],
     ) {
         $this->paginatorConfig = new PaginatorConfig(itemsPerPage: 1);
+        $this->jumpToReaderPage = new LazyPage($jumpToReaderPageId);
+        $this->jumpToListViewPage = new LazyPage($jumpToListViewPageId);
     }
 
     public function createBackLink(): ?BackLink
     {
-        if (!$this->jumpToListViewPageId) {
-            return null;
-        }
-
-        if (!$pageModel = PageModel::findByPk($this->jumpToListViewPageId)) {
+        if (!$pageModel = $this->jumpToListViewPage->get()) {
             return null;
         }
 
         return BackLink::fromPage($pageModel);
-    }
-
-    public function getAutoItemField(): string
-    {
-        return $this->autoItemField;
-    }
-
-    public function getEntryCache(): array
-    {
-        if (!\is_callable($this->entryCache)) {
-            return [];
-        }
-
-        // Closure return value MUST NOT be cached locally, as it may change during runtime,
-        // e.g., when used with InteractiveProjection, entries are only available after a lazy fetch.
-        return \is_array($cache = ($this->entryCache)()) ? $cache : [];
     }
 
     public function getFilterValues(): array
@@ -87,7 +66,6 @@ readonly class ValidationContext implements
     public function withFilterValues(array $values): self
     {
         return new self(
-            entryCache: $this->entryCache,
             jumpToReaderPageId: $this->jumpToReaderPageId,
             jumpToListViewPageId: $this->jumpToListViewPageId,
             autoItemField: $this->autoItemField,

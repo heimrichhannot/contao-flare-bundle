@@ -16,9 +16,9 @@ use HeimrichHannot\FlareBundle\Engine\Context\Factory\ValidationContextFactory;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
 use HeimrichHannot\FlareBundle\Exception\ViewException;
+use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
-use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
 use HeimrichHannot\FlareBundle\Util\Env;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -28,7 +28,7 @@ readonly class BreadcrumbListener
     public function __construct(
         private Connection               $connection,
         private EventDispatcherInterface $eventDispatcher,
-        private ListSpecificationFactory $listSpecificationFactory,
+        private ListSpecBuilderFactory   $listFactory,
         private ProjectorRegistry        $projectorRegistry,
         private ValidationContextFactory $validationContextFactory,
     ) {}
@@ -93,11 +93,11 @@ readonly class BreadcrumbListener
                 return $items;
             }
 
-            $listSpec = $this->listSpecificationFactory->create(dataSource: $listModel);
+            $listSpec = $this->listFactory->createFromListModel($listModel)->build();
 
             $validationContext = $this->validationContextFactory->createFromContent(
                 contentModel: $contentModel,
-                listModel: $listModel
+                list: $listSpec,
             );
 
             $validationProjector = $this->projectorRegistry->getProjectorFor($listSpec, $validationContext);
@@ -115,10 +115,10 @@ readonly class BreadcrumbListener
             $pageMetaEvent = $this->eventDispatcher->dispatch(new ReaderPageMetaEvent(
                 contentModel: $contentModel,
                 displayModel: $autoItemModel,
-                listSpecification: $listSpec,
+                list: $listSpec,
             ));
 
-            $title = $pageMetaEvent->getPageMeta()->getTitle();
+            $title = $pageMetaEvent->pageMeta->getTitle();
             $item = &$items[\count($items) - 1];
 
             if ($title && $item)

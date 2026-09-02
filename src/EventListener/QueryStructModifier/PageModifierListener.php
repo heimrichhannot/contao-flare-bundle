@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\EventListener\QueryStructModifier;
 
-use HeimrichHannot\FlareBundle\Engine\Context\Interface\PaginatedContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Context\PaginatedContextInterface;
 use HeimrichHannot\FlareBundle\Event\ModifyListQueryStructEvent;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 

@@ -11,9 +11,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class InteractiveContext implements
     ContextInterface,
-    Interface\FormContextInterface,
-    Interface\PaginatedContextInterface,
-    Interface\SortableContextInterface
+    FormContextInterface,
+    PaginatedContextInterface,
+    SortableContextInterface
 {
     use ReaderUrlConfigCreatorTrait;
 

@@ -11,7 +11,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 readonly class ValidationContext implements
     ContextInterface,
-    Interface\PaginatedContextInterface
+    PaginatedContextInterface
 {
     use ReaderUrlConfigCreatorTrait;
 

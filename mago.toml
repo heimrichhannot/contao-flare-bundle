@@ -41,5 +41,5 @@ find-unused-definitions = true
 find-unused-expressions = false
 analyze-dead-code = false
 check-throws = true
-allow-possibly-undefined-array-keys = false
+strict-array-index-existence = true
 perform-heuristic-checks = true

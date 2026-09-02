@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Engine\Context;
 
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Sort\SortOrderSequence;
+use HeimrichHannot\FlareBundle\Util\LazyPage;
 use Symfony\Component\Validator\Constraints as Assert;
 
 class InteractiveContext implements
@@ -31,7 +32,7 @@ class InteractiveContext implements
         #[Assert\NotBlank] public string    $autoItemField = 'id',
         public ?string                      $pageParam = null,
     ) {
-        $this->initJumpToReaderPage();
+        $this->jumpToReaderPage = new LazyPage($jumpToReaderPageId);
     }
 
     public function getFormName(): string
@@ -71,13 +72,13 @@ class InteractiveContext implements
     ): static {
         return new self(
             paginatorConfig: $paginatorConfig ?? $this->paginatorConfig,
-            sortOrderSequence: $this->sortOrderSequence,
             formName: $formName ?? $this->formName,
+            sortOrderSequence: $this->sortOrderSequence,
             contentModelId: $this->contentModelId,
             formActionPage: $this->formActionPage,
             jumpToReaderPageId: $this->jumpToReaderPageId,
             autoItemField: $this->autoItemField,
-            pageParam: $pageParam ?? $this->pageParam
+            pageParam: $pageParam ?? $this->pageParam,
         );
     }
 }

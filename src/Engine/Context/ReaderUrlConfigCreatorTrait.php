@@ -6,23 +6,16 @@ namespace HeimrichHannot\FlareBundle\Engine\Context;
 
 use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlConfig;
+use HeimrichHannot\FlareBundle\Util\LazyPage;
 
 trait ReaderUrlConfigCreatorTrait
 {
-    private \Closure $jumpToReaderPage;
-
-    final protected function initJumpToReaderPage(): void
-    {
-        $this->jumpToReaderPage = function (): ?PageModel {
-            $pageModel = PageModel::findByPk($this->jumpToReaderPageId);
-            $this->jumpToReaderPage = static fn (): ?PageModel => $pageModel;
-            return $pageModel;
-        };
-    }
+    /** Must be initialized by the using class' constructor. */
+    private readonly LazyPage $jumpToReaderPage;
 
     protected function getJumpToReaderPage(): ?PageModel
     {
-        return ($this->jumpToReaderPage)();
+        return $this->jumpToReaderPage->get();
     }
 
     public function createReaderUrlConfig(): ?ReaderUrlConfig

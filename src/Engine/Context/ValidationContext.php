@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Context;
 
-use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Reader\BackLink;
+use HeimrichHannot\FlareBundle\Util\LazyPage;
 use Symfony\Component\Validator\Constraints as Assert;
 
 readonly class ValidationContext implements
@@ -16,8 +16,7 @@ readonly class ValidationContext implements
     use ReaderUrlConfigCreatorTrait;
 
     private PaginatorConfig $paginatorConfig;
-    private \Closure $jumpToListViewPage;
-    private \Closure $jumpToReaderPage;
+    private LazyPage $jumpToListViewPage;
 
     public static function getContextType(): string
     {
@@ -31,23 +30,13 @@ readonly class ValidationContext implements
         private array                       $filterValues = [],
     ) {
         $this->paginatorConfig = new PaginatorConfig(itemsPerPage: 1);
-
-        $this->jumpToListViewPage = function (): ?PageModel {
-            $pageModel = PageModel::findByPk($this->jumpToListViewPageId);
-            $this->jumpToListViewPage = static fn (): ?PageModel => $pageModel;
-            return $pageModel;
-        };
-
-        $this->initJumpToReaderPage();
+        $this->jumpToReaderPage = new LazyPage($jumpToReaderPageId);
+        $this->jumpToListViewPage = new LazyPage($jumpToListViewPageId);
     }
 
     public function createBackLink(): ?BackLink
     {
-        if (!$this->jumpToListViewPageId) {
-            return null;
-        }
-
-        if (!$pageModel = ($this->jumpToListViewPage)()) {
+        if (!$pageModel = $this->jumpToListViewPage->get()) {
             return null;
         }
 

@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Form;
 
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
-use HeimrichHannot\FlareBundle\Engine\Context\Interface\FormContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Context\FormContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormBuiltEvent;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;

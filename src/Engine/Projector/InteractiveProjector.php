@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Engine\Projector;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\AggregationContextFactory;
 use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
-use HeimrichHannot\FlareBundle\Engine\Context\Interface\PaginatedContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Context\PaginatedContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveEmptyLoader;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;

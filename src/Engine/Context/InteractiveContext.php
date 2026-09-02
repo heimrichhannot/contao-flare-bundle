@@ -17,6 +17,8 @@ class InteractiveContext implements
 {
     use ReaderUrlConfigCreatorTrait;
 
+    private readonly LazyPage $formActionPage;
+
     public static function getContextType(): string
     {
         return 'interactive';
@@ -27,12 +29,18 @@ class InteractiveContext implements
         #[Assert\NotBlank] public string    $formName,
         public ?SortOrderSequence           $sortOrderSequence = null,
         #[Assert\PositiveOrZero] public int $contentModelId = 0,
-        #[Assert\PositiveOrZero] public int $formActionPage = 0,
+        #[Assert\PositiveOrZero] public int $formActionPageId = 0,
         #[Assert\PositiveOrZero] public int $jumpToReaderPageId = 0,
         #[Assert\NotBlank] public string    $autoItemField = 'id',
         public ?string                      $pageParam = null,
     ) {
+        $this->formActionPage = new LazyPage($formActionPageId);
         $this->jumpToReaderPage = new LazyPage($jumpToReaderPageId);
+    }
+
+    public function getPaginatorConfig(): PaginatorConfig
+    {
+        return $this->paginatorConfig;
     }
 
     public function getFormName(): string
@@ -40,14 +48,9 @@ class InteractiveContext implements
         return $this->formName;
     }
 
-    public function getFormActionPage(): int
+    public function getSortOrderSequence(): ?SortOrderSequence
     {
-        return $this->formActionPage;
-    }
-
-    public function getPaginatorConfig(): PaginatorConfig
-    {
-        return $this->paginatorConfig;
+        return $this->sortOrderSequence;
     }
 
     public function getPaginatorQueryParameter(): ?string
@@ -60,9 +63,9 @@ class InteractiveContext implements
         $this->pageParam = $queryParameter;
     }
 
-    public function getSortOrderSequence(): ?SortOrderSequence
+    public function createFormActionUrl(): ?string
     {
-        return $this->sortOrderSequence;
+        return $this->formActionPage->get()?->getAbsoluteUrl();
     }
 
     public function with(
@@ -75,7 +78,7 @@ class InteractiveContext implements
             formName: $formName ?? $this->formName,
             sortOrderSequence: $this->sortOrderSequence,
             contentModelId: $this->contentModelId,
-            formActionPage: $this->formActionPage,
+            formActionPageId: $this->formActionPageId,
             jumpToReaderPageId: $this->jumpToReaderPageId,
             autoItemField: $this->autoItemField,
             pageParam: $pageParam ?? $this->pageParam,

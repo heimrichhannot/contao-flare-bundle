@@ -41,7 +41,7 @@ readonly class InteractiveContextFactory
             formName: $filterFormName,
             sortOrderSequence: $sortOrderSequence,
             contentModelId: (int) $contentModel->id,
-            formActionPage: (int) $contentModel->{ContentContainer::FIELD_JUMP_TO},
+            formActionPageId: (int) $contentModel->{ContentContainer::FIELD_JUMP_TO},
             jumpToReaderPageId: $jumpToReaderPageId,
             autoItemField: $fieldAutoItem,
         );

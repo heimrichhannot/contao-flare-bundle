@@ -79,9 +79,9 @@ final class FilterFormFactoryTest extends TestCase
                 return 'flare_test';
             }
 
-            public function getFormActionPage(): int
+            public function createFormActionUrl(): ?string
             {
-                return 0;
+                return null;
             }
         };
 

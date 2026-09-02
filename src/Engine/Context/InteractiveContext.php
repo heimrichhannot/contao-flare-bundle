@@ -69,7 +69,7 @@ class InteractiveContext implements
         ?PaginatorConfig $paginatorConfig = null,
         ?string          $formName = null,
         ?string          $pageParam = null,
-    ): static {
+    ): self {
         return new self(
             paginatorConfig: $paginatorConfig ?? $this->paginatorConfig,
             formName: $formName ?? $this->formName,

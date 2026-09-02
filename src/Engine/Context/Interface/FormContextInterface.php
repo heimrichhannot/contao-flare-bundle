@@ -8,5 +8,5 @@ interface FormContextInterface
 {
     public function getFormName(): string;
 
-    public function getFormActionPage(): int;
+    public function createFormActionUrl(): ?string;
 }

@@ -69,6 +69,9 @@ final readonly class ElementDcaListener
             return;
         }
 
+        $type = '';
+        $service = null;
+
         if ($table === FilterModel::getTable())
         {
             $filterModel = FilterModel::findByPk($id);

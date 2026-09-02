@@ -16,6 +16,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
 use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
+use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
@@ -117,8 +118,12 @@ final class ListSpecBuilderTest extends TestCase
 
     public function testBuildFailsWithoutAnyDataContainer(): void
     {
+        $registry = new ListDriverRegistry();
+        $listDriverResolver = new ListDriverResolver($registry);
+
         $builder = new ListSpecBuilder(
-            specFactory: self::specFactory(),
+            listDriverResolver: $listDriverResolver,
+            specFactory: self::specFactory($registry, $listDriverResolver),
             eventDispatcher: new EventDispatcher(),
             driver: new class extends AbstractListDriver {},
             source: 'tl_flare_list.9',
@@ -144,12 +149,16 @@ final class ListSpecBuilderTest extends TestCase
         }
     }
 
-    private static function specFactory(?EventDispatcher $dispatcher = null): ListSpecFactory
-    {
+    private static function specFactory(
+        ListDriverRegistry $registry,
+        ListDriverResolver $listDriverResolver,
+        ?EventDispatcher   $dispatcher = null,
+    ): ListSpecFactory {
         return new ListSpecFactory(
-            new ListDriverRegistry(),
+            $registry,
             new ListOptionsResolver(new SchemaResolver()),
             new ListTransformerResolver($dispatcher ?? new EventDispatcher()),
+            $listDriverResolver,
         );
     }
 
@@ -158,8 +167,12 @@ final class ListSpecBuilderTest extends TestCase
         ?ListDriverInterface $driver = null,
         ?ListModel           $model = null,
     ): ListSpecBuilder {
+        $registry = new ListDriverRegistry();
+        $listDriverResolver = new ListDriverResolver($registry);
+
         return new ListSpecBuilder(
-            specFactory: self::specFactory($dispatcher),
+            listDriverResolver: $listDriverResolver,
+            specFactory: self::specFactory($registry, $listDriverResolver, $dispatcher),
             eventDispatcher: $dispatcher,
             driver: $driver ?? new class extends AbstractListDriver {},
             model: $model ?? new ListModelStub(['dc' => 'tl_test']),

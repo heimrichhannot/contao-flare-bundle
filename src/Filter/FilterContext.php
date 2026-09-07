@@ -20,12 +20,6 @@ final readonly class FilterContext
     public const ATTR_SINGLE_FIELD = 'flare.single_field';
 
     /**
-     * Canonical values-bag key under which a single-field filter's value reaches buildFilter(),
-     * regardless of whether the field was mounted flat or inside a compound filter form.
-     */
-    public const SINGLE_VALUE = '0';
-
-    /**
      * @param array<string, mixed> $config Resolved canonical config of the filter.
      * @param string|int|null $key Key of the filter within {@see ListSpec::$filters}.
      */

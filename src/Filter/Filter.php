@@ -25,9 +25,8 @@ final readonly class Filter
      * @param string $type Registered element type alias. Only used for named event dispatch
      *   (`flare.filter_element.{type}.*`) and targeting lookups.
      * @param array<string, mixed> $config Canonical config (element-defined schema); scalars, arrays, and enums only.
-     * @param array<string, mixed>|null $data Runtime data bag, same shape buildFilter() receives
-     *   (single-field elements read {@see FilterContext::SINGLE_VALUE}). Submitted form
-     *   data takes precedence over this bag.
+     * @param FilterData|null $data Programmatically set runtime data, same as buildFilter()
+     *   receives. Submitted form data takes precedence over it.
      * @param string|null $alias Form name of the filter. An alias that is not a valid Symfony form
      *   name (e.g. the generated "_.{source}" fallback) never mounts form children.
      * @param string|null $targetAlias Table alias the filter's conditions apply to.
@@ -40,17 +39,14 @@ final readonly class Filter
         public FilterElementInterface $element,
         public string                 $type,
         public array                  $config = [],
-        public ?array                 $data = null,
+        public ?FilterData            $data = null,
         public ?string                $alias = null,
         public ?string                $targetAlias = null,
         public bool                   $targetingForced = false,
         public ?string                $source = null,
     ) {}
 
-    /**
-     * @param array<string, mixed>|null $data
-     */
-    public function withData(?array $data): self
+    public function withData(?FilterData $data): self
     {
         return new self(
             element: $this->element,
@@ -101,7 +97,7 @@ final readonly class Filter
             'element' => \get_class($this->element),
             'type' => $this->type,
             'config' => $this->config,
-            'data' => $this->data,
+            'data' => $this->data?->toArray(),
             'alias' => $this->alias,
             'targetAlias' => $this->targetAlias,
             'targetingForced' => $this->targetingForced,

@@ -15,6 +15,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Type\FieldValueChoiceFilterType;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
@@ -83,7 +84,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
         $builder->setAttribute('flare.choices_builder', $choicesBuilder);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
     {
         if ($context->engineContext instanceof ValidationContext) {
             return;
@@ -97,7 +98,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
 
         $value = $config['intrinsic']
             ? $config['preselect']
-            : $this->normalizeRuntimeValue($values[FilterContext::SINGLE_VALUE] ?? null, $context);
+            : $this->normalizeRuntimeValue($data->getSingleValue(), $context);
 
         if (!$value) {
             return;

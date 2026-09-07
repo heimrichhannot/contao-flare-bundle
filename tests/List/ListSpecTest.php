@@ -9,6 +9,7 @@ use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
@@ -35,7 +36,11 @@ final class ListSpecTest extends TestCase
         $element ??= new class implements FilterElementInterface {
             public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 
-            public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void {}
+            public function buildFilter(
+                FilterBuilderInterface $builder,
+                FilterContext $context,
+                FilterData $data,
+            ): void {}
         };
 
         return new Filter(element: $element, type: $type, alias: $alias);

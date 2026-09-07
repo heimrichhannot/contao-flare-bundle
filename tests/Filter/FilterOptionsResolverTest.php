@@ -11,6 +11,7 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -70,7 +71,7 @@ final class ElementConfigAwareElement implements FilterElementInterface, Options
     {
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
     {
     }
 }
@@ -81,7 +82,7 @@ final class PlainElement implements FilterElementInterface
     {
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
     {
     }
 }

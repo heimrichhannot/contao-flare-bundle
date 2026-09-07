@@ -14,6 +14,7 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Type\DcaSelectFilterType;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -95,14 +96,14 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
         $builder->single(ChoiceType::class, $formOptions);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
     {
         $config = $context->config;
         $options = $this->getOptions($context->list->dc, $config['field']) ?? [];
 
         $selected = $config['intrinsic']
             ? $config['preselect']
-            : $this->normalizeSubmittedValue($values[FilterContext::SINGLE_VALUE] ?? null, $options);
+            : $this->normalizeSubmittedValue($data->getSingleValue(), $options);
 
         if (!$selected) {
             return;

@@ -8,6 +8,7 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -20,7 +21,11 @@ final class FilterTest extends TestCase
         return $element ??= new class implements FilterElementInterface {
             public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 
-            public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void {}
+            public function buildFilter(
+                FilterBuilderInterface $builder,
+                FilterContext $context,
+                FilterData $data,
+            ): void {}
         };
     }
 
@@ -34,10 +39,10 @@ final class FilterTest extends TestCase
             source: 'tl_flare_filter.1',
         );
 
-        $withData = $filter->withData(['value' => 42]);
+        $withData = $filter->withData(FilterData::of(['value' => 42]));
 
         self::assertNull($filter->data);
-        self::assertSame(['value' => 42], $withData->data);
+        self::assertSame(['value' => 42], $withData->data?->all());
         self::assertSame(self::element(), $withData->element);
         self::assertSame('test', $withData->type);
         self::assertSame('foo', $withData->alias);

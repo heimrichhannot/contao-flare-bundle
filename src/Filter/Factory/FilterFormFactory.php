@@ -77,34 +77,41 @@ final readonly class FilterFormFactory
             /** @var FilterElementFormBuiltEvent $event */
             $event = $this->eventDispatcher->dispatch(new FilterElementFormBuiltEvent($wrapper, $filterContext));
 
+            if ($event->isCancelled())
+                // Filters can be skipped by event listeners.
+            {
+                continue;
+            }
+
             $single = $wrapper->getSingle();
 
-            if ($event->isCancelled() || (!$single && $wrapper->count() === 0))
+            if (!$single && $wrapper->count() === 0)
                 // Filters without any form representation are never mounted.
             {
                 continue;
             }
 
-            if ($single && $wrapper->count() === 0)
-                // Flat mount: the field lives at the root under the filter's alias.
+            if ($single && $wrapper->count() > 0)
+            {
+                throw new FlareException(
+                    'Filter element cannot declare a single field and add children at the same time.',
+                    method: __METHOD__,
+                );
+            }
+
+            if ($single)
             {
                 $mount = $builder->create($filter->alias, $single['type'], $single['options']);
                 $mount->setAttribute(FilterContext::ATTR_SINGLE_FIELD, true);
             }
             /** @mago-expect lint:no-else-clause The mount decision is a genuine either-or. */
             else
-                // Nested mount: real compound; a single() field materializes under the
-                // canonical field name alongside any explicitly added children.
             {
                 $mount = $builder->create($filter->alias, FormType::class, [
                     'inherit_data' => false,
                     'label'        => false,
                     'required'     => false,
                 ]);
-
-                if ($single) {
-                    $mount->add(FilterContext::SINGLE_VALUE, $single['type'], $single['options']);
-                }
 
                 foreach ($wrapper->all() as $childBuilder) {
                     $mount->add($childBuilder);

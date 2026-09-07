@@ -14,6 +14,7 @@ use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
 use HeimrichHannot\FlareBundle\Enum\BoolMode;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Type\BooleanFilterType;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -58,7 +59,7 @@ class BooleanFilterElement extends AbstractFilterElement
         ]);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
     {
         $config = $context->config;
 
@@ -68,7 +69,7 @@ class BooleanFilterElement extends AbstractFilterElement
 
         $value = $config['intrinsic']
             ? $config['preselect']
-            : $this->resolveRuntimeValue($values[FilterContext::SINGLE_VALUE] ?? null, $config);
+            : $this->resolveRuntimeValue($data->getSingleValue(), $config);
 
         if ($value === null) {
             return;

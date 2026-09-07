@@ -14,6 +14,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Type\ArchiveFilterType;
 use HeimrichHannot\FlareBundle\Filter\Type\BelongsToRelationFilterType;
@@ -170,14 +171,14 @@ class ArchiveFilterElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
     {
         $config = $context->config;
 
         /** @var Model[] $selectedModels */
         $selectedModels = $config['intrinsic']
             ? $this->getWhitelistedParents($context->list, $config)
-            : $this->processRuntimeValue($values[FilterContext::SINGLE_VALUE] ?? null, $context->list, $config);
+            : $this->processRuntimeValue($data->getSingleValue(), $context->list, $config);
 
         $inferrer = $this->getPtableInferrer($context->list);
 

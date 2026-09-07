@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 
 interface FilterElementInterface
@@ -15,8 +16,9 @@ interface FilterElementInterface
      *
      * Single-field elements declare their field via {@see FilterFormBuilderInterface::single()};
      * it is mounted flat on the root form under the filter's alias, and its value reaches
-     * buildFilter() under {@see FilterContext::SINGLE_VALUE}. Multi-field elements add()
-     * children with local names, which mount as a compound sub-form. Pre-submission defaults
+     * buildFilter() as {@see FilterData::getSingleValue()}. Multi-field elements add()
+     * children with local names, which mount as a compound sub-form. Declaring both at once is
+     * not supported and fails when the form is built. Pre-submission defaults
      * belong in the fields' native `data` option. Event listeners registered on the builder are
      * replayed onto the mounted form; event subscribers are not supported. Declaring no fields
      * means the filter has no form representation.
@@ -26,10 +28,10 @@ interface FilterElementInterface
     /**
      * Translates canonical config and runtime data into filter type calls.
      *
-     * @param array<string, mixed> $values Submitted form data of this filter (keyed by the local
-     *   field names declared in buildForm(); single() fields use {@see FilterContext::SINGLE_VALUE})
-     *   or a programmatically set data bag; empty array when neither exists (e.g. non-interactive
-     *   contexts).
+     * @param FilterData $data Submitted form data of this filter — {@see FilterData::get()} by
+     *   the local field names declared in buildForm(), or {@see FilterData::getSingleValue()}
+     *   for a single() field — or the programmatically set {@see \HeimrichHannot\FlareBundle\Filter\Filter::$data};
+     *   {@see FilterData::none()} when neither exists (e.g. non-interactive contexts).
      */
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void;
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void;
 }

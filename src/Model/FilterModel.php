@@ -24,7 +24,7 @@ class FilterModel extends Model implements FilterDataSourceInterface, PtableInfe
 
     public function getFilterIdentifier(): string
     {
-        return (string) $this->id;
+        return \sprintf('%s.id=%s', static::$strTable, $this->id);
     }
 
     public function getFilterType(): string

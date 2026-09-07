@@ -163,13 +163,11 @@ class InteractiveProjector extends AbstractProjector
             }
             catch (OutOfBoundsException $exception)
             {
-                $filterSourceId = $filterDefinition->getDataSource()->getFilterIdentifier();
-
                 throw new FlareException(
                     message: 'Filter form does not contain field: ' . $filterName,
                     previous: $exception,
                     method: __METHOD__,
-                    source: $filterSourceId ? \sprintf('tl_flare_filter.id=%s', $filterSourceId) : 'filter inlined'
+                    source: $filterDefinition->getDataSource()?->getFilterIdentifier() ?? 'filter inlined'
                 );
             }
 

@@ -177,9 +177,7 @@ readonly class FilterExecutor
         return new FilterException(
             \sprintf('[FLARE] Query denied: %s / Callback: %s', $e->getMessage(), $errorMethod),
             code: $e->getCode(), previous: $e, method: $errorMethod,
-            source: $filter->getDataSource()
-                ? \sprintf('tl_flare_filter.id=%s', $filter->getDataSource()->getFilterIdentifier() ?: '0')
-                : null,
+            source: $filter->getDataSource()?->getFilterIdentifier() ?? 'filter inlined',
         );
     }
 }

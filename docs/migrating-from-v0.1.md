@@ -44,16 +44,16 @@ lifecycle methods (see the [custom filter elements guide](./dev/filter-elements/
 | v0.1 | v0.2 |
 |---|---|
 | `formType:` attribute parameter | `buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void` — declare one field via `single()` or add children under local names |
-| `__invoke(FilterInvocation, FilterQueryBuilder)` | `buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void` — emit filter-type calls instead of writing SQL |
+| `__invoke(FilterInvocation, FilterQueryBuilder)` | `buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void` — emit filter-type calls instead of writing SQL |
 | SQL written directly in the element | A [`FilterTypeInterface`](./dev/filter-types.md) service; the element calls `$builder->add(MyFilterType::class, [...])` |
-| `FilterInvocation->getValue()` | `$values` (submitted form data by local child name; `single()` fields under `FilterContext::SINGLE_VALUE`) and `$context->config` (resolved config) |
+| `FilterInvocation->getValue()` | `$data` (a `FilterData`: `$data->get('from')` by local child name, `$data->getSingleValue()` for a `single()` field) and `$context->config` (resolved config) |
 | `FilterQueryBuilder::abort()` in the element | `$builder->abort()` on the `FilterBuilderInterface` (filter types may still use `FilterQueryBuilder::abort()`) |
 
 ## Contracts
 
 | v0.1 contract | v0.2 equivalent |
 |---|---|
-| `FormDataContract::extractFormData()` | Read `$values` in `buildFilter()` — it contains the filter's submitted data |
+| `FormDataContract::extractFormData()` | Read `$data` in `buildFilter()` — it contains the filter's submitted data |
 | `RuntimeValueContract::processRuntimeValue()` | Normalize values inside `buildFilter()` |
 | `IntrinsicValueContract::getIntrinsicValue()` | Read `$context->config` in `buildFilter()` (intrinsic values are config) |
 | `HydrateFormContract::hydrateForm()` | Pass defaults via the fields' `data` option in `buildForm()` |
@@ -147,9 +147,9 @@ class CityFilterElement extends AbstractFilterElement
         $builder->single(TextType::class, ['required' => false]);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
     {
-        if (!$value = $values[FilterContext::SINGLE_VALUE] ?? null) {
+        if (!$value = $data->getSingleValue()) {
             return;
         }
 

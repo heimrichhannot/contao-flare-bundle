@@ -98,11 +98,11 @@ That's it — no attribute, no manual registration.
 **From a filter element**, inside `buildFilter()`:
 
 ```php
-public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
+public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
 {
     $builder->add(MinPriceFilterType::class, [
         'field' => $context->config['field'],
-        'min' => (int) ($values[FilterContext::SINGLE_VALUE] ?? 0),
+        'min' => (int) $data->getSingleValue(0),
     ]);
 }
 ```
@@ -116,13 +116,14 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 
 $filter = new Filter(
     element: new class implements FilterElementInterface {
         public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 
-        public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
+        public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
         {
             $builder->add(MinPriceFilterType::class, ['field' => 'price', 'min' => 10]);
         }

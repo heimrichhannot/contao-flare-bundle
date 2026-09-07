@@ -38,14 +38,14 @@ Constructor properties:
 | `element` | The `FilterElementInterface` instance — a registered element service or an inline instance |
 | `type` | The registered element type alias (e.g. `flare_bool`), if the filter was created from one; used for the `flare.filter_element.{type}.*` named events and targeting lookups |
 | `config` | Canonical config following the element's schema; scalars, arrays, and enums only |
-| `data` | Optional runtime data bag, same shape `buildFilter()` receives; submitted form data takes precedence |
+| `data` | Optional programmatic runtime data (`FilterData`), same as `buildFilter()` receives; submitted form data takes precedence |
 | `alias` | Form name of the filter; an invalid Symfony form name never mounts form children |
 | `targetAlias` | Table alias the filter's conditions apply to |
 | `targetingForced` | Whether the target alias applies even if the element is not marked as targeted |
 | `source` | Provenance for error messages, e.g. `tl_flare_filter.42` |
 
 Because `Filter` is immutable, all modification happens through withers that return a new instance:
-`withConfig()`, `withData()`, `withAlias()`, `withTargetAlias(?string, bool $forced = true)`, `withSource()`.
+`withData()`, `withAlias()`, `withTargetAlias(?string, bool $forced = true)`.
 
 Filters are created without a database row through the `FilterFactory` service — which resolves a
 registered element type alias to its service — or by constructing a `Filter` directly around an inline

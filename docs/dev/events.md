@@ -81,14 +81,14 @@ Dispatched when Schema.org JSON-LD data is generated for a reader page.
 Dispatched before a filter element's `buildFilter()` runs.
 - **Use Case:** Skipping specific filters conditionally, or inspecting the filter context.
 - **Class:** `HeimrichHannot\FlareBundle\Event\FilterElementBuildingEvent`
-- **API:** `getContext(): FilterContext`, `getBuilder(): FilterBuilderInterface`, `getData(): array`,
-  `shouldBuild(): bool` / `setShouldBuild(bool)` — set to `false` to skip the element's `buildFilter()`.
+- **API:** `$context: FilterContext`, `$builder: FilterBuilderInterface`, `$data: FilterData`,
+  `$shouldBuild: bool` — set to `false` to skip the element's `buildFilter()`.
 
 ### `FilterElementBuiltEvent`
 Dispatched after a filter element's `buildFilter()` ran.
 - **Use Case:** Reacting to applied filters or adding further filter-type calls.
 - **Class:** `HeimrichHannot\FlareBundle\Event\FilterElementBuiltEvent`
-- **API:** `getContext(): FilterContext`, `getBuilder(): FilterBuilderInterface`, `getData(): array`
+- **API:** `$context: FilterContext`, `$builder: FilterBuilderInterface`, `$data: FilterData`
 
 ## 6. Filter Form Lifecycle
 

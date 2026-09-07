@@ -47,7 +47,7 @@ Every element implements `FilterElementInterface`:
 ```php
 public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void;
 
-public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void;
+public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void;
 ```
 
 Elements with configuration additionally implement [`OptionsContract`](../contracts/index.mdx) and
@@ -78,7 +78,6 @@ Both `buildForm()` and `buildFilter()` receive a `FilterContext`
 | `$context->config` | The **resolved** canonical config (validated against `configureOptions()`) |
 | `$context->engineContext` | The engine context (`ContextInterface`) — interactive, validation, ... |
 | `$context->key` | Key of the filter within `ListSpec::$filters` |
-| `FilterContext::SINGLE_VALUE` | Constant `'0'` — canonical `$values` key under which a `single()` field's value reaches `buildFilter()` |
 | `FilterContext::ATTR_SELF` | Attribute-bag key under which the context is stored on the per-filter form builder |
 
 ## 3. Config Schema (`configureOptions` + `configureTransformers`)
@@ -160,25 +159,25 @@ filter simply has no form representation.
 Pre-submission defaults go into the fields' native `data` option. Event listeners registered on the builder
 are replayed onto the mounted form; event subscribers are not supported and throw. After your element
 declared its fields, a [`FilterElementFormBuiltEvent`](../events.md) is dispatched so third parties can
-adjust or cancel the filter's form — adding a child alongside a `single()` declaration switches the filter
-to the compound layout, with the single field materialized under `FilterContext::SINGLE_VALUE`.
+adjust or cancel the filter's form. Declaring a `single()` field and adding children at the same time is
+not supported and fails when the form is built.
 
 ## 6. Query Translation (`buildFilter`)
 
 `buildFilter()` turns config and data into one or more **filter-type calls** — it does not write SQL:
 
 - `$context->config` is the resolved canonical config.
-- `$values` holds the submitted form data, keyed by the local field names from `buildForm()` —
-  `single()` fields always arrive under `FilterContext::SINGLE_VALUE`, regardless of how they
-  were mounted (or the filter's programmatic data bag; an empty array otherwise).
+- `$data` is a [`FilterData`](#filterdata) holding the submitted form data — `$data->get('from')` by the
+  local field names from `buildForm()`, or `$data->getSingleValue()` for a `single()` field. It falls back
+  to the filter's programmatic data, and is `FilterData::none()` when neither exists.
 - `$builder->add(SomeFilterType::class, $options, ?$targetAlias)` records a call; the options are validated
   against the filter type's own schema.
 - `$builder->abort()` stops filtering entirely and yields an empty result set.
 
 ```php
-public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
+public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
 {
-    if (!$value = $values[FilterContext::SINGLE_VALUE] ?? null) {
+    if (!$value = $data->getSingleValue()) {
         return; // nothing submitted — this filter adds no conditions
     }
 
@@ -189,6 +188,24 @@ public function buildFilter(FilterBuilderInterface $builder, FilterContext $cont
     ]);
 }
 ```
+
+### FilterData
+
+`FilterData` is an immutable object holding *either* a single field's value *or* the named values of a
+compound filter — never both, mirroring how the filter was mounted.
+
+| Member | Description |
+|---|---|
+| `getSingleValue(mixed $default = null)` | The `single()` field's value, or `$default` if none was supplied |
+| `hasSingle()` | Whether a single value was supplied at all — tells a submitted `null` from "never submitted" |
+| `get(string $name, mixed $default = null)` | A named field's value, or `$default` if the field is absent |
+| `has(string $name)` | Whether the named field was supplied at all |
+| `all()` | All named values; always empty for single-field data |
+| `isEmpty()` | Whether neither a single value nor any named values are present |
+| `count()` / iteration | Over the named values only |
+
+Construct one programmatically with `FilterData::single($value)`, `FilterData::of(['from' => $x])`, or
+`FilterData::none()`.
 
 ## 7. Complete Example
 
@@ -201,6 +218,7 @@ use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Type\SimpleEquationFilterType;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -236,9 +254,9 @@ class CityFilterElement extends AbstractFilterElement
         ]);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
     {
-        if (!$value = $values[FilterContext::SINGLE_VALUE] ?? null) {
+        if (!$value = $data->getSingleValue()) {
             return;
         }
 
@@ -302,10 +320,10 @@ under [Consuming Filter Types](../filter-types.md#4-consuming-filter-types)). Su
 `type` alias and fire no named events.
 
 The `config` array must satisfy the element's `configureOptions()` schema — no DCA row or transformer is
-involved. An optional `data` bag supplies runtime values in the same shape `buildFilter()` receives
-(single-field elements read `FilterContext::SINGLE_VALUE`); submitted form data takes precedence over it.
-Use the `with*()` methods (`withConfig()`, `withData()`, `withAlias()`, `withTargetAlias()`, ...) to derive
-variants — `Filter` is immutable, so they return new instances.
+involved. An optional `data` argument supplies runtime values as a `FilterData` — `FilterData::single($v)`
+for single-field elements, `FilterData::of([...])` for compound ones; submitted form data takes precedence
+over it. Use the `with*()` methods (`withData()`, `withAlias()`, `withTargetAlias()`) to derive variants —
+`Filter` is immutable, so they return new instances.
 
 Add programmatic filters to a list while it is being built — from a list driver's `buildList()` hook or a
 [`ListBuildEvent`](../events.md) listener via `ListSpecBuilder::addFilter()` — or derive a new spec from an

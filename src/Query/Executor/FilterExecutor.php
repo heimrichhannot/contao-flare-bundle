@@ -14,6 +14,7 @@ use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilder;
 use HeimrichHannot\FlareBundle\Filter\FilterCall;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
@@ -50,7 +51,7 @@ readonly class FilterExecutor
         {
             $context = $this->filterContextFactory->create($list, $filter, $options->context, $key);
 
-            $data = (array) ($options->filterValues[$key] ?? $filter->data ?? []);
+            $data = $options->filterValues[$key] ?? $filter->data ?? FilterData::none();
 
             if (!$builders = $this->invokeFilter($filter, $context, $data)) {
                 continue;
@@ -63,15 +64,13 @@ readonly class FilterExecutor
     }
 
     /**
-     * @param array<string, mixed> $data
-     *
      * @return FilterQueryBuilder[]
      *
      * @throws AbortFilteringException
      * @throws FilterException
      * @throws FlareException
      */
-    public function invokeFilter(Filter $filter, FilterContext $context, array $data = []): array
+    public function invokeFilter(Filter $filter, FilterContext $context, FilterData $data): array
     {
         if (!Str::isValidSqlName($table = $context->list->dc))
         {

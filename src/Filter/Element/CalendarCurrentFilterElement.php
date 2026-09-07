@@ -11,6 +11,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Type\CalendarCurrentFilterType;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -95,7 +96,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
         $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validateRange(...));
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
     {
         $config = $context->config;
 
@@ -103,7 +104,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
             return;
         }
 
-        $value = $this->processRuntimeValue($values) ?? [];
+        $value = $this->processRuntimeValue($data) ?? [];
         $from = $value['from'] ?? null;
         $to = $value['to'] ?? null;
 
@@ -181,30 +182,30 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
     }
 
     /**
-     * @param array<string, mixed> $value
-     *
      * @return array{from: ?\DateTimeInterface, to: ?\DateTimeInterface}|null
      */
-    private function processRuntimeValue(array $value): ?array
+    private function processRuntimeValue(FilterData $data): ?array
     {
-        if (!\array_key_exists('from', $value) && !\array_key_exists('to', $value))
+        if (!$data->has('from') && !$data->has('to'))
+            // Programmatically set data may carry the bounds positionally instead of by name.
         {
-            if (\count($value) !== 2)
-            {
+            $values = $data->all();
+
+            if (\count($values) !== 2) {
                 return null;
             }
 
-            $value = \array_values($value);
+            $values = \array_values($values);
 
             return [
-                'from' => $this->mixedToDateTime($value[0] ?? null),
-                'to' => $this->mixedToDateTime($value[1] ?? null),
+                'from' => $this->mixedToDateTime($values[0] ?? null),
+                'to' => $this->mixedToDateTime($values[1] ?? null),
             ];
         }
 
         return [
-            'from' => $this->mixedToDateTime($value['from'] ?? null),
-            'to' => $this->mixedToDateTime($value['to'] ?? null),
+            'from' => $this->mixedToDateTime($data->get('from')),
+            'to' => $this->mixedToDateTime($data->get('to')),
         ];
     }
 

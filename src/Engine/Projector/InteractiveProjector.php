@@ -16,6 +16,7 @@ use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFormFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
@@ -117,10 +118,11 @@ class InteractiveProjector extends AbstractProjector
 
     /**
      * Collects each filter's form data, keyed by the filter's list-specification key.
-     * Flat-mounted single fields are normalized to the canonical values-bag shape
-     * `[FilterContext::SINGLE_VALUE => value]` that buildFilter() consumes.
      *
-     * @return array<string|int, array<string, mixed>>
+     * Filters that contribute nothing stay absent from the map, so a filter's programmatically
+     * set data can take over downstream.
+     *
+     * @return array<string|int, FilterData>
      */
     protected function collectFilterData(ListSpec $list, FormInterface $form): array
     {
@@ -141,7 +143,7 @@ class InteractiveProjector extends AbstractProjector
                 $value = $child->getData();
 
                 if ($form->isSubmitted() || !\is_null($value)) {
-                    $data[$key] = [FilterContext::SINGLE_VALUE => $value];
+                    $data[$key] = FilterData::single($value);
                 }
 
                 continue;
@@ -149,7 +151,7 @@ class InteractiveProjector extends AbstractProjector
 
             if ($form->isSubmitted())
             {
-                $data[$key] = (array) $child->getData();
+                $data[$key] = FilterData::of((array) $child->getData());
                 continue;
             }
 
@@ -162,7 +164,7 @@ class InteractiveProjector extends AbstractProjector
             );
 
             if ($values) {
-                $data[$key] = $values;
+                $data[$key] = FilterData::of($values);
             }
         }
 
@@ -170,6 +172,8 @@ class InteractiveProjector extends AbstractProjector
     }
 
     /**
+     * @param array<string|int, FilterData> $filterValues
+     *
      * @throws FlareException
      */
     protected function createAggregationView(

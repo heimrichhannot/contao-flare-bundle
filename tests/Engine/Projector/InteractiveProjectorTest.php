@@ -9,6 +9,7 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
@@ -24,6 +25,8 @@ final class InteractiveProjectorTest extends TestCase
     /**
      * collectFilterData() touches no constructor dependencies, so the test double
      * skips the parent constructor entirely.
+     *
+     * @return array<string|int, FilterData>
      */
     private function collect(ListSpec $list, FormInterface $form): array
     {
@@ -63,7 +66,11 @@ final class InteractiveProjectorTest extends TestCase
         $element = new class implements FilterElementInterface {
             public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 
-            public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void {}
+            public function buildFilter(
+                FilterBuilderInterface $builder,
+                FilterContext $context,
+                FilterData $data,
+            ): void {}
         };
 
         return new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test', filters: [
@@ -71,7 +78,7 @@ final class InteractiveProjectorTest extends TestCase
         ]);
     }
 
-    public function testFlatSubmittedValueIsKeyedCanonically(): void
+    public function testFlatSubmittedValueBecomesSingleData(): void
     {
         $root = $this->createRootBuilder();
         $this->addFlatChild($root, 'suche');
@@ -79,10 +86,12 @@ final class InteractiveProjectorTest extends TestCase
 
         $form->submit(['suche' => 'term']);
 
-        $this->assertSame(
-            ['sucheKey' => [FilterContext::SINGLE_VALUE => 'term']],
-            $this->collect($this->listWithFilter('sucheKey', 'suche'), $form),
-        );
+        $data = $this->collect($this->listWithFilter('sucheKey', 'suche'), $form);
+
+        $this->assertSame(['sucheKey'], \array_keys($data));
+        $this->assertTrue($data['sucheKey']->hasSingle());
+        $this->assertSame('term', $data['sucheKey']->getSingleValue());
+        $this->assertSame([], $data['sucheKey']->all());
     }
 
     public function testFlatUnsubmittedDefaultIsCollected(): void
@@ -91,10 +100,10 @@ final class InteractiveProjectorTest extends TestCase
         $this->addFlatChild($root, 'suche', ['data' => 'preset']);
         $form = $root->getForm();
 
-        $this->assertSame(
-            ['sucheKey' => [FilterContext::SINGLE_VALUE => 'preset']],
-            $this->collect($this->listWithFilter('sucheKey', 'suche'), $form),
-        );
+        $data = $this->collect($this->listWithFilter('sucheKey', 'suche'), $form);
+
+        $this->assertSame(['sucheKey'], \array_keys($data));
+        $this->assertSame('preset', $data['sucheKey']->getSingleValue());
     }
 
     public function testFlatUnsubmittedWithoutDefaultStaysUnset(): void
@@ -114,10 +123,12 @@ final class InteractiveProjectorTest extends TestCase
 
         $form->submit(['suche' => '']);
 
-        $this->assertSame(
-            ['sucheKey' => [FilterContext::SINGLE_VALUE => null]],
-            $this->collect($this->listWithFilter('sucheKey', 'suche'), $form),
-        );
+        $data = $this->collect($this->listWithFilter('sucheKey', 'suche'), $form);
+
+        $this->assertSame(['sucheKey'], \array_keys($data));
+        // The submitted null must stay distinguishable from "never submitted".
+        $this->assertTrue($data['sucheKey']->hasSingle());
+        $this->assertNull($data['sucheKey']->getSingleValue());
     }
 
     public function testCompoundSubmittedDataIsCollected(): void
@@ -132,10 +143,11 @@ final class InteractiveProjectorTest extends TestCase
 
         $form->submit(['range' => ['from' => 'a', 'to' => 'b']]);
 
-        $this->assertSame(
-            ['rangeKey' => ['from' => 'a', 'to' => 'b']],
-            $this->collect($this->listWithFilter('rangeKey', 'range'), $form),
-        );
+        $data = $this->collect($this->listWithFilter('rangeKey', 'range'), $form);
+
+        $this->assertSame(['rangeKey'], \array_keys($data));
+        $this->assertFalse($data['rangeKey']->hasSingle());
+        $this->assertSame(['from' => 'a', 'to' => 'b'], $data['rangeKey']->all());
     }
 
     public function testCompoundUnsubmittedFieldDefaultsAreCollected(): void
@@ -148,10 +160,10 @@ final class InteractiveProjectorTest extends TestCase
         );
         $form = $root->getForm();
 
-        $this->assertSame(
-            ['rangeKey' => ['from' => 'a']],
-            $this->collect($this->listWithFilter('rangeKey', 'range'), $form),
-        );
+        $data = $this->collect($this->listWithFilter('rangeKey', 'range'), $form);
+
+        $this->assertSame(['rangeKey'], \array_keys($data));
+        $this->assertSame(['from' => 'a'], $data['rangeKey']->all());
     }
 
     public function testFilterWithoutMountedChildIsSkipped(): void

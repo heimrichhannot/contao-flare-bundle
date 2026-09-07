@@ -5,10 +5,15 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Query;
 
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 
 readonly class ListQueryConfig
 {
+    /**
+     * @param array<string|int, FilterData> $filterValues
+     * @param array<string, mixed> $attributes
+     */
     public function __construct(
         public ListSpec $list,
         public ContextInterface  $context,
@@ -18,6 +23,10 @@ readonly class ListQueryConfig
         public array             $attributes = [],
     ) {}
 
+    /**
+     * @param array<string|int, FilterData>|null $filterValues
+     * @param array<string, mixed>|null $attributes
+     */
     public function with(
         ?array $filterValues = null,
         ?bool  $isCounting = null,

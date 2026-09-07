@@ -11,6 +11,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Type\DateRangeFilterType;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -75,7 +76,7 @@ class DateRangeFilterElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
     {
         if (!$field = $context->config['field']) {
             throw new FilterException('Set fieldGeneric in filter model.');
@@ -83,8 +84,8 @@ class DateRangeFilterElement extends AbstractFilterElement
 
         $builder->add(DateRangeFilterType::class, [
             'field' => $field,
-            'from' => $values['from'] ?? null,
-            'to' => $values['to'] ?? null,
+            'from' => $data->get('from'),
+            'to' => $data->get('to'),
         ]);
     }
 

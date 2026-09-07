@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Context;
 
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Reader\BackLink;
 use HeimrichHannot\FlareBundle\Util\LazyPage;
@@ -43,6 +44,9 @@ readonly class ValidationContext implements
         return BackLink::fromPage($pageModel);
     }
 
+    /**
+     * @return array<string|int, FilterData>
+     */
     public function getFilterValues(): array
     {
         return $this->filterValues;
@@ -63,6 +67,9 @@ readonly class ValidationContext implements
         // ignore
     }
 
+    /**
+     * @param array<string|int, FilterData> $values
+     */
     public function withFilterValues(array $values): self
     {
         return new self(

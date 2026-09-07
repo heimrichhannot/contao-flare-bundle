@@ -11,6 +11,7 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Type\SearchKeywordsFilterType;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -61,13 +62,13 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
         $builder->single(TextType::class, $options);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
     {
         $config = $context->config;
 
         $value = $config['intrinsic']
             ? $config['prefill']
-            : ($values[FilterContext::SINGLE_VALUE] ?? null);
+            : $data->getSingleValue();
 
         if (!$value || !\is_string($value)) {
             return;

@@ -18,8 +18,8 @@ class SimpleEquationMod extends AbstractMod
 
     public function __invoke(Engine $engine, array $options): void
     {
-        $operator = SqlEquationOperator::match($options['operator']
-            ?? throw new \InvalidArgumentException('Invalid equation operator provided'));
+        $operator = SqlEquationOperator::match($options['operator'])
+            ?? throw new \InvalidArgumentException('Invalid equation operator provided');
 
         $filter = SimpleEquationElement::define(
             equationLeft: $options['operand1'],

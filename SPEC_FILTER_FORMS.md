@@ -128,18 +128,54 @@ repeated per-element declarations.
 ### 3.4 Capability ports
 
 A form MUST NOT read element-owned config in `decode()`. Anything it needs *pulled* from the element
-is an explicit interface:
+is an explicit interface. For choice-based filters there is exactly one such port:
 
 ```php
 interface ChoiceSourceContract
 {
+    /**
+     * @throws FilterException On invalid filter configuration (no whitelist, no inferrable ptable, …).
+     */
     public function buildChoices(FilterContext $context): ChoicesBuilder;
+
+    /**
+     * @param list<string> $keys Selected choice keys, verbatim — MAY include
+     *   {@see ChoicesBuilder::EMPTY_CHOICE}, whose meaning is element-defined.
+     */
+    public function valueFromChoiceKeys(array $keys, FilterContext $context): ?object;
 }
 ```
 
 Registry filter for the backend select: value class matches **and** every entry in `requires` is
 implemented by the element (plain `instanceof`, resolvable at compile time). This is not a second
 pairing axis — the form still never names an element.
+
+#### The decode division
+
+> The **form** decodes the *widget*: which choice keys did the user pick.
+> The **element** decodes the *domain*: what do those keys mean.
+
+So a generic choice form's `decode()` is:
+
+```php
+$keys = (array) $field->getViewData();          // widget → keys
+return $element->valueFromChoiceKeys($keys, $ctx);   // keys → domain value
+```
+
+This is why the port needs a second method. Choice keys are element-defined: `FieldValueChoice` uses
+bare ids, `ArchiveFilterElement` uses `"<table>.<id>"` in dynamic-ptable mode (§7.4). A form that had
+to parse them would be reading element knowledge through the back door — the very thing `requires`
+exists to prevent.
+
+Two consequences worth stating:
+
+- **The empty-option sentinel is passed through, not swallowed.** It looks like a widget artifact but
+  can carry domain meaning: `ArchiveFilterElement::normalizeFilterValue()` treats a selected empty
+  option as "use the full whitelist" (unless `use_whitelist_for_options_only`). The form therefore
+  forwards `ChoicesBuilder::EMPTY_CHOICE` verbatim and lets the element decide.
+- **Labelling is split.** `buildChoices()` MAY set labels it owns — `setLabelForTable()` fed from
+  element-owned whitelist rows is the real case. The form owns only global overrides (`setLabel()`,
+  `setModelSuffix()`, `setEmptyOption()`) and `applyFormOptions()`.
 
 ---
 
@@ -292,12 +328,44 @@ Additionally, fix `add()` so `choice` carries identity rather than the display s
 
 | stays on the element (via `ChoiceSourceContract`) | moves to the form |
 |---|---|
-| `createChoices()` | `buildPreselectData()` |
-| `getForeignValues()` | `normalizeRuntimeValue()` |
-| `getLocalValues()` | `extractSubmittedData()` |
+| `createChoices()` → `buildChoices()` | `buildPreselectData()` |
+| `getForeignValues()` | `extractSubmittedData()` |
+| `getLocalValues()` | |
+| `normalizeRuntimeValue()` → `valueFromChoiceKeys()` | |
 
-Choice provision is element knowledge (the target field's `foreignKey` relation). The three form-side
-methods largely evaporate, since view data is already the scalar.
+Choice provision is element knowledge (the target field's `foreignKey` relation), and so is key
+interpretation. `normalizeRuntimeValue()` does **not** move to the form — it becomes
+`valueFromChoiceKeys()` on the port and loses its `ChoicesBuilder` rebuild entirely, because view
+data already carries the keys. The two form-side methods largely evaporate.
+
+### 7.4 `ArchiveFilterElement` under the port
+
+Archive is the stress test for this design and it fits, with three notes.
+
+**One value class spans both ptable modes.** `PtableInferrer` selects at runtime between a static
+main ptable (choices keyed `"<id>"`, filter `ArchiveFilterType(field: 'pid', parent_ids: [...])`) and
+a dynamic ptable (choices keyed `"<table>.<id>"`, filter `BelongsToRelationFilterType(parent_groups:,
+submitted_data: <ids grouped by table>)`). The value shape therefore depends on runtime config, not
+on a static declaration — which would break the one-element-one-value-class rule of §3.3 if the two
+modes got separate classes. They do not: `ParentRefValue` holds `array<string $table, list<int> $ids>`
+and the static mode is the single-table degenerate case. `buildFilter()` re-derives the flat vs.
+grouped call from the inferrer exactly as it does today.
+
+**Config re-ownership** per the §4.1 rule:
+
+| config | owner | why |
+|---|---|---|
+| `whitelist_parents`, `group_whitelist_parents` | element | changes matching |
+| `use_whitelist_for_options_only` | element | changes matching (empty selection ⇒ `return` vs. `abort()`) |
+| `format_label`, `format_empty_option`, `has_empty_option` | form | presentation only |
+| `is_mandatory`, `is_multiple`, `is_expanded` | form | presentation only |
+| `preselect` | form | hydration (§4.2) |
+
+**Models leave the form data path.** Today the form's model data is `Model` instances, which
+`processRuntimeValue()` filters against the whitelist. Under keys-based decode the element receives id
+strings and validates them against `getWhitelistedParentIds()` — which it already computes. That
+removes the Model round-trip through the form, simplifies `normalizeFilterValue()`, and keeps Models
+out of value objects as §9 requires.
 
 ---
 
@@ -395,17 +463,40 @@ The contract set is the entire risk; the remaining elements are mechanical.
 
 ---
 
-## 13. Open questions
+## 13. Resolved decisions
 
-1. **`ArchiveFilterElement`** is the largest element (658 lines) and mixes choice provision,
-   preselect handling and ptable inference. Confirm it fits `ChoiceSourceContract` or needs a second
-   capability port. It is the most likely place for this design to need an escape hatch.
-2. **Multi-field forms and `requires`** — a compound form (`DateRange`) needs no capability today.
-   Confirm no compound case needs per-child capability negotiation.
-3. **Form-contributed translations** — form-owned fields need `tl_flare_filter` labels; decide
-   whether forms declare them or they stay in the central language files.
-4. **Element-owned `{form_legend}` fields** — `CalendarCurrentFilterElement::buildDca()` already
-   appends `{form_legend},isLimited` only when not intrinsic (line 142-144). Under §6 that branch
-   disappears and `isLimited` becomes form-owned config. Confirm the same holds for
-   `SearchKeywordsFilterElement::buildDca()` and `DcaSelectFieldFilterElement::buildDca()`, which
-   branch on `intrinsic` the same way.
+Recorded here because each one closes a branch the design could otherwise have taken.
+
+1. **`ArchiveFilterElement` gets a capability port** — and it drove the port's final shape.
+   `ChoiceSourceContract` carries two methods, not one (§3.4), because choice keys are
+   element-defined; Archive's `"<table>.<id>"` keys made that explicit. The port is shared by
+   `FieldValueChoiceFilterElement`, `DcaSelectFieldFilterElement`, `CodefogTagsChoiceFilterElement`
+   and `ArchiveFilterElement`, all served by one generic choice form. No second port is needed —
+   see §7.4 for the mode-spanning value class and the config re-ownership table.
+2. **No compound case needs per-child capability negotiation.** `requires` is declared per form, not
+   per child field. `DateRangeFilterElement` needs no capability at all.
+3. **Form-owned field labels stay in the central language files**
+   (`contao/languages/{en,de}/tl_flare_filter.php`). Forms declare fields and palette segments; they
+   do not declare translations. This keeps `tl_flare_filter`'s label surface in one place, consistent
+   with the shared-column reality of §6.3.
+4. **`intrinsic`-branching `buildDca()` methods collapse into the §6 palette segments.**
+   `CalendarCurrentFilterElement::buildDca()` (lines 142-144) already appends
+   `{form_legend},isLimited` only when not intrinsic — hand-rolling exactly the split §6 formalises.
+   Under the target model that branch disappears and `isLimited` becomes form-owned config. The same
+   applies to `SearchKeywordsFilterElement::buildDca()`, `DcaSelectFieldFilterElement::buildDca()`
+   and `BooleanFilterElement::buildDca()`.
+
+---
+
+## 14. Remaining unknowns
+
+Not blockers, but unverified at spec time.
+
+1. **`serialize()` stability for readonly value objects** is asserted from language semantics in §9,
+   not measured against `ListSpec::hash()`. Write a throwaway test before committing to "no hashing
+   interface".
+2. **`DcaBuilder::selector()`** (§6.3) has no consumer yet. Confirm whether any form in the initial
+   migration actually contributes a subpalette; if none does, defer the API.
+3. **`ArchiveFilterElement::buildPreselectData()`** is currently `ListSpec`-aware. Confirm it reduces
+   to a generic key-lookup against `buildChoices()` once preselect is stored as choice keys, or
+   whether preselect hydration needs its own port method.

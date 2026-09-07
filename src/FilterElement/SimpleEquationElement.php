@@ -47,8 +47,10 @@ class SimpleEquationElement extends AbstractFilterElement
             SqlEquationOperator::IN => $qb->expr()->in($operand, ':eq_right'),
             SqlEquationOperator::NOT_IN => $qb->expr()->notIn($operand, ':eq_right'),
             SqlEquationOperator::IS_NULL => $qb->expr()->isNull($operand),
+            // the default arm below is a runtime safety net for operators added to the enum later
+            // @phpstan-ignore match.alwaysTrue
             SqlEquationOperator::IS_NOT_NULL => $qb->expr()->isNotNull($operand),
-            default => null, // keep this for future operators that might be added to the enum
+            default => null,
         };
 
         if (!$where) {

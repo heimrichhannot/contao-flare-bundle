@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\ConfigProvider;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class SearchKeywordsFilterLogic extends AbstractFilterLogic
+class SearchKeywordsLogic extends AbstractLogic
 {
     public function __construct(
         private readonly ConfigProvider $configProvider,

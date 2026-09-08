@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class SimpleEquationFilterLogic extends AbstractFilterLogic
+class SimpleEquationLogic extends AbstractLogic
 {
     public function configureOptions(OptionsResolver $resolver): void
     {

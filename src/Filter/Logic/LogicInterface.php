@@ -9,7 +9,7 @@ use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AutoconfigureTag(self::FLARE_FILTER_LOGIC_TAG)]
-interface FilterLogicInterface
+interface LogicInterface
 {
     public const FLARE_FILTER_LOGIC_TAG = 'flare.filter_logic';
 

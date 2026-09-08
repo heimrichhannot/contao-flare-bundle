@@ -9,11 +9,11 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Logic\SearchKeywordsFilterLogic;
+use HeimrichHannot\FlareBundle\Filter\Logic\SearchKeywordsLogic;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -62,7 +62,7 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
         $builder->single(TextType::class, $options);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
     {
         $config = $context->config;
 
@@ -78,7 +78,7 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
             return;
         }
 
-        $builder->add(SearchKeywordsFilterLogic::class, [
+        $builder->add(SearchKeywordsLogic::class, [
             'value' => $value,
             'columns' => $columns,
         ]);

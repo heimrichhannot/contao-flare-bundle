@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Logic;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class DateRangeFilterLogic extends AbstractFilterLogic
+class DateRangeLogic extends AbstractLogic
 {
     public function configureOptions(OptionsResolver $resolver): void
     {

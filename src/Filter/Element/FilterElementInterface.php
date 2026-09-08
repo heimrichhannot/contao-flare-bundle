@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
-use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
@@ -33,5 +33,5 @@ interface FilterElementInterface
      *   for a single() field — or the programmatically set {@see \HeimrichHannot\FlareBundle\Filter\Filter::$data};
      *   {@see FilterData::none()} when neither exists (e.g. non-interactive contexts).
      */
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void;
+    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void;
 }

@@ -33,7 +33,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 **Lifecycle taxonomy** — elements and list types own their lifecycle through two method families:
 `configure*` methods are declarative, memoizable setup (`configureOptions` = OptionsResolver schema,
 `configureTransformers` = source→canonical-config mappings); `build*` methods are per-invocation construction
-(`buildDca`, `buildForm`, `buildFilter`, `buildList`, `buildTableRegistry`/`buildBaseQuery`).
+(`buildDca`, `buildForm`, `buildLogic`, `buildList`, `buildTableRegistry`/`buildBaseQuery`).
 
 **Notable subsystems** (beyond the flow above):
 - `src/List/` — `ListSpec` (immutable list DTO: type, dc, filters, canonical config, source), `ListBuilder`

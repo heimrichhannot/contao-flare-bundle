@@ -6,8 +6,8 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterBuilder;
-use HeimrichHannot\FlareBundle\Filter\Logic\AbstractFilterLogic;
+use HeimrichHannot\FlareBundle\Filter\LogicSequencer;
+use HeimrichHannot\FlareBundle\Filter\Logic\AbstractLogic;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use HeimrichHannot\FlareBundle\Registry\FilterLogicRegistry;
 use PHPUnit\Framework\TestCase;
@@ -18,24 +18,24 @@ final class FilterBuilderTest extends TestCase
 {
     public function testRegistryLooksUpFilterTypesByClassName(): void
     {
-        $type = new TestFilterLogic();
+        $type = new TestLogic();
         $registry = new FilterLogicRegistry([$type]);
 
-        self::assertSame($type, $registry->get(TestFilterLogic::class));
-        self::assertSame([TestFilterLogic::class => $type], $registry->all());
-        self::assertNull($registry->get(UnknownFilterLogic::class));
+        self::assertSame($type, $registry->get(TestLogic::class));
+        self::assertSame([TestLogic::class => $type], $registry->all());
+        self::assertNull($registry->get(UnknownLogic::class));
     }
 
     public function testBuilderResolvesOptionsAndRecordsTargetedCalls(): void
     {
-        $builder = new FilterBuilder(
-            new FilterLogicRegistry([new TestFilterLogic()]),
+        $builder = new LogicSequencer(
+            new FilterLogicRegistry([new TestLogic()]),
             'main',
         );
 
         $builder
-            ->add(TestFilterLogic::class, ['value' => 'first'])
-            ->add(TestFilterLogic::class, ['value' => 'second', 'enabled' => true], 'translation');
+            ->add(TestLogic::class, ['value' => 'first'])
+            ->add(TestLogic::class, ['value' => 'second', 'enabled' => true], 'translation');
 
         $calls = $builder->all();
 
@@ -50,33 +50,33 @@ final class FilterBuilderTest extends TestCase
 
     public function testBuilderRejectsUnknownFilterTypes(): void
     {
-        $builder = new FilterBuilder(new FilterLogicRegistry([]), 'main');
+        $builder = new LogicSequencer(new FilterLogicRegistry([]), 'main');
 
         $this->expectException(FilterException::class);
-        $builder->add(TestFilterLogic::class, ['value' => 'test']);
+        $builder->add(TestLogic::class, ['value' => 'test']);
     }
 
     public function testBuilderLetsOptionsResolverValidateRequiredOptions(): void
     {
-        $builder = new FilterBuilder(
-            new FilterLogicRegistry([new TestFilterLogic()]),
+        $builder = new LogicSequencer(
+            new FilterLogicRegistry([new TestLogic()]),
             'main',
         );
 
         $this->expectException(MissingOptionsException::class);
-        $builder->add(TestFilterLogic::class);
+        $builder->add(TestLogic::class);
     }
 
     public function testBuilderAbortThrowsAbortFilteringException(): void
     {
-        $builder = new FilterBuilder(new FilterLogicRegistry([]), 'main');
+        $builder = new LogicSequencer(new FilterLogicRegistry([]), 'main');
 
         $this->expectException(AbortFilteringException::class);
         $builder->abort();
     }
 }
 
-final class TestFilterLogic extends AbstractFilterLogic
+final class TestLogic extends AbstractLogic
 {
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -89,7 +89,7 @@ final class TestFilterLogic extends AbstractFilterLogic
     }
 }
 
-final class UnknownFilterLogic extends AbstractFilterLogic
+final class UnknownLogic extends AbstractLogic
 {
     public function buildConditions(FilterConditionsBuilder $builder, array $options): void
     {

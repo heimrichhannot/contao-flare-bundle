@@ -8,7 +8,7 @@ use Doctrine\DBAL\ParameterType;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class BooleanFilterLogic extends AbstractFilterLogic
+class BooleanLogic extends AbstractLogic
 {
     public function configureOptions(OptionsResolver $resolver): void
     {

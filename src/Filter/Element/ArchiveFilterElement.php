@@ -12,12 +12,12 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Logic\ArchiveFilterLogic;
-use HeimrichHannot\FlareBundle\Filter\Logic\BelongsToRelationFilterLogic;
+use HeimrichHannot\FlareBundle\Filter\Logic\ArchiveLogic;
+use HeimrichHannot\FlareBundle\Filter\Logic\BelongsToRelationLogic;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
@@ -171,7 +171,7 @@ class ArchiveFilterElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
     {
         $config = $context->config;
 
@@ -197,7 +197,7 @@ class ArchiveFilterElement extends AbstractFilterElement
                 throw new FilterException('No valid parent archive ids extracted.', method: __METHOD__);
             }
 
-            $builder->add(ArchiveFilterLogic::class, [
+            $builder->add(ArchiveLogic::class, [
                 'field' => 'pid',
                 'parent_ids' => $pids,
             ]);
@@ -225,7 +225,7 @@ class ArchiveFilterElement extends AbstractFilterElement
             }
         }
 
-        $builder->add(BelongsToRelationFilterLogic::class, [
+        $builder->add(BelongsToRelationLogic::class, [
             'field_pid' => 'pid',
             'field_dynamic_ptable' => 'ptable',
             'parent_groups' => $this->getDynamicParentGroups($config),

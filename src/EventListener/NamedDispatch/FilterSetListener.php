@@ -4,23 +4,21 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\EventListener\NamedDispatch;
 
-use HeimrichHannot\FlareBundle\Event\FilterFormBuiltEvent;
+use HeimrichHannot\FlareBundle\Event\FilterSetBuildEvent;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
-readonly class FilterFormListener
+readonly class FilterSetListener
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
     ) {}
 
     #[AsEventListener(priority: -200)]
-    public function onFilterFormBuiltEvent(FilterFormBuiltEvent $event): void
+    public function onFilterSetBuildEvent(FilterSetBuildEvent $event): void
     {
-        if (!$type = $event->context->filter->type) {
-            return;
-        }
+        $eventName = "flare.filter_set.{$event->formName}.build";
 
-        $this->eventDispatcher->dispatch(event: $event, eventName: "flare.filter_form.{$type}.built");
+        $this->eventDispatcher->dispatch(event: $event, eventName: $eventName);
     }
 }

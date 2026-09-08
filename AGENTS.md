@@ -40,10 +40,13 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   (build lifecycle: type's `buildList()` hook → `ListBuildEvent` → config assembly → schema resolution),
   `BaseListOptions` (framework-owned base schema for tl_flare_list columns)
 - `src/Filter/` — `Filter` DTO, elements (`Element/`), types (`Type/`), collector, resolvers
-  (`FilterOptionsResolver`, `FilterTransformerResolver`, `FilterElementResolver`), `FilterContextFactory`
+  (`FilterOptionsResolver`, `FilterTransformerResolver`, `FilterElementResolver`), `FilterContextFactory`,
+  and the form aggregate: `FilterSetFactory` builds a `FilterSet` (root form + mount↔filter map of
+  `FilterMount`s) per list × form context
 - `src/Config/` — `ConfigBuilder` (fluent canonical-config accumulator; no cast helpers — transformers cast
   declaratively off the typed model) and `TransformerResolver` (source class → transformer map)
-- `src/Form/` — filter form building (FilterFormFactory etc.)
+- `src/Filter/Form/` — FLARE filter form implementations (peers of `src/Filter/Element/`);
+  `src/Form/` — Symfony-level building blocks only (`ChoicesBuilder`, `Form/Type/DateRangeFormType`)
 - `src/Reader/` — reader/detail-page URL generation (`ReaderUrlGenerator`)
 - `src/InferPtable/` — parent-table inference for DCAs
 - `src/Integration/` — optional integrations (Codefog Tags, Terminal42 ChangeLanguage), wired via `config/integrations/*.yaml`
@@ -57,16 +60,17 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 
 **Extensibility via PHP 8 attributes** (compiler passes auto-register tagged services):
 - `#[AsFilterElement(type: '...', isTargeted: ...)]` — register a filter element
-- `#[AsListType(type: '...', dataContainer: '...')]` — register a list type
+- `#[AsListDriver(type: '...', dataContainer: '...')]` — register a list driver
 
 Attributes are in `src/DependencyInjection/Attribute/`, compiler passes in `src/DependencyInjection/Compiler/`.
 Backend palettes/fields are declared in code via `DcaContract::buildDca(DcaBuilder, DcaContext)` (both
 tl_flare_filter and tl_flare_list).
 
-**Event system** — Events, some with aliased dispatch for targeted listening (`flare.form.{name}.build`,
-`flare.list.{type}.build`, `flare.filter_element.{type}.transformers`, `flare.filter_element.{type}.dca` /
-`flare.list.{type}.dca`, etc., implemented by the listeners in `src/EventListener/NamedDispatch/`). All events
-are in `src/Event/`. Prefer events over overriding services for customization.
+**Event system** — Events, some with aliased dispatch for targeted listening
+(`flare.filter_set.{name}.build`, `flare.filter_form.{type}.built`, `flare.list.{type}.build`,
+`flare.filter_element.{type}.transformers`, `flare.filter_element.{type}.dca` / `flare.list.{type}.dca`,
+etc., implemented by the listeners in `src/EventListener/NamedDispatch/`). All events are in `src/Event/`.
+Prefer events over overriding services for customization.
 
 **Registry pattern** — Registries in `src/Registry/` map type names to implementations: `FilterElementRegistry`, `ListTypeRegistry`, `FilterTypeRegistry`, `ProjectorRegistry`, `EngineModRegistry`.
 

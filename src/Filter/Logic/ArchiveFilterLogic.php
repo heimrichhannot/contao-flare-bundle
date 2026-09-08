@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter\Type;
+namespace HeimrichHannot\FlareBundle\Filter\Logic;
 
 use Doctrine\DBAL\ArrayParameterType;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class ArchiveFilterType extends AbstractFilterType
+class ArchiveFilterLogic extends AbstractFilterLogic
 {
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -17,7 +17,7 @@ class ArchiveFilterType extends AbstractFilterType
         $resolver->define('parent_ids')->required()->allowedTypes('array');
     }
 
-    public function buildQuery(FilterQueryBuilder $builder, array $options): void
+    public function buildConditions(FilterConditionsBuilder $builder, array $options): void
     {
         $ids = \array_values(\array_unique(\array_filter(\array_map('\intval', $options['parent_ids']))));
 

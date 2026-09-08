@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
-use HeimrichHannot\FlareBundle\Filter\Type\FilterTypeInterface;
+use HeimrichHannot\FlareBundle\Filter\Logic\FilterLogicInterface;
 
 interface FilterBuilderInterface
 {
     /**
-     * @param class-string<FilterTypeInterface> $type
+     * @param class-string<FilterLogicInterface> $type
      * @param array<string, mixed> $options
      */
     public function add(string $type, array $options = [], ?string $targetAlias = null): static;

@@ -144,7 +144,7 @@ Rejected names, recorded so the branches stay closed:
 - **`ListForm…`** — puts the form on the output side of the model, contradicting the table above.
 - **`ListFilterForm…`** — contains `FilterForm` as a substring, so every search for the per-filter
   concept also hits the aggregate.
-- **`FilterFormType`** — `FilterType` already means the SQL predicate (`src/Filter/Type/`), and the
+- **`FilterFormType`** — `FilterType` already means the SQL predicate (`src/Filter/Logic/`), and the
   suffix falsely promises a Symfony `AbstractType`.
 - **`FilterBar` / `FilterPanel`** — commit to a layout no template is obliged to honour, and
   understate an object that also owns `decode()`.

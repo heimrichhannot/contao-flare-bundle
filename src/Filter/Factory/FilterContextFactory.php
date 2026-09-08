@@ -25,10 +25,10 @@ final readonly class FilterContextFactory
      * @throws FilterException If the filter's config violates the element's schema
      */
     public function create(
-        ListSpec               $list,
-        Filter                 $filter,
-        ContextInterface       $engineContext,
-        string|int|null        $key = null,
+        ListSpec         $list,
+        Filter           $filter,
+        ContextInterface $engineContext,
+        string|int|null  $key = null,
     ): FilterContext {
         return new FilterContext(
             list: $list,

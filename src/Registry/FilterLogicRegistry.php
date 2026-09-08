@@ -4,31 +4,31 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Registry;
 
-use HeimrichHannot\FlareBundle\Filter\Type\FilterTypeInterface;
+use HeimrichHannot\FlareBundle\Filter\Logic\FilterLogicInterface;
 use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
 
-class FilterTypeRegistry
+class FilterLogicRegistry
 {
     /**
-     * @var array<class-string<FilterTypeInterface>, FilterTypeInterface>
+     * @var array<class-string<FilterLogicInterface>, FilterLogicInterface>
      */
     private array $types;
 
     public function __construct(
-        #[TaggedIterator(FilterTypeInterface::FLARE_FILTER_TYPE_TAG)]
+        #[TaggedIterator(FilterLogicInterface::FLARE_FILTER_LOGIC_TAG)]
         private readonly iterable $filterTypes,
     ) {}
 
     /**
-     * @param class-string<FilterTypeInterface> $class
+     * @param class-string<FilterLogicInterface> $class
      */
-    public function get(string $class): ?FilterTypeInterface
+    public function get(string $class): ?FilterLogicInterface
     {
         return $this->resolve()[$class] ?? null;
     }
 
     /**
-     * @return array<class-string<FilterTypeInterface>, FilterTypeInterface>
+     * @return array<class-string<FilterLogicInterface>, FilterLogicInterface>
      */
     public function all(): array
     {
@@ -41,12 +41,12 @@ class FilterTypeRegistry
             $this->types = [];
 
             foreach ($this->filterTypes as $filterType) {
-                if (!$filterType instanceof FilterTypeInterface) {
+                if (!$filterType instanceof FilterLogicInterface) {
                     throw new \LogicException(\sprintf(
                         'Service "%s" is tagged "%s" but does not implement %s.',
                         $filterType::class,
-                        FilterTypeInterface::FLARE_FILTER_TYPE_TAG,
-                        FilterTypeInterface::class,
+                        FilterLogicInterface::FLARE_FILTER_LOGIC_TAG,
+                        FilterLogicInterface::class,
                     ));
                 }
 

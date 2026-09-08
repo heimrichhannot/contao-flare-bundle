@@ -19,7 +19,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Value;
  *
  * Distinct from {@see ChoiceValue} by semantics, not structure (§4.3).
  */
-final readonly class KeywordsValue
+final readonly class KeywordsValue implements ValueInterface
 {
     /** Non-empty, trimmed, with internal whitespace runs collapsed to a single space. */
     public string $keywords;

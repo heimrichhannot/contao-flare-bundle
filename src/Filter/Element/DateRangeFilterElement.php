@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Type\DateRangeFilterType;
+use HeimrichHannot\FlareBundle\Filter\Logic\DateRangeFilterLogic;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\FormError;
@@ -82,7 +82,7 @@ class DateRangeFilterElement extends AbstractFilterElement
             throw new FilterException('Set fieldGeneric in filter model.');
         }
 
-        $builder->add(DateRangeFilterType::class, [
+        $builder->add(DateRangeFilterLogic::class, [
             'field' => $field,
             'from' => $data->get('from'),
             'to' => $data->get('to'),

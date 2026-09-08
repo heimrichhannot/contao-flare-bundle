@@ -15,7 +15,7 @@ use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\Type\BelongsToRelationFilterType;
+use HeimrichHannot\FlareBundle\Filter\Logic\BelongsToRelationFilterLogic;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -85,7 +85,7 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
 
         if (\is_string($fieldDynamicPtable))
         {
-            $builder->add(BelongsToRelationFilterType::class, [
+            $builder->add(BelongsToRelationFilterLogic::class, [
                 'field_pid' => $fieldPid,
                 'field_dynamic_ptable' => $fieldDynamicPtable,
                 'parent_groups' => $this->getDynamicParentGroups($config['group_whitelist_parents']),
@@ -98,7 +98,7 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
             throw new FilterException('No whitelisted parents.');
         }
 
-        $builder->add(BelongsToRelationFilterType::class, [
+        $builder->add(BelongsToRelationFilterLogic::class, [
             'field_pid' => $fieldPid,
             'whitelist' => $whitelistParents,
         ]);
@@ -123,7 +123,7 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
         string                 $fieldPid,
         ?array                 $submittedData = null,
     ): void {
-        $builder->add(BelongsToRelationFilterType::class, [
+        $builder->add(BelongsToRelationFilterLogic::class, [
             'field_pid' => $fieldPid,
             'field_dynamic_ptable' => $fieldDynamicPtable,
             'parent_groups' => $this->getDynamicParentGroups($groupWhitelistParents),

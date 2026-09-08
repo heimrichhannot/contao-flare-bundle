@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Util\SqlHelper;
 
-class FilterQueryBuilder
+class FilterConditionsBuilder
 {
     private ExpressionBuilder $expr;
     private array $conditions = [];
@@ -237,19 +237,19 @@ class FilterQueryBuilder
         }
     }
 
-    public function build(?string $prefix): FilterQuery
+    public function build(?string $prefix): FilterConditions
     {
         $alias = $this->alias();
 
         if (!$this->conditions) {
-            return new FilterQuery($alias, '', [], []);
+            return new FilterConditions($alias, '', [], []);
         }
 
         $cond = $this->expr()->and(...$this->conditions);
         $sql = (string) $cond;
 
         if ($prefix === null) {
-            return new FilterQuery($alias, $sql, $this->parameters, $this->types);
+            return new FilterConditions($alias, $sql, $this->parameters, $this->types);
         }
 
         if (!\preg_match('/^[a-zA-Z0-9_]+$/', $prefix)) {
@@ -283,6 +283,6 @@ class FilterQueryBuilder
             $sql,
         );
 
-        return new FilterQuery($alias, $sql, $parameters, $types);
+        return new FilterConditions($alias, $sql, $parameters, $types);
     }
 }

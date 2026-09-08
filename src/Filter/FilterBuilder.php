@@ -6,14 +6,14 @@ namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\Type\FilterTypeInterface;
-use HeimrichHannot\FlareBundle\Registry\FilterTypeRegistry;
+use HeimrichHannot\FlareBundle\Filter\Logic\FilterLogicInterface;
+use HeimrichHannot\FlareBundle\Registry\FilterLogicRegistry;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 final class FilterBuilder implements FilterBuilderInterface
 {
     /**
-     * @var array<class-string<FilterTypeInterface>, OptionsResolver>
+     * @var array<class-string<FilterLogicInterface>, OptionsResolver>
      */
     private static array $optionsResolvers = [];
 
@@ -23,12 +23,12 @@ final class FilterBuilder implements FilterBuilderInterface
     private array $calls = [];
 
     public function __construct(
-        private readonly FilterTypeRegistry $filterTypeRegistry,
-        private readonly string             $defaultTargetAlias,
+        private readonly FilterLogicRegistry $filterTypeRegistry,
+        private readonly string              $defaultTargetAlias,
     ) {}
 
     /**
-     * @param class-string<FilterTypeInterface> $type
+     * @param class-string<FilterLogicInterface> $type
      * @param array<string, mixed> $options
      *
      * @throws FilterException

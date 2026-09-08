@@ -30,6 +30,7 @@ readonly class ListModelFilterCollector
 
     /**
      * @return array<string, Filter>|null
+     * @throws FlareException
      */
     public function collect(ListModel $listModel): ?array
     {
@@ -38,7 +39,7 @@ readonly class ListModelFilterCollector
         }
 
         if (!$this->listDriverRegistry->getService((string) $listModel->type)) {
-            return null;
+            throw new FlareException('No list driver found for type "' . $listModel->type . '"');
         }
 
         Controller::loadDataContainer($table);
@@ -60,7 +61,7 @@ readonly class ListModelFilterCollector
             catch (FlareException $e)
             {
                 $this->logger->warning(\sprintf(
-                    '[FLARE] Error while creating Filter of type "%s" on [%s.%s] -- [Message] %e',
+                    '[FLARE] Error while creating Filter of type "%s" on [%s.%s] -- [Message] %s',
                     $model->getFilterElementType(),
                     $listModel::getTable(),
                     $listModel->id,

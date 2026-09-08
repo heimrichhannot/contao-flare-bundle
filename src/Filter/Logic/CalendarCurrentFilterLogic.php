@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter\Type;
+namespace HeimrichHannot\FlareBundle\Filter\Logic;
 
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class CalendarCurrentFilterType extends AbstractFilterType
+class CalendarCurrentFilterLogic extends AbstractFilterLogic
 {
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -16,7 +16,7 @@ class CalendarCurrentFilterType extends AbstractFilterType
         $resolver->define('has_extended_events')->default(false)->allowedTypes('bool');
     }
 
-    public function buildQuery(FilterQueryBuilder $builder, array $options): void
+    public function buildConditions(FilterConditionsBuilder $builder, array $options): void
     {
         $colStartTime = $builder->column('startTime');
         $colRepeatEnd = $builder->column('repeatEnd');

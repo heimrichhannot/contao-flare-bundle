@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter\Type;
+namespace HeimrichHannot\FlareBundle\Filter\Logic;
 
 use HeimrichHannot\FlareBundle\ConfigProvider;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class SearchKeywordsFilterType extends AbstractFilterType
+class SearchKeywordsFilterLogic extends AbstractFilterLogic
 {
     public function __construct(
         private readonly ConfigProvider $configProvider,
@@ -20,7 +20,7 @@ class SearchKeywordsFilterType extends AbstractFilterType
         $resolver->define('columns')->required()->allowedTypes('array');
     }
 
-    public function buildQuery(FilterQueryBuilder $builder, array $options): void
+    public function buildConditions(FilterConditionsBuilder $builder, array $options): void
     {
         $columns = \array_map($builder->column(...), $options['columns']);
         $searchTermGroups = \array_values(\preg_split('/\s+OR\s+/i', $options['value']));

@@ -1,9 +1,12 @@
 # SPEC: Decoupling Filter Forms from Filter Elements
 
 **Status:** Draft / design agreed, not implemented
-**Scope:** `src/Filter/`, `src/Form/`, `src/DataContainer/Builder/`, `contao/dca/tl_flare_filter.php`,
-`src/EventListener/Contao/ElementDcaListener.php`, `src/Engine/Projector/InteractiveProjector.php`
-**Breaking:** yes (`FilterElementInterface`, `Filter::$data`, `tl_flare_filter` schema)
+**Scope:** `src/Filter/`, `src/Form/`, `src/Event/`, `src/EventListener/NamedDispatch/`,
+`src/Registry/`, `src/DependencyInjection/`, `src/DataContainer/Builder/`,
+`contao/dca/tl_flare_filter.php`, `src/EventListener/Contao/ElementDcaListener.php`,
+`src/Engine/Projector/InteractiveProjector.php`
+**Breaking:** yes (`FilterElementInterface`, `Filter::$data`, `tl_flare_filter` schema, plus the
+Phase 0 renames of §2.2 — service ids, event classes and the `flare.form.*` dispatch alias)
 
 ---
 
@@ -28,7 +31,7 @@ incidental:
   it** in `normalizeRuntimeValue()` to map submitted choices back to scalars.
 - `DateRangeFilterElement::buildForm()` adds children `from`/`to`; `buildFilter()` reads
   `$data->get('from')` by those exact names.
-- The `single()` vs. compound mount decision (`FilterFormFactory`) determines whether `buildFilter()`
+- The `single()` vs. compound mount decision (`FilterSetFactory`, §2.2) determines whether `buildFilter()`
   receives `getSingleValue()` or `get($name)`.
 
 Extracting forms without addressing this trades one coupling for a worse, invisible one.
@@ -68,6 +71,80 @@ Registration is **one-directional**: a form binds to a *value object*, never to 
 Selectable forms for an element = registry lookup by the element's declared value class.
 A mismatch is therefore structurally impossible rather than validated.
 
+### 2.1 Nomenclature
+
+`FilterForm` is the *per-filter* strategy. That name is currently occupied by the whole-form
+machinery (`FilterFormFactory`, `FilterFormBuildEvent`, `flare.form.{name}.build`), which must
+therefore be renamed before anything else — Phase 0 in §12.
+
+The renaming axis is **not** filter-versus-list. A form belongs to filtering; the list is
+exclusively output. The three concerns are peers:
+
+| concern | meaning |
+|---|---|
+| **Filter** | what matches — the predicate, query side |
+| **List** | what comes out — output |
+| **Form** | what goes in — input |
+
+The aggregate is therefore not list-scoped but simply the *plural* of the singular. Four layers,
+one word each:
+
+| term | multiplicity | what it is |
+|---|---|---|
+| `FilterSet` | one per list × form context | the filters, their root form, and the mount↔filter map |
+| `FilterForm` | one per filter | registrable presentation strategy (`buildForm()`, `decode()`) |
+| `FilterFormBuilder` | one per filter, transient | collect-only builder handed to `buildForm()` |
+| **mount** | one per filter that has a form | the node mounted into the root form — flat field or compound group |
+
+`FilterSet` is an **object**, not a bare `FormInterface` returned by a factory: it owns the
+`decode()` loop (§8), which otherwise has no home but `InteractiveProjector` — where its
+predecessor already landed wrongly (§7.2).
+
+**"Mount"** is the codebase's own word; `FilterFormFactory` already names the variable `$mount`.
+It replaces "field" throughout this spec, because in the compound case the mounted node is a
+`FormType` group with children and not a field at all.
+
+Directory split, unchanged by the rename: `src/Filter/Form/` holds FLARE `FilterForm`
+implementations (peers of `src/Filter/Element/`); `src/Form/` keeps Symfony-level building blocks
+(`ChoicesBuilder`, `Form/Type/DateRangeFormType`). Mixing the two is the ambiguity this section
+exists to remove.
+
+### 2.2 Renaming (Phase 0)
+
+| today | new | scope |
+|---|---|---|
+| `Filter\Factory\FilterFormFactory` | `Filter\Factory\FilterSetFactory` | filter set |
+| — | `Filter\FilterSet` (new) | filter set |
+| `Event\FilterFormBuildEvent` | `Event\FilterSetBuildEvent` | filter set |
+| `EventListener\NamedDispatch\FilterFormListener` | `…\FilterSetListener` | filter set |
+| `flare.form.{name}.build` | `flare.filter_set.{name}.build` | filter set |
+| `Event\FilterElementFormBuiltEvent` | `Event\FilterFormBuiltEvent` | filter |
+| `Filter\FilterFormBuilder`, `…Interface` | unchanged | filter |
+
+`FilterSetFactory` builds a `FilterSet`, not a form, so the `Form` infix drops out; the root form
+is `FilterSet::getForm()`. `FilterElementFormBuiltEvent` loses its detour over the element: it was
+named after the element only because `FilterForm*` was taken.
+
+`FilterFormBuilder` keeps its name deliberately. Symfony's own
+`FormTypeInterface::buildForm(FormBuilderInterface)` names the builder after what it builds, not
+after who receives it, so `FilterForm::buildForm(FilterFormBuilderInterface)` reads as the familiar
+pattern. `single()` is moreover a statement about the form, not about fields, which rules out
+`FilterFieldsBuilder`.
+
+Rejected names, recorded so the branches stay closed:
+
+- **`ListForm…`** — puts the form on the output side of the model, contradicting the table above.
+- **`ListFilterForm…`** — contains `FilterForm` as a substring, so every search for the per-filter
+  concept also hits the aggregate.
+- **`FilterFormType`** — `FilterType` already means the SQL predicate (`src/Filter/Type/`), and the
+  suffix falsely promises a Symfony `AbstractType`.
+- **`FilterBar` / `FilterPanel`** — commit to a layout no template is obliged to honour, and
+  understate an object that also owns `decode()`.
+- **`QueryForm`** — `src/Query/` is the SQL layer.
+- **`FilterWidget` for the per-filter strategy** (leaving `FilterForm` on the aggregate) — the
+  strategy has `decode()` and its own DCA slice, so "widget" promises rendering and hides half the
+  contract; the term is also already occupied by Contao.
+
 ---
 
 ## 3. Contracts
@@ -80,9 +157,9 @@ interface FilterFormInterface
     public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void;
 
     /**
-     * Produces the element's canonical value from the mounted field, or null to contribute nothing.
+     * Produces the element's canonical value from the mount, or null to contribute nothing.
      */
-    public function decode(FormInterface $field, FilterContext $context): ?object;
+    public function decode(FormInterface $mount, FilterContext $context): ?object;
 }
 ```
 
@@ -90,7 +167,7 @@ A form MAY additionally implement the existing contracts, which then apply to th
 config slice: `OptionsContract` (`configureOptions`), `TransformerContract`
 (`configureTransformers`), `DcaContract` (`buildDca`).
 
-**`decode()` receives the mounted `FormInterface`, not a pre-flattened DTO.** Only the form knows
+**`decode()` receives the mount (§2.1), not a pre-flattened DTO.** Only the form knows
 whether it wants `getData()`, `getNormData()` or `getViewData()`, and it needs access to the
 attributes it set in `buildForm()` (e.g. `flare.choices_builder`). See §7.
 
@@ -158,7 +235,7 @@ pairing axis — the form still never names an element.
 So a generic choice form's `decode()` is:
 
 ```php
-$keys = (array) $field->getViewData();          // widget → keys
+$keys = (array) $mount->getViewData();          // widget → keys
 return $element->valueFromChoiceKeys($keys, $ctx);   // keys → domain value
 ```
 
@@ -238,7 +315,9 @@ The `intrinsic` boolean is replaced by a nullable `formVariant` slot in canonica
 The programmatic call sites in §1.3 keep working by simply not setting a form.
 
 **Do not name the column `formAlias`** — that is taken; it is the query-parameter name
-(`src/Model/FilterModel.php:91-102`). Use `formVariant`.
+(`src/Model/FilterModel.php:91-102`). Use `formVariant`. Bare `form` was rejected as too generic
+for a column in the one wide shared table (§6.3), even though `FilterForm` is now the noun it
+selects.
 
 ### 5.2 Backend field
 
@@ -317,9 +396,9 @@ lookup at all.
 
 `InteractiveProjector::collectFilterData()` flattens the form to `$child->getData()` — model data,
 which for a `ChoiceType` is the choice objects. A query filter wants the *value*, which Symfony has
-already computed as **view data**: `$field->getViewData()` is `['5','7']`.
+already computed as **view data**: `$mount->getViewData()` is `['5','7']`.
 
-The fix is therefore §3.1: `decode(FormInterface $field, ...)`. No reverse mapping, no second
+The fix is therefore §3.1: `decode(FormInterface $mount, ...)`. No reverse mapping, no second
 `ChoicesBuilder`, no label collisions.
 
 Additionally, fix `add()` so `choice` carries identity rather than the display string.
@@ -384,6 +463,14 @@ Both of its jobs relocate:
 `FilterFormBuilder`'s `single()` vs. compound mount decision is unaffected — that is genuinely a
 form concern and stays where it is.
 
+**The decode loop lives on `FilterSet`.** `InteractiveProjector::collectFilterData()` today walks
+the root form and flattens every child to `$child->getData()` — the flattening §7.2 identifies as
+the defect. Under the target model that walk becomes `FilterSet::decode()`: for each filter that
+has a mount, call the filter form's `decode($mount, $context)` and set the resulting value on the
+filter. The projector asks the filter set for values instead of reconstructing them from a form
+tree it does not own. This is the reason the aggregate is an object rather than a bare
+`FormInterface` (§2.1).
+
 ---
 
 ## 9. Value objects and hashing
@@ -435,6 +522,8 @@ object legitimately must hold something non-serializable.
 
 ## 11. Migration
 
+Phase 0 (§2.2) is rename-only and touches no schema; everything below belongs to steps 1-4.
+
 - New column `formVariant` (`varchar`), plus form-owned columns as they move.
 - Drop `intrinsic`, `boolMode`, `boolBinaryChoices` and the `boolMode_binary` subpalette /
   `boolMode` selector entry.
@@ -447,11 +536,35 @@ object legitimately must hold something non-serializable.
 
 ## 12. Sequencing
 
-The contract set is the entire risk; the remaining elements are mechanical.
+Phase 0 clears the vocabulary so the rest can be written in the target words. After that the
+contract set is the entire risk; the remaining elements are mechanical.
+
+0. **Nomenclature refactor.** Pure rename plus one new object. No behaviour change, no schema
+   change, no new contract — landed on its own so the diff of step 1 contains only design.
+   - Apply the §2.2 table.
+   - Introduce `Filter\FilterSet`:
+     `FilterSetFactory::create(ListSpec, FormContextInterface): FilterSet`, holding the root
+     `FormInterface` and the mount↔filter map. `getForm()` returns the root form; callers that
+     only need the form (`InteractiveProjector`, the list-view template data) go through it. The
+     `decode()` loop (§8) arrives in step 1 — Phase 0 only builds its home.
+   - Align the factory's local variables with the vocabulary: root builder `$root`, collect-only
+     per-filter builder `$builder`, mounted node `$mount` (today `$builder` / `$wrapper` /
+     `$mount`, where `$builder` denotes the root and the per-filter collector is a "wrapper").
+   - Move the tests next to their subjects: `tests/Form/FilterFormFactoryTest.php` →
+     `tests/Filter/FilterSetFactoryTest.php`, `tests/Form/FilterFormBuilderTest.php` →
+     `tests/Filter/FilterFormBuilderTest.php`. Add coverage for `FilterSet::getForm()` and the
+     mount↔filter map, which has no test today.
+   - Update `AGENTS.md`: the "Event system" paragraph names `flare.form.{name}.build`, and
+     "Notable subsystems" describes `src/Form/` as "filter form building (FilterFormFactory etc.)".
+     Both become wrong. State the §2.1 directory split there.
+   - Grep gate for the rename being complete: `FilterFormFactory`, `FilterFormBuildEvent`,
+     `FilterElementFormBuiltEvent` and `flare.form.` must have no hits left outside this spec's
+     history.
 
 1. **Contracts + pilot.** Value objects, `FilterFormInterface`, `AsFilterForm`,
-   `AsFilterElement::$value`, `decode(FormInterface)`, `buildFilter(?object)`, registry lookup by
-   value class, `requires` check in the compiler pass. Pilot on `BooleanFilterElement` — it has the
+   `AsFilterElement::$value`, `decode(FormInterface $mount)`, `buildFilter(?object)`,
+   `FilterSet::decode()` replacing `InteractiveProjector::collectFilterData()` (§8), registry
+   lookup by value class, `requires` check in the compiler pass. Pilot on `BooleanFilterElement` — it has the
    most presentation-config rot (`boolMode`, `boolBinaryChoices`, `label`, the `preselect` overload).
 2. **DCA composition.** `DcaBuilder` palette segments, `scope()`, `selector()`; `ElementDcaListener`
    resolves and invokes the form's `buildDca()`.
@@ -485,6 +598,13 @@ Recorded here because each one closes a branch the design could otherwise have t
    Under the target model that branch disappears and `isLimited` becomes form-owned config. The same
    applies to `SearchKeywordsFilterElement::buildDca()`, `DcaSelectFieldFilterElement::buildDca()`
    and `BooleanFilterElement::buildDca()`.
+5. **The aggregate is called `FilterSet` and is an object.** The naming axis is multiplicity within
+   *Filter*, not filter-versus-list (§2.1) — the list is exclusively output, so no `List…` name can
+   be right for a form. `FilterSet` won over the invented alternatives because it names something
+   that already exists unnamed: `ListSpec::$filters` is a bare `array<string, Filter>` with
+   hand-rolled `_generated_{$index}` keying and a hand-rolled `array_map` fingerprint loop in
+   `hash()`. Making it an object rather than a factory return value is what gives `decode()` a home
+   (§8). Rejected names and their reasons are in §2.2.
 
 ---
 
@@ -500,3 +620,10 @@ Not blockers, but unverified at spec time.
 3. **`ArchiveFilterElement::buildPreselectData()`** is currently `ListSpec`-aware. Confirm it reduces
    to a generic key-lookup against `buildChoices()` once preselect is stored as choice keys, or
    whether preselect hydration needs its own port method.
+4. **Whether `FilterSet` should also absorb `ListSpec::$filters`.** The name fits the bare
+   `array<string, Filter>` at least as well as it fits the form aggregate, which is a tension the
+   rename introduces rather than resolves. Phase 0 deliberately keeps them apart: `ListSpec` is
+   built in validation and aggregation contexts that never produce a form, so a form-carrying
+   `FilterSet` cannot simply replace the array. Revisit once the decode loop exists — either
+   `FilterSet` splits into a plain collection plus a form-bearing wrapper, or the two stay separate
+   and the form-side object needs a distinguishing name after all.

@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Filter;
 use Symfony\Component\Form\FormInterface;
 
 /**
- * The filters of one list within one form context: their root form and the mount↔filter map.
+ * The filters of one list within one form context: their root form and the mount <-> filter map.
  *
  * Created by {@see Factory\FilterSetFactory}. Callers that only need the form go through
  * {@see getForm()}; callers that need to relate a mounted node back to its filter go through

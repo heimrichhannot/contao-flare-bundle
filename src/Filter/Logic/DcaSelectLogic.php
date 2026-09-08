@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class DcaSelectFilterLogic extends AbstractFilterLogic
+class DcaSelectLogic extends AbstractLogic
 {
     public function configureOptions(OptionsResolver $resolver): void
     {

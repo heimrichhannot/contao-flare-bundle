@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class ArchiveFilterLogic extends AbstractFilterLogic
+class ArchiveLogic extends AbstractLogic
 {
     public function configureOptions(OptionsResolver $resolver): void
     {

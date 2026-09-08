@@ -8,10 +8,10 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\Logic\PublishedFilterLogic;
+use HeimrichHannot\FlareBundle\Filter\Logic\PublishedLogic;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -51,11 +51,11 @@ class PublishedFilterElement extends AbstractFilterElement
             ->set('invert', (bool) $model->invertPublished);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
     {
         $config = $context->config;
 
-        $builder->add(PublishedFilterLogic::class, [
+        $builder->add(PublishedLogic::class, [
             'published_field' => $config['published_field'],
             'start_field' => $config['start_field'],
             'stop_field' => $config['stop_field'],

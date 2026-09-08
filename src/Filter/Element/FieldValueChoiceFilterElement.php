@@ -13,11 +13,11 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
-use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Logic\FieldValueChoiceFilterLogic;
+use HeimrichHannot\FlareBundle\Filter\Logic\FieldValueChoiceLogic;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -84,7 +84,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
         $builder->setAttribute('flare.choices_builder', $choicesBuilder);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
     {
         if ($context->engineContext instanceof ValidationContext) {
             return;
@@ -104,7 +104,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
             return;
         }
 
-        $builder->add(FieldValueChoiceFilterLogic::class, [
+        $builder->add(FieldValueChoiceLogic::class, [
             'field' => $field,
             'values' => $value,
         ]);

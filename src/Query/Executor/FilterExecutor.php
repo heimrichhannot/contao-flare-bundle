@@ -11,8 +11,8 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterBuilder;
-use HeimrichHannot\FlareBundle\Filter\FilterCall;
+use HeimrichHannot\FlareBundle\Filter\LogicSequencer;
+use HeimrichHannot\FlareBundle\Filter\LogicStep;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
@@ -87,7 +87,7 @@ readonly class FilterExecutor
             $targetAlias = $filter->targetAlias ?: TableAliasRegistry::ALIAS_MAIN;
         }
 
-        $builder = new FilterBuilder($this->filterTypeRegistry, $targetAlias);
+        $builder = new LogicSequencer($this->filterTypeRegistry, $targetAlias);
 
         $event = $this->eventDispatcher->dispatch(new FilterElementBuildingEvent(
             context: $context,
@@ -101,7 +101,7 @@ readonly class FilterExecutor
 
         try
         {
-            $filter->element->buildFilter($builder, $context, $data);
+            $filter->element->buildLogic($builder, $context, $data);
         }
         catch (AbortFilteringException $e)
         {
@@ -123,7 +123,7 @@ readonly class FilterExecutor
     }
 
     /**
-     * @param FilterCall[] $calls
+     * @param LogicStep[] $calls
      * @return FilterConditionsBuilder[]
      */
     private function buildQueryBuilders(array $calls, Filter $filter): array

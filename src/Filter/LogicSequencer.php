@@ -6,21 +6,21 @@ namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\Logic\FilterLogicInterface;
+use HeimrichHannot\FlareBundle\Filter\Logic\LogicInterface;
 use HeimrichHannot\FlareBundle\Registry\FilterLogicRegistry;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-final class FilterBuilder implements FilterBuilderInterface
+final class LogicSequencer implements LogicSequencerInterface
 {
     /**
-     * @var array<class-string<FilterLogicInterface>, OptionsResolver>
+     * @var array<class-string<LogicInterface>, OptionsResolver>
      */
     private static array $optionsResolvers = [];
 
     /**
-     * @var FilterCall[]
+     * @var LogicStep[]
      */
-    private array $calls = [];
+    private array $steps = [];
 
     public function __construct(
         private readonly FilterLogicRegistry $filterTypeRegistry,
@@ -28,14 +28,15 @@ final class FilterBuilder implements FilterBuilderInterface
     ) {}
 
     /**
-     * @param class-string<FilterLogicInterface> $type
+     * @param class-string<LogicInterface> $type
      * @param array<string, mixed> $options
      *
      * @throws FilterException
      */
     public function add(string $type, array $options = [], ?string $targetAlias = null): static
     {
-        if (!$filterType = $this->filterTypeRegistry->get($type)) {
+        if (!$filterType = $this->filterTypeRegistry->get($type))
+        {
             throw new FilterException(
                 \sprintf('No FLARE filter type service registered for "%s".', $type),
                 method: __METHOD__,
@@ -49,7 +50,7 @@ final class FilterBuilder implements FilterBuilderInterface
             self::$optionsResolvers[$type] = $resolver;
         }
 
-        $this->calls[] = new FilterCall(
+        $this->steps[] = new LogicStep(
             type: $filterType,
             typeClass: $type,
             targetAlias: $targetAlias ?: $this->defaultTargetAlias,
@@ -61,7 +62,7 @@ final class FilterBuilder implements FilterBuilderInterface
 
     public function all(): array
     {
-        return $this->calls;
+        return $this->steps;
     }
 
     public function abort(): never

@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
-use HeimrichHannot\FlareBundle\Filter\Logic\FilterLogicInterface;
+use HeimrichHannot\FlareBundle\Filter\Logic\LogicInterface;
 
-interface FilterBuilderInterface
+interface LogicSequencerInterface
 {
     /**
-     * @param class-string<FilterLogicInterface> $type
+     * @param class-string<LogicInterface> $type
      * @param array<string, mixed> $options
      */
     public function add(string $type, array $options = [], ?string $targetAlias = null): static;
 
     /**
-     * @return FilterCall[]
+     * @return LogicStep[]
      */
     public function all(): array;
 

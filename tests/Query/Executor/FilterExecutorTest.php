@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Engine\Context\AggregationContext;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
@@ -114,7 +114,7 @@ final class RecordingFilterElement implements FilterElementInterface
 
     public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
     {
         $this->received = $data;
     }

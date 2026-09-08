@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Logic;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-abstract class AbstractFilterLogic implements FilterLogicInterface
+abstract class AbstractLogic implements LogicInterface
 {
     public function configureOptions(OptionsResolver $resolver): void {}
 

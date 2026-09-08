@@ -9,7 +9,7 @@ use Doctrine\DBAL\ParameterType;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class IntegerIdChoiceFilterLogic extends AbstractFilterLogic
+class IntegerIdChoiceLogic extends AbstractLogic
 {
     public function configureOptions(OptionsResolver $resolver): void
     {

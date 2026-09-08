@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\FilterTransformerEvent;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
@@ -98,7 +98,7 @@ final class TransformingElement implements FilterElementInterface, TransformerCo
     {
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
     {
     }
 }
@@ -109,7 +109,7 @@ final class PlainTransformerlessElement implements FilterElementInterface
     {
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
     {
     }
 }

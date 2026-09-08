@@ -12,11 +12,11 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
 use HeimrichHannot\FlareBundle\Enum\BoolMode;
-use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Logic\BooleanFilterLogic;
+use HeimrichHannot\FlareBundle\Filter\Logic\BooleanLogic;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -59,7 +59,7 @@ class BooleanFilterElement extends AbstractFilterElement
         ]);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
     {
         $config = $context->config;
 
@@ -75,7 +75,7 @@ class BooleanFilterElement extends AbstractFilterElement
             return;
         }
 
-        $builder->add(BooleanFilterLogic::class, [
+        $builder->add(BooleanLogic::class, [
             'field' => $targetField,
             'value' => $value,
         ]);

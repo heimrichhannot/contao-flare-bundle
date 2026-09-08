@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
@@ -21,10 +21,10 @@ final class FilterTest extends TestCase
         return $element ??= new class implements FilterElementInterface {
             public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 
-            public function buildFilter(
-                FilterBuilderInterface $builder,
-                FilterContext $context,
-                FilterData $data,
+            public function buildLogic(
+                LogicSequencerInterface $builder,
+                FilterContext           $context,
+                FilterData              $data,
             ): void {}
         };
     }

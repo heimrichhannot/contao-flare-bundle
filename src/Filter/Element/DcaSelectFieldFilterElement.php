@@ -12,11 +12,11 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Logic\DcaSelectFilterLogic;
+use HeimrichHannot\FlareBundle\Filter\Logic\DcaSelectLogic;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -96,7 +96,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
         $builder->single(ChoiceType::class, $formOptions);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
     {
         $config = $context->config;
         $options = $this->getOptions($context->list->dc, $config['field']) ?? [];
@@ -124,7 +124,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
         $dcaOptionsField = $this->getOptionsField($context->list->dc, $config['field']) ?? [];
         $isMultiple = $dcaOptionsField['eval']['multiple'] ?? false;
 
-        $builder->add(DcaSelectFilterLogic::class, [
+        $builder->add(DcaSelectLogic::class, [
             'field' => $targetField,
             'selected' => $selected,
             'valid_options' => $options,

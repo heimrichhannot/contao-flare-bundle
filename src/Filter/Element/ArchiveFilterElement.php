@@ -12,12 +12,14 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Logic\ArchiveLogic;
-use HeimrichHannot\FlareBundle\Filter\Logic\BelongsToRelationLogic;
+use HeimrichHannot\FlareBundle\Filter\Predicate\ArchivePredicate;
+use HeimrichHannot\FlareBundle\Filter\Predicate\BelongsToRelationPredicate;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
@@ -171,14 +173,14 @@ class ArchiveFilterElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
         $config = $context->config;
 
         /** @var Model[] $selectedModels */
         $selectedModels = $config['intrinsic']
             ? $this->getWhitelistedParents($context->list, $config)
-            : $this->processRuntimeValue($data->getSingleValue(), $context->list, $config);
+            : $this->processRuntimeValue($value->getSingleValue(), $context->list, $config);
 
         $inferrer = $this->getPtableInferrer($context->list);
 
@@ -197,7 +199,7 @@ class ArchiveFilterElement extends AbstractFilterElement
                 throw new FilterException('No valid parent archive ids extracted.', method: __METHOD__);
             }
 
-            $builder->add(ArchiveLogic::class, [
+            $builder->addPredicate(ArchivePredicate::class, [
                 'field' => 'pid',
                 'parent_ids' => $pids,
             ]);
@@ -225,7 +227,7 @@ class ArchiveFilterElement extends AbstractFilterElement
             }
         }
 
-        $builder->add(BelongsToRelationLogic::class, [
+        $builder->add(BelongsToRelationPredicate::class, [
             'field_pid' => 'pid',
             'field_dynamic_ptable' => 'ptable',
             'parent_groups' => $this->getDynamicParentGroups($config),

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter\Logic;
+namespace HeimrichHannot\FlareBundle\Filter\Predicate;
 
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class FieldValueChoiceLogic extends AbstractLogic
+class FieldValueChoicePredicate extends AbstractPredicate
 {
     public function configureOptions(OptionsResolver $resolver): void
     {

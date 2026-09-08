@@ -7,11 +7,13 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
-use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -31,10 +33,9 @@ final class FilterFactoryTest extends TestCase
         return new class implements FilterElementInterface {
             public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 
-            public function buildLogic(
-                LogicSequencerInterface $builder,
-                FilterContext           $context,
-                FilterData              $data,
+            public function buildContext(
+                FilterContextBuilder $builder,
+                ?ValueInterface      $value,
             ): void {}
         };
     }

@@ -12,11 +12,13 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Logic\DcaSelectLogic;
+use HeimrichHannot\FlareBundle\Filter\Predicate\DcaSelectPredicate;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -96,14 +98,14 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
         $builder->single(ChoiceType::class, $formOptions);
     }
 
-    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
         $config = $context->config;
         $options = $this->getOptions($context->list->dc, $config['field']) ?? [];
 
         $selected = $config['intrinsic']
             ? $config['preselect']
-            : $this->normalizeSubmittedValue($data->getSingleValue(), $options);
+            : $this->normalizeSubmittedValue($value->getSingleValue(), $options);
 
         if (!$selected) {
             return;
@@ -124,7 +126,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
         $dcaOptionsField = $this->getOptionsField($context->list->dc, $config['field']) ?? [];
         $isMultiple = $dcaOptionsField['eval']['multiple'] ?? false;
 
-        $builder->add(DcaSelectLogic::class, [
+        $builder->add(DcaSelectPredicate::class, [
             'field' => $targetField,
             'selected' => $selected,
             'valid_options' => $options,

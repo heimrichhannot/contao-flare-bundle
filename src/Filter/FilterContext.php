@@ -21,13 +21,12 @@ final readonly class FilterContext
 
     /**
      * @param array<string, mixed> $config Resolved canonical config of the filter.
-     * @param string|int|null $key Key of the filter within {@see ListSpec::$filters}.
      */
     public function __construct(
         public ListSpec         $list,
         public Filter           $filter,
         public array            $config,
+        public Formula          $formula,
         public ContextInterface $engineContext,
-        public string|int|null  $key = null,
     ) {}
 }

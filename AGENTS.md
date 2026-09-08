@@ -33,7 +33,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 **Lifecycle taxonomy** — elements and list types own their lifecycle through two method families:
 `configure*` methods are declarative, memoizable setup (`configureOptions` = OptionsResolver schema,
 `configureTransformers` = source→canonical-config mappings); `build*` methods are per-invocation construction
-(`buildDca`, `buildForm`, `buildLogic`, `buildList`, `buildTableRegistry`/`buildBaseQuery`).
+(`buildDca`, `buildForm`, `buildContext`, `buildList`, `buildTableRegistry`/`buildBaseQuery`).
 
 **Notable subsystems** (beyond the flow above):
 - `src/List/` — `ListSpec` (immutable list DTO: type, dc, filters, canonical config, source), `ListBuilder`
@@ -81,7 +81,7 @@ tl_flare_filter and tl_flare_list).
 etc., implemented by the listeners in `src/EventListener/NamedDispatch/`). All events are in `src/Event/`.
 Prefer events over overriding services for customization.
 
-**Registry pattern** — Registries in `src/Registry/` map type names to implementations: `FilterElementRegistry`, `FilterFormRegistry`, `ListDriverRegistry`, `FilterLogicRegistry`, `ProjectorRegistry`, `EngineModRegistry`. `FilterFormRegistry` differs from the others: it holds
+**Registry pattern** — Registries in `src/Registry/` map type names to implementations: `FilterElementRegistry`, `FilterFormRegistry`, `ListDriverRegistry`, `FilterPredicateRegistry`, `ProjectorRegistry`, `EngineModRegistry`. `FilterFormRegistry` differs from the others: it holds
 compile-time metadata as plain arrays and resolves the form services through a lazy
 `container.service_locator`, so reading metadata (the `formVariant` options, the form election)
 instantiates nothing.

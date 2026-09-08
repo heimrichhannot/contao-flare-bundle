@@ -32,9 +32,9 @@ final readonly class FilterFactory
      */
     public function create(
         FilterElementInterface|string $element,
+        string                        $alias,
         array                         $config = [],
         ?FilterData                   $data = null,
-        ?string                       $alias = null,
         ?string                       $targetAlias = null,
         bool                          $targetingForced = false,
         ?string                       $source = null,
@@ -45,9 +45,9 @@ final readonly class FilterFactory
         return new Filter(
             element: $element,
             type: $type,
+            alias: $alias,
             config: $config,
             data: $data,
-            alias: $alias,
             targetAlias: $targetAlias,
             targetingForced: $targetingForced,
             source: $source,
@@ -69,8 +69,8 @@ final readonly class FilterFactory
         return new Filter(
             element: $element,
             type: $type,
+            alias: $filterModel->getFilterFormName(),
             config: $config,
-            alias: $filterModel->getFilterFormName() ?: "_.{$source}",
             targetAlias: $filterModel->getFilterTargetAlias() ?: null,
             source: $source,
         );

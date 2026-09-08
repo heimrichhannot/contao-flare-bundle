@@ -13,11 +13,13 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
-use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Logic\FieldValueChoiceLogic;
+use HeimrichHannot\FlareBundle\Filter\Predicate\FieldValueChoicePredicate;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -84,7 +86,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
         $builder->setAttribute('flare.choices_builder', $choicesBuilder);
     }
 
-    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
         if ($context->engineContext instanceof ValidationContext) {
             return;
@@ -98,13 +100,13 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
 
         $value = $config['intrinsic']
             ? $config['preselect']
-            : $this->normalizeRuntimeValue($data->getSingleValue(), $context);
+            : $this->normalizeRuntimeValue($value->getSingleValue(), $context);
 
         if (!$value) {
             return;
         }
 
-        $builder->add(FieldValueChoiceLogic::class, [
+        $builder->add(FieldValueChoicePredicate::class, [
             'field' => $field,
             'values' => $value,
         ]);

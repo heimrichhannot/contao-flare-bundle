@@ -10,10 +10,12 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\Logic\SimpleEquationLogic;
+use HeimrichHannot\FlareBundle\Filter\Predicate\SimpleEquationPredicate;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -48,7 +50,7 @@ class SimpleEquationFilterElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
         $config = $context->config;
 
@@ -56,7 +58,7 @@ class SimpleEquationFilterElement extends AbstractFilterElement
             throw new FilterException('Invalid filter configuration.');
         }
 
-        $builder->add(SimpleEquationLogic::class, [
+        $builder->add(SimpleEquationPredicate::class, [
             'operand_left' => $operand,
             'operator' => $op,
             'operand_right' => $config['right'],

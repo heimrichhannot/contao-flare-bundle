@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter\Logic;
+namespace HeimrichHannot\FlareBundle\Filter\Predicate;
 
 use HeimrichHannot\FlareBundle\ConfigProvider;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class SearchKeywordsLogic extends AbstractLogic
+class SearchKeywordsPredicate extends AbstractPredicate
 {
     public function __construct(
         private readonly ConfigProvider $configProvider,

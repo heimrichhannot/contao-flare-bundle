@@ -4,31 +4,31 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Registry;
 
-use HeimrichHannot\FlareBundle\Filter\Logic\LogicInterface;
+use HeimrichHannot\FlareBundle\Filter\Predicate\PredicateInterface;
 use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
 
-class FilterLogicRegistry
+class FilterPredicateRegistry
 {
     /**
-     * @var array<class-string<LogicInterface>, LogicInterface>
+     * @var array<class-string<PredicateInterface>, PredicateInterface>
      */
     private array $types;
 
     public function __construct(
-        #[TaggedIterator(LogicInterface::FLARE_FILTER_LOGIC_TAG)]
+        #[TaggedIterator(PredicateInterface::FLARE_FILTER_PREDICATE_TAG)]
         private readonly iterable $filterTypes,
     ) {}
 
     /**
-     * @param class-string<LogicInterface> $class
+     * @param class-string<PredicateInterface> $class
      */
-    public function get(string $class): ?LogicInterface
+    public function get(string $class): ?PredicateInterface
     {
         return $this->resolve()[$class] ?? null;
     }
 
     /**
-     * @return array<class-string<LogicInterface>, LogicInterface>
+     * @return array<class-string<PredicateInterface>, PredicateInterface>
      */
     public function all(): array
     {
@@ -41,12 +41,12 @@ class FilterLogicRegistry
             $this->types = [];
 
             foreach ($this->filterTypes as $filterType) {
-                if (!$filterType instanceof LogicInterface) {
+                if (!$filterType instanceof PredicateInterface) {
                     throw new \LogicException(\sprintf(
                         'Service "%s" is tagged "%s" but does not implement %s.',
                         $filterType::class,
-                        LogicInterface::FLARE_FILTER_LOGIC_TAG,
-                        LogicInterface::class,
+                        PredicateInterface::FLARE_FILTER_PREDICATE_TAG,
+                        PredicateInterface::class,
                     ));
                 }
 

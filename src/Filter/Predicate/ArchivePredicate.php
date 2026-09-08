@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter\Logic;
+namespace HeimrichHannot\FlareBundle\Filter\Predicate;
 
 use Doctrine\DBAL\ArrayParameterType;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class ArchiveLogic extends AbstractLogic
+class ArchivePredicate extends AbstractPredicate
 {
     public function configureOptions(OptionsResolver $resolver): void
     {

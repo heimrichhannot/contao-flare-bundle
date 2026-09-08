@@ -143,11 +143,11 @@ class InteractiveProjector extends AbstractProjector
 
         foreach ($list->filters as $key => $filter)
         {
-            if (!$filter->alias || !$form->has($filter->alias)) {
+            if (!$form->has($key)) {
                 continue;
             }
 
-            $child = $form->get($filter->alias);
+            $child = $form->get($key);
 
             if ($child->getConfig()->getAttribute(FilterContext::ATTR_SINGLE_FIELD))
             {

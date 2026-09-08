@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter\Logic;
+namespace HeimrichHannot\FlareBundle\Filter\Predicate;
 
 use Doctrine\DBAL\ParameterType;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class BooleanLogic extends AbstractLogic
+class BooleanPredicate extends AbstractPredicate
 {
     public function configureOptions(OptionsResolver $resolver): void
     {

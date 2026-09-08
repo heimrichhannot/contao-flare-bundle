@@ -45,8 +45,15 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `FilterMount`s) per list × form context
 - `src/Config/` — `ConfigBuilder` (fluent canonical-config accumulator; no cast helpers — transformers cast
   declaratively off the typed model) and `TransformerResolver` (source class → transformer map)
-- `src/Filter/Form/` — FLARE filter form implementations (peers of `src/Filter/Element/`);
-  `src/Form/` — Symfony-level building blocks only (`ChoicesBuilder`, `Form/Type/DateRangeFormType`)
+- `src/Filter/Form/` — FLARE filter form implementations (peers of `src/Filter/Element/`) behind
+  `FilterFormInterface` (`buildForm()` + `decode()`); `src/Form/` — Symfony-level building blocks only
+  (`ChoicesBuilder`, `Form/Type/DateRangeFormType`)
+- `src/Filter/Value/` — immutable filter value objects (`BoolValue`, `ChoiceValue`, `KeywordsValue`,
+  `DateRangeValue`, `ParentRefValue`), the typed channel between a form's `decode()` and an element's
+  `buildFilter()`. Each is `final readonly` with only public scalar/enum/nested-VO/array properties —
+  the containment rule `tests/Filter/Value/ValueObjectContainmentTest.php` enforces by reflection, so
+  `Util\Fingerprint::flatten()` can hash them without object identity leaking in. Deliberately not
+  services (excluded in `config/services.yaml`)
 - `src/Reader/` — reader/detail-page URL generation (`ReaderUrlGenerator`)
 - `src/InferPtable/` — parent-table inference for DCAs
 - `src/Integration/` — optional integrations (Codefog Tags, Terminal42 ChangeLanguage), wired via `config/integrations/*.yaml`
@@ -60,6 +67,8 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 
 **Extensibility via PHP 8 attributes** (compiler passes auto-register tagged services):
 - `#[AsFilterElement(type: '...', isTargeted: ...)]` — register a filter element
+- `#[AsFilterForm(name: '...', value: '...', requires: [...], default: ...)]` — register a filter form,
+  bound to a value class rather than to an element type (repeatable)
 - `#[AsListDriver(type: '...', dataContainer: '...')]` — register a list driver
 
 Attributes are in `src/DependencyInjection/Attribute/`, compiler passes in `src/DependencyInjection/Compiler/`.
@@ -72,7 +81,10 @@ tl_flare_filter and tl_flare_list).
 etc., implemented by the listeners in `src/EventListener/NamedDispatch/`). All events are in `src/Event/`.
 Prefer events over overriding services for customization.
 
-**Registry pattern** — Registries in `src/Registry/` map type names to implementations: `FilterElementRegistry`, `ListTypeRegistry`, `FilterTypeRegistry`, `ProjectorRegistry`, `EngineModRegistry`.
+**Registry pattern** — Registries in `src/Registry/` map type names to implementations: `FilterElementRegistry`, `FilterFormRegistry`, `ListDriverRegistry`, `FilterTypeRegistry`, `ProjectorRegistry`, `EngineModRegistry`. `FilterFormRegistry` differs from the others: it holds
+compile-time metadata as plain arrays and resolves the form services through a lazy
+`container.service_locator`, so reading metadata (the `formVariant` options, the form election)
+instantiates nothing.
 
 **Query safety** — `FilterQueryBuilder` (`src/Query/FilterQueryBuilder.php`) enforces parameterized queries. `TableAliasRegistry` (`src/Query/TableAliasRegistry.php`) manages table aliases and JOINs safely.
 

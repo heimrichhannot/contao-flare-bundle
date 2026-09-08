@@ -7,12 +7,12 @@ namespace HeimrichHannot\FlareBundle\Filter\Factory;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\FormContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterFormBuiltEvent;
-use HeimrichHannot\FlareBundle\Event\FilterSetBuildEvent;
+use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
-use HeimrichHannot\FlareBundle\Filter\FilterMount;
-use HeimrichHannot\FlareBundle\Filter\FilterSet;
+use HeimrichHannot\FlareBundle\Form\FilterMount;
+use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -21,7 +21,7 @@ use Symfony\Component\Form\FormBuilder;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
-final readonly class FilterSetFactory
+final readonly class FormHarnessFactory
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
@@ -35,7 +35,7 @@ final readonly class FilterSetFactory
      *
      * @throws FlareException If the form could not be built
      */
-    public function create(ListSpec $list, FormContextInterface $context): FilterSet
+    public function create(ListSpec $list, FormContextInterface $context): FormHarness
     {
         if (!$context instanceof ContextInterface) {
             throw new FlareException(
@@ -148,8 +148,8 @@ final readonly class FilterSetFactory
          * ```
          */
 
-        /** @var FilterSetBuildEvent $formBuildEvent */
-        $formBuildEvent = $this->eventDispatcher->dispatch(new FilterSetBuildEvent(
+        /** @var FormHarnessBuildEvent $formBuildEvent */
+        $formBuildEvent = $this->eventDispatcher->dispatch(new FormHarnessBuildEvent(
             list: $list,
             formName: $name,
             formBuilder: $root,
@@ -158,6 +158,6 @@ final readonly class FilterSetFactory
         /** @var FormBuilder $root */
         $root = $formBuildEvent->formBuilder;
 
-        return new FilterSet($root->getForm(), $mounts);
+        return new FormHarness($root->getForm(), $mounts);
     }
 }

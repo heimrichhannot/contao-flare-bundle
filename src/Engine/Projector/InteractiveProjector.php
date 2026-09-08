@@ -14,10 +14,10 @@ use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\AggregationView;
 use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterSetFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FormHarnessFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\FilterSet;
+use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
@@ -31,7 +31,7 @@ class InteractiveProjector extends AbstractProjector
 {
     public function __construct(
         private readonly AggregationContextFactory $aggregationConfigFactory,
-        private readonly FilterSetFactory         $filterSetFactory,
+        private readonly FormHarnessFactory        $filterSetFactory,
         private readonly PaginatorFactory          $paginatorFactory,
     ) {}
 
@@ -120,7 +120,7 @@ class InteractiveProjector extends AbstractProjector
      *
      * @throws FlareException
      */
-    protected function createFilterSet(ListSpec $list, InteractiveContext $context): FilterSet
+    protected function createFilterSet(ListSpec $list, InteractiveContext $context): FormHarness
     {
         $filterSet = $this->filterSetFactory->create($list, $context);
 

@@ -33,7 +33,7 @@ incidental:
   it** in `normalizeRuntimeValue()` to map submitted choices back to scalars.
 - `DateRangeFilterElement::buildForm()` adds children `from`/`to`; `buildFilter()` reads
   `$data->get('from')` by those exact names.
-- The `single()` vs. compound mount decision (`FilterSetFactory`, §2.2) determines whether `buildFilter()`
+- The `single()` vs. compound mount decision (`FormHarnessFactory`, §2.2) determines whether `buildFilter()`
   receives `getSingleValue()` or `get($name)`.
 
 Extracting forms without addressing this trades one coupling for a worse, invisible one.
@@ -93,12 +93,12 @@ one word each:
 
 | term | multiplicity | what it is |
 |---|---|---|
-| `FilterSet` | one per list × form context | the filters, their root form, and the mount↔filter map |
+| `FormHarness` | one per list × form context | the filters, their root form, and the mount↔filter map |
 | `FilterForm` | one per filter | registrable presentation strategy (`buildForm()`, `decode()`) |
 | `FilterFormBuilder` | one per filter, transient | collect-only builder handed to `buildForm()` |
 | **mount** | one per filter that has a form | the node mounted into the root form — flat field or compound group |
 
-`FilterSet` is an **object**, not a bare `FormInterface` returned by a factory: it owns the
+`FormHarness` is an **object**, not a bare `FormInterface` returned by a factory: it owns the
 `decode()` loop (§8), which otherwise has no home but `InteractiveProjector` — where its
 predecessor already landed wrongly (§7.2).
 
@@ -117,20 +117,20 @@ exists to remove.
 |---|---|---|
 | `Filter\Factory\FilterFormFactory` | `Filter\Factory\FilterSetFactory` | filter set |
 | — | `Filter\FilterSet` (new) | filter set |
-| — | `Filter\FilterMount` (new) | filter set |
+| — | `Form\FilterMount` (new) | filter set |
 | `Event\FilterFormBuildEvent` | `Event\FilterSetBuildEvent` | filter set |
 | `EventListener\NamedDispatch\FilterFormListener` | `…\FilterSetListener` | filter set |
-| `flare.form.{name}.build` | `flare.filter_set.{name}.build` | filter set |
+| `flare.form.{name}.build` | `flare.form.{name}.build` | filter set |
 | `Event\FilterElementFormBuiltEvent` | `Event\FilterFormBuiltEvent` | filter |
 | `flare.filter_element.{type}.form_built` | `flare.filter_form.{type}.built` | filter |
 | — | `EventListener\NamedDispatch\FilterFormListener` (new) | filter |
 | `Filter\FilterFormBuilder`, `…Interface` | unchanged | filter |
 
-`FilterSetFactory` builds a `FilterSet`, not a form, so the `Form` infix drops out; the root form
+`FormHarnessFactory` builds a `FormHarness`, not a form, so the `Form` infix drops out; the root form
 is `FilterSet::getForm()`. `FilterElementFormBuiltEvent` loses its detour over the element: it was
 named after the element only because `FilterForm*` was taken — and its dispatch alias follows the
 class, moving out of `FilterElementListener` into the `FilterFormListener` whose name the
-`FilterFormListener` → `FilterSetListener` rename frees. `{type}` there remains the *element* type,
+`FilterFormListener` → `FormHarnessListener` rename frees. `{type}` there remains the *element* type,
 which is what listeners target; the alias names the concern, not the key.
 
 `FilterFormBuilder` keeps its name deliberately. Symfony's own
@@ -471,7 +471,7 @@ Both of its jobs relocate:
 `FilterFormBuilder`'s `single()` vs. compound mount decision is unaffected — that is genuinely a
 form concern and stays where it is.
 
-**The decode loop lives on `FilterSet`.** `InteractiveProjector::collectFilterData()` today walks
+**The decode loop lives on `FormHarness`.** `InteractiveProjector::collectFilterData()` today walks
 the root form and flattens every child to `$child->getData()` — the flattening §7.2 identifies as
 the defect. Under the target model that walk becomes `FilterSet::decode()`: for each filter that
 has a mount, call the filter form's `decode($mount, $context)` and set the resulting value on the
@@ -656,9 +656,9 @@ Recorded here because each one closes a branch the design could otherwise have t
    Under the target model that branch disappears and `isLimited` becomes form-owned config. The same
    applies to `SearchKeywordsFilterElement::buildDca()`, `DcaSelectFieldFilterElement::buildDca()`
    and `BooleanFilterElement::buildDca()`.
-5. **The aggregate is called `FilterSet` and is an object.** The naming axis is multiplicity within
+5. **The aggregate is called `FormHarness` and is an object.** The naming axis is multiplicity within
    *Filter*, not filter-versus-list (§2.1) — the list is exclusively output, so no `List…` name can
-   be right for a form. `FilterSet` won over the invented alternatives because it names something
+   be right for a form. `FormHarness` won over the invented alternatives because it names something
    that already exists unnamed: `ListSpec::$filters` is a bare `array<string, Filter>` with
    hand-rolled `_generated_{$index}` keying and a hand-rolled `array_map` fingerprint loop in
    `hash()`. Making it an object rather than a factory return value is what gives `decode()` a home
@@ -695,10 +695,10 @@ Not blockers, but unverified at spec time.
 3. **`ArchiveFilterElement::buildPreselectData()`** is currently `ListSpec`-aware. Confirm it reduces
    to a generic key-lookup against `buildChoices()` once preselect is stored as choice keys, or
    whether preselect hydration needs its own port method.
-4. **Whether `FilterSet` should also absorb `ListSpec::$filters`.** The name fits the bare
+4. **Whether `FormHarness` should also absorb `ListSpec::$filters`.** The name fits the bare
    `array<string, Filter>` at least as well as it fits the form aggregate, which is a tension the
    rename introduces rather than resolves. Phase 0 deliberately keeps them apart: `ListSpec` is
    built in validation and aggregation contexts that never produce a form, so a form-carrying
-   `FilterSet` cannot simply replace the array. Revisit once the decode loop exists — either
-   `FilterSet` splits into a plain collection plus a form-bearing wrapper, or the two stay separate
+   `FormHarness` cannot simply replace the array. Revisit once the decode loop exists — either
+   `FormHarness` splits into a plain collection plus a form-bearing wrapper, or the two stay separate
    and the form-side object needs a distinguishing name after all.

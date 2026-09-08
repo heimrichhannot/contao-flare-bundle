@@ -8,18 +8,18 @@ use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\FormContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterFormBuiltEvent;
-use HeimrichHannot\FlareBundle\Event\FilterSetBuildEvent;
+use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterSetFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FormHarnessFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterMount;
-use HeimrichHannot\FlareBundle\Filter\FilterSet;
+use HeimrichHannot\FlareBundle\Form\FilterMount;
+use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
@@ -42,7 +42,7 @@ final class FilterSetFactoryTest extends TestCase
         $this->eventDispatcher = new EventDispatcher();
     }
 
-    private function createFactory(): FilterSetFactory
+    private function createFactory(): FormHarnessFactory
     {
         // The CSRF extension only needs to define the "csrf_protection" option; the factory
         // always disables it, so the token manager is never used.
@@ -50,7 +50,7 @@ final class FilterSetFactoryTest extends TestCase
             ->addExtension(new CsrfExtension(new CsrfTokenManager()))
             ->getFormFactory();
 
-        return new FilterSetFactory(
+        return new FormHarnessFactory(
             eventDispatcher: $this->eventDispatcher,
             filterContextFactory: new FilterContextFactory(new FilterOptionsResolver(new SchemaResolver())),
             formFactory: $formFactory,
@@ -62,7 +62,7 @@ final class FilterSetFactoryTest extends TestCase
         return $this->createFilterSet($filters)->getForm();
     }
 
-    private function createFilterSet(array $filters): FilterSet
+    private function createFilterSet(array $filters): FormHarness
     {
         $driver = new class implements ListDriverInterface {
             public function resolveDcTable(string $type, array $config, array $attributes): string
@@ -258,14 +258,14 @@ final class FilterSetFactoryTest extends TestCase
 
         $this->assertSame(['k_single', 'k_compound'], \array_keys($filterSet->getMounts()));
 
-        $singleMount = $filterSet->getFilterMount('k_single');
+        $singleMount = $filterSet->getMount('k_single');
         $this->assertInstanceOf(FilterMount::class, $singleMount);
         $this->assertSame($singleFilter, $singleMount->filter);
         $this->assertSame('suche', $singleMount->alias);
         $this->assertSame($singleFilter, $singleMount->context->filter);
         $this->assertSame('k_single', $singleMount->context->key);
 
-        $compoundMount = $filterSet->getFilterMount('k_compound');
+        $compoundMount = $filterSet->getMount('k_compound');
         $this->assertInstanceOf(FilterMount::class, $compoundMount);
         $this->assertSame('range', $compoundMount->alias);
         $this->assertSame('k_compound', $compoundMount->context->key);
@@ -281,7 +281,7 @@ final class FilterSetFactoryTest extends TestCase
             'k' => new Filter(element: $element, type: 'test_element', alias: 'suche'),
         ]);
 
-        $this->assertSame($filterSet->getForm()->get('suche'), $filterSet->getMount('k'));
+        $this->assertSame($filterSet->getForm()->get('suche'), $filterSet->getChild('k'));
     }
 
     public function testGetMountToleratesALeadingDigitAlias(): void
@@ -296,8 +296,8 @@ final class FilterSetFactoryTest extends TestCase
             'k' => new Filter(element: $element, type: 'test_element', alias: '0'),
         ]);
 
-        $this->assertSame('0', $filterSet->getFilterMount('k')?->alias);
-        $this->assertSame($filterSet->getForm()->get('0'), $filterSet->getMount('k'));
+        $this->assertSame('0', $filterSet->getMount('k')?->alias);
+        $this->assertSame($filterSet->getForm()->get('0'), $filterSet->getChild('k'));
     }
 
     /**
@@ -323,8 +323,8 @@ final class FilterSetFactoryTest extends TestCase
         ]);
 
         $this->assertSame([], $filterSet->getMounts());
-        $this->assertNull($filterSet->getFilterMount('k'));
         $this->assertNull($filterSet->getMount('k'));
+        $this->assertNull($filterSet->getChild('k'));
     }
 
     /**
@@ -342,8 +342,8 @@ final class FilterSetFactoryTest extends TestCase
         // A FilterSetBuildEvent listener may drop children. The map still lists the filter — the
         // mount is resolved against the root form on every call, so it simply reports null.
         $this->eventDispatcher->addListener(
-            FilterSetBuildEvent::class,
-            static function (FilterSetBuildEvent $event): void {
+            FormHarnessBuildEvent::class,
+            static function (FormHarnessBuildEvent $event): void {
                 $event->formBuilder->remove('suche');
             },
         );
@@ -357,13 +357,13 @@ final class FilterSetFactoryTest extends TestCase
         ]);
 
         $this->assertFalse($filterSet->getForm()->has('suche'));
-        $this->assertSame('suche', $filterSet->getFilterMount('k')?->alias);
-        $this->assertNull($filterSet->getMount('k'));
+        $this->assertSame('suche', $filterSet->getMount('k')?->alias);
+        $this->assertNull($filterSet->getChild('k'));
     }
 
     public function testGetMountIsNullForAnUnknownKey(): void
     {
+        $this->assertNull($this->createFilterSet([])->getChild('nope'));
         $this->assertNull($this->createFilterSet([])->getMount('nope'));
-        $this->assertNull($this->createFilterSet([])->getFilterMount('nope'));
     }
 }

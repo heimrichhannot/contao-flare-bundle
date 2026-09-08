@@ -16,11 +16,11 @@ use HeimrichHannot\FlareBundle\Filter\FilterCall;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\Registry\FilterTypeRegistry;
+use HeimrichHannot\FlareBundle\Registry\FilterLogicRegistry;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -31,11 +31,11 @@ readonly class FilterExecutor
         private FilterContextFactory      $filterContextFactory,
         private FilterElementRegistry     $filterElementRegistry,
         private FilterQueryBuilderFactory $filterQueryBuilderFactory,
-        private FilterTypeRegistry        $filterTypeRegistry,
+        private FilterLogicRegistry       $filterTypeRegistry,
     ) {}
 
     /**
-     * @return FilterQueryBuilder[]
+     * @return FilterConditionsBuilder[]
      *
      * @throws AbortFilteringException
      * @throws FilterException
@@ -64,7 +64,7 @@ readonly class FilterExecutor
     }
 
     /**
-     * @return FilterQueryBuilder[]
+     * @return FilterConditionsBuilder[]
      *
      * @throws AbortFilteringException
      * @throws FilterException
@@ -124,7 +124,7 @@ readonly class FilterExecutor
 
     /**
      * @param FilterCall[] $calls
-     * @return FilterQueryBuilder[]
+     * @return FilterConditionsBuilder[]
      */
     private function buildQueryBuilders(array $calls, Filter $filter): array
     {
@@ -136,7 +136,7 @@ readonly class FilterExecutor
 
             try
             {
-                $call->type->buildQuery($filterQueryBuilder, $call->options);
+                $call->type->buildConditions($filterQueryBuilder, $call->options);
             }
             catch (AbortFilteringException $e)
             {

@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\Type\PublishedFilterType;
+use HeimrichHannot\FlareBundle\Filter\Logic\PublishedFilterLogic;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -55,7 +55,7 @@ class PublishedFilterElement extends AbstractFilterElement
     {
         $config = $context->config;
 
-        $builder->add(PublishedFilterType::class, [
+        $builder->add(PublishedFilterLogic::class, [
             'published_field' => $config['published_field'],
             'start_field' => $config['start_field'],
             'stop_field' => $config['stop_field'],

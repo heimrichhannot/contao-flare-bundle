@@ -26,9 +26,9 @@ namespace HeimrichHannot\FlareBundle\Filter\Value;
  * divergence from `CalendarCurrentFilterElement::mixedToDateTime()`, whose `if (!$input)` guard
  * discards `0` and `'0'`.
  */
-final readonly class DateRangeValue
+final readonly class DateRangeValue implements ValueInterface
 {
-    public function __construct(
+    private function __construct(
         public ?int $from = null,
         public ?int $to = null,
     ) {}

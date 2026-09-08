@@ -16,7 +16,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Type\DcaSelectFilterType;
+use HeimrichHannot\FlareBundle\Filter\Logic\DcaSelectFilterLogic;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -124,7 +124,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
         $dcaOptionsField = $this->getOptionsField($context->list->dc, $config['field']) ?? [];
         $isMultiple = $dcaOptionsField['eval']['multiple'] ?? false;
 
-        $builder->add(DcaSelectFilterType::class, [
+        $builder->add(DcaSelectFilterLogic::class, [
             'field' => $targetField,
             'selected' => $selected,
             'valid_options' => $options,

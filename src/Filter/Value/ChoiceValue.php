@@ -22,7 +22,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Value;
  * two elements share a value object only if every form registered for one is meaningful for the
  * other, and a choice form is not meaningful for a free-text search.
  */
-final readonly class ChoiceValue
+final readonly class ChoiceValue implements ValueInterface
 {
     /** @var list<string> Non-empty, deduplicated, ascending by string comparison. */
     public array $keys;

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter\Type;
+namespace HeimrichHannot\FlareBundle\Filter\Logic;
 
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class PublishedFilterType extends AbstractFilterType
+class PublishedFilterLogic extends AbstractFilterLogic
 {
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -18,7 +18,7 @@ class PublishedFilterType extends AbstractFilterType
         $resolver->define('now')->required()->allowedTypes('int');
     }
 
-    public function buildQuery(FilterQueryBuilder $builder, array $options): void
+    public function buildConditions(FilterConditionsBuilder $builder, array $options): void
     {
         if ($options['published_field'])
         {

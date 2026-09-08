@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Type\SearchKeywordsFilterType;
+use HeimrichHannot\FlareBundle\Filter\Logic\SearchKeywordsFilterLogic;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -78,7 +78,7 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
             return;
         }
 
-        $builder->add(SearchKeywordsFilterType::class, [
+        $builder->add(SearchKeywordsFilterLogic::class, [
             'value' => $value,
             'columns' => $columns,
         ]);

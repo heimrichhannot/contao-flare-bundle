@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Type\CalendarCurrentFilterType;
+use HeimrichHannot\FlareBundle\Filter\Logic\CalendarCurrentFilterLogic;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
@@ -129,7 +129,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
             }
         }
 
-        $builder->add(CalendarCurrentFilterType::class, [
+        $builder->add(CalendarCurrentFilterLogic::class, [
             'start' => $start,
             'stop' => $stop,
             'has_extended_events' => $config['has_extended_events'],

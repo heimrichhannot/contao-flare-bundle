@@ -16,7 +16,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Type\BooleanFilterType;
+use HeimrichHannot\FlareBundle\Filter\Logic\BooleanFilterLogic;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -75,7 +75,7 @@ class BooleanFilterElement extends AbstractFilterElement
             return;
         }
 
-        $builder->add(BooleanFilterType::class, [
+        $builder->add(BooleanFilterLogic::class, [
             'field' => $targetField,
             'value' => $value,
         ]);

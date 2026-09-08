@@ -18,7 +18,7 @@ use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
  * callers in the target model — the form's `decode()` and the form's `preselect` transformer
  * (§4.2) — which is why it lives here rather than on either of them.
  */
-final readonly class BoolValue
+final readonly class BoolValue implements ValueInterface
 {
     public function __construct(
         public bool $state,

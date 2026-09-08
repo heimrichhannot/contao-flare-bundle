@@ -25,7 +25,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Value;
  * decide which rows match (§3.4, §4.1) while creating a second representation of "nothing
  * selected" (§9). {@see tryFrom()} is the guard that keeps an empty instance from existing.
  */
-final readonly class ParentRefValue
+final readonly class ParentRefValue implements ValueInterface
 {
     /**
      * Parent ids grouped by parent table. Tables sorted by name, ids sorted ascending,

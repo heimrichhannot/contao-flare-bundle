@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\Type\SimpleEquationFilterType;
+use HeimrichHannot\FlareBundle\Filter\Logic\SimpleEquationFilterLogic;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -56,7 +56,7 @@ class SimpleEquationFilterElement extends AbstractFilterElement
             throw new FilterException('Invalid filter configuration.');
         }
 
-        $builder->add(SimpleEquationFilterType::class, [
+        $builder->add(SimpleEquationFilterLogic::class, [
             'operand_left' => $operand,
             'operator' => $op,
             'operand_right' => $config['right'],

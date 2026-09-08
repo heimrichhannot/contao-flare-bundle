@@ -21,7 +21,7 @@ use HeimrichHannot\FlareBundle\Query\Executor\FilterExecutor;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\Registry\FilterTypeRegistry;
+use HeimrichHannot\FlareBundle\Registry\FilterLogicRegistry;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
@@ -39,7 +39,7 @@ final class FilterExecutorTest extends TestCase
             filterContextFactory: new FilterContextFactory(new FilterOptionsResolver(new SchemaResolver())),
             filterElementRegistry: new FilterElementRegistry(),
             filterQueryBuilderFactory: new FilterQueryBuilderFactory($this->createMock(Connection::class)),
-            filterTypeRegistry: new FilterTypeRegistry([]),
+            filterTypeRegistry: new FilterLogicRegistry([]),
         );
     }
 

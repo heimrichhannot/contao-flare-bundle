@@ -14,7 +14,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Type\IntegerIdChoiceFilterType;
+use HeimrichHannot\FlareBundle\Filter\Logic\IntegerIdChoiceFilterLogic;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
@@ -119,7 +119,7 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
             return;
         }
 
-        $builder->add(IntegerIdChoiceFilterType::class, [
+        $builder->add(IntegerIdChoiceFilterLogic::class, [
             'field' => 'id',
             'ids' => $tagIds,
         ]);

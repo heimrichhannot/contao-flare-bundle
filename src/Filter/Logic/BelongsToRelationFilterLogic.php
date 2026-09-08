@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter\Type;
+namespace HeimrichHannot\FlareBundle\Filter\Logic;
 
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class BelongsToRelationFilterType extends AbstractFilterType
+class BelongsToRelationFilterLogic extends AbstractFilterLogic
 {
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -18,7 +18,7 @@ class BelongsToRelationFilterType extends AbstractFilterType
         $resolver->define('submitted_data')->default(null)->allowedTypes('null', 'array');
     }
 
-    public function buildQuery(FilterQueryBuilder $builder, array $options): void
+    public function buildConditions(FilterConditionsBuilder $builder, array $options): void
     {
         if ($options['field_dynamic_ptable']) {
             $this->buildDynamicQuery($builder, $options);
@@ -33,7 +33,7 @@ class BelongsToRelationFilterType extends AbstractFilterType
             ->setParameter('whitelist', $options['whitelist']);
     }
 
-    private function buildDynamicQuery(FilterQueryBuilder $builder, array $options): void
+    private function buildDynamicQuery(FilterConditionsBuilder $builder, array $options): void
     {
         $ors = [];
         $submittedData = $options['submitted_data'];

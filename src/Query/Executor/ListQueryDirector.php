@@ -11,8 +11,8 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\QueryBuilderFactory;
-use HeimrichHannot\FlareBundle\Query\FilterQuery;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Query\FilterConditions;
+use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -71,8 +71,8 @@ readonly class ListQueryDirector
     }
 
     /**
-     * @param FilterQueryBuilder[] $filterQueryBuilders
-     * @return FilterQuery[]
+     * @param FilterConditionsBuilder[] $filterQueryBuilders
+     * @return FilterConditions[]
      */
     public function buildFilterQueries(array $filterQueryBuilders): array
     {

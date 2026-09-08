@@ -17,7 +17,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Type\FieldValueChoiceFilterType;
+use HeimrichHannot\FlareBundle\Filter\Logic\FieldValueChoiceFilterLogic;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -104,7 +104,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
             return;
         }
 
-        $builder->add(FieldValueChoiceFilterType::class, [
+        $builder->add(FieldValueChoiceFilterLogic::class, [
             'field' => $field,
             'values' => $value,
         ]);

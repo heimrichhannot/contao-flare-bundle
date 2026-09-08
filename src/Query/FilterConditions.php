@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Query;
 
-readonly class FilterQuery
+readonly class FilterConditions
 {
     public function __construct(
         private string $targetAlias,

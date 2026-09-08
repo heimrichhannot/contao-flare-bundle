@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Tests\Form;
+namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
 use PHPUnit\Framework\TestCase;

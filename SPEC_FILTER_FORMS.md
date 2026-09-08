@@ -1,12 +1,13 @@
 # SPEC: Decoupling Filter Forms from Filter Elements
 
-**Status:** Draft / design agreed, not implemented
+**Status:** Step 0 (§12) implemented; steps 1-5 not started
 **Scope:** `src/Filter/`, `src/Form/`, `src/Event/`, `src/EventListener/NamedDispatch/`,
 `src/Registry/`, `src/DependencyInjection/`, `src/DataContainer/Builder/`,
 `contao/dca/tl_flare_filter.php`, `src/EventListener/Contao/ElementDcaListener.php`,
 `src/Engine/Projector/InteractiveProjector.php`
 **Breaking:** yes (`FilterElementInterface`, `Filter::$data`, `tl_flare_filter` schema, plus the
-Phase 0 renames of §2.2 — service ids, event classes and the `flare.form.*` dispatch alias)
+Phase 0 renames of §2.2 — service ids, event classes and two dispatch aliases:
+`flare.form.{name}.build` and `flare.filter_element.{type}.form_built`)
 
 ---
 
@@ -115,15 +116,21 @@ exists to remove.
 |---|---|---|
 | `Filter\Factory\FilterFormFactory` | `Filter\Factory\FilterSetFactory` | filter set |
 | — | `Filter\FilterSet` (new) | filter set |
+| — | `Filter\FilterMount` (new) | filter set |
 | `Event\FilterFormBuildEvent` | `Event\FilterSetBuildEvent` | filter set |
 | `EventListener\NamedDispatch\FilterFormListener` | `…\FilterSetListener` | filter set |
 | `flare.form.{name}.build` | `flare.filter_set.{name}.build` | filter set |
 | `Event\FilterElementFormBuiltEvent` | `Event\FilterFormBuiltEvent` | filter |
+| `flare.filter_element.{type}.form_built` | `flare.filter_form.{type}.built` | filter |
+| — | `EventListener\NamedDispatch\FilterFormListener` (new) | filter |
 | `Filter\FilterFormBuilder`, `…Interface` | unchanged | filter |
 
 `FilterSetFactory` builds a `FilterSet`, not a form, so the `Form` infix drops out; the root form
 is `FilterSet::getForm()`. `FilterElementFormBuiltEvent` loses its detour over the element: it was
-named after the element only because `FilterForm*` was taken.
+named after the element only because `FilterForm*` was taken — and its dispatch alias follows the
+class, moving out of `FilterElementListener` into the `FilterFormListener` whose name the
+`FilterFormListener` → `FilterSetListener` rename frees. `{type}` there remains the *element* type,
+which is what listeners target; the alias names the concern, not the key.
 
 `FilterFormBuilder` keeps its name deliberately. Symfony's own
 `FormTypeInterface::buildForm(FormBuilderInterface)` names the builder after what it builds, not
@@ -539,8 +546,8 @@ Phase 0 (§2.2) is rename-only and touches no schema; everything below belongs t
 Phase 0 clears the vocabulary so the rest can be written in the target words. After that the
 contract set is the entire risk; the remaining elements are mechanical.
 
-0. **Nomenclature refactor.** Pure rename plus one new object. No behaviour change, no schema
-   change, no new contract — landed on its own so the diff of step 1 contains only design.
+0. **Nomenclature refactor.** ✅ **Done.** Pure rename plus one new object. No behaviour change,
+   no schema change, no new contract — landed on its own so the diff of step 1 contains only design.
    - Apply the §2.2 table.
    - Introduce `Filter\FilterSet`:
      `FilterSetFactory::create(ListSpec, FormContextInterface): FilterSet`, holding the root
@@ -612,9 +619,26 @@ Recorded here because each one closes a branch the design could otherwise have t
 
 Not blockers, but unverified at spec time.
 
-1. **`serialize()` stability for readonly value objects** is asserted from language semantics in §9,
-   not measured against `ListSpec::hash()`. Write a throwaway test before committing to "no hashing
-   interface".
+1. ~~**`serialize()` stability for readonly value objects**~~ — **measured** in step 0.
+   `tests/Filter/ValueObjectSerializeProbeTest.php` (throwaway, `@group probe`) exercises the real
+   `ListSpec::hash()` path via `Filter::$data`. Results:
+   - §9's core claim **holds**: two separately constructed, equal `final readonly` value objects of
+     scalars, arrays, enums and nested value objects hash identically, and survive a
+     `serialize()`/`unserialize()` round trip. Enums are value stable.
+   - Every hazard §9 names is **confirmed**: `\DateTimeImmutable` hashes differently for the same
+     instant as `+01:00` (`timezone_type` 1) vs. `Europe/Berlin` (`timezone_type` 3); array order
+     changes the hash for both list and string keys; a mutation-state-carrying model-like object
+     drags unrelated state in; a closure makes `serialize()` throw.
+   - **New finding not anticipated by §9:** `serialize()` is not a pure value function over an
+     object *graph*. A repeated object is emitted as a back-reference (`r:N;`), so a hash over two
+     filters differs depending on whether they **share one value instance** or hold two equal ones.
+     Today's code is immune only because `Filter::fingerprint()` flattens through
+     `FilterData::toArray()`; §8's plan to move the hashing role onto the value object removes that
+     flattening. **Step 1 must therefore either keep a flattening step (the opt-in
+     `fingerprint(): array` §9 mentions) or accept the resulting cache miss.** Note the blast radius
+     is small: `ListSpec::hash()`'s only consumer is an in-request memoization array in
+     `ArchiveFilterElement`, so instability costs a cache miss, not correctness — a *collision*
+     would be the correctness bug, and none was observed.
 2. **`DcaBuilder::selector()`** (§6.3) has no consumer yet. Confirm whether any form in the initial
    migration actually contributes a subpalette; if none does, defer the API.
 3. **`ArchiveFilterElement::buildPreselectData()`** is currently `ListSpec`-aware. Confirm it reduces

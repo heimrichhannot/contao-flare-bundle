@@ -22,6 +22,11 @@ final readonly class TypeNameFactory
         return self::createType($className, ['Controller', 'FilterElement', 'Element']);
     }
 
+    public static function createFilterFormType(string $className): string
+    {
+        return self::createType($className, ['Controller', 'FilterForm', 'Form']);
+    }
+
     public static function createListDriverType(string $className): string
     {
         return self::createType($className, ['Controller', 'ListDriver', 'Driver']);

@@ -13,6 +13,7 @@ services:
             - ../src/{Config,Contao,ContaoManager,Contract,DependencyInjection,Dto,Engine,Event,Integration,Model,Trait,Util}
             - ../src/{Filter,Form,InferPtable,List,Paginator,Query,Sort}/*.php
             - ../src/DataContainer/Builder
+            - ../src/Filter/Value
 
     HeimrichHannot\FlareBundle\Engine\:
         resource: ../src/Engine
@@ -25,6 +26,12 @@ services:
     # Util classes registered as twig globals must be defined as services
     HeimrichHannot\FlareBundle\Util\Env: ~
     HeimrichHannot\FlareBundle\Util\Str: ~
+
+    # Arguments pinned so autowiring can never substitute the full container for the locator
+    HeimrichHannot\FlareBundle\Registry\FilterFormRegistry:
+        arguments:
+            $formLocator: null # populated by RegisterFilterFormsPass
+            $forms:       []   # populated by RegisterFilterFormsPass
 
     # Not shared: each consumer keeps its own per-key schema memoization space
     HeimrichHannot\FlareBundle\Config\SchemaResolver:

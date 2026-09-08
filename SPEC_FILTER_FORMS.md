@@ -1,6 +1,7 @@
 # SPEC: Decoupling Filter Forms from Filter Elements
 
-**Status:** Step 0 (§12) implemented; steps 1-5 not started
+**Status:** Step 0 (§12) implemented; step 1 partially implemented (contracts, value objects,
+registry — see the Phase 1 plan); steps 2-6 not started
 **Scope:** `src/Filter/`, `src/Form/`, `src/Event/`, `src/EventListener/NamedDispatch/`,
 `src/Registry/`, `src/DependencyInjection/`, `src/DataContainer/Builder/`,
 `contao/dca/tl_flare_filter.php`, `src/EventListener/Contao/ElementDcaListener.php`,
@@ -529,15 +530,60 @@ object legitimately must hold something non-serializable.
 
 ## 11. Migration
 
-Phase 0 (§2.2) is rename-only and touches no schema; everything below belongs to steps 1-4.
+Phase 0 (§2.2) is rename-only and touches no schema. Everything below belongs to steps 1-4, with
+the sole exception of the data migration, which is written **last** — see "Why the data migration
+comes last" below.
+
+Two separable things, deliberately not done together:
+
+**Schema** — tracked by the DCA, applied by Contao's schema diff. Columns in this bundle come only
+from `sql` keys in `contao/dca/tl_flare_filter.php`; there is no schema listener.
 
 - New column `formVariant` (`varchar`), plus form-owned columns as they move.
 - Drop `intrinsic`, `boolMode`, `boolBinaryChoices` and the `boolMode_binary` subpalette /
   `boolMode` selector entry.
-- Contao migration: `intrinsic = 0` → the default form for the element's value class;
-  `intrinsic = 1` → `''`.
 - `preselect` stays a column but becomes form-owned; its semantics narrow to hydration only, and
   the `unset($preselectOptions['null'])` hack in `BooleanFilterElement::buildDca()` goes away.
+
+**Data** — one Contao migration: `intrinsic = 0` → the default form for the element's value class;
+`intrinsic = 1` → `''`.
+
+### Why the data migration comes last
+
+The mapping cannot be frozen correctly before the forms exist. Three reasons, in order of severity:
+
+1. **The `flare_bool` arm is undecidable early.** `BooleanFilterElement::buildForm()` always mounts a
+   `CheckboxType` and never reads `boolMode`; `ternary` posts a backend error as unsupported. But
+   `boolBinaryChoices` *does* change matching, via `resolveRuntimeValue()` — under `NULL_TRUE` an
+   unchecked box means "no opinion", under `NULL_FALSE`/`TRUE_FALSE` it means `false`. A checkbox
+   form that owns no element config cannot express both, so which bool rows map to which bool form
+   is only answerable once those forms are written.
+2. **A migration file auto-registers the moment it exists.** `src/Migration` is not excluded from
+   the PSR-4 service resource, and `autoconfigure: true` plus `AbstractMigration` earns Contao's
+   `contao.migration` tag — no manual tag. So the file's mere presence means `contao:migrate` runs
+   it, against form names that may not exist yet. It is also one-shot: once `shouldRun()` has been
+   satisfied it goes quiet, so wrong values stay committed and need a *second* corrective migration.
+3. **Form names are permanent data.** The migration must hardcode `element type → form name` as
+   frozen literals rather than resolving through `FilterFormRegistry`, because a migration describes
+   historical rows — resolving names through live code would let a later rename retroactively change
+   what already-migrated rows meant. Freezing those literals before the names settle is the same
+   mistake one step earlier.
+
+**The ordering hazard this creates, and the constraint it imposes.** The backfill reads `intrinsic`,
+which the schema step *drops*. Contao runs migrations before applying the schema diff, so a single
+`contao:migrate` on a database still carrying `intrinsic` will backfill and then drop, in that order
+— which is correct. But applying a schema update after the drop lands and before the migration
+exists destroys the source column, and with it any chance of recovering the mapping. Therefore:
+
+- The data migration MUST be written before any environment holding real rows applies the schema
+  diff that drops `intrinsic`.
+- `shouldRun()` MUST return `false` when `intrinsic` is already absent, so an environment that has
+  passed that point fails closed rather than backfilling from nothing.
+- `shouldRun()` MUST NOT key on `formVariant` being absent — the column arrives with the schema step
+  and will already exist. Key on `intrinsic` being present plus a type-restricted count of rows
+  still needing work; without the type restriction, the element types that get no form at all
+  (`flare_published`, `flare_relation_belongsTo`, `flare_equation_simple`, `cfg_tags_search`) keep
+  the migration pending forever.
 
 ---
 
@@ -578,8 +624,13 @@ contract set is the entire risk; the remaining elements are mechanical.
 3. **Migrate the rest.** Nine remaining elements + `CodefogTagsChoiceFilterElement`.
    `FieldValueChoiceFilterElement` carries the §7 fix. `CodefogTagsSearchElement` declares neither
    `buildForm()` nor `buildFilter()` (only `buildDca()`) — it needs `value:` set and nothing else.
-4. **Schema migration** per §11.
+4. **Schema changes** per §11 — drop `intrinsic`, `boolMode`, `boolBinaryChoices` and their
+   palette/selector entries. DCA only; no data migration yet.
 5. **Fold `FilterData`** out per §8.
+6. **Data migration** per §11. Written last, once the forms and their names exist and the
+   `flare_bool` mapping is decided. Subject to the ordering hazard §11 records: it reads
+   `intrinsic`, which step 4 removes from the DCA, so it must land before any environment with real
+   rows applies the schema diff.
 
 ---
 

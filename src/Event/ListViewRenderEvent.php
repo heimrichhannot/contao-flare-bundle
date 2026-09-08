@@ -18,7 +18,7 @@ class ListViewRenderEvent extends Event
         public readonly ContentModel $contentModel,
         public readonly Engine       $engine,
         public readonly ListModel    $listModel,
-        private Template              $template,
+        private Template             $template,
     ) {}
 
     public function getTemplate(): Template

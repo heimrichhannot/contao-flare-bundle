@@ -9,11 +9,13 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Logic\SearchKeywordsLogic;
+use HeimrichHannot\FlareBundle\Filter\Predicate\SearchKeywordsPredicate;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -62,13 +64,13 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
         $builder->single(TextType::class, $options);
     }
 
-    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
         $config = $context->config;
 
         $value = $config['intrinsic']
             ? $config['prefill']
-            : $data->getSingleValue();
+            : $value->getSingleValue();
 
         if (!$value || !\is_string($value)) {
             return;
@@ -78,7 +80,7 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
             return;
         }
 
-        $builder->add(SearchKeywordsLogic::class, [
+        $builder->add(SearchKeywordsPredicate::class, [
             'value' => $value,
             'columns' => $columns,
         ]);

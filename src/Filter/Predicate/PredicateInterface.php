@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter\Logic;
+namespace HeimrichHannot\FlareBundle\Filter\Predicate;
 
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-#[AutoconfigureTag(self::FLARE_FILTER_LOGIC_TAG)]
-interface LogicInterface
+#[AutoconfigureTag(self::FLARE_FILTER_PREDICATE_TAG)]
+interface PredicateInterface
 {
-    public const FLARE_FILTER_LOGIC_TAG = 'flare.filter_logic';
+    public const FLARE_FILTER_PREDICATE_TAG = 'flare.filter_predicate';
 
     /**
      * Configures the options for this type.

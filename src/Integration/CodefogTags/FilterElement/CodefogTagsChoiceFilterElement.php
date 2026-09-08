@@ -10,11 +10,13 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
-use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Logic\IntegerIdChoiceLogic;
+use HeimrichHannot\FlareBundle\Filter\Predicate\IntegerIdChoicePredicate;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
@@ -104,7 +106,7 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
         $builder->single(ChoiceType::class, $formOptions);
     }
 
-    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
         $config = $context->config;
 
@@ -113,13 +115,13 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
         /** @var ?array $tagIds */
         $tagIds = $config['intrinsic']
             ? $preselect
-            : $this->processRuntimeValue($data->getSingleValue());
+            : $this->processRuntimeValue($value->getSingleValue());
 
         if (!$tagIds) {
             return;
         }
 
-        $builder->add(IntegerIdChoiceLogic::class, [
+        $builder->add(IntegerIdChoicePredicate::class, [
             'field' => 'id',
             'ids' => $tagIds,
         ]);

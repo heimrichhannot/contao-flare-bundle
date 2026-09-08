@@ -9,10 +9,12 @@ use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -71,7 +73,7 @@ final class ElementConfigAwareElement implements FilterElementInterface, Options
     {
     }
 
-    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
     }
 }
@@ -82,7 +84,7 @@ final class PlainElement implements FilterElementInterface
     {
     }
 
-    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
     }
 }

@@ -6,10 +6,10 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\LogicSequencer;
-use HeimrichHannot\FlareBundle\Filter\Logic\AbstractLogic;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilder;
+use HeimrichHannot\FlareBundle\Filter\Predicate\AbstractPredicate;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
-use HeimrichHannot\FlareBundle\Registry\FilterLogicRegistry;
+use HeimrichHannot\FlareBundle\Registry\FilterPredicateRegistry;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\OptionsResolver\Exception\MissingOptionsException;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -18,24 +18,24 @@ final class FilterBuilderTest extends TestCase
 {
     public function testRegistryLooksUpFilterTypesByClassName(): void
     {
-        $type = new TestLogic();
-        $registry = new FilterLogicRegistry([$type]);
+        $type = new TestPredicate();
+        $registry = new FilterPredicateRegistry([$type]);
 
-        self::assertSame($type, $registry->get(TestLogic::class));
-        self::assertSame([TestLogic::class => $type], $registry->all());
-        self::assertNull($registry->get(UnknownLogic::class));
+        self::assertSame($type, $registry->get(TestPredicate::class));
+        self::assertSame([TestPredicate::class => $type], $registry->all());
+        self::assertNull($registry->get(UnknownPredicate::class));
     }
 
     public function testBuilderResolvesOptionsAndRecordsTargetedCalls(): void
     {
-        $builder = new LogicSequencer(
-            new FilterLogicRegistry([new TestLogic()]),
+        $builder = new FormulaBuilder(
+            new FilterPredicateRegistry([new TestPredicate()]),
             'main',
         );
 
         $builder
-            ->add(TestLogic::class, ['value' => 'first'])
-            ->add(TestLogic::class, ['value' => 'second', 'enabled' => true], 'translation');
+            ->add(TestPredicate::class, ['value' => 'first'])
+            ->add(TestPredicate::class, ['value' => 'second', 'enabled' => true], 'translation');
 
         $calls = $builder->all();
 
@@ -50,33 +50,33 @@ final class FilterBuilderTest extends TestCase
 
     public function testBuilderRejectsUnknownFilterTypes(): void
     {
-        $builder = new LogicSequencer(new FilterLogicRegistry([]), 'main');
+        $builder = new FormulaBuilder(new FilterPredicateRegistry([]), 'main');
 
         $this->expectException(FilterException::class);
-        $builder->add(TestLogic::class, ['value' => 'test']);
+        $builder->add(TestPredicate::class, ['value' => 'test']);
     }
 
     public function testBuilderLetsOptionsResolverValidateRequiredOptions(): void
     {
-        $builder = new LogicSequencer(
-            new FilterLogicRegistry([new TestLogic()]),
+        $builder = new FormulaBuilder(
+            new FilterPredicateRegistry([new TestPredicate()]),
             'main',
         );
 
         $this->expectException(MissingOptionsException::class);
-        $builder->add(TestLogic::class);
+        $builder->add(TestPredicate::class);
     }
 
     public function testBuilderAbortThrowsAbortFilteringException(): void
     {
-        $builder = new LogicSequencer(new FilterLogicRegistry([]), 'main');
+        $builder = new FormulaBuilder(new FilterPredicateRegistry([]), 'main');
 
         $this->expectException(AbortFilteringException::class);
         $builder->abort();
     }
 }
 
-final class TestLogic extends AbstractLogic
+final class TestPredicate extends AbstractPredicate
 {
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -89,7 +89,7 @@ final class TestLogic extends AbstractLogic
     }
 }
 
-final class UnknownLogic extends AbstractLogic
+final class UnknownPredicate extends AbstractPredicate
 {
     public function buildConditions(FilterConditionsBuilder $builder, array $options): void
     {

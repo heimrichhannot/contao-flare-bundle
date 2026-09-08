@@ -10,18 +10,20 @@ use HeimrichHannot\FlareBundle\Engine\Context\AggregationContext;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Query\Executor\FilterExecutor;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\Registry\FilterLogicRegistry;
+use HeimrichHannot\FlareBundle\Registry\FilterPredicateRegistry;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
@@ -39,7 +41,7 @@ final class FilterExecutorTest extends TestCase
             filterContextFactory: new FilterContextFactory(new FilterOptionsResolver(new SchemaResolver())),
             filterElementRegistry: new FilterElementRegistry(),
             filterQueryBuilderFactory: new FilterQueryBuilderFactory($this->createMock(Connection::class)),
-            filterTypeRegistry: new FilterLogicRegistry([]),
+            filterTypeRegistry: new FilterPredicateRegistry([]),
         );
     }
 
@@ -114,8 +116,8 @@ final class RecordingFilterElement implements FilterElementInterface
 
     public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 
-    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
-        $this->received = $data;
+        $this->received = $value;
     }
 }

@@ -45,26 +45,20 @@ final readonly class ListSpec
     /**
      * Adds a filter. The key defaults to the filter's alias; alias-less filters receive a generated key.
      */
-    public function withFilter(Filter $filter, ?string $key = null): self
+    public function withFilter(Filter $filter): self
     {
-        if (null === ($key ??= $filter->alias))
-        {
-            $index = 0;
-
-            while (isset($this->filters["_generated_{$index}"])) {
-                $index++;
-            }
-
-            $key = "_generated_{$index}";
-        }
-
-        return $this->withFilters([...$this->filters, $key => $filter]);
+        return $this->withFilters([...$this->filters, $filter]);
     }
 
-    public function withoutFilter(string $key): self
+    public function withoutFilter(Filter|string $filter_or_class_or_alias): self
     {
-        $filters = $this->filters;
-        unset($filters[$key]);
+        $filters = \array_filter(
+            $this->filters,
+            static fn (Filter $existingFilter): bool =>
+                $existingFilter !== $filter_or_class_or_alias
+                && $existingFilter->alias !== $filter_or_class_or_alias
+                && \get_class($existingFilter->element) !== $filter_or_class_or_alias,
+        );
 
         return $this->withFilters($filters);
     }

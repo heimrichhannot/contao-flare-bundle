@@ -9,11 +9,13 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Logic\DateRangeLogic;
+use HeimrichHannot\FlareBundle\Filter\Predicate\DateRangePredicate;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\FormError;
@@ -76,16 +78,16 @@ class DateRangeFilterElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
         if (!$field = $context->config['field']) {
             throw new FilterException('Set fieldGeneric in filter model.');
         }
 
-        $builder->add(DateRangeLogic::class, [
+        $builder->add(DateRangePredicate::class, [
             'field' => $field,
-            'from' => $data->get('from'),
-            'to' => $data->get('to'),
+            'from' => $value->get('from'),
+            'to' => $value->get('to'),
         ]);
     }
 

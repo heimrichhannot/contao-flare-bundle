@@ -12,10 +12,12 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
-use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\Logic\BelongsToRelationLogic;
+use HeimrichHannot\FlareBundle\Filter\Predicate\BelongsToRelationPredicate;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -61,7 +63,7 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
         $config = $context->config;
 
@@ -85,7 +87,7 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
 
         if (\is_string($fieldDynamicPtable))
         {
-            $builder->add(BelongsToRelationLogic::class, [
+            $builder->add(BelongsToRelationPredicate::class, [
                 'field_pid' => $fieldPid,
                 'field_dynamic_ptable' => $fieldDynamicPtable,
                 'parent_groups' => $this->getDynamicParentGroups($config['group_whitelist_parents']),
@@ -98,7 +100,7 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
             throw new FilterException('No whitelisted parents.');
         }
 
-        $builder->add(BelongsToRelationLogic::class, [
+        $builder->add(BelongsToRelationPredicate::class, [
             'field_pid' => $fieldPid,
             'whitelist' => $whitelistParents,
         ]);
@@ -117,13 +119,13 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
      *   `group_whitelist_parents` config key.
      */
     public function addDynamicPtableFilter(
-        LogicSequencerInterface $builder,
+        FormulaBuilderInterface $builder,
         array                   $groupWhitelistParents,
         string                  $fieldDynamicPtable,
         string                  $fieldPid,
         ?array                  $submittedData = null,
     ): void {
-        $builder->add(BelongsToRelationLogic::class, [
+        $builder->add(BelongsToRelationPredicate::class, [
             'field_pid' => $fieldPid,
             'field_dynamic_ptable' => $fieldDynamicPtable,
             'parent_groups' => $this->getDynamicParentGroups($groupWhitelistParents),

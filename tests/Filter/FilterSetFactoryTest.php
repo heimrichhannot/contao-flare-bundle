@@ -14,10 +14,12 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
 use HeimrichHannot\FlareBundle\Filter\Factory\FormHarnessFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterMount;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
@@ -119,10 +121,9 @@ final class FilterSetFactoryTest extends TestCase
                 ($this->buildForm)($builder, $context);
             }
 
-            public function buildLogic(
-                LogicSequencerInterface $builder,
-                FilterContext           $context,
-                FilterData              $data,
+            public function buildContext(
+                FilterContextBuilder $builder,
+                ?ValueInterface      $value,
             ): void {}
         };
     }

@@ -66,13 +66,13 @@ final readonly class FormHarnessFactory
         /** @var array<string|int, FilterMount> $mounts */
         $mounts = [];
 
-        foreach ($list->filters as $key => $filter)
+        foreach ($list->filters as $filter)
         {
             if (!Str::isValidFormName($filter->alias)) {
                 continue;
             }
 
-            $filterContext = $this->filterContextFactory->create($list, $filter, $context, $key);
+            $filterContext = $this->filterContextFactory->create($list, $filter, $context);
 
             // Collect-only builder: never mounted itself; its single-field spec, children,
             // attributes, and deferred listeners are transferred onto the mounted builder below.

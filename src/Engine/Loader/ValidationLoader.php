@@ -45,6 +45,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
         {
             $idDefinition = $this->filterFactory->create(
                 element: SimpleEquationFilterElement::TYPE,
+                alias: '_.id',
                 config: [
                     'intrinsic' => true,
                     'left' => 'id',
@@ -94,6 +95,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
         {
             $autoItemDefinition = $this->filterFactory->create(
                 element: SimpleEquationFilterElement::TYPE,
+                alias: '_.autoItem',
                 config: [
                     'intrinsic' => true,
                     'left' => $this->config->autoItemField,

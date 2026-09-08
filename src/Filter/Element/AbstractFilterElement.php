@@ -15,10 +15,12 @@ use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\Filter\CallbackFilterModelTransformer;
-use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -51,7 +53,7 @@ abstract class AbstractFilterElement implements
 
     public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 
-    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void {}
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
 
     public function isSupported(): bool
     {

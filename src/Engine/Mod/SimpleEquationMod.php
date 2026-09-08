@@ -8,6 +8,7 @@ use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class SimpleEquationMod extends AbstractMod
@@ -25,6 +26,7 @@ class SimpleEquationMod extends AbstractMod
     {
         $filter = $this->filterFactory->create(
             element: SimpleEquationFilterElement::TYPE,
+            alias: $options['name'] ?: ('_.equation_' . Str::random(8)),
             config: [
                 'intrinsic' => true,
                 'left' => $options['operand1'],
@@ -33,7 +35,7 @@ class SimpleEquationMod extends AbstractMod
             ],
         );
 
-        $engine->setList($engine->getList()->withFilter($filter, $options['name'] ?: null));
+        $engine->setList($engine->getList()->withFilter($filter));
     }
 
     public function configureOptions(OptionsResolver $resolver): void

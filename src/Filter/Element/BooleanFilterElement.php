@@ -12,11 +12,13 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
 use HeimrichHannot\FlareBundle\Enum\BoolMode;
-use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Logic\BooleanLogic;
+use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -59,7 +61,7 @@ class BooleanFilterElement extends AbstractFilterElement
         ]);
     }
 
-    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
         $config = $context->config;
 
@@ -69,13 +71,13 @@ class BooleanFilterElement extends AbstractFilterElement
 
         $value = $config['intrinsic']
             ? $config['preselect']
-            : $this->resolveRuntimeValue($data->getSingleValue(), $config);
+            : $this->resolveRuntimeValue($value->getSingleValue(), $config);
 
         if ($value === null) {
             return;
         }
 
-        $builder->add(BooleanLogic::class, [
+        $builder->add(BooleanPredicate::class, [
             'field' => $targetField,
             'value' => $value,
         ]);

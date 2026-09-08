@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
-use HeimrichHannot\FlareBundle\Filter\LogicSequencerInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 
 interface FilterElementInterface
 {
@@ -28,10 +30,8 @@ interface FilterElementInterface
     /**
      * Translates canonical config and runtime data into filter type calls.
      *
-     * @param FilterData $data Submitted form data of this filter — {@see FilterData::get()} by
-     *   the local field names declared in buildForm(), or {@see FilterData::getSingleValue()}
-     *   for a single() field — or the programmatically set {@see \HeimrichHannot\FlareBundle\Filter\Filter::$data};
-     *   {@see FilterData::none()} when neither exists (e.g. non-interactive contexts).
+     * @param FilterContextBuilder $builder
+     * @param ValueInterface|null $value
      */
-    public function buildLogic(LogicSequencerInterface $builder, FilterContext $context, FilterData $data): void;
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void;
 }

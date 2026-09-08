@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter\Logic;
+namespace HeimrichHannot\FlareBundle\Filter\Predicate;
 
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class SimpleEquationLogic extends AbstractLogic
+class SimpleEquationPredicate extends AbstractPredicate
 {
     public function configureOptions(OptionsResolver $resolver): void
     {

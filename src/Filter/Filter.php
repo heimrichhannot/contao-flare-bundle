@@ -24,11 +24,11 @@ final readonly class Filter
      * @param FilterElementInterface $element Filter element service (registered or inline).
      * @param string $type Registered element type alias. Only used for named event dispatch
      *   (`flare.filter_element.{type}.*`) and targeting lookups.
+     * @param string $alias Form name of the filter. An alias that is not a valid Symfony form
+     *   name (e.g. the generated "_.{source}" fallback) never mounts form children.
      * @param array<string, mixed> $config Canonical config (element-defined schema); scalars, arrays, and enums only.
      * @param FilterData|null $data Programmatically set runtime data, same as buildFilter()
      *   receives. Submitted form data takes precedence over it.
-     * @param string|null $alias Form name of the filter. An alias that is not a valid Symfony form
-     *   name (e.g. the generated "_.{source}" fallback) never mounts form children.
      * @param string|null $targetAlias Table alias the filter's conditions apply to.
      * @param bool $targetingForced Whether the target alias applies even if the element is not marked as targeted.
      * @param string|null $source Provenance for error messages, e.g. "tl_flare_filter.42".
@@ -38,9 +38,9 @@ final readonly class Filter
     public function __construct(
         public FilterElementInterface $element,
         public string                 $type,
+        public string                 $alias,
         public array                  $config = [],
         public ?FilterData            $data = null,
-        public ?string                $alias = null,
         public ?string                $targetAlias = null,
         public bool                   $targetingForced = false,
         public ?string                $source = null,
@@ -51,23 +51,23 @@ final readonly class Filter
         return new self(
             element: $this->element,
             type: $this->type,
+            alias: $this->alias,
             config: $this->config,
             data: $data,
-            alias: $this->alias,
             targetAlias: $this->targetAlias,
             targetingForced: $this->targetingForced,
             source: $this->source,
         );
     }
 
-    public function withAlias(?string $alias): self
+    public function withAlias(string $alias): self
     {
         return new self(
             element: $this->element,
             type: $this->type,
+            alias: $alias,
             config: $this->config,
             data: $this->data,
-            alias: $alias,
             targetAlias: $this->targetAlias,
             targetingForced: $this->targetingForced,
             source: $this->source,
@@ -79,9 +79,9 @@ final readonly class Filter
         return new self(
             element: $this->element,
             type: $this->type,
+            alias: $this->alias,
             config: $this->config,
             data: $this->data,
-            alias: $this->alias,
             targetAlias: $targetAlias,
             targetingForced: !\is_null($targetAlias) && $forced,
             source: $this->source,

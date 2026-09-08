@@ -353,7 +353,7 @@ precise than the interface it replaces, and it removes:
 `DcaBuilder::palette()` currently *replaces*, and `apply()` writes one slot:
 
 ```php
-$dca['palettes'][$type] = Str::mergePalettes($prefix, $this->palette, $suffix);
+$dca['palettes'][$predicate] = Str::mergePalettes($prefix, $this->palette, $suffix);
 ```
 
 A third segment is required, with fixed order:

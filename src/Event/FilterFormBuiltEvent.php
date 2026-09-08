@@ -10,7 +10,7 @@ use Symfony\Contracts\EventDispatcher\Event;
 
 /**
  * Dispatched after a filter element built its fields on the collect-only per-filter builder,
- * before {@see \HeimrichHannot\FlareBundle\Filter\Factory\FilterSetFactory} mounts them onto the
+ * before {@see \HeimrichHannot\FlareBundle\Filter\Factory\FormHarnessFactory} mounts them onto the
  * root form (flat for single() fields without companions, nested compound otherwise).
  *
  * Listeners may add, remove, or replace children (re-adding a child with the same name

@@ -8,7 +8,7 @@ namespace HeimrichHannot\FlareBundle\Filter;
  * Runtime data of one filter invocation.
  *
  * Holds either a single field's value or a compound filter's named field values — never both,
- * mirroring the mount decision in {@see Factory\FilterSetFactory}: an element that declares
+ * mirroring the mount decision in {@see Factory\FormHarnessFactory}: an element that declares
  * {@see FilterFormBuilderInterface::single()} mounts flat under the filter's alias, while an
  * element adding children mounts as a compound sub-form.
  *

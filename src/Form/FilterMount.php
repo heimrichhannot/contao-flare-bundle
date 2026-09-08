@@ -2,14 +2,17 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter;
+namespace HeimrichHannot\FlareBundle\Form;
+
+use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
 
 /**
- * One filter's node in the root filter form, as recorded by {@see Factory\FilterSetFactory}.
+ * One filter's node in the root filter form, as recorded by {@see Factory\FormHarnessFactory}.
  *
  * Only filters that actually mounted get an entry — filters skipped for an invalid alias, for
  * declaring no fields, or by a cancelled {@see \HeimrichHannot\FlareBundle\Event\FilterFormBuiltEvent}
- * are absent from {@see FilterSet::getMounts()}.
+ * are absent from {@see FormHarness::getMounts()}.
  *
  * {@see $filter} is deliberately redundant with `$context->filter`: it is the field consumers
  * reach for, and going through the context would be a hop through an unrelated concern. Only

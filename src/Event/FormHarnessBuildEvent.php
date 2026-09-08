@@ -12,13 +12,13 @@ use Symfony\Contracts\EventDispatcher\Event;
  * Dispatched after every filter mounted onto the root form, before the form is built.
  *
  * Listeners may modify {@see $formBuilder} or replace it wholesale; a replacement that drops
- * mounted children makes {@see \HeimrichHannot\FlareBundle\Filter\FilterSet::getMount()} return
+ * mounted children makes {@see \HeimrichHannot\FlareBundle\Form\FormHarness::getChild()} return
  * null for the affected filters.
  *
- * Also dispatched under the name `flare.filter_set.{formName}.build`
- * ({@see \HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterSetListener}).
+ * Also dispatched under the name `flare.form.{formName}.build`
+ * ({@see \HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FormHarnessListener}).
  */
-class FilterSetBuildEvent extends Event
+class FormHarnessBuildEvent extends Event
 {
     public function __construct(
         public readonly ListSpec    $list,

@@ -41,7 +41,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `BaseListOptions` (framework-owned base schema for tl_flare_list columns)
 - `src/Filter/` — `Filter` DTO, elements (`Element/`), types (`Type/`), collector, resolvers
   (`FilterOptionsResolver`, `FilterTransformerResolver`, `FilterElementResolver`), `FilterContextFactory`,
-  and the form aggregate: `FilterSetFactory` builds a `FilterSet` (root form + mount↔filter map of
+  and the form aggregate: `FormHarnessFactory` builds a `FormHarness` (root form + mount↔filter map of
   `FilterMount`s) per list × form context
 - `src/Config/` — `ConfigBuilder` (fluent canonical-config accumulator; no cast helpers — transformers cast
   declaratively off the typed model) and `TransformerResolver` (source class → transformer map)
@@ -76,7 +76,7 @@ Backend palettes/fields are declared in code via `DcaContract::buildDca(DcaBuild
 tl_flare_filter and tl_flare_list).
 
 **Event system** — Events, some with aliased dispatch for targeted listening
-(`flare.filter_set.{name}.build`, `flare.filter_form.{type}.built`, `flare.list.{type}.build`,
+(`flare.form.{name}.build`, `flare.filter_form.{type}.built`, `flare.list.{type}.build`,
 `flare.filter_element.{type}.transformers`, `flare.filter_element.{type}.dca` / `flare.list.{type}.dca`,
 etc., implemented by the listeners in `src/EventListener/NamedDispatch/`). All events are in `src/Event/`.
 Prefer events over overriding services for customization.

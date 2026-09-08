@@ -47,7 +47,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  *
  * @mago-expect lint:too-many-methods
  */
-class ChoicesBuilder
+final class ChoicesBuilder
 {
     /**
      * @api This is the 'choice' property of the empty option. Use as a placeholder for a empty choice option.

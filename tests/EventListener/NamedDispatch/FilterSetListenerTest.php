@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\EventListener\NamedDispatch;
 
-use HeimrichHannot\FlareBundle\Event\FilterSetBuildEvent;
-use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterSetListener;
+use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
+use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FormHarnessListener;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use PHPUnit\Framework\TestCase;
@@ -17,7 +17,7 @@ final class FilterSetListenerTest extends TestCase
 {
     public function testDispatchesNamedEventForTheFormName(): void
     {
-        self::assertSame(['flare.filter_set.flare_a.build'], $this->dispatchedNames('flare_a'));
+        self::assertSame(['flare.form.flare_a.build'], $this->dispatchedNames('flare_a'));
     }
 
     public function testNamedEventIsScopedToTheFormName(): void
@@ -37,9 +37,9 @@ final class FilterSetListenerTest extends TestCase
         foreach (['flare_a', 'flare_b'] as $name)
         {
             $dispatcher->addListener(
-                "flare.filter_set.{$name}.build",
+                "flare.form.{$name}.build",
                 static function () use (&$names, $name): void {
-                    $names[] = "flare.filter_set.{$name}.build";
+                    $names[] = "flare.form.{$name}.build";
                 },
             );
         }
@@ -53,8 +53,8 @@ final class FilterSetListenerTest extends TestCase
 
         $formBuilder = Forms::createFormFactory()->createNamedBuilder($formName, FormType::class);
 
-        $listener = new FilterSetListener($dispatcher);
-        $listener->onFilterSetBuildEvent(new FilterSetBuildEvent(
+        $listener = new FormHarnessListener($dispatcher);
+        $listener->onFormHarnessBuildEvent(new FormHarnessBuildEvent(
             list: new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test'),
             formName: $formName,
             formBuilder: $formBuilder,

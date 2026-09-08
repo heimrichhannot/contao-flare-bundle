@@ -57,7 +57,7 @@ lifecycle methods (see the [custom filter elements guide](./dev/filter-elements/
 | `RuntimeValueContract::processRuntimeValue()` | Normalize values inside `buildFilter()` |
 | `IntrinsicValueContract::getIntrinsicValue()` | Read `$context->config` in `buildFilter()` (intrinsic values are config) |
 | `HydrateFormContract::hydrateForm()` | Pass defaults via the fields' `data` option in `buildForm()` |
-| `FormTypeOptionsContract::handleFormTypeOptions()` | Build options directly in `buildForm()`; third parties use `FilterElementFormBuiltEvent` |
+| `FormTypeOptionsContract::handleFormTypeOptions()` | Build options directly in `buildForm()`; third parties use `FilterFormBuiltEvent` |
 | `PaletteContract::getPalette()` | [`DcaContract::buildDca()`](./dev/contracts/dca-contract.md) |
 
 New interfaces: `FilterElementInterface` (required), `OptionsContract` (config schema),
@@ -71,12 +71,13 @@ New interfaces: `FilterElementInterface` (required), `OptionsContract` (config s
 |---|---|
 | `FilterElementInvokingEvent` (`flare.filter_element.{type}.invoking`) | `FilterElementBuildingEvent` (`flare.filter_element.{type}.building`) — cancellable via `setShouldBuild(false)` |
 | `FilterElementInvokedEvent` (`flare.filter_element.{type}.invoked`) | `FilterElementBuiltEvent` (`flare.filter_element.{type}.built`) |
-| `FilterFormChildOptionsEvent` (`flare.form.{parent}.child.{name}.options`) | Removed — customize in `buildForm()`, or listen to `FilterElementFormBuiltEvent` (`flare.filter_element.{type}.form_built`) |
+| `FilterFormChildOptionsEvent` (`flare.form.{parent}.child.{name}.options`) | Removed — customize in `buildForm()`, or listen to `FilterFormBuiltEvent` (`flare.filter_form.{type}.built`) |
 | `FilterElementFormTypeOptionsEvent` | Removed — same replacement as above |
 | `PaletteEvent` (`flare.filter_element.{alias}.palette`, `flare.list.{type}.palette`) | `ElementDcaEvent` (`flare.filter_element.{type}.dca`, `flare.list.{type}.dca`) |
 | `FilterDefinitionCreatedEvent` | `FilterCollectedEvent` — dispatched per filter collected from the database; `$event->filter` is replaceable |
 
-`flare.form.{formName}.build` (`FilterFormBuildEvent`) is unchanged.
+`flare.form.{formName}.build` (`FilterFormBuildEvent`) is now `flare.filter_set.{formName}.build`
+(`FilterSetBuildEvent`) — the `FilterForm*` names were freed for the per-filter presentation concern.
 
 ## ListSpecification → ListSpec
 

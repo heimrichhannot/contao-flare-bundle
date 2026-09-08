@@ -65,16 +65,20 @@ listeners may replace the (mutable) `$event->filter`, e.g. to change its config 
 
 ## 3. Form Building
 
-For each non-intrinsic filter whose alias is a valid Symfony form name, the `FilterFormFactory` hands a
+For each non-intrinsic filter whose alias is a valid Symfony form name, the `FilterSetFactory` hands a
 collect-only per-filter builder (`FilterFormBuilderInterface`) to the element's `buildForm()`.
 **Single-field elements** declare their one control via `single()` — it is mounted flat on the root form
 under the filter's alias (`form[alias]=x`). **Multi-field elements** `add()` children under local names,
 which mount as a compound sub-form (`form[alias][from]=x`).
 
 The per-filter builder carries the `FilterContext` in its attribute bag under
-`FilterContext::ATTR_SELF`. After the element built its fields, a `FilterElementFormBuiltEvent` is
+`FilterContext::ATTR_SELF`. After the element built its fields, a `FilterFormBuiltEvent` is
 dispatched — listeners can add, remove, or replace children, adjust the `single()` declaration, or
 `cancel()` the filter's form entirely. Filters that declare no fields are not mounted onto the root form.
+
+The factory returns a `FilterSet`: the root form plus a mount↔filter map (`FilterMount` per mounted
+filter, keyed by the filter's key within `ListSpec::$filters`). `FilterSet::getForm()` is the root form;
+`getMount($key)` resolves one filter's mounted node against it.
 
 ## 4. Query Building
 

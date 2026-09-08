@@ -59,7 +59,7 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - `flare.filter_element.{type}.invoked` → now `.built`
 - `flare.filter_element.{alias}.palette`, `flare.list.{type}.palette` → now `.dca`
 - `flare.form.{parentFormName}.child.{formName}.options` → removed without a named replacement
-  (use `flare.filter_element.{type}.form_built`)
+  (use `flare.filter_form.{type}.built`)
 
 ## Twig
 

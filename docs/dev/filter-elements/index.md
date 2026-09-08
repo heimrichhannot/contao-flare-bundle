@@ -158,7 +158,7 @@ filter simply has no form representation.
 
 Pre-submission defaults go into the fields' native `data` option. Event listeners registered on the builder
 are replayed onto the mounted form; event subscribers are not supported and throw. After your element
-declared its fields, a [`FilterElementFormBuiltEvent`](../events.md) is dispatched so third parties can
+declared its fields, a [`FilterFormBuiltEvent`](../events.md) is dispatched so third parties can
 adjust or cancel the filter's form. Declaring a `single()` field and adding children at the same time is
 not supported and fails when the form is built.
 

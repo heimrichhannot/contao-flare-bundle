@@ -92,22 +92,24 @@ Dispatched after a filter element's `buildFilter()` ran.
 
 ## 6. Filter Form Lifecycle
 
-### `FilterFormBuildEvent`
-Dispatched while the filter form is being built, exposing the `FormBuilderInterface`.
+### `FilterSetBuildEvent`
+Dispatched after every filter mounted onto the root form, before the form is built, exposing the
+`FormBuilderInterface`.
 - **Use Case:** Adding, removing, or reconfiguring form children of the filter form.
-- **Class:** `HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent`
-- **Properties:** `list` (readonly `ListSpec`), `formName`, `formBuilder`
+- **Class:** `HeimrichHannot\FlareBundle\Event\FilterSetBuildEvent`
+- **Properties:** `list` (readonly `ListSpec`), `formName` (readonly), `formBuilder`
 
-### `FilterElementFormBuiltEvent`
-Dispatched after a filter element declared its fields on the collect-only per-filter builder, before the
+### `FilterFormBuiltEvent`
+Dispatched after a filter's form declared its fields on the collect-only per-filter builder, before the
 factory mounts them onto the root form (flat for `single()` fields without companions, nested compound
 otherwise).
 - **Use Case:** Adding, removing, or replacing one filter's form children (re-adding a same-named child
   overwrites it), adjusting the single-field declaration via `single()`/`getSingle()`, or preventing the
   filter from being mounted at all. Adding a child alongside a `single()` declaration switches the filter
   to the nested compound layout.
-- **Class:** `HeimrichHannot\FlareBundle\Event\FilterElementFormBuiltEvent`
-- **API:** `getBuilder(): FilterFormBuilderInterface`, `getContext(): FilterContext`, `cancel()` / `isCancelled()`
+- **Class:** `HeimrichHannot\FlareBundle\Event\FilterFormBuiltEvent`
+- **Properties:** `builder` (readonly `FilterFormBuilderInterface`), `context` (readonly `FilterContext`)
+- **API:** `cancel()` / `isCancelled()`
 
 ## 7. Backend DCA Lifecycle
 
@@ -135,9 +137,9 @@ object is identical to the base event.
 |---|---|
 | `flare.filter_element.{type}.building` | `FilterElementBuildingEvent` |
 | `flare.filter_element.{type}.built` | `FilterElementBuiltEvent` |
-| `flare.filter_element.{type}.form_built` | `FilterElementFormBuiltEvent` |
 | `flare.filter_element.{type}.transformers` | `FilterTransformerEvent` |
-| `flare.form.{formName}.build` | `FilterFormBuildEvent` |
+| `flare.filter_form.{type}.built` | `FilterFormBuiltEvent` |
+| `flare.filter_set.{formName}.build` | `FilterSetBuildEvent` |
 | `flare.list.{type}.build` | `ListBuildEvent` |
 | `flare.list.{type}.transformers` | `ListTransformerEvent` |
 | `flare.filter_element.{type}.dca` | `ElementDcaEvent` (filter elements) |
@@ -149,22 +151,22 @@ How `{type}` is derived:
   `ListDriverRegistry` and fire once per type alias it is registered under (a driver registered under
   several aliases dispatches once per alias). An inline driver instance that is not registered fires no
   named events — the base event still fires.
-- **`flare.filter_element.{type}.building` / `.built` / `.form_built` / `.transformers`** use the
-  filter's `type` — the registered alias captured when the filter was created from one (e.g. via
-  `FilterFactory`). Filters constructed around a plain element instance have no `type` and fire no
-  named events.
+- **`flare.filter_element.{type}.building` / `.built` / `.transformers` and
+  `flare.filter_form.{type}.built`** use the filter's `type` — the registered alias captured when the
+  filter was created from one (e.g. via `FilterFactory`). Filters constructed around a plain element
+  instance have no `type` and fire no named events.
 - **`.dca`** events run in the backend and use the type alias stored on the record being edited.
 
 Example — listen only to the build of the form named `my_form`:
 
 ```php
-use HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent;
+use HeimrichHannot\FlareBundle\Event\FilterSetBuildEvent;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
-#[AsEventListener('flare.form.my_form.build')]
+#[AsEventListener('flare.filter_set.my_form.build')]
 class MyFormBuildListener
 {
-    public function __invoke(FilterFormBuildEvent $event): void
+    public function __invoke(FilterSetBuildEvent $event): void
     {
         // e.g. $event->formBuilder->remove('...');
     }

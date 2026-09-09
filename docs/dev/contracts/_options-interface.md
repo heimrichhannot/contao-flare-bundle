@@ -32,7 +32,7 @@ public function configureOptions(OptionsResolver $resolver): void
   paired with the element's transformers (`TransformerContract`), which translate stored sources onto it.
 - **List drivers** (`AbstractListDriver`) declare their driver schema through this contract; it is resolved
   on top of the framework-owned `BaseListOptions` schema by the `ListOptionsResolver`.
-- **Filter types** declare `configureOptions()` directly on `FilterTypeInterface` (not via this
+- **Filter types** declare `configureOptions()` directly on `PredicateInterface` (not via this
   contract); the options passed to `FilterBuilderInterface::add()` are validated against it.
 
 `configureOptions()` is declarative, memoizable setup — it runs once per class, not per record.

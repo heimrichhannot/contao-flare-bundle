@@ -92,7 +92,7 @@ Dispatched after a filter element's `buildFilter()` ran.
 
 ## 6. Filter Form Lifecycle
 
-### `FilterSetBuildEvent`
+### `FormHarnessBuildEvent`
 Dispatched after every filter mounted onto the root form, before the form is built, exposing the
 `FormBuilderInterface`.
 - **Use Case:** Adding, removing, or reconfiguring form children of the filter form.
@@ -139,7 +139,7 @@ object is identical to the base event.
 | `flare.filter_element.{type}.built` | `FilterElementBuiltEvent` |
 | `flare.filter_element.{type}.transformers` | `FilterTransformerEvent` |
 | `flare.filter_form.{type}.built` | `FilterFormBuiltEvent` |
-| `flare.filter_set.{formName}.build` | `FilterSetBuildEvent` |
+| `flare.filter_set.{formName}.build` | `FormHarnessBuildEvent` |
 | `flare.list.{type}.build` | `ListBuildEvent` |
 | `flare.list.{type}.transformers` | `ListTransformerEvent` |
 | `flare.filter_element.{type}.dca` | `ElementDcaEvent` (filter elements) |
@@ -160,13 +160,13 @@ How `{type}` is derived:
 Example — listen only to the build of the form named `my_form`:
 
 ```php
-use HeimrichHannot\FlareBundle\Event\FilterSetBuildEvent;
+use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsEventListener('flare.filter_set.my_form.build')]
 class MyFormBuildListener
 {
-    public function __invoke(FilterSetBuildEvent $event): void
+    public function __invoke(FormHarnessBuildEvent $event): void
     {
         // e.g. $event->formBuilder->remove('...');
     }

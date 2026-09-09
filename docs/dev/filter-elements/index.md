@@ -162,7 +162,7 @@ declared its fields, a [`FilterFormBuiltEvent`](../events.md) is dispatched so t
 adjust or cancel the filter's form. Declaring a `single()` field and adding children at the same time is
 not supported and fails when the form is built.
 
-## 6. Query Translation (`buildFilter`)
+## 6. Query Translation (`buildContext`)
 
 `buildFilter()` turns config and data into one or more **filter-type calls** — it does not write SQL:
 
@@ -216,11 +216,11 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
-use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Type\SimpleEquationFilterType;
+use HeimrichHannot\FlareBundle\Filter\Type\SimpleEquationFilterLogic;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -254,13 +254,13 @@ class CityFilterElement extends AbstractFilterElement
         ]);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
+    public function buildFilter(FormulaBuilderInterface $builder, FilterContext $context, FilterData $data): void
     {
         if (!$value = $data->getSingleValue()) {
             return;
         }
 
-        $builder->add(SimpleEquationFilterType::class, [
+        $builder->add(SimpleEquationFilterLogic::class, [
             'operand_left' => $context->config['field'],
             'operator' => SqlEquationOperator::EQUALS,
             'operand_right' => (string) $value,

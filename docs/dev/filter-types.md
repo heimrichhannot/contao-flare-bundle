@@ -37,10 +37,10 @@ interface FilterTypeInterface
 - **`configureOptions()`** declares the type's option schema with Symfony's
   [OptionsResolver](https://symfony.com/doc/current/components/options_resolver.html). Every call to the type
   is resolved against this schema before `buildQuery()` runs, so invalid options fail loudly and early.
-- **`buildQuery()`** writes the conditions into the [`FilterQueryBuilder`](#2-the-filterquerybuilder),
+- **`buildQuery()`** writes the conditions into the [`FilterConditionsBuilder`](#2-the-filterquerybuilder),
   which is already scoped to the correct table alias.
 
-Extend `AbstractFilterType` if your type has no options — it provides a no-op `configureOptions()`.
+Extend `AbstractPredicate` if your type has no options — it provides a no-op `configureOptions()`.
 
 ### Registration
 
@@ -48,9 +48,9 @@ There is no attribute to add: the interface carries `#[AutoconfigureTag('huh.fla
 service implementing it is registered automatically when autoconfiguration is enabled (the default). If you
 configure services manually, tag them with `huh.flare.filter_type`.
 
-## 2. The `FilterQueryBuilder`
+## 2. The `FilterConditionsBuilder`
 
-The `FilterQueryBuilder` (`HeimrichHannot\FlareBundle\Query\FilterQueryBuilder`) provides a safe and fluent
+The `FilterConditionsBuilder` (`HeimrichHannot\FlareBundle\Query\FilterQueryBuilder`) provides a safe and fluent
 API for building filter conditions. It enforces parameterized queries and handles table aliasing automatically.
 
 ### Key Methods:
@@ -71,11 +71,11 @@ API for building filter conditions. It enforces parameterized queries and handle
 ```php
 namespace App\Flare\FilterType;
 
-use HeimrichHannot\FlareBundle\Filter\Type\AbstractFilterType;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Filter\Type\AbstractFilterLogic;
+use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class MinPriceFilterType extends AbstractFilterType
+class MinPriceFilterType extends AbstractFilterLogic
 {
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -83,7 +83,7 @@ class MinPriceFilterType extends AbstractFilterType
         $resolver->define('min')->required()->allowedTypes('int', 'float');
     }
 
-    public function buildQuery(FilterQueryBuilder $builder, array $options): void
+    public function buildQuery(FilterConditionsBuilder $builder, array $options): void
     {
         $builder->where($builder->expr()->gte($builder->column($options['field']), ':min'))
             ->setParameter('min', $options['min']);
@@ -114,7 +114,7 @@ whose element emits the call — added to a list through `ListSpecBuilder::addFi
 ```php
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
@@ -123,7 +123,7 @@ $filter = new Filter(
     element: new class implements FilterElementInterface {
         public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 
-        public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
+        public function buildFilter(FormulaBuilderInterface $builder, FilterContext $context, FilterData $data): void
         {
             $builder->add(MinPriceFilterType::class, ['field' => 'price', 'min' => 10]);
         }

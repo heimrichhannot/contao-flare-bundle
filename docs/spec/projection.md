@@ -42,7 +42,7 @@ The system is based on a strict separation of responsibilities:
 ### 4. Projector (`ProjectorInterface`)
 - **Type:** Stateless Symfony Service.
 - **Responsibility:** Executes the actual business logic to transform a Specification and Context into a View.
-- **Function:** Interacts with the database (via `SqlQueryStruct` and `FilterQueryBuilder`) to fetch or aggregate data.
+- **Function:** Interacts with the database (via `SqlQueryStruct` and `FilterConditionsBuilder`) to fetch or aggregate data.
 
 ### 5. View (`ViewInterface`)
 - **Type:** Stateful Data Object (Result).

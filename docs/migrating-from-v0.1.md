@@ -45,9 +45,9 @@ lifecycle methods (see the [custom filter elements guide](./dev/filter-elements/
 |---|---|
 | `formType:` attribute parameter | `buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void` — declare one field via `single()` or add children under local names |
 | `__invoke(FilterInvocation, FilterQueryBuilder)` | `buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void` — emit filter-type calls instead of writing SQL |
-| SQL written directly in the element | A [`FilterTypeInterface`](./dev/filter-types.md) service; the element calls `$builder->add(MyFilterType::class, [...])` |
+| SQL written directly in the element | A [`PredicateInterface`](./dev/filter-types.md) service; the element calls `$builder->add(MyFilterType::class, [...])` |
 | `FilterInvocation->getValue()` | `$data` (a `FilterData`: `$data->get('from')` by local child name, `$data->getSingleValue()` for a `single()` field) and `$context->config` (resolved config) |
-| `FilterQueryBuilder::abort()` in the element | `$builder->abort()` on the `FilterBuilderInterface` (filter types may still use `FilterQueryBuilder::abort()`) |
+| `FilterQueryBuilder::abort()` in the element | `$builder->abort()` on the `FormulaBuilderInterface` (filter types may still use `FilterQueryBuilder::abort()`) |
 
 ## Contracts
 
@@ -77,7 +77,7 @@ New interfaces: `FilterElementInterface` (required), `OptionsContract` (config s
 | `FilterDefinitionCreatedEvent` | `FilterCollectedEvent` — dispatched per filter collected from the database; `$event->filter` is replaceable |
 
 `flare.form.{formName}.build` (`FilterFormBuildEvent`) is now `flare.filter_set.{formName}.build`
-(`FilterSetBuildEvent`) — the `FilterForm*` names were freed for the per-filter presentation concern.
+(`FormHarnessBuildEvent`) — the `FilterForm*` names were freed for the per-filter presentation concern.
 
 ## ListSpecification → ListSpec
 

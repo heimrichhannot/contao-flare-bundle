@@ -65,7 +65,7 @@ listeners may replace the (mutable) `$event->filter`, e.g. to change its config 
 
 ## 3. Form Building
 
-For each non-intrinsic filter whose alias is a valid Symfony form name, the `FilterSetFactory` hands a
+For each non-intrinsic filter whose alias is a valid Symfony form name, the `FormHarnessFactory` hands a
 collect-only per-filter builder (`FilterFormBuilderInterface`) to the element's `buildForm()`.
 **Single-field elements** declare their one control via `single()` — it is mounted flat on the root form
 under the filter's alias (`form[alias]=x`). **Multi-field elements** `add()` children under local names,
@@ -76,7 +76,7 @@ The per-filter builder carries the `FilterContext` in its attribute bag under
 dispatched — listeners can add, remove, or replace children, adjust the `single()` declaration, or
 `cancel()` the filter's form entirely. Filters that declare no fields are not mounted onto the root form.
 
-The factory returns a `FilterSet`: the root form plus a mount↔filter map (`FilterMount` per mounted
+The factory returns a `FormHarness`: the root form plus a mount↔filter map (`FilterMount` per mounted
 filter, keyed by the filter's key within `ListSpec::$filters`). `FilterSet::getForm()` is the root form;
 `getMount($key)` resolves one filter's mounted node against it.
 
@@ -89,17 +89,17 @@ When a projector executes the list query, the `FilterExecutor` processes each fi
 2. A `FilterElementBuildingEvent` is dispatched — listeners may inspect the `FilterContext` and skip the
    filter via `setShouldBuild(false)`.
 3. The element's `buildFilter()` runs. It translates config + data into one or more **filter-type calls**
-   on the `FilterBuilder`:
+   on the `FormulaBuilder`:
 
    ```php
    $builder->add(BooleanFilterType::class, ['field' => 'featured', 'value' => true]);
    ```
 
    Each call's options are resolved against the filter type's own `configureOptions()` schema and recorded
-   as a `FilterCall` (type, resolved options, target alias).
+   as a `Proposition` (type, resolved options, target alias).
 4. A `FilterElementBuiltEvent` is dispatched.
-5. Each `FilterCall` is executed: the filter type's `buildQuery(FilterQueryBuilder $builder, array $options)`
-   writes parameterized conditions into a `FilterQueryBuilder` scoped to the call's target alias.
+5. Each `Proposition` is executed: the filter type's `buildQuery(FilterQueryBuilder $builder, array $options)`
+   writes parameterized conditions into a `FilterConditionsBuilder` scoped to the call's target alias.
 
 Calling `$builder->abort()` (which throws `AbortFilteringException`) anywhere in the pipeline short-circuits
 the list to an empty result set — useful when a required value is missing or invalid.

@@ -4,23 +4,14 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Value;
 
+use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
+
 /**
- * A selection from a server-provided option set: the value consumed by
- * `FieldValueChoiceFilterElement`, `DcaSelectFieldFilterElement` and
- * `CodefogTagsChoiceFilterElement`.
+ * A selection from an option set.
  *
  * Keys, not domain values. Choice keys are strings by construction (Symfony view data always is)
- * and their *meaning* is element-defined, so any further interpretation — the `(int)` cast for tag
- * ids, the `LOWER(TRIM())` folding `FieldValueChoiceFilterType` expects, dropping
- * {@see \HeimrichHannot\FlareBundle\Form\ChoicesBuilder::EMPTY_CHOICE} — belongs in the element's
- * `valueFromChoiceKeys()`, not here (SPEC_FILTER_FORMS.md §3.4). In particular the lowercasing is
- * coupled to that one filter type and would break `DcaSelectFilterType`'s case-sensitive lookup of
- * DCA option keys.
- *
- * Sorted, because all three consuming filter types emit `IN()` and therefore do not care about
- * order (§9). Deliberately distinct from {@see KeywordsValue} despite the identical shape: §4.3 —
- * two elements share a value object only if every form registered for one is meaningful for the
- * other, and a choice form is not meaningful for a free-text search.
+ * and their *meaning* is element-defined, so any further interpretation belongs in the element's
+ * {@see ChoiceSourceContract::valueFromChoiceKeys()}.
  */
 final readonly class ChoiceValue implements ValueInterface
 {
@@ -50,7 +41,7 @@ final readonly class ChoiceValue implements ValueInterface
             }
         }
 
-        $strings = \array_values(\array_unique($strings, \SORT_STRING));
+        $strings = \array_values(\array_unique($strings));
 
         \sort($strings, \SORT_STRING);
 

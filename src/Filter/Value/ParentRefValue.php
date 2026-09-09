@@ -5,31 +5,13 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\Value;
 
 /**
- * A selection of parent records, grouped by parent table: the value consumed by
- * `ArchiveFilterElement`.
- *
- * The shape is `BelongsToRelationFilterType`'s `submitted_data`, documented verbatim at
- * `BelongsToRelationFilterElement.php:107-118`. One value class spans both ptable modes
- * (SPEC_FILTER_FORMS.md §7.4): the static main-ptable mode is the single-table degenerate case, and
- * `buildFilter()` re-derives the flat vs. grouped filter-type call from `PtableInferrer` exactly as
- * it does today.
- *
- * Ids, never `Contao\Model` instances: a model carries `$arrData` *and* `$arrModified`, so an
- * unrelated mutation moves the hash (§9, measured in
- * tests/Filter/ValueObjectSerializeProbeTest.php).
- *
- * **"Use the full whitelist" is the absence of this value, not a state of it.** Today
- * `ArchiveFilterElement::processRuntimeValue()` already treats "nothing submitted" (null), "the
- * empty option was chosen" (true) and "no model survived" ([]) identically, so nothing is lost by
- * collapsing them to `null` — and the alternative, a `wholeWhitelist` flag, would let the form
- * decide which rows match (§3.4, §4.1) while creating a second representation of "nothing
- * selected" (§9). {@see tryFrom()} is the guard that keeps an empty instance from existing.
+ * A selection of parent records, grouped by parent table.
  */
 final readonly class ParentRefValue implements ValueInterface
 {
     /**
-     * Parent ids grouped by parent table. Tables sorted by name, ids sorted ascending,
-     * deduplicated and positive-only; a table with no surviving id is dropped entirely.
+     * Parent ids grouped by parent table. Tables are sorted by name, ids sorted ascending,
+     * and are deduplicated and positive-only; a table with no surviving id is dropped entirely.
      *
      * @var array<string, list<int>>
      */

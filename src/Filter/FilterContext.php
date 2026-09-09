@@ -19,13 +19,9 @@ final readonly class FilterContext
     /** Attribute-bag key marking a root form child as a flat-mounted single field. */
     public const ATTR_SINGLE_FIELD = 'flare.single_field';
 
-    /**
-     * @param array<string, mixed> $config Resolved canonical config of the filter.
-     */
     public function __construct(
         public ListSpec         $list,
         public Filter           $filter,
-        public array            $config,
         public Formula          $formula,
         public ContextInterface $engineContext,
     ) {}

@@ -99,7 +99,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
 
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
-        $config = $builder->config;
+        $config = $builder->filter->config;
 
         if (!$config['is_limited'] && $builder->engineContext instanceof ValidationContext) {
             return;

@@ -16,7 +16,6 @@ class FilterContextBuilder
         public readonly ListSpec $list,
         public readonly Filter $filter,
         public readonly ContextInterface $engineContext,
-        public readonly array $config,
     ) {}
 
     public function addPredicate(string $type, array $options = [], ?string $targetAlias = null): self
@@ -45,7 +44,6 @@ class FilterContextBuilder
         return new FilterContext(
             list: $this->list,
             filter: $this->filter,
-            config: $this->config,
             formula: $formula,
             engineContext: $this->engineContext,
         );

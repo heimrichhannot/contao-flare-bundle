@@ -26,7 +26,7 @@ class SimpleEquationMod extends AbstractMod
     {
         $filter = $this->filterFactory->create(
             element: SimpleEquationFilterElement::TYPE,
-            alias: $options['name'] ?: ('_.equation_' . Str::random(8)),
+            alias: $options['name'] ?: null,
             config: [
                 'intrinsic' => true,
                 'left' => $options['operand1'],

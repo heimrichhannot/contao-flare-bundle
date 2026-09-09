@@ -7,10 +7,9 @@ namespace HeimrichHannot\FlareBundle\Engine\Context\Factory;
 use Contao\ContentModel;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
-use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Sort\Factory\SortOrderSequenceFactory;
-use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -21,30 +20,28 @@ readonly class InteractiveContextFactory
         private ValidatorInterface       $validator,
     ) {}
 
-    public function createFromContent(ContentModel $contentModel, ListModel $listModel): InteractiveContext
+    public function createFromContent(ContentModel $contentModel, ListSpec $list): InteractiveContext
     {
-        $filterFormName = $contentModel->{ContentContainer::FIELD_FORM_NAME} ?: ('fl' . $listModel->id);
+        $filterFormName = $contentModel->{ContentContainer::FIELD_FORM_NAME}
+            ?: ('fl' . ($contentModel->id ?? ''));
 
         $paginatorConfig = new PaginatorConfig(
             itemsPerPage: (int) ($contentModel->{ContentContainer::FIELD_ITEMS_PER_PAGE} ?: 0),
         );
 
-        $sortOrderSequence = $this->sortOrderSequenceFactory->createFromListModel($listModel);
+        $sortOrderSequence = $this->sortOrderSequenceFactory->createFromList($list);
 
-        $jumpToReaderPageId = (int) ($contentModel->{ContentContainer::FIELD_JUMP_TO_READER} ?: $listModel->jumpToReader);
+        $jumpToReaderPageId = (int) ($contentModel->{ContentContainer::FIELD_JUMP_TO_READER}
+            ?: ($list->config['jumpToReader'] ?? 0));
 
-        $fieldAutoItem = DcaHelper::tryGetColumnName(
-            $listModel->dc,
-            $listModel->fieldAutoItem,
-            DcaHelper::tryGetColumnName($listModel->dc, 'alias', 'id')
-        );
+        $fieldAutoItem = $list->getAutoItemField();
 
         $config = new InteractiveContext(
             paginatorConfig: $paginatorConfig,
+            formName: $filterFormName,
             sortOrderSequence: $sortOrderSequence,
             contentModelId: (int) $contentModel->id,
-            formActionPage: (int) $contentModel->{ContentContainer::FIELD_JUMP_TO},
-            formName: $filterFormName,
+            formActionPageId: (int) $contentModel->{ContentContainer::FIELD_JUMP_TO},
             jumpToReaderPageId: $jumpToReaderPageId,
             autoItemField: $fieldAutoItem,
         );

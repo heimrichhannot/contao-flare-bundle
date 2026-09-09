@@ -7,112 +7,41 @@ namespace HeimrichHannot\FlareBundle\DataContainer;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
+use HeimrichHannot\FlareBundle\Contract\ListDriver\OnSubmitDcContract;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
-use HeimrichHannot\FlareBundle\Registry\FlareCallbackRegistry;
-use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
-use HeimrichHannot\FlareBundle\Util\CallbackHelper;
+use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
-class ListContainer implements FlareCallbackContainerInterface
+class ListContainer
 {
     public const TABLE_NAME = 'tl_flare_list';
-    public const CALLBACK_PREFIX = 'list';
 
     public function __construct(
-        private readonly Connection              $connection,
-        private readonly FlareCallbackRegistry   $callbackRegistry,
-        private readonly ListTypeRegistry        $listTypeRegistry,
+        private readonly Connection         $connection,
+        private readonly ListDriverRegistry $listDriverRegistry,
     ) {}
 
-    /* ============================= *
-     *  CALLBACK HANDLING            *
-     * ============================= */
-    // <editor-fold desc="Callback Handling">
-
-    public function handleConfigOnLoad(?DataContainer $dc, string $target): void
+    public function hasFilterConfigured(ListModel $listModel, string $filterType): bool
     {
-        if (!$listModel = $this->getListModelFromDataContainer($dc)) {
-            return;
-        }
+        $filterTable = FilterModel::getTable();
 
-        $namespace = static::CALLBACK_PREFIX . '.' . $listModel->type;
+        $result = $this->connection->createQueryBuilder()
+            ->select('1')
+            ->from($filterTable)
+            ->where('pid = :pid')
+            ->andWhere('published = 1')
+            ->andWhere('tstamp > 0')
+            ->andWhere('type = :type')
+            ->setMaxResults(1)
+            ->setParameter('pid', $listModel->id)
+            ->setParameter('type', $filterType)
+            ->executeQuery();
 
-        $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
-        $callbacks = \array_reverse($callbacks);
-
-        CallbackHelper::call($callbacks, [], [
-            ListModel::class  => $listModel,
-            DataContainer::class  => $dc,
-        ]);
+        return (bool) $result->rowCount();
     }
-
-    /**
-     * @throws \RuntimeException
-     */
-    public function handleFieldOptions(?DataContainer $dc, string $target): array
-    {
-        if (!$listModel = $this->getListModelFromDataContainer($dc)) {
-            return [];
-        }
-
-        $namespace = static::CALLBACK_PREFIX . '.' . $listModel->type;
-
-        $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
-
-        return CallbackHelper::firstReturn($callbacks, [], [
-            ListModel::class  => $listModel,
-            DataContainer::class  => $dc,
-        ]) ?? [];
-    }
-
-    /**
-     * @throws \RuntimeException
-     */
-    public function handleLoadField(mixed $value, ?DataContainer $dc, string $target): mixed
-    {
-        return $this->handleValueCallback($value, $dc, $target);
-    }
-
-    /**
-     * @throws \RuntimeException
-     */
-    public function handleSaveField(mixed $value, ?DataContainer $dc, string $target): mixed
-    {
-        return $this->handleValueCallback($value, $dc, $target);
-    }
-
-    /**
-     * @throws \RuntimeException
-     */
-    public function handleValueCallback(mixed $value, ?DataContainer $dc, string $target): mixed
-    {
-        if (!$listModel = $this->getListModelFromDataContainer($dc)) {
-            return $value;
-        }
-
-        $namespace =  static::CALLBACK_PREFIX . '.' . $listModel->type;
-
-        $callbacks = $this->callbackRegistry->getSorted($namespace, $target) ?? [];
-
-        return CallbackHelper::firstReturn($callbacks, [$value], [
-            ListModel::class  => $listModel,
-            DataContainer::class  => $dc,
-        ]) ?? $value;
-    }
-
-    public function getListModelFromDataContainer(?DataContainer $dc): ?ListModel
-    {
-        if (!$dc?->id) {
-            return null;
-        }
-
-        return ListModel::findByPk($dc->id);
-    }
-
-    // </editor-fold>
 
     /* ============================= *
      *  CONFIG                       *
@@ -131,23 +60,26 @@ class ListContainer implements FlareCallbackContainerInterface
             return;
         }
 
-        if (!$listTypeConfig = $this->listTypeRegistry->get($type)) {
+        if (!$service = $this->listDriverRegistry->getService($type)) {
             return;
         }
 
-        $service = $listTypeConfig->getService();
+        $expectedDataContainer = null;
 
-        if (($service instanceof DataContainerContract)
-            && !$expectedDataContainer = $service->getDataContainerName($row, $dc))
+        if (($service instanceof OnSubmitDcContract)
+            && !$expectedDataContainer = $service->resolveDcOnSubmit($row, $dc))
         {
             return;
         }
 
         // if no data container is set, use the default data container of the list type
-        $expectedDataContainer ??= $listTypeConfig->getDataContainer();
+        if (!$expectedDataContainer) {
+            $default = $this->listDriverRegistry->getAttribute($type)?->dataContainer;
+            $expectedDataContainer = \is_string($default) ? $default : null;
+        }
 
         if (!$expectedDataContainer) {
-            throw new BadRequestHttpException('No data container found for list type ' . $type);
+            throw new BadRequestHttpException(\sprintf('No data container found for list type "%s".', $type));
         }
 
         if ($expectedDataContainer !== ($row['dc'] ?? null))

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\View;
 
+use Contao\Controller;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 
@@ -20,12 +21,16 @@ trait HandlesModelsTrait
         if ($model = $registry->fetch($table, $id_or_alias, strAlias: $column))
             // Contao native model cache
         {
-            return $model;
+            Controller::loadDataContainer($table);
+
+            if (!isset($GLOBALS['TL_DCA'][$table]['fields']['published']) || $model->published) {
+                return $model;
+            }
         }
 
         $modelClass = Model::getClassFromTable($table);
         if (!\class_exists($modelClass)) {
-            throw new FlareException(\sprintf('Model class does not exist: "%s"', $modelClass), source: __METHOD__);
+            throw new FlareException(\sprintf('Model class does not exist: "%s"', $modelClass), method: __METHOD__);
         }
 
         if (!$row = $getEntry($id_or_alias)) {
@@ -34,7 +39,7 @@ trait HandlesModelsTrait
 
         $model = new $modelClass($row);
         if (!$model instanceof Model) {
-            throw new FlareException('Invalid model instance.', source: __METHOD__);
+            throw new FlareException('Invalid model instance.', method: __METHOD__);
         }
 
         $registry->register($model);
@@ -49,7 +54,7 @@ trait HandlesModelsTrait
     {
         $modelClass = Model::getClassFromTable($table);
         if (!\class_exists($modelClass)) {
-            throw new FlareException(\sprintf('Model class does not exist: "%s"', $modelClass), source: __METHOD__);
+            throw new FlareException(\sprintf('Model class does not exist: "%s"', $modelClass), method: __METHOD__);
         }
 
         $registry = Model\Registry::getInstance();
@@ -58,7 +63,7 @@ trait HandlesModelsTrait
         foreach ($entries as $entry)
         {
             if (!$id = $entry['id'] ?? null) {
-                throw new FlareException('Entry does not have an ID.', source: __METHOD__);
+                throw new FlareException('Entry does not have an ID.', method: __METHOD__);
             }
 
             if (!$model = $registry->fetch($table, $id))
@@ -67,7 +72,7 @@ trait HandlesModelsTrait
                 $model = new $modelClass($entry);
 
                 if (!$model instanceof Model) {
-                    throw new FlareException('Invalid model instance.', source: __METHOD__);
+                    throw new FlareException('Invalid model instance.', method: __METHOD__);
                 }
 
                 $registry->register($model);

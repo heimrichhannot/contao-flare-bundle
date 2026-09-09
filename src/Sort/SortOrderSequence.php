@@ -46,11 +46,15 @@ final class SortOrderSequence
     private function assertUnique(array $items): void
     {
         $seen = [];
-        foreach ($items as $order) {
+
+        foreach ($items as $order)
+        {
             $key = $order->key();
+
             if (isset($seen[$key])) {
-                throw new FlareException("Duplicate sort key in sequence: {$key}");
+                throw new FlareException("Duplicate sort key in sequence: {$key}", method: __METHOD__);
             }
+
             $seen[$key] = true;
         }
     }

@@ -18,8 +18,8 @@ The core execution flow is:
 
 ```
 ContentElement Controller
-  → EngineFactory (consumes a ListSpecification from src/Specification/)
-    → Engine
+  → ListBuilderFactory::createFromListModel(...)->build() — builds the immutable ListSpec (src/List/)
+    → EngineFactory → Engine
       → Context (Interactive / Validation / Aggregation) — src/Engine/Context/
         → Loader (src/Engine/Loader/) + Mods (src/Engine/Mod/)
           → Projector (Interactive / Validation / Aggregation / Export) — orchestrates query + filter execution
@@ -30,10 +30,30 @@ Note: Contexts and Projectors/Views are separate axes — (Export Context/Projec
 
 The bundle follows standard Symfony Bundle architecture with deep Contao integration.
 
+**Lifecycle taxonomy** — elements and list types own their lifecycle through two method families:
+`configure*` methods are declarative, memoizable setup (`configureOptions` = OptionsResolver schema,
+`configureTransformers` = source→canonical-config mappings); `build*` methods are per-invocation construction
+(`buildDca`, `buildForm`, `buildContext`, `buildList`, `buildTableRegistry`/`buildBaseQuery`).
+
 **Notable subsystems** (beyond the flow above):
-- `src/Specification/` — `ListSpecification` / `FilterDefinition`, the declarative input to the engine
-- `src/Filter/`, `src/FilterElement/`, `src/FilterCollector/` — filter definition and execution
-- `src/Form/` — filter form building (FilterFormFactory etc.)
+- `src/List/` — `ListSpec` (immutable list DTO: type, dc, filters, canonical config, source), `ListBuilder`
+  (build lifecycle: type's `buildList()` hook → `ListBuildEvent` → config assembly → schema resolution),
+  `BaseListOptions` (framework-owned base schema for tl_flare_list columns)
+- `src/Filter/` — `Filter` DTO, elements (`Element/`), types (`Type/`), collector, resolvers
+  (`FilterOptionsResolver`, `FilterTransformerResolver`, `FilterElementResolver`), `FilterContextFactory`,
+  and the form aggregate: `FormHarnessFactory` builds a `FormHarness` (root form + mount↔filter map of
+  `FilterMount`s) per list × form context
+- `src/Config/` — `ConfigBuilder` (fluent canonical-config accumulator; no cast helpers — transformers cast
+  declaratively off the typed model) and `TransformerResolver` (source class → transformer map)
+- `src/Filter/Form/` — FLARE filter form implementations (peers of `src/Filter/Element/`) behind
+  `FilterFormInterface` (`buildForm()` + `decode()`); `src/Form/` — Symfony-level building blocks only
+  (`ChoicesBuilder`, `Form/Type/DateRangeFormType`)
+- `src/Filter/Value/` — immutable filter value objects (`BoolValue`, `ChoiceValue`, `KeywordsValue`,
+  `DateRangeValue`, `ParentRefValue`), the typed channel between a form's `decode()` and an element's
+  `buildFilter()`. Each is `final readonly` with only public scalar/enum/nested-VO/array properties —
+  the containment rule `tests/Filter/Value/ValueObjectContainmentTest.php` enforces by reflection, so
+  `Util\Fingerprint::flatten()` can hash them without object identity leaking in. Deliberately not
+  services (excluded in `config/services.yaml`)
 - `src/Reader/` — reader/detail-page URL generation (`ReaderUrlGenerator`)
 - `src/InferPtable/` — parent-table inference for DCAs
 - `src/Integration/` — optional integrations (Codefog Tags, Terminal42 ChangeLanguage), wired via `config/integrations/*.yaml`
@@ -46,21 +66,27 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 - `src/Controller/ContentElement/ListViewController.php` / `ReaderController.php` — frontend controllers
 
 **Extensibility via PHP 8 attributes** (compiler passes auto-register tagged services):
-- `#[AsFilterElement(type: '...', palette: '...', formType: ...)]` — register a filter element
-- `#[AsListType(type: '...', dataContainer: '...', palette: '...')]` — register a list type
-- `#[AsFilterCallback(type, 'path.to.callback')]` — register a Contao DCA callback on a filter type
-- `#[AsListCallback(type, 'path.to.callback')]` — register a Contao DCA callback on a list type
-- `#[AsFilterInvoker]` — register a custom filter invocation handler
-
-(`AsFilterCallback` and `AsListCallback` both extend the `@internal` base attribute `AsFlareCallback`.)
+- `#[AsFilterElement(type: '...', isTargeted: ...)]` — register a filter element
+- `#[AsFilterForm(name: '...', value: '...', requires: [...], default: ...)]` — register a filter form,
+  bound to a value class rather than to an element type (repeatable)
+- `#[AsListDriver(type: '...', dataContainer: '...')]` — register a list driver
 
 Attributes are in `src/DependencyInjection/Attribute/`, compiler passes in `src/DependencyInjection/Compiler/`.
+Backend palettes/fields are declared in code via `DcaContract::buildDca(DcaBuilder, DcaContext)` (both
+tl_flare_filter and tl_flare_list).
 
-**Event system** — Events, some with aliased dispatch for targeted listening (`flare.form.{name}.build`, etc., implemented by the listeners in `src/EventListener/NamedDispatch/`). All events are in `src/Event/`. Prefer events over overriding services for customization.
+**Event system** — Events, some with aliased dispatch for targeted listening
+(`flare.form.{name}.build`, `flare.filter_form.{type}.built`, `flare.list.{type}.build`,
+`flare.filter_element.{type}.transformers`, `flare.filter_element.{type}.dca` / `flare.list.{type}.dca`,
+etc., implemented by the listeners in `src/EventListener/NamedDispatch/`). All events are in `src/Event/`.
+Prefer events over overriding services for customization.
 
-**Registry pattern** — Registries in `src/Registry/` map type names to implementations: `FilterElementRegistry`, `ListTypeRegistry`, `FilterInvokerRegistry`, `ProjectorRegistry`, `FilterCollectorRegistry`, `FlareCallbackRegistry`, `EngineModRegistry`.
+**Registry pattern** — Registries in `src/Registry/` map type names to implementations: `FilterElementRegistry`, `FilterFormRegistry`, `ListDriverRegistry`, `FilterPredicateRegistry`, `ProjectorRegistry`, `EngineModRegistry`. `FilterFormRegistry` differs from the others: it holds
+compile-time metadata as plain arrays and resolves the form services through a lazy
+`container.service_locator`, so reading metadata (the `formVariant` options, the form election)
+instantiates nothing.
 
-**Query safety** — `FilterQueryBuilder` (`src/Query/FilterQueryBuilder.php`) enforces parameterized queries. `TableAliasRegistry` (`src/Query/TableAliasRegistry.php`) manages table aliases and JOINs safely.
+**Query safety** — `FilterConditionsBuilder` (`src/Query/FilterConditionsBuilder.php`) enforces parameterized queries. `TableAliasRegistry` (`src/Query/TableAliasRegistry.php`) manages table aliases and JOINs safely.
 
 **Contao DCA** — Backend form definitions in `contao/dca/tl_flare_*.php`. Templates in `contao/templates/`. Translations in `contao/languages/`.
 
@@ -91,8 +117,9 @@ Attributes are in `src/DependencyInjection/Attribute/`, compiler passes in `src/
 
 ## Testing & CI
 
-*   **There is currently no test suite**: no `tests/` directory, no `phpunit.xml`, no test CI workflow — even though PHPUnit is in `require-dev` and `tests/` is referenced in `autoload-dev` and `mago.toml`. Don't look for tests or invent a `make test` target.
+*   **Unit tests** live in `tests/` (PHPUnit 9, configured via `phpunit.xml.dist`); run them with `make test` (optionally passing phpunit args, e.g. `make test tests/SomeTest.php`).
 *   CI workflows in `.github/workflows/`:
+    *   `phpunit.yaml` — PHPUnit test suite
     *   `phpstan.yaml` — PHPStan analysis
     *   `mago.yaml` — Mago lint (`--minimum-fail-level note`, PHP 8.2–8.5)
     *   `compatibility.yaml` — `composer validate` + dependency-resolution matrix (PHP 8.2–8.5 × Contao 4.13/5.x)

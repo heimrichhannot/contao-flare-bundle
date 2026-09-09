@@ -81,7 +81,7 @@ final readonly class Str
         }
 
         if ($format) {
-            \array_walk($pieces, $format);
+            $pieces = \array_map($format, $pieces);
         }
 
         return \implode($glue, $pieces);
@@ -94,14 +94,29 @@ final readonly class Str
      */
     public static function mergePalettes(?string ...$palettes): string
     {
-        $palettes = \array_filter($palettes);
-        \array_walk($palettes, static fn (string $palette): string => \trim($palette, ";, \n\r\t\v\0"));
-        return \implode(';', \array_filter($palettes));
+        $palettes = \array_filter(\array_map(
+            static fn (string $palette): string => \trim($palette, ";, \n\r\t\v\0"),
+            $palettes,
+        ));
+
+        return \implode(';', $palettes);
     }
 
     public static function isValidSqlName(?string $db_or_col_name): bool
     {
         return $db_or_col_name && \preg_match('/^[A-Za-z_]\w*$/', $db_or_col_name);
+    }
+
+    /**
+     * Whether the given name is a valid, non-empty Symfony form name.
+     * Mirrors {@see \Symfony\Component\Form\FormConfigBuilder::isValidName()} except that
+     * empty names are rejected. Generated filter aliases like "_.tl_flare_filter.42" fail
+     * this check by design and therefore never mount form children.
+     */
+    public static function isValidFormName(?string $name): bool
+    {
+        return $name !== null && $name !== ''
+            && \preg_match('/^[a-zA-Z0-9_][a-zA-Z0-9_\-:]*$/D', $name) === 1;
     }
 
     public static function wrap(mixed $value): string
@@ -152,7 +167,7 @@ final readonly class Str
 
     public static function normalizeHeadline(array|string|null $headline): ?array
     {
-        if (!$headline) {
+        if ($headline === null || $headline === '' || $headline === []) {
             return null;
         }
 
@@ -172,9 +187,25 @@ final readonly class Str
         ];
     }
 
+    /**
+     * Formats a Contao-formatted headline by processing the given input and optionally
+     * wrapping it in HTML tags.
+     *
+     * If the `$withTags` parameter is set to true, the content is wrapped in the computed tag
+     * (defaulting to `<h2>` if none is provided, or it's invalid). Supported tags are limited
+     * to valid headings (`h1` through `h6`), `<hgroup>`, and `<p>`. If the tag is invalid, the
+     * raw content is returned without tags.
+     *
+     * @param array|string|null $headline The headline input to be formatted, which can be a
+     *                                    string, an associative array, or null.
+     * @param bool $withTags Whether to wrap the headline in HTML tags. Defaults to false.
+     *
+     * @return string|null The formatted headline, optionally wrapped in HTML tags, or null if
+     *                     the input is invalid or empty.
+     */
     public static function formatHeadline(array|string|null $headline, bool $withTags = false): ?string
     {
-        if (!$headline) {
+        if ($headline === null || $headline === '' || $headline === []) {
             return null;
         }
 
@@ -183,20 +214,30 @@ final readonly class Str
         }
 
         if (\is_string($headline)) {
-            return $headline ?: null;
+            return $headline;
         }
 
         if (!\is_array($headline)) {
             return null;
         }
 
-        $tagName = $headline['tag_name'] ?? $headline['unit'] ?? 'h2';
+        $value = $headline['text'] ?? $headline['value'] ?? '';
+
+        if ($value === '') {
+            return null;
+        }
+
+        $tagName = \strtolower($headline['tag_name'] ?? $headline['unit'] ?? 'h2');
 
         if (\is_numeric($tagName)) {
             $tagName = "h{$tagName}";
         }
 
-        $value = $headline['text'] ?? $headline['value'] ?? '';
+        $allowedTags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hgroup', 'p', 'span'];
+
+        if (!\in_array($tagName, $allowedTags, true)) {
+            return $value;
+        }
 
         return $withTags ? "<{$tagName}>{$value}</{$tagName}>" : $value;
     }

@@ -10,18 +10,17 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsContentElement;
 use Contao\CoreBundle\Exception\ResponseException;
 use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\CoreBundle\Routing\ScopeMatcher;
-use Contao\StringUtil;
 use Contao\Template;
 use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
+use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\InteractiveContextFactory;
 use HeimrichHannot\FlareBundle\Engine\Factory\EngineFactory;
 use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
-use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -47,7 +46,7 @@ final class ListViewController extends AbstractContentElementController
         private readonly EventDispatcherInterface  $eventDispatcher,
         private readonly InteractiveContextFactory $interactiveConfigFactory,
         private readonly KernelInterface           $kernel,
-        private readonly ListSpecificationFactory  $listSpecificationFactory,
+        private readonly ListSpecBuilderFactory    $listFactory,
         private readonly LoggerInterface           $logger,
         private readonly ScopeMatcher              $scopeMatcher,
         private readonly SymfonyResponseTagger     $responseTagger,
@@ -88,7 +87,7 @@ final class ListViewController extends AbstractContentElementController
             $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST);
 
             if (!$listModel instanceof ListModel) {
-                throw new FilterException('No list model found.');
+                throw new FilterException('No list model found.', method: __METHOD__);
             }
         }
         catch (\Exception $e)
@@ -101,12 +100,12 @@ final class ListViewController extends AbstractContentElementController
 
         try
         {
+            $listSpec = $this->listFactory->createFromListModel($listModel)->build();
+
             $interactiveConfig = $this->interactiveConfigFactory->createFromContent(
                 contentModel: $contentModel,
-                listModel: $listModel,
+                list: $listSpec,
             );
-
-            $listSpec = $this->listSpecificationFactory->create(dataSource: $listModel);
 
             $engine = $this->engineFactory->createEngine($interactiveConfig, $listSpec);
         }
@@ -116,13 +115,17 @@ final class ListViewController extends AbstractContentElementController
         }
         catch (FlareException $e)
         {
-            $this->logger->error(\sprintf('%s (tl_content.id=%s, tl_flare_list.id=%s)', $e->getMessage(), $contentModel->id, $listModel->id),
-                ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
+            $this->logger->error(\sprintf(
+                '%s (tl_content.id=%s, tl_flare_list.id=%s)',
+                $e->getMessage(),
+                $contentModel->id,
+                $listModel->id
+            ), ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
 
             return $this->getErrorResponse($e);
         }
 
-        $this->responseTagger->addTags(['contao.db.' . $listModel->dc]);
+        $this->responseTagger->addTags(['contao.db.' . $engine->getList()->dc]);
 
         $event = $this->eventDispatcher->dispatch(
             new ListViewRenderEvent(
@@ -212,17 +215,20 @@ final class ListViewController extends AbstractContentElementController
             return new Response($e->getMessage());
         }
 
-        if (($headline = StringUtil::deserialize($model->headline, true)) && isset($headline['value'])) {
-            $unit = ($headline['unit'] ?? null) ?: 'h2';
-            $hl = \sprintf('<%s>%s</%s>', $unit, $headline['value'], $unit);
+        if (!$listModel instanceof ListModel) {
+            return new Response(\sprintf(
+                '<div><strong class="tl_red">%s</strong></div><div>%s</div>',
+                $this->translator->trans('reader.invalid_list', [], 'flare'),
+                Str::formatHeadline($model->headline, withTags: true),
+            ));
         }
 
         return new Response(\sprintf(
-            '%s%s <span class="tl_gray">[%s, %s]</span>',
-            $hl ?? '',
-            $listModel->title,
-            $this->translator->trans($listModel->type, [], 'flare_list'),
-            $listModel->dc
+            '<div>%s</div><span>%s</span> <span class="tl_gray">[%s, %s]</span>',
+            (string) Str::formatHeadline($model->headline),
+            \strip_tags((string) $listModel->title),
+            \strip_tags($this->translator->trans($listModel->type, [], 'flare_list')),
+            \strip_tags((string) $listModel->dc)
         ));
     }
 }

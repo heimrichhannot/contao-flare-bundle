@@ -14,6 +14,9 @@ final class Configuration implements ConfigurationInterface
         $treeBuilder = new TreeBuilder('huh_flare');
         $rootNode = $treeBuilder->getRootNode();
 
+        // PHPStan 1.x cannot parse symfony/config 7.4 template defaults.
+        // This phpstan-ignore annotation is only required when using symfony/config >= 7:
+        // @ ### phpstan-ignore class.notFound
         $rootNode
             ->children()
                 ->arrayNode('format_label_defaults')

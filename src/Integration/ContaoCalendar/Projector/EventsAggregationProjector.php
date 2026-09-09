@@ -10,20 +10,20 @@ use HeimrichHannot\FlareBundle\Engine\Loader\AggregationLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\AggregationLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\Projector\AggregationProjector;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\GroupsEntriesTrait;
-use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListType\EventsListType;
+use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListDriver\EventsListDriver;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\Loader\EventsAggregationLoader;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 
 class EventsAggregationProjector extends AggregationProjector
 {
     use GroupsEntriesTrait;
 
-    public function supports(ListSpecification $list, ContextInterface $context): bool
+    public function supports(ListSpec $list, ContextInterface $context): bool
     {
-        return $list->type === EventsListType::TYPE && $context instanceof AggregationContext;
+        return $list->driver instanceof EventsListDriver && $context instanceof AggregationContext;
     }
 
-    public function priority(ListSpecification $list, ContextInterface $context): int
+    public function priority(ListSpec $list, ContextInterface $context): int
     {
         return 100;
     }

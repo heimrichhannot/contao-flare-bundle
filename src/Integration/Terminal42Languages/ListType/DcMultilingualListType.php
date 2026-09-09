@@ -7,12 +7,14 @@ namespace HeimrichHannot\FlareBundle\Integration\Terminal42Languages\ListType;
 use Contao\CoreBundle\String\HtmlDecoder;
 use Contao\CoreBundle\String\SimpleTokenParser;
 use Contao\DataContainer;
-use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
-use HeimrichHannot\FlareBundle\ListType\AbstractListType;
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
+use HeimrichHannot\FlareBundle\Contract\ListDriver\OnSubmitDcContract;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
+use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 
-#[AsListType(type: self::TYPE, palette: self::DEFAULT_PALETTE)]
-class DcMultilingualListType extends AbstractListType implements DataContainerContract
+#[AsListDriver(type: self::TYPE)]
+class DcMultilingualListType extends AbstractListDriver implements OnSubmitDcContract
 {
     public const TYPE = 'flare_generic_dc_multilingual';
     public const DEFAULT_PALETTE = <<<'PALETTE'
@@ -35,8 +37,13 @@ class DcMultilingualListType extends AbstractListType implements DataContainerCo
         return $this->simpleTokenParser;
     }
 
-    public function getDataContainerName(array $row, DataContainer $dc): string
+    public function resolveDcOnSubmit(array $row, DataContainer $dc): string
     {
         return $row['dc'] ?? '';
+    }
+
+    protected function transformListModel(ConfigBuilder $config, ListModel $model): void
+    {
+        $config->set('genericPageMeta', true);
     }
 }

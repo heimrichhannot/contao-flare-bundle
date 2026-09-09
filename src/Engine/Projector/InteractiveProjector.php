@@ -4,26 +4,24 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
-use HeimrichHannot\FlareBundle\Contract\FilterElement\FormDataContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\HydrateFormContract;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\AggregationContextFactory;
 use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
-use HeimrichHannot\FlareBundle\Engine\Context\Interface\PaginatedContextInterface;
-use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
+use HeimrichHannot\FlareBundle\Engine\Context\PaginatedContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveEmptyLoader;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\AggregationView;
 use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Form\Factory\FilterFormFactory;
+use HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
+use HeimrichHannot\FlareBundle\Form\FormHarness;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
-use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
-use Symfony\Component\Form\Exception\OutOfBoundsException;
 use Symfony\Component\Form\FormInterface;
 
 /**
@@ -33,25 +31,23 @@ class InteractiveProjector extends AbstractProjector
 {
     public function __construct(
         private readonly AggregationContextFactory $aggregationConfigFactory,
-        private readonly FilterFormFactory         $filterFormFactory,
-        private readonly LoaderFactory             $loaderFactory,
+        private readonly FormHarnessFactory        $filterSetFactory,
         private readonly PaginatorFactory          $paginatorFactory,
-        private readonly ReaderUrlGeneratorFactory $readerUrlGeneratorFactory,
     ) {}
 
-    public function supports(ListSpecification $list, ContextInterface $context): bool
+    public function supports(ListSpec $list, ContextInterface $context): bool
     {
         return $context instanceof InteractiveContext;
     }
 
-    public function project(ListSpecification $list, ContextInterface $context): InteractiveView
+    public function project(ListSpec $list, ContextInterface $context): InteractiveView
     {
         \assert($context instanceof InteractiveContext, '$config must be an instance of InteractiveConfig');
 
         // collect filter values from form data
-        $form = $this->createForm($list, $context);
-        $runtimeValues = $this->mapFormDataToFilterKeys($list, $form);
-        $filterValues = $this->resolveFilterValues($list, $runtimeValues);
+        $filterSet = $this->createFilterSet($list, $context);
+        $form = $filterSet->getForm();
+        $filterValues = $this->collectFilterData($list, $form);
 
         // pagination setup
         $totalItems = $this->createAggregationView($list, $context, $filterValues)->getCount();
@@ -75,7 +71,8 @@ class InteractiveProjector extends AbstractProjector
             $loader = $this->createLoader($config);
         }
 
-        $readerUrlGenerator = $this->readerUrlGeneratorFactory->create($context->createReaderUrlConfig());
+        $readerUrlConfig = $context->createReaderUrlConfig();
+        $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($readerUrlConfig);
 
         return $this->createView(
             loader: $loader,
@@ -89,7 +86,7 @@ class InteractiveProjector extends AbstractProjector
 
     protected function createLoader(InteractiveLoaderConfig $config): InteractiveLoaderInterface
     {
-        return $this->loaderFactory->createInteractiveLoader($config);
+        return $this->getLoaderFactory()->createInteractiveLoader($config);
     }
 
     protected function createView(
@@ -113,107 +110,87 @@ class InteractiveProjector extends AbstractProjector
     /**
      * @throws FlareException
      */
-    public function createForm(ListSpecification $list, InteractiveContext $context): FormInterface
+    public function createForm(ListSpec $list, InteractiveContext $context): FormInterface
     {
-        $form = $this->filterFormFactory->create($list, $context);
-        $form->handleRequest($this->getCurrentRequest());
-
-        $this->hydrateForm($form, $list);
-
-        return $form;
+        return $this->createFilterSet($list, $context)->getForm();
     }
 
     /**
-     * @throws FlareException If the form does not contain the filter field.
+     * Builds the list's filter set and hands the current request to its root form.
+     *
+     * @throws FlareException
      */
-    private function hydrateForm(FormInterface $form, ListSpecification $list): void
+    protected function createFilterSet(ListSpec $list, InteractiveContext $context): FormHarness
     {
-        if ($form->isSubmitted()) {
-            return;
-        }
+        $filterSet = $this->filterSetFactory->create($list, $context);
 
-        $filterElementRegistry = $this->getFilterElementRegistry();
+        $filterSet->getForm()->handleRequest($this->getCurrentRequest());
 
-        $data = [];
-        foreach ($list->getFilters()->getIterator() as $filterDefinition)
-        {
-            if (!$filterElement = $filterElementRegistry->get($filterDefinition->getType())?->getService()) {
-                continue;
-            }
-
-            if (!$filterElement instanceof HydrateFormContract) {
-                continue;
-            }
-
-            if ($filterDefinition->isIntrinsic()) {
-                continue;
-            }
-
-            if (!$filterName = $filterDefinition->getAlias()) {
-                throw new FlareException(message: 'Non-intrinsic filter must provide a form field name.');
-            }
-
-            if (!$form->has($filterName)) {
-                continue;
-            }
-
-            try
-            {
-                $field = $form->get($filterName);
-            }
-            catch (OutOfBoundsException $exception)
-            {
-                throw new FlareException(
-                    message: 'Filter form does not contain field: ' . $filterName,
-                    previous: $exception,
-                    method: __METHOD__,
-                    source: $filterDefinition->getDataSource()?->getFilterIdentifier() ?? 'filter inlined'
-                );
-            }
-
-            $filterElement->hydrateForm($field, $list, $filterDefinition);
-
-            $data[$filterName] = $field->getData();
-        }
-
-        // This might not be necessary, but $form->getData() should return all child data as well.
-        $form->setData(\array_merge($form->getData() ?? [], $data));
-    }
-
-    protected function mapFormDataToFilterKeys(ListSpecification $list, FormInterface $form): array
-    {
-        $values = [];
-
-        $filterElementRegistry = $this->getFilterElementRegistry();
-
-        foreach ($list->getFilters()->all() as $key => $definition)
-        {
-            $alias = $definition->getAlias();
-
-            if (\is_null($alias)) {
-                continue;
-            }
-
-            if (!$form->has($alias)) {
-                continue;
-            }
-
-            $field = $form->get($alias);
-            $filterElement = $filterElementRegistry->get($definition->getType())?->getService();
-
-            $values[$key] = $filterElement instanceof FormDataContract
-                ? $filterElement->extractFormData($field)
-                : $field->getData();
-        }
-
-        return $values;
+        return $filterSet;
     }
 
     /**
+     * Collects each filter's form data, keyed by the filter's list-specification key.
+     *
+     * Filters that contribute nothing stay absent from the map, so a filter's programmatically
+     * set data can take over downstream.
+     *
+     * @return array<string|int, FilterData>
+     */
+    protected function collectFilterData(ListSpec $list, FormInterface $form): array
+    {
+        $data = [];
+
+        foreach ($list->filters as $key => $filter)
+        {
+            if (!$form->has($key)) {
+                continue;
+            }
+
+            $child = $form->get($key);
+
+            if ($child->getConfig()->getAttribute(FilterContext::ATTR_SINGLE_FIELD))
+            {
+                // Submitted value, or the field's configured default (e.g., a `preselect`) when
+                // unsubmitted. Unsubmitted null defaults stay unset, so Filter::$data can take over.
+                $value = $child->getData();
+
+                if ($form->isSubmitted() || !\is_null($value)) {
+                    $data[$key] = FilterData::single($value);
+                }
+
+                continue;
+            }
+
+            if ($form->isSubmitted())
+            {
+                $data[$key] = FilterData::of((array) $child->getData());
+                continue;
+            }
+
+            // Unsubmitted forms never map the fields' default data (e.g., preselects) back onto
+            // the compound filter child, so collect the defaults from the fields directly.
+            // Filters without defaults stay unset here, so Filter::$data can take over.
+            $values = \array_filter(
+                \array_map(static fn (FormInterface $field): mixed => $field->getData(), $child->all()),
+                static fn (mixed $value): bool => !\is_null($value),
+            );
+
+            if ($values) {
+                $data[$key] = FilterData::of($values);
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param array<string|int, FilterData> $filterValues
+     *
      * @throws FlareException
      */
     protected function createAggregationView(
-        ListSpecification  $spec,
+        ListSpec  $spec,
         InteractiveContext $interactiveConfig,
         array              $filterValues,
     ): AggregationView {

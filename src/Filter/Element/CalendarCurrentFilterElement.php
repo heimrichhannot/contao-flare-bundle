@@ -10,11 +10,10 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\CalendarCurrentPredicate;
+use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
@@ -25,7 +24,7 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-#[AsFilterElement(type: self::TYPE)]
+#[AsFilterElement(type: self::TYPE, value: DateRangeValue::class)]
 class CalendarCurrentFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_calendar_current';
@@ -100,9 +99,9 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
 
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
-        $config = $context->config;
+        $config = $builder->config;
 
-        if (!$config['is_limited'] && $context->engineContext instanceof ValidationContext) {
+        if (!$config['is_limited'] && $builder->engineContext instanceof ValidationContext) {
             return;
         }
 
@@ -131,7 +130,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
             }
         }
 
-        $builder->add(CalendarCurrentPredicate::class, [
+        $builder->addPredicate(CalendarCurrentPredicate::class, [
             'start' => $start,
             'stop' => $stop,
             'has_extended_events' => $config['has_extended_events'],
@@ -186,28 +185,15 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
     /**
      * @return array{from: ?\DateTimeInterface, to: ?\DateTimeInterface}|null
      */
-    private function processRuntimeValue(FilterData $data): ?array
+    private function processRuntimeValue(?ValueInterface $data): ?array
     {
-        if (!$data->has('from') && !$data->has('to'))
-            // Programmatically set data may carry the bounds positionally instead of by name.
-        {
-            $values = $data->all();
-
-            if (\count($values) !== 2) {
-                return null;
-            }
-
-            $values = \array_values($values);
-
-            return [
-                'from' => $this->mixedToDateTime($values[0] ?? null),
-                'to' => $this->mixedToDateTime($values[1] ?? null),
-            ];
+        if (!$data instanceof DateRangeValue) {
+            return null;
         }
 
         return [
-            'from' => $this->mixedToDateTime($data->get('from')),
-            'to' => $this->mixedToDateTime($data->get('to')),
+            'from' => $this->mixedToDateTime($data->from),
+            'to' => $this->mixedToDateTime($data->to),
         ];
     }
 

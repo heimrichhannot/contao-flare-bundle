@@ -24,6 +24,13 @@ use Symfony\Component\Form\FormInterface;
 interface FilterFormInterface
 {
     /**
+     * Returns the fully qualified class name of the value object this form produces.
+     *
+     * @return class-string<ValueInterface>
+     */
+    public function getValueClass(): string;
+
+    /**
      * Declares the filter's form fields on the collect-only per-filter builder.
      *
      * Single-field forms declare their field via {@see FilterFormBuilderInterface::single()}; it is

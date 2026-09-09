@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Predicate;
 
+use DateTimeInterface;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -11,9 +12,19 @@ class CalendarCurrentPredicate extends AbstractPredicate
 {
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('start')->required()->allowedTypes('int');
-        $resolver->define('stop')->required()->allowedTypes('int');
-        $resolver->define('has_extended_events')->default(false)->allowedTypes('bool');
+        $resolver->define('start')
+            ->required()
+            ->allowedTypes('int', DateTimeInterface::class)
+            ->normalize($this->normalizeTimestamp(...));
+
+        $resolver->define('stop')
+            ->required()
+            ->allowedTypes('int', DateTimeInterface::class)
+            ->normalize($this->normalizeTimestamp(...));
+
+        $resolver->define('has_extended_events')
+            ->default(false)
+            ->allowedTypes('bool');
     }
 
     public function buildConditions(FilterConditionsBuilder $builder, array $options): void
@@ -46,5 +57,14 @@ class CalendarCurrentPredicate extends AbstractPredicate
         $builder->whereOr(...$or);
         $builder->setParameter('start', $options['start']);
         $builder->setParameter('end', $options['stop']);
+    }
+
+    private function normalizeTimestamp($value): int
+    {
+        if ($value instanceof DateTimeInterface) {
+            return $value->getTimestamp();
+        }
+
+        return (int) $value;
     }
 }

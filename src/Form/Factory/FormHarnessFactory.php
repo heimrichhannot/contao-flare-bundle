@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter\Factory;
+namespace HeimrichHannot\FlareBundle\Form\Factory;
 
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\FormContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterFormBuiltEvent;
 use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\Form\FilterMount;
@@ -47,8 +48,8 @@ final readonly class FormHarnessFactory
         $name = $context->getFormName();
 
         $formOptions = [
-            'method'             => 'GET',
-            'csrf_protection'    => false,
+            'method' => 'GET',
+            'csrf_protection' => false,
             'translation_domain' => 'flare_form',
             'attr' => [
                 'data-flare-form' => 'keep-query',
@@ -68,7 +69,9 @@ final readonly class FormHarnessFactory
 
         foreach ($list->filters as $filter)
         {
-            if (!Str::isValidFormName($filter->alias)) {
+            $alias = $filter->alias;
+
+            if (!Str::isValidFormName($alias)) {
                 continue;
             }
 
@@ -76,7 +79,7 @@ final readonly class FormHarnessFactory
 
             // Collect-only builder: never mounted itself; its single-field spec, children,
             // attributes, and deferred listeners are transferred onto the mounted builder below.
-            $builder = new FilterFormBuilder($filter->alias, null, new EventDispatcher(), $this->formFactory);
+            $builder = new FilterFormBuilder($alias, null, new EventDispatcher(), $this->formFactory);
             $builder->setAttribute(FilterContext::ATTR_SELF, $filterContext);
 
             $filter->element->buildForm($builder, $filterContext);
@@ -108,13 +111,13 @@ final readonly class FormHarnessFactory
 
             if ($single)
             {
-                $mount = $root->create($filter->alias, $single['type'], $single['options']);
+                $mount = $root->create($alias, $single['type'], $single['options']);
                 $mount->setAttribute(FilterContext::ATTR_SINGLE_FIELD, true);
             }
             /** @mago-expect lint:no-else-clause The mount decision is a genuine either-or. */
             else
             {
-                $mount = $root->create($filter->alias, FormType::class, [
+                $mount = $root->create($alias, FormType::class, [
                     'inherit_data' => false,
                     'label'        => false,
                     'required'     => false,
@@ -133,7 +136,7 @@ final readonly class FormHarnessFactory
                 $mount->addEventListener($eventName, $listener, $priority);
             }
 
-            $mounts[$key] = new FilterMount($filter, $filter->alias, $filterContext);
+            $mounts[$alias] = new FilterMount($filter, $alias, $filterContext);
 
             $root->add($mount);
         }

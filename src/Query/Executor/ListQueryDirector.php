@@ -9,22 +9,30 @@ use HeimrichHannot\FlareBundle\Event\ModifyListQueryStructEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
+use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\QueryBuilderFactory;
-use HeimrichHannot\FlareBundle\Query\FilterQuery;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use HeimrichHannot\FlareBundle\Query\FilterConditions;
+use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
+use HeimrichHannot\FlareBundle\Util\CreatesFilterExceptionTrait;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class ListQueryDirector
 {
+    use CreatesFilterExceptionTrait;
+
     public function __construct(
         private EventDispatcherInterface    $eventDispatcher,
-        private FilterExecutor              $filterExecutor,
+        private FilterContextFactory        $filterContextFactory,
+        private FilterQueryBuilderFactory   $filterQueryBuilderFactory,
         private ListExecutionContextFactory $listExecutionContextFactory,
         private QueryBuilderFactory         $queryBuilderFactory,
-        private LoggerInterface $logger
+        private LoggerInterface             $logger,
     ) {}
 
     /**
@@ -45,8 +53,8 @@ readonly class ListQueryDirector
             $registry = $executionContext->tableAliasRegistry;
             $struct = $executionContext->queryStruct;
 
-            $filterQueryBuilders = $this->filterExecutor->invokeFilters($config);
-            $filterQueries = $this->buildFilterQueries($filterQueryBuilders);
+            $filterQueryBuilders = $this->invokeFilters($config);
+            $filterQueries = $this->buildFilterConditions($filterQueryBuilders);
 
             $event = new ModifyListQueryStructEvent(
                 filterQueries: $filterQueries,
@@ -69,12 +77,81 @@ readonly class ListQueryDirector
             return null;
         }
     }
+    /**
+     * @return FilterConditionsBuilder[]
+     *
+     * @throws AbortFilteringException
+     * @throws FilterException
+     * @throws FlareException
+     */
+    public function invokeFilters(ListQueryConfig $options): array
+    {
+        $filterQueryBuilders = [];
+        $list = $options->list;
+
+        foreach ($list->filters as $filter)
+        {
+            $context = $this->filterContextFactory->create(
+                list: $list,
+                filter: $filter,
+                engineContext: $options->context
+            );
+
+            if (!$builders = $this->buildFilterConditionsBuilders($context)) {
+                continue;
+            }
+
+            \array_push($filterQueryBuilders, ...$builders);
+        }
+
+        return $filterQueryBuilders;
+    }
 
     /**
-     * @param FilterQueryBuilder[] $filterQueryBuilders
-     * @return FilterQuery[]
+     * @return FilterConditionsBuilder[]
+     * @throws AbortFilteringException
+     * @throws FilterException
      */
-    public function buildFilterQueries(array $filterQueryBuilders): array
+    private function buildFilterConditionsBuilders(FilterContext $context): array
+    {
+        $filterQueryBuilders = [];
+
+        foreach ($context->formula->propositions as $proposition)
+        // todo: this should be simplified, either FilterConditionsBuilderFactory like FilterContextFactory
+        //   or skip collecting the builders and build right away
+        //   in any case: we need to handle the AbortFilteringException and FilterException properly
+        {
+            $filterQueryBuilder = $this->filterQueryBuilderFactory->create($proposition->targetAlias);
+
+            try
+            {
+                $proposition->predicate->buildConditions($filterQueryBuilder, $proposition->options);
+            }
+            catch (AbortFilteringException $e)
+            {
+                throw $e;
+            }
+            catch (FilterException $e)
+            {
+                throw $this->createFilterException($e, $context->filter, $proposition->predicateClass . '::buildConditions');
+            }
+            catch (\Throwable $e)
+            {
+                throw new FilterException($e->getMessage(), code: $e->getCode(), previous: $e,
+                    method: $proposition->predicateClass, source: $context->filter->source ?: 'filter inlined');
+            }
+
+            $filterQueryBuilders[] = $filterQueryBuilder;
+        }
+
+        return $filterQueryBuilders;
+    }
+
+    /**
+     * @param FilterConditionsBuilder[] $filterQueryBuilders
+     * @return FilterConditions[]
+     */
+    private function buildFilterConditions(array $filterQueryBuilders): array
     {
         $filterQueries = [];
 

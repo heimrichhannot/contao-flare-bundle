@@ -6,34 +6,21 @@ namespace HeimrichHannot\FlareBundle\Reader;
 
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 
 readonly class ReaderRequestAttribute
 {
     public function __construct(
-        private Model             $model,
-        private ListSpecification $listSpecification,
+        public Model     $displayModel,
+        public ListModel $listModel,
     ) {}
-
-    public function getModel(): Model
-    {
-        return $this->model;
-    }
-
-    public function getListSpecification(): ListSpecification
-    {
-        return $this->listSpecification;
-    }
 
     public function marshal(): array
     {
-        $dataSource = $this->listSpecification->getDataSource();
-
         return [
-            'model_class' => $this->model::class,
-            'model_table' => $this->model::getTable(),
-            'model_id' => $this->model->id,
-            'list_id' => $dataSource instanceof ListModel ? $dataSource->id : null,
+            'model_class' => $this->displayModel::class,
+            'model_table' => $this->displayModel::getTable(),
+            'model_id' => $this->displayModel->id,
+            'list_id' => $this->listModel->id,
         ];
     }
 }

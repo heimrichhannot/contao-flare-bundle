@@ -10,14 +10,14 @@ use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoader;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoader;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderConfig;
-use HeimrichHannot\FlareBundle\Filter\Resolver\FilterValueResolver;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 
 final readonly class LoaderFactory
 {
     public function __construct(
-        private FilterValueResolver $filterValueResolver,
-        private ListQueryDirector   $listQueryDirector,
+        private FilterFactory     $filterFactory,
+        private ListQueryDirector $listQueryDirector,
     ) {}
 
     public function createAggregationLoader(AggregationLoaderConfig $config): AggregationLoader
@@ -39,9 +39,9 @@ final readonly class LoaderFactory
     public function createValidationLoader(ValidationLoaderConfig $config): ValidationLoader
     {
         return new ValidationLoader(
-            filterValueResolver: $this->filterValueResolver,
-            listQueryDirector: $this->listQueryDirector,
             config: $config,
+            filterFactory: $this->filterFactory,
+            listQueryDirector: $this->listQueryDirector,
         );
     }
 }

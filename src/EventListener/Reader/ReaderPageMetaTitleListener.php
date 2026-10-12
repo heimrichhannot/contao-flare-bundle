@@ -18,12 +18,11 @@ readonly class ReaderPageMetaTitleListener
 
     public function __invoke(ReaderPageMetaEvent $event): void
     {
-        $pageMeta = $event->getPageMeta();
-        if ($pageMeta->getTitle()) {
+        if ($event->pageMeta->getTitle()) {
             return;
         }
 
-        $model = $event->getDisplayModel();
+        $model = $event->displayModel;
 
         $title = $this->htmlDecoder->inputEncodedToPlainText(
             (string) (
@@ -40,6 +39,6 @@ readonly class ReaderPageMetaTitleListener
             return;
         }
 
-        $pageMeta->setTitle($title);
+        $event->pageMeta->setTitle($title);
     }
 }

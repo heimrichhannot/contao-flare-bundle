@@ -24,11 +24,11 @@ use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
 use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\ViewException;
+use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;
+use HeimrichHannot\FlareBundle\Reader\Factory\ReaderRequestAttributeFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
-use HeimrichHannot\FlareBundle\Reader\ReaderRequestAttribute;
-use HeimrichHannot\FlareBundle\Specification\Factory\ListSpecificationFactory;
+use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -48,8 +48,9 @@ final class ReaderController extends AbstractContentElementController
         private readonly EngineFactory                  $engineFactory,
         private readonly EntityCacheTags                $entityCacheTags,
         private readonly KernelInterface                $kernel,
-        private readonly ListSpecificationFactory       $listSpecificationFactory,
+        private readonly ListSpecBuilderFactory         $listFactory,
         private readonly LoggerInterface                $logger,
+        private readonly ReaderRequestAttributeFactory  $attributeFactory,
         private readonly ReaderRequestAttributeResolver $attributeResolver,
         private readonly ResponseContextAccessor        $responseContextAccessor,
         private readonly ScopeMatcher                   $scopeMatcher,
@@ -94,7 +95,7 @@ final class ReaderController extends AbstractContentElementController
             $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST);
 
             if (!$listModel instanceof ListModel) {
-                throw new FlareException('No list model found.');
+                throw new FlareException('No list model found.', method: __METHOD__);
             }
         }
         catch (\Exception $e)
@@ -112,19 +113,19 @@ final class ReaderController extends AbstractContentElementController
 
         try
         {
-            $listSpec = $this->listSpecificationFactory->create(dataSource: $listModel);
+            $list = $this->listFactory->createFromListModel($listModel)->build();
 
             $validationContext = $this->validationContextFactory->createFromContent(
                 contentModel: $contentModel,
-                listModel: $listModel
+                list: $list,
             );
 
-            $engine = $this->engineFactory->createEngine($validationContext, $listSpec);
+            $engine = $this->engineFactory->createEngine($validationContext, $list);
 
             $validationView = $engine->createView();
 
             if (!$validationView instanceof ValidationView) {
-                throw ViewException::create(ValidationView::class, $validationView, __METHOD__);
+                throw ViewException::create(ValidationView::class, $validationView, method: __METHOD__);
             }
 
             if (!$autoItemModel = $validationView->getModelByAutoItem($autoItem)) {
@@ -133,16 +134,17 @@ final class ReaderController extends AbstractContentElementController
 
             $errData[] = "{$autoItemModel::getTable()}.id={$autoItemModel->id}";
 
-            $this->attributeResolver->store(new ReaderRequestAttribute($autoItemModel, $listSpec), $request);
+            $attribute = $this->attributeFactory->createFromModels($autoItemModel, $listModel);
+            $this->attributeResolver->store($attribute, $request);
             $this->entityCacheTags->tagWith($autoItemModel);
 
             /** @var ReaderPageMetaEvent $pageMetaEvent $pageMetaEvent */
             $pageMetaEvent = $this->eventDispatcher->dispatch(new ReaderPageMetaEvent(
                 contentModel: $contentModel,
                 displayModel: $autoItemModel,
-                listSpecification: $listSpec,
+                list: $list,
             ));
-            $pageMeta = $pageMetaEvent->getPageMeta();
+            $pageMeta = $pageMetaEvent->pageMeta;
         }
         catch (FlareException $e)
         {
@@ -157,7 +159,7 @@ final class ReaderController extends AbstractContentElementController
                 contentModel: $contentModel,
                 context: $validationContext,
                 displayModel: $autoItemModel,
-                listSpecification: $listSpec,
+                list: $list,
                 pageMeta: $pageMeta,
                 template: $template,
             )
@@ -172,7 +174,7 @@ final class ReaderController extends AbstractContentElementController
         $data['headline'] = Str::normalizeHeadline($contentModel->headline ?: null);
         $template->setData($data);
 
-        $this->applyPageMeta($event->getPageMeta());
+        $this->applyPageMeta($event->pageMeta);
 
         try
         {
@@ -222,6 +224,14 @@ final class ReaderController extends AbstractContentElementController
             $listModel = $model->getRelated(ContentContainer::FIELD_LIST);
         } catch (\Exception $e) {
             return new Response($e->getMessage());
+        }
+
+        if (!$listModel instanceof ListModel) {
+            return new Response(\sprintf(
+                '<div><strong class="tl_red">%s</strong></div><div>%s</div>',
+                $this->translator->trans('reader.invalid_list', [], 'flare'),
+                Str::formatHeadline($model->headline, withTags: true),
+            ));
         }
 
         return new Response(\sprintf(

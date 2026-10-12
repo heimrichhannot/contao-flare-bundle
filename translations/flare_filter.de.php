@@ -1,20 +1,20 @@
 <?php
 
-use HeimrichHannot\FlareBundle\FilterElement;
+use HeimrichHannot\FlareBundle\Filter\Element;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement as CodefogTagsElement;
 
 return [
-    FilterElement\ArchiveElement::TYPE => 'Archiv',
-    FilterElement\BelongsToRelationElement::TYPE => 'Relation: Gehört zu',
-    FilterElement\BooleanElement::TYPE => 'Boolescher Eigenschaftswert',
-    FilterElement\CalendarCurrentElement::TYPE => 'Kalender-Zeitfenster',
-    FilterElement\DateRangeElement::TYPE => 'Datumsbereich',
-    FilterElement\DcaSelectFieldElement::TYPE => 'DCA-Feld Optionsauswahl',
-    FilterElement\FieldValueChoiceElement::TYPE => 'DCA-Feld Feldwerte-Auswahl (beta)',
-    FilterElement\PublishedElement::TYPE => 'Veröffentlicht',
-    FilterElement\SimpleEquationElement::TYPE => 'Einfache Gleichung',
-    FilterElement\SearchKeywordsElement::TYPE => 'Stichwortsuche',
+    Element\ArchiveFilterElement::TYPE => 'Archiv',
+    Element\BelongsToRelationFilterElement::TYPE => 'Relation: Gehört zu',
+    Element\BooleanFilterElement::TYPE => 'Boolescher Eigenschaftswert',
+    Element\CalendarCurrentFilterElement::TYPE => 'Kalender-Zeitfenster',
+    Element\DateRangeFilterElement::TYPE => 'Datumsbereich',
+    Element\DcaSelectFieldFilterElement::TYPE => 'DCA-Feld Optionsauswahl',
+    Element\FieldValueChoiceFilterElement::TYPE => 'DCA-Feld Feldwerte-Auswahl (beta)',
+    Element\PublishedFilterElement::TYPE => 'Veröffentlicht',
+    Element\SimpleEquationFilterElement::TYPE => 'Einfache Gleichung',
+    Element\SearchKeywordsFilterElement::TYPE => 'Stichwortsuche',
 
-    CodefogTagsElement\CodefogTagsChoiceElement::TYPE => 'Tag-Auswahl [codefog/tags-bundle]',
+    CodefogTagsElement\CodefogTagsChoiceFilterElement::TYPE => 'Tag-Auswahl [codefog/tags-bundle]',
     CodefogTagsElement\CodefogTagsSearchElement::TYPE => 'Tag-Suche [codefog/tags-bundle]',
 ];

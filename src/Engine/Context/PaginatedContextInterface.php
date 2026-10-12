@@ -1,0 +1,16 @@
+<?php
+
+declare(strict_types=1);
+
+namespace HeimrichHannot\FlareBundle\Engine\Context;
+
+use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
+
+interface PaginatedContextInterface
+{
+    public function getPaginatorConfig(): PaginatorConfig;
+
+    public function getPaginatorQueryParameter(): ?string;
+
+    public function setPaginatorQueryParameter(?string $queryParameter): void;
+}

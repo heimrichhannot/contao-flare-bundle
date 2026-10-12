@@ -15,11 +15,12 @@ use HeimrichHannot\FlareBundle\Event\DetailsPageUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Event\FetchAutoItemEvent;
 use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
 use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
-use HeimrichHannot\FlareBundle\FilterElement\SimpleEquationElement;
-use HeimrichHannot\FlareBundle\ListType\DcMultilingualListType;
+use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Integration\Terminal42Languages\ListType\DcMultilingualListType;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
-use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;
 use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
+use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;
 use HeimrichHannot\FlareBundle\Util\DcMultilingualHelper;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
@@ -37,6 +38,7 @@ class ChangelanguageListener
 
     public function __construct(
         private readonly Connection                     $connection,
+        private readonly FilterFactory                  $filterFactory,
         private readonly ReaderRequestAttributeResolver $attributeResolver,
         private readonly RequestStack                   $requestStack,
     ) {}
@@ -53,9 +55,9 @@ class ChangelanguageListener
     #[AsEventListener]
     public function fetchAutoItem(FetchAutoItemEvent $event): void
     {
-        $list = $event->getListSpecification();
+        $list = $event->getList();
 
-        if ($list->type !== DcMultilingualListType::TYPE) {
+        if (!$list->driver instanceof DcMultilingualListType) {
             return;
         }
 
@@ -127,27 +129,35 @@ class ChangelanguageListener
         $dcMultilingualDisplay = $event->getContentContext()->getContentModel()->flare_dcMultilingualDisplay
             ?: $filters->getListModel()->dcMultilingual_display;
 
-        $filterDefinition = null;
+        $configuredFilter = null;
 
         if ($lang !== $langFallback && $dcMultilingualDisplay === DcMultilingualHelper::DISPLAY_LOCALIZED)
             // localized list view
         {
-            $filterDefinition = SimpleEquationElement::define(
-                equationLeft: DcMultilingualHelper::getPidColumn($table),
-                equationOperator: SqlEquationOperator::GREATER_THAN,
-                equationRight: '0'
+            $configuredFilter = $this->filterFactory->create(
+                element: SimpleEquationFilterElement::TYPE,
+                config: [
+                    'intrinsic' => true,
+                    'left' => DcMultilingualHelper::getPidColumn($table),
+                    'operator' => SqlEquationOperator::GREATER_THAN,
+                    'right' => '0',
+                ],
             );
-            $filterDefinition->forceTargetAlias('translation');
+            $configuredFilter = $configuredFilter->withTargetAlias('translation');
         }
 
-        $filterDefinition ??= SimpleEquationElement::define(
-            equationLeft: DcMultilingualHelper::getPidColumn($table),
-            equationOperator: SqlEquationOperator::EQUALS,
-            equationRight: '0'
+        $configuredFilter ??= $this->filterFactory->create(
+            element: SimpleEquationFilterElement::TYPE,
+            config: [
+                'intrinsic' => true,
+                'left' => DcMultilingualHelper::getPidColumn($table),
+                'operator' => SqlEquationOperator::EQUALS,
+                'right' => '0',
+            ],
         );
 
         // $filters->add($this->filterContextManager->definitionToContext(
-        //     definition: $filterDefinition,
+        //     filter: $configuredFilter,
         //     listModel: $filters->getListModel(),
         //     contentContext: $contentContext,
         // ));
@@ -200,21 +210,19 @@ class ChangelanguageListener
     #[AsEventListener(priority: 220)]
     public function onListViewDetailsPageUrlGenerated(DetailsPageUrlGeneratedEvent $event): void
     {
-        $eventPage = $event->getPage();
-
-        if (!$langPage = $this->findPageForLanguage($eventPage)) {
+        if (!$langPage = $this->findPageForLanguage($event->page)) {
             return;
         }
 
         /** @noinspection PhpCastIsUnnecessaryInspection */
-        if ((int) $langPage->id === (int) $eventPage->id) {
+        if ((int) $langPage->id === (int) $event->page->id) {
             return;
         }
 
-        $url = $langPage->getAbsoluteUrl('/' . Str::urlEncodePath($event->getAutoItem()));
+        $url = $langPage->getAbsoluteUrl('/' . Str::urlEncodePath($event->autoItem));
 
-        $event->setPage($langPage);
-        $event->setUrl($url);
+        $event->page = $langPage;
+        $event->url = $url;
     }
 
     private function findPageForLanguage(PageModel $page): ?PageModel
@@ -260,8 +268,8 @@ class ChangelanguageListener
             return;
         }
 
-        $table = $reader->getModel()::getTable();
-        $listModel = $reader->getListModel();
+        $table = $reader->displayModel::getTable();
+        $listModel = $reader->listModel;
 
         if ($listModel->dc !== $table) {
             return;

@@ -13,7 +13,7 @@ use Contao\NewsArchiveModel;
 use Contao\NewsModel;
 use Contao\UserModel;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\Event\PaletteEvent;
+use HeimrichHannot\FlareBundle\Event\ElementDcaEvent;
 use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\Model\ContentModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -32,8 +32,7 @@ readonly class ContaoCommentsListener
     #[AsEventListener]
     public function onReaderBuilt(ReaderRenderEvent $event): void
     {
-        $list = $event->getListSpecification();
-        if (!$list->comments_enabled) {
+        if (!($event->list->config['comments_enabled'] ?? false)) {
             return;
         }
 
@@ -44,7 +43,7 @@ readonly class ContaoCommentsListener
         }
 
         /** @var NewsModel $newsModel */
-        $newsModel = $event->getDisplayModel();
+        $newsModel = $event->displayModel;
         if (!$newsModel instanceof NewsModel) {
             return;
         }
@@ -60,7 +59,7 @@ readonly class ContaoCommentsListener
 
         $notifies = [];
 
-        if ($list->comments_sendNativeEmails)
+        if ($event->list->config['comments_sendNativeEmails'] ?? false)
         {
             if ($archiveModel->notify !== 'notify_author'
                 && isset($GLOBALS['TL_ADMIN_EMAIL']))
@@ -78,7 +77,7 @@ readonly class ContaoCommentsListener
         $config = new \stdClass();
         $config->perPage = $archiveModel->perPage;
         $config->order = $archiveModel->sortOrder;
-        $config->template = $event->getContentModel()->com_template ?: null;
+        $config->template = $event->contentModel->com_template ?: null;
         $config->requireLogin = $archiveModel->requireLogin;
         $config->disableCaptcha = $archiveModel->disableCaptcha;
         $config->bbcode = $archiveModel->bbcode;
@@ -103,18 +102,18 @@ readonly class ContaoCommentsListener
     /**
      * Attach the comments_enabled field to the flare_news palette.
      */
-    #[AsEventListener('flare.list.flare_news.palette')]
-    public function onListPalette(PaletteEvent $event): void
+    #[AsEventListener('flare.list.flare_news.dca')]
+    public function onListDca(ElementDcaEvent $event): void
     {
         $pm = PaletteManipulator::create()
             ->addLegend('comments_legend')
             ->addField('comments_enabled', 'comments_legend', PaletteManipulator::POSITION_APPEND);
 
-        if ($event->getPaletteConfig()->getListModel()->comments_enabled) {
+        if ($event->context->listModel->comments_enabled) {
             $pm->addField('comments_sendNativeEmails', 'comments_legend', PaletteManipulator::POSITION_APPEND);
         }
 
-        $event->setPalette($pm->applyToString($event->getPalette()));
+        $event->dca->palette($pm->applyToString((string) $event->dca->getPalette()));
     }
 
     /**

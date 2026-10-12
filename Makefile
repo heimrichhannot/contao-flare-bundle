@@ -1,4 +1,4 @@
-.PHONY: help docs-setup docs-remove php composer semgrep-sec
+.PHONY: help docs-setup docs-remove php composer semgrep-sec test
 
 # Configuration
 DOCS_DIR = docs
@@ -22,6 +22,9 @@ phpstan-pro: ## Run PHPStan static analysis in Pro GUI
 
 semgrep-sec: ## Run Semgrep security scanner
 	docker compose run --rm semgrep-sec
+
+test: ## Run PHPUnit test suite
+	docker compose run --rm php vendor/bin/phpunit $(filter-out $@,$(MAKECMDGOALS))
 
 docs-setup: ## Setup the Docusaurus worktree environment locally
 	@if [ -d "$(DOCS_DIR)" ]; then \

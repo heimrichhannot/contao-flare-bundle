@@ -148,6 +148,19 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
+    'formVariant' => [
+        'exclude' => true,
+        'inputType' => 'select',
+        'eval' => [
+            'mandatory' => false,
+            'includeBlankOption' => true,
+            'submitOnChange' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => ['type' => 'string', 'length' => 128, 'default' => '', 'notnull' => true],
+    ],
     'targetAlias' => [
         'inputType' => 'select',
         'exclude' => true,

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\EventListener\NamedDispatch;
 
-use HeimrichHannot\FlareBundle\Event\FilterElementInvokedEvent;
-use HeimrichHannot\FlareBundle\Event\FilterElementInvokingEvent;
+use HeimrichHannot\FlareBundle\Event\FilterElementBuildingEvent;
+use HeimrichHannot\FlareBundle\Event\FilterElementBuiltEvent;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -16,20 +16,22 @@ readonly class FilterElementListener
     ) {}
 
     #[AsEventListener(priority: -200)]
-    public function onFilterElementInvokedEvent(FilterElementInvokedEvent $event): void
+    public function onFilterElementBuiltEvent(FilterElementBuiltEvent $event): void
     {
-        $type = $event->getInvocation()->getFilterDefinition()->getType();
-        $eventName = "flare.filter_element.{$type}.invoked";
+        if (!$type = $event->context->filter->type) {
+            return;
+        }
 
-        $this->eventDispatcher->dispatch(event: $event, eventName: $eventName);
+        $this->eventDispatcher->dispatch(event: $event, eventName: "flare.filter_element.{$type}.built");
     }
 
     #[AsEventListener(priority: -200)]
-    public function onFilterElementInvokingEvent(FilterElementInvokingEvent $event): void
+    public function onFilterElementBuildingEvent(FilterElementBuildingEvent $event): void
     {
-        $type = $event->getInvocation()->getFilterDefinition()->getType();
-        $eventName = "flare.filter_element.{$type}.invoking";
+        if (!$type = $event->context->filter->type) {
+            return;
+        }
 
-        $this->eventDispatcher->dispatch(event: $event, eventName: $eventName);
+        $this->eventDispatcher->dispatch(event: $event, eventName: "flare.filter_element.{$type}.building");
     }
 }

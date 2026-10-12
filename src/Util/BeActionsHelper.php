@@ -13,7 +13,7 @@ class BeActionsHelper
         self::OP_EDIT,
     ];
 
-    public static function operation(string $operation, ?string $itemTable = null): array
+    public static function operation(string $operation, ?string $itemTable = null, bool $primary = true): array
     {
         $contao4 = Env::isContao4();
 
@@ -30,10 +30,12 @@ class BeActionsHelper
             self::OP_CHILDREN => [
                 'href' => "table={$itemTable}",
                 'icon' => $contao4 ? 'edit.svg' : 'children.svg',
+                'primary' => $primary,
             ],
             self::OP_EDIT => [
                 'href' => 'act=edit',
                 'icon' => $contao4 ? 'header.svg' : 'edit.svg',
+                'primary' => $primary,
             ],
         };
 

@@ -65,6 +65,7 @@ $dca['list'] = [
         'toggle' => [
             'href' => 'act=toggle&amp;field=published',
             'icon' => 'visible.svg',
+            'primary' => true,
         ],
         'show' => [
             'href' => 'act=show',

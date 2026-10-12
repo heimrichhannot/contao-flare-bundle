@@ -41,14 +41,17 @@ readonly class ListCallbacks
         }
         $typeLabel ??= 'N/A';
 
+        $cutLabel = $this->translator->trans('DCA.cut.0', [$row['id']], 'contao_default');
+
         $formFieldName = FilterModel::generateFormName($row);
 
-        return $this->twig->render('@HeimrichHannotFlare/backend/be_filter_info.html.twig', [
+        return $this->twig->render('@HeimrichHannotFlare/backend/filter_child_record.html.twig', [
             'row' => $row,
             'is_intrinsic' => $isIntrinsic,
             'is_published' => $isPublished,
             'title' => $title,
             'type_label' => $typeLabel,
+            'cut_label' => $cutLabel,
             'form_alias' => $formFieldName,
         ]);
     }

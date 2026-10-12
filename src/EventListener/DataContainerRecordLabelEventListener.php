@@ -13,14 +13,18 @@ class DataContainerRecordLabelEventListener
 {
     public function __invoke(DataContainerRecordLabelEvent $event): void
     {
-        if (!str_starts_with($event->getIdentifier(), 'contao.db.tl_flare_list.')) {
+        if (!\str_starts_with($event->getIdentifier(), 'contao.db.tl_flare_list.')) {
             return;
         }
 
-        if ('' === (string)($event->getData()['title'] ?? '')) {
+        $data = $event->getData();
+        $id = (int) ($data['id'] ?? 0);
+        $title = \trim((string) ($data['title'] ?? ''));
+
+        if (!$id || $title === '') {
             return;
         }
 
-        $event->setLabel($event->getData()['title']. ' (ID '.$event->getData()['id'].')');
+        $event->setLabel(\sprintf('%s (ID %s)', $title, $id));
     }
 }

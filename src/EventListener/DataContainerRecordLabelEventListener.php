@@ -17,7 +17,7 @@ class DataContainerRecordLabelEventListener
             return;
         }
 
-        if (''=== ((string)$event->getData()['title'] ?? '')) {
+        if ('' === (string)($event->getData()['title'] ?? '')) {
             return;
         }
 

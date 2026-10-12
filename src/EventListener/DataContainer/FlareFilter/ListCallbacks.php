@@ -9,6 +9,7 @@ use Contao\DataContainer;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Util\Env;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment as TwigEnvironment;
 
@@ -43,10 +44,14 @@ readonly class ListCallbacks
 
         $formFieldName = FilterModel::generateFormName($row);
 
+        $labelCut = $this->translator->trans('DCA.cut.0', [$row['id']], domain: 'contao_default');
+
         return $this->twig->render('@HeimrichHannotFlare/backend/be_filter_info.html.twig', [
             'row' => $row,
             'is_intrinsic' => $isIntrinsic,
             'is_published' => $isPublished,
+            'new_draggable' => Env::isContao57orHigher(),
+            'label_cut' => $labelCut,
             'title' => $title,
             'type_label' => $typeLabel,
             'form_alias' => $formFieldName,

@@ -9,7 +9,6 @@ use Contao\DataContainer;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
-use HeimrichHannot\FlareBundle\Util\Env;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment as TwigEnvironment;
 

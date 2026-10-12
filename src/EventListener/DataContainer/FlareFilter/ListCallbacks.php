@@ -45,7 +45,7 @@ readonly class ListCallbacks
 
         $formFieldName = FilterModel::generateFormName($row);
 
-        return $this->twig->render('@HeimrichHannotFlare/backend/be_filter_info.html.twig', [
+        return $this->twig->render('@HeimrichHannotFlare/backend/filter_child_record.html.twig', [
             'row' => $row,
             'is_intrinsic' => $isIntrinsic,
             'is_published' => $isPublished,

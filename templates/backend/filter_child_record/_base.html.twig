@@ -1,13 +1,5 @@
 {% trans_default_domain 'flare' %}
 
-{% if flare_env.isContao57orHigher %}
-    <div class="tl_content_left" style="display: flex; align-items: start">
-        <button type="button" class="drag-handle" data-action="keydown->contao--sortable#move" data-contao--sortable-target="primaryHandle">
-            {{ backend_icon('drag.svg', cut_label|default('cut')) }}
-        </button>
-        <div>
-{% endif %}
-
 <div class="cte_type {{ is_published ? 'published' : 'unpublished' }}" style="margin-bottom: .5rem">[{{ type_label }}]</div>
 <div style="display: flex; align-items: center; gap: .5rem; --flare-filter-info-opacity: {{ is_intrinsic|default(false) ? '0.5' : '1' }};">
     <div style="opacity: var(--flare-filter-info-opacity)">
@@ -44,8 +36,3 @@
         {% endif %}
     </div>
 </div>
-
-{% if flare_env.isContao57orHigher %}
-        </div>
-    </div>
-{% endif %}

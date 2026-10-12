@@ -1,0 +1,7 @@
+{% set base_template = '@HeimrichHannotFlare/backend/filter_child_record/_base.html.twig' %}
+{% set contao57up_template = '@HeimrichHannotFlare/backend/filter_child_record/_contao_57_draghandle.html.twig' %}
+{% set include_template = flare_env.isContao57orHigher ? contao57up_template : base_template %}
+
+{% block content %}
+    {% include include_template %}
+{% endblock %}

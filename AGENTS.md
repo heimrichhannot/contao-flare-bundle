@@ -36,7 +36,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 - `src/Form/` — filter form building (FilterFormFactory etc.)
 - `src/Reader/` — reader/detail-page URL generation (`ReaderUrlGenerator`)
 - `src/InferPtable/` — parent-table inference for DCAs
-- `src/Integration/` — optional integrations (Codefog Tags, Terminal42 ChangeLanguage), wired via `config/integrations/*.yaml`
+- `src/Integration/` — optional integrations (Codefog Tags, Terminal42 ChangeLanguage, utils-bundle search vector), wired via `config/integrations/*.yaml`
 - `src/EventListener/NamedDispatch/` — re-dispatches base events under dynamic names (see Event system below)
 
 **Key entry points:**

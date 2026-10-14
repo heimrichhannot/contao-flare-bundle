@@ -7,6 +7,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Resolver;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 
 /**
@@ -24,17 +25,15 @@ final readonly class FilterOptionsResolver
      *
      * @throws FilterException If the config does not satisfy the element's schema.
      */
-    public function resolve(Filter $filter): array
+    public function resolve(FilterElementInterface $element, array $config): array
     {
-        $element = $filter->element;
-
         if (!$element instanceof OptionsContract) {
-            return $filter->config;
+            return $config;
         }
 
         try
         {
-            return $this->schemaResolver->resolve($element::class, $element->configureOptions(...), $filter->config);
+            return $this->schemaResolver->resolve($element::class, $element->configureOptions(...), $config);
         }
         catch (\Throwable $e)
         {
@@ -42,7 +41,6 @@ final readonly class FilterOptionsResolver
                 \sprintf('[FLARE] Invalid filter config for element "%s": %s', $element::class, $e->getMessage()),
                 previous: $e,
                 method: $element::class . '::configureOptions',
-                source: $filter->source,
             );
         }
     }

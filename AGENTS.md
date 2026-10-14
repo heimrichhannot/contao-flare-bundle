@@ -33,7 +33,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 **Lifecycle taxonomy** — elements and list types own their lifecycle through two method families:
 `configure*` methods are declarative, memoizable setup (`configureOptions` = OptionsResolver schema,
 `configureTransformers` = source→canonical-config mappings); `build*` methods are per-invocation construction
-(`buildDca`, `buildForm`, `buildFilter`, `buildList`, `buildTableRegistry`/`buildBaseQuery`).
+(`buildDca`, `buildForm`, `buildContext`, `buildList`, `buildTableRegistry`/`buildBaseQuery`).
 
 **Notable subsystems** (beyond the flow above):
 - `src/List/` — `ListSpec` (immutable list DTO: type, dc, filters, canonical config, source), `ListBuilder`
@@ -41,7 +41,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `BaseListOptions` (framework-owned base schema for tl_flare_list columns)
 - `src/Filter/` — `Filter` DTO, elements (`Element/`), types (`Type/`), collector, resolvers
   (`FilterOptionsResolver`, `FilterTransformerResolver`, `FilterElementResolver`), `FilterContextFactory`,
-  and the form aggregate: `FilterSetFactory` builds a `FilterSet` (root form + mount↔filter map of
+  and the form aggregate: `FormHarnessFactory` builds a `FormHarness` (root form + mount↔filter map of
   `FilterMount`s) per list × form context
 - `src/Config/` — `ConfigBuilder` (fluent canonical-config accumulator; no cast helpers — transformers cast
   declaratively off the typed model) and `TransformerResolver` (source class → transformer map)
@@ -76,17 +76,17 @@ Backend palettes/fields are declared in code via `DcaContract::buildDca(DcaBuild
 tl_flare_filter and tl_flare_list).
 
 **Event system** — Events, some with aliased dispatch for targeted listening
-(`flare.filter_set.{name}.build`, `flare.filter_form.{type}.built`, `flare.list.{type}.build`,
+(`flare.form.{name}.build`, `flare.filter_form.{type}.built`, `flare.list.{type}.build`,
 `flare.filter_element.{type}.transformers`, `flare.filter_element.{type}.dca` / `flare.list.{type}.dca`,
 etc., implemented by the listeners in `src/EventListener/NamedDispatch/`). All events are in `src/Event/`.
 Prefer events over overriding services for customization.
 
-**Registry pattern** — Registries in `src/Registry/` map type names to implementations: `FilterElementRegistry`, `FilterFormRegistry`, `ListDriverRegistry`, `FilterTypeRegistry`, `ProjectorRegistry`, `EngineModRegistry`. `FilterFormRegistry` differs from the others: it holds
+**Registry pattern** — Registries in `src/Registry/` map type names to implementations: `FilterElementRegistry`, `FilterFormRegistry`, `ListDriverRegistry`, `FilterPredicateRegistry`, `ProjectorRegistry`, `EngineModRegistry`. `FilterFormRegistry` differs from the others: it holds
 compile-time metadata as plain arrays and resolves the form services through a lazy
 `container.service_locator`, so reading metadata (the `formVariant` options, the form election)
 instantiates nothing.
 
-**Query safety** — `FilterQueryBuilder` (`src/Query/FilterQueryBuilder.php`) enforces parameterized queries. `TableAliasRegistry` (`src/Query/TableAliasRegistry.php`) manages table aliases and JOINs safely.
+**Query safety** — `FilterConditionsBuilder` (`src/Query/FilterConditionsBuilder.php`) enforces parameterized queries. `TableAliasRegistry` (`src/Query/TableAliasRegistry.php`) manages table aliases and JOINs safely.
 
 **Contao DCA** — Backend form definitions in `contao/dca/tl_flare_*.php`. Templates in `contao/templates/`. Translations in `contao/languages/`.
 

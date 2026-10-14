@@ -76,7 +76,6 @@ final class RegisterFilterFormsPass implements CompilerPassInterface
                 $forms[$name] = [
                     'value' => ((string) ($attributes['value'] ?? '')) ?: null,
                     'requires' => $this->getRequires($serviceId, $name, $attributes),
-                    'default' => (bool) ($attributes['default'] ?? false),
                     'service' => $serviceId,
                 ];
 
@@ -87,9 +86,6 @@ final class RegisterFilterFormsPass implements CompilerPassInterface
                     ->setPublic(true);
             }
         }
-
-        $this->assertOneDefaultPerValueClass($forms);
-        $this->assertEveryElementValueIsServed($container, $forms);
 
         $registry = $container->findDefinition(FilterFormRegistry::class);
         $registry->setArgument('$forms', $forms);
@@ -194,105 +190,5 @@ final class RegisterFilterFormsPass implements CompilerPassInterface
         }
 
         return $resolved;
-    }
-
-    /**
-     * §3.3: `default` names *the* fallback form for a value class.
-     *
-     * @param array<string, FilterFormMeta> $forms
-     */
-    private function assertOneDefaultPerValueClass(array $forms): void
-    {
-        $defaults = [];
-
-        foreach ($forms as $name => $meta)
-        {
-            if (!$meta['default'] || $meta['value'] === null) {
-                continue;
-            }
-
-            if (isset($defaults[$meta['value']]))
-            {
-                throw new \InvalidArgumentException(\sprintf(
-                    'Filter forms "%s" and "%s" are both declared as the default for value class "%s".'
-                    . ' Exactly one default per value class is allowed.',
-                    $defaults[$meta['value']],
-                    $name,
-                    $meta['value'],
-                ));
-            }
-
-            $defaults[$meta['value']] = $name;
-        }
-    }
-
-    /**
-     * §10, row 3 (second half): every element value class must be served by at least one form whose
-     * `requires` that element satisfies. Reads `flare.filter_element` tags, hence the pass ordering.
-     *
-     * @param array<string, FilterFormMeta> $forms
-     */
-    private function assertEveryElementValueIsServed(ContainerBuilder $container, array $forms): void
-    {
-        foreach ($container->findTaggedServiceIds(AsFilterElement::TAG) as $serviceId => $tags)
-        {
-            $elementClass = $container->findDefinition($serviceId)->getClass();
-
-            if ($elementClass === null || !\class_exists($elementClass)) {
-                continue;
-            }
-
-            foreach ($tags as $attributes)
-            {
-                $value = ((string) ($attributes['value'] ?? '')) ?: null;
-
-                if ($value === null || $this->hasEligibleForm($elementClass, $value, $forms)) {
-                    continue;
-                }
-
-                throw new \InvalidArgumentException(\sprintf(
-                    'Filter element "%s" declares value class "%s", but no filter form produces that value for an'
-                    . ' element of type "%s". Register a form with #[AsFilterForm(value: %s::class)] whose'
-                    . ' "requires" the element satisfies, or drop the "value" declaration to make the element'
-                    . ' intrinsic-only.',
-                    (string) ($attributes['type'] ?? $serviceId),
-                    $value,
-                    $elementClass,
-                    $value,
-                ));
-            }
-        }
-    }
-
-    /**
-     * @param class-string $elementClass
-     * @param array<string, FilterFormMeta> $forms
-     */
-    private function hasEligibleForm(string $elementClass, string $valueClass, array $forms): bool
-    {
-        foreach ($forms as $meta)
-        {
-            if ($meta['value'] !== $valueClass) {
-                continue;
-            }
-
-            $satisfied = true;
-
-            foreach ($meta['requires'] as $interface)
-            {
-                if (!\is_a($elementClass, $interface, true))
-                {
-                    $satisfied = false;
-
-                    break;
-                }
-            }
-
-            if ($satisfied) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

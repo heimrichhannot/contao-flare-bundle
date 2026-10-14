@@ -6,10 +6,10 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterBuilder;
-use HeimrichHannot\FlareBundle\Filter\Type\AbstractFilterType;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Registry\FilterTypeRegistry;
+use HeimrichHannot\FlareBundle\Filter\FormulaBuilder;
+use HeimrichHannot\FlareBundle\Filter\Predicate\AbstractPredicate;
+use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
+use HeimrichHannot\FlareBundle\Registry\FilterPredicateRegistry;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\OptionsResolver\Exception\MissingOptionsException;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -18,24 +18,24 @@ final class FilterBuilderTest extends TestCase
 {
     public function testRegistryLooksUpFilterTypesByClassName(): void
     {
-        $type = new TestFilterType();
-        $registry = new FilterTypeRegistry([$type]);
+        $type = new TestPredicate();
+        $registry = new FilterPredicateRegistry([$type]);
 
-        self::assertSame($type, $registry->get(TestFilterType::class));
-        self::assertSame([TestFilterType::class => $type], $registry->all());
-        self::assertNull($registry->get(UnknownFilterType::class));
+        self::assertSame($type, $registry->get(TestPredicate::class));
+        self::assertSame([TestPredicate::class => $type], $registry->all());
+        self::assertNull($registry->get(UnknownPredicate::class));
     }
 
     public function testBuilderResolvesOptionsAndRecordsTargetedCalls(): void
     {
-        $builder = new FilterBuilder(
-            new FilterTypeRegistry([new TestFilterType()]),
+        $builder = new FormulaBuilder(
+            new FilterPredicateRegistry([new TestPredicate()]),
             'main',
         );
 
         $builder
-            ->add(TestFilterType::class, ['value' => 'first'])
-            ->add(TestFilterType::class, ['value' => 'second', 'enabled' => true], 'translation');
+            ->add(TestPredicate::class, ['value' => 'first'])
+            ->add(TestPredicate::class, ['value' => 'second', 'enabled' => true], 'translation');
 
         $calls = $builder->all();
 
@@ -50,33 +50,33 @@ final class FilterBuilderTest extends TestCase
 
     public function testBuilderRejectsUnknownFilterTypes(): void
     {
-        $builder = new FilterBuilder(new FilterTypeRegistry([]), 'main');
+        $builder = new FormulaBuilder(new FilterPredicateRegistry([]), 'main');
 
         $this->expectException(FilterException::class);
-        $builder->add(TestFilterType::class, ['value' => 'test']);
+        $builder->add(TestPredicate::class, ['value' => 'test']);
     }
 
     public function testBuilderLetsOptionsResolverValidateRequiredOptions(): void
     {
-        $builder = new FilterBuilder(
-            new FilterTypeRegistry([new TestFilterType()]),
+        $builder = new FormulaBuilder(
+            new FilterPredicateRegistry([new TestPredicate()]),
             'main',
         );
 
         $this->expectException(MissingOptionsException::class);
-        $builder->add(TestFilterType::class);
+        $builder->add(TestPredicate::class);
     }
 
     public function testBuilderAbortThrowsAbortFilteringException(): void
     {
-        $builder = new FilterBuilder(new FilterTypeRegistry([]), 'main');
+        $builder = new FormulaBuilder(new FilterPredicateRegistry([]), 'main');
 
         $this->expectException(AbortFilteringException::class);
         $builder->abort();
     }
 }
 
-final class TestFilterType extends AbstractFilterType
+final class TestPredicate extends AbstractPredicate
 {
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -84,14 +84,14 @@ final class TestFilterType extends AbstractFilterType
         $resolver->define('enabled')->default(false)->allowedTypes('bool');
     }
 
-    public function buildQuery(FilterQueryBuilder $builder, array $options): void
+    public function buildConditions(FilterConditionsBuilder $builder, array $options): void
     {
     }
 }
 
-final class UnknownFilterType extends AbstractFilterType
+final class UnknownPredicate extends AbstractPredicate
 {
-    public function buildQuery(FilterQueryBuilder $builder, array $options): void
+    public function buildConditions(FilterConditionsBuilder $builder, array $options): void
     {
     }
 }

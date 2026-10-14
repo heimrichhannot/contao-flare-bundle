@@ -7,10 +7,11 @@ namespace HeimrichHannot\FlareBundle\Filter\Factory;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
+use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Util\Str;
 
 /**
  * Creates {@see Filter} DTOs, resolving registered type aliases to their element services.
@@ -19,6 +20,7 @@ final readonly class FilterFactory
 {
     public function __construct(
         private FilterElementRegistry     $filterElementRegistry,
+        private FilterOptionsResolver     $filterOptionsResolver,
         private FilterTransformerResolver $filterTransformerResolver,
     ) {}
 
@@ -32,9 +34,8 @@ final readonly class FilterFactory
      */
     public function create(
         FilterElementInterface|string $element,
-        array                         $config = [],
-        ?FilterData                   $data = null,
         ?string                       $alias = null,
+        array                         $config = [],
         ?string                       $targetAlias = null,
         bool                          $targetingForced = false,
         ?string                       $source = null,
@@ -42,12 +43,17 @@ final readonly class FilterFactory
         $type = $this->resolveType($element, $source);
         $element = $this->resolveElement($element, $source);
 
+        if (!$alias) {
+            $alias = \sprintf('_.%s_%s', $type, Str::random(8));
+        }
+
+        $config = $this->filterOptionsResolver->resolve($element, $config);
+
         return new Filter(
             element: $element,
             type: $type,
-            config: $config,
-            data: $data,
             alias: $alias,
+            config: $config,
             targetAlias: $targetAlias,
             targetingForced: $targetingForced,
             source: $source,
@@ -65,12 +71,13 @@ final readonly class FilterFactory
         $element = $this->resolveElement($type, $source);
 
         $config = $this->filterTransformerResolver->transform($element, $type, $filterModel) ?? [];
+        $config = $this->filterOptionsResolver->resolve($element, $config);
 
         return new Filter(
             element: $element,
             type: $type,
+            alias: $filterModel->getFilterFormName(),
             config: $config,
-            alias: $filterModel->getFilterFormName() ?: "_.{$source}",
             targetAlias: $filterModel->getFilterTargetAlias() ?: null,
             source: $source,
         );

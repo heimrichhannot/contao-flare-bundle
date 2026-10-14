@@ -244,7 +244,7 @@ final class RegistryFormStub implements FilterFormInterface
     {
     }
 
-    public function decode(FormInterface $mount, FilterContext $context): ?object
+    public function decode(FormInterface $form, FilterContext $context): ?object
     {
         return null;
     }

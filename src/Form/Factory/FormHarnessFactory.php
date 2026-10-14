@@ -2,17 +2,18 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter\Factory;
+namespace HeimrichHannot\FlareBundle\Form\Factory;
 
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\FormContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterFormBuiltEvent;
-use HeimrichHannot\FlareBundle\Event\FilterSetBuildEvent;
+use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
-use HeimrichHannot\FlareBundle\Filter\FilterMount;
-use HeimrichHannot\FlareBundle\Filter\FilterSet;
+use HeimrichHannot\FlareBundle\Form\FilterMount;
+use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -21,7 +22,7 @@ use Symfony\Component\Form\FormBuilder;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
-final readonly class FilterSetFactory
+final readonly class FormHarnessFactory
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
@@ -35,7 +36,7 @@ final readonly class FilterSetFactory
      *
      * @throws FlareException If the form could not be built
      */
-    public function create(ListSpec $list, FormContextInterface $context): FilterSet
+    public function create(ListSpec $list, FormContextInterface $context): FormHarness
     {
         if (!$context instanceof ContextInterface) {
             throw new FlareException(
@@ -47,8 +48,8 @@ final readonly class FilterSetFactory
         $name = $context->getFormName();
 
         $formOptions = [
-            'method'             => 'GET',
-            'csrf_protection'    => false,
+            'method' => 'GET',
+            'csrf_protection' => false,
             'translation_domain' => 'flare_form',
             'attr' => [
                 'data-flare-form' => 'keep-query',
@@ -66,17 +67,19 @@ final readonly class FilterSetFactory
         /** @var array<string|int, FilterMount> $mounts */
         $mounts = [];
 
-        foreach ($list->filters as $key => $filter)
+        foreach ($list->filters as $filter)
         {
-            if (!Str::isValidFormName($filter->alias)) {
+            $alias = $filter->alias;
+
+            if (!Str::isValidFormName($alias)) {
                 continue;
             }
 
-            $filterContext = $this->filterContextFactory->create($list, $filter, $context, $key);
+            $filterContext = $this->filterContextFactory->create($list, $filter, $context);
 
             // Collect-only builder: never mounted itself; its single-field spec, children,
             // attributes, and deferred listeners are transferred onto the mounted builder below.
-            $builder = new FilterFormBuilder($filter->alias, null, new EventDispatcher(), $this->formFactory);
+            $builder = new FilterFormBuilder($alias, null, new EventDispatcher(), $this->formFactory);
             $builder->setAttribute(FilterContext::ATTR_SELF, $filterContext);
 
             $filter->element->buildForm($builder, $filterContext);
@@ -108,13 +111,13 @@ final readonly class FilterSetFactory
 
             if ($single)
             {
-                $mount = $root->create($filter->alias, $single['type'], $single['options']);
+                $mount = $root->create($alias, $single['type'], $single['options']);
                 $mount->setAttribute(FilterContext::ATTR_SINGLE_FIELD, true);
             }
             /** @mago-expect lint:no-else-clause The mount decision is a genuine either-or. */
             else
             {
-                $mount = $root->create($filter->alias, FormType::class, [
+                $mount = $root->create($alias, FormType::class, [
                     'inherit_data' => false,
                     'label'        => false,
                     'required'     => false,
@@ -133,7 +136,7 @@ final readonly class FilterSetFactory
                 $mount->addEventListener($eventName, $listener, $priority);
             }
 
-            $mounts[$key] = new FilterMount($filter, $filter->alias, $filterContext);
+            $mounts[$alias] = new FilterMount($filter, $alias, $filterContext);
 
             $root->add($mount);
         }
@@ -148,8 +151,8 @@ final readonly class FilterSetFactory
          * ```
          */
 
-        /** @var FilterSetBuildEvent $formBuildEvent */
-        $formBuildEvent = $this->eventDispatcher->dispatch(new FilterSetBuildEvent(
+        /** @var FormHarnessBuildEvent $formBuildEvent */
+        $formBuildEvent = $this->eventDispatcher->dispatch(new FormHarnessBuildEvent(
             list: $list,
             formName: $name,
             formBuilder: $root,
@@ -158,6 +161,6 @@ final readonly class FilterSetFactory
         /** @var FormBuilder $root */
         $root = $formBuildEvent->formBuilder;
 
-        return new FilterSet($root->getForm(), $mounts);
+        return new FormHarness($root->getForm(), $mounts);
     }
 }

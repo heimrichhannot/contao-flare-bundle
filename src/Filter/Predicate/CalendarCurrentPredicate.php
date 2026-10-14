@@ -2,21 +2,32 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter\Type;
+namespace HeimrichHannot\FlareBundle\Filter\Predicate;
 
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
+use DateTimeInterface;
+use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class CalendarCurrentFilterType extends AbstractFilterType
+class CalendarCurrentPredicate extends AbstractPredicate
 {
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('start')->required()->allowedTypes('int');
-        $resolver->define('stop')->required()->allowedTypes('int');
-        $resolver->define('has_extended_events')->default(false)->allowedTypes('bool');
+        $resolver->define('start')
+            ->required()
+            ->allowedTypes('int', DateTimeInterface::class)
+            ->normalize($this->normalizeTimestamp(...));
+
+        $resolver->define('stop')
+            ->required()
+            ->allowedTypes('int', DateTimeInterface::class)
+            ->normalize($this->normalizeTimestamp(...));
+
+        $resolver->define('has_extended_events')
+            ->default(false)
+            ->allowedTypes('bool');
     }
 
-    public function buildQuery(FilterQueryBuilder $builder, array $options): void
+    public function buildConditions(FilterConditionsBuilder $builder, array $options): void
     {
         $colStartTime = $builder->column('startTime');
         $colRepeatEnd = $builder->column('repeatEnd');
@@ -46,5 +57,14 @@ class CalendarCurrentFilterType extends AbstractFilterType
         $builder->whereOr(...$or);
         $builder->setParameter('start', $options['start']);
         $builder->setParameter('end', $options['stop']);
+    }
+
+    private function normalizeTimestamp($value): int
+    {
+        if ($value instanceof DateTimeInterface) {
+            return $value->getTimestamp();
+        }
+
+        return (int) $value;
     }
 }

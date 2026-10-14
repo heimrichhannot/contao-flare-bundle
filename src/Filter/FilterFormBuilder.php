@@ -9,7 +9,7 @@ use Symfony\Component\Form\FormBuilder;
 /**
  * Collect-only builder for a single filter's form fields.
  *
- * Constructed manually by {@see Factory\FilterSetFactory} outside Symfony's form-type system,
+ * Constructed manually by {@see Factory\FormHarnessFactory} outside Symfony's form-type system,
  * so it carries no resolved type, options, or data mapper and must never be mounted into a form
  * tree — the factory transfers its children, attributes, single-field spec, and deferred event
  * listeners onto a real builder. Children created through add()/create() are real, factory-built

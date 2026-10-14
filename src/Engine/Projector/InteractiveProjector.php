@@ -14,9 +14,10 @@ use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\AggregationView;
 use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFormFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterSetFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterData;
+use HeimrichHannot\FlareBundle\Filter\FilterSet;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
@@ -30,7 +31,7 @@ class InteractiveProjector extends AbstractProjector
 {
     public function __construct(
         private readonly AggregationContextFactory $aggregationConfigFactory,
-        private readonly FilterFormFactory         $filterFormFactory,
+        private readonly FilterSetFactory         $filterSetFactory,
         private readonly PaginatorFactory          $paginatorFactory,
     ) {}
 
@@ -44,7 +45,8 @@ class InteractiveProjector extends AbstractProjector
         \assert($context instanceof InteractiveContext, '$config must be an instance of InteractiveConfig');
 
         // collect filter values from form data
-        $form = $this->createForm($list, $context);
+        $filterSet = $this->createFilterSet($list, $context);
+        $form = $filterSet->getForm();
         $filterValues = $this->collectFilterData($list, $form);
 
         // pagination setup
@@ -110,10 +112,21 @@ class InteractiveProjector extends AbstractProjector
      */
     public function createForm(ListSpec $list, InteractiveContext $context): FormInterface
     {
-        $form = $this->filterFormFactory->create($list, $context);
-        $form->handleRequest($this->getCurrentRequest());
+        return $this->createFilterSet($list, $context)->getForm();
+    }
 
-        return $form;
+    /**
+     * Builds the list's filter set and hands the current request to its root form.
+     *
+     * @throws FlareException
+     */
+    protected function createFilterSet(ListSpec $list, InteractiveContext $context): FilterSet
+    {
+        $filterSet = $this->filterSetFactory->create($list, $context);
+
+        $filterSet->getForm()->handleRequest($this->getCurrentRequest());
+
+        return $filterSet;
     }
 
     /**

@@ -36,7 +36,11 @@ final class RegisterFilterElementsPass implements CompilerPassInterface
                 $type = $this->getFilterElementType($definition, $attributes);
 
                 /** @see AsFilterElement::__construct */
-                $attribute = new Definition(AsFilterElement::class, [$type, $attributes['isTargeted'] ?? null]);
+                $attribute = new Definition(AsFilterElement::class, [
+                    $type,
+                    $attributes['isTargeted'] ?? null,
+                    $attributes['value'] ?? null,
+                ]);
 
                 /** @see FilterElementRegistry::add() */
                 $registry->addMethodCall('add', [$reference, $attribute, $type]);

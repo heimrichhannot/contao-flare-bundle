@@ -4,19 +4,15 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Registry\Descriptor;
 
-use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
-use HeimrichHannot\FlareBundle\Contract\PaletteContract;
 use HeimrichHannot\FlareBundle\DependencyInjection\Registry\ServiceDescriptorInterface;
 use HeimrichHannot\FlareBundle\ListType\AbstractListType;
 
-class ListTypeDescriptor implements ServiceDescriptorInterface, PaletteContract
+class ListTypeDescriptor implements ServiceDescriptorInterface
 {
     public function __construct(
         private object  $service,
         private array   $attributes = [],
         private ?string $dataContainer = null,
-        private ?string $palette = null,
-        private ?string $method = null
     ) {}
 
     /**
@@ -51,25 +47,5 @@ class ListTypeDescriptor implements ServiceDescriptorInterface, PaletteContract
     public function setDataContainer(?string $dataContainer): void
     {
         $this->dataContainer = $dataContainer;
-    }
-
-    public function getPalette(PaletteConfig $config): ?string
-    {
-        return $this->palette;
-    }
-
-    public function setPalette(?string $palette): void
-    {
-        $this->palette = $palette;
-    }
-
-    public function getMethod(): ?string
-    {
-        return $this->method;
-    }
-
-    public function setMethod(?string $method): void
-    {
-        $this->method = $method;
     }
 }

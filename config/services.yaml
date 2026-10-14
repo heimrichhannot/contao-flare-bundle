@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
 services:
     _defaults:
         autowire:      true
@@ -9,8 +10,10 @@ services:
     HeimrichHannot\FlareBundle\:
         resource: ../src
         exclude:
-            - ../src/{Collection,Contao,ContaoManager,Contract,DependencyInjection,Dto,Engine,Event,Integration,Model,Trait,Util}
+            - ../src/{Contao,ContaoManager,Contract,DependencyInjection,Dto,Engine,Event,Integration,Model,Trait,Util}
             - ../src/{Filter,Form,InferPtable,List,Paginator,Query,Sort,Specification}/*.php
+            - ../src/DataContainer/Builder
+            - ../src/FilterElement/CallbackFilterElement.php
             - ../src/Registry/Descriptor
 
     HeimrichHannot\FlareBundle\Engine\:

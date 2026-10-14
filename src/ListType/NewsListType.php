@@ -4,19 +4,27 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\ListType;
 
+use HeimrichHannot\FlareBundle\Contract\DcaContract;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
 use HeimrichHannot\FlareBundle\Event\ListSpecificationCreatedEvent;
-use HeimrichHannot\FlareBundle\FilterElement\PublishedElement;
+use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Query\SqlJoinStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
-#[AsListType(type: self::TYPE, dataContainer: 'tl_news', palette: '{filter_legend},')]
-class NewsListType extends AbstractListType
+#[AsListType(type: self::TYPE, dataContainer: 'tl_news')]
+class NewsListType extends AbstractListType implements DcaContract
 {
     public const TYPE = 'flare_news';
     public const ALIAS_ARCHIVE = 'news_archive';
+
+    public function buildDca(DcaBuilder $dca, DcaContext $context): void
+    {
+        $dca->palette('{filter_legend},');
+    }
 
     public function configureTableRegistry(TableAliasRegistry $registry): void
     {
@@ -36,10 +44,10 @@ class NewsListType extends AbstractListType
             return;
         }
 
-        $filters = $config->listSpecification->getFilters();
+        $spec = $config->listSpecification;
 
-        if (!$filters->hasType(PublishedElement::TYPE)) {
-            $filters->add(PublishedElement::define());
+        if (!$spec->hasFilterOfType(PublishedFilterElement::TYPE)) {
+            $spec->addFilter(PublishedFilterElement::define());
         }
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\EventListener\QueryStructModifier;
 
-use HeimrichHannot\FlareBundle\Engine\Context\Interface\SortableContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Context\SortableContextInterface;
 use HeimrichHannot\FlareBundle\Event\ModifyListQueryStructEvent;
 use HeimrichHannot\FlareBundle\Sort\SortOrder;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;

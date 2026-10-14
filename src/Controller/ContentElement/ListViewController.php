@@ -87,7 +87,7 @@ final class ListViewController extends AbstractContentElementController
             $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST);
 
             if (!$listModel instanceof ListModel) {
-                throw new FilterException('No list model found.');
+                throw new FilterException('No list model found.', method: __METHOD__);
             }
         }
         catch (\Exception $e)
@@ -115,8 +115,12 @@ final class ListViewController extends AbstractContentElementController
         }
         catch (FlareException $e)
         {
-            $this->logger->error(\sprintf('%s (tl_content.id=%s, tl_flare_list.id=%s)', $e->getMessage(), $contentModel->id, $listModel->id),
-                ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
+            $this->logger->error(\sprintf(
+                '%s (tl_content.id=%s, tl_flare_list.id=%s)',
+                $e->getMessage(),
+                $contentModel->id,
+                $listModel->id
+            ), ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
 
             return $this->getErrorResponse($e);
         }
@@ -209,6 +213,14 @@ final class ListViewController extends AbstractContentElementController
             $listModel = $model->getRelated(ContentContainer::FIELD_LIST);
         } catch (\Exception $e) {
             return new Response($e->getMessage());
+        }
+
+        if (!$listModel instanceof ListModel) {
+            return new Response(\sprintf(
+                '<div><strong class="tl_red">%s</strong></div><div>%s</div>',
+                $this->translator->trans('reader.invalid_list', [], 'flare'),
+                Str::formatHeadline($model->headline, withTags: true),
+            ));
         }
 
         return new Response(\sprintf(

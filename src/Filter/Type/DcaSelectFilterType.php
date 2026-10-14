@@ -50,7 +50,7 @@ class DcaSelectFilterType extends AbstractFilterType
         }
 
         if (\count(\array_unique($validOptions)) !== \count($validOptions)) {
-            throw new FilterException('The options for the DCA select field must be unique.');
+            throw new FilterException('Options for the DCA select field must be unique.', method: __METHOD__);
         }
 
         $filtered = [];

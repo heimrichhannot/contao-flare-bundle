@@ -11,6 +11,7 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
+use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -37,6 +38,7 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
     private int $generatedFilterKeys = 0;
 
     public function __construct(
+        private readonly ListDriverResolver         $listDriverResolver,
         private readonly ListSpecFactory            $specFactory,
         private readonly EventDispatcherInterface   $eventDispatcher,
         private readonly ListDriverInterface|string $driver,
@@ -121,10 +123,9 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
      */
     public function build(): ListSpec
     {
-        $driver = $this->driver;
-
-        if ($driver instanceof BuildListContract) {
-            $driver->buildList($this);
+        $driver = $this->listDriverResolver->resolve($this->driver);
+        if ($driver->driver instanceof BuildListContract) {
+            $driver->driver->buildList($this);
         }
 
         $this->eventDispatcher->dispatch(new ListBuildEvent($this));

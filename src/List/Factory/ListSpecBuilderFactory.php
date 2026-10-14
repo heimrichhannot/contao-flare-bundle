@@ -8,6 +8,7 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\List\Collector\ListModelFilterCollector;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
+use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -19,6 +20,7 @@ final readonly class ListSpecBuilderFactory
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
+        private ListDriverResolver       $listDriverResolver,
         private ListModelFilterCollector $filterCollector,
         private ListSpecFactory          $specFactory,
     ) {}
@@ -29,6 +31,7 @@ final readonly class ListSpecBuilderFactory
         ?string                    $source = null,
     ): ListSpecBuilder {
         return new ListSpecBuilder(
+            listDriverResolver: $this->listDriverResolver,
             specFactory: $this->specFactory,
             eventDispatcher: $this->eventDispatcher,
             driver: $driver,

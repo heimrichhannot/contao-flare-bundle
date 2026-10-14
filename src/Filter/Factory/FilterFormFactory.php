@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Factory;
 
-use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
-use HeimrichHannot\FlareBundle\Engine\Context\Interface\FormContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Context\FormContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormBuiltEvent;
 use HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -35,7 +34,10 @@ final readonly class FilterFormFactory
     public function create(ListSpec $list, FormContextInterface $context): FormInterface
     {
         if (!$context instanceof ContextInterface) {
-            throw new FlareException('Filter form context must implement ContextInterface.', method: __METHOD__);
+            throw new FlareException(
+                'Filter form context must implement ContextInterface.',
+                method: __METHOD__,
+            );
         }
 
         $name = $context->getFormName();
@@ -49,7 +51,7 @@ final readonly class FilterFormFactory
             ],
         ];
 
-        if ($action = $this->resolveFormAction($context)) {
+        if ($action = $context->createFormActionUrl()) {
             $formOptions['action'] = $action;
         }
 
@@ -122,12 +124,11 @@ final readonly class FilterFormFactory
 
         /*
          * **Always add submit buttons in templates, not in the form builder!**
-         * This is not advised:
+         * This is NOT advised:
          * ```php
          *  if ($builder->count()) {
-         *      $builder->add('submit', SubmitType::class, [
-         *      'label' => 'submit',
-         *  ]);
+         *      $builder->add('submit', SubmitType::class, [ 'label' => 'submit']);
+         *  }
          * ```
          */
 
@@ -142,18 +143,5 @@ final readonly class FilterFormFactory
         $builder = $formBuildEvent->formBuilder;
 
         return $builder->getForm();
-    }
-
-    private function resolveFormAction(FormContextInterface $config): ?string
-    {
-        if (!$jumpTo = $config->getFormActionPage()) {
-            return null;
-        }
-
-        if (!$pageModel = PageModel::findByPk($jumpTo)) {
-            return null;
-        }
-
-        return $pageModel->getAbsoluteUrl();
     }
 }

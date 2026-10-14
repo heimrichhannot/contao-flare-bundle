@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Mod;
 
-use HeimrichHannot\FlareBundle\Engine\Context\Interface\PaginatedContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Context\PaginatedContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 

@@ -44,7 +44,7 @@ class SimpleEquationFilterType extends AbstractFilterType
         $operator = SqlEquationOperator::match($options['operator']);
 
         if (!$operandLeft || !$operator instanceof SqlEquationOperator) {
-            throw new FilterException('Invalid filter configuration.');
+            throw new FilterException('Invalid filter configuration.', method: __METHOD__);
         }
 
         $operandLeft = $builder->column($operandLeft);
@@ -58,13 +58,20 @@ class SimpleEquationFilterType extends AbstractFilterType
             SqlEquationOperator::LESS_THAN_EQUALS => $builder->expr()->lte($operandLeft, ':eq_right'),
             SqlEquationOperator::LIKE => $builder->expr()->like($operandLeft, ':eq_right'),
             SqlEquationOperator::NOT_LIKE => $builder->expr()->notLike($operandLeft, ':eq_right'),
+            SqlEquationOperator::IN => $builder->expr()->in($operandLeft, ':eq_right'),
+            SqlEquationOperator::NOT_IN => $builder->expr()->notIn($operandLeft, ':eq_right'),
             SqlEquationOperator::IS_NULL => $builder->expr()->isNull($operandLeft),
+            // the default arm below is a runtime safety net for operators added to the enum later
+            // @phpstan-ignore match.alwaysTrue
             SqlEquationOperator::IS_NOT_NULL => $builder->expr()->isNotNull($operandLeft),
             default => null,
         };
 
         if (!$where) {
-            throw new FilterException('Invalid filter configuration: Operator not supported.');
+            throw new FilterException(
+                'Invalid filter configuration: Operator not supported.',
+                method: __METHOD__,
+            );
         }
 
         $builder->where($where);

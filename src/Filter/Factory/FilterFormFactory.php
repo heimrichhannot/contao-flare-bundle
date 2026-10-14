@@ -21,7 +21,7 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
-readonly class FilterFormFactory
+final readonly class FilterFormFactory
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
@@ -63,16 +63,14 @@ readonly class FilterFormFactory
                 continue;
             }
 
-            $element = $filter->element;
-
-            $filterContext = $this->filterContextFactory->create($list, $filter, $element, $context, $key);
+            $filterContext = $this->filterContextFactory->create($list, $filter, $context, $key);
 
             // Collect-only builder: never mounted itself; its single-field spec, children,
             // attributes, and deferred listeners are transferred onto the mounted builder below.
             $wrapper = new FilterFormBuilder($filter->alias, null, new EventDispatcher(), $this->formFactory);
             $wrapper->setAttribute(FilterContext::ATTR_SELF, $filterContext);
 
-            $element->buildForm($wrapper, $filterContext);
+            $filter->element->buildForm($wrapper, $filterContext);
 
             /** @var FilterElementFormBuiltEvent $event */
             $event = $this->eventDispatcher->dispatch(new FilterElementFormBuiltEvent($wrapper, $filterContext));

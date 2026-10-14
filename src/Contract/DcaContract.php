@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Contract;
 
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 
 /**
@@ -15,5 +15,5 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
  */
 interface DcaContract
 {
-    public function buildDca(DcaBuilder $dca, DcaContext $context): void;
+    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void;
 }

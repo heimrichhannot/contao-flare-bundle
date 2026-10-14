@@ -4,21 +4,24 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\List\Driver;
 
+use Contao\Controller;
 use Contao\CoreBundle\DataContainer\PaletteManipulator;
 use Contao\DataContainer;
 use Contao\Message;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Contract\ListDriver\DataContainerContract;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\Contract\ListDriver\OnSubmitDcContract;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
+use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsListDriver(type: self::TYPE)]
-class GenericDataContainerListDriver extends AbstractListDriver implements DataContainerContract
+class GenericDataContainerListDriver extends AbstractListDriver implements OnSubmitDcContract
 {
     public const TYPE = 'flare_generic_dc';
     public const DEFAULT_PALETTE = <<<'PALETTE'
@@ -28,9 +31,10 @@ class GenericDataContainerListDriver extends AbstractListDriver implements DataC
 
     public function __construct(
         private readonly TranslatorInterface $trans,
+        private readonly ListContainer       $listContainer,
     ) {}
 
-    public function resolveDataContainerTable(array $row, DataContainer $dc): string
+    public function resolveDcOnSubmit(array $row, DataContainer $dc): string
     {
         return $row['dc'] ?? '';
     }
@@ -40,7 +44,7 @@ class GenericDataContainerListDriver extends AbstractListDriver implements DataC
         $config->set('genericPageMeta', true);
     }
 
-    public function buildDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
         $listModel = $context->listModel;
 
@@ -54,12 +58,11 @@ class GenericDataContainerListDriver extends AbstractListDriver implements DataC
             ->addField('whichPtable', 'parent_legend', PaletteManipulator::POSITION_APPEND)
         ;
 
-        $table = $listModel->dc;
-
         $inferrer = new PtableInferrer($listModel, $listModel->dc);
 
         try
         {
+            $table = $listModel->dc;
             $ptable = $inferrer->getInferredPtable();
 
             Message::addInfo(match (true) {
@@ -87,6 +90,26 @@ class GenericDataContainerListDriver extends AbstractListDriver implements DataC
             $listModel->whichPtable_disableAutoOption();
         }
 
+        $this->checkPublishedFilter($listModel);
+
         $dca->palette($pm->applyToString(self::DEFAULT_PALETTE));
+    }
+
+    private function checkPublishedFilter(ListModel $listModel): void
+    {
+        $displayTable = $listModel->dc;
+        Controller::loadDataContainer($displayTable);
+
+        if (!isset($GLOBALS['TL_DCA'][$displayTable]['fields']['published'])) {
+            return;
+        }
+
+        if ($this->listContainer->hasFilterConfigured($listModel, PublishedFilterElement::TYPE)) {
+            return;
+        }
+
+        Message::addInfo($this->trans->trans('list.info.no_published_filter', [
+            '%target%' => "{$displayTable}.published",
+        ], 'flare'));
     }
 }

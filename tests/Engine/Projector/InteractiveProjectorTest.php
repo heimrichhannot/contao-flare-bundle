@@ -54,7 +54,7 @@ final class InteractiveProjectorTest extends TestCase
     private function listWithFilter(string $key, string $alias): ListSpec
     {
         $driver = new class implements ListDriverInterface {
-            public function getDataContainerName(array $config): string
+            public function resolveDcTable(string $type, array $config, array $attributes): string
             {
                 return (string) ($config['dc'] ?? '');
             }
@@ -66,9 +66,9 @@ final class InteractiveProjectorTest extends TestCase
             public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void {}
         };
 
-        return new ListSpec(driver: $driver, filters: [
+        return new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test', filters: [
             $key => new Filter(element: $element, type: 'test_element', alias: $alias),
-        ], config: ['dc' => 'tl_test']);
+        ]);
     }
 
     public function testFlatSubmittedValueIsKeyedCanonically(): void

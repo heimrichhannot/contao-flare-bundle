@@ -8,7 +8,6 @@ use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\AggregationContextFactory;
 use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
 use HeimrichHannot\FlareBundle\Engine\Context\Interface\PaginatedContextInterface;
-use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveEmptyLoader;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
@@ -20,7 +19,6 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
-use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
 use Symfony\Component\Form\FormInterface;
 
@@ -32,9 +30,7 @@ class InteractiveProjector extends AbstractProjector
     public function __construct(
         private readonly AggregationContextFactory $aggregationConfigFactory,
         private readonly FilterFormFactory         $filterFormFactory,
-        private readonly LoaderFactory             $loaderFactory,
         private readonly PaginatorFactory          $paginatorFactory,
-        private readonly ReaderUrlGeneratorFactory $readerUrlGeneratorFactory,
     ) {}
 
     public function supports(ListSpec $list, ContextInterface $context): bool
@@ -72,7 +68,8 @@ class InteractiveProjector extends AbstractProjector
             $loader = $this->createLoader($config);
         }
 
-        $readerUrlGenerator = $this->readerUrlGeneratorFactory->create($context->createReaderUrlConfig());
+        $readerUrlConfig = $context->createReaderUrlConfig();
+        $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($readerUrlConfig);
 
         return $this->createView(
             loader: $loader,
@@ -86,7 +83,7 @@ class InteractiveProjector extends AbstractProjector
 
     protected function createLoader(InteractiveLoaderConfig $config): InteractiveLoaderInterface
     {
-        return $this->loaderFactory->createInteractiveLoader($config);
+        return $this->getLoaderFactory()->createInteractiveLoader($config);
     }
 
     protected function createView(

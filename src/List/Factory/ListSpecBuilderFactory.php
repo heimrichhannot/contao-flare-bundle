@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\List\Factory;
 
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Collector\ListModelFilterCollector;
+use HeimrichHannot\FlareBundle\List\Collector\ListModelFilterCollector;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
-use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -22,12 +21,8 @@ final readonly class ListSpecBuilderFactory
         private EventDispatcherInterface $eventDispatcher,
         private ListModelFilterCollector $filterCollector,
         private ListSpecFactory          $specFactory,
-        private ListTransformerResolver  $listTransformerResolver,
     ) {}
 
-    /**
-     * @throws FlareException In case the list driver cannot be resolved.
-     */
     public function create(
         ListDriverInterface|string $driver,
         ?ListModel                 $model = null,
@@ -35,9 +30,8 @@ final readonly class ListSpecBuilderFactory
     ): ListSpecBuilder {
         return new ListSpecBuilder(
             specFactory: $this->specFactory,
-            transformerResolver: $this->listTransformerResolver,
             eventDispatcher: $this->eventDispatcher,
-            driver: $this->specFactory->resolveDriver($driver),
+            driver: $driver,
             model: $model,
             source: $source,
         );

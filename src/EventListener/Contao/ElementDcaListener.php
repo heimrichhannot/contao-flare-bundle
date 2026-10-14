@@ -54,9 +54,7 @@ readonly class ElementDcaListener
             return;
         }
 
-        $GLOBALS['TL_DCA'][$table]['config']['onload_callback'][] = function () use ($table): void {
-            $this->configure($table);
-        };
+        $this->configure($table);
     }
 
     private function configure(string $table): void

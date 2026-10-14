@@ -16,7 +16,7 @@ readonly class ProjectorRegistry
      * @param iterable<ProjectorInterface> $projectors
      */
     public function __construct(
-        #[TaggedIterator('flare.projector')]
+        #[TaggedIterator(ProjectorInterface::FLARE_PROJECTOR_TAG)]
         private iterable $projectors,
     ) {}
 

@@ -10,7 +10,6 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsContentElement;
 use Contao\CoreBundle\Exception\ResponseException;
 use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\CoreBundle\Routing\ScopeMatcher;
-use Contao\StringUtil;
 use Contao\Template;
 use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
@@ -122,7 +121,7 @@ final class ListViewController extends AbstractContentElementController
             return $this->getErrorResponse($e);
         }
 
-        $this->responseTagger->addTags(['contao.db.' . $listModel->dc]);
+        $this->responseTagger->addTags(['contao.db.' . $engine->getList()->dc]);
 
         $event = $this->eventDispatcher->dispatch(
             new ListViewRenderEvent(
@@ -212,17 +211,12 @@ final class ListViewController extends AbstractContentElementController
             return new Response($e->getMessage());
         }
 
-        if (($headline = StringUtil::deserialize($model->headline, true)) && isset($headline['value'])) {
-            $unit = ($headline['unit'] ?? null) ?: 'h2';
-            $hl = \sprintf('<%s>%s</%s>', $unit, $headline['value'], $unit);
-        }
-
         return new Response(\sprintf(
-            '%s%s <span class="tl_gray">[%s, %s]</span>',
-            $hl ?? '',
-            $listModel->title,
-            $this->translator->trans($listModel->type, [], 'flare_list'),
-            $listModel->dc
+            '<div>%s</div><span>%s</span> <span class="tl_gray">[%s, %s]</span>',
+            (string) Str::formatHeadline($model->headline),
+            \strip_tags((string) $listModel->title),
+            \strip_tags($this->translator->trans($listModel->type, [], 'flare_list')),
+            \strip_tags((string) $listModel->dc)
         ));
     }
 }

@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\List\ListSpec;
 readonly class ValidationLoaderConfig
 {
     public function __construct(
-        public ListSpec $list,
+        public ListSpec          $list,
         public ValidationContext $context,
         public string            $autoItemField,
     ) {}

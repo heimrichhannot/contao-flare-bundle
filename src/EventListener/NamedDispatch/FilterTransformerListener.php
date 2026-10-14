@@ -17,10 +17,6 @@ readonly class FilterTransformerListener
     #[AsEventListener(priority: -200)]
     public function __invoke(FilterTransformerEvent $event): void
     {
-        if (!$event->type) {
-            return;
-        }
-
         $this->eventDispatcher->dispatch(event: $event, eventName: "flare.filter_element.{$event->type}.transformers");
     }
 }

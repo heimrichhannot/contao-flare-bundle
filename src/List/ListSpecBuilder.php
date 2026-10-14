@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\List;
 
-use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildListContract;
 use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
-use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -38,15 +37,14 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
     private int $generatedFilterKeys = 0;
 
     public function __construct(
-        private readonly ListSpecFactory          $specFactory,
-        private readonly ListTransformerResolver  $transformerResolver,
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly ListDriverInterface      $driver,
-        private readonly ?ListModel               $model = null,
-        private readonly ?string                  $source = null,
+        private readonly ListSpecFactory            $specFactory,
+        private readonly EventDispatcherInterface   $eventDispatcher,
+        private readonly ListDriverInterface|string $driver,
+        private readonly ?ListModel                 $model = null,
+        private readonly ?string                    $source = null,
     ) {}
 
-    public function getDriver(): ListDriverInterface
+    public function getDriver(): ListDriverInterface|string
     {
         return $this->driver;
     }
@@ -102,11 +100,14 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
         return $this->filters[$key] ?? null;
     }
 
-    public function hasFilterOfType(string $elementType): bool
+    /**
+     * @param class-string<FilterElementInterface> $class
+     */
+    public function hasFilterInstance(string $class): bool
     {
         foreach ($this->filters as $filter)
         {
-            if ($filter->type === $elementType) {
+            if ($filter->element instanceof $class) {
                 return true;
             }
         }
@@ -128,27 +129,21 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
 
         $this->eventDispatcher->dispatch(new ListBuildEvent($this));
 
-        $config = new ConfigBuilder();
-
         if ($this->model)
         {
-            BaseListOptions::transform($config, $this->model);
-
-            $transformed = $this->transformerResolver->transform($driver, $this->model);
-
-            foreach ($transformed ?? [] as $key => $value) {
-                $config->set($key, $value);
-            }
-        }
-
-        foreach ($this->overrides as $key => $value) {
-            $config->set($key, $value);
+            return $this->specFactory->createFromListModel(
+                listModel: $this->model,
+                driver: $driver,
+                filters: $this->filters,
+                config: $this->overrides,
+                source: $this->source,
+            );
         }
 
         return $this->specFactory->create(
             driver: $driver,
             filters: $this->filters,
-            config: $config->all(),
+            config: $this->overrides,
             source: $this->source,
         );
     }

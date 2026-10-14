@@ -41,8 +41,10 @@ trait LinksToReaderTrait
             return $this->readerUrls[$id] = null;
         }
 
-        if ($target instanceof Model && $model->id !== $target->id && $model::getTable() !== $target::getTable()) {
-            throw new \InvalidArgumentException('The provided model does not match the model resolved by the list context.');
+        if ($target instanceof Model && ($id !== ((int) $model->id) || $model::getTable() !== $target::getTable())) {
+            throw new \InvalidArgumentException(
+                'The provided model does not match the model resolved by the list context.',
+            );
         }
 
         return $this->readerUrls[$id] = $this->getReaderUrlGenerator()->generate($model);

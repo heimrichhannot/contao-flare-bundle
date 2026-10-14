@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
+use HeimrichHannot\FlareBundle\DependencyInjection\Factory\TypeNameFactory;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
-use HeimrichHannot\FlareBundle\Util\Str;
-use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\PriorityTaggedServiceTrait;
-use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 
@@ -35,12 +33,7 @@ final class RegisterListDriversPass implements CompilerPassInterface
 
             foreach ($tags as $attributes)
             {
-                $type = $this->getListTypeName($definition, $attributes);
-
-                $serviceId = 'huh.flare.list_type.' . $type;
-
-                $childDefinition = new ChildDefinition((string) $reference);
-                $childDefinition->setPublic(true);
+                $type = $this->getListDriverName($definition, $attributes);
 
                 /** @see AsListDriver::__construct */
                 $attribute = new Definition(AsListDriver::class, [$type, $attributes['dataContainer'] ?? null]);
@@ -48,13 +41,16 @@ final class RegisterListDriversPass implements CompilerPassInterface
                 /** @see ListDriverRegistry::add() */
                 $registry->addMethodCall('add', [$reference, $attribute, $type]);
 
-                $childDefinition->setTags($definition->getTags());
-                $container->setDefinition($serviceId, $childDefinition);
+                $serviceId = 'flare.list_driver.' . $type;
+
+                $container
+                    ->setAlias($serviceId, (string) $reference)
+                    ->setPublic(true);
             }
         }
     }
 
-    protected function getListTypeName(Definition $definition, array $attributes): string
+    protected function getListDriverName(Definition $definition, array $attributes): string
     {
         if ($type = (string) ($attributes['type'] ?? ''))
         {
@@ -65,10 +61,6 @@ final class RegisterListDriversPass implements CompilerPassInterface
             return $type;
         }
 
-        $className = $definition->getClass();
-        $className = \ltrim(\strrchr($className, '\\'), '\\');
-        $className = Str::trimSubstrings($className, suffix: ['ListDriver', 'Driver']);
-
-        return Container::underscore($className);
+        return TypeNameFactory::createListDriverType($definition->getClass());
     }
 }

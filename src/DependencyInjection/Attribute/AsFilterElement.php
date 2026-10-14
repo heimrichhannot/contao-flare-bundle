@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\DependencyInjection\Attribute;
 #[\Attribute(\Attribute::TARGET_CLASS | \Attribute::IS_REPEATABLE)]
 class AsFilterElement
 {
-    public const TAG = 'huh.flare.filter_element';
+    public const TAG = 'flare.filter_element';
 
     public ?string $type;
     public array $attributes;

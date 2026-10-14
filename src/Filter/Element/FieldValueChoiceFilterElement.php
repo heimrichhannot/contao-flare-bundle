@@ -9,7 +9,7 @@ use Contao\DataContainer;
 use Contao\StringUtil;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
@@ -109,7 +109,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
         ]);
     }
 
-    public function buildDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
         $dca->palette('{filter_legend},fieldGeneric,isMultiple,isExpanded,preselect');
 
@@ -263,6 +263,8 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
         if (isset($this->foreignValueCache[$table][$field])) {
             return $this->foreignValueCache[$table][$field];
         }
+
+        Controller::loadDataContainer($table);
 
         $dca = $GLOBALS['TL_DCA'][$table]['fields'][$field] ?? [];
 

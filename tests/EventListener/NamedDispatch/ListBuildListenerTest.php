@@ -19,36 +19,22 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 
 final class ListBuildListenerTest extends TestCase
 {
-    public function testDispatchesOncePerRegisteredType(): void
+    public function testDispatchesNamedEventForStringDriverType(): void
+    {
+        self::assertSame(['flare.list.a.build'], $this->dispatchedNames('a'));
+    }
+
+    public function testInstanceDriverTriggersNoNamedDispatch(): void
     {
         $driver = new class extends AbstractListDriver {};
 
-        $registry = new ListDriverRegistry();
-        $registry->add($driver, null, 'a');
-        $registry->add($driver, null, 'b');
-
-        self::assertSame(
-            ['flare.list.a.build', 'flare.list.b.build'],
-            $this->dispatchedNames($driver, $registry),
-        );
-    }
-
-    public function testUnregisteredInlineDriverTriggersNoNamedDispatch(): void
-    {
-        $registered = new class extends AbstractListDriver {};
-
-        $registry = new ListDriverRegistry();
-        $registry->add($registered, null, 'a');
-
-        $inline = new ($registered::class)();
-
-        self::assertSame([], $this->dispatchedNames($inline, $registry));
+        self::assertSame([], $this->dispatchedNames($driver));
     }
 
     /**
      * @return list<string>
      */
-    private function dispatchedNames(ListDriverInterface $driver, ListDriverRegistry $registry): array
+    private function dispatchedNames(ListDriverInterface|string $driver): array
     {
         $names = [];
 
@@ -65,13 +51,16 @@ final class ListBuildListenerTest extends TestCase
         }
 
         $builder = new ListSpecBuilder(
-            specFactory: new ListSpecFactory($registry, new ListOptionsResolver(new SchemaResolver())),
-            transformerResolver: new ListTransformerResolver($dispatcher),
+            specFactory: new ListSpecFactory(
+                new ListDriverRegistry(),
+                new ListOptionsResolver(new SchemaResolver()),
+                new ListTransformerResolver($dispatcher),
+            ),
             eventDispatcher: $dispatcher,
             driver: $driver,
         );
 
-        $listener = new ListBuildListener($dispatcher, $registry);
+        $listener = new ListBuildListener($dispatcher);
         $listener(new ListBuildEvent($builder));
 
         return $names;

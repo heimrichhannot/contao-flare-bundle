@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\List;
 
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
@@ -19,28 +20,27 @@ use HeimrichHannot\FlareBundle\Util\DcaHelper;
  *
  * Use {@see Factory\ListSpecFactory} to create instances — it resolves the config schema
  * and guarantees a well-defined data container.
+ *
+ * @api
  */
 final readonly class ListSpec
 {
-    /**
-     * The main data container table of the list.
-     */
-    public string $dc;
-
     /**
      * @param ListDriverInterface $driver List driver service (registered or inline).
      * @param array<string, Filter> $filters
      * @param array<string, mixed> $config Canonical config, resolved through the base and driver schemas.
      * @param string|null $source Provenance for error messages, e.g. "tl_flare_list.5".
+     *
+     * @internal Use {@see Factory\ListSpecFactory} to create instances.
      */
     public function __construct(
         public ListDriverInterface $driver,
+        public string              $type,
+        public string              $dc,
         public array               $filters = [],
         public array               $config = [],
         public ?string             $source = null,
-    ) {
-        $this->dc = (string) ($this->config['dc'] ?? '');
-    }
+    ) {}
 
     /**
      * Adds a filter. The key defaults to the filter's alias; alias-less filters receive a generated key.
@@ -76,6 +76,8 @@ final readonly class ListSpec
     {
         return new self(
             driver: $this->driver,
+            type: $this->type,
+            dc: $this->dc,
             filters: $filters,
             config: $this->config,
             source: $this->source,
@@ -83,23 +85,13 @@ final readonly class ListSpec
     }
 
     /**
-     * @param array<string, mixed> $config
+     * @param class-string<FilterElementInterface> $class
      */
-    public function withConfig(array $config): self
-    {
-        return new self(
-            driver: $this->driver,
-            filters: $this->filters,
-            config: $config,
-            source: $this->source,
-        );
-    }
-
-    public function hasFilterOfType(string $elementType): bool
+    public function hasFilterInstance(string $class): bool
     {
         foreach ($this->filters as $filter)
         {
-            if ($filter->type === $elementType) {
+            if ($filter->element instanceof $class) {
                 return true;
             }
         }
@@ -122,6 +114,8 @@ final readonly class ListSpec
     {
         return \sha1(\serialize([
             \get_class($this->driver),
+            $this->type,
+            $this->dc,
             $this->source,
             $this->config,
             \array_map(static fn (Filter $filter): array => $filter->fingerprint(), $this->filters),

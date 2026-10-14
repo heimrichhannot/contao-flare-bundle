@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Filter\Type\FilterTypeInterface;
 use HeimrichHannot\FlareBundle\Registry\FilterTypeRegistry;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class FilterBuilder implements FilterBuilderInterface
+final class FilterBuilder implements FilterBuilderInterface
 {
     /**
      * @var array<class-string<FilterTypeInterface>, OptionsResolver>

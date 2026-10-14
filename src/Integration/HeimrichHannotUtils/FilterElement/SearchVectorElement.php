@@ -41,7 +41,7 @@ class SearchVectorElement extends AbstractFilterElement implements IntrinsicValu
     public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
     {
         $value = $inv->getValue();
-        if (!$value || !\is_string($value)) {
+        if (!\is_string($value) || '' === $value) {
             return;
         }
 
@@ -77,7 +77,9 @@ class SearchVectorElement extends AbstractFilterElement implements IntrinsicValu
 
     public function getIntrinsicValue(ListSpecification $list, FilterDefinition $filter): ?string
     {
-        return $filter->prefill ?: null;
+        $prefill = (string) $filter->prefill;
+
+        return '' !== $prefill ? $prefill : null;
     }
 
     public function getPalette(PaletteConfig $config): ?string

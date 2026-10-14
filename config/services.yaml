@@ -21,10 +21,6 @@ services:
             - ../src/Engine/Loader
             - ../src/Engine/View
 
-    HeimrichHannot\FlareBundle\Filter\Resolver\FilterInvokerResolver:
-        arguments:
-            $invokerLocator: null # populated by compiler pass
-
     # Util classes registered as twig globals must be defined as services
     HeimrichHannot\FlareBundle\Util\Env: ~
     HeimrichHannot\FlareBundle\Util\Str: ~

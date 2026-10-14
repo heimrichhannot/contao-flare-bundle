@@ -10,11 +10,12 @@ use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
+use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
+use HeimrichHannot\FlareBundle\Filter\Type\BelongsToRelationFilterType;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
-use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
-use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
+use HeimrichHannot\FlareBundle\Specification\ConfiguredFilter;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsFilterElement(type: self::TYPE)]
@@ -29,15 +30,17 @@ class BelongsToRelationElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterInvocation $invocation): void
     {
-        if (!$fieldPid = $inv->filter->fieldPid)
+        $filter = $invocation->filter;
+
+        if (!$fieldPid = $filter->fieldPid)
         {
             throw new FilterException('No parent field defined.');
         }
 
-        $inferrable = PtableInferrableFactory::createFromListModelLike($inv->list);
-        $inferrer = new PtableInferrer($inferrable, $inv->list->dc);
+        $inferrable = PtableInferrableFactory::createFromListModelLike($invocation->list);
+        $inferrer = new PtableInferrer($inferrable, $invocation->list->dc);
 
         try
         {
@@ -46,21 +49,28 @@ class BelongsToRelationElement extends AbstractFilterElement
         }
         catch (InferenceException)
         {
-            $qb->abort();
+            $builder->abort();
         }
 
         if (\is_string($fieldDynamicPtable))
         {
-            $this->filterDynamicPtableField($qb, $inv->filter, $fieldDynamicPtable, $fieldPid);
+            $builder->add(BelongsToRelationFilterType::class, [
+                'field_pid' => $fieldPid,
+                'field_dynamic_ptable' => $fieldDynamicPtable,
+                'parent_groups' => $this->getDynamicParentGroups($filter),
+            ]);
+
             return;
         }
 
-        if (!$ptable || !$whitelistParents = StringUtil::deserialize($inv->filter->whitelistParents)) {
+        if (!$ptable || !$whitelistParents = StringUtil::deserialize($filter->whitelistParents)) {
             throw new FilterException('No whitelisted parents.');
         }
 
-        $qb->where($qb->expr()->in($qb->column($fieldPid), ":whitelist"))
-            ->setParameter('whitelist', $whitelistParents);
+        $builder->add(BelongsToRelationFilterType::class, [
+            'field_pid' => $fieldPid,
+            'whitelist' => (array) $whitelistParents,
+        ]);
     }
 
     /**
@@ -72,24 +82,31 @@ class BelongsToRelationElement extends AbstractFilterElement
      *   ];
      * ```
      */
-    public function filterDynamicPtableField(
-        FilterQueryBuilder $qb,
-        FilterDefinition   $filter,
-        string             $fieldDynamicPtable,
-        string             $fieldPid,
-        ?array             $submittedData = null,
+    public function addDynamicPtableFilter(
+        FilterBuilderInterface $builder,
+        ConfiguredFilter       $filter,
+        string                 $fieldDynamicPtable,
+        string                 $fieldPid,
+        ?array                 $submittedData = null,
     ): void {
+        $builder->add(BelongsToRelationFilterType::class, [
+            'field_pid' => $fieldPid,
+            'field_dynamic_ptable' => $fieldDynamicPtable,
+            'parent_groups' => $this->getDynamicParentGroups($filter),
+            'submitted_data' => $submittedData,
+        ]);
+    }
+
+    public function getDynamicParentGroups(ConfiguredFilter $filter): array
+    {
         if (!$parentGroups = StringUtil::deserialize($filter->groupWhitelistParents))
         {
-            $qb->abort();
+            return [];
         }
 
-        $ors = [];
+        $groups = [];
 
-        $colDynamicPtable = $qb->column($fieldDynamicPtable);
-        $colPid = $qb->column($fieldPid);
-
-        foreach (\array_values($parentGroups) as $i => $group)
+        foreach (\array_values($parentGroups) as $group)
         {
             if (!($g_tablePtable = $group['tablePtable'] ?? null)
                 || !($g_whitelistParents = $group['whitelistParents'] ?? null)
@@ -98,47 +115,19 @@ class BelongsToRelationElement extends AbstractFilterElement
                 continue;
             }
 
-            if (isset($submittedData))
-            {
-                $submittedWhitelist = $submittedData[$g_tablePtable] ?? null;
-
-                if (!\is_array($submittedWhitelist)) {
-                    continue;
-                }
-
-                $g_whitelistParents = \array_intersect($g_whitelistParents, $submittedWhitelist);
-            }
-
             $g_whitelistParents = \array_values(\array_filter($g_whitelistParents));
 
             if (!$g_whitelistParents) {
                 continue;
             }
 
-            $gKey_tablePtable = \sprintf(':g%s_ptable', $i);
-            $gKey_whitelistParents = \sprintf(':g%s_whitelist', $i);
-
-            $ors[] = $qb->expr()->and(
-                $qb->expr()->eq($colDynamicPtable, $gKey_tablePtable),
-                $qb->expr()->in($colPid, $gKey_whitelistParents)
-            );
-
-            $qb->setParameter($gKey_tablePtable, $g_tablePtable);
-            $qb->setParameter($gKey_whitelistParents, $g_whitelistParents);
+            $groups[] = [
+                'table' => $g_tablePtable,
+                'ids' => $g_whitelistParents,
+            ];
         }
 
-        if (\count($ors) < 1)
-        {
-            $qb->abort();
-        }
-
-        if (\count($ors) === 1)
-        {
-            $qb->where($ors[0]);
-            return;
-        }
-
-        $qb->whereOr(...$ors);
+        return $groups;
     }
 
     public function getPalette(PaletteConfig $config): ?string

@@ -7,6 +7,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Factory;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
@@ -24,7 +25,6 @@ final readonly class FilterFactory
     /**
      * @param FilterElementInterface|string $element Filter element instance or registered type alias.
      * @param array<string, mixed> $config
-     * @param array<string, mixed>|null $data
      *
      * @throws FlareException In case no filter element is registered under the given type alias.
      *
@@ -33,7 +33,7 @@ final readonly class FilterFactory
     public function create(
         FilterElementInterface|string $element,
         array                         $config = [],
-        ?array                        $data = null,
+        ?FilterData                   $data = null,
         ?string                       $alias = null,
         ?string                       $targetAlias = null,
         bool                          $targetingForced = false,

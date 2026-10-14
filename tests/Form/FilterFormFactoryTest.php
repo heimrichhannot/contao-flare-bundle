@@ -8,12 +8,14 @@ use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\FormContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormBuiltEvent;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFormFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\List\ListSpec;
@@ -109,7 +111,11 @@ final class FilterFormFactoryTest extends TestCase
                 ($this->buildForm)($builder, $context);
             }
 
-            public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void {}
+            public function buildFilter(
+                FilterBuilderInterface $builder,
+                FilterContext $context,
+                FilterData $data,
+            ): void {}
         };
     }
 
@@ -137,21 +143,19 @@ final class FilterFormFactoryTest extends TestCase
         );
     }
 
-    public function testSingleWithCompanionFieldMountsNestedCompound(): void
+    public function testSingleWithCompanionFieldIsRejected(): void
     {
         $element = $this->element(static function (FilterFormBuilderInterface $builder): void {
             $builder->single(TextType::class, ['required' => false]);
             $builder->add('extra', TextType::class, ['required' => false]);
         });
 
-        $form = $this->createForm(['suche' => new Filter(element: $element, type: 'test_element', alias: 'suche')]);
+        $this->expectException(FlareException::class);
+        $this->expectExceptionMessage(
+            'Filter element cannot declare a single field and add children at the same time.',
+        );
 
-        $child = $form->get('suche');
-
-        $this->assertInstanceOf(FormType::class, $child->getConfig()->getType()->getInnerType());
-        $this->assertNull($child->getConfig()->getAttribute(FilterContext::ATTR_SINGLE_FIELD));
-        $this->assertTrue($child->has(FilterContext::SINGLE_VALUE));
-        $this->assertTrue($child->has('extra'));
+        $this->createForm(['suche' => new Filter(element: $element, type: 'test_element', alias: 'suche')]);
     }
 
     public function testMultiFieldElementMountsNestedCompound(): void

@@ -17,6 +17,7 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\Filter\CallbackFilterModelTransformer;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
@@ -50,7 +51,7 @@ abstract class AbstractFilterElement implements
 
     public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void {}
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void {}
 
     public function isSupported(): bool
     {
@@ -79,7 +80,7 @@ abstract class AbstractFilterElement implements
         $this->connection = $connection;
     }
 
-    public function getConnection(): Connection
+    protected function getConnection(): Connection
     {
         return $this->connection;
     }

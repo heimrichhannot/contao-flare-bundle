@@ -6,16 +6,14 @@ namespace HeimrichHannot\FlareBundle\Event;
 
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use Symfony\Contracts\EventDispatcher\Event;
 
 class FilterElementBuiltEvent extends Event
 {
-    /**
-     * @param array<string, mixed> $data
-     */
     public function __construct(
         public readonly FilterContext          $context,
         public readonly FilterBuilderInterface $builder,
-        public readonly array                  $data = [],
+        public readonly FilterData             $data,
     ) {}
 }

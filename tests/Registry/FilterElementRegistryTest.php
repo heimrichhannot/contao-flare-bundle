@@ -8,6 +8,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use PHPUnit\Framework\TestCase;
@@ -59,5 +60,5 @@ final class RegistryElementStub implements FilterElementInterface
 {
     public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void {}
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void {}
 }

@@ -12,6 +12,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Type\IntegerIdChoiceFilterType;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegistry;
@@ -103,7 +104,7 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
         $builder->single(ChoiceType::class, $formOptions);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
     {
         $config = $context->config;
 
@@ -112,7 +113,7 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
         /** @var ?array $tagIds */
         $tagIds = $config['intrinsic']
             ? $preselect
-            : $this->processRuntimeValue($values[FilterContext::SINGLE_VALUE] ?? null);
+            : $this->processRuntimeValue($data->getSingleValue());
 
         if (!$tagIds) {
             return;

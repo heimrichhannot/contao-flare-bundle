@@ -7,42 +7,20 @@ namespace HeimrichHannot\FlareBundle\Model;
 use Contao\Model;
 use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrableInterface;
-use HeimrichHannot\FlareBundle\Specification\DataSource\ListDataSourceInterface;
-use HeimrichHannot\FlareBundle\Specification\AutoItemFieldGetterTrait;
+use HeimrichHannot\FlareBundle\Util\DcaHelper;
 
 /**
  * Class ListModel
  */
-class ListModel extends Model implements PtableInferrableInterface, ListDataSourceInterface
+class ListModel extends Model implements PtableInferrableInterface
 {
-    use AutoItemFieldGetterTrait;
     use DocumentsListModelTrait;
     use PtableInferrableTrait;
 
     protected static $strTable = ListContainer::TABLE_NAME;
 
-    public function getListIdentifier(): string
+    public function getAutoItemField(): string
     {
-        return (string) $this->id;
-    }
-
-    public function getListType(): string
-    {
-        return $this->type;
-    }
-
-    public function getListTable(): string
-    {
-        return $this->dc;
-    }
-
-    public function getListData(): array
-    {
-        return $this->arrData;
-    }
-
-    public function getListProperty(string $name): mixed
-    {
-        return $this->{$name};
+        return $this->fieldAutoItem ?: DcaHelper::tryGetColumnName($this->dc, 'alias', 'id');
     }
 }

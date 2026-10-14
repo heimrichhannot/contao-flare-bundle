@@ -8,8 +8,8 @@ use Contao\ContentModel;
 use Contao\Model;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Contracts\EventDispatcher\Event;
 
 class ReaderRenderEvent extends Event
@@ -17,12 +17,12 @@ class ReaderRenderEvent extends Event
     use ModifiesTemplateTrait;
 
     public function __construct(
-        private readonly ContentModel      $contentModel,
-        private readonly ContextInterface  $context,
-        private readonly Model             $displayModel,
-        private readonly ListSpecification $listSpecification,
-        private ReaderPageMeta             $pageMeta,
-        private Template                   $template,
+        private readonly ContentModel     $contentModel,
+        private readonly ContextInterface $context,
+        private readonly Model            $displayModel,
+        private readonly ListSpec         $list,
+        private ReaderPageMeta            $pageMeta,
+        private Template                  $template,
     ) {}
 
     public function getContentModel(): ContentModel
@@ -40,9 +40,9 @@ class ReaderRenderEvent extends Event
         return $this->displayModel;
     }
 
-    public function getListSpecification(): ListSpecification
+    public function getList(): ListSpec
     {
-        return $this->listSpecification;
+        return $this->list;
     }
 
     public function getPageMeta(): ReaderPageMeta

@@ -24,7 +24,7 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string $fieldPtable
  * @property string $tablePtable
  * @property string $whichPtable
- * @property string dcMultilingual_display
+ * @property string $dcMultilingual_display
  */
 trait DocumentsListModelTrait
 {

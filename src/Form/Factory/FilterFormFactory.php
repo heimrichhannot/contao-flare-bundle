@@ -10,10 +10,10 @@ use HeimrichHannot\FlareBundle\Engine\Context\Interface\FormContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormBuiltEvent;
 use HeimrichHannot\FlareBundle\Event\FilterFormBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterElementResolver;
-use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -24,7 +24,7 @@ readonly class FilterFormFactory
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
-        private FilterOptionsResolver    $filterConfigResolver,
+        private FilterContextFactory     $filterContextFactory,
         private FilterElementResolver    $filterElementResolver,
         private FormFactoryInterface     $formFactory,
     ) {}
@@ -32,7 +32,7 @@ readonly class FilterFormFactory
     /**
      * @throws FlareException If the form could not be built
      */
-    public function create(ListSpecification $list, FormContextInterface $context): FormInterface
+    public function create(ListSpec $list, FormContextInterface $context): FormInterface
     {
         if (!$context instanceof ContextInterface) {
             throw new FlareException('Filter form context must implement ContextInterface.', method: __METHOD__);
@@ -57,7 +57,7 @@ readonly class FilterFormFactory
         $builder->setAttribute('flare.list', $list);
         $builder->setAttribute('flare.engine_context', $context);
 
-        foreach ($list->getFilters() as $key => $filter)
+        foreach ($list->filters as $key => $filter)
         {
             if (!Str::isValidFormName($filter->alias)) {
                 continue;
@@ -67,13 +67,7 @@ readonly class FilterFormFactory
                 continue;
             }
 
-            $filterContext = new FilterContext(
-                list: $list,
-                filter: $filter,
-                config: $this->filterConfigResolver->resolve($filter, $element),
-                engineContext: $context,
-                key: $key,
-            );
+            $filterContext = $this->filterContextFactory->create($list, $filter, $element, $context, $key);
 
             $child = $builder->create($filter->alias, FormType::class, [
                 'inherit_data' => false,
@@ -109,7 +103,7 @@ readonly class FilterFormFactory
 
         /** @var FilterFormBuildEvent $formBuildEvent */
         $formBuildEvent = $this->eventDispatcher->dispatch(new FilterFormBuildEvent(
-            listSpecification: $list,
+            list: $list,
             formName: $name,
             formBuilder: $builder,
         ));

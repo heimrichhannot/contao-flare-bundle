@@ -7,6 +7,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Element;
 use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -19,7 +20,8 @@ use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -51,29 +53,28 @@ class ArchiveFilterElement extends AbstractFilterElement
         $resolver->define('preselect')->default([])->allowedTypes('array');
     }
 
-    public function configFromRow(array $row): array
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $formatLabel = ($row['formatLabel'] ?? null) === 'custom'
-            ? ($row['formatLabelCustom'] ?? null)
-            : ($row['formatLabel'] ?? null);
+        $formatLabel = $model->formatLabel === 'custom'
+            ? $model->formatLabelCustom
+            : $model->formatLabel;
 
-        $formatEmptyOption = ($row['formatEmptyOption'] ?? null) === 'custom'
-            ? ($row['formatEmptyOptionCustom'] ?? null)
-            : ($row['formatEmptyOption'] ?? null);
+        $formatEmptyOption = $model->formatEmptyOption === 'custom'
+            ? $model->formatEmptyOptionCustom
+            : $model->formatEmptyOption;
 
-        return [
-            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
-            'whitelist_parents' => $this->normalizeIds($row['whitelistParents'] ?? null),
-            'group_whitelist_parents' => $this->normalizeGroups($row['groupWhitelistParents'] ?? null),
-            'use_whitelist_for_options_only' => (bool) ($row['useWhitelistForOptionsOnly'] ?? false),
-            'format_label' => $formatLabel ?: null,
-            'has_empty_option' => (bool) ($row['hasEmptyOption'] ?? false),
-            'format_empty_option' => $formatEmptyOption ?: null,
-            'is_mandatory' => (bool) ($row['isMandatory'] ?? false),
-            'is_multiple' => (bool) ($row['isMultiple'] ?? false),
-            'is_expanded' => (bool) ($row['isExpanded'] ?? false),
-            'preselect' => StringUtil::deserialize(($row['preselect'] ?? null) ?: null, true),
-        ];
+        $config
+            ->set('intrinsic', (bool) $model->intrinsic)
+            ->set('whitelist_parents', $this->normalizeIds($model->whitelistParents))
+            ->set('group_whitelist_parents', $this->normalizeGroups($model->groupWhitelistParents))
+            ->set('use_whitelist_for_options_only', (bool) $model->useWhitelistForOptionsOnly)
+            ->set('format_label', $formatLabel ?: null)
+            ->set('has_empty_option', (bool) $model->hasEmptyOption)
+            ->set('format_empty_option', $formatEmptyOption ?: null)
+            ->set('is_mandatory', (bool) $model->isMandatory)
+            ->set('is_multiple', (bool) $model->isMultiple)
+            ->set('is_expanded', (bool) $model->isExpanded)
+            ->set('preselect', StringUtil::deserialize($model->preselect ?: null, true));
     }
 
     /**
@@ -257,7 +258,7 @@ class ArchiveFilterElement extends AbstractFilterElement
     /**
      * @return array<string, int[]>|int[] Parent IDs, either flat (main ptable) or mapped by table (dynamic ptable).
      */
-    protected function getWhitelistedParentIds(ListSpecification $list, array $config): array
+    protected function getWhitelistedParentIds(ListSpec $list, array $config): array
     {
         $inferrer = $this->getPtableInferrer($list);
 
@@ -286,7 +287,7 @@ class ArchiveFilterElement extends AbstractFilterElement
     /**
      * @return Model[]
      */
-    protected function getWhitelistedParents(ListSpecification $list, array $config): array
+    protected function getWhitelistedParents(ListSpec $list, array $config): array
     {
         $inferrer = $this->getPtableInferrer($list);
 
@@ -323,7 +324,7 @@ class ArchiveFilterElement extends AbstractFilterElement
     /**
      * @return Model[]
      */
-    public function processRuntimeValue(mixed $value, ListSpecification $list, array $config): array
+    public function processRuntimeValue(mixed $value, ListSpec $list, array $config): array
     {
         $values = $this->normalizeFilterValue($value);
 
@@ -399,7 +400,7 @@ class ArchiveFilterElement extends AbstractFilterElement
         return $arr;
     }
 
-    private function getPtableInferrer(ListSpecification $list): PtableInferrer
+    private function getPtableInferrer(ListSpec $list): PtableInferrer
     {
         $cacheKey = $list->hash();
 
@@ -407,7 +408,7 @@ class ArchiveFilterElement extends AbstractFilterElement
             return $this->_inferrer[$cacheKey];
         }
 
-        $inferrable = PtableInferrableFactory::createFromListModelLike($list);
+        $inferrable = PtableInferrableFactory::createFromConfig($list->config);
         return $this->_inferrer[$cacheKey] = new PtableInferrer($inferrable, $list->dc);
     }
 
@@ -508,7 +509,7 @@ class ArchiveFilterElement extends AbstractFilterElement
      *
      * @return Model[]|null
      */
-    private function buildPreselectData(ListSpecification $list, array $preselect): ?array
+    private function buildPreselectData(ListSpec $list, array $preselect): ?array
     {
         if (!$preselect) {
             return null;

@@ -14,11 +14,8 @@ use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Event\ReaderSchemaOrgEvent;
-use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\Type\FilterTypeInterface;
-use HeimrichHannot\FlareBundle\Model\ListModel;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\FlareBundle\Util\CallableWrapper;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Twig\Extension\RuntimeExtensionInterface;
@@ -30,44 +27,9 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
         private ProjectorRegistry        $projectorRegistry,
     ) {}
 
-    public function project(ListSpecification $spec, ContextInterface $config): ViewInterface
+    public function project(ListSpec $spec, ContextInterface $config): ViewInterface
     {
         return $this->projectorRegistry->getProjectorFor($spec, $config)->project($spec, $config);
-    }
-
-    /**
-     * Creates a filter for programmatic use, e.g. `{% do flare.list.addFilter(flare_make_filter(...)) %}`.
-     *
-     * @param string $type A registered filter element type alias (config keys are the element's
-     *   canonical config), or a filter type class-string (config keys are the type's options).
-     * @param array<string, mixed> $config
-     * @param array<string, mixed>|null $data Runtime data bag, as buildFilter() receives it.
-     */
-    public function makeFilter(string $type, array $config = [], ?array $data = null, ?string $alias = null): Filter
-    {
-        if (\is_a($type, FilterTypeInterface::class, true)) {
-            return Filter::fromType($type, $config);
-        }
-
-        return new Filter(element: $type, config: $config, data: $data, alias: $alias);
-    }
-
-    /**
-     * @throws \InvalidArgumentException
-     */
-    public function getListModel(ListModel|string|int $listModel): ?ListModel
-    {
-        if ($listModel instanceof ListModel) {
-            return $listModel;
-        }
-
-        $listModel = ListModel::findByPk((int) $listModel);
-
-        if ($listModel instanceof ListModel) {
-            return $listModel;
-        }
-
-        throw new \InvalidArgumentException('Invalid list model');
     }
 
     public function getTlContent(Model $model): ?callable
@@ -140,7 +102,7 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
         return [];
     }
 
-    public function getSchemaOrg(array $context, ?Model $model = null, ?ListSpecification $list = null): ?array
+    public function getSchemaOrg(array $context, ?Model $model = null, ?ListSpec $list = null): ?array
     {
         $model ??= $context['model'] ?? null;
         if (!$model instanceof Model) {

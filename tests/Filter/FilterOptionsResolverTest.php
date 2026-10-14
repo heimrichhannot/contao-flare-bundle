@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
+use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\Element\FilterElementOptionsInterface;
-use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -57,17 +57,12 @@ final class FilterOptionsResolverTest extends TestCase
     }
 }
 
-final class ElementConfigAwareElement implements FilterElementInterface, FilterElementOptionsInterface
+final class ElementConfigAwareElement implements FilterElementInterface, OptionsContract
 {
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('field')->default(null)->allowedTypes('string', 'null');
-    }
-
-    public function configFromRow(array $row): array
-    {
-        return ['field' => $row['fieldGeneric'] ?? null];
     }
 
     public function buildForm(FormBuilderInterface $builder, FilterContext $context): void

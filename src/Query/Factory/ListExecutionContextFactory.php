@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Query\Factory;
 
-use HeimrichHannot\FlareBundle\Contract\ListType\ConfigureQueryContract;
+use HeimrichHannot\FlareBundle\Contract\ListType\BuildQueryContract;
 use HeimrichHannot\FlareBundle\Event\QueryBaseInitializedEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
 use HeimrichHannot\FlareBundle\Query\SqlQueryStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Registry\Descriptor\ListTypeDescriptor;
 use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class ListExecutionContextFactory
@@ -25,15 +25,25 @@ readonly class ListExecutionContextFactory
     /**
      * @throws FlareException
      */
-    public function create(ListSpecification $list): ListExecutionContext
+    public function create(ListSpec $list): ListExecutionContext
     {
-        /** @var ListTypeDescriptor $listTypeDescriptor */
-        $listTypeDescriptor = $this->listTypeRegistry->get($list->type);
-        if (!$listTypeDescriptor instanceof ListTypeDescriptor) {
-            throw new FlareException(\sprintf('No list type registered for type "%s".', $list->type), method: __METHOD__);
+        $listTypeDescriptor = null;
+        $listType = $list->getTypeInstance();
+
+        if (!$listType)
+        {
+            $listTypeDescriptor = $this->listTypeRegistry->get($list->getTypeAlias());
+            if (!$listTypeDescriptor instanceof ListTypeDescriptor) {
+                throw new FlareException(
+                    \sprintf('No list type registered for type "%s".', $list->getTypeAlias() ?? ''),
+                    method: __METHOD__,
+                );
+            }
+
+            $listType = $listTypeDescriptor->getService();
         }
 
-        if (!$mainTable = $list->dc ?? $listTypeDescriptor->getDataContainer()) {
+        if (!$mainTable = $list->dc ?: $listTypeDescriptor?->getDataContainer()) {
             throw new FlareException('No data container table set.', method: __METHOD__);
         }
 
@@ -46,14 +56,13 @@ readonly class ListExecutionContextFactory
             ->setSelect([TableAliasRegistry::ALIAS_MAIN . '.*'])
             ->setGroupBy([TableAliasRegistry::ALIAS_MAIN . '.id']);
 
-        $listType = $listTypeDescriptor->getService();
-        if ($listType instanceof ConfigureQueryContract) {
-            $listType->configureTableRegistry($registry);
-            $listType->configureBaseQuery($struct);
+        if ($listType instanceof BuildQueryContract) {
+            $listType->buildTableRegistry($registry);
+            $listType->buildBaseQuery($struct);
         }
 
         $this->eventDispatcher->dispatch(new QueryBaseInitializedEvent(
-            listSpecification: $list,
+            list: $list,
             registry: $registry,
             struct: $struct,
         ));

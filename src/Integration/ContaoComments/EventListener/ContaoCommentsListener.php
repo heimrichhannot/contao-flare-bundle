@@ -32,8 +32,8 @@ readonly class ContaoCommentsListener
     #[AsEventListener]
     public function onReaderBuilt(ReaderRenderEvent $event): void
     {
-        $list = $event->getListSpecification();
-        if (!$list->comments_enabled) {
+        $list = $event->getList();
+        if (!($list->config['comments_enabled'] ?? false)) {
             return;
         }
 
@@ -60,7 +60,7 @@ readonly class ContaoCommentsListener
 
         $notifies = [];
 
-        if ($list->comments_sendNativeEmails)
+        if ($list->config['comments_sendNativeEmails'] ?? false)
         {
             if ($archiveModel->notify !== 'notify_author'
                 && isset($GLOBALS['TL_ADMIN_EMAIL']))

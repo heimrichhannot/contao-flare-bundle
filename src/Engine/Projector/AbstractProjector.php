@@ -9,11 +9,11 @@ use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
-use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
@@ -45,14 +45,14 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
     /**
      * {@inheritdoc}
      */
-    abstract public function supports(ListSpecification $list, ContextInterface $context): bool;
+    abstract public function supports(ListSpec $list, ContextInterface $context): bool;
 
     /**
      * {@inheritdoc}
      *
      * The default priority is 0, but can be overriden by subclasses.
      */
-    public function priority(ListSpecification $list, ContextInterface $context): int
+    public function priority(ListSpec $list, ContextInterface $context): int
     {
         return 0;
     }
@@ -62,7 +62,7 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
      *
      * @throws FlareException Thrown if the projector does not support the provided list context and configuration.
      */
-    abstract public function project(ListSpecification $list, ContextInterface $context): ViewInterface;
+    abstract public function project(ListSpec $list, ContextInterface $context): ViewInterface;
 
     protected function getFilterElementRegistry(): FilterElementRegistry
     {
@@ -78,7 +78,7 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
      * @throws FlareException
      */
     protected function getProjectorFor(
-        ListSpecification $spec,
+        ListSpec $spec,
         ContextInterface  $config,
         ?array            $exclude = null,
     ): ProjectorInterface {

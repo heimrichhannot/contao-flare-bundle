@@ -1,0 +1,58 @@
+<?php
+
+declare(strict_types=1);
+
+namespace HeimrichHannot\FlareBundle\List\Type;
+
+use HeimrichHannot\FlareBundle\Contract\DcaContract;
+use HeimrichHannot\FlareBundle\Contract\ListType\BuildListContract;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListType;
+use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\List\ListBuilder;
+use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
+use HeimrichHannot\FlareBundle\Query\SqlJoinStruct;
+use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
+
+#[AsListType(type: self::TYPE, dataContainer: 'tl_news')]
+class NewsListType extends AbstractListType implements BuildListContract, DcaContract
+{
+    public const TYPE = 'flare_news';
+    public const ALIAS_ARCHIVE = 'news_archive';
+
+    public function buildDca(DcaBuilder $dca, DcaContext $context): void
+    {
+        $dca->palette('{filter_legend},');
+    }
+
+    public function buildTableRegistry(TableAliasRegistry $registry): void
+    {
+        $registry->registerJoin(new SqlJoinStruct(
+            fromAlias: TableAliasRegistry::ALIAS_MAIN,
+            joinType: JoinTypeEnum::INNER,
+            table: 'tl_news_archive',
+            joinAlias: self::ALIAS_ARCHIVE,
+            condition: $registry->makeJoinOn(self::ALIAS_ARCHIVE, 'id', TableAliasRegistry::ALIAS_MAIN, 'pid')
+        ));
+    }
+
+    public function buildList(ListBuilder $builder): void
+    {
+        if ($builder->hasFilterOfType(PublishedFilterElement::TYPE)) {
+            return;
+        }
+
+        $builder->addFilter(new Filter(
+            element: PublishedFilterElement::TYPE,
+            config: [
+                'intrinsic' => true,
+                'published_field' => 'published',
+                'start_field' => 'start',
+                'stop_field' => 'stop',
+                'invert' => false,
+            ],
+        ));
+    }
+}

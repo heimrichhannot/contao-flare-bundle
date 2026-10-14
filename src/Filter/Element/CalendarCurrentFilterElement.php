@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -11,6 +12,7 @@ use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Type\CalendarCurrentFilterType;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -40,17 +42,16 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
         $resolver->define('has_extended_events')->default(false)->allowedTypes('bool');
     }
 
-    public function configFromRow(array $row): array
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        return [
-            'intrinsic' => (bool) ($row['intrinsic'] ?? false),
-            'is_limited' => (bool) ($row['isLimited'] ?? false),
-            'configure_start' => ($row['configureStart'] ?? null) ?: null,
-            'configure_stop' => ($row['configureStop'] ?? null) ?: null,
-            'start_at' => ($row['startAt'] ?? null) ?: null,
-            'stop_at' => ($row['stopAt'] ?? null) ?: null,
-            'has_extended_events' => (bool) ($row['hasExtendedEvents'] ?? false),
-        ];
+        $config
+            ->set('intrinsic', (bool) $model->intrinsic)
+            ->set('is_limited', (bool) $model->isLimited)
+            ->set('configure_start', $model->configureStart ?: null)
+            ->set('configure_stop', $model->configureStop ?: null)
+            ->set('start_at', $model->startAt ?: null)
+            ->set('stop_at', $model->stopAt ?: null)
+            ->set('has_extended_events', (bool) $model->hasExtendedEvents);
     }
 
     public function buildForm(FormBuilderInterface $builder, FilterContext $context): void

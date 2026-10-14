@@ -671,7 +671,7 @@ Recorded here because each one closes a branch the design could otherwise have t
 Not blockers, but unverified at spec time.
 
 1. ~~**`serialize()` stability for readonly value objects**~~ — **measured** in step 0.
-   `tests/Filter/ValueObjectSerializeProbeTest.php` (throwaway, `@group probe`) exercises the real
+   A throwaway probe test (commit 06fc013 on `feat/filter-types`, not carried over) exercised the real
    `ListSpec::hash()` path via `Filter::$data`. Results:
    - §9's core claim **holds**: two separately constructed, equal `final readonly` value objects of
      scalars, arrays, enums and nested value objects hash identically, and survive a

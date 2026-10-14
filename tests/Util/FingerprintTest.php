@@ -14,7 +14,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Closes SPEC_FILTER_FORMS.md §14.1.
  *
- * tests/Filter/ValueObjectSerializeProbeTest.php measured that `serialize()` is not a pure value
+ * A throwaway probe (commit 06fc013, not carried over) measured that `serialize()` is not a pure value
  * function over an object *graph*: a repeated object is emitted as a back-reference (`r:N;`), so a
  * hash over two filters differs depending on whether they share one value instance or hold two
  * equal ones. That probe left step 1 a choice between keeping a flattening step and accepting the

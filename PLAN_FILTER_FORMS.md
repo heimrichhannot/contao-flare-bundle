@@ -137,7 +137,7 @@ Outcome: presentation becomes a separately registered, per-instance-selectable c
 New files plus one additive column. Nothing existing changes behaviour.
 
 > **§14.1 is answered — and it constrains this phase.** Phase 0's throwaway probe
-> (`tests/Filter/ValueObjectSerializeProbeTest.php`, `@group probe`) measured `serialize()` against
+> (commit 06fc013 on `feat/filter-types`, not carried over) measured `serialize()` against
 > `ListSpec::hash()`. §9's core claim holds: equal-but-distinct `final readonly` value objects of
 > scalars, arrays, enums and nested value objects hash identically and survive a round trip, and
 > every hazard §9 names is confirmed. **But `serialize()` is not a pure value function over an

@@ -10,7 +10,7 @@ namespace HeimrichHannot\FlareBundle\Util;
  * `serialize()` is a pure value function over a value *tree*, but not over an object *graph*: a
  * repeated object is emitted as a back-reference (`r:N;`), so two structures holding one shared
  * instance and two equal instances serialize differently. This was measured in
- * tests/Filter/ValueObjectSerializeProbeTest.php; see SPEC_FILTER_FORMS.md §14.1. Arrays and
+ * a throwaway probe (commit 06fc013, not carried over); see SPEC_FILTER_FORMS.md §14.1. Arrays and
  * scalars are never back-referenced, so a structure containing no objects at all cannot exhibit
  * the asymmetry — and that is what this class produces.
  *

@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
@@ -17,6 +17,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
 {
     public function __construct(
         private ValidationLoaderConfig $config,
+        private FilterFactory          $filterFactory,
         private ListQueryDirector      $listQueryDirector,
     ) {}
 
@@ -33,7 +34,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
 
         try
         {
-            $idDefinition = new Filter(
+            $idDefinition = $this->filterFactory->create(
                 element: SimpleEquationFilterElement::TYPE,
                 config: [
                     'intrinsic' => true,
@@ -68,7 +69,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
 
         try
         {
-            $autoItemDefinition = new Filter(
+            $autoItemDefinition = $this->filterFactory->create(
                 element: SimpleEquationFilterElement::TYPE,
                 config: [
                     'intrinsic' => true,

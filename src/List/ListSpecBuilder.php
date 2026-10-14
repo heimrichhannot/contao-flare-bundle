@@ -5,25 +5,25 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\List;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Contract\ListType\BuildListContract;
+use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildListContract;
 use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
+use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
+use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
-use HeimrichHannot\FlareBundle\List\Type\ListTypeInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Configures a list and its filters, then builds the immutable {@see ListSpec}.
  *
- * Build order: the type's {@see BuildListContract::buildList()} hook, the
+ * Build order: the driver's {@see BuildListContract::buildList()} hook, the
  * {@see ListBuildEvent} (named dispatch `flare.list.{type}.build`), then config assembly —
- * base translation, the type's model transformers, and explicit {@see set()} overrides —
- * resolved through the base and type schemas.
+ * base translation, the driver's model transformers, and explicit {@see set()} overrides —
+ * handed to {@see ListSpecFactory} for schema resolution and construction.
  */
-final class ListBuilder implements ListBuilderInterface
+final class ListSpecBuilder implements ListSpecBuilderInterface
 {
     /**
      * @var array<string, Filter>
@@ -38,34 +38,17 @@ final class ListBuilder implements ListBuilderInterface
     private int $generatedFilterKeys = 0;
 
     public function __construct(
-        private readonly ListOptionsResolver      $optionsResolver,
+        private readonly ListSpecFactory          $specFactory,
         private readonly ListTransformerResolver  $transformerResolver,
         private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly ListTypeInterface|string $type,
-        private readonly ?object                  $typeService,
-        private readonly string                   $dc,
+        private readonly ListDriverInterface      $driver,
         private readonly ?ListModel               $model = null,
         private readonly ?string                  $source = null,
     ) {}
 
-    public function getType(): ListTypeInterface|string
+    public function getDriver(): ListDriverInterface
     {
-        return $this->type;
-    }
-
-    public function getTypeAlias(): ?string
-    {
-        return \is_string($this->type) ? $this->type : null;
-    }
-
-    public function getTypeService(): ?object
-    {
-        return $this->typeService;
-    }
-
-    public function getDc(): string
-    {
-        return $this->dc;
+        return $this->driver;
     }
 
     public function getModel(): ?ListModel
@@ -79,7 +62,7 @@ final class ListBuilder implements ListBuilderInterface
     }
 
     /**
-     * Sets a canonical config value, overriding base translation and type transformers.
+     * Sets a canonical config value, overriding base translation and driver transformers.
      */
     public function set(string $key, mixed $value): self
     {
@@ -123,7 +106,7 @@ final class ListBuilder implements ListBuilderInterface
     {
         foreach ($this->filters as $filter)
         {
-            if ($filter->getElementType() === $elementType) {
+            if ($filter->type === $elementType) {
                 return true;
             }
         }
@@ -132,12 +115,15 @@ final class ListBuilder implements ListBuilderInterface
     }
 
     /**
-     * @throws FlareException If the resulting config does not satisfy the schema.
+     * @throws FlareException If the resulting config does not satisfy the schema or no data
+     *                        container can be determined.
      */
     public function build(): ListSpec
     {
-        if ($this->typeService instanceof BuildListContract) {
-            $this->typeService->buildList($this);
+        $driver = $this->driver;
+
+        if ($driver instanceof BuildListContract) {
+            $driver->buildList($this);
         }
 
         $this->eventDispatcher->dispatch(new ListBuildEvent($this));
@@ -148,17 +134,10 @@ final class ListBuilder implements ListBuilderInterface
         {
             BaseListOptions::transform($config, $this->model);
 
-            if ($this->typeService instanceof ListTypeInterface)
-            {
-                $transformed = $this->transformerResolver->transform(
-                    $this->typeService,
-                    $this->getTypeAlias(),
-                    $this->model,
-                );
+            $transformed = $this->transformerResolver->transform($driver, $this->model);
 
-                foreach ($transformed ?? [] as $key => $value) {
-                    $config->set($key, $value);
-                }
+            foreach ($transformed ?? [] as $key => $value) {
+                $config->set($key, $value);
             }
         }
 
@@ -166,11 +145,10 @@ final class ListBuilder implements ListBuilderInterface
             $config->set($key, $value);
         }
 
-        return new ListSpec(
-            type: $this->type,
-            dc: $this->dc,
+        return $this->specFactory->create(
+            driver: $driver,
             filters: $this->filters,
-            config: $this->optionsResolver->resolve($this->typeService, $config->all(), $this->source),
+            config: $config->all(),
             source: $this->source,
         );
     }

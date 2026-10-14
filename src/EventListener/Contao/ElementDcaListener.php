@@ -10,13 +10,13 @@ use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\Event\ElementDcaEvent;
-use HeimrichHannot\FlareBundle\List\Factory\ListBuilderFactory;
+use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -35,8 +35,8 @@ readonly class ElementDcaListener
         private EventDispatcherInterface    $eventDispatcher,
         private FilterElementRegistry       $filterElementRegistry,
         private ListExecutionContextFactory $listExecutionContextFactory,
-        private ListBuilderFactory          $listFactory,
-        private ListTypeRegistry            $listTypeRegistry,
+        private ListSpecBuilderFactory      $listFactory,
+        private ListDriverRegistry          $listDriverRegistry,
         private RequestStack                $requestStack,
     ) {}
 
@@ -70,7 +70,7 @@ readonly class ElementDcaListener
             $filterModel = FilterModel::findByPk($id);
             $listModel = $filterModel?->getRelated('pid');
             $type = (string) ($filterModel->type ?? '');
-            $service = $this->filterElementRegistry->get($type)?->getService();
+            $service = $this->filterElementRegistry->getService($type);
         }
         /** @mago-expect lint:no-else-clause This else clause is fine. */
         else
@@ -78,7 +78,7 @@ readonly class ElementDcaListener
             $filterModel = null;
             $listModel = ListModel::findByPk($id);
             $type = (string) ($listModel->type ?? '');
-            $service = $this->listTypeRegistry->get($type)?->getService();
+            $service = $this->listDriverRegistry->getService($type);
         }
 
         if (!$listModel instanceof ListModel || !$type || $type === 'default' || \str_starts_with($type, '__')) {

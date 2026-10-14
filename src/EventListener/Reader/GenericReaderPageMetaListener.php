@@ -42,7 +42,7 @@ readonly class GenericReaderPageMetaListener
         }
 
         $tokens = [
-            'list.type' => $list->getTypeAlias() ?? $list->type::class,
+            'list.driver_class' => \get_class($list->driver),
             'list.dc' => $list->dc,
         ];
 

@@ -7,9 +7,9 @@ namespace HeimrichHannot\FlareBundle\DataContainer;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\Contract\ListType\DataContainerContract;
+use HeimrichHannot\FlareBundle\Contract\ListDriver\DataContainerContract;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
-use HeimrichHannot\FlareBundle\Registry\ListTypeRegistry;
+use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
@@ -18,8 +18,8 @@ class ListContainer
     public const TABLE_NAME = 'tl_flare_list';
 
     public function __construct(
-        private readonly Connection       $connection,
-        private readonly ListTypeRegistry $listTypeRegistry,
+        private readonly Connection         $connection,
+        private readonly ListDriverRegistry $listDriverRegistry,
     ) {}
 
     /* ============================= *
@@ -39,23 +39,22 @@ class ListContainer
             return;
         }
 
-        if (!$listTypeConfig = $this->listTypeRegistry->get($type)) {
+        if (!$service = $this->listDriverRegistry->getService($type)) {
             return;
         }
 
-        $service = $listTypeConfig->getService();
-
         if (($service instanceof DataContainerContract)
-            && !$expectedDataContainer = $service->getDataContainerName($row, $dc))
+            && !$expectedDataContainer = $service->resolveDataContainerTable($row, $dc))
         {
             return;
         }
 
         // if no data container is set, use the default data container of the list type
-        $expectedDataContainer ??= $listTypeConfig->getDataContainer();
+        $default = $this->listDriverRegistry->getAttribute($type)?->dataContainer;
+        $expectedDataContainer ??= \is_string($default) ? $default : null;
 
         if (!$expectedDataContainer) {
-            throw new BadRequestHttpException('No data container found for list type ' . $type);
+            throw new BadRequestHttpException(\sprintf('No data container found for list type "%s".', $type));
         }
 
         if ($expectedDataContainer !== ($row['dc'] ?? null))

@@ -2,22 +2,30 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\List\Type;
+namespace HeimrichHannot\FlareBundle\List\Driver;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerResolver;
-use HeimrichHannot\FlareBundle\Contract\ListType\BuildQueryContract;
+use HeimrichHannot\FlareBundle\Contract\DcaContract;
+use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildQueryContract;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\List\CallbackListModelTransformer;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\SqlQueryStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-abstract class AbstractListType implements
-    ListTypeInterface, OptionsContract, TransformerContract, BuildQueryContract
+abstract class AbstractListDriver implements
+    ListDriverInterface, BuildQueryContract, DcaContract, OptionsContract, TransformerContract
 {
+    public function getDataContainerName(array $config): string
+    {
+        return (string) ($config['dc'] ?? '');
+    }
+
     /**
      * Declares the type's config schema on top of {@see \HeimrichHannot\FlareBundle\List\BaseListOptions}.
      */
@@ -36,6 +44,8 @@ abstract class AbstractListType implements
      * Base columns are already translated by {@see \HeimrichHannot\FlareBundle\List\BaseListOptions}.
      */
     protected function transformListModel(ConfigBuilder $config, ListModel $model): void {}
+
+    public function buildDca(DcaBuilder $dca, DcaContext $context): void {}
 
     public function buildTableRegistry(TableAliasRegistry $registry): void {}
 

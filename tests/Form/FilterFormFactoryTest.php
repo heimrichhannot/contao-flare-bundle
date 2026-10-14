@@ -15,12 +15,10 @@ use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Resolver\FilterElementResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\List\ListSpec;
-use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -50,14 +48,24 @@ final class FilterFormFactoryTest extends TestCase
         return new FilterFormFactory(
             eventDispatcher: $this->eventDispatcher,
             filterContextFactory: new FilterContextFactory(new FilterOptionsResolver(new SchemaResolver())),
-            filterElementResolver: new FilterElementResolver(new FilterElementRegistry(), new NullLogger()),
             formFactory: $formFactory,
         );
     }
 
     private function createForm(array $filters): FormInterface
     {
-        $list = new ListSpec(type: 'test', dc: 'tl_test', filters: $filters);
+        $driver = new class implements ListDriverInterface {
+            public function getDataContainerName(array $config): string
+            {
+                return (string) ($config['dc'] ?? '');
+            }
+        };
+
+        $list = new ListSpec(
+            driver: $driver,
+            filters: $filters,
+            config: ['dc' => 'tl_test'],
+        );
 
         $context = new class implements ContextInterface, FormContextInterface {
             public static function getContextType(): string
@@ -80,6 +88,8 @@ final class FilterFormFactoryTest extends TestCase
     }
 
     /**
+     * Creates an element building its form via the given callable.
+     *
      * @param callable(FilterFormBuilderInterface, FilterContext): void $buildForm
      */
     private function element(callable $buildForm): FilterElementInterface

@@ -7,11 +7,15 @@ namespace HeimrichHannot\FlareBundle\Engine\Mod;
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class SimpleEquationMod extends AbstractMod
 {
+    public function __construct(
+        private readonly FilterFactory $filterFactory,
+    ) {}
+
     public static function getType(): string
     {
         return 'equation';
@@ -19,7 +23,7 @@ class SimpleEquationMod extends AbstractMod
 
     public function __invoke(Engine $engine, array $options): void
     {
-        $filter = new Filter(
+        $filter = $this->filterFactory->create(
             element: SimpleEquationFilterElement::TYPE,
             config: [
                 'intrinsic' => true,

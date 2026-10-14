@@ -20,7 +20,7 @@ use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\List\Factory\ListBuilderFactory;
+use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Psr\Log\LoggerInterface;
@@ -47,7 +47,7 @@ final class ListViewController extends AbstractContentElementController
         private readonly EventDispatcherInterface  $eventDispatcher,
         private readonly InteractiveContextFactory $interactiveConfigFactory,
         private readonly KernelInterface           $kernel,
-        private readonly ListBuilderFactory        $listFactory,
+        private readonly ListSpecBuilderFactory    $listFactory,
         private readonly LoggerInterface           $logger,
         private readonly ScopeMatcher              $scopeMatcher,
         private readonly SymfonyResponseTagger     $responseTagger,

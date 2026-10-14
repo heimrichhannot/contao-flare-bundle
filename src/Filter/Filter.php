@@ -9,15 +9,19 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 /**
  * Immutable runtime representation of a single filter within a list.
  *
- * Pairs a filter element (registered type string or inline instance) with its canonical,
- * element-defined configuration. Contains no DCA/storage specifics — translating a stored
- * source into config is the element's transformer responsibility
+ * Pairs a filter element instance with its canonical, element-defined configuration.
+ * Contains no DCA/storage specifics — translating a stored source into config is the
+ * element's transformer responsibility
  * ({@see \HeimrichHannot\FlareBundle\Contract\TransformerContract}).
+ *
+ * Use {@see Factory\FilterFactory} to create filters from a registered type alias.
  */
 final readonly class Filter
 {
     /**
-     * @param FilterElementInterface|string $element Registered element type alias or an inline element instance.
+     * @param FilterElementInterface $element Filter element service (registered or inline).
+     * @param string|null $type Registered element type alias, if known. Only used for named
+     *   event dispatch (`flare.filter_element.{type}.*`) and targeting lookups.
      * @param array<string, mixed> $config Canonical config (element-defined schema); scalars, arrays, and enums only.
      * @param array<string, mixed>|null $data Runtime data bag, same shape buildFilter() receives
      *   (single-field elements read {@see FilterContext::SINGLE_VALUE}). Submitted form
@@ -29,24 +33,15 @@ final readonly class Filter
      * @param string|null $source Provenance for error messages, e.g. "tl_flare_filter.42".
      */
     public function __construct(
-        public FilterElementInterface|string $element,
-        public array                         $config = [],
-        public ?array                        $data = null,
-        public ?string                       $alias = null,
-        public ?string                       $targetAlias = null,
-        public bool                          $targetingForced = false,
-        public ?string                       $source = null,
+        public FilterElementInterface $element,
+        public ?string                $type = null,
+        public array                  $config = [],
+        public ?array                 $data = null,
+        public ?string                $alias = null,
+        public ?string                $targetAlias = null,
+        public bool                   $targetingForced = false,
+        public ?string                $source = null,
     ) {}
-
-    public function getElementType(): ?string
-    {
-        return \is_string($this->element) ? $this->element : null;
-    }
-
-    public function getElementInstance(): ?FilterElementInterface
-    {
-        return $this->element instanceof FilterElementInterface ? $this->element : null;
-    }
 
     /**
      * @param array<string, mixed> $config
@@ -55,6 +50,7 @@ final readonly class Filter
     {
         return new self(
             element: $this->element,
+            type: $this->type,
             config: $config,
             data: $this->data,
             alias: $this->alias,
@@ -71,6 +67,7 @@ final readonly class Filter
     {
         return new self(
             element: $this->element,
+            type: $this->type,
             config: $this->config,
             data: $data,
             alias: $this->alias,
@@ -84,6 +81,7 @@ final readonly class Filter
     {
         return new self(
             element: $this->element,
+            type: $this->type,
             config: $this->config,
             data: $this->data,
             alias: $alias,
@@ -97,6 +95,7 @@ final readonly class Filter
     {
         return new self(
             element: $this->element,
+            type: $this->type,
             config: $this->config,
             data: $this->data,
             alias: $this->alias,
@@ -110,23 +109,24 @@ final readonly class Filter
     {
         return new self(
             element: $this->element,
+            type: $this->type,
             config: $this->config,
             data: $this->data,
             alias: $this->alias,
             targetAlias: $this->targetAlias,
             targetingForced: $this->targetingForced,
-            source: $source
+            source: $source,
         );
     }
 
     /**
-     * Stable representation for hashing/caching. Inline elements are represented by their
-     * class name, which makes hashes of anonymous elements request-local.
+     * Stable representation for hashing/caching.
      */
     public function fingerprint(): array
     {
         return [
-            'element' => $this->getElementType() ?? $this->element::class,
+            'element' => \get_class($this->element),
+            'type' => $this->type,
             'config' => $this->config,
             'data' => $this->data,
             'alias' => $this->alias,

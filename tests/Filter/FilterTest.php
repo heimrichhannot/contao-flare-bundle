@@ -8,33 +8,38 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Form\FormBuilderInterface;
 
 final class FilterTest extends TestCase
 {
-    public function testElementUnionAccessors(): void
+    private static function element(): FilterElementInterface
     {
-        $typed = new Filter(element: 'flare_bool');
+        static $element = null;
 
-        self::assertSame('flare_bool', $typed->getElementType());
-        self::assertNull($typed->getElementInstance());
+        return $element ??= new class implements FilterElementInterface {
+            public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
 
-        $instance = $this->createInlineElement();
-        $inline = new Filter(element: $instance);
-
-        self::assertNull($inline->getElementType());
-        self::assertSame($instance, $inline->getElementInstance());
+            public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void {}
+        };
     }
 
     public function testWithersPreserveOtherFields(): void
     {
-        $filter = new Filter(element: 'test', config: ['a' => 1], alias: 'foo', source: 'tl_flare_filter.1');
+        $filter = new Filter(
+            element: self::element(),
+            type: 'test',
+            config: ['a' => 1],
+            alias: 'foo',
+            source: 'tl_flare_filter.1',
+        );
 
         $withData = $filter->withData(['value' => 42]);
 
         self::assertNull($filter->data);
         self::assertSame(['value' => 42], $withData->data);
+        self::assertSame(self::element(), $withData->element);
+        self::assertSame('test', $withData->type);
         self::assertSame('foo', $withData->alias);
         self::assertSame(['a' => 1], $withData->config);
         self::assertSame('tl_flare_filter.1', $withData->source);
@@ -46,24 +51,16 @@ final class FilterTest extends TestCase
         self::assertFalse($filter->targetingForced);
     }
 
-    public function testFingerprintRepresentsInlineElementsByClass(): void
+    public function testFingerprintReflectsIdentityAndContent(): void
     {
-        $instance = $this->createInlineElement();
-        $filter = new Filter(element: $instance);
+        $filter = new Filter(element: self::element(), type: 'test', config: ['a' => 1], alias: 'foo');
 
-        self::assertSame($instance::class, $filter->fingerprint()['element']);
-    }
+        $fingerprint = $filter->fingerprint();
 
-    private function createInlineElement(): FilterElementInterface
-    {
-        return new class implements FilterElementInterface {
-            public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
-            {
-            }
-
-            public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
-            {
-            }
-        };
+        self::assertSame(\get_class(self::element()), $fingerprint['element']);
+        self::assertSame('test', $fingerprint['type']);
+        self::assertSame(['a' => 1], $fingerprint['config']);
+        self::assertSame('foo', $fingerprint['alias']);
+        self::assertNotSame($fingerprint, $filter->withConfig(['a' => 2])->fingerprint());
     }
 }

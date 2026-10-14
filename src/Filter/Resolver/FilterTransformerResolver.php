@@ -16,12 +16,12 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  * source (e.g. a FilterModel) into canonical config values. The configured transformer map
  * is memoized per element class; listeners extend it via {@see FilterTransformerEvent}.
  */
-class FilterTransformerResolver
+final class FilterTransformerResolver
 {
     /**
      * @var array<class-string, TransformerResolver>
      */
-    private array $builders = [];
+    private array $resolvers = [];
 
     public function __construct(
         private readonly EventDispatcherInterface $eventDispatcher,
@@ -32,20 +32,20 @@ class FilterTransformerResolver
      */
     public function transform(FilterElementInterface $element, ?string $elementType, object $source): ?array
     {
-        if (!isset($this->builders[$element::class]))
+        if (!isset($this->resolvers[$element::class]))
         {
-            $transformers = new TransformerResolver();
+            $resolver = new TransformerResolver();
 
             if ($element instanceof TransformerContract) {
-                $element->configureTransformers($transformers);
+                $element->configureTransformers($resolver);
             }
 
-            $this->eventDispatcher->dispatch(new FilterTransformerEvent($transformers, $element, $elementType));
+            $this->eventDispatcher->dispatch(new FilterTransformerEvent($resolver, $element, $elementType));
 
-            $this->builders[$element::class] = $transformers;
+            $this->resolvers[$element::class] = $resolver;
         }
 
-        if (!$transformer = $this->builders[$element::class]->resolve($source)) {
+        if (!$transformer = $this->resolvers[$element::class]->resolve($source)) {
             return null;
         }
 

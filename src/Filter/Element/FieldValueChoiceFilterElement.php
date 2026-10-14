@@ -15,12 +15,12 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Type\FieldValueChoiceFilterType;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE)]
@@ -57,7 +57,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
             ->set('preselect', $this->normalizePreselect($model->preselect, $multiple));
     }
 
-    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
+    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
     {
         $config = $context->config;
 
@@ -68,21 +68,22 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
         $choicesBuilder = $this->createChoices($context->list->dc, (string) ($config['field'] ?? ''))
             ->setEmptyOption(!$config['multiple']);
 
-        $builder->add(FilterContext::FIELD_VALUE, ChoiceType::class, [
+        $formOptions = [
             'label' => false,
             'multiple' => $config['multiple'],
             'expanded' => $config['expanded'],
             'required' => false,
-            'choice_loader' => $choicesBuilder->buildCallbackChoiceLoader(),
-            'choice_label' => $choicesBuilder->buildChoiceLabelCallback(),
-            'choice_value' => $choicesBuilder->buildChoiceValueCallback(),
             'data' => $this->buildPreselectData($choicesBuilder, $config),
-        ]);
+        ];
+
+        $choicesBuilder->applyFormOptions($formOptions);
+
+        $builder->single(ChoiceType::class, $formOptions);
 
         $builder->setAttribute('flare.choices_builder', $choicesBuilder);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
         if ($context->engineContext instanceof ValidationContext) {
             return;
@@ -96,7 +97,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
 
         $value = $config['intrinsic']
             ? $config['preselect']
-            : $this->normalizeRuntimeValue($data[FilterContext::FIELD_VALUE] ?? null, $context);
+            : $this->normalizeRuntimeValue($values[FilterContext::SINGLE_VALUE] ?? null, $context);
 
         if (!$value) {
             return;
@@ -134,7 +135,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
 
                 return $this->createChoices($table, $valueField)
                     ->setModelSuffix('[%id%]')
-                    ->buildOptions();
+                    ->buildContaoOptions();
             });
     }
 
@@ -144,9 +145,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
      */
     private function createChoices(string $table, string $field): ChoicesBuilder
     {
-        $choices = $this->choicesBuilderFactory
-            ->createChoicesBuilder()
-            ->enable();
+        $choices = $this->choicesBuilderFactory->createChoicesBuilder();
 
         if (!\is_null($foreignValues = $this->getForeignValues($table, $field)))
         {
@@ -236,8 +235,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement
             return $preselect;
         }
 
-        if ($multiple
-            || (\is_string($preselect) && \preg_match('/^a:\d+:\{.*}$/', $preselect)))
+        if ($multiple || (\is_string($preselect) && \preg_match('/^a:\d+:\{.*}$/', $preselect)))
         {
             return StringUtil::deserialize($preselect, true);
         }

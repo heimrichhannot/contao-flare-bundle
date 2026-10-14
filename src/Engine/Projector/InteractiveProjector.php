@@ -15,7 +15,8 @@ use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\AggregationView;
 use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Form\Factory\FilterFormFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFormFactory;
+use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
@@ -118,8 +119,9 @@ class InteractiveProjector extends AbstractProjector
     }
 
     /**
-     * Collects each filter's submitted form data (the compound child's data array),
-     * keyed by the filter's list-specification key.
+     * Collects each filter's form data, keyed by the filter's list-specification key.
+     * Flat-mounted single fields are normalized to the canonical values-bag shape
+     * `[FilterContext::DEFAULT_FIELD_NAME => value]` that buildFilter() consumes.
      *
      * @return array<string|int, array<string, mixed>>
      */
@@ -133,7 +135,38 @@ class InteractiveProjector extends AbstractProjector
                 continue;
             }
 
-            $data[$key] = (array) $form->get($filter->alias)->getData();
+            $child = $form->get($filter->alias);
+
+            if ($child->getConfig()->getAttribute(FilterContext::ATTR_SINGLE_FIELD))
+            {
+                // Submitted value, or the field's configured default (e.g., a `preselect`) when
+                // unsubmitted. Unsubmitted null defaults stay unset, so Filter::$data can take over.
+                $value = $child->getData();
+
+                if ($form->isSubmitted() || !\is_null($value)) {
+                    $data[$key] = [FilterContext::SINGLE_VALUE => $value];
+                }
+
+                continue;
+            }
+
+            if ($form->isSubmitted())
+            {
+                $data[$key] = (array) $child->getData();
+                continue;
+            }
+
+            // Unsubmitted forms never map the fields' default data (e.g., preselects) back onto
+            // the compound filter child, so collect the defaults from the fields directly.
+            // Filters without defaults stay unset here, so Filter::$data can take over.
+            $values = \array_filter(
+                \array_map(static fn (FormInterface $field): mixed => $field->getData(), $child->all()),
+                static fn (mixed $value): bool => !\is_null($value),
+            );
+
+            if ($values) {
+                $data[$key] = $values;
+            }
         }
 
         return $data;

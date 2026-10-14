@@ -12,15 +12,14 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Type\IntegerIdChoiceFilterType;
-use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegistry;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE, isTargeted: true)]
@@ -29,7 +28,6 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
     public const TYPE = 'cfg_tags_choice';
 
     public function __construct(
-        private readonly ChoicesBuilderFactory       $choicesBuilderFactory,
         private readonly CfgTagsJoinsRegistry        $joinsRegistry,
         private readonly ListExecutionContextFactory $listExecutionContextFactory,
         private readonly LoggerInterface             $logger,
@@ -60,7 +58,7 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
             ->set('placeholder', $model->placeholder ?: null);
     }
 
-    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
+    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
     {
         $config = $context->config;
 
@@ -97,23 +95,19 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
 
         if (!\is_null($optValues))
         {
-            $choicesBuilder = $this->choicesBuilderFactory->createChoicesBuilder()->enable();
+            $choicesBuilder = $this->createChoicesBuilder()->applyFormOptions($formOptions);
 
             foreach ($optValues as $value => $label) {
                 $choicesBuilder->add((string) $value, (string) $label, (int) $value);
             }
 
-            $formOptions['choice_loader'] = $choicesBuilder->buildCallbackChoiceLoader();
-            $formOptions['choice_label'] = $choicesBuilder->buildChoiceLabelCallback();
-            $formOptions['choice_value'] = $choicesBuilder->buildChoiceValueCallback();
-
             $builder->setAttribute('flare.choices_builder', $choicesBuilder);
         }
 
-        $builder->add(FilterContext::FIELD_VALUE, ChoiceType::class, $formOptions);
+        $builder->single(ChoiceType::class, $formOptions);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
         $config = $context->config;
 
@@ -122,7 +116,7 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement
         /** @var ?array $tagIds */
         $tagIds = $config['intrinsic']
             ? $preselect
-            : $this->processRuntimeValue($data[FilterContext::FIELD_VALUE] ?? null);
+            : $this->processRuntimeValue($values[FilterContext::SINGLE_VALUE] ?? null);
 
         if (!$tagIds) {
             return;

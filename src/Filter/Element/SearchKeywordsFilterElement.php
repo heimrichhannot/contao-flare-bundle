@@ -11,10 +11,10 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Type\SearchKeywordsFilterType;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE, isTargeted: true)]
@@ -41,7 +41,7 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
             ->set('placeholder', $model->placeholder ?: null);
     }
 
-    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
+    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
     {
         $config = $context->config;
 
@@ -58,16 +58,16 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
             $options['attr']['placeholder'] = $config['placeholder'];
         }
 
-        $builder->add(FilterContext::FIELD_VALUE, TextType::class, $options);
+        $builder->single(TextType::class, $options);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
         $config = $context->config;
 
         $value = $config['intrinsic']
             ? $config['prefill']
-            : ($data[FilterContext::FIELD_VALUE] ?? null);
+            : ($values[FilterContext::SINGLE_VALUE] ?? null);
 
         if (!$value || !\is_string($value)) {
             return;

@@ -14,10 +14,10 @@ use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
 use HeimrichHannot\FlareBundle\Enum\BoolMode;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Type\BooleanFilterType;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
-use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE, isTargeted: true)]
@@ -46,19 +46,19 @@ class BooleanFilterElement extends AbstractFilterElement
             ->set('label', $model->label ?: $model->title ?: null);
     }
 
-    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
+    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
     {
         if ($context->config['intrinsic']) {
             return;
         }
 
-        $builder->add(FilterContext::FIELD_VALUE, CheckboxType::class, [
+        $builder->single(CheckboxType::class, [
             'label' => $context->config['label'] ?? 'CBX',
             'required' => false,
         ]);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
         $config = $context->config;
 
@@ -68,7 +68,7 @@ class BooleanFilterElement extends AbstractFilterElement
 
         $value = $config['intrinsic']
             ? $config['preselect']
-            : $this->resolveRuntimeValue($data[FilterContext::FIELD_VALUE] ?? null, $config);
+            : $this->resolveRuntimeValue($values[FilterContext::SINGLE_VALUE] ?? null, $config);
 
         if ($value === null) {
             return;
@@ -164,5 +164,4 @@ class BooleanFilterElement extends AbstractFilterElement
 
         return $options;
     }
-
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\List\Resolver;
 
+use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\List\BaseListOptions;
@@ -14,12 +15,11 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  * type's declared schema ({@see OptionsContract}). The combined resolver is memoized
  * per type class.
  */
-class ListOptionsResolver
+final readonly class ListOptionsResolver
 {
-    /**
-     * @var array<string, OptionsResolver> Keyed by type class; '' for type-less lists.
-     */
-    private array $resolvers = [];
+    public function __construct(
+        private SchemaResolver $schemaResolver,
+    ) {}
 
     /**
      * @param array<string, mixed> $config
@@ -28,36 +28,32 @@ class ListOptionsResolver
      *
      * @throws FlareException If the config does not satisfy the schema.
      */
-    public function resolve(?object $typeService, array $config, ?string $source = null): array
+    public function resolve(?object $driverService, array $config, ?string $source = null): array
     {
-        $key = $typeService ? $typeService::class : '';
-
-        if (!isset($this->resolvers[$key]))
-        {
-            $resolver = new OptionsResolver();
+        $configure = static function (OptionsResolver $resolver) use ($driverService): void {
             BaseListOptions::configureOptions($resolver);
 
-            if ($typeService instanceof OptionsContract) {
-                $typeService->configureOptions($resolver);
+            if ($driverService instanceof OptionsContract) {
+                $driverService->configureOptions($resolver);
             }
+        };
 
-            $this->resolvers[$key] = $resolver;
-        }
+        $driverClass = $driverService ? $driverService::class : null;
 
         try
         {
-            return $this->resolvers[$key]->resolve($config);
+            return $this->schemaResolver->resolve((string) $driverClass, $configure, $config);
         }
         catch (\Throwable $e)
         {
             throw new FlareException(
                 \sprintf(
                     '[FLARE] Invalid list config%s: %s',
-                    $typeService ? ' for list type "' . $typeService::class . '"' : '',
+                    $driverService ? ' for list type "' . $driverService::class . '"' : '',
                     $e->getMessage(),
                 ),
                 previous: $e,
-                method: ($typeService ? $typeService::class : BaseListOptions::class) . '::configureOptions',
+                method: ($driverClass ?? BaseListOptions::class) . '::configureOptions',
                 source: $source,
             );
         }

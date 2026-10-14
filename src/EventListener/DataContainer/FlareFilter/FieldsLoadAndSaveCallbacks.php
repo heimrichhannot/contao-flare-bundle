@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareFilter;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicContract;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
@@ -79,7 +80,9 @@ readonly class FieldsLoadAndSaveCallbacks
             return $value;
         }
 
-        if ($this->filterElementRegistry->get($row['type'] ?? null)?->isIntrinsicOnly())
+        $filterElement = $this->filterElementRegistry->get($row['type'] ?? null)?->getService();
+
+        if ($filterElement instanceof IntrinsicContract && $filterElement->isOnlyIntrinsic())
         {
             $eval = &$GLOBALS['TL_DCA'][self::TABLE_NAME]['fields']['intrinsic']['eval'];
 
@@ -98,7 +101,9 @@ readonly class FieldsLoadAndSaveCallbacks
             return $value;
         }
 
-        if ($this->filterElementRegistry->get($row['type'] ?? null)?->isIntrinsicOnly()) {
+        $element = $this->filterElementRegistry->get($row['type'] ?? null)?->getService();
+
+        if ($element instanceof IntrinsicContract && $element->isOnlyIntrinsic()) {
             return '1';
         }
 

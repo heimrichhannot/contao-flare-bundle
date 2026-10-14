@@ -14,21 +14,16 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Type\DcaSelectFilterType;
-use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 #[AsFilterElement(type: self::TYPE)]
 class DcaSelectFieldFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_dcaSelectField';
-
-    public function __construct(
-        private readonly ChoicesBuilderFactory $choicesBuilderFactory,
-    ) {}
 
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -60,7 +55,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
                 : $preselect);
     }
 
-    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
+    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
     {
         $config = $context->config;
 
@@ -82,15 +77,13 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
 
         if (!\is_null($options))
         {
-            $choicesBuilder = $this->choicesBuilderFactory->createChoicesBuilder()->enable();
+            $choicesBuilder = $this->createChoicesBuilder();
 
             foreach ($options as $value => $label) {
                 $choicesBuilder->add((string) $value, (string) $label);
             }
 
-            $formOptions['choice_loader'] = $choicesBuilder->buildCallbackChoiceLoader();
-            $formOptions['choice_label'] = $choicesBuilder->buildChoiceLabelCallback();
-            $formOptions['choice_value'] = $choicesBuilder->buildChoiceValueCallback();
+            $choicesBuilder->applyFormOptions($formOptions);
 
             $builder->setAttribute('flare.choices_builder', $choicesBuilder);
         }
@@ -99,17 +92,17 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
             $formOptions['data'] = $data;
         }
 
-        $builder->add(FilterContext::FIELD_VALUE, ChoiceType::class, $formOptions);
+        $builder->single(ChoiceType::class, $formOptions);
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
         $config = $context->config;
         $options = $this->getOptions($context->list->dc, $config['field']) ?? [];
 
         $selected = $config['intrinsic']
             ? $config['preselect']
-            : $this->normalizeSubmittedValue($data[FilterContext::FIELD_VALUE] ?? null, $options);
+            : $this->normalizeSubmittedValue($values[FilterContext::SINGLE_VALUE] ?? null, $options);
 
         if (!$selected) {
             return;

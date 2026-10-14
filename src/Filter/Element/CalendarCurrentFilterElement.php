@@ -11,11 +11,11 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Filter\FilterBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Type\CalendarCurrentFilterType;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
-use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
@@ -54,7 +54,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
             ->set('has_extended_events', (bool) $model->hasExtendedEvents);
     }
 
-    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
+    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
     {
         $config = $context->config;
 
@@ -95,7 +95,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
         $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validateRange(...));
     }
 
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $data): void
+    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, array $values): void
     {
         $config = $context->config;
 
@@ -103,7 +103,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
             return;
         }
 
-        $value = $this->processRuntimeValue($data) ?? [];
+        $value = $this->processRuntimeValue($values) ?? [];
         $from = $value['from'] ?? null;
         $to = $value['to'] ?? null;
 

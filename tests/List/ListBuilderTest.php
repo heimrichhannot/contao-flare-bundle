@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\List;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
+use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Contract\ListType\BuildListContract;
 use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\ListBuilder;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
+use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\List\Type\AbstractListType;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use PHPUnit\Framework\TestCase;
@@ -114,7 +116,8 @@ final class ListBuilderTest extends TestCase
         ?ListModel      $model = null,
     ): ListBuilder {
         return new ListBuilder(
-            optionsResolver: new ListOptionsResolver(),
+            optionsResolver: new ListOptionsResolver(new SchemaResolver()),
+            transformerResolver: new ListTransformerResolver($dispatcher),
             eventDispatcher: $dispatcher,
             type: 'test_type',
             typeService: $typeService,

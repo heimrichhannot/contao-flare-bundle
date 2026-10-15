@@ -22,6 +22,10 @@ parameters:
             identifier: varTag.nativeType
             path: src/Integration/
         -
+            # Detects utils bundle versions with relevance support, the utils bundle is not installed for the analysis
+            identifier: function.impossibleType
+            path: src/Integration/HeimrichHannotUtils/FilterElement/SearchVectorElement.php
+        -
             message: "#^Access to an undefined property Contao\\\\\\w*Model\\:\\:\\$\\w+\\.$#"
         -
             message: "#^Call to function method_exists\\(\\) with Contao\\\\DataContainer and 'getCurrentRecord' will always evaluate to true\\.$#"

@@ -31,6 +31,10 @@ errors:
     missing_model: 'List model or filter model not found.'
     missing_datacontainer: 'Please define a data container on the list model [ID %id%]'
 
+search_vector:
+    info: "Searches the search vector \"%table%.%field%\" built from the fields: %fields%"
+    missing_field: "The table \"%table%\" has no search vector field. Register one with SearchVectorField::register() of heimrichhannot/contao-utils-bundle and rebuild the vectors."
+
 infer_ptable:
     auto: "Parent table of \"%table%.%field%\" inferred as \"%ptable%\""
     dynamic: "Parent table of \"%table%\" can be inferred dynamically"

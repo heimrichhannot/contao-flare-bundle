@@ -73,6 +73,7 @@ $lang['formatEmptyOption_custom'] = 'Eigene Formatierung';
 $lang['formatEmptyOptionCustom'] = ['Formatierung der leeren Option', 'Bitte geben Sie einen Text oder ein Labelformat für die leere Option ein.'];
 $lang['preselect'] = ['Vorauswahl', 'Geben Sie an, welche Werte vorausgewählt sein sollen.'];
 $lang['prefill'] = ['Vorbelegung', 'Geben Sie an, mit welchem Text der Feldinhalt vorbelegt werden soll.'];
+$lang['sortByRelevance'] = ['Nach Relevanz sortieren', 'Einträge mit den Suchwörtern nebeneinander oder als ganze Wörter zuerst anzeigen, vor der Sortierung der Liste.'];
 $lang['placeholder'] = ['Platzhalter', 'Bitte geben Sie einen Platzhaltertext ein.'];
 $lang['label'] = ['Label', 'Bitte geben Sie ein Label für das Feld ein.'];
 ###< form_legend ###

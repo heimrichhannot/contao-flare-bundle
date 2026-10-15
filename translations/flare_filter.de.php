@@ -2,6 +2,7 @@
 
 use HeimrichHannot\FlareBundle\FilterElement;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement as CodefogTagsElement;
+use HeimrichHannot\FlareBundle\Integration\HeimrichHannotUtils\FilterElement\SearchVectorElement;
 
 return [
     FilterElement\ArchiveElement::TYPE => 'Archiv',
@@ -17,4 +18,6 @@ return [
 
     CodefogTagsElement\CodefogTagsChoiceElement::TYPE => 'Tag-Auswahl [codefog/tags-bundle]',
     CodefogTagsElement\CodefogTagsSearchElement::TYPE => 'Tag-Suche [codefog/tags-bundle]',
+
+    SearchVectorElement::TYPE => 'Suchvektor-Suche [heimrichhannot/contao-utils-bundle]',
 ];

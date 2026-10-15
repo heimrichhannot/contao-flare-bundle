@@ -25,6 +25,7 @@ A Contao CMS bundle for building filterable lists and detail pages — for news,
 - Customizable filter and list templates
 - Extensible with custom filter and list types
 - No modules, no worries!
+- Search vector filter for the search vector field of [heimrichhannot/contao-utils-bundle](https://github.com/heimrichhannot/contao-utils-bundle) (optional, only available if the bundle is installed; can sort the list by relevance with utils bundle versions supporting it)
 
 <!-- Currently not supported --
 - Integration with [terminal42/contao-DC_Multilingual](https://github.com/terminal42/contao-DC_Multilingual)

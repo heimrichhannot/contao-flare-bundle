@@ -189,6 +189,14 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
+    'sortByRelevance' => [
+        'exclude' => false,
+        'filter' => false,
+        'default' => false,
+        'inputType' => 'checkbox',
+        'eval' => ['tl_class' => 'cbx w50'],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
     'isMultiple' => [
         'exclude' => true,
         'toggle' => true,

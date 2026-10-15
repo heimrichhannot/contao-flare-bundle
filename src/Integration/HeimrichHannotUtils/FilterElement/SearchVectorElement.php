@@ -86,11 +86,22 @@ class SearchVectorElement extends AbstractFilterElement implements IntrinsicValu
     {
         $this->addSearchVectorMessage($config->getListModel()->dc);
 
+        $relevance = self::isRelevanceSupported() ? ',sortByRelevance' : '';
+
         if ($config->getFilterModel()?->intrinsic) {
-            return '{filter_legend},prefill';
+            return '{filter_legend},prefill' . $relevance;
         }
 
-        return '{form_legend},label,placeholder';
+        return ($relevance ? '{filter_legend}' . $relevance . ';' : '') . '{form_legend},label,placeholder';
+    }
+
+    /**
+     * Sorting by relevance needs SearchVectorQuery::createRelevance(), which older versions of
+     * heimrichhannot/contao-utils-bundle do not have.
+     */
+    public static function isRelevanceSupported(): bool
+    {
+        return \method_exists(SearchVectorQuery::class, 'createRelevance');
     }
 
     private function addSearchVectorMessage(?string $table): void

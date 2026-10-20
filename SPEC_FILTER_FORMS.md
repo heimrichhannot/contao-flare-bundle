@@ -1,20 +1,21 @@
 # SPEC: Decoupling Filter Forms from Filter Elements
 
-**Status:** Step 0 (§12) implemented and partly re-renamed by #48; step 1 partially implemented
-(contracts, value objects, registry, the element contract's signature, and the query-side predicate
-layer of §2.3 — the tree is red mid-cut); steps 2-6 not started. Progress and the open checklist
-live in `PLAN_FILTER_FORMS.md`.
+**Status:** Design settled (2026-10-20, §13.6-13.17). Step 0 (§12) implemented and partly
+re-renamed by #48; step 1 partially implemented and red mid-cut; steps 2-6 not started. Progress
+and the open checklist live in `PLAN_FILTER_FORMS.md`.
 **Scope:** `src/Filter/`, `src/Form/`, `src/Query/`, `src/Event/`, `src/EventListener/NamedDispatch/`,
-`src/Registry/`, `src/DependencyInjection/`, `src/DataContainer/Builder/`,
+`src/Registry/`, `src/DependencyInjection/`, `src/DataContainer/Builder/`, `src/Util/`,
 `contao/dca/tl_flare_filter.php`, `src/EventListener/Contao/ElementDcaListener.php`,
 `src/Engine/Projector/InteractiveProjector.php`
-**Breaking:** yes (`FilterElementInterface`, `Filter::$data`, `tl_flare_filter` schema, the
-renames of §2.2 — service ids, event classes and the dispatch alias
-`flare.filter_element.{type}.form_built` — and the replacement of filter types, `FilterBuilder` and
-`FilterExecutor` by the predicate layer of §2.3)
+**Breaking:** yes, deliberately — v0.2 is unreleased and the goal is a stable architecture, not
+compatibility. `FilterElementInterface`, `Filter::$data`, `ChoicesBuilder::add()`, the
+`tl_flare_filter` schema, the renames of §2.2 (service ids, event classes, the dispatch alias
+`flare.filter_element.{type}.form_built`), the predicate layer of §2.3 replacing filter types,
+`FilterBuilder` and `FilterExecutor`, and the removal of `FilterElementBuildingEvent` /
+`FilterElementBuiltEvent` (§13.16).
 
 **Reading note.** §1 describes the code *before* the refactor and uses the names of that time.
-Everything from §2 on uses the current names (§2.2).
+Everything from §2 on uses the target names.
 
 ---
 
@@ -67,19 +68,26 @@ flag. Two concepts fighting over one column.
 ## 2. Target model
 
 A filter's **presentation** becomes a separate, registrable, per-instance-selectable concern that
-owns its own config and its own slice of the backend palette.
+owns its own config and its own slice of the backend palette. The **element owns its lifecycle**:
+it alone decides, from its config and the value, which predicates apply.
 
 ```
-FilterForm             — how the user supplies the value. Produces the value object.
-Value object           — the typed contract between form and element.
-FilterElement          — what rows match. Consumes the value object plus its config and emits
-                         propositions (§2.3).
-Predicate              — how a proposition becomes SQL conditions. Stateless service.
+FilterForm      — how the user supplies the value. Turns submitted form data into a value object.
+Value object    — what the user said, typed: a selection, a bool, a range, a phrase.
+FilterElement   — what rows match. Applies its config triple and the value object, and emits
+                  predicates with bound arguments (§2.3).
+Predicate       — how bound arguments become SQL conditions. Stateless, public API.
 ```
 
-Registration is **one-directional**: a form binds to a *value object*, never to an element type.
-Selectable forms for an element = registry lookup by the element's declared value class.
-A mismatch is therefore structurally impossible rather than validated.
+Registration is **one-directional**: a form binds to a *value class*, never to an element type.
+Selectable forms for an element = registry lookup by the element's declared value class. A form's
+value class is the narrowed return type of its `decode()` (§3.1), so a form that produces the wrong
+shape fails at container build or as a native `TypeError` — it is never a silently wrong query.
+
+**The value object stays at widget level** (§13.10). It records *what the user said* — which
+options, which bool, which range, which phrase — and nothing about what that means for the query.
+Interpreting it (which archive ids, which parent tables, whether an empty selection means "all") is
+the element's job in `buildContext()`, the one place that also holds the config.
 
 ### 2.1 Nomenclature
 
@@ -108,7 +116,7 @@ one word each:
 
 `FormHarness` is an **object**, not a bare `FormInterface` returned by a factory: it owns the
 `decode()` loop (§8), which otherwise has no home but `InteractiveProjector` — where its
-predecessor already landed wrongly (§7.2).
+predecessor already landed wrongly (§8).
 
 **"Mount"** is the codebase's own word; `FilterFormFactory` already names the variable `$mount`.
 It replaces "field" throughout this spec, because in the compound case the mounted node is a
@@ -168,28 +176,62 @@ Rejected names, recorded so the branches stay closed:
   strategy has `decode()` and its own DCA slice, so "widget" promises rendering and hides half the
   contract; the term is also already occupied by Contao.
 
-### 2.3 Query side: predicates, propositions, formula (#48)
+### 2.3 Two stages: `FilterScope` and `FilterContext`
 
-Not part of the original design; introduced by #48 and recorded here because it changes the element
-contract (§3.2). An element no longer writes into a query builder. It *describes* its conditions,
-and the framework executes the description:
+A filter is applied in two stages. Their separation is the answer to §14.5.
 
-| term | what it is |
-|---|---|
-| `Predicate` (`src/Filter/Predicate/`) | stateless service turning resolved options into SQL conditions: `configureOptions()`, `buildConditions(FilterConditionsBuilder, array $options)`. Tagged `flare.filter_predicate`, registered in `FilterPredicateRegistry` keyed by **class**. Formerly "filter type". |
-| `Proposition` | one predicate applied once: predicate service + class, target alias, resolved options |
-| `Formula` | the list of propositions one filter produced for one invocation |
-| `FormulaBuilder` | validates options through the predicate's `OptionsResolver` (memoised per predicate class) and collects propositions. Formerly `FilterBuilder`. |
-| `FilterContextBuilder` | what `buildContext()` receives: `list`, `filter`, `engineContext`, `addPredicate(class, options, ?targetAlias)`, `abort()`. `build()` produces the `FilterContext` with its formula. |
-| `FilterConditionsBuilder` / `FilterConditions` | the parameterised SQL fragment builder and its product. Formerly `FilterQueryBuilder` / `FilterQuery`. |
+**Stage 1 — `FilterScope`, value-free.** The config triple a filter is evaluated in:
 
-`FilterExecutor` is gone. `ListQueryDirector::invokeFilters()` asks `FilterContextFactory` for each
-filter's context and runs every proposition's predicate into its own `FilterConditionsBuilder`;
-failures are wrapped with the filter's source via `Util\CreatesFilterExceptionTrait`.
+```php
+final readonly class FilterScope
+{
+    public function __construct(
+        public ListSpec         $list,
+        public Filter           $filter,         // carries the canonical config
+        public ContextInterface $engineContext,  // the context the list is built / filter is executed in
+    ) {}
+}
+```
 
-**Open:** where the formula is built relative to the form (§14.5), and what happens to
-`FilterElementBuildingEvent` / `FilterElementBuiltEvent`, whose dispatcher was `FilterExecutor` and
-which nothing dispatches now (§14.7).
+Everything that happens before a value exists receives the scope: `FilterFormInterface::buildForm()`
+and `::decode()`, `ChoiceSourceContract::createChoices()`, `FilterFormBuiltEvent`, `FilterMount`.
+`FormHarnessFactory` creates scopes directly. The form-side attribute keys `ATTR_SELF` and
+`ATTR_SINGLE_FIELD` move from `FilterContext` to `FilterScope`.
+
+**Stage 2 — `FilterContext`, the element's product for one invocation.** The element applies the
+triple and the value:
+
+```
+buildContext(FilterContextBuilder $builder, ?ValueInterface $value)
+    → $builder->addPredicate(Predicate::class, [bound arguments])
+    → FilterContext { scope, formula }
+```
+
+A formula exists **only once the value is known**. `FilterContextFactory::create(FilterScope,
+?ValueInterface)` is called by `ListQueryDirector` alone; the form path never builds a formula.
+
+Why not curry predicates instead (§13.6): the value rarely fills a predicate argument verbatim. It is
+combined with config (`CalendarCurrent` clamps `start`/`stop`), it changes the formula's shape (no
+value ⇒ no proposition; an empty selection ⇒ `return` or `abort()`), it is checked against
+config-derived sets (`Archive`'s whitelist), and the engine context can suppress the filter
+altogether (`CalendarCurrent` in a `ValidationContext`). P'(z) is therefore a function, and that
+function is the element: `buildContext()` curried over the scope.
+
+**Query-side vocabulary** (#48):
+
+| term | visibility | what it is |
+|---|---|---|
+| `PredicateInterface`, `AbstractPredicate` (`src/Filter/Predicate/`) | **public API** | stateless logic class: `configureOptions()`, `buildConditions(FilterConditionsBuilder, array $options)`. Tagged `flare.filter_predicate`, registered in `FilterPredicateRegistry` keyed by **class**. Formerly "filter type". |
+| `FilterContextBuilder` | **public API** | what `buildContext()` receives: `$builder->scope`, `addPredicate(class, options)`, `abort()`. The only way an element applies predicates. |
+| `Proposition` | `@internal` | value object: a predicate with all arguments bound (predicate service + class, target alias, resolved options) |
+| `Formula` | `@internal` | the propositions one filter produced for one invocation |
+| `FormulaBuilder` | `@internal` | resolves options through the predicate's `OptionsResolver` (memoised per predicate class) and collects propositions. Formerly `FilterBuilder`. |
+| `FilterConditionsBuilder` / `FilterConditions` | public | the parameterised SQL fragment builder and its product. Formerly `FilterQueryBuilder` / `FilterQuery`. |
+
+`FilterExecutor` is gone. `ListQueryDirector::invokeFilters()` builds each filter's context from
+`$values[$filter->alias] ?? $filter->value` (§8) and runs every proposition's predicate into its
+own `FilterConditionsBuilder`; failures are wrapped with the filter's source via
+`Util\CreatesFilterExceptionTrait`. Table-alias targeting is out of scope here (§15).
 
 ---
 
@@ -198,35 +240,53 @@ which nothing dispatches now (§14.7).
 ### 3.1 `FilterFormInterface`
 
 ```php
-/** @template T of ValueInterface */
 interface FilterFormInterface
 {
-    /** @return class-string<T> */
-    public function getValueClass(): string;
-
-    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void;
+    public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void;
 
     /**
-     * Produces the element's canonical value from the mount, or null to contribute nothing.
-     *
-     * @return T|null
+     * Turns the mount's data into this form's value object, or null to contribute nothing.
+     * Implementations MUST narrow the return type to one concrete value class.
      */
-    public function decode(FormInterface $form, FilterContext $context): ?ValueInterface;
+    public function decode(mixed $data, FilterScope $scope): ?ValueInterface;
+}
+
+#[AsFilterForm(name: 'flare_checkbox')]
+final class CheckboxFilterForm extends AbstractFilterForm
+{
+    public function decode(mixed $data, FilterScope $scope): ?BoolValue
+    {
+        return BoolValue::tryFrom($data);
+    }
 }
 ```
 
-Implementations extend `AbstractFilterForm`, which carries the same `@template`. Every value object
-implements the marker interface `Filter\Value\ValueInterface`.
+**The value class is the narrowed return type of `decode()`.** PHP return types are covariant, so a
+form may declare `?BoolValue` against the interface's `?ValueInterface`. `RegisterFilterFormsPass`
+reads it by reflection — no instantiation — and fails the container build if it is not a single
+concrete class implementing `ValueInterface` (a bare `?ValueInterface`, a union, `mixed`). At run
+time PHP itself enforces it: a form returning anything else is a `TypeError`. There is no
+`getValueClass()` and no `@template` (§13.11). The asymmetry with elements is deliberate: an element
+*cannot* narrow its `$value` parameter (contravariance, §3.2), so it declares its value class in the
+attribute; a form *can* narrow its return, so it declares nothing.
+
+**`decode()` receives the mount's data, not the `FormInterface`** (§13.13). `FormHarness::decode()`
+extracts it uniformly with `getData()` — model data, never view data:
+
+| mount | data handed to `decode()` |
+|---|---|
+| single field | `$mount->getData()` |
+| compound, submitted | `$mount->getData()` (array keyed by child name) |
+| compound, not submitted | the children's own data (defaults/preselect), because Symfony does not map them onto an unsubmitted compound parent |
+
+The "cleared vs. never touched" distinction survives in the data itself: an unsubmitted form yields
+its preselect or `null`; a submitted, unchecked checkbox yields `false`. The reason `decode()` used
+to receive the `FormInterface` — letting a form pick view data over model data — disappears with
+choice objects that carry their own key (§7).
 
 A form MAY additionally implement the existing contracts, which then apply to the form's own
 config slice: `OptionsContract` (`configureOptions`), `TransformerContract`
 (`configureTransformers`), `DcaContract` (`buildDca`).
-
-**`decode()` receives the mount (§2.1), not a pre-flattened DTO.** The parameter is named `$form`
-because it is a `FormInterface`, but it is always the filter's mounted node, never the root form.
-Only the form knows whether it wants `getData()`, `getNormData()` or `getViewData()`, and it may
-need attributes it set in `buildForm()` — whether `flare.choices_builder` is such an attribute is
-open (`PLAN_FILTER_FORMS.md`, gap 3). See §7.
 
 ### 3.2 `FilterElementInterface` (revised)
 
@@ -238,15 +298,16 @@ interface FilterElementInterface
 ```
 
 `buildForm()` is removed, and `buildFilter()` became `buildContext()`: the element reads its config
-from `$builder->filter->config`, and emits propositions via `$builder->addPredicate()` (§2.3) instead
-of writing into a query builder. `$value` is the decoded form value, or the filter's programmatic
-value (§8), or `null`.
+from `$builder->scope->filter->config` and emits predicates via `$builder->addPredicate()` (§2.3)
+instead of writing into a query builder. `$value` is the decoded form value, or the filter's
+programmatic value (§8), or `null` (no form, nothing submitted, nothing preset).
 
 **An implementation cannot narrow `$value` to its value class in the signature.** PHP enforces
 parameter contravariance, so `?BoolValue` against the interface's `?ValueInterface` is a fatal
 "declaration must be compatible" at class load. The check runs inside the method, through a
-`@template`-annotated accessor on `AbstractFilterElement` so PHPStan still narrows call sites; a
-mismatched value is a `FilterException`, not a silently wrong query.
+`@template`-annotated accessor on `AbstractFilterElement` (`expectValue($value, BoolValue::class)`)
+so PHPStan still narrows call sites; a mismatched value is a `FilterException`, not a silently wrong
+query.
 
 `configureOptions`, `configureTransformers`, `buildDca` stay as they are.
 
@@ -254,29 +315,38 @@ mismatched value is a `FilterException`, not a silently wrong query.
 
 ```php
 #[AsFilterElement(type: self::TYPE, value: BoolValue::class)]
-#[AsFilterForm(name: 'flare_checkbox', requires: [])]
+#[AsFilterForm(name: 'flare_checkbox')]
 ```
 
 - `AsFilterElement::$value` — the value class this element consumes. `null` means the element has no
   runtime value at all (see §5.3).
 - `AsFilterForm::$name` — the identifier persisted in `tl_flare_filter.formVariant`. Defaults to
   `TypeNameFactory::createFilterFormType()` over the class (suffixes `Controller`, `FilterForm`,
-  `Form` stripped). `""` (= intrinsic) and `"default"` are reserved. The value class is not a
-  discriminator — several forms share one — so the name is needed; FQCNs are not stored because a
+  `Form` stripped). `""` (= intrinsic) and `"default"` are reserved; a duplicate name fails the
+  container build, because a silent override would re-interpret stored rows. The value class is not
+  a discriminator — several forms share one — so the name is needed; FQCNs are not stored because a
   class rename would orphan every row.
-- `AsFilterForm::$requires` — capability interfaces the form needs the element to implement (§4.3).
-- The value class the form produces comes from `FilterFormInterface::getValueClass()`, not from the
-  attribute (#48 removed `value:` and `default:` from `AsFilterForm`). How the compiler pass, which
-  must not instantiate services, learns it — and whether a per-value-class `default` returns — is
-  open (§14.6).
 
-`AsFilterForm` is repeatable. One form class can serve every element sharing a value class without
-repeated per-element declarations.
+There is no `value:`, `requires:` or `default:` on `AsFilterForm` (§13.11, §13.12, §13.14).
+`AsFilterForm` stays repeatable (one class under several names); no bundle form uses that.
 
-### 3.4 Capability ports
+### 3.4 Registration
 
-A form MUST NOT read element-owned config in `decode()`. Anything it needs *pulled* from the element
-is an explicit interface. For choice-based filters there is exactly one such port:
+`RegisterFilterFormsPass` follows `RegisterFilterElementsPass` exactly (§13.14):
+`findAndSortTaggedServices()`, `addMethodCall('add', [Reference, attribute, name, valueClass])`
+on an eager `FilterFormRegistry`, public alias `flare.filter_form.{name}`. On top of that pattern it
+does two checks only: the value class (§3.1) and name uniqueness (§3.3). It has no ordering
+constraint relative to the element pass.
+
+`FilterFormRegistry::findNames(string $valueClass): list<string>` is the whole election: the forms
+whose value class equals the element's declared one, in registration order. It feeds the
+`formVariant` options callback (§5.2) and the consistency check in `FilterFactory` (§8). An element
+whose value class has no form is legal — it is used intrinsically or programmatically, and its
+`formVariant` select offers only the blank option.
+
+### 3.5 The choice port
+
+The only thing any form pulls from an element is the option set of a selection:
 
 ```php
 interface ChoiceSourceContract
@@ -284,48 +354,21 @@ interface ChoiceSourceContract
     /**
      * @throws FilterException On invalid filter configuration (no whitelist, no inferrable ptable, …).
      */
-    public function buildChoices(FilterContext $context): ChoicesBuilder;
-
-    /**
-     * @param list<string> $keys Selected choice keys, verbatim — MAY include
-     *   {@see ChoicesBuilder::EMPTY_CHOICE}, whose meaning is element-defined.
-     */
-    public function valueFromChoiceKeys(array $keys, FilterContext $context): ?ValueInterface;
+    public function createChoices(FilterScope $scope): ChoicesBuilder;
 }
 ```
 
-(The interface in the tree still declares `?object`; tightening it is part of step 1.)
+`ChoiceFilterForm::buildForm()` checks `$scope->filter->element instanceof ChoiceSourceContract`
+and throws a `FilterException` otherwise. A unit test asserts that every bundle element declaring
+`value: ChoiceValue::class` implements the contract. There is no general capability mechanism
+(§13.12).
 
-Registry filter for the backend select: value class matches **and** every entry in `requires` is
-implemented by the element (plain `instanceof`, resolvable at compile time). This is not a second
-pairing axis — the form still never names an element.
+Labelling is split: `createChoices()` MAY set labels the element owns — `setLabelForTable()` fed
+from element-owned whitelist rows is the real case. The form owns only global overrides
+(`setLabel()`, `setModelSuffix()`, `setEmptyOption()`) and `applyFormOptions()`.
 
-#### The decode division
-
-> The **form** decodes the *widget*: which choice keys did the user pick.
-> The **element** decodes the *domain*: what do those keys mean.
-
-So a generic choice form's `decode()` is:
-
-```php
-$keys = (array) $form->getViewData();                 // widget → keys
-return $element->valueFromChoiceKeys($keys, $ctx);    // keys → domain value
-```
-
-This is why the port needs a second method. Choice keys are element-defined: `FieldValueChoice` uses
-bare ids, `ArchiveFilterElement` uses `"<table>.<id>"` in dynamic-ptable mode (§7.4). A form that had
-to parse them would be reading element knowledge through the back door — the very thing `requires`
-exists to prevent.
-
-Two consequences worth stating:
-
-- **The empty-option sentinel is passed through, not swallowed.** It looks like a widget artifact but
-  can carry domain meaning: `ArchiveFilterElement::normalizeFilterValue()` treats a selected empty
-  option as "use the full whitelist" (unless `use_whitelist_for_options_only`). The form therefore
-  forwards `ChoicesBuilder::EMPTY_CHOICE` verbatim and lets the element decide.
-- **Labelling is split.** `buildChoices()` MAY set labels it owns — `setLabelForTable()` fed from
-  element-owned whitelist rows is the real case. The form owns only global overrides (`setLabel()`,
-  `setModelSuffix()`, `setEmptyOption()`) and `applyFormOptions()`.
+(`ChoicesBuilder::buildChoices()` keeps its name; the port method is `createChoices()` so the two no
+longer collide.)
 
 ---
 
@@ -340,7 +383,7 @@ Two consequences worth stating:
 |---|---|---|
 | `fieldGeneric` | element | changes matching |
 | `fieldPublished`, `invertPublished`, `startAt`, `stopAt` | element | changes matching |
-| `targetAlias` | framework | stays in `__prefix__` |
+| `targetAlias` | framework | stays in `__prefix__`; rethought in §15 |
 | `label` | form | presentation only |
 | `isMultiple`, `isExpanded` | form | value-shape change absorbed by `decode()` |
 | `preselect` | form | initial hydration (§4.2) |
@@ -353,29 +396,28 @@ Two consequences worth stating:
 |---|---|---|
 | `intrinsicValue` | element config | canonical value when no form is selected |
 | `preselect` | form config | initial hydration → the field's native `data` option |
-| `decode()` result | form | canonical value from submitted-or-hydrated data |
+| `decode()` result | form | value object from submitted-or-hydrated data |
 
 `intrinsicValue` is **not** a framework-mandated key. It is declared per element in
 `configureOptions()` only where meaningful. `SimpleEquationFilterElement`,
 `BelongsToRelationFilterElement` and `PublishedFilterElement` have no single value — their config
 *is* the value — and declare none.
 
-Because the decode path collects field defaults for unsubmitted forms (today
-`InteractiveProjector::collectFilterData()`, after the cut `FormHarness::decode()`, §8),
+Because `FormHarness::decode()` collects field defaults for unsubmitted forms (§3.1),
 preselect-as-`data` flows through the normal path and every `?? $config['preselect']` fallback
 disappears.
-
-The "user explicitly cleared" vs. "user never interacted" distinction is preserved: `decode()`
-receives the `FormInterface` and can consult `isSubmitted()` / `getConfig()->getData()`.
 
 ### 4.3 Value object semantics, not structure
 
 > Two elements share a value object only if every form registered for one is meaningful for the other.
 
-`ChoiceValue` for the three choice-based elements; `KeywordsValue` for `SearchKeywordsFilterElement`
-— even though both are "a list of strings". Merging structurally identical value objects
-reintroduces the silent mismatch one level up, because a choice form would be offered for a
-free-text filter.
+`ChoiceValue` for the four choice-based elements (`FieldValueChoice`, `DcaSelectField`,
+`CodefogTagsChoice`, `Archive`); `KeywordsValue` for `SearchKeywordsFilterElement` — even though
+both are "some strings". Merging structurally identical value objects reintroduces the silent
+mismatch one level up, because a choice form would be offered for a free-text filter.
+
+The value classes are `BoolValue`, `ChoiceValue`, `DateRangeValue`, `KeywordsValue`.
+`ParentRefValue` is deleted (§7.4).
 
 ---
 
@@ -389,16 +431,15 @@ The `intrinsic` boolean is replaced by a nullable `formVariant` slot in canonica
 The programmatic call sites in §1.3 keep working by simply not setting a form.
 
 **Do not name the column `formAlias`** — that is taken; it is the query-parameter name
-(`src/Model/FilterModel.php:91-102`). Use `formVariant`. Bare `form` was rejected as too generic
-for a column in the one wide shared table (§6.3), even though `FilterForm` is now the noun it
-selects.
+(`src/Model/FilterModel.php`). Use `formVariant`. Bare `form` was rejected as too generic for a
+column in the one wide shared table (§6.3), even though `FilterForm` is now the noun it selects.
 
 ### 5.2 Backend field
 
 `formVariant` is a `select` with `submitOnChange => true`. Its blank option *is* intrinsic.
-Options come from the registry, keyed by the element's declared value class and filtered by
-`requires`. `ElementDcaListener` reads it alongside `$filterModel->type` to resolve the form service
-before calling the form's `buildDca()`.
+Options come from `FilterFormRegistry::findNames()` for the element's declared value class.
+`ElementDcaListener` reads it alongside `$filterModel->type` to resolve the form service before
+calling the form's `buildDca()`.
 
 ### 5.3 `IntrinsicContract` is deleted
 
@@ -448,9 +489,10 @@ element contributes `{filter_legend},fieldGeneric`, form contributes
 - **Columns are shared** — `tl_flare_filter` is one wide table, so form-owned columns need globally
   unique names, exactly as `boolBinaryChoices` does now. No namespacing.
 
+
 ---
 
-## 7. The `FieldValueChoice` round-trip
+## 7. Choices
 
 ### 7.1 The current defect
 
@@ -460,49 +502,93 @@ element contributes `{filter_legend},fieldGeneric`, form contributes
 $choices->add((string) $id, (string) $label, $id);   // alias=id, choice=label, value=id
 ```
 
-so `ChoicesBuilder::buildChoices()` returns `[id => labelString]`, the form's **model data** is
-label strings, and `buildChoiceValueCallback()` reverse-maps via
-`array_search($label, $this->choices, true)`. Consequences: two rows with the same display label
-silently collide onto one id, and `buildFilter()` must construct a second `ChoicesBuilder` to do the
-lookup at all.
+so the form's **model data** is label strings, and `ChoicesBuilder::buildChoiceValueCallback()`
+reverse-maps a choice to its submitted value via `array_search($choice, $this->choices, true)`.
+Two rows with the same display label are the same string, so they silently collide onto the first
+id, and `normalizeRuntimeValue()` must rebuild the whole `ChoicesBuilder` (SQL included) to do the
+lookup at all. `DcaSelectFieldFilterElement::normalizeSubmittedValue()` hand-rolls the identical
+reverse mapping.
 
 ### 7.2 Root cause and fix
 
-`InteractiveProjector::collectFilterData()` flattens the form to `$child->getData()` — model data,
-which for a `ChoiceType` is the choice objects. A query filter wants the *value*, which Symfony has
-already computed as **view data**: `$mount->getViewData()` is `['5','7']`.
+The root cause is not that model data is read instead of view data — it is that **a string is a
+bad choice object**: it has no identity beyond its content. `Archive` already shows the working
+case: its choice objects are Contao models, which are distinct and come back as themselves.
 
-The fix is therefore §3.1: `decode(FormInterface $mount, ...)`. No reverse mapping, no second
-`ChoicesBuilder`, no label collisions.
+The fix makes every choice an object that names its own key (§13.9):
 
-Additionally, fix `add()` so `choice` carries identity rather than the display string.
+```php
+interface ChoiceObjectInterface
+{
+    /** Identity of the option: the submitted value, the preselect match, and the hash input. */
+    public function getChoiceKey(): string;
 
-### 7.3 Division of labour after the change
+    /** Placeholders for the label translation, as LabelableInterface::getLabelParameters() today. */
+    public function getLabelParameters(): array;
+}
+```
 
-| stays on the element (via `ChoiceSourceContract`) | moves to the form |
-|---|---|
-| `createChoices()` → `buildChoices()` | `buildPreselectData()` |
-| `getForeignValues()` | `extractSubmittedData()` |
-| `getLocalValues()` | |
-| `normalizeRuntimeValue()` → `valueFromChoiceKeys()` | |
+- `ChoicesBuilder::add(ChoiceObjectInterface $choice)` is the only way in — no `$alias`, no
+  `$value`, no strings. `choice_value` becomes `fn (?ChoiceObjectInterface $c) => $c?->getChoiceKey()`;
+  `array_search` and the identity dependence disappear, so a preselect object equal to, but not
+  identical with, a listed option is still recognised. The per-table / per-class label lookup
+  (`setLabelForTable()`, format defaults) keeps working; how a choice object exposes its table or
+  class for that lookup is a builder decision.
+- `ContaoModelChoice` covers models:
+  `::from(Model $model, ?string $key = null)` for option lists — labels from the row, model held
+  internally, never hashed; `::ref(string $table, int $id)` for programmatic values without a
+  database round trip. Public state is `table` and `id`. The key defaults to `"<table>.<id>"`.
+- `FieldValueChoice(value, label)` covers `FieldValueChoice` and `DcaSelectField`. Equal labels now
+  have different keys, which is the §7.1 fix.
 
-Choice provision is element knowledge (the target field's `foreignKey` relation), and so is key
-interpretation. `normalizeRuntimeValue()` does **not** move to the form — it becomes
-`valueFromChoiceKeys()` on the port and loses its `ChoicesBuilder` rebuild entirely, because view
-data already carries the keys. The two form-side methods largely evaporate.
+Every form reads **model data** (§3.1): the selected choice objects, already validated by Symfony
+against the option list — a submitted key outside it makes the form invalid, and the projector then
+uses its empty loader, as today.
 
-### 7.4 `ArchiveFilterElement` under the port
+### 7.3 `ChoiceValue`
 
-Archive is the stress test for this design and it fits, with three notes.
+```php
+final readonly class ChoiceValue implements ValueInterface
+{
+    /** @var list<ChoiceObjectInterface> Deduplicated and sorted by key. */
+    public array $choices;
+    /** Whether the empty option was selected; its meaning is element-defined. */
+    public bool $emptySelected;
+}
+```
 
-**One value class spans both ptable modes.** `PtableInferrer` selects at runtime between a static
-main ptable (choices keyed `"<id>"`, predicate `ArchivePredicate(field: 'pid', parent_ids: [...])`)
-and a dynamic ptable (choices keyed `"<table>.<id>"`, predicate `BelongsToRelationPredicate(parent_groups:,
-submitted_data: <ids grouped by table>)`). The value shape therefore depends on runtime config, not
-on a static declaration — which would break the one-element-one-value-class rule of §3.3 if the two
-modes got separate classes. They do not: `ParentRefValue` holds `array<string $table, list<int> $ids>`
-and the static mode is the single-table degenerate case. `buildContext()` re-derives the flat vs.
-grouped proposition from the inferrer exactly as `buildFilter()` did.
+- The empty option is a flag, not a sentinel string in the list. Its meaning stays with the
+  element: `Archive` reads it as "use the full whitelist" unless `use_whitelist_for_options_only`.
+- Equality and the fingerprint (§9) are the sorted choice keys plus the flag.
+- `ChoiceFilterForm::decode()` is `ChoiceValue::tryFrom($data)`; `ChoiceFilterForm::buildForm()`
+  calls `$element->createChoices($scope)` and owns `ChoiceType`, `multiple`/`expanded`, the empty
+  option, labels, preselect and `applyFormOptions()`. The write-only `flare.choices_builder`
+  attribute is dropped (§13.17).
+
+| stays on the element | moves to `ChoiceFilterForm` | disappears |
+|---|---|---|
+| choice provision → `createChoices()` (`getForeignValues()`, `getLocalValues()`, whitelists) | `buildPreselectData()` | `normalizeRuntimeValue()`, `normalizeSubmittedValue()` |
+| interpretation of the selected objects → `buildContext()` | widget options, empty option, labels | the second `ChoicesBuilder`, the reverse lookup |
+
+### 7.4 `ArchiveFilterElement`
+
+Archive is the stress test, and it gets simpler:
+
+- **Choices are `ContaoModelChoice`s.** In static-ptable mode the element passes the bare id as key
+  (`ContaoModelChoice::from($model, (string) $model->id)`), so existing filter URLs stay valid; in
+  dynamic-ptable mode the default `"<table>.<id>"` applies. Stored preselects use `"<table>.<id>"`
+  in both modes, which collides with the static-mode key — §14.9.
+- **`buildContext()` works on ids only.** It groups the selected choices' `table`/`id` into
+  `array<table, list<int>>`, intersects them with the whitelist (still needed: programmatic values
+  bypass the form's validation), and emits `ArchivePredicate` (static) or
+  `BelongsToRelationPredicate` (dynamic) as the inferrer dictates. No model is loaded on the query
+  path — today `getWhitelistedParents()` fetches models only to read their ids.
+- **No `ParentRefValue`.** A selection of parent records is a `ChoiceValue` like any other; the
+  table/id structure lives in the choice objects. `valueFromChoiceKeys()` and the key parsing it
+  implied are gone.
+- **Behaviour change:** an intrinsic Archive filter with `use_whitelist_for_options_only` set used to
+  filter by the whole whitelist; it now applies no condition. The combination is meaningless — an
+  intrinsic filter shows no options.
 
 **Config re-ownership** per the §4.1 rule:
 
@@ -514,87 +600,69 @@ grouped proposition from the inferrer exactly as `buildFilter()` did.
 | `is_mandatory`, `is_multiple`, `is_expanded` | form | presentation only |
 | `preselect` | form | hydration (§4.2) |
 
-**Models leave the form data path.** Today the form's model data is `Model` instances, which
-`processRuntimeValue()` filters against the whitelist. Under keys-based decode the element receives id
-strings and validates them against `getWhitelistedParentIds()` — which it already computes. That
-removes the Model round-trip through the form, simplifies `normalizeFilterValue()`, and keeps Models
-out of value objects as §9 requires.
-
 ---
 
-## 8. Programmatic data and `FilterData`
+## 8. The value path and `FilterData`
 
-`Filter::$data` (typed `?FilterData`) becomes `Filter::$value` (`?ValueInterface`), typed as the
-element's value object. A programmatic caller constructs the value directly instead of fabricating
-form-shaped data. (Its former reader, `FilterExecutor`, is gone; today no value reaches
-`buildContext()` at all — `FilterContextFactory` passes `null`, with a `todo` — so the cut must
-re-establish the path below.)
+`Filter::$data` (`?FilterData`) becomes `Filter::$value` (`?ValueInterface`), and `Filter` gains
+`?FilterFormInterface $form`. A programmatic caller constructs the value object directly — e.g.
+`new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5)])` — instead of fabricating
+form-shaped data. Programmatic filter creation is a first-class use case going forward.
 
-**Consequence: `FilterData` largely disappears** (introduced in `4263611`; partly unwound here).
-Both of its jobs relocate:
+**The path.** `ListSpec::$filters` is a plain list and every `Filter` carries an alias
+(`FilterFactory` generates `_.{type}_{random}` when none is given), so the alias is the key
+throughout:
 
-- `hasSingle()`'s submitted-vs-untouched distinction → answerable from the `FormInterface`.
-- `toArray()`'s hashing role → the value object, flattened by `Util\Fingerprint::flatten()` (§9,
-  §14.1).
+1. `FormHarnessFactory` keys mounts by alias.
+2. `FormHarness::decode(): array<alias, ValueInterface>` extracts each mount's data (§3.1), calls
+   `$mount->filter->form->decode($data, $mount->scope)`, keeps non-null results.
+   `InteractiveProjector::collectFilterData()` is deleted; this is why the aggregate is an object
+   (§2.1).
+3. The map travels through `ListQueryConfig::$filterValues` and the loader/context configs.
+4. `ListQueryDirector` builds each filter's context from `$values[$filter->alias] ?? $filter->value`.
+   Submitted data takes precedence over the programmatic value.
 
-`FilterFormBuilder`'s `single()` vs. compound mount decision is unaffected — that is genuinely a
-form concern and stays where it is.
+`FilterFactory::createFromFilterModel()` resolves the form from `formVariant` and checks that it
+is registered for the element's value class; an unknown or mismatched name degrades to intrinsic
+with a logged warning — it is a data condition (a renamed or uninstalled form), not a programming
+error.
 
-**The decode loop lives on `FormHarness`.** `InteractiveProjector::collectFilterData()` today walks
-the root form and flattens every child to `$child->getData()` — the flattening §7.2 identifies as
-the defect. Under the target model that walk becomes `FormHarness::decode()`: for each filter that
-has a mount, call the filter form's `decode($mount, $context)` and keep the non-null results. The
-projector asks the harness for values instead of reconstructing them from a form tree it does not
-own. This is the reason the aggregate is an object rather than a bare `FormInterface` (§2.1).
-
-**The value path.** Since #48 `ListSpec::$filters` is a plain list and every `Filter` carries an
-alias (`FilterFactory` generates `_.{type}_{random}` when none is given), so the alias is the key
-throughout: `FormHarnessFactory` keys mounts by alias, `FormHarness::decode()` returns
-`array<alias, ValueInterface>`, that map travels through `ListQueryConfig::$filterValues` and the
-loader configs, and `ListQueryDirector` hands `$values[$filter->alias] ?? $filter->value` to
-`buildContext()`. Submitted data takes precedence over the programmatic value.
+**`FilterData` disappears** (introduced in #46). `hasSingle()`'s submitted-vs-untouched distinction
+is carried by the data `FormHarness::decode()` extracts; `toArray()`'s hashing role moves to the
+value object's fingerprint (§9). `FilterFormBuilder`'s `single()` vs. compound mount decision is
+unaffected — that is genuinely a form concern and stays.
 
 ---
 
 ## 9. Value objects and hashing
 
-`ListSpec::hash()` is `sha1(serialize([...]))` over `Filter::fingerprint()`. `serialize()` handles
-readonly objects natively and includes the class name, so **a value object of scalars and arrays
-needs no hashing interface at all** — it drops into the existing fingerprint.
+**Scope: in-request caching only** (§13.15). `ListSpec::hash()` — `sha1(serialize([...]))` over
+`Filter::fingerprint()` — exists to key in-request memoisation. Nothing hashes across requests, and
+nothing is meant to, so cross-request stability is not a requirement.
 
-`spl_object_id` is explicitly **not** usable: it is identity, not value. It is unstable across
-requests (so the cache never hits), handles are recycled after GC (so distinct values can collide
-into a wrong cache hit), and two equal values are always two objects. `readonly` guarantees contents
-cannot drift after hashing; it does not make identity coincide with value.
+Its single consumer today is `ArchiveFilterElement::getPtableInferrer()`, whose result depends only
+on `$list->dc` and `$list->config`; that cache keys on exactly those two from now on, not on the
+whole spec.
 
-What is required instead is a **containment rule**:
+**Rule for value objects:**
 
-> A filter value object is `final readonly`; every property is a scalar, `null`, an enum, a nested
-> filter value object, or an array of those. Anything with external identity is stored as its id;
-> anything with multiple equal representations is normalized in the constructor.
+> A value object is `final readonly`, implements `ValueInterface`, normalizes equal representations
+> in its constructor, and expresses its identity through `ValueInterface::fingerprint(): string`.
 
-Rationale per excluded type:
+`Filter::fingerprint()` uses `$this->value?->fingerprint()` and the form's class name beside the
+element's. Per class:
 
-- **`\DateTimeInterface`** — bites immediately (`DateRangeFilterElement` deals in from/to).
-  `serialize()` embeds `date`/`timezone_type`/`timezone`, so the same instant as `+02:00` vs.
-  `Europe/Berlin` hashes differently. Store a timestamp or normalize the timezone. **Conflict:**
-  `DateRangeValue` (#48) holds timezone-normalized `?\DateTimeImmutable`, which the rule above
-  excludes and `ValueObjectContainmentTest` rejects — open, §14.8.
-- **Contao `Model`** — `ArchiveFilterElement` works with selected models; serializing them drags
-  whole rows plus `$arrModified` into the hash, so the fingerprint changes when an unrelated column
-  changes. Store ids.
-- **Closures** — `serialize()` throws.
-- **Array order** — arrays serialize in insertion order, so `['a','b']` and `['b','a']` differ. Sort
-  in the constructor where order is irrelevant to the query.
+| value | fingerprint |
+|---|---|
+| `BoolValue` | the bool |
+| `ChoiceValue` | sorted choice keys + `emptySelected` |
+| `DateRangeValue` | the two timestamps (it holds timezone-normalized `?\DateTimeImmutable`, which is fine under this rule) |
+| `KeywordsValue` | the normalized phrase |
 
-**Enforcement:** `tests/Filter/Value/ValueObjectContainmentTest.php` checks every class in
-`src/Filter/Value/` and every class named in an `#[AsFilterElement(value: ...)]` by reflection. This
-cannot drift from the real properties the way hand-written `hashKey()` methods would.
-
-**Flattening.** §14.1 showed that `serialize()` is not a pure value function over an object graph,
-so the hash does not rely on it alone: `Util\Fingerprint::flatten()` turns a value object into an
-object-free structure before hashing. It exists and is tested, but `Filter::fingerprint()` does not
-use it yet — it still flattens through `FilterData::toArray()`.
+Because each value object states its own identity, `serialize()`'s object-graph back-references
+(§14.1) and the hazards they guarded against no longer matter. `Util\Fingerprint` is deleted, and
+`ValueObjectContainmentTest` shrinks to: every class in `src/Filter/Value/` and every
+`#[AsFilterElement(value: …)]` is `final`, `readonly` and implements `ValueInterface`.
 
 ---
 
@@ -602,10 +670,12 @@ use it yet — it still flattens through `FilterData::toArray()`.
 
 | risk | mechanism | when it fires |
 |---|---|---|
-| form produces the wrong shape | registry keyed by value class | structurally impossible |
-| element receives the wrong type | checked accessor inside `buildContext()` (§3.2) | `FilterException`, at query build |
-| form needs something the element can't supply | `requires` + `instanceof` check | container build — `requires` existence is checked, the per-element check is not implemented yet |
-| value object not hashable | reflection test over declared value classes | test suite |
+| form produces the wrong shape | narrowed `decode()` return type, read by the compiler pass | container build; `TypeError` at run time |
+| element receives the wrong type | `expectValue()` inside `buildContext()` (§3.2) | `FilterException`, at query build |
+| stored `formVariant` does not fit the element | `findNames()` check in `FilterFactory` (§8) | degrades to intrinsic, logged |
+| choice form on an element without options | `instanceof ChoiceSourceContract` in `ChoiceFilterForm`, plus a unit test over bundle elements | `FilterException` / test suite |
+| two forms claim one name | uniqueness check in the compiler pass | container build |
+| value object not final/readonly | reflection test | test suite |
 
 ---
 
@@ -620,14 +690,17 @@ Two separable things, deliberately not done together:
 **Schema** — tracked by the DCA, applied by Contao's schema diff. Columns in this bundle come only
 from `sql` keys in `contao/dca/tl_flare_filter.php`; there is no schema listener.
 
-- New column `formVariant` (`varchar`), plus form-owned columns as they move.
+- New column `formVariant` (`varchar`, landed), plus form-owned columns as they move.
 - Drop `intrinsic`, `boolMode`, `boolBinaryChoices` and the `boolMode_binary` subpalette /
   `boolMode` selector entry.
 - `preselect` stays a column but becomes form-owned; its semantics narrow to hydration only, and
   the `unset($preselectOptions['null'])` hack in `BooleanFilterElement::buildDca()` goes away.
+  Stored preselects are matched as choice keys (§7.2). For `Archive` the stored keys are
+  `"<table>.<id>"` in both ptable modes (that is what the backend options write), while the
+  frontend key in static mode is the bare id — open, §14.9.
 
-**Data** — one Contao migration: `intrinsic = 0` → the default form for the element's value class;
-`intrinsic = 1` → `''`.
+**Data** — one Contao migration: `intrinsic = 0` → a frozen `element type → form name` literal;
+`intrinsic = 1` → `''`. There is no "default form" to resolve (§13.14).
 
 ### Why the data migration comes last
 
@@ -666,6 +739,7 @@ exists destroys the source column, and with it any chance of recovering the mapp
   (`flare_published`, `flare_relation_belongsTo`, `flare_equation_simple`, `cfg_tags_search`) keep
   the migration pending forever.
 
+
 ---
 
 ## 12. Sequencing
@@ -675,34 +749,21 @@ contract set is the entire risk; the remaining elements are mechanical. `PLAN_FI
 merges steps 1 and 3 into one atomic cut (no pilot, no legacy adapter) and tracks the open items.
 
 0. **Nomenclature refactor.** ✅ **Done** (#47), then revised by #48 (§2.2). Pure rename plus one new
-   object, no behaviour or schema change.
-   - Applied the §2.2 table and introduced the aggregate —
-     `FormHarnessFactory::create(ListSpec, FormContextInterface): FormHarness`, holding the root
-     `FormInterface` and the mount↔filter map. `getForm()` returns the root form; callers that only
-     need the form (`InteractiveProjector`, the list-view template data) go through it.
-   - The factory's local variables follow the vocabulary: root builder `$root`, collect-only
-     per-filter builder `$builder`, mounted node `$mount`.
-   - `AGENTS.md` describes the `src/Filter/Form/` vs. `src/Form/` split and the current aliases.
-   - Left over: two test files still carry the Phase 0 names (`FilterSetFactoryTest`,
-     `FilterSetListenerTest`).
-
-1. **Contracts + the cut.** 🟡 **In progress — tree red.**
-   - ✅ Value objects + `ValueInterface` + containment test, `FilterFormInterface` /
-     `AbstractFilterForm`, `ChoiceSourceContract`, `AsFilterForm` (`name:`, `requires:`),
-     `AsFilterElement::$value`, `FilterFormRegistry` + `RegisterFilterFormsPass`, the
-     `formVariant` column, `Util\Fingerprint`.
-   - ✅ The predicate layer (§2.3) and the `buildContext()` signature (§3.2).
-   - ⬜ Value-class discovery in the compiler pass (§14.6), the per-element `requires` check (§10).
-   - ⬜ Element bodies, the five forms, `buildForm()` removed from elements, `Filter::$value` /
-     `$form`, `formVariant` resolution in `FilterFactory`, `FormHarness::decode()` and the value
-     path of §8, deletion of `IntrinsicContract`.
-   - Originally piloted on `BooleanFilterElement`; the pilot is dropped because the contract change
-     cannot be split without an adapter.
+   object, no behaviour or schema change. Left over: two test files still carry the Phase 0 names
+   (`FilterSetFactoryTest`, `FilterSetListenerTest`).
+1. **Contracts + the cut.** 🟡 **In progress — tree red.** Landed: value objects, form/element
+   contract signatures, `ChoiceSourceContract`, `AsFilterForm(name:)`, the registry and pass in
+   their first shape, `formVariant`, the predicate layer (§2.3). To do, in the target shape of this
+   spec: `FilterScope` and the two-stage split (§2.3); `decode(mixed, FilterScope)` with the value
+   class from its return type (§3.1); registry/pass aligned with elements, `requires`/`default`
+   removed (§3.4); choice objects, `ChoiceValue` of choice objects, `ParentRefValue` removed (§7);
+   element bodies and `expectValue()`; the five forms; `Filter::$value` / `$form`; `FormHarness::decode()`
+   and the value path (§8); value fingerprints, `Util\Fingerprint` removed (§9); the two element
+   events removed (§13.16); `IntrinsicContract` removed.
 2. **DCA composition.** `DcaBuilder` palette segments, `scope()`, `selector()`; `ElementDcaListener`
    resolves and invokes the form's `buildDca()`.
-3. **Migrate the rest.** Merged into step 1 (atomic cut). `FieldValueChoiceFilterElement` carries the
-   §7 fix. `CodefogTagsSearchElement` has neither `buildForm()` nor `buildContext()` (only
-   `buildDca()`) — it needs `value: null` set and nothing else.
+3. **Migrate the rest.** Merged into step 1 (atomic cut). `CodefogTagsSearchElement` has neither
+   `buildForm()` nor `buildContext()` (only `buildDca()`) — it needs `value: null` and nothing else.
 4. **Schema changes** per §11 — drop `intrinsic`, `boolMode`, `boolBinaryChoices` and their
    palette/selector entries. DCA only; no data migration yet.
 5. **Fold `FilterData`** out per §8.
@@ -711,20 +772,18 @@ merges steps 1 and 3 into one atomic cut (no pilot, no legacy adapter) and track
    `intrinsic`, which step 4 removes from the DCA, so it must land before any environment with real
    rows applies the schema diff.
 
+Targeting (§15) is a separate piece of work after this one and before the v0.2 release.
+
 ---
 
 ## 13. Resolved decisions
 
 Recorded here because each one closes a branch the design could otherwise have taken.
 
-1. **`ArchiveFilterElement` gets a capability port** — and it drove the port's final shape.
-   `ChoiceSourceContract` carries two methods, not one (§3.4), because choice keys are
-   element-defined; Archive's `"<table>.<id>"` keys made that explicit. The port is shared by
-   `FieldValueChoiceFilterElement`, `DcaSelectFieldFilterElement`, `CodefogTagsChoiceFilterElement`
-   and `ArchiveFilterElement`, all served by one generic choice form. No second port is needed —
-   see §7.4 for the mode-spanning value class and the config re-ownership table.
-2. **No compound case needs per-child capability negotiation.** `requires` is declared per form, not
-   per child field. `DateRangeFilterElement` needs no capability at all.
+1. **`ArchiveFilterElement` shares the choice port** with `FieldValueChoice`, `DcaSelectField` and
+   `CodefogTagsChoice`, all served by one generic choice form. No second port is needed (§7.4).
+2. **No compound case needs per-child capability negotiation.** `DateRangeFilterElement` needs
+   nothing from the element at all.
 3. **Form-owned field labels stay in the central language files**
    (`contao/languages/{en,de}/tl_flare_filter.php`). Forms declare fields and palette segments; they
    do not declare translations. This keeps `tl_flare_filter`'s label surface in one place, consistent
@@ -737,74 +796,96 @@ Recorded here because each one closes a branch the design could otherwise have t
    `BooleanFilterElement::buildDca()`.
 5. **The aggregate is called `FormHarness` and is an object.** The naming axis is multiplicity within
    *Filter*, not filter-versus-list (§2.1) — the list is exclusively output, so no `List…` name can
-   be right for a form. Phase 0 named it `FilterSet`, on the argument that it named something that
-   already existed unnamed (`ListSpec::$filters`). #48 renamed it `FormHarness` and moved it to
+   be right for a form. Phase 0 named it `FilterSet`; #48 renamed it `FormHarness` and moved it to
    `src/Form/`: the object holds the root form and the mounts, not the filters as such, and
-   `ListSpec::$filters` stays a separate plain list (§14.4), so a collection name over-promised.
-   Making it an object rather than a factory return value is what gives `decode()` a home (§8).
-   Rejected names and their reasons are in §2.2.
-6. **Elements describe conditions; predicates execute them** (#48, §2.3). An element emits
-   propositions through `FilterContextBuilder::addPredicate()` and never touches a query builder.
-   Predicates are registered by class, not by type name.
-7. **The value class of a form is declared in code, not in the attribute** (#48, §3.3):
-   `FilterFormInterface::getValueClass()` with a `@template`. Its consequence for compile-time
-   registration is still open (§14.6).
+   `ListSpec::$filters` stays a separate plain list (§14.4). Making it an object rather than a
+   factory return value is what gives `decode()` a home (§8).
+6. **Two stages, and the formula only exists once the value does** (§2.3). `FilterScope` is the
+   value-free config triple for everything before the value; `FilterContext` is the element's
+   product. Predicates are not curried as data: the value-to-argument mapping is element logic, so
+   the curried function is the element itself.
+7. **Elements describe conditions; predicates execute them** (#48). `PredicateInterface` is public
+   API; `Proposition`, `Formula` and `FormulaBuilder` are `@internal`; `FilterContextBuilder::addPredicate()`
+   is how an element applies a predicate. Predicates are registered by class, not by type name.
+8. **Forms read model data, always** (§3.1). The view-vs-model choice was only ever needed because
+   choice objects were badly chosen.
+9. **Choices are objects that name their key** (§7.2): `ChoiceObjectInterface` with
+   `getChoiceKey()` and `getLabelParameters()`, `ContaoModelChoice::from()` / `::ref()`,
+   `FieldValueChoice`. Custom choice semantics mean a custom choice class, not a translation step.
+10. **Value objects stay at widget level** (§2). Domain interpretation happens in `buildContext()`.
+    `ChoiceValue` carries choice objects; `ParentRefValue` and `valueFromChoiceKeys()` are gone.
+11. **A form's value class is its narrowed `decode()` return type** (§3.1), read by reflection at
+    compile time. No `getValueClass()`, no `@template`, no `value:` on the attribute.
+12. **No general `requires` mechanism** (§3.5). The only case is the choice form; a direct
+    `instanceof` check plus a unit test replace it. A capability mechanism can be added later without
+    breaking anything; removing one that third parties use could not.
+13. **`decode()` takes data, not a `FormInterface`** (§3.1). Extraction lives once, in
+    `FormHarness::decode()`.
+14. **Form registration mirrors element registration** (§3.4): eager registry, `addMethodCall`,
+    public alias. No `ServiceLocator`, no `default` / `findDefaultName()`, no "every value class has a
+    form" check, no ordering constraint. The migration uses frozen literals, so nothing needs a
+    default form.
+15. **Hashing is for in-request caching only** (§9). Value objects state their identity through
+    `fingerprint(): string`; `Util\Fingerprint` and the strict containment rule are gone.
+16. **`FilterElementBuildingEvent` and `FilterElementBuiltEvent` are removed**, with their
+    `flare.filter_element.{type}.building|built` aliases. An event is public API whose payload would
+    pin `FilterScope`, the value and `FilterContextBuilder` while they are new; adding an event later
+    breaks nothing. The use cases are covered: skip or add filters via `ListBuildEvent` /
+    `flare.list.{type}.build`, preset values via programmatic `Filter::$value`, extra conditions via
+    another filter or a custom element. Lost: a per-execution decision depending on the engine
+    context, which needs a custom element. The 0.1 events `FilterElementInvokingEvent` /
+    `FilterElementInvokedEvent` therefore have no direct successor; the migration guide says so.
+17. **`flare.choices_builder` is dropped.** The attribute was write-only (set in four `buildForm()`s,
+    read nowhere); `ChoiceFilterForm` owns its `ChoicesBuilder`. Custom form themes that read it
+    from `form.vars` lose it — release note.
 
 ---
 
 ## 14. Remaining unknowns
 
-Items 1-4 were not blockers at spec time. Items 5-8 surfaced with #48 and **must be settled before
-the cut can be finished**.
-
-1. ~~**`serialize()` stability for readonly value objects**~~ — **measured** in step 0 and
-   **resolved** by `Util\Fingerprint::flatten()` (§9).
-   A throwaway probe test (commit 06fc013 on `feat/filter-types`, not carried over) exercised the real
-   `ListSpec::hash()` path via `Filter::$data`. Results:
-   - §9's core claim **holds**: two separately constructed, equal `final readonly` value objects of
-     scalars, arrays, enums and nested value objects hash identically, and survive a
-     `serialize()`/`unserialize()` round trip. Enums are value stable.
-   - Every hazard §9 names is **confirmed**: `\DateTimeImmutable` hashes differently for the same
-     instant as `+01:00` (`timezone_type` 1) vs. `Europe/Berlin` (`timezone_type` 3); array order
-     changes the hash for both list and string keys; a mutation-state-carrying model-like object
-     drags unrelated state in; a closure makes `serialize()` throw.
-   - **New finding not anticipated by §9:** `serialize()` is not a pure value function over an
-     object *graph*. A repeated object is emitted as a back-reference (`r:N;`), so a hash over two
-     filters differs depending on whether they **share one value instance** or hold two equal ones.
-     Today's code is immune only because `Filter::fingerprint()` flattens through
-     `FilterData::toArray()`. The decision: keep a flattening step — `Util\Fingerprint::flatten()`,
-     which `Filter::fingerprint()` must adopt in step 1. The blast radius was small anyway:
-     `ListSpec::hash()`'s only consumer is an in-request memoization array in
-     `ArchiveFilterElement`, so instability costs a cache miss, not correctness.
+1. ~~**`serialize()` stability for readonly value objects**~~ — measured in step 0 (probe commit
+   06fc013 on `feat/filter-types`, not carried over): `serialize()` is not a pure value function
+   over an object graph (repeated objects become back-references). **Moot** since §13.15: value
+   objects state their identity through `fingerprint()`, and only in-request caching is required.
 2. **`DcaBuilder::selector()`** (§6.3) has no consumer yet. Confirm whether any form in the initial
    migration actually contributes a subpalette; if none does, defer the API.
-3. **`ArchiveFilterElement::buildPreselectData()`** is currently `ListSpec`-aware. Confirm it reduces
-   to a generic key-lookup against `buildChoices()` once preselect is stored as choice keys, or
-   whether preselect hydration needs its own port method.
-4. **Whether `FormHarness` should also absorb `ListSpec::$filters`.** Phase 0 kept them apart:
-   `ListSpec` is built in validation and aggregation contexts that never produce a form, so a
-   form-carrying object cannot simply replace the array. #48 settled the naming side — the form
-   object is `FormHarness`, `ListSpec::$filters` is a plain list keyed by position, and the filter
-   alias is the key everywhere else (§8). What remains open is only whether `ListSpec::$filters`
-   should become a collection object of its own (it still has a hand-rolled fingerprint loop in
-   `hash()`).
-5. **Form-time vs. query-time context.** `FilterContext` now carries the `Formula`, and
-   `FilterContextFactory::create()` builds it by calling `buildContext($builder, null)`.
-   `FormHarnessFactory` needs a `FilterContext` for `buildForm()` and `buildChoices()`, so building a
-   form also builds — and discards — a formula, with no value, and an element that aborts aborts the
-   form build. Candidate: a value-free `FilterContext` (`list`, `filter`, `engineContext`) for the
-   form side, and the formula built only in `ListQueryDirector`, from the decoded value.
-6. **How the compiler pass learns a form's value class.** `RegisterFilterFormsPass` must not
-   instantiate services, but the value class now comes from an instance method (§3.3, §13.7). The
-   pass and `FilterFormRegistry` still read `value` and `default` from the tag, which `AsFilterForm`
-   no longer sets, so every form is registered with `value: null` and the §3.4 election finds
-   nothing. Options: `value:` back on the attribute, a static method or class constant, or
-   reflection on the `@template`. Decide together whether a per-value-class `default` returns.
-7. **`FilterElementBuildingEvent` / `FilterElementBuiltEvent`.** Still defined, still aliased to
-   `flare.filter_element.{type}.building|built` by `FilterElementListener`, but no longer dispatched
-   (their dispatcher was `FilterExecutor`). Re-dispatch them around `buildContext()` with a payload of
-   `FilterContextBuilder` + `?ValueInterface`, or remove them and their aliases.
-8. **`DateRangeValue` holds `\DateTimeImmutable`.** It normalizes the timezone in its factory, which
-   defuses the hashing hazard of §9, but the containment rule and `ValueObjectContainmentTest` exclude
-   the type. Store timestamps, or amend §9 and the test to allow a timezone-normalized
-   `\DateTimeImmutable`.
+3. **`ArchiveFilterElement::buildPreselectData()`** is `ListSpec`-aware today. With preselect stored
+   as choice keys it should reduce to a key lookup against `createChoices()` inside `ChoiceFilterForm`
+   — confirm while porting, together with 9.
+4. **Whether `ListSpec::$filters` should become a collection object.** The naming side is settled
+   (§13.5); the alias is the key everywhere (§8). Open only whether the plain list deserves its own
+   type. Not needed for this refactor.
+5. ~~Form-time vs. query-time context~~ — resolved, §13.6.
+6. ~~How the compiler pass learns a form's value class~~ — resolved, §13.11 and §13.14.
+7. ~~The element events~~ — resolved, §13.16.
+8. ~~`DateRangeValue` holding `\DateTimeImmutable`~~ — resolved by the relaxed rule, §9.
+9. **Archive's stored preselect keys vs. its static-mode choice keys.** The backend preselect
+   options write `"<table>.<id>"` in both ptable modes; the frontend submits the bare id in static
+   mode. Under key-based matching the two must agree. Either the static-mode key becomes
+   `"<table>.<id>"` too (one format, but existing filter URLs like `?archive=5` break), or stored
+   preselects are translated (by the data migration of step 6, or by the backend options writing
+   bare ids in static mode).
+
+---
+
+## 15. Deferred: table-alias targeting
+
+Out of scope for this refactor; to be redesigned **before the v0.2 release**.
+
+The v0.1 model assumed every filter applies to exactly one SQL table/join alias, chosen from outside
+the element (`AsFilterElement::$isTargeted`, `Filter::$targetAlias`, `Filter::$targetingForced`,
+the `targetAlias` backend field). In fact only the element knows which aliases its conditions
+address, so the alias has to be coupled with `FilterConditionsBuilder`:
+
+- **Default:** an element selects at most one target; `null` means `TableAliasRegistry::ALIAS_MAIN`.
+  `$builder->column()` applies the selected alias automatically.
+- **Opt-out:** an element may leave the default and address aliases itself.
+- `isTargeted`, `targetingForced`, `Filter::$targetAlias` and `AddTargetAliasFieldCallback` are
+  reconsidered as part of that design.
+
+**Known breakage until then:** #48 dropped the old resolution in `FilterExecutor::invokeFilter()`
+(`isTargeted || targetingForced` ⇒ `$filter->targetAlias`, else `ALIAS_MAIN`).
+`FilterContextBuilder::build()` now hands `$filter->targetAlias` straight to `FormulaBuilderFactory`,
+so a non-targeted element with a `targetAlias` targets it anyway, and a `null` alias reaches
+`FormulaBuilder`'s `string` parameter as a `TypeError`. The cut may restore the old resolution as a
+stopgap; it must not extend it.

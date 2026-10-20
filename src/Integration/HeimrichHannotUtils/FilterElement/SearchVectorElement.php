@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Integration\HeimrichHannotUtils\FilterElement;
 
-use Contao\Controller;
-use Contao\CoreBundle\Framework\ContaoFramework;
+use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
+use Contao\DataContainer;
 use Contao\Message;
 use HeimrichHannot\FlareBundle\Contract\Config\PaletteConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicValueContract;
+use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
@@ -16,7 +17,8 @@ use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
-use HeimrichHannot\UtilsBundle\Dca\SearchVectorField;
+use HeimrichHannot\UtilsBundle\Dca\SearchVectorFieldConfiguration;
+use HeimrichHannot\UtilsBundle\SearchVector\SearchVectorConfigurationResolver;
 use HeimrichHannot\UtilsBundle\SearchVector\SearchVectorQuery;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -39,10 +41,11 @@ class SearchVectorElement extends AbstractFilterElement implements IntrinsicValu
     public const MAX_SEARCH_LENGTH = 200;
 
     public function __construct(
-        private readonly SearchVectorQuery   $searchVectorQuery,
-        private readonly ContaoFramework     $contaoFramework,
-        private readonly TranslatorInterface $translator,
-        private readonly LoggerInterface     $logger,
+        private readonly SearchVectorQuery                 $searchVectorQuery,
+        private readonly SearchVectorConfigurationResolver $configurationResolver,
+        private readonly FilterContainer                   $filterContainer,
+        private readonly TranslatorInterface               $translator,
+        private readonly LoggerInterface                   $logger,
     ) {}
 
     public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
@@ -139,18 +142,39 @@ class SearchVectorElement extends AbstractFilterElement implements IntrinsicValu
         return '' !== $value ? $value : null;
     }
 
+    /**
+     * Refuses to save the filter type if the table of the list cannot be searched.
+     */
+    #[AsCallback(FilterContainer::TABLE_NAME, 'fields.type.save')]
+    public function onSaveType(mixed $value, DataContainer $dc): mixed
+    {
+        if (self::TYPE !== $value) {
+            return $value;
+        }
+
+        [, $listModel] = $this->filterContainer->getModelsFromDataContainer($dc, ignoreType: true);
+
+        if ($table = $listModel?->dc) {
+            // Contao shows the message of the exception at the field and does not save it
+            $this->resolveConfiguration($table);
+        }
+
+        return $value;
+    }
+
     private function addSearchVectorMessage(?string $table): void
     {
         if (!$table) {
             return;
         }
 
-        $this->contaoFramework->getAdapter(Controller::class)->loadDataContainer($table);
-
-        if (!$configuration = SearchVectorField::getRegistrations()[$table] ?? null) {
-            Message::addError($this->translator->trans('search_vector.missing_field', [
-                '%table%' => $table,
-            ], 'flare'));
+        try
+        {
+            $configuration = $this->resolveConfiguration($table);
+        }
+        catch (\InvalidArgumentException $e)
+        {
+            Message::addError($e->getMessage());
 
             return;
         }
@@ -160,5 +184,28 @@ class SearchVectorElement extends AbstractFilterElement implements IntrinsicValu
             '%field%' => $configuration->getFieldName(),
             '%fields%' => \implode(', ', $configuration->getFields()),
         ], 'flare'));
+    }
+
+    /**
+     * @throws \InvalidArgumentException if the table has no search vector field, or its stemmer or normalizer is not
+     *                                   registered
+     */
+    private function resolveConfiguration(string $table): SearchVectorFieldConfiguration
+    {
+        try
+        {
+            $configuration = $this->configurationResolver->getConfiguration($table);
+        }
+        catch (\InvalidArgumentException $e)
+        {
+            throw new \InvalidArgumentException($this->translator->trans('search_vector.missing_field', [
+                '%table%' => $table,
+            ], 'flare'), previous: $e);
+        }
+
+        $this->configurationResolver->getStemmer($configuration);
+        $this->configurationResolver->getNormalizer($configuration);
+
+        return $configuration;
     }
 }

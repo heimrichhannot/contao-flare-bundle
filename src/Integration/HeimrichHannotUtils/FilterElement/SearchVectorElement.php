@@ -34,7 +34,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 )]
 class SearchVectorElement extends AbstractFilterElement implements IntrinsicValueContract
 {
-    public const TYPE = 'flare_search_vector';
+    public const TYPE = 'huh_utils_searchVector';
 
     /**
      * Each word of the search adds placeholders to the condition and the relevance, so longer searches are cut.

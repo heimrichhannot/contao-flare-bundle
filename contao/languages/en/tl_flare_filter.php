@@ -73,6 +73,7 @@ $lang['formatEmptyOption_custom'] = 'Custom formatting';
 $lang['formatEmptyOptionCustom'] = ['Empty option formatting', 'Please enter a text or label format for the empty option.'];
 $lang['preselect'] = ['Preselection', 'Specify which values should be preselected.'];
 $lang['prefill'] = ['Prefill', 'Specify the text to prefill the field content with.'];
+$lang['sortByRelevance'] = ['Sort by relevance', 'List entries containing the search words in a row or as whole words first, before the sort order of the list.'];
 $lang['placeholder'] = ['Placeholder', 'Please enter a placeholder text.'];
 $lang['label'] = ['Label', 'Please enter a label for the field.'];
 ###< form_legend ###

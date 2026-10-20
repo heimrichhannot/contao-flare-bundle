@@ -12,6 +12,7 @@ use Composer\Semver\VersionParser;
  * @method static bool hasContaoCalendar()
  * @method static bool hasContaoComments()
  * @method static bool hasContaoNews()
+ * @method static bool hasHuhUtilsCompat313()
  * @method static bool hasTerminal42ChangeLanguage()
  * @method static bool isContao4()
  * @method static bool isContao5()
@@ -41,6 +42,7 @@ final class Env
                 'hasContaoCalendar' => InstalledVersions::isInstalled('contao/calendar-bundle'),
                 'hasContaoComments' => InstalledVersions::isInstalled('contao/comments-bundle'),
                 'hasContaoNews' => InstalledVersions::isInstalled('contao/news-bundle'),
+                'hasHuhUtilsCompat313' => InstalledVersions::satisfies(new VersionParser(), 'heimrichhannot/contao-utils-bundle', '^3.13'),
                 'hasTerminal42ChangeLanguage' => InstalledVersions::isInstalled('terminal42/contao-changelanguage'),
                 'isContao4' => InstalledVersions::satisfies(new VersionParser(), 'contao/core-bundle', '^4.0'),
                 'isContao5' => InstalledVersions::satisfies(new VersionParser(), 'contao/core-bundle', '^5.0'),

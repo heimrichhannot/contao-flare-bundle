@@ -64,6 +64,16 @@ Each filter element type specifies its own configuration options. The following 
 - A filter that has intrinsic unchecked is shown in the form and can be used by the user to filter the list view.
 - Some filters can only be intrinsic, e.g. the "published" filter. Under the hood, these filters do not specify a Symfony FormType.
 
+## Integrations
+
+FLARE ships with integrations for the following packages. Each one is enabled automatically when the package is installed.
+
+- [contao/news-bundle](https://github.com/contao/news-bundle): page meta and schema.org data for news readers
+- [contao/calendar-bundle](https://github.com/contao/calendar-bundle): an events list type
+- [contao/comments-bundle](https://github.com/contao/comments-bundle): comments on news readers
+- [codefog/tags-bundle](https://github.com/codefog/tags-bundle): tag choice and tag search filters for any data container
+- [heimrichhannot/contao-utils-bundle](https://github.com/heimrichhannot/contao-utils-bundle) (version 3.13 or newer): a filter for the search vector field, which can sort the list by relevance
+
 ## Resources
 
 ### Documentation

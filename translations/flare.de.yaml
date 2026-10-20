@@ -31,6 +31,12 @@ errors:
     missing_model: 'Listen- oder Filtermodell nicht gefunden'
     missing_datacontainer: 'Bitte definieren Sie einen Data-Container für das Listenmodell [ID %id%]'
 
+search_vector:
+    info: "Durchsucht den Suchvektor \"%table%.%field%\" aus den Feldern: %fields%"
+    missing_field: "Die Tabelle \"%table%\" hat kein Suchvektor-Feld. Registrieren Sie es mit SearchVectorField::register() aus heimrichhannot/contao-utils-bundle und bauen Sie die Vektoren neu auf."
+    missing_stemmer: "Der Stemmer \"%service%\" des Suchvektors von \"%table%\" ist kein registrierter Service, der das StemmerInterface von heimrichhannot/contao-utils-bundle implementiert."
+    missing_normalizer: "Der Normalizer \"%service%\" des Suchvektors von \"%table%\" ist kein registrierter Service, der das NormalizerInterface von heimrichhannot/contao-utils-bundle implementiert."
+
 infer_ptable:
     auto: "Als Elterntabelle von \"%table%.%field%\" wird \"%ptable%\" abgeleitet."
     dynamic: "Die Elterntabelle von \"%table%\" kann dynamisch abgeleitet werden."

@@ -43,6 +43,7 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string $groupWhitelistParents
  * @property string $preselect
  * @property string $prefill
+ * @property bool   $sortByRelevance
  * @property string $equationOperator
  * @property string $equationLeft
  * @property string $equationRight

@@ -44,13 +44,17 @@ readonly class SearchVectorRelevanceListener
                 continue;
             }
 
+            // Same alias as the filter gets from FilterExecutor::invokeFilter(), the element itself is not targeted
+            $alias = $filter->isTargetingForced()
+                ? ($filter->getTargetAlias() ?: TableAliasRegistry::ALIAS_MAIN)
+                : TableAliasRegistry::ALIAS_MAIN;
+
             try
             {
-                // The search vector filter is not targeted, it always filters the main table
                 $relevance = $this->searchVectorQuery->createRelevance(
                     table: $event->config->list->dc,
                     search: $value,
-                    alias: TableAliasRegistry::ALIAS_MAIN,
+                    alias: $alias,
                     parameterPrefix: 'search_vector_relevance_' . \count($orderBy),
                 );
             }

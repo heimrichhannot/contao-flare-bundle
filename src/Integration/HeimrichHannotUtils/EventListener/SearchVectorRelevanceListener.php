@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Integration\HeimrichHannotUtils\EventListener;
 
 use Doctrine\DBAL\ParameterType;
+use HeimrichHannot\FlareBundle\Engine\Context\Interface\SortableContextInterface;
 use HeimrichHannot\FlareBundle\Event\ModifyListQueryStructEvent;
 use HeimrichHannot\FlareBundle\Integration\HeimrichHannotUtils\FilterElement\SearchVectorElement;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
@@ -13,7 +14,8 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 /**
  * Sorts the list by the relevance of the search vector filters with "sort by relevance" enabled, before the sort order
- * of the list (set by the OrderModifierListener with a higher priority).
+ * of the list (set by the OrderModifierListener with a higher priority). Like the sort order, only in sortable
+ * contexts.
  */
 #[AsEventListener(priority: 410)]
 readonly class SearchVectorRelevanceListener
@@ -24,7 +26,7 @@ readonly class SearchVectorRelevanceListener
 
     public function __invoke(ModifyListQueryStructEvent $event): void
     {
-        if ($event->config->isCounting) {
+        if ($event->config->isCounting || !$event->config->context instanceof SortableContextInterface) {
             return;
         }
 

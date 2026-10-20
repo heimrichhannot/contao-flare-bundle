@@ -42,11 +42,7 @@ final class Env
                 'hasContaoCalendar' => InstalledVersions::isInstalled('contao/calendar-bundle'),
                 'hasContaoComments' => InstalledVersions::isInstalled('contao/comments-bundle'),
                 'hasContaoNews' => InstalledVersions::isInstalled('contao/news-bundle'),
-                'hasHuhUtilsCompat313' => InstalledVersions::satisfies(
-                    new VersionParser(),
-                    'heimrichhannot/contao-utils-bundle',
-                    '^3.13',
-                ),
+                'hasHuhUtilsCompat313' => InstalledVersions::satisfies(new VersionParser(), 'heimrichhannot/contao-utils-bundle', '^3.13'),
                 'hasTerminal42ChangeLanguage' => InstalledVersions::isInstalled('terminal42/contao-changelanguage'),
                 'isContao4' => InstalledVersions::satisfies(new VersionParser(), 'contao/core-bundle', '^4.0'),
                 'isContao5' => InstalledVersions::satisfies(new VersionParser(), 'contao/core-bundle', '^5.0'),

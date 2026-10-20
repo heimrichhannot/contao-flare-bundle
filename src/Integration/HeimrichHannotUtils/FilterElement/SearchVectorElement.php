@@ -207,8 +207,29 @@ class SearchVectorElement extends AbstractFilterElement implements IntrinsicValu
             ], 'flare'), previous: $e);
         }
 
-        $this->configurationResolver->getStemmer($configuration);
-        $this->configurationResolver->getNormalizer($configuration);
+        try
+        {
+            $this->configurationResolver->getStemmer($configuration);
+        }
+        catch (\InvalidArgumentException $e)
+        {
+            throw new \InvalidArgumentException($this->translator->trans('search_vector.missing_stemmer', [
+                '%table%' => $table,
+                '%service%' => $configuration->getStemmer(),
+            ], 'flare'), previous: $e);
+        }
+
+        try
+        {
+            $this->configurationResolver->getNormalizer($configuration);
+        }
+        catch (\InvalidArgumentException $e)
+        {
+            throw new \InvalidArgumentException($this->translator->trans('search_vector.missing_normalizer', [
+                '%table%' => $table,
+                '%service%' => $configuration->getNormalizer(),
+            ], 'flare'), previous: $e);
+        }
 
         return $configuration;
     }

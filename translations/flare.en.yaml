@@ -34,6 +34,8 @@ errors:
 search_vector:
     info: "Searches the search vector \"%table%.%field%\" built from the fields: %fields%"
     missing_field: "The table \"%table%\" has no search vector field. Register one with SearchVectorField::register() of heimrichhannot/contao-utils-bundle and rebuild the vectors."
+    missing_stemmer: "The stemmer \"%service%\" of the search vector of \"%table%\" is not a registered service implementing the StemmerInterface of heimrichhannot/contao-utils-bundle."
+    missing_normalizer: "The normalizer \"%service%\" of the search vector of \"%table%\" is not a registered service implementing the NormalizerInterface of heimrichhannot/contao-utils-bundle."
 
 infer_ptable:
     auto: "Parent table of \"%table%.%field%\" inferred as \"%ptable%\""

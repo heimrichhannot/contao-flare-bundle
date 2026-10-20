@@ -37,9 +37,8 @@ readonly class SearchVectorRelevanceListener
                 continue;
             }
 
-            $value = $event->config->filterValues[$key] ?? null;
-
-            if (!\is_string($value) || '' === $value) {
+            $value = SearchVectorElement::normalizeSearch($event->config->filterValues[$key] ?? null);
+            if (null === $value) {
                 continue;
             }
 

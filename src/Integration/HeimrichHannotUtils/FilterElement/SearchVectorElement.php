@@ -32,6 +32,11 @@ class SearchVectorElement extends AbstractFilterElement implements IntrinsicValu
 {
     public const TYPE = 'flare_search_vector';
 
+    /**
+     * Each word of the search adds placeholders to the condition and the relevance, so longer searches are cut.
+     */
+    public const MAX_SEARCH_LENGTH = 200;
+
     public function __construct(
         private readonly SearchVectorQuery   $searchVectorQuery,
         private readonly ContaoFramework     $contaoFramework,
@@ -40,8 +45,8 @@ class SearchVectorElement extends AbstractFilterElement implements IntrinsicValu
 
     public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
     {
-        $value = $inv->getValue();
-        if (!\is_string($value) || '' === $value) {
+        $value = self::normalizeSearch($inv->getValue());
+        if (null === $value) {
             return;
         }
 
@@ -65,6 +70,7 @@ class SearchVectorElement extends AbstractFilterElement implements IntrinsicValu
     {
         $event->options['label'] = 'label.text';
         $event->options['required'] = false;
+        $event->options['attr']['maxlength'] = self::MAX_SEARCH_LENGTH;
 
         if ($label = $event->filter->label) {
             $event->options['label'] = $label;
@@ -91,6 +97,30 @@ class SearchVectorElement extends AbstractFilterElement implements IntrinsicValu
         }
 
         return '{filter_legend},sortByRelevance;{form_legend},label,placeholder';
+    }
+
+    /**
+     * Returns the trimmed search, cut at a word boundary to MAX_SEARCH_LENGTH characters, or null if there is none.
+     */
+    public static function normalizeSearch(mixed $value): ?string
+    {
+        if (!\is_string($value)) {
+            return null;
+        }
+
+        $value = \trim($value);
+
+        if (\mb_strlen($value) > self::MAX_SEARCH_LENGTH)
+        {
+            $value = \mb_substr($value, 0, self::MAX_SEARCH_LENGTH);
+            $lastSpace = \mb_strrpos($value, ' ');
+
+            if (false !== $lastSpace) {
+                $value = \rtrim(\mb_substr($value, 0, $lastSpace));
+            }
+        }
+
+        return '' !== $value ? $value : null;
     }
 
     private function addSearchVectorMessage(?string $table): void

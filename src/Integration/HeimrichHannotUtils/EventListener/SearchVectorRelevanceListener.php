@@ -64,10 +64,14 @@ readonly class SearchVectorRelevanceListener
             return;
         }
 
+        // Records of the same relevance and sort order are sorted by id, otherwise pagination can repeat or skip them
+        $orderBy = [...$orderBy, ...($event->queryStruct->getOrderBy() ?? [])];
+        $orderBy[] = [TableAliasRegistry::ALIAS_MAIN . '.id', 'ASC'];
+
         $types = \array_fill_keys(\array_keys($parameters), ParameterType::STRING);
 
         $struct = $event->queryStruct;
-        $struct->setOrderBy([...$orderBy, ...($struct->getOrderBy() ?? [])]);
+        $struct->setOrderBy($orderBy);
         $struct->setParams(\array_merge($struct->getParams(), $parameters));
         $struct->setTypes(\array_merge($struct->getTypes(), $types));
     }

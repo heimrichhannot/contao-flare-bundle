@@ -64,9 +64,11 @@ readonly class SearchVectorRelevanceListener
             return;
         }
 
+        $types = \array_fill_keys(\array_keys($parameters), ParameterType::STRING);
+
         $struct = $event->queryStruct;
         $struct->setOrderBy([...$orderBy, ...($struct->getOrderBy() ?? [])]);
         $struct->setParams(\array_merge($struct->getParams(), $parameters));
-        $struct->setTypes(\array_merge($struct->getTypes(), \array_fill_keys(\array_keys($parameters), ParameterType::STRING)));
+        $struct->setTypes(\array_merge($struct->getTypes(), $types));
     }
 }

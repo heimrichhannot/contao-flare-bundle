@@ -18,6 +18,7 @@ use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListType\EventsListTyp
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
+use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use HeimrichHannot\UtilsBundle\Dca\SearchVectorFieldConfiguration;
 use HeimrichHannot\UtilsBundle\SearchVector\SearchVectorConfigurationResolver;
 use HeimrichHannot\UtilsBundle\SearchVector\SearchVectorQuery;
@@ -147,12 +148,14 @@ class SearchVectorElement extends AbstractFilterElement implements IntrinsicValu
     }
 
     /**
-     * Refuses to save the filter type if the table of the list cannot be searched.
+     * Refuses to choose the filter type if the table of the list cannot be searched. A filter that already has the
+     * type can still be saved, so it can be unpublished after its table broke; its palette shows the error.
      */
     #[AsCallback(FilterContainer::TABLE_NAME, 'fields.type.save')]
     public function onSaveType(mixed $value, DataContainer $dc): mixed
     {
-        if (self::TYPE !== $value) {
+        // The save callback runs before the record is written, so the row still holds the previous type
+        if (self::TYPE !== $value || self::TYPE === (DcaHelper::rowOf($dc)['type'] ?? null)) {
             return $value;
         }
 

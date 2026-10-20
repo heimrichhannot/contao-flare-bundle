@@ -7,6 +7,7 @@ namespace HeimrichHannot\FlareBundle\Integration\HeimrichHannotUtils\EventListen
 use Doctrine\DBAL\ParameterType;
 use HeimrichHannot\FlareBundle\Engine\Context\Interface\SortableContextInterface;
 use HeimrichHannot\FlareBundle\Event\ModifyListQueryStructEvent;
+use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListType\EventsListType;
 use HeimrichHannot\FlareBundle\Integration\HeimrichHannotUtils\FilterElement\SearchVectorElement;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\UtilsBundle\SearchVector\SearchVectorQuery;
@@ -15,7 +16,7 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 /**
  * Sorts the list by the relevance of the search vector filters with "sort by relevance" enabled, before the sort order
  * of the list (set by the OrderModifierListener with a higher priority). Like the sort order, only in sortable
- * contexts.
+ * contexts, and not for event lists, which are sorted by date.
  */
 #[AsEventListener(priority: 410)]
 readonly class SearchVectorRelevanceListener
@@ -27,6 +28,11 @@ readonly class SearchVectorRelevanceListener
     public function __invoke(ModifyListQueryStructEvent $event): void
     {
         if ($event->config->isCounting || !$event->config->context instanceof SortableContextInterface) {
+            return;
+        }
+
+        // Event lists are sorted by date in PHP, the option is hidden for them
+        if (EventsListType::TYPE === $event->config->list->type) {
             return;
         }
 

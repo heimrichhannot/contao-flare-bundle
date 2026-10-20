@@ -14,6 +14,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterElementFormTypeOptionsEvent;
 use HeimrichHannot\FlareBundle\Filter\FilterInvocation;
 use HeimrichHannot\FlareBundle\FilterElement\AbstractFilterElement;
+use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListType\EventsListType;
 use HeimrichHannot\FlareBundle\Query\FilterQueryBuilder;
 use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
@@ -111,11 +112,14 @@ class SearchVectorElement extends AbstractFilterElement implements IntrinsicValu
     {
         $this->addSearchVectorMessage($config->getListModel()->dc);
 
+        // Event lists are sorted by date, see GroupsEntriesTrait::groupEntriesByDate()
+        $sortable = EventsListType::TYPE !== $config->getListModel()->type;
+
         if ($config->getFilterModel()?->intrinsic) {
-            return '{filter_legend},prefill,sortByRelevance';
+            return '{filter_legend},prefill' . ($sortable ? ',sortByRelevance' : '');
         }
 
-        return '{filter_legend},sortByRelevance;{form_legend},label,placeholder';
+        return ($sortable ? '{filter_legend},sortByRelevance;' : '') . '{form_legend},label,placeholder';
     }
 
     /**

@@ -24,7 +24,7 @@ readonly class SearchVectorRelevanceListener
 
     public function __invoke(ModifyListQueryStructEvent $event): void
     {
-        if ($event->config->isCounting || !SearchVectorElement::isRelevanceSupported()) {
+        if ($event->config->isCounting) {
             return;
         }
 

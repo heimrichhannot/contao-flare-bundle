@@ -45,7 +45,7 @@ final class HeimrichHannotFlareExtension extends Extension implements PrependExt
             $loader->load('integrations/codefog_tags.yaml');
         }
 
-        if (Env::hasUtilsSearchVector()) {
+        if (Env::hasHuhUtilsCompat313()) {
             $loader->load('integrations/heimrichhannot_utils.yaml');
         }
 

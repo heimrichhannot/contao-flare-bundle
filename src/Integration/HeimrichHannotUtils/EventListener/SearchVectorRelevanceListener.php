@@ -42,13 +42,21 @@ readonly class SearchVectorRelevanceListener
                 continue;
             }
 
-            // The search vector filter is not targeted, it always filters the main table
-            $relevance = $this->searchVectorQuery->createRelevance(
-                table: $event->config->list->dc,
-                search: $value,
-                alias: TableAliasRegistry::ALIAS_MAIN,
-                parameterPrefix: 'search_vector_relevance_' . \count($orderBy),
-            );
+            try
+            {
+                // The search vector filter is not targeted, it always filters the main table
+                $relevance = $this->searchVectorQuery->createRelevance(
+                    table: $event->config->list->dc,
+                    search: $value,
+                    alias: TableAliasRegistry::ALIAS_MAIN,
+                    parameterPrefix: 'search_vector_relevance_' . \count($orderBy),
+                );
+            }
+            catch (\InvalidArgumentException)
+            {
+                // The table cannot be searched, the filter logs this and returns no results
+                continue;
+            }
 
             if (!$relevance) {
                 continue;

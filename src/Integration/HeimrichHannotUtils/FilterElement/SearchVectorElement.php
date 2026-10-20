@@ -18,6 +18,7 @@ use HeimrichHannot\FlareBundle\Specification\FilterDefinition;
 use HeimrichHannot\FlareBundle\Specification\ListSpecification;
 use HeimrichHannot\UtilsBundle\Dca\SearchVectorField;
 use HeimrichHannot\UtilsBundle\SearchVector\SearchVectorQuery;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -41,6 +42,7 @@ class SearchVectorElement extends AbstractFilterElement implements IntrinsicValu
         private readonly SearchVectorQuery   $searchVectorQuery,
         private readonly ContaoFramework     $contaoFramework,
         private readonly TranslatorInterface $translator,
+        private readonly LoggerInterface     $logger,
     ) {}
 
     public function __invoke(FilterInvocation $inv, FilterQueryBuilder $qb): void
@@ -50,12 +52,26 @@ class SearchVectorElement extends AbstractFilterElement implements IntrinsicValu
             return;
         }
 
-        $condition = $this->searchVectorQuery->createCondition(
-            table: $inv->list->dc,
-            search: $value,
-            alias: $qb->alias(),
-            parameterPrefix: 'search_vector',
-        );
+        try
+        {
+            $condition = $this->searchVectorQuery->createCondition(
+                table: $inv->list->dc,
+                search: $value,
+                alias: $qb->alias(),
+                parameterPrefix: 'search_vector',
+            );
+        }
+        catch (\InvalidArgumentException $e)
+        {
+            // The table has no search vector field, or its stemmer or normalizer is not registered
+            $this->logger->error(\sprintf(
+                '[FLARE] Search vector filter cannot search list %s (ID %s), filter ID %s: %s',
+                $inv->list->dc, (string) ($inv->list->getDataSource()?->getListProperty('id') ?? 'N/A'),
+                (string) ($inv->filter->getDataSource()?->getFilterProperty('id') ?? 'N/A'), $e->getMessage(),
+            ), ['exception' => $e]);
+
+            $qb->abort();
+        }
 
         if (!$condition) {
             return;

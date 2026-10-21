@@ -23,16 +23,125 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         'ctl_formatEmptyOptionCustom', 'ctl_placeholder',
     ];
 
+    private const MARKER = 'legacyBackfilled';
+
+    /** @var list<string>|null The table's columns, or null if the table does not exist. */
+    private ?array $columns = self::COLUMNS;
+
+    /** The marker column's current default. */
+    private string $markerDefault = '0';
+
     /** @var array<int, array<string, mixed>> The table's rows by id; `update()` calls are applied to them. */
     private array $rows = [];
 
     /** @var list<array{array<string, mixed>, array<string, mixed>}> The recorded `update()` calls: data, criteria. */
     private array $updates = [];
 
+    /** @var list<string> The recorded `executeStatement()` calls. */
+    private array $statements = [];
+
     protected function setUp(): void
     {
+        $this->columns = self::COLUMNS;
+        $this->markerDefault = '0';
         $this->rows = [];
         $this->updates = [];
+        $this->statements = [];
+    }
+
+    public function testRunAddsTheMarkerMarksEveryRowAndDefaultsItToDone(): void
+    {
+        $this->addRow(1, 'flare_archive', ['intrinsic' => '0']);
+        $this->addRow(2, 'flare_published', ['intrinsic' => '0']);
+
+        self::assertTrue($this->migration()->shouldRun());
+
+        $this->migration()->run();
+
+        self::assertSame([
+            "ALTER TABLE tl_flare_filter ADD legacyBackfilled CHAR(1) NOT NULL DEFAULT '0'",
+            "ALTER TABLE tl_flare_filter ALTER legacyBackfilled SET DEFAULT '1'",
+        ], $this->statements);
+        self::assertContains(self::MARKER, $this->columns);
+        self::assertSame('1', $this->rows[1][self::MARKER]);
+        self::assertSame('1', $this->rows[2][self::MARKER], 'types without a control are marked as well');
+        self::assertFalse($this->migration()->shouldRun());
+
+        // A second run (e.g. after an interruption) does not add the column again.
+        $this->statements = [];
+        $this->migration()->run();
+
+        self::assertSame(["ALTER TABLE tl_flare_filter ALTER legacyBackfilled SET DEFAULT '1'"], $this->statements);
+    }
+
+    public function testShouldRunWhileTheMarkerIsAbsent(): void
+    {
+        self::assertTrue($this->migration()->shouldRun(), 'empty table');
+
+        $this->addRow(1, 'flare_published', ['intrinsic' => '0']);
+
+        self::assertTrue($this->migration()->shouldRun());
+    }
+
+    public function testRowsCreatedLaterAreNotPending(): void
+    {
+        $this->addRow(1, 'flare_archive', ['intrinsic' => '0']);
+        $this->migration()->run();
+
+        // The retired `intrinsic` column keeps its default, the control is empty: an editor's new intrinsic filter.
+        $this->addRow(2, 'flare_archive', ['intrinsic' => '0', 'preselect' => \serialize(['tl_news_archive.5'])]);
+
+        self::assertSame('1', $this->rows[2][self::MARKER]);
+        self::assertFalse($this->migration()->shouldRun());
+
+        $this->migration()->run();
+
+        self::assertSame('', $this->rows[2]['control']);
+        self::assertNull($this->rows[2]['value']);
+    }
+
+    public function testEditorChangesAfterTheRunAreNotReverted(): void
+    {
+        $this->addRow(1, 'flare_dcaSelectField', ['intrinsic' => '0', 'preselect' => 'red']);
+        $this->addRow(2, 'flare_search_keywords', ['intrinsic' => '1', 'prefill' => 'solar']);
+        $this->migration()->run();
+
+        self::assertSame('flare_choice', $this->rows[1]['control']);
+        self::assertSame('solar', $this->rows[2]['value']);
+
+        // The editor makes the first filter intrinsic and clears both values.
+        $this->rows[1]['control'] = '';
+        $this->rows[1]['value'] = null;
+        $this->rows[2]['value'] = null;
+
+        self::assertFalse($this->migration()->shouldRun());
+
+        $this->updates = [];
+        $this->migration()->run();
+
+        self::assertSame([], $this->rowUpdates());
+        self::assertSame('', $this->rows[1]['control']);
+        self::assertNull($this->rows[1]['value']);
+        self::assertNull($this->rows[2]['value']);
+    }
+
+    public function testIntrinsicOnlyDatabaseGetsItsFixedValuesOnce(): void
+    {
+        $this->addRow(1, 'flare_bool', ['intrinsic' => '1', 'preselect' => 'true']);
+        $this->addRow(2, 'flare_fieldValueChoice', ['intrinsic' => '1', 'preselect' => \serialize(['berlin'])]);
+        $this->addRow(3, 'flare_archive', ['intrinsic' => '1', 'preselect' => \serialize(['tl_news_archive.5'])]);
+
+        self::assertTrue($this->migration()->shouldRun());
+
+        $this->migration()->run();
+
+        self::assertSame([
+            [['value' => '1'], ['id' => 1]],
+            [['value' => \serialize(['berlin'])], ['id' => 2]],
+            [[], ['id' => 3]],
+        ], $this->rowUpdates());
+        self::assertSame('', $this->rows[1]['control']);
+        self::assertFalse($this->migration()->shouldRun());
     }
 
     public function testIntrinsicArchiveIgnoresLeftoverPreselect(): void
@@ -42,11 +151,9 @@ final class BackfillFilterValuesMigrationTest extends TestCase
             'preselect' => \serialize(['tl_news_archive.5']),
         ]);
 
-        self::assertFalse($this->migration()->shouldRun());
-
         $this->migration()->run();
 
-        self::assertSame([], $this->updates);
+        self::assertSame([[[], ['id' => 1]]], $this->rowUpdates());
         self::assertSame('', $this->rows[1]['control']);
         self::assertNull($this->rows[1]['value']);
     }
@@ -66,7 +173,7 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         self::assertSame([[
             ['control' => 'flare_choice', 'value' => \serialize(['tl_news_archive.5'])],
             ['id' => 1],
-        ]], $this->updates);
+        ]], $this->rowUpdates());
 
         // Archive keeps its empty option and placeholder settings 1:1.
         self::assertSame('Pick one', $this->rows[1]['ctl_placeholder']);
@@ -128,7 +235,7 @@ final class BackfillFilterValuesMigrationTest extends TestCase
 
         $this->migration()->run();
 
-        self::assertSame([[['ctl_boolBinaryChoices' => 'true_false'], ['id' => 1]]], $this->updates);
+        self::assertSame([[['ctl_boolBinaryChoices' => 'true_false'], ['id' => 1]]], $this->rowUpdates());
     }
 
     public function testSingleDcaSelectPlaceholderBecomesEmptyOptionLabel(): void
@@ -151,7 +258,7 @@ final class BackfillFilterValuesMigrationTest extends TestCase
                 'ctl_placeholder' => '',
             ],
             ['id' => 1],
-        ]], $this->updates);
+        ]], $this->rowUpdates());
     }
 
     public function testSingleSelectWithoutPlaceholderKeepsItsFallbackLabel(): void
@@ -231,11 +338,13 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         self::assertSame([
             [['control' => 'flare_date_range'], ['id' => 1]],
             [['control' => 'flare_date_range'], ['id' => 2]],
-        ], $this->updates);
+            [[], ['id' => 3]],
+        ], $this->rowUpdates());
     }
 
     public function testElementsWithoutAControlAreNeverPending(): void
     {
+        $this->columns[] = self::MARKER;
         $this->addRow(1, 'flare_published', ['intrinsic' => '0', 'preselect' => 'leftover', 'prefill' => 'x']);
         $this->addRow(2, 'flare_simple_equation', ['intrinsic' => '0']);
 
@@ -243,7 +352,8 @@ final class BackfillFilterValuesMigrationTest extends TestCase
 
         $this->migration()->run();
 
-        self::assertSame([], $this->updates);
+        self::assertSame([], $this->rowUpdates());
+        self::assertSame('1', $this->rows[1][self::MARKER]);
     }
 
     public function testExistingTargetsAreNotOverwritten(): void
@@ -262,6 +372,8 @@ final class BackfillFilterValuesMigrationTest extends TestCase
 
         $this->migration()->run();
 
+        self::assertSame([[[], ['id' => 1]], [['control' => 'flare_choice', 'ctl_hasEmptyOption' => '1',
+            'ctl_formatEmptyOption' => 'empty_option.no_selection'], ['id' => 2]]], $this->rowUpdates());
         self::assertSame(\serialize(['blue']), $this->rows[1]['value']);
         self::assertSame(\serialize(['blue']), $this->rows[2]['value']);
         self::assertSame('flare_choice', $this->rows[2]['control']);
@@ -271,22 +383,28 @@ final class BackfillFilterValuesMigrationTest extends TestCase
     {
         $this->addRow(1, 'flare_archive', ['intrinsic' => '0', 'preselect' => \serialize(['tl_news_archive.5'])]);
 
-        $columns = \array_values(\array_diff(self::COLUMNS, ['intrinsic']));
+        $this->columns = \array_values(\array_diff(self::COLUMNS, ['intrinsic']));
 
-        self::assertFalse($this->migration($columns)->shouldRun());
-        self::assertFalse($this->migration(null)->shouldRun(), 'no table');
+        self::assertFalse($this->migration()->shouldRun());
+
+        $this->columns = null;
+
+        self::assertFalse($this->migration()->shouldRun(), 'no table');
     }
 
     public function testShouldRunWaitsForTheRenamedColumns(): void
     {
         $this->addRow(1, 'flare_archive', ['intrinsic' => '0']);
 
-        $columns = \array_map(
+        $this->columns = \array_map(
             static fn (string $column): string => $column === 'ctl_placeholder' ? 'placeholder' : $column,
             self::COLUMNS,
         );
 
-        self::assertFalse($this->migration($columns)->shouldRun());
+        self::assertFalse($this->migration()->shouldRun());
+
+        $this->columns = self::COLUMNS;
+
         self::assertTrue($this->migration()->shouldRun());
     }
 
@@ -294,22 +412,25 @@ final class BackfillFilterValuesMigrationTest extends TestCase
     {
         $this->addRow(1, 'flare_archive', ['intrinsic' => '0']);
 
-        self::assertFalse($this->migration(\array_values(\array_diff(self::COLUMNS, ['control'])))->shouldRun());
-        self::assertFalse($this->migration(\array_values(\array_diff(self::COLUMNS, ['value'])))->shouldRun());
+        foreach (['control', 'value'] as $target)
+        {
+            $this->columns = \array_values(\array_diff(self::COLUMNS, [$target]));
+
+            self::assertFalse($this->migration()->shouldRun(), $target);
+        }
     }
 
-    public function testShouldRunReadsMissingOptionalSourcesAsEmpty(): void
+    public function testMissingOptionalSourcesReadAsEmpty(): void
     {
+        $this->columns = \array_values(\array_diff(self::COLUMNS, ['boolMode', 'preselect', 'prefill']));
         $this->addRow(1, 'flare_bool', ['intrinsic' => '0']);
         unset($this->rows[1]['boolMode'], $this->rows[1]['preselect'], $this->rows[1]['prefill']);
 
-        $columns = \array_values(\array_diff(self::COLUMNS, ['boolMode', 'preselect', 'prefill']));
+        self::assertTrue($this->migration()->shouldRun());
 
-        self::assertTrue($this->migration($columns)->shouldRun());
+        $this->migration()->run();
 
-        $this->migration($columns)->run();
-
-        self::assertSame([[['control' => 'flare_checkbox'], ['id' => 1]]], $this->updates);
+        self::assertSame([[['control' => 'flare_checkbox'], ['id' => 1]]], $this->rowUpdates());
     }
 
     public function testShouldRunGoesQuietAfterARun(): void
@@ -317,15 +438,12 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         $this->addRow(1, 'flare_archive', ['intrinsic' => '0', 'preselect' => \serialize(['tl_news_archive.5'])]);
         $this->addRow(2, 'flare_archive', ['intrinsic' => '1', 'preselect' => \serialize(['tl_news_archive.5'])]);
         $this->addRow(3, 'flare_bool', ['intrinsic' => '1', 'preselect' => 'null']);
-        $this->addRow(4, 'flare_bool', ['intrinsic' => '1', 'preselect' => 'false']);
-        $this->addRow(5, 'flare_bool', ['intrinsic' => '0', 'ctl_boolBinaryChoices' => 'null_false']);
-        $this->addRow(6, 'flare_search_keywords', ['intrinsic' => '1', 'prefill' => 'solar']);
-        $this->addRow(7, 'flare_search_keywords', ['intrinsic' => '0', 'prefill' => 'leftover']);
-        $this->addRow(8, 'flare_dcaSelectField', ['intrinsic' => '0', 'preselect' => '0']);
-        $this->addRow(9, 'flare_dcaSelectField', ['intrinsic' => '1', 'preselect' => \serialize([])]);
-        $this->addRow(10, 'cfg_tags_choice', ['intrinsic' => '0', 'ctl_placeholder' => 'Tags']);
-        $this->addRow(11, 'flare_calendar_current', ['intrinsic' => '1']);
-        $this->addRow(12, 'flare_published', ['intrinsic' => '0']);
+        $this->addRow(4, 'flare_bool', ['intrinsic' => '0', 'ctl_boolBinaryChoices' => 'null_false']);
+        $this->addRow(5, 'flare_search_keywords', ['intrinsic' => '0', 'prefill' => 'leftover']);
+        $this->addRow(6, 'flare_dcaSelectField', ['intrinsic' => '0', 'preselect' => '0']);
+        $this->addRow(7, 'cfg_tags_choice', ['intrinsic' => '0', 'ctl_placeholder' => 'Tags']);
+        $this->addRow(8, 'flare_calendar_current', ['intrinsic' => '1']);
+        $this->addRow(9, 'flare_published', ['intrinsic' => '0']);
 
         self::assertTrue($this->migration()->shouldRun());
 
@@ -333,22 +451,19 @@ final class BackfillFilterValuesMigrationTest extends TestCase
 
         self::assertFalse($this->migration()->shouldRun());
 
-        // An intrinsic-only database whose leftovers were never read is not pending at all.
-        $this->rows = [];
-        $this->addRow(1, 'flare_archive', ['intrinsic' => '1', 'preselect' => \serialize(['tl_news_archive.5'])]);
-        $this->addRow(2, 'flare_bool', ['intrinsic' => '1', 'preselect' => 'null']);
-        $this->addRow(3, 'flare_search_keywords', ['intrinsic' => '1', 'prefill' => '']);
-        $this->addRow(4, 'flare_dateRange', ['intrinsic' => '1']);
-
-        self::assertFalse($this->migration()->shouldRun());
+        foreach ($this->rows as $id => $row) {
+            self::assertSame('1', $row[self::MARKER], (string) $id);
+        }
     }
 
     /**
+     * Adds a row; once the marker column exists, the row gets the column's current default.
+     *
      * @param array<string, mixed> $values
      */
     private function addRow(int $id, string $type, array $values): void
     {
-        $this->rows[$id] = \array_merge([
+        $row = [
             'id' => (string) $id,
             'type' => $type,
             'intrinsic' => '0',
@@ -365,39 +480,96 @@ final class BackfillFilterValuesMigrationTest extends TestCase
             'ctl_formatEmptyOption' => '',
             'ctl_formatEmptyOptionCustom' => '',
             'ctl_placeholder' => '',
-        ], $values);
+        ];
+
+        if (\in_array(self::MARKER, $this->columns ?? [], true)) {
+            $row[self::MARKER] = $this->markerDefault;
+        }
+
+        $this->rows[$id] = \array_merge($row, $values);
     }
 
     /**
-     * @param list<string>|null $columns The table's columns, or null if the table does not exist.
+     * The per-row `update()` calls, without the marker.
+     *
+     * @return list<array{array<string, mixed>, array<string, mixed>}>
      */
-    private function migration(?array $columns = self::COLUMNS): BackfillFilterValuesMigration
+    private function rowUpdates(): array
+    {
+        $updates = [];
+
+        foreach ($this->updates as [$data, $criteria])
+        {
+            if (isset($criteria['id'])) {
+                unset($data[self::MARKER]);
+                $updates[] = [$data, $criteria];
+            }
+        }
+
+        return $updates;
+    }
+
+    /**
+     * A migration over a fake `tl_flare_filter`: `$this->columns` is its schema, `$this->rows` its content.
+     */
+    private function migration(): BackfillFilterValuesMigration
     {
         $schemaManager = $this->createMock(AbstractSchemaManager::class);
-        $schemaManager->method('tablesExist')->with([self::TABLE])->willReturn($columns !== null);
+        $schemaManager->method('tablesExist')->with([self::TABLE])->willReturnCallback(
+            fn (): bool => $this->columns !== null,
+        );
         $schemaManager->method('introspectTable')->with(self::TABLE)->willReturnCallback(
-            static fn (): Table => new Table(self::TABLE, \array_map(
+            fn (): Table => new Table(self::TABLE, \array_map(
                 static fn (string $name): Column => new Column($name, Type::getType(Types::STRING)),
-                $columns ?? [],
+                $this->columns ?? [],
             )),
         );
 
         $connection = $this->createMock(Connection::class);
         $connection->method('createSchemaManager')->willReturn($schemaManager);
         $connection->method('fetchAllAssociative')->willReturnCallback(function (string $sql): array {
-            self::assertSame('SELECT * FROM tl_flare_filter ORDER BY id', $sql);
+            self::assertSame("SELECT * FROM tl_flare_filter WHERE legacyBackfilled = '0' ORDER BY id", $sql);
 
-            return \array_values($this->rows);
+            return \array_values(\array_filter(
+                $this->rows,
+                static fn (array $row): bool => $row[self::MARKER] === '0',
+            ));
         });
         $connection->method('update')->willReturnCallback(function (string $table, array $data, array $criteria): int {
             self::assertSame(self::TABLE, $table);
 
             $this->updates[] = [$data, $criteria];
-            $this->rows[(int) $criteria['id']] = \array_merge($this->rows[(int) $criteria['id']], $data);
+            $affected = 0;
 
-            return 1;
+            foreach ($this->rows as $id => $row)
+            {
+                if (\array_intersect_key($row, $criteria) == $criteria) {
+                    $this->rows[$id] = \array_merge($row, $data);
+                    ++$affected;
+                }
+            }
+
+            return $affected;
         });
-        $connection->expects(self::never())->method('executeStatement');
+        $connection->method('executeStatement')->willReturnCallback(function (string $sql): int {
+            $this->statements[] = $sql;
+
+            if ($sql === "ALTER TABLE tl_flare_filter ADD legacyBackfilled CHAR(1) NOT NULL DEFAULT '0'") {
+                $this->columns[] = self::MARKER;
+
+                foreach ($this->rows as $id => $row) {
+                    $this->rows[$id][self::MARKER] = '0';
+                }
+            }
+            elseif ($sql === "ALTER TABLE tl_flare_filter ALTER legacyBackfilled SET DEFAULT '1'") {
+                $this->markerDefault = '1';
+            }
+            else {
+                self::fail('Unexpected statement: ' . $sql);
+            }
+
+            return 0;
+        });
 
         return new BackfillFilterValuesMigration($connection);
     }

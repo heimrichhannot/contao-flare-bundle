@@ -24,7 +24,7 @@ class CodefogTagsSearchElement extends AbstractFilterElement
 
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},fieldGeneric,isMultiple,preselect');
+        $dca->palette('{filter_legend},fieldGeneric');
     }
 
     public function configureOptions(OptionsResolver $resolver): void

@@ -14,8 +14,6 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
 use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BelongsToRelationPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
@@ -33,14 +31,8 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
         private readonly TranslatorInterface $trans,
     ) {}
 
-    public function isOnlyIntrinsic(): bool
-    {
-        return true;
-    }
-
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('field_pid')->default(null)->allowedTypes('string', 'null');
         $resolver->define('which_ptable')->default(null)->allowedTypes('string', 'null');
         $resolver->define('whitelist_parents')->default([])->allowedTypes('array');
@@ -53,7 +45,6 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
         $groupWhitelistParents = StringUtil::deserialize($model->groupWhitelistParents);
 
         $config
-            ->set('intrinsic', (bool) $model->intrinsic)
             ->set('field_pid', $model->fieldPid ?: null)
             ->set('which_ptable', $model->whichPtable ?: null)
             ->set('whitelist_parents', $whitelistParents ? (array) $whitelistParents : [])
@@ -65,15 +56,15 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
      */
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
-        $config = $context->config;
+        $config = $builder->scope->filter->config;
 
         if (!$fieldPid = $config['field_pid'])
         {
             throw new FilterException('No parent field defined.');
         }
 
-        $inferrable = PtableInferrableFactory::createFromConfig($context->list->config);
-        $inferrer = new PtableInferrer($inferrable, $context->list->dc);
+        $inferrable = PtableInferrableFactory::createFromConfig($builder->scope->list->config);
+        $inferrer = new PtableInferrer($inferrable, $builder->scope->list->dc);
 
         try
         {
@@ -87,7 +78,7 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
 
         if (\is_string($fieldDynamicPtable))
         {
-            $builder->add(BelongsToRelationPredicate::class, [
+            $builder->addPredicate(BelongsToRelationPredicate::class, [
                 'field_pid' => $fieldPid,
                 'field_dynamic_ptable' => $fieldDynamicPtable,
                 'parent_groups' => $this->getDynamicParentGroups($config['group_whitelist_parents']),
@@ -100,7 +91,7 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
             throw new FilterException('No whitelisted parents.');
         }
 
-        $builder->add(BelongsToRelationPredicate::class, [
+        $builder->addPredicate(BelongsToRelationPredicate::class, [
             'field_pid' => $fieldPid,
             'whitelist' => $whitelistParents,
         ]);

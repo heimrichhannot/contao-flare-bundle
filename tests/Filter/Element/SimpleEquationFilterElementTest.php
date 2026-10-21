@@ -17,13 +17,12 @@ final class SimpleEquationFilterElementTest extends TestCase
     public function testTransformsPopulatedModel(): void
     {
         $config = $this->transform([
-            'intrinsic' => '1',
             'equationLeft' => 'pid',
             'equationOperator' => '=',
             'equationRight' => '42',
         ]);
 
-        self::assertTrue($config['intrinsic']);
+        self::assertArrayNotHasKey('intrinsic', $config);
         self::assertSame('pid', $config['left']);
         self::assertSame(SqlEquationOperator::EQUALS, $config['operator']);
         self::assertSame('42', $config['right']);
@@ -32,13 +31,11 @@ final class SimpleEquationFilterElementTest extends TestCase
     public function testTransformsEmptyModelToDefaults(): void
     {
         $config = $this->transform([
-            'intrinsic' => '',
             'equationLeft' => '',
             'equationOperator' => '',
             'equationRight' => null,
         ]);
 
-        self::assertFalse($config['intrinsic']);
         self::assertNull($config['left']);
         self::assertNull($config['operator']);
         self::assertNull($config['right']);

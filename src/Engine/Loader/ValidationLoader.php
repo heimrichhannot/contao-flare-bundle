@@ -47,7 +47,6 @@ readonly class ValidationLoader implements ValidationLoaderInterface
                 element: SimpleEquationFilterElement::TYPE,
                 alias: '_.id',
                 config: [
-                    'intrinsic' => true,
                     'left' => 'id',
                     'operator' => SqlEquationOperator::EQUALS,
                     'right' => $id,
@@ -97,7 +96,6 @@ readonly class ValidationLoader implements ValidationLoaderInterface
                 element: SimpleEquationFilterElement::TYPE,
                 alias: '_.autoItem',
                 config: [
-                    'intrinsic' => true,
                     'left' => $this->config->autoItemField,
                     'operator' => SqlEquationOperator::EQUALS,
                     'right' => $autoItem,

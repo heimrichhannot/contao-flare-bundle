@@ -28,7 +28,6 @@ class SimpleEquationMod extends AbstractMod
             element: SimpleEquationFilterElement::TYPE,
             alias: $options['name'] ?: null,
             config: [
-                'intrinsic' => true,
                 'left' => $options['operand1'],
                 'operator' => $options['operator'],
                 'right' => $options['operand2'],

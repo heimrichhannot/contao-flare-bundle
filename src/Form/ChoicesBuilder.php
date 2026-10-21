@@ -47,8 +47,6 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  *
  * The submitted value of a choice is its local key while all choices share at most one scope
  * ({@see usesLocalKeys()}), otherwise its canonical key.
- *
- * @mago-expect lint:too-many-methods
  */
 final class ChoicesBuilder
 {
@@ -290,28 +288,19 @@ final class ChoicesBuilder
             }
         }
 
-        $label = $this->label;
+        $labelClass = match (true) {
+            $model !== null => $model::class,
+            \is_object($choice) => $choice::class,
+            default => null,
+        };
 
-        if ($choice instanceof ValueChoice && $choice->label !== null)
-        {
-            $label = $choice->label;
-        }
-        elseif ($choice instanceof ValueChoice)
-        {
-            $label = $choice->value;
-        }
-        elseif ($model)
-        {
-            $label = $this->tryGetTypeLabel($model::class)
+        $label = match (true) {
+            $choice instanceof ValueChoice => $choice->label ?? $choice->value,
+            $labelClass !== null => $this->tryGetTypeLabel($labelClass)
                 ?? $this->label
-                ?: $this->tryGetDefaultTypeLabel($model::class);
-        }
-        elseif (\is_object($choice))
-        {
-            $label = $this->tryGetTypeLabel($choice::class)
-                ?? $this->label
-                ?: $this->tryGetDefaultTypeLabel($choice::class);
-        }
+                ?: $this->tryGetDefaultTypeLabel($labelClass),
+            default => $this->label,
+        };
 
         if ($model)
         {

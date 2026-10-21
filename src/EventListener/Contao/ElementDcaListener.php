@@ -159,7 +159,7 @@ final readonly class ElementDcaListener
 
         $this->valueProviderRegistry->get($valueClass)?->buildDcaField($dca->field('value'), $context);
 
-        $dca->prefix(static fn (string $prefix): string => $prefix . ',value');
+        $dca->composePrefix(static fn (string $prefix): string => $prefix . ',value');
     }
 
     /**

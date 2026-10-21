@@ -62,6 +62,29 @@ class DcaBuilderTest extends TestCase
         self::assertSame('{a},p,value;{z},s', $GLOBALS['TL_DCA']['tl_test']['palettes']['x']);
     }
 
+    public function testComposedPrefixKeepsAnEarlierOverride(): void
+    {
+        $dca = new DcaBuilder();
+        $dca->prefix('{b},q');
+        $dca->composePrefix(static fn (string $prefix): string => $prefix . ',value');
+        $dca->apply('tl_test', 'x');
+
+        self::assertSame('{b},q,value;{z},s', $GLOBALS['TL_DCA']['tl_test']['palettes']['x']);
+
+        $dca = new DcaBuilder();
+        $dca->prefix(static fn (string $prefix): string => $prefix . ',r');
+        $dca->composePrefix(static fn (string $prefix): string => $prefix . ',value');
+        $dca->apply('tl_test', 'y');
+
+        self::assertSame('{a},p,r,value;{z},s', $GLOBALS['TL_DCA']['tl_test']['palettes']['y']);
+
+        $dca = new DcaBuilder();
+        $dca->composePrefix(static fn (string $prefix): string => $prefix . ',value');
+        $dca->apply('tl_test', 'z');
+
+        self::assertSame('{a},p,value;{z},s', $GLOBALS['TL_DCA']['tl_test']['palettes']['z']);
+    }
+
     public function testSelectorRegistersFieldAndSubpaletteKey(): void
     {
         $GLOBALS['TL_DCA']['tl_test']['palettes']['__selector__'] = ['other'];

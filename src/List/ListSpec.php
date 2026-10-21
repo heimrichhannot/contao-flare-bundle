@@ -28,11 +28,12 @@ final readonly class ListSpec
 {
     /**
      * @param ListDriverInterface $driver List driver service (registered or inline).
-     * @param array<string, Filter> $filters Keyed by alias.
+     * @param array<string, Filter> $filters Keyed by alias, unless added to the builder under an explicit key
+     *   ({@see ListSpecBuilder::addFilter()}).
      * @param array<string, mixed> $config Canonical config, resolved through the base and driver schemas.
      * @param string|null $source Provenance for error messages, e.g. "tl_flare_list.5".
-     * @param list<string> $failures Failures of filters without a control that could not be built; a list
-     *   with failures has failed as a whole (SPEC_FILTER_FORMS.md §8.1).
+     * @param list<string> $failures Failures of filters whose element could not be built, or whose fixed
+     *   value or alias is broken; a list with failures has failed as a whole (SPEC_FILTER_FORMS.md §8.1).
      *
      * @internal Use {@see Factory\ListSpecFactory} to create instances.
      */

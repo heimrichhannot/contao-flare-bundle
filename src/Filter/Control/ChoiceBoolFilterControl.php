@@ -74,6 +74,10 @@ class ChoiceBoolFilterControl extends AbstractFilterControl
     {
         $value = $this->expectValue($value, BoolValue::class);
 
-        return $value === null ? null : ($value->state ? '1' : '0');
+        return match ($value?->state) {
+            true => '1',
+            false => '0',
+            null => null,
+        };
     }
 }

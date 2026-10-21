@@ -58,6 +58,20 @@ final class DcaBuilder implements DcaBuilderInterface
     }
 
     /**
+     * Transforms the palette prefix on top of any override set so far: `fn(string $prefix): string`
+     * receives the prefix that override resolves to (or the table's `__prefix__` without one).
+     */
+    public function composePrefix(callable $transform): self
+    {
+        $override = $this->prefix;
+        $transform = $transform(...);
+
+        $this->prefix = static fn (string $current): string => $transform(self::resolveAffix($override, $current));
+
+        return $this;
+    }
+
+    /**
      * Overrides the palette suffix for this type: a string replaces the table's `__suffix__`,
      * a callable `fn(string $current): string` transforms it, null keeps it.
      */

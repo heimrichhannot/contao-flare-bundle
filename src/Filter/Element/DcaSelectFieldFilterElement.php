@@ -96,8 +96,14 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
 
         $choices = $this->createChoicesBuilder();
 
-        foreach ($options as $key => $label) {
-            $choices->add(new ValueChoice((string) $key, (string) $label));
+        foreach ($options as $key => $label)
+        {
+            // A blank option (e.g. a DCA's "-" entry) would collide with the control's empty option (§7.3).
+            if (($key = (string) $key) === '') {
+                continue;
+            }
+
+            $choices->add(new ValueChoice($key, (string) $label));
         }
 
         return $choices;

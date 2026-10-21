@@ -28,7 +28,8 @@ final readonly class Filter
      * @param string $type Registered element type alias. Only used for named event dispatch
      *   (`flare.filter_element.{type}.*`) and targeting lookups.
      * @param string $alias Form name of the filter and its key within the list. An alias that is not a
-     *   valid Symfony form name (e.g. the generated "_.{type}_{random}" fallback) never mounts form children.
+     *   valid Symfony form name (e.g. the "_.{type}_{random}" fallback generated for a filter without a
+     *   control) never mounts form children.
      * @param array<string, mixed> $config Canonical element config (element-defined schema);
      *   scalars, arrays, and enums only.
      * @param FilterControlInterface|null $control The control presenting the filter, or null for a filter

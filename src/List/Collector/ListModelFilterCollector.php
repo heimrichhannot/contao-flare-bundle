@@ -29,7 +29,7 @@ readonly class ListModelFilterCollector
 
     /**
      * @throws FlareException If no list driver is registered for the list's type. A filter that fails
-     *   with a FlareException does not throw (it is skipped or recorded, see {@see collectFromModels()}),
+     *   with a FlareException does not throw (it is recorded, see {@see collectFromModels()}),
      *   so backend callbacks building the ListSpec keep working; other throwables still escape.
      */
     public function collect(ListModel $listModel): ?CollectedFilters
@@ -48,9 +48,14 @@ readonly class ListModelFilterCollector
     }
 
     /**
-     * Creates the filters of the given models. A filter that cannot be created fails by its role
-     * (SPEC_FILTER_FORMS.md §8.1): with a control it is skipped with a warning (fail open); without
-     * one, the failure is logged as an error and recorded, failing the list (fail closed).
+     * Creates the filters of the given models. A filter whose element cannot be created — unknown type,
+     * element config failing its schema, or an unreadable fixed value — fails the list as a whole
+     * (SPEC_FILTER_FORMS.md §8.1), with or without a control: the element config bounds the whole list
+     * (§4.2). The failure is logged as an error and recorded. Control-level failures never reach this
+     * point; {@see FilterFactory::createFromFilterModel()} keeps such a filter without control and value.
+     *
+     * Two filters sharing an alias fail the list too: the later one is recorded, never silently replacing
+     * the earlier one.
      *
      * @param iterable<FilterModel> $models
      */
@@ -71,34 +76,47 @@ readonly class ListModelFilterCollector
             }
             catch (FlareException $e)
             {
-                $message = \sprintf(
-                    'Filter %s.%s of type "%s" on %s.%s could not be created: %s',
-                    $model::getTable(),
-                    $model->id,
-                    $model->getFilterElementType(),
-                    $listModel::getTable(),
-                    $listModel->id,
-                    $e->getMessage(),
-                );
-
-                if ((string) $model->control !== '')
-                {
-                    $this->logger->warning('[FLARE] ' . $message . ' -- The filter is skipped.');
-
-                    continue;
-                }
-
-                $this->logger->error('[FLARE] ' . $message . ' -- The list fails.');
-                $failures[] = $message;
+                $failures[] = $this->fail($model, $listModel, $e->getMessage());
 
                 continue;
             }
 
             $filter = $this->eventDispatcher->dispatch(new FilterCollectedEvent($filter, $model))->filter;
 
+            if (isset($filters[$filter->alias]))
+            {
+                $failures[] = $this->fail($model, $listModel, \sprintf(
+                    'The alias "%s" is already used by filter %s.',
+                    $filter->alias,
+                    $filters[$filter->alias]->source ?? 'another filter',
+                ));
+
+                continue;
+            }
+
             $filters[$filter->alias] = $filter;
         }
 
         return new CollectedFilters($filters, $failures);
+    }
+
+    /**
+     * Logs a filter failure that fails the list and returns its message.
+     */
+    private function fail(FilterModel $model, ListModel $listModel, string $reason): string
+    {
+        $message = \sprintf(
+            'Filter %s.%s of type "%s" on %s.%s could not be created: %s',
+            $model::getTable(),
+            $model->id,
+            $model->getFilterElementType(),
+            $listModel::getTable(),
+            $listModel->id,
+            $reason,
+        );
+
+        $this->logger->error('[FLARE] ' . $message . ' -- The list fails.');
+
+        return $message;
     }
 }

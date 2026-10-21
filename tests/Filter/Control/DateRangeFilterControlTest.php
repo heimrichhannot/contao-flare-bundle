@@ -57,6 +57,19 @@ final class DateRangeFilterControlTest extends TestCase
         }
     }
 
+    public function testLabelBecomesTheCompoundMountsLabel(): void
+    {
+        $ctl = $this->control();
+
+        $labelled = $this->newFormBuilder();
+        $ctl->buildForm($labelled, $this->scope($ctl, ['label' => 'Period']));
+        self::assertSame(['label' => 'Period'], $labelled->getCompoundOptions());
+
+        $plain = $this->newFormBuilder();
+        $ctl->buildForm($plain, $this->scope($ctl));
+        self::assertSame([], $plain->getCompoundOptions());
+    }
+
     public function testOpenBoundIsOmitted(): void
     {
         $ctl = $this->control();

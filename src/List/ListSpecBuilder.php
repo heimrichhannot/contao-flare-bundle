@@ -76,10 +76,35 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
 
     /**
      * Adds a filter. The key defaults to the filter's alias.
+     *
+     * A filter is never replaced silently: replacing a filter without a control would widen the list
+     * (SPEC_FILTER_FORMS.md §8.1). Remove it first with {@see removeFilter()}.
+     *
+     * @throws FlareException If the key is already taken, or another filter already has the alias.
      */
     public function addFilter(Filter $filter, ?string $key = null): self
     {
-        $this->filters[$key ?? $filter->alias] = $filter;
+        $key ??= $filter->alias;
+
+        $aliasTaken = \array_filter(
+            $this->filters,
+            static fn (Filter $existing): bool => $existing->alias === $filter->alias,
+        );
+
+        if (isset($this->filters[$key]) || $aliasTaken)
+        {
+            throw new FlareException(
+                \sprintf(
+                    'The list already has a filter with the key "%s" or the alias "%s".',
+                    $key,
+                    $filter->alias,
+                ),
+                method: __METHOD__,
+                source: $filter->source ?? $this->source,
+            );
+        }
+
+        $this->filters[$key] = $filter;
 
         return $this;
     }

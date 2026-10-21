@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Filter\Filter;
 final readonly class CollectedFilters
 {
     /**
-     * @param array<string, Filter> $filters Keyed by alias.
+     * @param array<string, Filter> $filters Keyed by alias; aliases are unique.
      * @param list<string> $failures Failure messages, each naming its source.
      */
     public function __construct(

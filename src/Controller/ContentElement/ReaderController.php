@@ -148,7 +148,7 @@ final class ReaderController extends AbstractContentElementController
         }
         catch (FlareException $e)
         {
-            // A failed list (a broken filter without a control, SPEC_FILTER_FORMS.md §8.1) arrives here as a
+            // A failed list (a broken filter element or fixed value, SPEC_FILTER_FORMS.md §8.1) arrives here as a
             // FilterException: membership cannot be decided, so the reader answers 5xx, never 404 or the entry.
             $this->logger->error(\sprintf('%s (%s)', $e->getMessage(), \implode(', ', $errData)),
                 ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);

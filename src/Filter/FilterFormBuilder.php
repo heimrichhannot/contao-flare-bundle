@@ -20,6 +20,9 @@ final class FilterFormBuilder extends FormBuilder implements FilterFormBuilderIn
     /** @var array{type: class-string, options: array<string, mixed>}|null */
     private ?array $single = null;
 
+    /** @var array<string, mixed> */
+    private array $compoundOptions = [];
+
     /** @var list<array{string, callable, int}> */
     private array $deferredListeners = [];
 
@@ -33,6 +36,18 @@ final class FilterFormBuilder extends FormBuilder implements FilterFormBuilderIn
     public function getSingle(): ?array
     {
         return $this->single;
+    }
+
+    public function compound(array $options): static
+    {
+        $this->compoundOptions = $options;
+
+        return $this;
+    }
+
+    public function getCompoundOptions(): array
+    {
+        return $this->compoundOptions;
     }
 
     /**

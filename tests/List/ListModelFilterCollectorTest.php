@@ -137,7 +137,7 @@ final class ListModelFilterCollectorTest extends TestCase
         self::assertStringContainsString('tl_flare_list.5', $this->logs[0][1]);
     }
 
-    public function testFailingControlledFilterIsSkippedWithAWarning(): void
+    public function testFailingElementOfAControlledFilterFailsTheList(): void
     {
         $collected = $this->collector()->collectFromModels(
             [self::filterModel(1, 'missing', 'flare_choice'), self::filterModel(2, 'stub')],
@@ -145,10 +145,45 @@ final class ListModelFilterCollectorTest extends TestCase
         );
 
         self::assertSame([2], \array_keys($collected->filters));
+        self::assertCount(1, $collected->failures);
+        self::assertStringContainsString('tl_flare_filter.1', $collected->failures[0]);
+        self::assertCount(1, $this->logs);
+        self::assertSame('error', $this->logs[0][0]);
+        self::assertStringContainsString('tl_flare_filter.1', $this->logs[0][1]);
+    }
+
+    public function testFailingControlIsAbsorbedAndTheFilterKeptWithoutIt(): void
+    {
+        $collected = $this->collector()->collectFromModels(
+            [self::filterModel(1, 'stub', 'unknown_control')],
+            self::listModel(),
+        );
+
+        self::assertSame([1], \array_keys($collected->filters));
+        self::assertNull($collected->filters[1]->control);
         self::assertSame([], $collected->failures);
         self::assertCount(1, $this->logs);
         self::assertSame('warning', $this->logs[0][0]);
-        self::assertStringContainsString('tl_flare_filter.1', $this->logs[0][1]);
+    }
+
+    public function testDuplicateAliasFailsTheListInsteadOfOverwriting(): void
+    {
+        $first = self::model(FilterModel::class, [
+            'id' => 1, 'type' => 'stub', 'alias' => 'dup', 'control' => '', 'published' => '1',
+        ]);
+        $second = self::model(FilterModel::class, [
+            'id' => 2, 'type' => 'stub', 'alias' => 'dup', 'control' => '', 'published' => '1',
+        ]);
+
+        $collected = $this->collector()->collectFromModels([$first, $second], self::listModel());
+
+        self::assertSame(['dup'], \array_keys($collected->filters));
+        self::assertSame('tl_flare_filter.1', $collected->filters['dup']->source);
+        self::assertCount(1, $collected->failures);
+        self::assertStringContainsString('tl_flare_filter.2', $collected->failures[0]);
+        self::assertStringContainsString('"dup"', $collected->failures[0]);
+        self::assertCount(1, $this->logs);
+        self::assertSame('error', $this->logs[0][0]);
     }
 
     public function testUnpublishedFiltersAreSkipped(): void

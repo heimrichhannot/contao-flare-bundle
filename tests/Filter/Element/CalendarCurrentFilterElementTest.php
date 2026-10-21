@@ -16,6 +16,7 @@ use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use PHPUnit\Framework\TestCase;
 
 final class CalendarCurrentFilterElementTest extends TestCase
@@ -66,6 +67,21 @@ final class CalendarCurrentFilterElementTest extends TestCase
         );
 
         self::assertSame([], $context->formula->propositions);
+    }
+
+    public function testValidationAppliesAFixedRangeWithoutTheConfiguredDefaults(): void
+    {
+        $config = ['start_at' => '@5000', 'stop_at' => '@6000'] + self::BASE;
+
+        $p = $this->buildFilterContext(
+            new CalendarCurrentFilterElement(),
+            $config,
+            DateRangeValue::tryFrom(1000, null),
+            new ValidationContext(),
+        )->formula->propositions[0];
+
+        self::assertSame(CalendarCurrentPredicate::class, $p->predicateClass);
+        self::assertSame([1000, DateTimeHelper::maxTimestamp()], [$p->options['start'], $p->options['stop']]);
     }
 
     public function testCalendarBoundsOnlyWhenLimited(): void

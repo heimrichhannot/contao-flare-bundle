@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\ValueProvider;
 
 use Contao\Date;
+use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaFieldBuilderInterface;
 use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
@@ -47,7 +48,7 @@ final readonly class DateRangeValueProvider implements ValueProviderInterface
      */
     private function timestampsToDates(mixed $value): mixed
     {
-        $range = \is_string($value) && $value !== '' ? @\unserialize($value, ['allowed_classes' => false]) : $value;
+        $range = StringUtil::deserialize($value);
 
         if (!\is_array($range)) {
             return $value;
@@ -65,7 +66,7 @@ final readonly class DateRangeValueProvider implements ValueProviderInterface
 
     private function datesToTimestamps(mixed $value): mixed
     {
-        $range = \is_string($value) && $value !== '' ? @\unserialize($value, ['allowed_classes' => false]) : $value;
+        $range = StringUtil::deserialize($value);
 
         if (!\is_array($range)) {
             return $value;
@@ -88,7 +89,7 @@ final readonly class DateRangeValueProvider implements ValueProviderInterface
      */
     private static function unserialize(mixed $stored): array
     {
-        $range = \is_string($stored) ? @\unserialize($stored, ['allowed_classes' => false]) : false;
+        $range = \is_string($stored) ? StringUtil::deserialize($stored) : null;
 
         if (!\is_array($range)) {
             throw new UnreadableValueException('The stored date range is not a serialized array.');

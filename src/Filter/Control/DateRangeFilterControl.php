@@ -84,6 +84,10 @@ class DateRangeFilterControl extends AbstractFilterControl
             ]);
         }
 
+        if ($label = $scope->filter->controlConfig['label'] ?? null) {
+            $builder->compound(['label' => $label]);
+        }
+
         $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validateRange(...));
     }
 

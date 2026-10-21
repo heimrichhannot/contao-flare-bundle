@@ -33,4 +33,18 @@ interface FilterFormBuilderInterface extends FormBuilderInterface
      * @return array{type: class-string, options: array<string, mixed>}|null
      */
     public function getSingle(): ?array;
+
+    /**
+     * Sets form options of the compound mount of a multi-field filter, e.g. its `label`; merged over the
+     * mount's defaults (no label, not required). Ignored for a single-field filter, whose options are
+     * passed to {@see single()}. Calling this method again overwrites the previous options.
+     *
+     * @param array<string, mixed> $options Form options of the compound mount.
+     */
+    public function compound(array $options): static;
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getCompoundOptions(): array;
 }

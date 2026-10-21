@@ -50,12 +50,20 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
         $value = $this->expectValue($value, DateRangeValue::class);
         $config = $builder->scope->filter->config;
 
-        if (!$config['is_limited'] && $builder->scope->engineContext instanceof ValidationContext) {
-            return;
-        }
-
         $start = \strtotime((string) $config['start_at']) ?: 0;
         $stop = \strtotime((string) $config['stop_at']) ?: DateTimeHelper::maxTimestamp();
+
+        if (!$config['is_limited'] && $builder->scope->engineContext instanceof ValidationContext)
+        {
+            // Unlimited defaults only shape the initial display; the whole list is bounded by a fixed
+            // value alone (controlled filters have none here, SPEC_FILTER_FORMS.md §4.2).
+            if ($value === null) {
+                return;
+            }
+
+            $start = 0;
+            $stop = DateTimeHelper::maxTimestamp();
+        }
 
         if (($from = $value?->from?->getTimestamp()) !== null)
         {

@@ -148,6 +148,16 @@ final class ChoiceFilterControlTest extends TestCase
         self::assertArrayNotHasKey('attr', $with->getSingle()['options']);
     }
 
+    public function testNoImplicitSymfonyPlaceholderWithoutTheEmptyOption(): void
+    {
+        $radios = $this->form(['is_expanded' => true], null, 5, 7)->createView();
+        self::assertCount(2, $radios->children);
+        self::assertNull($radios->vars['placeholder']);
+
+        $select = $this->form([], null, 5, 7)->createView();
+        self::assertNull($select->vars['placeholder']);
+    }
+
     public function testFormOptionsAndNoChoicesBuilderAttribute(): void
     {
         $ctl = new ChoiceFilterControl();

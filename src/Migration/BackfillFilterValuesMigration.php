@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Migration;
 
 use Contao\CoreBundle\Migration\AbstractMigration;
 use Contao\CoreBundle\Migration\MigrationResult;
+use Contao\StringUtil;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Column;
 
@@ -79,7 +80,8 @@ class BackfillFilterValuesMigration extends AbstractMigration
     public function run(): MigrationResult
     {
         // Plain DDL valid on MySQL 5.7/8 and MariaDB. The rows existing now start as pending ('0'); switching the
-        // default right away means rows created from now on, even during an interrupted run, are never pending.
+        // default right away means rows created from now on are never pending. The switch is idempotent and runs on
+        // every run, so a run interrupted between the two statements cannot leave the default at '0'.
         if (!isset(($this->findColumns() ?? [])[\strtolower(self::MARKER)]))
         {
             $this->connection->executeStatement(\sprintf(
@@ -87,12 +89,13 @@ class BackfillFilterValuesMigration extends AbstractMigration
                 self::TABLE,
                 self::MARKER,
             ));
-            $this->connection->executeStatement(\sprintf(
-                "ALTER TABLE %s ALTER %s SET DEFAULT '1'",
-                self::TABLE,
-                self::MARKER,
-            ));
         }
+
+        $this->connection->executeStatement(\sprintf(
+            "ALTER TABLE %s ALTER %s SET DEFAULT '1'",
+            self::TABLE,
+            self::MARKER,
+        ));
 
         $updated = 0;
 
@@ -252,7 +255,7 @@ class BackfillFilterValuesMigration extends AbstractMigration
             return '';
         }
 
-        $keys = @\unserialize($stored, ['allowed_classes' => false]);
+        $keys = StringUtil::deserialize($stored);
 
         if (!\is_array($keys)) {
             $keys = [$stored];

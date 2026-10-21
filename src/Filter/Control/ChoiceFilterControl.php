@@ -112,6 +112,9 @@ class ChoiceFilterControl extends AbstractFilterControl
             'required' => $config['is_mandatory'],
             'multiple' => $config['is_multiple'],
             'expanded' => $config['is_expanded'],
+            // The empty option is a real choice (§7.3); Symfony's implicit placeholder would add a second,
+            // blank option or an untranslated "None" radio.
+            'placeholder' => false,
         ];
 
         if ($config['placeholder'] && !$choices->hasEmptyOption()) {

@@ -234,6 +234,23 @@ final class FormHarnessFactoryTest extends TestCase
         );
     }
 
+    public function testCompoundMountTakesTheControlsCompoundOptions(): void
+    {
+        $labelled = $this->control(static function (FilterFormBuilderInterface $builder): void {
+            $builder->add('from', TextType::class);
+            $builder->compound(['label' => 'Period']);
+        });
+        $plain = $this->control(static function (FilterFormBuilderInterface $builder): void {
+            $builder->add('from', TextType::class);
+        });
+
+        $form = $this->createForm([$this->filter('range', $labelled), $this->filter('other', $plain)]);
+
+        $this->assertSame('Period', $form->get('range')->getConfig()->getOption('label'));
+        $this->assertFalse($form->get('range')->getConfig()->getOption('required'));
+        $this->assertFalse($form->get('other')->getConfig()->getOption('label'));
+    }
+
     public function testControlWithoutFieldsIsNotMounted(): void
     {
         $control = $this->control(static function (): void {});

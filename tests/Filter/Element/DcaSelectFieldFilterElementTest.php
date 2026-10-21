@@ -41,6 +41,10 @@ final class DcaSelectFieldFilterElementTest extends TestCase
                     'eval' => ['multiple' => true],
                 ],
                 'free' => ['inputType' => 'select'],
+                'blank' => [
+                    'inputType' => 'select',
+                    'options' => ['' => '-', 'x' => 'Ex'],
+                ],
             ],
         ]);
     }
@@ -117,6 +121,13 @@ final class DcaSelectFieldFilterElementTest extends TestCase
             ['draft' => new ValueChoice('draft', 'Draft'), 'published' => new ValueChoice('published', 'Published')],
             $choices,
         );
+    }
+
+    public function testCreateChoicesSkipsTheBlankOption(): void
+    {
+        $choices = $this->createElement()->createChoices($this->createScope('blank'))->buildChoices();
+
+        self::assertEquals(['x' => new ValueChoice('x', 'Ex')], $choices);
     }
 
     public function testChoiceFromKeyIsAValueChoice(): void

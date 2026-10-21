@@ -818,7 +818,8 @@ final readonly class Filter
   creation is a first-class use case going forward.
 
 **The path.** `ListSpec::$filters` is a plain list and every `Filter` carries an alias
-(`FilterFactory` generates `_.{type}_{random}` when none is given), so the alias is the key
+(`FilterFactory` generates `_.{type}_{random}` when none is given — for a filter with a control a form-valid
+`{type}_{random}` instead, so it mounts), so the alias is the key
 throughout:
 
 1. `FormHarnessFactory` keys mounts by alias and hydrates each mount with
@@ -847,8 +848,8 @@ The rule follows the two scopes of §4.2 (§13.31):
 
 | what fails | bounds | behaviour |
 |---|---|---|
-| a filter **without a control** (fixed value, intrinsic) cannot be built — its config is broken, `createFromFilterModel()` throws, or a non-empty stored value yields no readable key | the whole list | **fail closed**: the list fails as a whole; error logged |
-| a filter **with a control** cannot be built, or its `control` names no registered control for the element's value class | only the initial display | **fail open**: the filter is not mounted and its initial value does not apply; warning logged |
+| a filter's **element** cannot be built, **with or without a control** — its type is unknown or its config is broken (`createFromFilterModel()` throws); without a control also a non-empty stored (fixed) value that yields no readable key; two published filters of a list sharing an alias | the whole list | **fail closed**: the list fails as a whole; error logged |
+| a filter's **control** cannot be built — its `control` names no registered control for the element's value class, its control config is broken, or its initial value is unreadable | only the initial display | **fail open**: the filter is kept without control and initial value, bounded only by its element config, so it is not mounted; warning logged |
 
 Stale keys of deleted records are not a failure: they resolve to references that match nothing
 (§3.6).
@@ -870,6 +871,13 @@ nothing" (e.g. an empty selection without `elm_useWhitelistForOptionsOnly`):
   rethrown so developers see it. *(Builder's call.)*
 - The asymmetry is deliberate: the list view is one content element among others on a page, so the
   page stays a 200; the reader *is* the page's content, so its failure is the page's failure.
+
+> **Implementation note (R12/R13).** An element-level failure fails the list **regardless of `control`**: the
+> element config bounds the whole list (§4.2), so dropping a controlled filter whose element is broken would
+> widen it. Control-level failures are absorbed in `FilterFactory::createFromFilterModel()`, which keeps the
+> filter without control and value. Aliases are unique per list: `ListModelFilterCollector` records a list
+> failure for a second published row with an alias already taken instead of overwriting the first, and
+> `ListSpecBuilder::addFilter()` throws a `FlareException` on a taken key or alias, like `ListSpec::withFilter()`.
 
 > **Implementation note (R5).** A **controlled** filter whose `buildContext()` fails while it carries a
 > non-null value is retried **once with value `null`**. If the retry succeeds, only the value is dropped
@@ -978,7 +986,8 @@ The mapping can be frozen only once the controls exist with their final names:
 
 > **Implementation note (R8).** The backfill is **run once per row** through a migration-managed marker
 > column `legacyBackfilled`, not through a content-based "pending" predicate. The migration adds the column
-> (default switched to `'1'` once added, so rows created afterwards count as done), it is not part of the
+> (default switched to `'1'` right after adding it — idempotently, on every run, so an interrupted run cannot
+> leave it at `'0'` — so rows created afterwards count as done), it is not part of the
 > DCA, and the schema diff's DROP of it is, like every legacy column, only run manually with the deletes.
 > It replaces the type-restricted pending predicate demanded by the third `shouldRun()` rule below.
 

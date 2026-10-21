@@ -67,17 +67,18 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         self::assertSame('1', $this->rows[2][self::MARKER], 'types without a control are marked as well');
         self::assertFalse($this->migration()->shouldRun());
 
-        // A second run does not touch the column again.
+        // A second run does not add the column again; switching the default is idempotent.
         $this->statements = [];
         $this->migration()->run();
 
-        self::assertSame([], $this->statements);
+        self::assertSame(["ALTER TABLE tl_flare_filter ALTER legacyBackfilled SET DEFAULT '1'"], $this->statements);
     }
 
     public function testRunResumesAnInterruptedRun(): void
     {
+        // Interrupted between the ADD and the default switch: the column still defaults to '0'.
         $this->columns[] = self::MARKER;
-        $this->markerDefault = '1';
+        $this->markerDefault = '0';
         $this->addRow(1, 'flare_archive', ['intrinsic' => '0', self::MARKER => '1', 'control' => 'flare_choice']);
         $this->addRow(2, 'flare_archive', ['intrinsic' => '0', self::MARKER => '0']);
 
@@ -85,7 +86,12 @@ final class BackfillFilterValuesMigrationTest extends TestCase
 
         $this->migration()->run();
 
-        self::assertSame([], $this->statements, 'no second ADD');
+        self::assertSame(
+            ["ALTER TABLE tl_flare_filter ALTER legacyBackfilled SET DEFAULT '1'"],
+            $this->statements,
+            'no second ADD, but the default is switched',
+        );
+        self::assertSame('1', $this->markerDefault);
         self::assertSame([[['control' => 'flare_choice', self::MARKER => '1'], ['id' => 2]]], $this->rowUpdates());
         self::assertFalse($this->migration()->shouldRun());
     }

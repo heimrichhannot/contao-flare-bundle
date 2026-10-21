@@ -29,6 +29,7 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
+use HeimrichHannot\FlareBundle\Util\Str;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -159,6 +160,18 @@ final class FilterFactoryTest extends TestCase
         self::assertSame($this->boolControl, $filter->control);
         self::assertSame(['label' => 'default'], $filter->controlConfig);
         self::assertEquals(new BoolValue(true), $filter->value);
+    }
+
+    public function testControlledFilterWithoutAliasGetsAFormValidAlias(): void
+    {
+        $filter = $this->factory()->create(element: self::BOOL_ELEMENT, control: self::BOOL_CONTROL);
+
+        self::assertTrue(Str::isValidFormName($filter->alias), $filter->alias);
+        self::assertStringStartsWith(self::BOOL_ELEMENT . '_', $filter->alias);
+
+        $byInstance = $this->factory()->create(element: $this->boolElement, control: $this->boolControl);
+
+        self::assertTrue(Str::isValidFormName($byInstance->alias), $byInstance->alias);
     }
 
     public function testUnknownControlNameIsRejected(): void

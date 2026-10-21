@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\ValueProvider;
 
 use Contao\Message;
+use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaFieldBuilderInterface;
@@ -32,7 +33,7 @@ final readonly class ChoiceValueProvider implements ValueProviderInterface
             return null;
         }
 
-        $keys = \is_array($stored) ? $stored : @\unserialize((string) $stored, ['allowed_classes' => false]);
+        $keys = StringUtil::deserialize($stored);
 
         if (!\is_array($keys)) {
             throw new UnreadableValueException('The stored choice keys are not a serialized list.');

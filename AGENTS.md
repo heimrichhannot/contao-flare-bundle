@@ -30,8 +30,9 @@ Filter execution inside the projector: the `FormHarness` decodes submitted form 
 objects; `ListQueryDirector` (`src/Query/Executor/`) picks each filter's value (with a control: the form's value;
 without: the fixed `Filter::$value`), creates the `FilterContext` via `FilterContextFactory::create(FilterScope, ?value)`
 (the element's `buildContext()` adds predicates) and runs each predicate into a `FilterConditionsBuilder`. A
-failed filter without a control fails the whole list (`list.failed` in the view, HTTP 500 in the reader). A
-controlled filter that fails with a non-null value is retried once with value null: success drops only the value
+filter whose element cannot be built (with or without a control), a broken fixed value, or two published filters
+sharing an alias fail the whole list (`list.failed` in the view, HTTP 500 in the reader); a control that cannot be
+resolved only drops the control and initial value (warning). A controlled filter that fails with a non-null value is retried once with value null: success drops only the value
 (warning); if the retry fails too (or the value was already null) the element config is broken and the list fails
 closed. `\Error`s escape unwrapped.
 

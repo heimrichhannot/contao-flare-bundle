@@ -64,9 +64,7 @@ final readonly class FilterFactory
         $element = $this->resolveElement($element, $source);
         $valueClass = $this->getElementValueClass($type, $element);
 
-        if (!$alias) {
-            $alias = \sprintf('_.%s_%s', $type, Str::random(8));
-        }
+        $alias = $alias ?: self::generateAlias($type, mounted: $control !== null);
 
         $config = $this->filterOptionsResolver->resolve($element, $config);
 
@@ -169,6 +167,21 @@ final readonly class FilterFactory
     }
 
     /**
+     * A random alias. Without a control it is `_.{type}_{random}`, which deliberately never mounts a form field
+     * ({@see Str::isValidFormName()}); with one, it is a valid form name built from the type's last segment.
+     */
+    private static function generateAlias(string $type, bool $mounted): string
+    {
+        if (!$mounted) {
+            return \sprintf('_.%s_%s', $type, Str::random(8));
+        }
+
+        $name = \preg_replace('/[^A-Za-z0-9_]/', '_', \substr((string) \strrchr('\\' . $type, '\\'), 1));
+
+        return \sprintf('%s_%s', $name, Str::random(8));
+    }
+
+    /**
      * The value class of an element: from its registration attribute, or — for elements without one,
      * e.g. inline instances — from the {@see AsFilterElement} attribute on its class.
      *
@@ -220,6 +233,8 @@ final readonly class FilterFactory
     ): FilterControlInterface {
         $at = $source ? " ({$source})" : '';
 
+        $controlValueClass = null;
+
         if (\is_string($control))
         {
             $name = $control;
@@ -231,16 +246,15 @@ final readonly class FilterFactory
                 );
             $controlValueClass = $this->filterControlRegistry->getValueClass($name);
         }
-        else
+
+        // An inline instance is not registered: its value class comes from its narrowed decode() return type.
+        try
         {
-            try
-            {
-                $controlValueClass = ValueClassReflector::fromReturnType($control::class, 'decode');
-            }
-            catch (\InvalidArgumentException $e)
-            {
-                throw new FlareException($e->getMessage(), previous: $e, method: __METHOD__, source: $source);
-            }
+            $controlValueClass ??= ValueClassReflector::fromReturnType($control::class, 'decode');
+        }
+        catch (\InvalidArgumentException $e)
+        {
+            throw new FlareException($e->getMessage(), previous: $e, method: __METHOD__, source: $source);
         }
 
         if ($controlValueClass !== $valueClass)

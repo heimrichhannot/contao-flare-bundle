@@ -96,6 +96,43 @@ final class ListSpecBuilderTest extends TestCase
         self::assertSame(['tl_flare_filter.3: broken'], $spec->failures);
     }
 
+    public function testAddFilterRejectsAnExistingKey(): void
+    {
+        $builder = $this->createBuilder(new EventDispatcher());
+        $builder->addFilter(self::filter('a', 'x'), 'key');
+
+        $this->expectException(FlareException::class);
+        $builder->addFilter(self::filter('b', 'y'), 'key');
+    }
+
+    public function testAddFilterRejectsAnAliasUsedByAnotherFilter(): void
+    {
+        $builder = $this->createBuilder(new EventDispatcher());
+        $builder->addFilter(self::filter('a', 'x'), 'key');
+
+        try
+        {
+            $builder->addFilter(self::filter('b', 'x'), 'other');
+            self::fail('Expected FlareException.');
+        }
+        catch (FlareException $e)
+        {
+            self::assertStringContainsString('"x"', $e->getMessage());
+        }
+
+        self::assertSame(['key'], \array_keys($builder->getFilters()));
+    }
+
+    public function testAddFilterAcceptsAKeyAgainAfterRemoval(): void
+    {
+        $builder = $this->createBuilder(new EventDispatcher());
+        $builder->addFilter(self::filter('a', 'x'));
+        $builder->removeFilter('x');
+        $builder->addFilter(self::filter('b', 'x'));
+
+        self::assertSame('b', $builder->getFilter('x')?->type);
+    }
+
     public function testModelTransformationAndOverridePrecedence(): void
     {
         $driver = new class extends AbstractListDriver {

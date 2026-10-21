@@ -30,7 +30,10 @@ Filter execution inside the projector: the `FormHarness` decodes submitted form 
 objects; `ListQueryDirector` (`src/Query/Executor/`) picks each filter's value (with a control: the form's value;
 without: the fixed `Filter::$value`), creates the `FilterContext` via `FilterContextFactory::create(FilterScope, ?value)`
 (the element's `buildContext()` adds predicates) and runs each predicate into a `FilterConditionsBuilder`. A
-failed filter without a control fails the whole list (`list.failed` in the view, HTTP 500 in the reader).
+failed filter without a control fails the whole list (`list.failed` in the view, HTTP 500 in the reader). A
+controlled filter that fails with a non-null value is retried once with value null: success drops only the value
+(warning); if the retry fails too (or the value was already null) the element config is broken and the list fails
+closed. `\Error`s escape unwrapped.
 
 Note: Contexts and Projectors/Views are separate axes — (Export Context/Projector/View are currently not implemented).
 
@@ -104,10 +107,10 @@ The former per-element `FilterElementBuildingEvent`/`FilterElementBuiltEvent` (a
 aliases) are removed; use `ListBuildEvent` or a programmatic `Filter::$value` instead.
 Prefer events over overriding services for customization.
 
-**Registry pattern** — Registries in `src/Registry/` map type names to implementations: `FilterElementRegistry`, `FilterControlRegistry`, `ValueProviderRegistry`, `ListDriverRegistry`, `FilterPredicateRegistry`, `ProjectorRegistry`, `EngineModRegistry`. `FilterControlRegistry` differs from the others: it holds
-compile-time metadata as plain arrays and resolves the control services through a lazy
-`container.service_locator`, so reading metadata (the `control` options, the control election)
-instantiates nothing.
+**Registry pattern** — Registries in `src/Registry/` map type names to implementations: `FilterElementRegistry`, `FilterControlRegistry`, `ValueProviderRegistry`, `ListDriverRegistry`, `FilterPredicateRegistry`, `ProjectorRegistry`, `EngineModRegistry`. `FilterControlRegistry` differs from the others: it stores
+`FilterControlInterface` instances together with their value class (the narrowed `decode()` return type),
+registered by `RegisterFilterControlsPass` via `add($control, $name, $valueClass)`; `findNames($valueClass)`
+serves the control election (the `control` options).
 
 **Query safety** — `FilterConditionsBuilder` (`src/Query/FilterConditionsBuilder.php`) enforces parameterized queries. `TableAliasRegistry` (`src/Query/TableAliasRegistry.php`) manages table aliases and JOINs safely.
 

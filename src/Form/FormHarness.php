@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Form;
 
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use Symfony\Component\Form\FormInterface;
 
 /**
@@ -19,8 +20,7 @@ final readonly class FormHarness
 {
     /**
      * @param FormInterface $form Root filter form holding every mounted node.
-     * @param array<string|int, FilterMount> $mounts Mounts keyed by the filter's key within
-     *   {@see \HeimrichHannot\FlareBundle\List\ListSpec::$filters}.
+     * @param array<string, FilterMount> $mounts Mounts keyed by alias.
      *
      * @internal Use {@see Factory\FormHarnessFactory} to create instances.
      */
@@ -35,16 +35,16 @@ final readonly class FormHarness
     }
 
     /**
-     * @return array<string|int, FilterMount> Mounts keyed by the filter's list-specification key.
+     * @return array<string, FilterMount> Mounts keyed by alias.
      */
     public function getMounts(): array
     {
         return $this->mounts;
     }
 
-    public function getMount(string|int $key): ?FilterMount
+    public function getMount(string $alias): ?FilterMount
     {
-        return $this->mounts[$key] ?? null;
+        return $this->mounts[$alias] ?? null;
     }
 
     /**
@@ -58,15 +58,44 @@ final readonly class FormHarness
      * PRE_SUBMIT listener while the request is being handled, so the mount is looked up on every
      * call instead of being captured when the set was built.
      */
-    public function getChild(string|int $key): ?FormInterface
+    public function getChild(string $alias): ?FormInterface
     {
-        // Compared against null, not truthiness: Str::isValidFormName() permits "0" as an alias.
-        $alias = ($this->mounts[$key] ?? null)?->alias;
-
-        if ($alias === null) {
+        if (!isset($this->mounts[$alias])) {
             return null;
         }
 
         return $this->form->has($alias) ? $this->form->get($alias) : null;
+    }
+
+    /**
+     * The value of every mounted filter, decoded by its control from the mount's data.
+     *
+     * On a submitted root form every mounted alias has an entry, null included (an emptied field
+     * is a submission, not an absence). On an unsubmitted form only non-null entries are returned,
+     * i.e. the hydrated initial values.
+     *
+     * @return array<string, ValueInterface|null> Decoded values keyed by alias.
+     */
+    public function decode(): array
+    {
+        $submitted = $this->form->isSubmitted();
+        $values = [];
+
+        foreach ($this->mounts as $mount)
+        {
+            $child = $this->getChild($mount->alias);
+
+            if ($child === null || $mount->filter->control === null) {
+                continue;
+            }
+
+            $value = $mount->filter->control->decode($child->getData(), $mount->scope);
+
+            if ($submitted || $value !== null) {
+                $values[$mount->alias] = $value;
+            }
+        }
+
+        return $values;
     }
 }

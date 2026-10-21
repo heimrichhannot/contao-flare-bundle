@@ -7,12 +7,12 @@ namespace HeimrichHannot\FlareBundle\Filter\Resolver;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\Filter;
 
 /**
- * Resolves a filter's canonical config through the element's declared schema.
- * Elements without an {@see OptionsContract} receive their config verbatim (unvalidated).
+ * Resolves a filter's canonical element or control config through its owner's declared schema.
+ * Owners without an {@see OptionsContract} receive their config verbatim (unvalidated).
  */
 final readonly class FilterOptionsResolver
 {
@@ -21,26 +21,32 @@ final readonly class FilterOptionsResolver
     ) {}
 
     /**
+     * @param array<string, mixed> $config
      * @return array<string, mixed>
      *
-     * @throws FilterException If the config does not satisfy the element's schema.
+     * @throws FilterException If the config does not satisfy the owner's schema.
      */
-    public function resolve(FilterElementInterface $element, array $config): array
+    public function resolve(FilterElementInterface|FilterControlInterface $owner, array $config): array
     {
-        if (!$element instanceof OptionsContract) {
+        if (!$owner instanceof OptionsContract) {
             return $config;
         }
 
         try
         {
-            return $this->schemaResolver->resolve($element::class, $element->configureOptions(...), $config);
+            return $this->schemaResolver->resolve($owner::class, $owner->configureOptions(...), $config);
         }
         catch (\Throwable $e)
         {
             throw new FilterException(
-                \sprintf('[FLARE] Invalid filter config for element "%s": %s', $element::class, $e->getMessage()),
+                \sprintf(
+                    '[FLARE] Invalid filter config for %s "%s": %s',
+                    $owner instanceof FilterControlInterface ? 'control' : 'element',
+                    $owner::class,
+                    $e->getMessage(),
+                ),
                 previous: $e,
-                method: $element::class . '::configureOptions',
+                method: $owner::class . '::configureOptions',
             );
         }
     }

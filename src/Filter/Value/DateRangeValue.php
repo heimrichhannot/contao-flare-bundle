@@ -22,8 +22,8 @@ final readonly class DateRangeValue implements ValueInterface
     ) {}
 
     /**
-     * @param mixed<DateTimeInterface|int|float|string|null> $from
-     * @param mixed<DateTimeInterface|int|float|string|null> $to
+     * @param mixed $from A DateTimeInterface, a timestamp, a date string or null.
+     * @param mixed $to A DateTimeInterface, a timestamp, a date string or null.
      */
     public static function tryFrom(mixed $from, mixed $to, ?DateTimeZone $timezone = null): ?self
     {
@@ -72,5 +72,10 @@ final readonly class DateRangeValue implements ValueInterface
         return $dateTime instanceof DateTimeImmutable
             ? $dateTime->setTimezone($timezone)
             : null;
+    }
+
+    public function fingerprint(): string
+    {
+        return ($this->from?->getTimestamp() ?? '') . '|' . ($this->to?->getTimestamp() ?? '');
     }
 }

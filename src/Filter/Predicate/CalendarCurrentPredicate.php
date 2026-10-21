@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Predicate;
 
 use DateTimeInterface;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
+use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class CalendarCurrentPredicate extends AbstractPredicate
@@ -59,7 +60,7 @@ class CalendarCurrentPredicate extends AbstractPredicate
         $builder->setParameter('end', $options['stop']);
     }
 
-    private function normalizeTimestamp($value): int
+    private function normalizeTimestamp(Options $options, mixed $value): int
     {
         if ($value instanceof DateTimeInterface) {
             return $value->getTimestamp();

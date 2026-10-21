@@ -31,11 +31,14 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
     private array $filters = [];
 
     /**
+     * @var list<string>
+     */
+    private array $failures = [];
+
+    /**
      * @var array<string, mixed>
      */
     private array $overrides = [];
-
-    private int $generatedFilterKeys = 0;
 
     public function __construct(
         private readonly ListDriverResolver         $listDriverResolver,
@@ -72,12 +75,46 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
     }
 
     /**
-     * Adds a filter. The key defaults to the filter's alias; alias-less filters receive a generated key.
+     * Adds a filter. The key defaults to the filter's alias.
+     *
+     * A filter is never replaced silently: replacing a filter without a control would widen the list
+     * (SPEC_FILTER_FORMS.md §8.1). Remove it first with {@see removeFilter()}.
+     *
+     * @throws FlareException If the key is already taken, or another filter already has the alias.
      */
     public function addFilter(Filter $filter, ?string $key = null): self
     {
-        $key ??= $filter->alias ?? ('_generated_' . $this->generatedFilterKeys++);
+        $key ??= $filter->alias;
+
+        $aliasTaken = \array_filter(
+            $this->filters,
+            static fn (Filter $existing): bool => $existing->alias === $filter->alias,
+        );
+
+        if (isset($this->filters[$key]) || $aliasTaken)
+        {
+            throw new FlareException(
+                \sprintf(
+                    'The list already has a filter with the key "%s" or the alias "%s".',
+                    $key,
+                    $filter->alias,
+                ),
+                method: __METHOD__,
+                source: $filter->source ?? $this->source,
+            );
+        }
+
         $this->filters[$key] = $filter;
+
+        return $this;
+    }
+
+    /**
+     * Records the failure of a filter that fails the list as a whole (SPEC_FILTER_FORMS.md §8.1).
+     */
+    public function addFailure(string $failure): self
+    {
+        $this->failures[] = $failure;
 
         return $this;
     }
@@ -130,22 +167,25 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
 
         $this->eventDispatcher->dispatch(new ListBuildEvent($this));
 
-        if ($this->model)
-        {
-            return $this->specFactory->createFromListModel(
+        $spec = $this->model
+            ? $this->specFactory->createFromListModel(
                 listModel: $this->model,
                 driver: $driver,
                 filters: $this->filters,
                 config: $this->overrides,
                 source: $this->source,
+            )
+            : $this->specFactory->create(
+                driver: $driver,
+                filters: $this->filters,
+                config: $this->overrides,
+                source: $this->source,
             );
+
+        foreach ($this->failures as $failure) {
+            $spec = $spec->withFailure($failure);
         }
 
-        return $this->specFactory->create(
-            driver: $driver,
-            filters: $this->filters,
-            config: $this->overrides,
-            source: $this->source,
-        );
+        return $spec;
     }
 }

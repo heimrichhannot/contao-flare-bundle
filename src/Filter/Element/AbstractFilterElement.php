@@ -8,18 +8,14 @@ use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicContract;
 use HeimrichHannot\FlareBundle\Contract\IsSupportedContract;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\Filter\CallbackFilterModelTransformer;
+use HeimrichHannot\FlareBundle\Filter\ExpectsValueTrait;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
@@ -28,8 +24,10 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Service\Attribute\Required;
 
 abstract class AbstractFilterElement implements
-    FilterElementInterface, IntrinsicContract, DcaContract, IsSupportedContract, OptionsContract, TransformerContract
+    FilterElementInterface, DcaContract, IsSupportedContract, OptionsContract, TransformerContract
 {
+    use ExpectsValueTrait;
+
     private ChoicesBuilderFactory $choicesBuilderFactory;
     private Connection $connection;
 
@@ -51,18 +49,11 @@ abstract class AbstractFilterElement implements
 
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void {}
 
-    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
-
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
 
     public function isSupported(): bool
     {
         return true;
-    }
-
-    public function isOnlyIntrinsic(): bool
-    {
-        return false;
     }
 
     #[Required]

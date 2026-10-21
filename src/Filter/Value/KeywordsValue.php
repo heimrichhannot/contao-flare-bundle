@@ -30,4 +30,9 @@ final readonly class KeywordsValue implements ValueInterface
 
         return $value->keywords === '' ? null : $value;
     }
+
+    public function fingerprint(): string
+    {
+        return $this->keywords;
+    }
 }

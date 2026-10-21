@@ -6,16 +6,17 @@ namespace HeimrichHannot\FlareBundle\Form\Factory;
 
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\FormContextInterface;
-use HeimrichHannot\FlareBundle\Event\FilterFormBuiltEvent;
+use HeimrichHannot\FlareBundle\Event\FilterControlBuiltEvent;
 use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
+use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Form\FilterMount;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Util\Str;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\FormBuilder;
@@ -26,8 +27,8 @@ final readonly class FormHarnessFactory
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
-        private FilterContextFactory     $filterContextFactory,
         private FormFactoryInterface     $formFactory,
+        private LoggerInterface          $logger,
     ) {}
 
     /**
@@ -64,28 +65,39 @@ final readonly class FormHarnessFactory
         $root->setAttribute('flare.list', $list);
         $root->setAttribute('flare.engine_context', $context);
 
-        /** @var array<string|int, FilterMount> $mounts */
+        /** @var array<string, FilterMount> $mounts */
         $mounts = [];
 
         foreach ($list->filters as $filter)
         {
             $alias = $filter->alias;
+            $control = $filter->control;
 
-            if (!Str::isValidFormName($alias)) {
+            if ($control === null || !Str::isValidFormName($alias))
+                // Filters without a control have no form representation.
+            {
                 continue;
             }
 
-            $filterContext = $this->filterContextFactory->create($list, $filter, $context);
+            $scope = new FilterScope($list, $filter, $context);
 
             // Collect-only builder: never mounted itself; its single-field spec, children,
             // attributes, and deferred listeners are transferred onto the mounted builder below.
             $builder = new FilterFormBuilder($alias, null, new EventDispatcher(), $this->formFactory);
-            $builder->setAttribute(FilterContext::ATTR_SELF, $filterContext);
+            $builder->setAttribute(FilterScope::ATTR_SELF, $scope);
 
-            $filter->element->buildForm($builder, $filterContext);
+            try {
+                $control->buildForm($builder, $scope);
+            }
+            catch (FilterException $e)
+                // Fail open: a control that cannot build drops its filter, not the list (§8.1).
+            {
+                $this->logSkipped($alias, $e);
+                continue;
+            }
 
-            /** @var FilterFormBuiltEvent $event */
-            $event = $this->eventDispatcher->dispatch(new FilterFormBuiltEvent($builder, $filterContext));
+            /** @var FilterControlBuiltEvent $event */
+            $event = $this->eventDispatcher->dispatch(new FilterControlBuiltEvent($builder, $scope));
 
             if ($event->isCancelled())
                 // Filters can be skipped by event listeners.
@@ -104,24 +116,45 @@ final readonly class FormHarnessFactory
             if ($single && $builder->count() > 0)
             {
                 throw new FlareException(
-                    'Filter element cannot declare a single field and add children at the same time.',
+                    'Filter control cannot declare a single field and add children at the same time.',
                     method: __METHOD__,
                 );
             }
 
+            try {
+                $initial = $control->hydrate($filter->value, $scope);
+            }
+            catch (FilterException $e) {
+                $this->logSkipped($alias, $e);
+                continue;
+            }
+
             if ($single)
             {
-                $mount = $root->create($alias, $single['type'], $single['options']);
-                $mount->setAttribute(FilterContext::ATTR_SINGLE_FIELD, true);
+                $options = $single['options'];
+
+                if ($initial !== null) {
+                    $options['data'] = $initial;
+                }
+
+                $mount = $root->create($alias, $single['type'], $options);
+                $mount->setAttribute(FilterScope::ATTR_SINGLE_FIELD, true);
             }
             /** @mago-expect lint:no-else-clause The mount decision is a genuine either-or. */
             else
             {
-                $mount = $root->create($alias, FormType::class, [
+                $options = [
                     'inherit_data' => false,
                     'label'        => false,
                     'required'     => false,
-                ]);
+                    ...$builder->getCompoundOptions(),
+                ];
+
+                if ($initial !== null) {
+                    $options['data'] = $initial;
+                }
+
+                $mount = $root->create($alias, FormType::class, $options);
 
                 foreach ($builder->all() as $childBuilder) {
                     $mount->add($childBuilder);
@@ -136,7 +169,7 @@ final readonly class FormHarnessFactory
                 $mount->addEventListener($eventName, $listener, $priority);
             }
 
-            $mounts[$alias] = new FilterMount($filter, $alias, $filterContext);
+            $mounts[$alias] = new FilterMount($filter, $alias, $scope);
 
             $root->add($mount);
         }
@@ -162,5 +195,13 @@ final readonly class FormHarnessFactory
         $root = $formBuildEvent->formBuilder;
 
         return new FormHarness($root->getForm(), $mounts);
+    }
+
+    private function logSkipped(string $alias, FilterException $e): void
+    {
+        $this->logger->warning(
+            \sprintf('Filter "%s" is not mounted, its control failed: %s', $alias, $e->getMessage()),
+            ['alias' => $alias, 'exception' => $e],
+        );
     }
 }

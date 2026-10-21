@@ -137,7 +137,6 @@ class ChangelanguageListener
             $configuredFilter = $this->filterFactory->create(
                 element: SimpleEquationFilterElement::TYPE,
                 config: [
-                    'intrinsic' => true,
                     'left' => DcMultilingualHelper::getPidColumn($table),
                     'operator' => SqlEquationOperator::GREATER_THAN,
                     'right' => '0',
@@ -149,7 +148,6 @@ class ChangelanguageListener
         $configuredFilter ??= $this->filterFactory->create(
             element: SimpleEquationFilterElement::TYPE,
             config: [
-                'intrinsic' => true,
                 'left' => DcMultilingualHelper::getPidColumn($table),
                 'operator' => SqlEquationOperator::EQUALS,
                 'right' => '0',

@@ -3,7 +3,6 @@
 use Contao\DataContainer;
 use Contao\DC_Table;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
-use HeimrichHannot\FlareBundle\Enum\BoolMode;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -22,8 +21,8 @@ $dca['config'] = [
         'keys' => [
             'id' => 'primary',
             'pid,published' => 'index',
-            'formAlias' => 'index',
-            'pid,formAlias' => 'index',
+            'alias' => 'index',
+            'pid,alias' => 'index',
         ],
     ],
 ];
@@ -112,7 +111,7 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
-    'formAlias' => [
+    'alias' => [
         'exclude' => true,
         'search' => true,
         'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
@@ -136,20 +135,7 @@ $dca['fields'] = [
         'eval' => ['doNotCopy' => true, 'tl_class' => 'w50'],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
-    'intrinsic' => [
-        'exclude' => true,
-        'toggle' => true,
-        'filter' => true,
-        'default' => true,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
-        'inputType' => 'checkbox',
-        'eval' => [
-            'submitOnChange' => true,
-            'tl_class' => 'cbx m12 w50',
-        ],
-        'sql' => ['type' => 'boolean', 'default' => false],
-    ],
-    'formVariant' => [
+    'control' => [
         'exclude' => true,
         'inputType' => 'select',
         'eval' => [
@@ -161,6 +147,11 @@ $dca['fields'] = [
             'tl_class' => 'w50',
         ],
         'sql' => ['type' => 'string', 'length' => 128, 'default' => '', 'notnull' => true],
+    ],
+    'value' => [
+        'exclude' => true,
+        'eval' => ['tl_class' => 'clr'],
+        'sql' => ['type' => 'blob', 'notnull' => false],
     ],
     'targetAlias' => [
         'inputType' => 'select',
@@ -177,19 +168,7 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'string', 'length' => 128, 'default' => TableAliasRegistry::ALIAS_MAIN],
     ],
-    'preselect' => [
-        'inputType' => 'text',
-        'default' => null,
-        'eval' => ['tl_class' => 'w100 clr'],
-        'sql' => ['type' => 'blob', 'notnull' => false],
-    ],
-    'prefill' => [
-        'inputType' => 'text',
-        'default' => null,
-        'eval' => ['tl_class' => 'w100 clr', 'alwaysSave' => true],
-        'sql' => ['type' => 'text', 'notnull' => false],
-    ],
-    'isMandatory' => [
+    'ctl_isMandatory' => [
         'exclude' => true,
         'toggle' => true,
         'filter' => false,
@@ -202,7 +181,7 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
-    'isMultiple' => [
+    'ctl_isMultiple' => [
         'exclude' => true,
         'toggle' => true,
         'filter' => false,
@@ -215,7 +194,7 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
-    'isExpanded' => [
+    'ctl_isExpanded' => [
         'exclude' => true,
         'toggle' => true,
         'filter' => false,
@@ -228,7 +207,7 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
-    'isLimited' => [
+    'elm_isLimited' => [
         'exclude' => true,
         'toggle' => true,
         'filter' => false,
@@ -241,7 +220,7 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
-    'useWhitelistForOptionsOnly' => [
+    'elm_useWhitelistForOptionsOnly' => [
         'exclude' => true,
         'toggle' => true,
         'filter' => false,
@@ -254,7 +233,7 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
-    'hasEmptyOption' => [
+    'ctl_hasEmptyOption' => [
         'exclude' => true,
         'toggle' => true,
         'filter' => false,
@@ -267,7 +246,7 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
-    'usePublished' => [
+    'elm_usePublished' => [
         'exclude' => true,
         'toggle' => true,
         'filter' => false,
@@ -280,7 +259,7 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => true],
     ],
-    'useStart' => [
+    'elm_useStart' => [
         'exclude' => true,
         'toggle' => true,
         'filter' => false,
@@ -293,7 +272,7 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => true],
     ],
-    'useStop' => [
+    'elm_useStop' => [
         'exclude' => true,
         'toggle' => true,
         'filter' => false,
@@ -306,7 +285,7 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => true],
     ],
-    'invertPublished' => [
+    'elm_invertPublished' => [
         'exclude' => true,
         'toggle' => true,
         'filter' => false,
@@ -318,7 +297,7 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
-    'formatLabel' => [
+    'ctl_formatLabel' => [
         'inputType' => 'select',
         'exclude' => true,
         'filter' => false,
@@ -332,7 +311,7 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
-    'formatLabelCustom' => [
+    'ctl_formatLabelCustom' => [
         'exclude' => true,
         'search' => false,
         'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
@@ -340,7 +319,7 @@ $dca['fields'] = [
         'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
-    'formatEmptyOption' => [
+    'ctl_formatEmptyOption' => [
         'inputType' => 'select',
         'exclude' => true,
         'filter' => false,
@@ -354,7 +333,7 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
-    'formatEmptyOptionCustom' => [
+    'ctl_formatEmptyOptionCustom' => [
         'exclude' => true,
         'search' => false,
         'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
@@ -362,14 +341,14 @@ $dca['fields'] = [
         'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
-    'whichPtable' => [
+    'elm_whichPtable' => [
         'exclude' => true,
         'filter' => false,
         'default' => 'auto',
         'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
         'inputType' => 'radio',
         'options' => ['auto', 'dynamic', 'static'],
-        'reference' => &$GLOBALS['TL_LANG'][$table]['whichPtable_options'],
+        'reference' => &$GLOBALS['TL_LANG'][$table]['elm_whichPtable_options'],
         'eval' => [
             'submitOnChange' => true,
             'alwaysSave' => true,
@@ -377,7 +356,7 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(32) NOT NULL default 'auto'",
     ],
-    'fieldPublished' => [
+    'elm_fieldPublished' => [
         'inputType' => 'select',
         'exclude' => true,
         'filter' => false,
@@ -390,7 +369,7 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
-    'fieldStart' => [
+    'elm_fieldStart' => [
         'inputType' => 'select',
         'exclude' => true,
         'filter' => false,
@@ -403,7 +382,7 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
-    'fieldStop' => [
+    'elm_fieldStop' => [
         'inputType' => 'select',
         'exclude' => true,
         'filter' => false,
@@ -416,7 +395,7 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
-    'fieldPid' => [
+    'elm_fieldPid' => [
         'inputType' => 'select',
         'exclude' => true,
         'filter' => false,
@@ -430,7 +409,7 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
-    'fieldPtable' => [
+    'elm_fieldPtable' => [
         'inputType' => 'select',
         'exclude' => true,
         'filter' => false,
@@ -443,7 +422,7 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
-    'tablePtable' => [
+    'elm_tablePtable' => [
         'inputType' => 'select',
         'exclude' => true,
         'filter' => false,
@@ -457,7 +436,7 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
-    'whitelistParents' => [
+    'elm_whitelistParents' => [
         'inputType' => 'select',
         'default' => null,
         'eval' => [
@@ -466,7 +445,7 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'blob', 'notnull' => false],
     ],
-    'fieldGeneric' => [
+    'elm_fieldGeneric' => [
         'inputType' => 'select',
         'exclude' => true,
         'filter' => false,
@@ -479,7 +458,7 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
-    'columnsGeneric' => [ // "columns" instead of "fields" to prevent confusion and typos
+    'elm_columnsGeneric' => [ // "columns" instead of "fields" to prevent confusion and typos
         'inputType' => 'select',
         'exclude' => true,
         'filter' => false,
@@ -493,27 +472,47 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'blob', 'notnull' => false],
     ],
-    'groupWhitelistParents' => [
+    'elm_groupWhitelistParents' => [
         'inputType' => 'group',
+        // The sub-fields are the keys of the stored blob, not columns: they keep their unprefixed names and are
+        // defined here rather than referencing the (renamed) columns.
         'palette' => ['tablePtable', 'whitelistParents', 'formatLabel', 'formatLabelCustom'],
         'fields' => [
-            '&tablePtable' => [
-                'eval' => ['tl_class' => 'clr w50'],
+            'tablePtable' => [
+                'inputType' => 'select',
+                'eval' => [
+                    'mandatory' => true,
+                    'submitOnChange' => true,
+                    'includeBlankOption' => true,
+                    'alwaysSave' => true,
+                    'chosen' => true,
+                    'tl_class' => 'clr w50',
+                ],
             ],
-            '&whitelistParents' => [
-                'eval' => ['tl_class' => 'w50'],
+            'whitelistParents' => [
+                'inputType' => 'select',
+                'eval' => ['chosen' => true, 'multiple' => true, 'tl_class' => 'w50'],
             ],
-            '&formatLabel' => [
-                'eval' => ['tl_class' => 'w50'],
+            'formatLabel' => [
+                'inputType' => 'select',
+                'eval' => [
+                    'mandatory' => false,
+                    'submitOnChange' => true,
+                    'includeBlankOption' => true,
+                    'alwaysSave' => true,
+                    'chosen' => true,
+                    'tl_class' => 'w50',
+                ],
             ],
-            '&formatLabelCustom' => [
-                'eval' => ['tl_class' => 'w50'],
+            'formatLabelCustom' => [
+                'inputType' => 'text',
+                'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
             ],
         ],
         'order' => false,
         'sql' => ['type' => 'blob', 'notnull' => false]
     ],
-    'equationOperator' => [
+    'elm_equationOperator' => [
         'exclude' => true,
         'search' => false,
         'inputType' => 'select',
@@ -527,35 +526,35 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
-    'equationLeft' => [
+    'elm_equationLeft' => [
         'exclude' => true,
         'search' => false,
         'inputType' => 'select',
         'eval' => ['mandatory' => true, 'maxlength' => 255, 'chosen' => true],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
-    'equationRight' => [
+    'elm_equationRight' => [
         'exclude' => true,
         'search' => false,
         'inputType' => 'text',
         'eval' => ['mandatory' => false, 'maxlength' => 255, 'chosen' => true],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
-    'placeholder' => [
+    'ctl_placeholder' => [
         'exclude' => true,
         'search' => false,
         'inputType' => 'text',
         'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
-    'label' => [
+    'ctl_label' => [
         'exclude' => true,
         'search' => false,
         'inputType' => 'text',
         'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
-    'configureStart' => [
+    'elm_configureStart' => [
         'exclude' => true,
         'search' => false,
         'inputType' => 'select',
@@ -572,7 +571,7 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
-    'configureStop' => [
+    'elm_configureStop' => [
         'exclude' => true,
         'search' => false,
         'inputType' => 'select',
@@ -589,7 +588,7 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
-    'startAt' => [
+    'elm_startAt' => [
         'exclude' => true,
         'search' => false,
         'inputType' => 'text',
@@ -602,7 +601,7 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
-    'stopAt' => [
+    'elm_stopAt' => [
         'exclude' => true,
         'search' => false,
         'inputType' => 'text',
@@ -615,7 +614,7 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
-    'hasExtendedEvents' => [
+    'elm_hasExtendedEvents' => [
         'exclude' => true,
         'toggle' => true,
         'filter' => false,
@@ -627,21 +626,7 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
-    'boolMode' => [
-        'exclude' => true,
-        'search' => false,
-        'inputType' => 'select',
-        'options' => BoolMode::asOptions(),
-        'eval' => [
-            'mandatory' => true,
-            'maxlength' => 255,
-            'alwaysSave' => true,
-            'submitOnChange' => true,
-            'tl_class' => 'w50 clr',
-        ],
-        'sql' => "varchar(64) NOT NULL default ''",
-    ],
-    'boolBinaryChoices' => [
+    'ctl_boolBinaryChoices' => [
         'exclude' => true,
         'search' => false,
         'inputType' => 'select',
@@ -653,27 +638,26 @@ $dca['fields'] = [
 
 $dca['palettes'] = [
     '__selector__' => [
-        'type', 'usePublished', 'useStart', 'useStop', 'whichPtable', 'formatLabel', 'formatEmptyOption',
-        'configureStart', 'configureStop', 'boolMode',
+        'type', 'elm_usePublished', 'elm_useStart', 'elm_useStop', 'elm_whichPtable', 'ctl_formatLabel',
+        'ctl_formatEmptyOption', 'elm_configureStart', 'elm_configureStop',
     ],
-    '__prefix__' => '{title_legend},title,type,intrinsic',
-    '__suffix__' => '{expert_legend:hide},formAlias;{publish_legend},published',
+    '__prefix__' => '{title_legend},title,type,control',
+    '__suffix__' => '{expert_legend:hide},alias;{publish_legend},published',
 ];
 
 $dca['palettes']['default'] = Str::mergePalettes($dca['palettes']['__prefix__'], $dca['palettes']['__suffix__']);
 
 $dca['subpalettes'] = [
-    'usePublished' => 'fieldPublished,invertPublished',
-    'useStart' => 'fieldStart',
-    'useStop' => 'fieldStop',
-    'whichPtable_auto' => '',
-    'whichPtable_dynamic' => 'fieldPtable',
-    'whichPtable_static' => 'tablePtable',
-    'formatLabel_custom' => 'formatLabelCustom',
-    'formatEmptyOption_custom' => 'formatEmptyOptionCustom',
-    'configureStart_str' => 'startAt',
-    'configureStart_date' => 'startAt',
-    'configureStop_str' => 'stopAt',
-    'configureStop_date' => 'stopAt',
-    'boolMode_binary' => 'boolBinaryChoices',
+    'elm_usePublished' => 'elm_fieldPublished,elm_invertPublished',
+    'elm_useStart' => 'elm_fieldStart',
+    'elm_useStop' => 'elm_fieldStop',
+    'elm_whichPtable_auto' => '',
+    'elm_whichPtable_dynamic' => 'elm_fieldPtable',
+    'elm_whichPtable_static' => 'elm_tablePtable',
+    'ctl_formatLabel_custom' => 'ctl_formatLabelCustom',
+    'ctl_formatEmptyOption_custom' => 'ctl_formatEmptyOptionCustom',
+    'elm_configureStart_str' => 'elm_startAt',
+    'elm_configureStart_date' => 'elm_startAt',
+    'elm_configureStop_str' => 'elm_stopAt',
+    'elm_configureStop_date' => 'elm_stopAt',
 ];

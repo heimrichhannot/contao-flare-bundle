@@ -45,4 +45,9 @@ final class KeywordsValueTest extends TestCase
 
         self::assertSame('foo bar', KeywordsValue::tryFrom($stringable)?->keywords);
     }
+
+    public function testFingerprint(): void
+    {
+        self::assertSame('foo bar', KeywordsValue::tryFrom("  foo   bar ")?->fingerprint());
+    }
 }

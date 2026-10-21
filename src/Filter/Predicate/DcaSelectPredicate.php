@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Predicate;
 
-use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -49,14 +48,10 @@ class DcaSelectPredicate extends AbstractPredicate
             return;
         }
 
-        if (\count(\array_unique($validOptions)) !== \count($validOptions)) {
-            throw new FilterException('Options for the DCA select field must be unique.', method: __METHOD__);
-        }
-
         $filtered = [];
         foreach ($selected as $value)
         {
-            if ($validOptions[$value] ?? null) {
+            if (\array_key_exists($value, $validOptions)) {
                 $filtered[] = $value;
             }
         }

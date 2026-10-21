@@ -5,37 +5,27 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Predicate\CalendarCurrentPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
-use Symfony\Component\Form\FormError;
-use Symfony\Component\Form\FormEvent;
-use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AsFilterElement(type: self::TYPE, value: DateRangeValue::class)]
-class CalendarCurrentFilterElement extends AbstractFilterElement
+class CalendarCurrentFilterElement extends AbstractFilterElement implements DateBoundsContract
 {
     public const TYPE = 'flare_calendar_current';
 
-    public function __construct(
-        private readonly TranslatorInterface $translator,
-    ) {}
-
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('is_limited')->default(false)->allowedTypes('bool');
         $resolver->define('configure_start')->default(null)->allowedTypes('string', 'null');
         $resolver->define('configure_stop')->default(null)->allowedTypes('string', 'null');
@@ -47,84 +37,43 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
         $config
-            ->set('intrinsic', (bool) $model->intrinsic)
-            ->set('is_limited', (bool) $model->isLimited)
-            ->set('configure_start', $model->configureStart ?: null)
-            ->set('configure_stop', $model->configureStop ?: null)
-            ->set('start_at', $model->startAt ?: null)
-            ->set('stop_at', $model->stopAt ?: null)
-            ->set('has_extended_events', (bool) $model->hasExtendedEvents);
-    }
-
-    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
-    {
-        $config = $context->config;
-
-        if ($config['intrinsic']) {
-            return;
-        }
-
-        [$min, $max] = $this->resolveFormLimits($config);
-
-        $minAttr = $min?->format('Y-m-d');
-        $maxAttr = null;
-
-        if ($max !== null) {
-            $maxAttr = \DateTime::createFromInterface($max)->modify('-1 second')->format('Y-m-d');
-        }
-
-        $attr = \array_filter([
-            'min' => $minAttr,
-            'max' => $maxAttr,
-        ]);
-
-        $builder->add('from', DateType::class, [
-            'widget' => 'single_text',
-            'label' => 'label.date_range.from',
-            'html5' => true,
-            'required' => false,
-            'attr' => $attr,
-        ]);
-
-        $builder->add('to', DateType::class, [
-            'widget' => 'single_text',
-            'label' => 'label.date_range.to',
-            'html5' => true,
-            'required' => false,
-            'attr' => $attr,
-        ]);
-
-        $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validateRange(...));
+            ->set('is_limited', (bool) $model->elm_isLimited)
+            ->set('configure_start', $model->elm_configureStart ?: null)
+            ->set('configure_stop', $model->elm_configureStop ?: null)
+            ->set('start_at', $model->elm_startAt ?: null)
+            ->set('stop_at', $model->elm_stopAt ?: null)
+            ->set('has_extended_events', (bool) $model->elm_hasExtendedEvents);
     }
 
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
-        $config = $builder->filter->config;
-
-        if (!$config['is_limited'] && $builder->engineContext instanceof ValidationContext) {
-            return;
-        }
-
-        $value = $this->processRuntimeValue($value) ?? [];
-        $from = $value['from'] ?? null;
-        $to = $value['to'] ?? null;
+        $value = $this->expectValue($value, DateRangeValue::class);
+        $config = $builder->scope->filter->config;
 
         $start = \strtotime((string) $config['start_at']) ?: 0;
         $stop = \strtotime((string) $config['stop_at']) ?: DateTimeHelper::maxTimestamp();
 
-        if ($from instanceof \DateTimeInterface)
+        if (!$config['is_limited'] && $builder->scope->engineContext instanceof ValidationContext)
         {
-            $from = $from->getTimestamp();
+            // Unlimited defaults only shape the initial display; the whole list is bounded by a fixed
+            // value alone (controlled filters have none here, SPEC_FILTER_FORMS.md §4.2).
+            if ($value === null) {
+                return;
+            }
 
+            $start = 0;
+            $stop = DateTimeHelper::maxTimestamp();
+        }
+
+        if (($from = $value?->from?->getTimestamp()) !== null)
+        {
             if (!$config['is_limited'] || $from >= $start) {
                 $start = $from;
             }
         }
 
-        if ($to instanceof \DateTimeInterface)
+        if (($to = $value?->to?->getTimestamp()) !== null)
         {
-            $to = $to->getTimestamp();
-
             if (!$config['is_limited'] || $to <= $stop) {
                 $stop = $to;
             }
@@ -137,15 +86,18 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
         ]);
     }
 
+    public function getDateBounds(FilterScope $scope): array
+    {
+        return $this->resolveFormLimits($scope->filter->config);
+    }
+
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
-        $palette = '{date_start_legend},configureStart,hasExtendedEvents;{date_stop_legend},configureStop;';
-
-        if (!$context->filterModel?->intrinsic) {
-            $palette .= '{form_legend},isLimited;';
-        }
-
-        $dca->palette($palette);
+        $dca->palette(
+            '{date_start_legend},elm_configureStart,elm_hasExtendedEvents;'
+            . '{date_stop_legend},elm_configureStop;'
+            . '{form_legend},elm_isLimited;'
+        );
     }
 
     /**
@@ -180,58 +132,5 @@ class CalendarCurrentFilterElement extends AbstractFilterElement
         }
 
         return [$min, $max];
-    }
-
-    /**
-     * @return array{from: ?\DateTimeInterface, to: ?\DateTimeInterface}|null
-     */
-    private function processRuntimeValue(?ValueInterface $data): ?array
-    {
-        if (!$data instanceof DateRangeValue) {
-            return null;
-        }
-
-        return [
-            'from' => $this->mixedToDateTime($data->from),
-            'to' => $this->mixedToDateTime($data->to),
-        ];
-    }
-
-    private function mixedToDateTime(mixed $input): ?\DateTimeInterface
-    {
-        if (!$input) {
-            return null;
-        }
-
-        if ($input instanceof \DateTimeInterface) {
-            return $input;
-        }
-
-        if (\is_numeric($input)) {
-            return \DateTimeImmutable::createFromFormat('U', (string) $input) ?: null;
-        }
-
-        if (\is_string($input)) {
-            return new \DateTimeImmutable($input);
-        }
-
-        return null;
-    }
-
-    /**
-     * Ensures `from` <= `to`, replicating the former compound form type's callback constraint.
-     */
-    private function validateRange(FormEvent $event): void
-    {
-        $form = $event->getForm();
-
-        $from = $form->has('from') ? $form->get('from')->getData() : null;
-        $to = $form->has('to') ? $form->get('to')->getData() : null;
-
-        if ($from instanceof \DateTimeInterface && $to instanceof \DateTimeInterface && $from > $to) {
-            $form->get('from')->addError(new FormError(
-                $this->translator->trans('flare.form.date_range.to_greater_than_from', [], 'validators'),
-            ));
-        }
     }
 }

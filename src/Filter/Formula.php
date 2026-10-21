@@ -1,7 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Filter;
 
+/**
+ * @internal
+ */
 final readonly class Formula
 {
     public function __construct(

@@ -6,12 +6,9 @@ namespace HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareFilter;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicContract;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
-use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
-use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * @internal For internal use only. Do not call this class or its methods directly.
@@ -20,98 +17,43 @@ readonly class FieldsLoadAndSaveCallbacks
 {
     public const TABLE_NAME = FilterContainer::TABLE_NAME;
 
-    public function __construct(
-        private FilterElementRegistry $filterElementRegistry,
-        private RequestStack          $requestStack,
-    ) {}
-
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.load')]
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.save')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_fieldPublished.load')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_fieldPublished.save')]
     public function onLoadField_fieldPublished(mixed $value, DataContainer $dc): string
     {
         return $value ?: DcaHelper::tryGetColumnName($dc, 'published', '');
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldStart.load')]
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldStart.save')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_fieldStart.load')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_fieldStart.save')]
     public function onLoadField_fieldStart(mixed $value, DataContainer $dc): string
     {
         return $value ?: DcaHelper::tryGetColumnName($dc, 'start', '');
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldStop.load')]
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldStop.save')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_fieldStop.load')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_fieldStop.save')]
     public function onLoadField_fieldStop(mixed $value, DataContainer $dc): string
     {
         return $value ?: DcaHelper::tryGetColumnName($dc, 'stop', '');
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldPid.load')]
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldPid.save')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_fieldPid.load')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_fieldPid.save')]
     public function onLoadField_fieldPid(mixed $value, DataContainer $dc): string
     {
         return $value ?: DcaHelper::tryGetColumnName($dc, 'pid', '');
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldPtable.load')]
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldPtable.save')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_fieldPtable.load')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_fieldPtable.save')]
     public function onLoadField_fieldPtable(mixed $value, DataContainer $dc): string
     {
         return $value ?: DcaHelper::tryGetColumnName($dc, 'ptable', '');
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.intrinsic.load')]
-    public function onLoadField_intrinsic(mixed $value, DataContainer $dc): bool
-    {
-        $value = (bool) $value;
-
-        if (!$request = $this->requestStack->getCurrentRequest()) {
-            return $value;
-        }
-
-        if ($request->getMethod() === 'POST' && $request->request->get('FORM_SUBMIT') === self::TABLE_NAME)
-        {
-            // do not disable intrinsic field if form is being submitted
-            // otherwise the save callback will not be called
-            return $value;
-        }
-
-        if (!$row = DcaHelper::rowOf($dc)) {
-            return $value;
-        }
-
-        $filterElement = $this->filterElementRegistry->getService($row['type'] ?? null);
-
-        if ($filterElement instanceof IntrinsicContract && $filterElement->isOnlyIntrinsic())
-        {
-            $eval = &$GLOBALS['TL_DCA'][self::TABLE_NAME]['fields']['intrinsic']['eval'];
-
-            $eval['disabled'] = true;
-
-            return true;
-        }
-
-        return $value;
-    }
-
-    #[AsCallback(self::TABLE_NAME, 'fields.intrinsic.save')]
-    public function onSaveField_intrinsic(mixed $value, DataContainer $dc): mixed
-    {
-        if ($value || !$row = DcaHelper::rowOf($dc)) {
-            return $value;
-        }
-
-        $element = $this->filterElementRegistry->getService($row['type'] ?? null);
-
-        if ($element instanceof IntrinsicContract && $element->isOnlyIntrinsic()) {
-            return '1';
-        }
-
-        return $value;
-    }
-
-    #[AsCallback(self::TABLE_NAME, 'fields.configureStart.save')]
-    #[AsCallback(self::TABLE_NAME, 'fields.configureStop.save')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_configureStart.save')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_configureStop.save')]
     public function onSaveField_configureDate(string $value, DataContainer $dc): string
     {
         if (!$value) {
@@ -119,8 +61,8 @@ readonly class FieldsLoadAndSaveCallbacks
         }
 
         $modifyField = match ($dc->field) {
-            'configureStop' => 'stopAt',
-            'configureStart' => 'startAt',
+            'elm_configureStop' => 'elm_stopAt',
+            'elm_configureStart' => 'elm_startAt',
             default => null,
         };
 
@@ -146,8 +88,8 @@ readonly class FieldsLoadAndSaveCallbacks
         $model->save();
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.startAt.load')]
-    #[AsCallback(self::TABLE_NAME, 'fields.stopAt.load')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_startAt.load')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_stopAt.load')]
     public function onLoadField_startStopAt(string $value, DataContainer $dc): string
     {
         if (!isset($GLOBALS['TL_DCA'][self::TABLE_NAME]['fields'][$dc->field])) {
@@ -155,8 +97,8 @@ readonly class FieldsLoadAndSaveCallbacks
         }
 
         $configuredBy = match ($dc->field) {
-            'startAt' => 'configureStart',
-            'stopAt' => 'configureStop',
+            'elm_startAt' => 'elm_configureStart',
+            'elm_stopAt' => 'elm_configureStop',
             default => null,
         };
 

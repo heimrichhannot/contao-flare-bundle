@@ -4,173 +4,263 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Engine\Projector;
 
+use Doctrine\DBAL\Connection;
+use HeimrichHannot\FlareBundle\Config\SchemaResolver;
+use HeimrichHannot\FlareBundle\Engine\Context\Factory\AggregationContextFactory;
+use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
+use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
+use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderConfig;
+use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
+use HeimrichHannot\FlareBundle\Engine\Projector\AggregationProjector;
 use HeimrichHannot\FlareBundle\Engine\Projector\InteractiveProjector;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
+use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
+use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
+use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
+use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
+use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
+use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
+use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
+use HeimrichHannot\FlareBundle\Query\Factory\QueryBuilderFactory;
+use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
+use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
+use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Form\Extension\Core\Type\FormType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Form\FormInterface;
+use Psr\Log\AbstractLogger;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\DependencyInjection\ServiceLocator;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Form\Extension\Csrf\CsrfExtension;
+use Symfony\Component\Form\Extension\HttpFoundation\HttpFoundationExtension;
 use Symfony\Component\Form\Forms;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Csrf\CsrfTokenManager;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+/**
+ * Runs the interactive projector over the real aggregation projector, loaders and query director.
+ * The tested lists never reach the database: they fail, or their filter aborts.
+ */
 final class InteractiveProjectorTest extends TestCase
 {
-    /**
-     * collectFilterData() touches no constructor dependencies, so the test double
-     * skips the parent constructor entirely.
-     *
-     * @return array<string|int, FilterData>
-     */
-    private function collect(ListSpec $list, FormInterface $form): array
+    use BuildsFilterContextsTrait;
+
+    /** @var list<array{string, string}> */
+    private array $logs = [];
+
+    public function testValuesComeFromTheHarness(): void
     {
-        $projector = new class extends InteractiveProjector {
-            public function __construct() {}
+        $spy = new ProjectorSpyElement();
+        $list = $this->list(new Filter(
+            element: $spy,
+            type: 'test_element',
+            alias: 'q',
+            control: new KeywordsFilterControl(),
+            controlConfig: ['label' => null, 'placeholder' => null],
+            value: new KeywordsValue('initial'),
+        ));
 
-            public function collect(ListSpec $list, FormInterface $form): array
-            {
-                return $this->collectFilterData($list, $form);
-            }
-        };
+        $projector = $this->createProjector(query: ['f' => ['q' => 'submitted']]);
+        $view = $projector->project($list, $this->context());
 
-        return $projector->collect($list, $form);
+        self::assertFalse($view->isFailed());
+        self::assertSame(0, $view->getCount());
+        self::assertSame('submitted', $spy->received?->keywords, 'The aggregation counts the submission.');
+        self::assertSame(['q'], \array_keys($projector->loaderConfig->filterValues));
+        self::assertSame('submitted', $projector->loaderConfig->filterValues['q']?->keywords);
     }
 
-    private function createRootBuilder(): FormBuilderInterface
+    public function testUnsubmittedHarnessDecodesTheInitialValue(): void
     {
-        return Forms::createFormFactory()->createNamedBuilder('f', FormType::class);
+        $spy = new ProjectorSpyElement();
+        $list = $this->list(new Filter(
+            element: $spy,
+            type: 'test_element',
+            alias: 'q',
+            control: new KeywordsFilterControl(),
+            controlConfig: ['label' => null, 'placeholder' => null],
+            value: new KeywordsValue('initial'),
+        ));
+
+        $this->createProjector()->project($list, $this->context());
+
+        self::assertSame('initial', $spy->received?->keywords);
     }
 
-    private function addFlatChild(FormBuilderInterface $root, string $alias, array $options = []): void
+    public function testProjectorReturnsFailedViewWhenAFixedFilterFails(): void
     {
-        $child = $root->create($alias, TextType::class, $options);
-        $child->setAttribute(FilterContext::ATTR_SINGLE_FIELD, true);
-        $root->add($child);
+        $list = $this->list(new Filter(element: new ProjectorFailingElement(), type: 'test_element', alias: 'fixed'));
+
+        $view = $this->createProjector()->project($list, $this->context());
+
+        self::assertTrue($view->isFailed());
+        self::assertSame(0, $view->getCount());
+        self::assertSame([], $view->getEntries());
+        self::assertSame(0, $view->getPaginator()->getTotalItems());
+        self::assertSame('error', $this->logs[0][0] ?? null);
+        self::assertStringContainsString('broken element', $this->logs[0][1]);
     }
 
-    private function listWithFilter(string $key, string $alias): ListSpec
+    public function testListFailuresRecordedAtBuildTimeYieldTheFailedView(): void
+    {
+        $spy = new ProjectorSpyElement();
+        $list = $this->list(new Filter(element: $spy, type: 'test_element', alias: 'fixed'))
+            ->withFailure('tl_flare_filter.3: broken config');
+
+        $view = $this->createProjector()->project($list, $this->context());
+
+        self::assertTrue($view->isFailed());
+        self::assertSame(0, $view->getCount());
+        self::assertSame(0, $spy->calls);
+        self::assertStringContainsString('tl_flare_filter.3: broken config', $this->logs[0][1] ?? '');
+    }
+
+    public function testFailuresAreRethrownInDebugMode(): void
+    {
+        $list = $this->list(new Filter(element: new ProjectorFailingElement(), type: 'test_element', alias: 'fixed'));
+
+        $this->expectException(FilterException::class);
+
+        $this->createProjector(debug: true)->project($list, $this->context());
+    }
+
+    private function context(): InteractiveContext
+    {
+        return new InteractiveContext(paginatorConfig: new PaginatorConfig(itemsPerPage: 10), formName: 'f');
+    }
+
+    private function list(Filter $filter): ListSpec
     {
         $driver = new class implements ListDriverInterface {
             public function resolveDcTable(string $type, array $config, array $attributes): string
             {
-                return (string) ($config['dc'] ?? '');
+                return 'tl_test';
             }
         };
 
-        $element = new class implements FilterElementInterface {
-            public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
+        return new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test', filters: [$filter->alias => $filter]);
+    }
 
-            public function buildContext(
-                FilterContextBuilder $builder,
-                ?ValueInterface      $value,
-            ): void {}
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function createProjector(array $query = [], bool $debug = false): RecordingInteractiveProjector
+    {
+        $logs = &$this->logs;
+        $logger = new class ($logs) extends AbstractLogger {
+            public function __construct(private array &$logs) {}
+
+            public function log($level, $message, array $context = []): void
+            {
+                $this->logs[] = [(string) $level, (string) $message];
+            }
         };
 
-        return new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test', filters: [
-            $key => new Filter(element: $element, type: 'test_element', alias: $alias),
+        $request = Request::create('/list', 'GET', $query);
+        $request->attributes->set('_route', 'test_route');
+        $requestStack = new RequestStack();
+        $requestStack->push($request);
+
+        $dispatcher = new EventDispatcher();
+        $connection = $this->createMock(Connection::class);
+        $director = new ListQueryDirector(
+            eventDispatcher: $dispatcher,
+            filterContextFactory: $this->createFilterContextFactory(),
+            filterQueryBuilderFactory: new FilterQueryBuilderFactory($connection),
+            listExecutionContextFactory: new ListExecutionContextFactory($dispatcher),
+            queryBuilderFactory: new QueryBuilderFactory($this->createMock(ValidatorInterface::class), $connection),
+            logger: $logger,
+        );
+
+        $filterFactory = new FilterFactory(
+            filterElementRegistry: new FilterElementRegistry(),
+            filterControlRegistry: new FilterControlRegistry(),
+            valueProviderRegistry: new ValueProviderRegistry(),
+            filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
+            filterTransformerResolver: new FilterTransformerResolver($dispatcher),
+            logger: $logger,
+        );
+
+        $aggregationProjector = new AggregationProjector();
+
+        $container = new ServiceLocator([
+            ListQueryDirector::class => static fn () => $director,
+            LoaderFactory::class => static fn () => new LoaderFactory($filterFactory, $director),
+            ProjectorRegistry::class => static fn () => new ProjectorRegistry([$aggregationProjector]),
+            ReaderUrlGeneratorFactory::class => static fn () => new ReaderUrlGeneratorFactory($dispatcher),
+            RequestStack::class => static fn () => $requestStack,
+            LoggerInterface::class => static fn () => $logger,
+            ParameterBagInterface::class => static fn () => new ParameterBag(['kernel.debug' => $debug]),
         ]);
-    }
 
-    public function testFlatSubmittedValueBecomesSingleData(): void
-    {
-        $root = $this->createRootBuilder();
-        $this->addFlatChild($root, 'suche');
-        $form = $root->getForm();
+        $aggregationProjector->setContainer($container);
 
-        $form->submit(['suche' => 'term']);
+        $formFactory = Forms::createFormFactoryBuilder()
+            ->addExtension(new CsrfExtension(new CsrfTokenManager()))
+            ->addExtension(new HttpFoundationExtension())
+            ->getFormFactory();
 
-        $data = $this->collect($this->listWithFilter('sucheKey', 'suche'), $form);
-
-        $this->assertSame(['sucheKey'], \array_keys($data));
-        $this->assertTrue($data['sucheKey']->hasSingle());
-        $this->assertSame('term', $data['sucheKey']->getSingleValue());
-        $this->assertSame([], $data['sucheKey']->all());
-    }
-
-    public function testFlatUnsubmittedDefaultIsCollected(): void
-    {
-        $root = $this->createRootBuilder();
-        $this->addFlatChild($root, 'suche', ['data' => 'preset']);
-        $form = $root->getForm();
-
-        $data = $this->collect($this->listWithFilter('sucheKey', 'suche'), $form);
-
-        $this->assertSame(['sucheKey'], \array_keys($data));
-        $this->assertSame('preset', $data['sucheKey']->getSingleValue());
-    }
-
-    public function testFlatUnsubmittedWithoutDefaultStaysUnset(): void
-    {
-        $root = $this->createRootBuilder();
-        $this->addFlatChild($root, 'suche');
-        $form = $root->getForm();
-
-        $this->assertSame([], $this->collect($this->listWithFilter('sucheKey', 'suche'), $form));
-    }
-
-    public function testFlatSubmittedEmptyValueIsKeptSoItOverridesDataBags(): void
-    {
-        $root = $this->createRootBuilder();
-        $this->addFlatChild($root, 'suche', ['data' => 'preset']);
-        $form = $root->getForm();
-
-        $form->submit(['suche' => '']);
-
-        $data = $this->collect($this->listWithFilter('sucheKey', 'suche'), $form);
-
-        $this->assertSame(['sucheKey'], \array_keys($data));
-        // The submitted null must stay distinguishable from "never submitted".
-        $this->assertTrue($data['sucheKey']->hasSingle());
-        $this->assertNull($data['sucheKey']->getSingleValue());
-    }
-
-    public function testCompoundSubmittedDataIsCollected(): void
-    {
-        $root = $this->createRootBuilder();
-        $root->add(
-            $root->create('range', FormType::class, ['inherit_data' => false])
-                ->add('from', TextType::class)
-                ->add('to', TextType::class),
+        $projector = new RecordingInteractiveProjector(
+            aggregationConfigFactory: new AggregationContextFactory(),
+            formHarnessFactory: new FormHarnessFactory($dispatcher, $formFactory, $logger),
+            paginatorFactory: new PaginatorFactory($requestStack, $this->createMock(UrlGeneratorInterface::class)),
         );
-        $form = $root->getForm();
+        $projector->setContainer($container);
 
-        $form->submit(['range' => ['from' => 'a', 'to' => 'b']]);
-
-        $data = $this->collect($this->listWithFilter('rangeKey', 'range'), $form);
-
-        $this->assertSame(['rangeKey'], \array_keys($data));
-        $this->assertFalse($data['rangeKey']->hasSingle());
-        $this->assertSame(['from' => 'a', 'to' => 'b'], $data['rangeKey']->all());
+        return $projector;
     }
+}
 
-    public function testCompoundUnsubmittedFieldDefaultsAreCollected(): void
+final class RecordingInteractiveProjector extends InteractiveProjector
+{
+    public ?InteractiveLoaderConfig $loaderConfig = null;
+
+    protected function createLoader(InteractiveLoaderConfig $config): InteractiveLoaderInterface
     {
-        $root = $this->createRootBuilder();
-        $root->add(
-            $root->create('range', FormType::class, ['inherit_data' => false])
-                ->add('from', TextType::class, ['data' => 'a'])
-                ->add('to', TextType::class),
-        );
-        $form = $root->getForm();
+        $this->loaderConfig = $config;
 
-        $data = $this->collect($this->listWithFilter('rangeKey', 'range'), $form);
-
-        $this->assertSame(['rangeKey'], \array_keys($data));
-        $this->assertSame(['from' => 'a'], $data['rangeKey']->all());
+        return parent::createLoader($config);
     }
+}
 
-    public function testFilterWithoutMountedChildIsSkipped(): void
+/**
+ * Records the value it is invoked with, then aborts so that no query is executed.
+ */
+final class ProjectorSpyElement implements FilterElementInterface
+{
+    public ?ValueInterface $received = null;
+    public int $calls = 0;
+
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
-        $form = $this->createRootBuilder()->getForm();
+        $this->received = $value;
+        ++$this->calls;
 
-        $this->assertSame([], $this->collect($this->listWithFilter('key', 'missing'), $form));
+        $builder->abort();
+    }
+}
+
+final class ProjectorFailingElement implements FilterElementInterface
+{
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
+    {
+        throw new FilterException('broken element');
     }
 }

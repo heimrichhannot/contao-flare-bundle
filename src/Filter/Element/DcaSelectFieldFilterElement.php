@@ -6,128 +6,74 @@ namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Contao\Controller;
 use Contao\DataContainer;
-use Contao\StringUtil;
 use Contao\System;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Predicate\DcaSelectPredicate;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
+use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-#[AsFilterElement(type: self::TYPE)]
-class DcaSelectFieldFilterElement extends AbstractFilterElement
+#[AsFilterElement(type: self::TYPE, value: ChoiceValue::class)]
+class DcaSelectFieldFilterElement extends AbstractFilterElement implements ChoiceSourceContract
 {
     public const TYPE = 'flare_dcaSelectField';
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('field')->default(null)->allowedTypes('string', 'null');
-        $resolver->define('is_multiple')->default(false)->allowedTypes('bool');
-        $resolver->define('is_expanded')->default(false)->allowedTypes('bool');
-        $resolver->define('is_mandatory')->default(false)->allowedTypes('bool');
-        $resolver->define('label')->default(null)->allowedTypes('string', 'null');
-        $resolver->define('placeholder')->default(null)->allowedTypes('string', 'null');
-        $resolver->define('preselect')->default(null);
     }
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $isMultiple = (bool) $model->isMultiple;
-        $preselect = $model->preselect ?: null;
-
-        $config
-            ->set('intrinsic', (bool) $model->intrinsic)
-            ->set('field', $model->fieldGeneric ?: null)
-            ->set('is_multiple', $isMultiple)
-            ->set('is_expanded', (bool) $model->isExpanded)
-            ->set('is_mandatory', (bool) $model->isMandatory)
-            ->set('label', $model->label ?: null)
-            ->set('placeholder', $model->placeholder ?: null)
-            ->set('preselect', $isMultiple
-                ? StringUtil::deserialize($preselect)
-                : $preselect);
+        $config->set('field', $model->elm_fieldGeneric ?: null);
     }
 
-    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
-    {
-        $config = $context->config;
-
-        if ($config['intrinsic']) {
-            return;
-        }
-
-        $defaultPlaceholder = $config['is_mandatory'] ? 'empty_option.prompt' : 'empty_option.no_selection';
-
-        $formOptions = [
-            'label' => $config['label'] ?: false,
-            'multiple' => $config['is_multiple'],
-            'expanded' => $config['is_expanded'],
-            'required' => $config['is_mandatory'],
-            'placeholder' => $config['placeholder'] ?: $defaultPlaceholder,
-        ];
-
-        $options = $this->getOptions($context->list->dc, $config['field']);
-
-        if (!\is_null($options))
-        {
-            $choicesBuilder = $this->createChoicesBuilder();
-
-            foreach ($options as $value => $label) {
-                $choicesBuilder->add((string) $value, (string) $label);
-            }
-
-            $choicesBuilder->applyFormOptions($formOptions);
-
-            $builder->setAttribute('flare.choices_builder', $choicesBuilder);
-        }
-
-        if (null !== $data = $this->buildPreselectData($config['preselect'], $options ?? [])) {
-            $formOptions['data'] = $data;
-        }
-
-        $builder->single(ChoiceType::class, $formOptions);
-    }
-
+    /**
+     * @throws FilterException
+     */
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
-        $config = $context->config;
-        $options = $this->getOptions($context->list->dc, $config['field']) ?? [];
+        if (!$value = $this->expectValue($value, ChoiceValue::class)) {
+            return;
+        }
 
-        $selected = $config['intrinsic']
-            ? $config['preselect']
-            : $this->normalizeSubmittedValue($value->getSingleValue(), $options);
+        if (!$field = $builder->scope->filter->config['field'] ?? null) {
+            $builder->abort();
+        }
+
+        $table = $builder->scope->list->dc;
+
+        if (!$options = $this->getOptions($table, $field)) {
+            $builder->abort();
+        }
+
+        $selected = [];
+
+        foreach ($value->choices as $choice)
+        {
+            if ($choice instanceof ValueChoice) {
+                $selected[] = $choice->value;
+            }
+        }
 
         if (!$selected) {
-            return;
-        }
-
-        if (!$selected = \array_values((array) $selected)) {
-            return;
-        }
-
-        if (!$options) {
             $builder->abort();
         }
 
-        if (!$targetField = $config['field']) {
-            $builder->abort();
-        }
+        $isMultiple = $this->getOptionsField($table, $field)['eval']['multiple'] ?? false;
 
-        $dcaOptionsField = $this->getOptionsField($context->list->dc, $config['field']) ?? [];
-        $isMultiple = $dcaOptionsField['eval']['multiple'] ?? false;
-
-        $builder->add(DcaSelectPredicate::class, [
-            'field' => $targetField,
+        $builder->addPredicate(DcaSelectPredicate::class, [
+            'field' => $field,
             'selected' => $selected,
             'valid_options' => $options,
             'is_multiple_dca_field' => (bool) $isMultiple,
@@ -135,112 +81,46 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement
     }
 
     /**
-     * Computes the initial choice data from the configured preselection, mirroring how the
-     * form would present it: scalar preselect keys are mapped to their option labels.
+     * @throws FilterException
      */
-    private function buildPreselectData(mixed $preselect, array $options): mixed
+    public function createChoices(FilterScope $scope): ChoicesBuilder
     {
-        if (!$preselect) {
-            return null;
+        $field = $scope->filter->config['field'] ?? null;
+
+        if (\is_null($options = $this->getOptions($scope->list->dc, $field))) {
+            throw new FilterException(
+                \sprintf('No options found for the select field "%s.%s".', $scope->list->dc, (string) $field),
+                method: __METHOD__,
+            );
         }
 
-        if (!\is_array($preselect))
+        $choices = $this->createChoicesBuilder();
+
+        foreach ($options as $key => $label)
         {
-            if (!\is_scalar($preselect)) {
-                return $preselect;
-            }
-
-            if (!$option = $options[$preselect] ?? null) {
-                return null;
-            }
-
-            return (string) $option;
-        }
-
-        $data = [];
-
-        foreach ($preselect as $value)
-        {
-            if (!\is_scalar($value)) {
-                $data[] = $value;
+            // A blank option (e.g. a DCA's "-" entry) would collide with the control's empty option (§7.3).
+            if (($key = (string) $key) === '') {
                 continue;
             }
 
-            if ($option = $options[$value] ?? null) {
-                $data[] = (string) $option;
-            }
+            $choices->add(new ValueChoice($key, (string) $label));
         }
 
-        return $data;
+        return $choices;
     }
 
-    /**
-     * Maps submitted choice data (option labels) back to the option keys the filter query
-     * expects, mirroring the choice value callback of the form's choices.
-     */
-    private function normalizeSubmittedValue(mixed $value, array $options): mixed
+    public function choiceFromKey(string $key): ValueChoice
     {
-        if (\is_null($value)) {
-            return null;
-        }
-
-        $choices = [];
-        foreach ($options as $key => $label) {
-            $choices[(string) $key] = (string) $label;
-        }
-
-        $toKey = static function (mixed $choice) use ($choices): string {
-            $key = \array_search($choice, $choices, true);
-            return ($key === false) ? '' : (string) $key;
-        };
-
-        if (\is_array($value)) {
-            return \array_map($toKey, $value);
-        }
-
-        return $toKey($value);
+        return new ValueChoice($key);
     }
 
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
-        $intrinsic = (bool) $context->filterModel?->intrinsic;
+        $dca->palette('{filter_legend},elm_fieldGeneric');
 
-        $palette = '{filter_legend},fieldGeneric,isMultiple,preselect';
-
-        if (!$intrinsic) {
-            $palette .= ';{form_legend},isExpanded,isMandatory,label,placeholder';
-        }
-
-        $dca->palette($palette);
-
-        $dca->field('fieldGeneric')
+        $dca->field('elm_fieldGeneric')
             ->eval(['alwaysSave' => true, 'submitOnChange' => true])
             ->options(fn (): array => $this->getFieldGenericOptions($context->listModel->dc));
-
-        $dca->field('isMultiple')
-            ->eval(['submitOnChange' => true]);
-
-        $preselect = $dca->field('preselect')
-            ->inputType('select')
-            ->eval([
-                'includeBlankOption' => true,
-                'multiple' => (bool) $context->filterModel?->isMultiple,
-                'chosen' => true,
-            ]);
-
-        $table = $context->listModel->dc;
-
-        if ($optionsField = $this->getOptionsField($table, (string) $context->filterModel?->fieldGeneric))
-        {
-            $preselect
-                ->merge(['reference' => $optionsField['reference'] ?? []])
-                ->options(fn (): array => $this->tryGetOptionsFromField($table, $optionsField) ?? []);
-        }
-        /** @mago-expect lint:no-else-clause This else clause is fine. */
-        else
-        {
-            $preselect->options([]);
-        }
     }
 
     public function getFieldGenericOptions(string $table): array

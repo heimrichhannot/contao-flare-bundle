@@ -17,7 +17,9 @@ use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Service\Attribute\Required;
@@ -41,6 +43,8 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
             ProjectorRegistry::class,
             ReaderUrlGeneratorFactory::class,
             RequestStack::class,
+            LoggerInterface::class,
+            ParameterBagInterface::class,
         ];
     }
 
@@ -79,6 +83,19 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
     protected function getReaderUrlGeneratorFactory(): ReaderUrlGeneratorFactory
     {
         return $this->container->get(ReaderUrlGeneratorFactory::class);
+    }
+
+    protected function getLogger(): LoggerInterface
+    {
+        return $this->container->get(LoggerInterface::class);
+    }
+
+    /**
+     * Whether the kernel runs in debug mode, in which failures are rethrown instead of degraded.
+     */
+    protected function isDebug(): bool
+    {
+        return (bool) $this->container->get(ParameterBagInterface::class)->get('kernel.debug');
     }
 
     /**

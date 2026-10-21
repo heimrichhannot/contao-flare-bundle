@@ -8,16 +8,16 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\FilterTransformerEvent;
+use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
+use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
+use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
-use Symfony\Component\Form\FormBuilderInterface;
 
 final class FilterTransformerResolverTest extends TestCase
 {
@@ -76,6 +76,23 @@ final class FilterTransformerResolverTest extends TestCase
 
         self::assertSame(['external' => true], $config);
     }
+
+    public function testTransformsSourceThroughControlTransformerWithoutDispatchingTheElementEvent(): void
+    {
+        $dispatched = 0;
+
+        $dispatcher = new EventDispatcher();
+        $dispatcher->addListener(FilterTransformerEvent::class, static function () use (&$dispatched): void {
+            $dispatched++;
+        });
+
+        $resolver = new FilterTransformerResolver($dispatcher);
+
+        $config = $resolver->transform(new TransformingControl(), 'transforming_control', new RowSource(['b' => 2]));
+
+        self::assertSame(['b' => 2], $config);
+        self::assertSame(0, $dispatched);
+    }
 }
 
 final class RowSource
@@ -96,10 +113,6 @@ final class TransformingElement implements FilterElementInterface, TransformerCo
         });
     }
 
-    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
-    {
-    }
-
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
     }
@@ -107,11 +120,33 @@ final class TransformingElement implements FilterElementInterface, TransformerCo
 
 final class PlainTransformerlessElement implements FilterElementInterface
 {
-    public function buildForm(FormBuilderInterface $builder, FilterContext $context): void
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
+    {
+    }
+}
+
+final class TransformingControl extends AbstractFilterControl
+{
+    public function configureTransformers(TransformerResolver $resolver): void
+    {
+        $resolver->for(RowSource::class, static function (ConfigBuilder $config, RowSource $source): void {
+            foreach ($source->row as $key => $value) {
+                $config->set($key, $value);
+            }
+        });
+    }
+
+    public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void
     {
     }
 
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
+    public function decode(mixed $data, FilterScope $scope): ?BoolValue
     {
+        return null;
+    }
+
+    public function hydrate(?ValueInterface $value, FilterScope $scope): mixed
+    {
+        return null;
     }
 }

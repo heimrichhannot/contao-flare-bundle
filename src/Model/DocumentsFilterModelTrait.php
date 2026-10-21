@@ -12,48 +12,46 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string $title
  * @property string $type
  * @property bool   $published
- * @property bool   $intrinsic
- * @property string $formAlias
+ * @property string $alias
+ * @property string $control
+ * @property string|null $value
  * @property string $targetAlias
- * @property bool   $isMandatory
- * @property bool   $isMultiple
- * @property bool   $isExpanded
- * @property bool   $isLimited
- * @property bool   $hasEmptyOption
- * @property bool   $hasExtendedEvents
- * @property bool   $usePublished
- * @property bool   $useStart
- * @property bool   $useStop
- * @property bool   $invertPublished
- * @property bool   $useWhitelistForOptionsOnly
- * @property string $formatLabel
- * @property string $formatLabelCustom
- * @property string $formatEmptyOption
- * @property string $formatEmptyOptionCustom
- * @property string $columnsGeneric
- * @property string $fieldGeneric
- * @property string $fieldPublished
- * @property string $fieldStart
- * @property string $fieldStop
- * @property string $fieldPid
- * @property string $fieldPtable
- * @property string $tablePtable
- * @property string $whichPtable
- * @property string $whitelistParents
- * @property string $groupWhitelistParents
- * @property string $preselect
- * @property string $prefill
- * @property string $equationOperator
- * @property string $equationLeft
- * @property string $equationRight
- * @property string $placeholder
- * @property string $label
- * @property string $startAt
- * @property string $stopAt
- * @property string $configureStart
- * @property string $configureStop
- * @property string $boolMode
- * @property string $boolBinaryChoices
+ * @property bool   $ctl_isMandatory
+ * @property bool   $ctl_isMultiple
+ * @property bool   $ctl_isExpanded
+ * @property bool   $elm_isLimited
+ * @property bool   $ctl_hasEmptyOption
+ * @property bool   $elm_hasExtendedEvents
+ * @property bool   $elm_usePublished
+ * @property bool   $elm_useStart
+ * @property bool   $elm_useStop
+ * @property bool   $elm_invertPublished
+ * @property bool   $elm_useWhitelistForOptionsOnly
+ * @property string $ctl_formatLabel
+ * @property string $ctl_formatLabelCustom
+ * @property string $ctl_formatEmptyOption
+ * @property string $ctl_formatEmptyOptionCustom
+ * @property string $elm_columnsGeneric
+ * @property string $elm_fieldGeneric
+ * @property string $elm_fieldPublished
+ * @property string $elm_fieldStart
+ * @property string $elm_fieldStop
+ * @property string $elm_fieldPid
+ * @property string $elm_fieldPtable
+ * @property string $elm_tablePtable
+ * @property string $elm_whichPtable
+ * @property string $elm_whitelistParents
+ * @property string $elm_groupWhitelistParents
+ * @property string $elm_equationOperator
+ * @property string $elm_equationLeft
+ * @property string $elm_equationRight
+ * @property string $ctl_placeholder
+ * @property string $ctl_label
+ * @property string $elm_startAt
+ * @property string $elm_stopAt
+ * @property string $elm_configureStart
+ * @property string $elm_configureStop
+ * @property string $ctl_boolBinaryChoices
  */
 trait DocumentsFilterModelTrait
 {

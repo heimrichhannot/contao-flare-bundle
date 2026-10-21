@@ -7,13 +7,13 @@ namespace HeimrichHannot\FlareBundle\Filter;
 use Symfony\Component\Form\FormBuilderInterface;
 
 /**
- * Per-filter form builder handed to filter elements in buildForm().
+ * Per-filter form builder handed to filter controls in buildForm().
  *
- * Besides the regular Symfony builder API for multi-field filters, it lets an element declare
+ * Besides the regular Symfony builder API for multi-field filters, it lets a control declare
  * itself as a single-field filter via {@see single()}. Single fields are mounted flat on the
- * root filter form under the filter's alias (query parameter `form[alias]=x`), and their
- * submitted value is handed back to buildFilter() as
- * {@see \HeimrichHannot\FlareBundle\Filter\FilterData::getSingleValue()}.
+ * root filter form under the filter's alias (query parameter `form[alias]=x`). Either way, the
+ * mount's data is handed back to the control's
+ * {@see \HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface::decode()}.
  */
 interface FilterFormBuilderInterface extends FormBuilderInterface
 {
@@ -33,4 +33,18 @@ interface FilterFormBuilderInterface extends FormBuilderInterface
      * @return array{type: class-string, options: array<string, mixed>}|null
      */
     public function getSingle(): ?array;
+
+    /**
+     * Sets form options of the compound mount of a multi-field filter, e.g. its `label`; merged over the
+     * mount's defaults (no label, not required). Ignored for a single-field filter, whose options are
+     * passed to {@see single()}. Calling this method again overwrites the previous options.
+     *
+     * @param array<string, mixed> $options Form options of the compound mount.
+     */
+    public function compound(array $options): static;
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getCompoundOptions(): array;
 }

@@ -1,6 +1,6 @@
 # SPEC: Decoupling Filter Forms from Filter Elements
 
-**Status:** Design settled (2026-10-20/21, §13.6-13.25). Step 0 (§12) implemented and partly
+**Status:** Design settled (2026-10-20/21, §13.6-13.26). Step 0 (§12) implemented and partly
 re-renamed by #48; step 1 partially implemented and red mid-cut; steps 2-6 not started. Progress
 and the open checklist live in `PLAN_FILTER_FORMS.md`.
 **Scope:** `src/Filter/`, `src/Form/`, `src/Query/`, `src/Event/`, `src/EventListener/NamedDispatch/`,
@@ -338,7 +338,7 @@ own config only.
 - `AsFilterElement::$value` — the value class this element consumes. `null` means the element has no
   runtime value at all: its config *is* the value (§5.3). A non-null value class requires a value
   provider (§3.6).
-- `AsFilterForm::$name` — the identifier persisted in `tl_flare_filter.formVariant`. Defaults to
+- `AsFilterForm::$name` — the identifier persisted in `tl_flare_filter.form`. Defaults to
   `TypeNameFactory::createFilterFormType()` over the class (suffixes `Controller`, `FilterForm`,
   `Form` stripped). `""` (= intrinsic) and `"default"` are reserved; a duplicate name fails the
   container build, because a silent override would re-interpret stored rows. The value class is not
@@ -358,9 +358,9 @@ constraint relative to the element pass.
 
 `FilterFormRegistry::findNames(string $valueClass): list<string>` is the whole election: the forms
 whose value class equals the element's declared one, in registration order. It feeds the
-`formVariant` options callback (§5.2) and the consistency check in `FilterFactory` (§8). An element
+`form` options callback (§5.2) and the consistency check in `FilterFactory` (§8). An element
 whose value class has no form is legal — it is used intrinsically or programmatically, and its
-`formVariant` select offers only the blank option.
+`form` select offers only the blank option.
 
 ### 3.5 Ports
 
@@ -454,26 +454,26 @@ price of occasional duplicates (an element and a form may each have a column of 
 
 | prefix | columns |
 |---|---|
-| none (framework) | `id`, `pid`, `sorting`, `tstamp`, `title`, `type`, `published`, `formVariant`, `formAlias` (query-parameter name), `targetAlias` (rethought in §15), **`value`** (new, §4.2) |
+| none (framework) | `id`, `pid`, `sorting`, `tstamp`, `title`, `type`, `published`, **`form`** (formerly `formVariant`), **`alias`** (formerly `formAlias`, the query-parameter name), `targetAlias` (rethought in §15), **`value`** (new, §4.2) |
 | `elm_` | `fieldGeneric`, `columnsGeneric`, `usePublished`, `fieldPublished`, `invertPublished`, `useStart`, `fieldStart`, `useStop`, `fieldStop`, `whichPtable`, `fieldPid`, `fieldPtable`, `tablePtable`, `whitelistParents`, `groupWhitelistParents`, `useWhitelistForOptionsOnly`, `equationLeft`, `equationOperator`, `equationRight`, `configureStart`, `startAt`, `configureStop`, `stopAt`, `hasExtendedEvents`, `isLimited` |
 | `frm_` | `label`, `placeholder`, `isMandatory`, `isMultiple`, `isExpanded`, `hasEmptyOption`, `formatLabel`, `formatLabelCustom`, `formatEmptyOption`, `formatEmptyOptionCustom`, `boolBinaryChoices` |
-| removed | `intrinsic` (→ blank `formVariant`), `preselect` and `prefill` (→ `value`), `boolMode` (→ `formVariant`, §7.5) |
+| removed | `intrinsic` (→ blank `form`), `preselect` and `prefill` (→ `value`), `boolMode` (→ `form`, §7.5) |
 
 Columns of the Codefog integration are classified by the same rule.
 
 ### 4.2 One value, one column
 
 The `value` column holds a value of the element's value class, stored in the format of its value
-provider (§3.6). Its meaning depends on `formVariant`:
+provider (§3.6). Its meaning depends on `form`:
 
-| `formVariant` | `value` is | effect |
+| `form` | `value` is | effect |
 |---|---|---|
 | blank (intrinsic) | the fixed value | the element always receives it |
 | a form | the initial value | the form is hydrated with it, and it applies while the form is not submitted; a submission replaces it — even an empty one |
 
 This is the same rule as for programmatic values (§8): `Filter::$value` is the value unless a
 submission overrides it. `preselect` (form hydration) and the intrinsic value were always mutually
-exclusive per row, so they share the column; switching `formVariant` keeps the stored value as
+exclusive per row, so they share the column; switching `form` keeps the stored value as
 long as the value class stays the same.
 
 Elements without a value class (`SimpleEquation`, `Published`, `BelongsToRelation`) have no
@@ -497,19 +497,22 @@ The value classes are `BoolValue`, `ChoiceValue`, `DateRangeValue`, `KeywordsVal
 
 ### 5.1 Config shape
 
-The `intrinsic` boolean is replaced by `formVariant`: blank = intrinsic. It is framework data, not
+The `intrinsic` boolean is replaced by `form`: blank = intrinsic. It is framework data, not
 part of either config. An intrinsic filter with a value class takes its value from `value` (§4.2);
 one without a value class needs nothing.
 
 The programmatic call sites in §1.3 keep working by simply not setting a form.
 
-**Do not name the column `formAlias`** — that is taken; it is the query-parameter name
-(`src/Model/FilterModel.php`). Use `formVariant`. Bare `form` was rejected as too generic for a
-column in the one wide shared table (§6.3), even though `FilterForm` is now the noun it selects.
+**Column names** (§13.26). The framework columns that select or name the filter's parts are
+`type` (the `FilterElement`), `form` (the `FilterForm`, by its registered name) and `alias` (the
+filter's name in the URL query and the form, formerly `formAlias`; Contao uses `alias` for "name in
+the URL" throughout). `formVariant` — the column's name while v0.2 was in development — implied a
+variant of the element's widget, which the model no longer has. `FilterModel::getFilterFormName()`,
+which returns the alias (or the id as fallback), becomes `getFilterAlias()`.
 
 ### 5.2 Backend fields
 
-`formVariant` is a `select` with `submitOnChange => true`. Its blank option *is* intrinsic.
+`form` is a `select` with `submitOnChange => true`. Its blank option *is* intrinsic.
 Options come from `FilterFormRegistry::findNames()` for the element's declared value class.
 `ElementDcaListener` reads it alongside `$filterModel->type` to resolve the form service before
 calling the form's `buildDca()`.
@@ -728,7 +731,7 @@ mapping is widget → logical value, i.e. `decode()` (§13.24):
   `TRUE_FALSE`), so existing rows migrate to `TRUE_FALSE` without a behaviour change.
 - **`ChoiceBoolFilterForm`** (`flare_choice_bool`) is the former `ternary` mode: a choice of
   "any / yes / no", no config.
-- **`boolMode` becomes `formVariant`:** `binary` → `flare_checkbox`, `ternary` → `flare_choice_bool`.
+- **`boolMode` becomes `form`:** `binary` → `flare_checkbox`, `ternary` → `flare_choice_bool`.
 - **Intrinsic bool filters** store `true`/`false` in `value` via `BoolValueProvider`.
 
 ---
@@ -755,8 +758,8 @@ final readonly class Filter
 
 **Where `Filter::$value` comes from.**
 - `FilterFactory::createFromFilterModel()` resolves the element config from the `elm_` columns, the
-  form from `formVariant`, the form config from the `frm_` columns, and — if the element has a value
-  class — the value via its provider's `provide($model->value, $scope)`. An unknown `formVariant`, or
+  form from the `form` column, the form config from the `frm_` columns, and — if the element has a value
+  class — the value via its provider's `provide($model->value, $scope)`. An unknown `form`, or
   one not registered for the element's value class, degrades to intrinsic with a logged warning: it
   is a data condition (a renamed or uninstalled form), not a programming error. Each config has its
   own resolver cache key, so the composite-key problem of the old plan does not arise.
@@ -825,7 +828,7 @@ whole spec.
 | form produces the wrong shape | narrowed `decode()` return type, read by the compiler pass | container build; `TypeError` at run time |
 | value class without a (unique) provider | narrowed `provide()` return type, read by the compiler pass | container build |
 | element receives the wrong type | `expectValue()` inside `buildContext()` (§3.2) | `FilterException`, at query build |
-| stored `formVariant` does not fit the element | `findNames()` check in `FilterFactory` (§8) | degrades to intrinsic, logged |
+| stored `form` does not fit the element | `findNames()` check in `FilterFactory` (§8) | degrades to intrinsic, logged |
 | choice form/provider on an element without options | `instanceof ChoiceSourceContract`, plus a unit test over bundle elements | `FilterException` / test suite |
 | two forms claim one name | uniqueness check in the compiler pass | container build |
 | element and form config collide | `elm_` / `frm_` column prefixes, separate configs | by construction |
@@ -839,7 +842,9 @@ Three kinds of change, with different constraints. Columns come only from `sql` 
 `contao/dca/tl_flare_filter.php`; there is no schema listener. Contao runs migrations **before** the
 schema diff in one `contao:migrate`.
 
-**A. Renames** (`elm_` / `frm_`, §4.1). A rename migration (`ALTER TABLE … CHANGE`, guarded by
+**A. Renames** (`elm_` / `frm_`, `formAlias` → `alias`, §4.1). `formVariant` → `form` needs no
+migration: the column is v0.2-only and still empty everywhere, so dropping and re-adding it loses
+nothing. A rename migration (`ALTER TABLE … CHANGE`, guarded by
 `SHOW COLUMNS`) MUST land in the same commit as the DCA rename: a schema diff that sees the DCA
 renamed but the column not yet renamed drops the column and adds an empty one. Renames are
 mechanical and do not depend on form names, so they need not wait for step 6.
@@ -849,7 +854,7 @@ the new form columns from the legacy ones, per row:
 
 | target | source |
 |---|---|
-| `formVariant` | `intrinsic = 1` → `''`; otherwise a frozen literal per element type: `flare_archive`, `flare_fieldValueChoice`, `flare_dcaSelectField`, `cfg_tags_choice` → `flare_choice`; `flare_dateRange`, `flare_calendar_current` → `flare_date_range`; `flare_search_keywords` → `flare_keywords`; `flare_bool` → `boolMode`: `binary` → `flare_checkbox`, `ternary` → `flare_choice_bool`; element types without a value class → `''` |
+| `form` | `intrinsic = 1` → `''`; otherwise a frozen literal per element type: `flare_archive`, `flare_fieldValueChoice`, `flare_dcaSelectField`, `cfg_tags_choice` → `flare_choice`; `flare_dateRange`, `flare_calendar_current` → `flare_date_range`; `flare_search_keywords` → `flare_keywords`; `flare_bool` → `boolMode`: `binary` → `flare_checkbox`, `ternary` → `flare_choice_bool`; element types without a value class → `''` |
 | `value` | `preselect` (bool and choice types) or `prefill` (keywords), converted to the provider's storage format: bool `true`/`false`/`null` → `1`/`0`/empty; choices → a serialized list of keys, which are already canonical (`"<table>.<id>"` for Archive, bare values for `FieldValueChoice`/`DcaSelect`/tags) whether single or multiple; date types have no stored value |
 | `frm_boolBinaryChoices` | `null_false` → `true_false` (§7.5) |
 | `frm_hasEmptyOption`, `frm_formatEmptyOption(Custom)`, `frm_placeholder` | per element, so existing choice widgets look the same: `FieldValueChoice` single-select → empty option on; `DcaSelect`/`CodefogTagsChoice` single-select and not expanded → empty option on, the old placeholder text becomes its custom label; otherwise the placeholder stays `frm_placeholder`; `Archive` 1:1 |
@@ -898,7 +903,7 @@ merges steps 1 and 3 into one atomic cut (no pilot, no legacy adapter) and track
    (`FilterSetFactoryTest`, `FilterSetListenerTest`).
 1. **Contracts + the cut.** 🟡 **In progress — tree red.** Landed: value objects, form/element
    contract signatures, `ChoiceSourceContract`, `AsFilterForm(name:)`, the registry and pass in
-   their first shape, `formVariant`, the predicate layer (§2.3). To do, in the target shape of this
+   their first shape, the `formVariant` column (to be renamed `form`), the predicate layer (§2.3). To do, in the target shape of this
    spec: `FilterScope`, `ConfigurationContext` and the two-stage split (§2.3); `decode()`/`hydrate()`
    with the value class from the return type (§3.1); registry/pass aligned with elements,
    `requires`/`default` removed (§3.4); ports incl. `DateBoundsContract` (§3.5); value providers and
@@ -1006,10 +1011,13 @@ Recorded here because each one closes a branch the design could otherwise have t
     existing widgets looking the same; the empty option is a real option with its own label, and
     `frm_placeholder` is always the HTML attribute (§7.3).
 24. **Bools: the checkbox mapping belongs to the form** (§7.5). `NULL_FALSE` is dropped;
-    `boolMode` becomes `formVariant`.
+    `boolMode` becomes `form`.
 25. **One value column, one rule** (§4.2, §8): `Filter::$value` is the fixed value (intrinsic) or the
     initial value (with a form); a submission — even an empty one — overrides it.
 
+26. **Framework columns are `type`, `form`, `alias`** (§5.1): `formVariant` → `form`, `formAlias` →
+    `alias`, `FilterModel::getFilterFormName()` → `getFilterAlias()`. `filterForm` was considered;
+    within `tl_flare_filter` the `filter` prefix is redundant, as it is for `type`.
 ---
 
 ## 14. Remaining unknowns

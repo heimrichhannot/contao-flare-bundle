@@ -853,13 +853,14 @@ nothing" (e.g. an empty selection without `elm_useWhitelistForOptionsOnly`):
   a translated "the list could not be created" message instead of the entries, the empty-result
   text and the pagination. The response status stays **200** — no HTTP error code. The filter form
   may still render; it cannot repair a broken fixed filter.
-- **Reader (`ValidationContext`):** membership cannot be decided, so the entry is not rendered;
-  the reader shows the same kind of message, also with status 200 — not a 404, because the entry is
-  not known to be absent. *(Builder's call, consistent with the list view.)*
+- **Reader (`ValidationContext`):** membership cannot be decided, so the entry is not rendered and
+  the reader answers with a **5xx status** — today's `ReaderController::getErrorResponse()` with 500.
+  A broken server config must not end up as indexed content, and a 404 would wrongly claim the entry
+  is absent.
 - **Debug mode** keeps today's behaviour of the controllers' `getErrorResponse()`: the exception is
   rethrown so developers see it. *(Builder's call.)*
-- Today `ReaderController::getErrorResponse()` answers a misconfigured list with status 500; it is
-  aligned with the list view's status 200.
+- The asymmetry is deliberate: the list view is one content element among others on a page, so the
+  page stays a 200; the reader *is* the page's content, so its failure is the page's failure.
 ---
 
 ## 9. Value objects and hashing
@@ -1111,7 +1112,8 @@ Recorded here because each one closes a branch the design could otherwise have t
     a correction by this definition, noted in the release notes.
 31. **Fail closed for what bounds the whole list, fail open for what only shapes the initial
     display** (§8.1). A list that fails closed shows an explicit "could not be created" message —
-    never "no entries found" — and keeps HTTP status 200.
+    never "no entries found" — and keeps HTTP status 200; a reader that cannot validate its entry
+    answers 5xx, so broken config is never indexed.
 ---
 
 ## 14. Remaining unknowns

@@ -47,14 +47,10 @@ final class CheckboxFilterControlTest extends TestCase
         self::assertNull($ctl->hydrate(null, $scope));
     }
 
-    public function testStoredNullFalseReadsAsTrueFalse(): void
+    public function testTransformerBinaryChoices(): void
     {
         $ctl = new CheckboxFilterControl();
 
-        self::assertSame(
-            BoolBinaryChoices::TRUE_FALSE,
-            $this->transform($ctl, ['ctl_boolBinaryChoices' => 'null_false'])['binary_choices'],
-        );
         self::assertSame(
             BoolBinaryChoices::TRUE_FALSE,
             $this->transform($ctl, ['ctl_boolBinaryChoices' => 'true_false'])['binary_choices'],

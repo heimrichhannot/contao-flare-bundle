@@ -31,11 +31,6 @@ class FilterModel extends Model implements PtableInferrableInterface
         return (string) $this->type;
     }
 
-    public function isFilterIntrinsic(): bool
-    {
-        return (bool) $this->intrinsic;
-    }
-
     public function getFilterTargetAlias(): string
     {
         return (string) $this->targetAlias;
@@ -122,7 +117,7 @@ class FilterModel extends Model implements PtableInferrableInterface
     public function __get($strKey)
     {
         return match ($strKey) {
-            'intrinsic', 'published' => (bool) parent::__get($strKey),
+            'published' => (bool) parent::__get($strKey),
             default => parent::__get($strKey),
         };
     }

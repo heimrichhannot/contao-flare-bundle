@@ -3,7 +3,6 @@
 use Contao\DataContainer;
 use Contao\DC_Table;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
-use HeimrichHannot\FlareBundle\Enum\BoolMode;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -136,19 +135,6 @@ $dca['fields'] = [
         'eval' => ['doNotCopy' => true, 'tl_class' => 'w50'],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
-    'intrinsic' => [
-        'exclude' => true,
-        'toggle' => true,
-        'filter' => true,
-        'default' => true,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
-        'inputType' => 'checkbox',
-        'eval' => [
-            'submitOnChange' => true,
-            'tl_class' => 'cbx m12 w50',
-        ],
-        'sql' => ['type' => 'boolean', 'default' => false],
-    ],
     'control' => [
         'exclude' => true,
         'inputType' => 'select',
@@ -181,18 +167,6 @@ $dca['fields'] = [
             'submitOnChange' => true,
         ],
         'sql' => ['type' => 'string', 'length' => 128, 'default' => TableAliasRegistry::ALIAS_MAIN],
-    ],
-    'preselect' => [
-        'inputType' => 'text',
-        'default' => null,
-        'eval' => ['tl_class' => 'w100 clr'],
-        'sql' => ['type' => 'blob', 'notnull' => false],
-    ],
-    'prefill' => [
-        'inputType' => 'text',
-        'default' => null,
-        'eval' => ['tl_class' => 'w100 clr', 'alwaysSave' => true],
-        'sql' => ['type' => 'text', 'notnull' => false],
     ],
     'ctl_isMandatory' => [
         'exclude' => true,
@@ -652,20 +626,6 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
-    'boolMode' => [
-        'exclude' => true,
-        'search' => false,
-        'inputType' => 'select',
-        'options' => BoolMode::asOptions(),
-        'eval' => [
-            'mandatory' => true,
-            'maxlength' => 255,
-            'alwaysSave' => true,
-            'submitOnChange' => true,
-            'tl_class' => 'w50 clr',
-        ],
-        'sql' => "varchar(64) NOT NULL default ''",
-    ],
     'ctl_boolBinaryChoices' => [
         'exclude' => true,
         'search' => false,
@@ -679,7 +639,7 @@ $dca['fields'] = [
 $dca['palettes'] = [
     '__selector__' => [
         'type', 'elm_usePublished', 'elm_useStart', 'elm_useStop', 'elm_whichPtable', 'ctl_formatLabel',
-        'ctl_formatEmptyOption', 'elm_configureStart', 'elm_configureStop', 'boolMode',
+        'ctl_formatEmptyOption', 'elm_configureStart', 'elm_configureStop',
     ],
     '__prefix__' => '{title_legend},title,type,control',
     '__suffix__' => '{expert_legend:hide},alias;{publish_legend},published',
@@ -700,5 +660,4 @@ $dca['subpalettes'] = [
     'elm_configureStart_date' => 'elm_startAt',
     'elm_configureStop_str' => 'elm_stopAt',
     'elm_configureStop_date' => 'elm_stopAt',
-    'boolMode_binary' => 'ctl_boolBinaryChoices',
 ];

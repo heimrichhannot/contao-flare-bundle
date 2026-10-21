@@ -12,7 +12,6 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string $title
  * @property string $type
  * @property bool   $published
- * @property bool   $intrinsic
  * @property string $alias
  * @property string $control
  * @property string|null $value
@@ -43,8 +42,6 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string $elm_whichPtable
  * @property string $elm_whitelistParents
  * @property string $elm_groupWhitelistParents
- * @property string $preselect
- * @property string $prefill
  * @property string $elm_equationOperator
  * @property string $elm_equationLeft
  * @property string $elm_equationRight
@@ -54,7 +51,6 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string $elm_stopAt
  * @property string $elm_configureStart
  * @property string $elm_configureStop
- * @property string $boolMode
  * @property string $ctl_boolBinaryChoices
  */
 trait DocumentsFilterModelTrait

@@ -1,8 +1,9 @@
 # SPEC: Decoupling Filter Controls from Filter Elements
 
-**Status:** Design settled (2026-10-20/21, §13.6-13.31). Step 0 (§12) implemented and partly
-re-renamed by #48; step 1 partially implemented and red mid-cut; steps 2-6 not started. Progress
-and the open checklist live in `PLAN_FILTER_FORMS.md`.
+**Status:** Design settled (2026-10-20/21, §13.6-13.31) and **implemented** on `v0.2-refactor-filter-api`
+(all of §12 steps 0-6, documentation included). Where the implementation deliberately differs from the
+text below, a *Implementation note* marks the place (R3, R5, R7-R10). Manual verification on a real Contao
+install and real MySQL/MariaDB is still pending. The plan and its checklist live in `PLAN_FILTER_FORMS.md`.
 **Scope:** `src/Filter/` (incl. the new `src/Filter/Control/`), `src/Form/`, `src/Query/`, `src/Event/`, `src/EventListener/NamedDispatch/`,
 `src/Registry/`, `src/DependencyInjection/`, `src/DataContainer/Builder/`, `src/Util/`,
 `contao/dca/tl_flare_filter.php`, `src/EventListener/Contao/ElementDcaListener.php`,
@@ -243,6 +244,10 @@ function is the element: `buildContext()` curried over the scope.
 value of §8 and runs every proposition's predicate into its own `FilterConditionsBuilder`; failures
 are wrapped with the filter's source via `Util\CreatesFilterExceptionTrait`. Table-alias targeting
 is out of scope here (§15).
+
+> **Implementation note (R3).** `ListSpec::withFilter()` throws a `FlareException` when the filter's alias is
+> already present in the list; it never silently replaces. Aliases are the key of the value path (§8), so a
+> duplicate would make two filters share one form value.
 
 ---
 
@@ -595,6 +600,9 @@ Pair the mechanism with distinct legends so the split is visible to the editor:
 element contributes `{filter_legend},elm_fieldGeneric`, control contributes
 `{control_legend},ctl_label,ctl_isMultiple,ctl_isExpanded`.
 
+> **Implementation note (R7).** The `control` backend field is labelled "Control" (German
+> "Bedienelement"); its blank option is the intrinsic (fixed value) mode.
+
 ### 6.3 Known gaps
 
 - **`__selector__` is static** in `contao/dca/tl_flare_filter.php`. `DcaBuilder::selector()` is built
@@ -862,6 +870,13 @@ nothing" (e.g. an empty selection without `elm_useWhitelistForOptionsOnly`):
   rethrown so developers see it. *(Builder's call.)*
 - The asymmetry is deliberate: the list view is one content element among others on a page, so the
   page stays a 200; the reader *is* the page's content, so its failure is the page's failure.
+
+> **Implementation note (R5).** A **controlled** filter whose `buildContext()` fails while it carries a
+> non-null value is retried **once with value `null`**. If the retry succeeds, only the value is dropped
+> (the submitted or initial value was the problem) and a warning is logged. If the retry fails, or the value
+> was already `null`, the element config itself is broken; because the filter's config bounds the whole list
+> (§4.2) this fails **closed** like a fixed filter. `\Error`s (programming errors) are not caught and escape
+> unwrapped.
 ---
 
 ## 9. Value objects and hashing
@@ -933,6 +948,14 @@ the new control columns from the legacy ones, per row:
 | `ctl_boolBinaryChoices` | `null_false` → `true_false` (§7.5) |
 | `ctl_hasEmptyOption`, `ctl_formatEmptyOption(Custom)`, `ctl_placeholder` | per element, so existing choice widgets look the same: `FieldValueChoice` single-select → empty option on; `DcaSelect`/`CodefogTagsChoice` single-select and not expanded → empty option on, the old placeholder text becomes its custom label; otherwise the placeholder stays `ctl_placeholder`; `Archive` 1:1 |
 
+> **Implementation note (R9/R10, B table, empty-option row).** Single-selects get the empty option
+> (`ctl_hasEmptyOption`) unless they are **expanded and mandatory**. This applies to `DcaSelect` and the
+> Codefog tag single-selects (the earlier "not expanded" condition is widened), and to `FieldValueChoice`
+> single-selects. The label: the old placeholder becomes the custom label (`ctl_formatEmptyOption` =
+> custom); without a placeholder, the translation default is used, `empty_option.prompt` when
+> mandatory and `empty_option.no_selection` otherwise. `FieldValueChoice` single-selects get the default
+> empty-option label (`ctl_formatEmptyOption` = `''`).
+
 **C. Retirement** (step 4): the field definitions of `intrinsic`, `boolMode`, `preselect`, `prefill`
 and the `boolMode` selector / subpalette are removed. Every retired column is a source of B; its data
 stays until deletes are run manually.
@@ -952,6 +975,12 @@ The mapping can be frozen only once the controls exist with their final names:
    already-migrated rows meant.
 
 (The former third reason — the undecidable `flare_bool` arm — is resolved by §7.5.)
+
+> **Implementation note (R8).** The backfill is **run once per row** through a migration-managed marker
+> column `legacyBackfilled`, not through a content-based "pending" predicate. The migration adds the column
+> (default switched to `'1'` once added, so rows created afterwards count as done), it is not part of the
+> DCA, and the schema diff's DROP of it is, like every legacy column, only run manually with the deletes.
+> It replaces the type-restricted pending predicate demanded by the third `shouldRun()` rule below.
 
 **Operating rule: migrations never delete.** `contao:migrate` is run without deletes; DROPs
 proposed by the schema diff are executed manually (`--with-deletes`) only once everything is tested.
@@ -981,28 +1010,17 @@ contract set is the entire risk; the remaining elements are mechanical. `PLAN_FI
 merges steps 1 and 3 into one atomic cut (no pilot, no legacy adapter) and tracks the open items.
 
 0. **Nomenclature refactor.** ✅ **Done** (#47), then revised by #48 (§2.2). Pure rename plus one new
-   object, no behaviour or schema change. Left over: two test files still carry the Phase 0 names
-   (`FilterSetFactoryTest`, `FilterSetListenerTest`).
-1. **Contracts + the cut.** 🟡 **In progress — tree red.** Landed: value objects, element and
-   (still `FilterForm`-named) control contract signatures, `ChoiceSourceContract`, `AsFilterForm(name:)`,
-   the registry and pass in their first shape, the `formVariant` column, the predicate layer (§2.3).
-   To do, in the target shape of this spec: the `FilterForm` → `FilterControl` rename (§2.2) and
-   `formVariant` → `control`; `FilterScope`, `ConfigurationContext` and the two-stage split (§2.3); `decode()`/`hydrate()`
-   with the value class from the return type (§3.1); registry/pass aligned with elements,
-   `requires`/`default` removed (§3.4); ports incl. `DateBoundsContract` (§3.5); value providers and
-   the `value` column (§3.6, §4.2); separate element/control config (§8); choice objects with
-   scope/local key, `ChoiceValue` of choice objects, `ParentRefValue` removed (§7); the five controls;
-   element bodies and `expectValue()`; `Filter::$value`/`$control`/`$controlConfig`; `FormHarness::decode()`
-   and the value path (§8); the backend scope (§6.4); value fingerprints, `Util\Fingerprint` removed
-   (§9); the two element events removed (§13.16); `IntrinsicContract` removed.
-2. **DCA composition.** `DcaBuilder` palette segments, `scope()`, `selector()`; `ElementDcaListener`
+   object, no behaviour or schema change.
+1. **Contracts + the cut.** ✅ **Done** (atomic cut, tree green). Everything of the former to-do list landed in the
+   target shape of this spec.
+2. **DCA composition.** ✅ Done. `DcaBuilder` palette segments, `scope()`, `selector()`; `ElementDcaListener`
    resolves and invokes the control's `buildDca()`.
 3. **Migrate the rest.** Merged into step 1 (atomic cut). `CodefogTagsSearchElement` has neither
    `buildForm()` nor `buildContext()` (only `buildDca()`) — it needs `value: null` and nothing else.
-4. **Schema changes** per §11: the `elm_`/`ctl_` renames with their rename migration (§11 A), the
+4. **Schema changes** ✅ Done: per §11: the `elm_`/`ctl_` renames with their rename migration (§11 A), the
    new `value` column, and the drops of §11 C. No data migration yet.
-5. **Fold `FilterData`** out per §8.
-6. **Data migration** per §11 B. Written last, once the controls and their names exist. Subject to
+5. **Fold `FilterData`** ✅ Done: out per §8.
+6. **Data migration** ✅ Done: per §11 B. Written last, once the controls and their names exist. Subject to
    the ordering hazard §11 records: it reads the columns step 4 drops, so it must land before any
    environment with real rows applies the schema diff.
 

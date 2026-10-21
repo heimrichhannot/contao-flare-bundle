@@ -13,7 +13,9 @@
 ## Global Constraints
 
 - PHP floor **8.2**: no typed class constants, no `#[\Override]`; `readonly` classes are fine.
-- Contao **4.13** compatible: one DB column per config value (no JSON/virtual fields); MySQL 5.7 — column renames use `ALTER TABLE … CHANGE`, never `RENAME COLUMN`.
+- Contao **4.13** compatible: one DB column per config value (no JSON/virtual fields).
+- Databases: **MySQL 5.7/8 and MariaDB (InnoDB)**. Column renames use `ALTER TABLE … CHANGE`, never `RENAME COLUMN` (MySQL 8 / MariaDB 10.5.2+ only); column definitions come from Doctrine DBAL (`^3.6 || ^4.0`), never hand-built from `SHOW COLUMNS` (MariaDB ≥ 10.2.7 reports defaults differently).
+- **Migrations never delete.** `contao:migrate` runs without deletes; DROPs proposed by the schema diff are executed manually (`--with-deletes`) only after everything is tested. Migrations may rename and fill columns, never drop columns or delete rows.
 - `declare(strict_types=1);` in every PHP file; PSR-12/PER, 4 spaces, 120-char lines; attributes over annotations.
 - The `php` binary is unavailable: run `make test <phpunit args>`, `make phpstan`, `make semgrep-sec`. Mago runs in CI only.
 - Breaking changes are allowed (v0.2 unreleased); no deprecation layers, no legacy adapters.
@@ -869,7 +871,7 @@ git commit -m "feat!: control palette segment, subpalettes and the backend value
 **Interfaces:**
 - Produces:
   - Column map (§4.1), frozen as a constant in the migration: `elm_` for `fieldGeneric`, `columnsGeneric`, `usePublished`, `fieldPublished`, `invertPublished`, `useStart`, `fieldStart`, `useStop`, `fieldStop`, `whichPtable`, `fieldPid`, `fieldPtable`, `tablePtable`, `whitelistParents`, `groupWhitelistParents`, `useWhitelistForOptionsOnly`, `equationLeft`, `equationOperator`, `equationRight`, `configureStart`, `startAt`, `configureStop`, `stopAt`, `hasExtendedEvents`, `isLimited`; `ctl_` for `label`, `placeholder`, `isMandatory`, `isMultiple`, `isExpanded`, `hasEmptyOption`, `formatLabel`, `formatLabelCustom`, `formatEmptyOption`, `formatEmptyOptionCustom`, `boolBinaryChoices`; `formAlias` → `alias`. `formVariant` → `control` is **not** migrated (v0.2-only and empty; the schema diff drops/adds it). (All columns, including those the Codefog elements use, live in `contao/dca/tl_flare_filter.php`.)
-  - `RenameFilterColumnsMigration extends AbstractMigration` (pattern: `RenameContentListColumnMigration`): `shouldRun()` = table exists and at least one old column exists whose new column does not; `run()` = per pending pair `ALTER TABLE tl_flare_filter CHANGE {old} {new} {Type} {NULL|NOT NULL} {DEFAULT …}` composed from the old column's `SHOW COLUMNS` row.
+  - `RenameFilterColumnsMigration extends AbstractMigration` (pattern: `RenameContentListColumnMigration`): `shouldRun()` = table exists and at least one old column exists whose new column does not (column names compared case-insensitively); `run()` = per pending pair, keep the old column's full definition: `$column = $connection->createSchemaManager()->introspectTable('tl_flare_filter')->getColumn($old)`, then `ALTER TABLE tl_flare_filter CHANGE {quoteIdentifier($old)} {$platform->getColumnDeclarationSQL(quoteIdentifier($new), $column->toArray())}` — DBAL's MySQL/MariaDB platforms render type, length, nullability, default, charset and collation correctly for both engines. One statement per column (InnoDB, no `ALGORITHM` clause).
   - `elm_groupWhitelistParents` keeps its inner blob keys (`tablePtable`, `whitelistParents`, `formatLabel`, `formatLabelCustom`); the group widget defines its sub-fields itself instead of referencing the renamed columns (§4.1).
   - `ElementDcaListener::checkDuplicateFilterAliases()` queries `alias`.
   - `FilterModel::getFilterAlias(): string` replaces `getFilterFormName()`; `generateFormName()` reads `alias`. `FilterFactory`/collector read `$model->control`. `AddTargetAliasFieldCallback` anchors on `control`. `ListCallbacks`: `is_intrinsic` = `($row['control'] ?? '') === ''`. All `#[AsCallback]` targets use the new field names; `__selector__`/subpalette keys use the new names (`elm_usePublished`, `elm_whichPtable_*`, `ctl_formatLabel_custom`, …).
@@ -878,11 +880,14 @@ git commit -m "feat!: control palette segment, subpalettes and the backend value
 
 ```php
 public function testShouldRunOnlyWhileOldColumnsRemain(): void {}
-public function testRunChangesColumnsKeepingTheirDefinition(): void
+/** @dataProvider platforms */
+public function testRunChangesColumnsKeepingTheirDefinition(AbstractPlatform $platform): void
 {
-    // SHOW COLUMNS row for fieldGeneric: Type varchar(255), Null NO, Default ''
-    // expect executeStatement("ALTER TABLE tl_flare_filter CHANGE fieldGeneric elm_fieldGeneric varchar(255) NOT NULL DEFAULT ''")
+    // introspected column fieldGeneric: string(255), notnull, default '', collation utf8mb4_unicode_ci
+    // expect executeStatement('ALTER TABLE tl_flare_filter CHANGE `fieldGeneric` `elm_fieldGeneric` VARCHAR(255) DEFAULT \'\' NOT NULL COLLATE `utf8mb4_unicode_ci`')
+    // (assert against $platform->getColumnDeclarationSQL() rather than a literal where platforms differ)
 }
+public static function platforms(): iterable { yield 'mysql' => [new MySQLPlatform()]; yield 'mariadb' => [new MariaDBPlatform()]; }
 public function testFormVariantIsNotRenamed(): void {}
 ```
 
@@ -911,13 +916,13 @@ git commit -m "feat!: elm_/ctl_ column prefixes, control and alias columns, rena
 
 **Files:**
 - Create: `src/Migration/BackfillFilterValuesMigration.php`, `tests/Migration/BackfillFilterValuesMigrationTest.php`
-- Modify: `contao/dca/tl_flare_filter.php` (drop `intrinsic`, `boolMode`, `preselect`, `prefill`, the `boolMode` selector and `boolMode_binary` subpalette), `src/Enum/BoolBinaryChoices.php` (drop `NULL_FALSE`), `src/Model/{FilterModel,DocumentsFilterModelTrait}.php` (drop `isFilterIntrinsic()`, the `intrinsic` arm of `__get()`, the properties), `src/Filter/Control/CheckboxFilterControl.php` (drop the `null_false` read), language files, `translations/flare.{en,de}.yaml` (`filter.info.intrinsic.*` stay)
+- Modify: `contao/dca/tl_flare_filter.php` (remove the field definitions `intrinsic`, `boolMode`, `preselect`, `prefill`, the `boolMode` selector and `boolMode_binary` subpalette — the columns and their data stay in the database until deletes are run manually), `src/Enum/BoolBinaryChoices.php` (drop `NULL_FALSE`), `src/Model/{FilterModel,DocumentsFilterModelTrait}.php` (drop `isFilterIntrinsic()`, the `intrinsic` arm of `__get()`, the properties), `src/Filter/Control/CheckboxFilterControl.php` (drop the `null_false` read), language files, `translations/flare.{en,de}.yaml` (`filter.info.intrinsic.*` stay)
 - Delete: `src/Enum/BoolMode.php`
 
 **Interfaces:**
 - Produces: `BackfillFilterValuesMigration extends AbstractMigration` per §11 B with **frozen string literals** (no class constants, no registry):
-  - `shouldRun()`: table exists, `intrinsic` present, the renamed `ctl_*` columns present (so it waits for the rename migration — `contao:migrate` re-runs pending migrations until none remain), and at least one row matches the **pending predicate**: type in the mapped set AND ( (`intrinsic = 0` AND `control = ''`) OR (copy source non-empty per the `value` rules below AND `value` empty) OR `ctl_boolBinaryChoices = 'null_false'` ); when `control`/`value` do not exist yet, every mapped row counts as pending. `false` when `intrinsic` is absent.
-  - `run()` first adds `control` (`varchar(128) NOT NULL DEFAULT ''`) and `value` (`blob NULL`) with `ALTER TABLE … ADD` when absent — on an upgrading install they would otherwise only arrive with the schema diff, which runs after migrations and also drops the sources.
+  - `shouldRun()`: table exists, `intrinsic` present, the renamed `ctl_*` columns **and** the target columns `control`/`value` present — it waits for the rename migration and for the schema diff that adds the targets; `contao:migrate` re-checks migrations after the schema update, and since deletes are not run, the sources are still there — and at least one row matches the **pending predicate**: type in the mapped set AND ( (`intrinsic = 0` AND `control = ''`) OR (copy source non-empty per the `value` rules below AND `value` empty) OR `ctl_boolBinaryChoices = 'null_false'` ). `false` when `intrinsic` is absent (fail closed).
+  - `run()` only updates rows; it adds and drops nothing.
   - `run()`, per row:
     - `control`: `intrinsic = 1` ⇒ `''`; else `flare_archive|flare_fieldValueChoice|flare_dcaSelectField|cfg_tags_choice` ⇒ `flare_choice`; `flare_dateRange|flare_calendar_current` ⇒ `flare_date_range`; `flare_search_keywords` ⇒ `flare_keywords`; `flare_bool` ⇒ `boolMode = 'ternary'` ? `flare_choice_bool` : `flare_checkbox`; others ⇒ `''`.
     - `value`: `preselect` for `flare_bool`, `flare_fieldValueChoice`, `flare_dcaSelectField`, `cfg_tags_choice`; for `flare_archive` only when `intrinsic = 0`; `prefill` for `flare_search_keywords` only when `intrinsic = 1`. Bool `true|false|null` ⇒ `'1'|'0'|''`; choices ⇒ `serialize(list of keys)` whether stored single or multiple.
@@ -935,7 +940,7 @@ public function testSingleDcaSelectPlaceholderBecomesEmptyOptionLabel(): void {}
 public function testShouldRunIsFalseOnceIntrinsicIsGone(): void {}
 public function testShouldRunWaitsForTheRenamedColumns(): void {}
 public function testShouldRunGoesQuietAfterARun(): void { /* rows after run() match no pending predicate, intrinsic-only databases included */ }
-public function testRunAddsMissingTargetColumnsFirst(): void {}
+public function testShouldRunWaitsForTheTargetColumns(): void {}
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -954,7 +959,7 @@ Run: `grep -rnE "intrinsic|boolMode|preselect|prefill|NULL_FALSE" src contao` �
 
 ```bash
 git add -A src contao translations tests
-git commit -m "feat!: backfill control and value, drop intrinsic, boolMode, preselect and prefill"
+git commit -m "feat!: backfill control and value; retire intrinsic, boolMode, preselect and prefill"
 ```
 
 ---

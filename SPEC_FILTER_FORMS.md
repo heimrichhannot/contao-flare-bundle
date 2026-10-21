@@ -933,8 +933,9 @@ the new control columns from the legacy ones, per row:
 | `ctl_boolBinaryChoices` | `null_false` → `true_false` (§7.5) |
 | `ctl_hasEmptyOption`, `ctl_formatEmptyOption(Custom)`, `ctl_placeholder` | per element, so existing choice widgets look the same: `FieldValueChoice` single-select → empty option on; `DcaSelect`/`CodefogTagsChoice` single-select and not expanded → empty option on, the old placeholder text becomes its custom label; otherwise the placeholder stays `ctl_placeholder`; `Archive` 1:1 |
 
-**C. Drops** (step 4): `intrinsic`, `boolMode`, `preselect`, `prefill` and the `boolMode` selector /
-subpalette. Every dropped column is a source of B.
+**C. Retirement** (step 4): the field definitions of `intrinsic`, `boolMode`, `preselect`, `prefill`
+and the `boolMode` selector / subpalette are removed. Every retired column is a source of B; its data
+stays until deletes are run manually.
 
 ### Why the data migration comes last
 
@@ -952,18 +953,25 @@ The mapping can be frozen only once the controls exist with their final names:
 
 (The former third reason — the undecidable `flare_bool` arm — is resolved by §7.5.)
 
-**The ordering hazard.** B reads the columns C drops. One `contao:migrate` with both in place
-backfills and then drops — correct. A schema update after C lands and before B exists destroys the
-sources unrecoverably. Therefore:
+**Operating rule: migrations never delete.** `contao:migrate` is run without deletes; DROPs
+proposed by the schema diff are executed manually (`--with-deletes`) only once everything is tested.
+Migrations may rename (A) and fill (B) columns but never drop columns or delete rows; C only removes
+the field definitions, so the old columns and their data stay until that manual step.
 
-- B MUST be written before any environment holding real rows applies the schema diff of C; in
-  practice A, B and C ship together in the v0.2 release.
-- `shouldRun()` MUST return `false` when its source columns are already absent (fail closed).
-- `shouldRun()` MUST NOT key on target columns being absent — they arrive with the schema step.
-  Key on `intrinsic` being present plus a type-restricted count of rows still needing work; without
-  the type restriction, element types that get no control keep the migration pending forever.
+**The ordering hazard**, reduced by that rule. B reads the columns C retires. Under the rule they are
+still present when B runs: the schema diff adds `control`/`value` without dropping anything, and
+`contao:migrate` re-checks migrations afterwards, so B runs in the same command. Running deletes
+before B has run would destroy the sources unrecoverably, hence:
 
+- B MUST ship together with A and C (the v0.2 release), and deletes MUST NOT be run before it has run.
+- `shouldRun()` MUST return `false` when its source columns are already absent (fail closed), and
+  MUST wait for its target columns rather than create them.
+- `shouldRun()` MUST key on a type-restricted predicate of rows still needing work; without the type
+  restriction, element types that get no control keep the migration pending forever.
 
+**Database compatibility.** MySQL 5.7/8 and MariaDB (InnoDB): renames use `ALTER TABLE … CHANGE`
+(not `RENAME COLUMN`, which needs MySQL 8 / MariaDB 10.5.2+), with the column definition rendered
+by Doctrine DBAL's platform from the introspected column, never hand-built from `SHOW COLUMNS`.
 ---
 
 ## 12. Sequencing

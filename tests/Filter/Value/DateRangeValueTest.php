@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 final class DateRangeValueTest extends TestCase
 {
     /**
-     * The reason the value object stores `int` rather than `\DateTimeInterface`: the probe measured
+     * The reason the value object normalises timezones: the probe measured
      * that the same instant hashes differently as `+01:00` (timezone_type 1) and `Europe/Berlin`
      * (timezone_type 3). Reducing to a timestamp at construction makes the two indistinguishable,
      * which is exactly §9's "anything with multiple equal representations is normalized in the
@@ -28,20 +28,20 @@ final class DateRangeValueTest extends TestCase
 
         // Gone once reduced to a timestamp.
         self::assertSame(
-            DateRangeValue::tryFrom($offset, null)?->from,
-            DateRangeValue::tryFrom($named, null)?->from,
+            DateRangeValue::tryFrom($offset, null)?->from?->getTimestamp(),
+            DateRangeValue::tryFrom($named, null)?->from?->getTimestamp(),
         );
     }
 
     public function testTryFromAcceptsDateTimeIntFloatAndNumericString(): void
     {
-        self::assertSame(1_767_225_600, DateRangeValue::tryFrom(1_767_225_600, null)?->from);
-        self::assertSame(1_767_225_600, DateRangeValue::tryFrom('1767225600', null)?->from);
-        self::assertSame(1_767_225_600, DateRangeValue::tryFrom(' 1767225600 ', null)?->from);
-        self::assertSame(1_767_225_600, DateRangeValue::tryFrom(1_767_225_600.9, null)?->from);
+        self::assertSame(1_767_225_600, DateRangeValue::tryFrom(1_767_225_600, null)?->from?->getTimestamp());
+        self::assertSame(1_767_225_600, DateRangeValue::tryFrom('1767225600', null)?->from?->getTimestamp());
+        self::assertSame(1_767_225_600, DateRangeValue::tryFrom(' 1767225600 ', null)?->from?->getTimestamp());
+        self::assertSame(1_767_225_600, DateRangeValue::tryFrom(1_767_225_600.9, null)?->from?->getTimestamp());
         self::assertSame(
             1_767_225_600,
-            DateRangeValue::tryFrom((new \DateTimeImmutable())->setTimestamp(1_767_225_600), null)?->from,
+            DateRangeValue::tryFrom((new \DateTimeImmutable())->setTimestamp(1_767_225_600), null)?->from?->getTimestamp(),
         );
     }
 
@@ -62,9 +62,9 @@ final class DateRangeValueTest extends TestCase
     public function testTryFromReturnsNullOnlyWhenBothBoundsAreAbsent(): void
     {
         self::assertNull(DateRangeValue::tryFrom(null, null));
-        self::assertSame(5, DateRangeValue::tryFrom(5, null)?->from);
+        self::assertSame(5, DateRangeValue::tryFrom(5, null)?->from?->getTimestamp());
         self::assertNull(DateRangeValue::tryFrom(5, null)?->to);
-        self::assertSame(9, DateRangeValue::tryFrom(null, 9)?->to);
+        self::assertSame(9, DateRangeValue::tryFrom(null, 9)?->to?->getTimestamp());
     }
 
     /**
@@ -77,7 +77,7 @@ final class DateRangeValueTest extends TestCase
         $value = DateRangeValue::tryFrom(0, null);
 
         self::assertNotNull($value);
-        self::assertSame(0, $value->from);
+        self::assertSame(0, $value->from?->getTimestamp());
     }
 
     /**
@@ -88,8 +88,8 @@ final class DateRangeValueTest extends TestCase
     {
         $value = DateRangeValue::tryFrom(100, 50);
 
-        self::assertSame(100, $value?->from);
-        self::assertSame(50, $value?->to);
+        self::assertSame(100, $value?->from?->getTimestamp());
+        self::assertSame(50, $value?->to?->getTimestamp());
     }
 
     public function testFingerprint(): void

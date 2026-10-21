@@ -28,8 +28,9 @@ readonly class ListModelFilterCollector
     ) {}
 
     /**
-     * @throws FlareException If no list driver is registered for the list's type. A broken filter
-     *   never throws, so backend callbacks building the ListSpec keep working.
+     * @throws FlareException If no list driver is registered for the list's type. A filter that fails
+     *   with a FlareException does not throw (it is skipped or recorded, see {@see collectFromModels()}),
+     *   so backend callbacks building the ListSpec keep working; other throwables still escape.
      */
     public function collect(ListModel $listModel): ?CollectedFilters
     {

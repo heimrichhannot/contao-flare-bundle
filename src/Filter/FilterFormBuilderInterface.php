@@ -7,13 +7,13 @@ namespace HeimrichHannot\FlareBundle\Filter;
 use Symfony\Component\Form\FormBuilderInterface;
 
 /**
- * Per-filter form builder handed to filter elements in buildForm().
+ * Per-filter form builder handed to filter controls in buildForm().
  *
- * Besides the regular Symfony builder API for multi-field filters, it lets an element declare
+ * Besides the regular Symfony builder API for multi-field filters, it lets a control declare
  * itself as a single-field filter via {@see single()}. Single fields are mounted flat on the
- * root filter form under the filter's alias (query parameter `form[alias]=x`), and their
- * submitted value is handed back to buildFilter() as
- * {@see \HeimrichHannot\FlareBundle\Filter\FilterData::getSingleValue()}.
+ * root filter form under the filter's alias (query parameter `form[alias]=x`). Either way, the
+ * mount's data is handed back to the control's
+ * {@see \HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface::decode()}.
  */
 interface FilterFormBuilderInterface extends FormBuilderInterface
 {

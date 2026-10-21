@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\List;
 
+use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
@@ -46,10 +47,24 @@ final readonly class ListSpec
     ) {}
 
     /**
-     * Adds a filter under its alias, replacing a filter of the same alias.
+     * Adds a filter under its alias.
+     *
+     * A filter of the same alias is never replaced silently: replacing a filter without a control
+     * would widen the list (SPEC_FILTER_FORMS.md §8.1). Remove it first with {@see withoutFilter()}.
+     *
+     * @throws FlareException If the list already has a filter with the same alias.
      */
     public function withFilter(Filter $filter): self
     {
+        if (isset($this->filters[$filter->alias]))
+        {
+            throw new FlareException(
+                \sprintf('The list already has a filter with the alias "%s".', $filter->alias),
+                method: __METHOD__,
+                source: $filter->source ?? $this->source,
+            );
+        }
+
         return $this->withFilters([...$this->filters, $filter->alias => $filter]);
     }
 

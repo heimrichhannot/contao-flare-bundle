@@ -6,6 +6,8 @@ reader:
     invalid_list: "Keine gültige Liste ausgewählt"
 
 list:
+    failed: "Die Liste konnte nicht erstellt werden."
+
     default_template:
         warning: "Standard-Template ausgewählt"
         description: "Bitte erstellen/wählen Sie ein benutzerdefiniertes Template für diese FLARE-Liste."

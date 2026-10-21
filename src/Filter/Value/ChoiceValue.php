@@ -6,7 +6,6 @@ namespace HeimrichHannot\FlareBundle\Filter\Value;
 
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceKey;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceObjectInterface;
-use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 
 /**
  * A selection of choice objects: a set, deduplicated and sorted by canonical key.
@@ -55,7 +54,7 @@ final readonly class ChoiceValue implements ValueInterface
 
         foreach ($data as $entry)
         {
-            if ($entry instanceof ChoiceObjectInterface && $entry !== ChoicesBuilder::EMPTY_CHOICE) {
+            if ($entry instanceof ChoiceObjectInterface) {
                 $choices[] = $entry;
             }
         }

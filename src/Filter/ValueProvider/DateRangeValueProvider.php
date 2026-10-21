@@ -73,6 +73,8 @@ final readonly class DateRangeValueProvider implements ValueProviderInterface
 
         $timestamps = \array_map(
             static fn (mixed $date): ?int => \is_string($date) && \trim($date) !== ''
+                // Contao's Date accepts a date string; its docblock wrongly declares an integer.
+                // @phpstan-ignore argument.type
                 ? (new Date(\trim($date), Date::getNumericDateFormat()))->tstamp
                 : null,
             \array_slice(\array_values($range), 0, 2),

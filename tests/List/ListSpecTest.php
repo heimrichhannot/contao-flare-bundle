@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\List;
 
+use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Filter;
@@ -54,16 +55,29 @@ final class ListSpecTest extends TestCase
         self::assertArrayHasKey('foo', $spec->filters);
     }
 
-    public function testWithFilterReplacesAFilterOfTheSameAlias(): void
+    public function testWithFilterRejectsADuplicateAlias(): void
     {
         $spec = self::spec()
             ->withFilter(self::filter('a', 'foo'))
-            ->withFilter(self::filter('b', 'bar'))
-            ->withFilter(self::filter('c', 'foo'));
+            ->withFilter(self::filter('b', 'bar'));
 
         self::assertSame(['foo', 'bar'], \array_keys($spec->filters));
-        self::assertSame('c', $spec->filters['foo']->type);
         self::assertSame(['bar'], \array_keys($spec->withoutFilter('foo')->filters));
+
+        $this->expectException(FlareException::class);
+        $this->expectExceptionMessage('"foo"');
+
+        $spec->withFilter(self::filter('c', 'foo'));
+    }
+
+    public function testAFilterIsReplacedByRemovingItFirst(): void
+    {
+        $spec = self::spec()
+            ->withFilter(self::filter('a', 'foo'))
+            ->withoutFilter('foo')
+            ->withFilter(self::filter('c', 'foo'));
+
+        self::assertSame('c', $spec->filters['foo']->type);
     }
 
     public function testFailuresSurviveWithers(): void

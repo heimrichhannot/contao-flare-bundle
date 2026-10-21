@@ -13,7 +13,6 @@ use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Form\ChoiceList\Loader\CallbackChoiceLoader;
-use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -246,7 +245,7 @@ final class ChoicesBuilder
     /** @api */
     public function buildChoiceLabelCallback(): callable
     {
-        return function (mixed $choice, string|int $key, mixed $value): TranslatableMessage|string {
+        return function (mixed $choice, string|int $key, mixed $value): string {
             if ($key === self::EMPTY_CHOICE)
             {
                 return $this->buildChoiceLabel($this->emptyOptionLabel, '', $this->emptyOptionValue);
@@ -257,7 +256,7 @@ final class ChoicesBuilder
     }
 
     /** @api */
-    public function buildChoiceLabel(mixed $choice, string|int $key, mixed $value): TranslatableMessage|string
+    public function buildChoiceLabel(mixed $choice, string|int $key, mixed $value): string
     {
         $params = [
             '%@choice%' => Str::wrap($choice),

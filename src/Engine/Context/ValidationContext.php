@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Context;
 
-use HeimrichHannot\FlareBundle\Filter\FilterData;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Reader\BackLink;
 use HeimrichHannot\FlareBundle\Util\LazyPage;
@@ -24,6 +24,9 @@ readonly class ValidationContext implements
         return 'validation';
     }
 
+    /**
+     * @param array<string, ?ValueInterface> $filterValues Filter values keyed by filter alias.
+     */
     public function __construct(
         #[Assert\PositiveOrZero] public int $jumpToReaderPageId = 0,
         #[Assert\PositiveOrZero] public int $jumpToListViewPageId = 0,
@@ -45,7 +48,7 @@ readonly class ValidationContext implements
     }
 
     /**
-     * @return array<string|int, FilterData>
+     * @return array<string, ?ValueInterface>
      */
     public function getFilterValues(): array
     {
@@ -68,7 +71,7 @@ readonly class ValidationContext implements
     }
 
     /**
-     * @param array<string|int, FilterData> $values
+     * @param array<string, ?ValueInterface> $values
      */
     public function withFilterValues(array $values): self
     {

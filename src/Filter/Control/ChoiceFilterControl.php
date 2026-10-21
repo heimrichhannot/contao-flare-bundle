@@ -132,9 +132,9 @@ class ChoiceFilterControl extends AbstractFilterControl
         $value = $this->expectValue($value, ChoiceValue::class);
 
         if ($scope->filter->controlConfig['is_multiple'] ?? false) {
-            return $value?->choices ?? [];
+            return $value->choices ?? [];
         }
 
-        return $value?->choices[0] ?? null;
+        return $value->choices[0] ?? null;
     }
 }

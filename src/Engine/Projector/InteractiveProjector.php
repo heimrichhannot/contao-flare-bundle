@@ -13,10 +13,10 @@ use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\AggregationView;
 use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
@@ -31,7 +31,7 @@ class InteractiveProjector extends AbstractProjector
 {
     public function __construct(
         private readonly AggregationContextFactory $aggregationConfigFactory,
-        private readonly FormHarnessFactory        $filterSetFactory,
+        private readonly FormHarnessFactory        $formHarnessFactory,
         private readonly PaginatorFactory          $paginatorFactory,
     ) {}
 
@@ -40,17 +40,32 @@ class InteractiveProjector extends AbstractProjector
         return $context instanceof InteractiveContext;
     }
 
+    /**
+     * @throws FilterException In debug mode, if the list has failed.
+     * @throws FlareException
+     */
     public function project(ListSpec $list, ContextInterface $context): InteractiveView
     {
         \assert($context instanceof InteractiveContext, '$config must be an instance of InteractiveConfig');
 
-        // collect filter values from form data
-        $filterSet = $this->createFilterSet($list, $context);
-        $form = $filterSet->getForm();
-        $filterValues = $this->collectFilterData($list, $form);
+        // the filter values decoded from the form: the submission, or the initial values when unsubmitted
+        $harness = $this->createFormHarness($list, $context);
+        $form = $harness->getForm();
+        $filterValues = $harness->decode();
+
+        $readerUrlConfig = $context->createReaderUrlConfig();
+        $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($readerUrlConfig);
 
         // pagination setup
-        $totalItems = $this->createAggregationView($list, $context, $filterValues)->getCount();
+        try
+        {
+            $totalItems = $this->createAggregationView($list, $context, $filterValues)->getCount();
+        }
+        catch (FilterException $e)
+        {
+            return $this->createFailedView($e, $list, $context, $form, $readerUrlGenerator);
+        }
+
         $paginator = $this->createPaginator($form, $context, $totalItems);
         // override list context to include the proper paginator config
         $context = $context->with(paginatorConfig: $paginator);
@@ -71,9 +86,6 @@ class InteractiveProjector extends AbstractProjector
             $loader = $this->createLoader($config);
         }
 
-        $readerUrlConfig = $context->createReaderUrlConfig();
-        $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($readerUrlConfig);
-
         return $this->createView(
             loader: $loader,
             form: $form,
@@ -81,6 +93,41 @@ class InteractiveProjector extends AbstractProjector
             readerUrlGenerator: $readerUrlGenerator,
             table: $list->dc,
             totalItems: $totalItems,
+        );
+    }
+
+    /**
+     * A list that cannot be created is not an empty list (SPEC_FILTER_FORMS.md §8.1): the view is
+     * marked as failed and holds no entries. The filter form still renders. In debug mode, the
+     * failure is rethrown instead.
+     *
+     * @throws FilterException In debug mode.
+     */
+    protected function createFailedView(
+        FilterException             $e,
+        ListSpec                    $list,
+        InteractiveContext          $context,
+        FormInterface               $form,
+        ReaderUrlGeneratorInterface $readerUrlGenerator,
+    ): InteractiveView {
+        $this->getLogger()->error(\sprintf(
+            '[FLARE] The list %s could not be created: %s',
+            $list->source ?? 'inlined',
+            $e->getMessage(),
+        ), ['method' => __METHOD__, 'exception' => $e]);
+
+        if ($this->isDebug()) {
+            throw $e;
+        }
+
+        return $this->createView(
+            loader: new InteractiveEmptyLoader(),
+            form: $form,
+            paginator: $this->paginatorFactory->createEmpty(pageParam: $this->getPageParam($form, $context)),
+            readerUrlGenerator: $readerUrlGenerator,
+            table: $list->dc,
+            totalItems: 0,
+            failed: true,
         );
     }
 
@@ -96,6 +143,7 @@ class InteractiveProjector extends AbstractProjector
         ReaderUrlGeneratorInterface $readerUrlGenerator,
         string                      $table,
         int                         $totalItems,
+        bool                        $failed = false,
     ): InteractiveView {
         return new InteractiveView(
             loader: $loader,
@@ -104,6 +152,7 @@ class InteractiveProjector extends AbstractProjector
             readerUrlGenerator: $readerUrlGenerator,
             table: $table,
             totalItems: $totalItems,
+            failed: $failed,
         );
     }
 
@@ -112,80 +161,25 @@ class InteractiveProjector extends AbstractProjector
      */
     public function createForm(ListSpec $list, InteractiveContext $context): FormInterface
     {
-        return $this->createFilterSet($list, $context)->getForm();
+        return $this->createFormHarness($list, $context)->getForm();
     }
 
     /**
-     * Builds the list's filter set and hands the current request to its root form.
+     * Builds the list's form harness and hands the current request to its root form.
      *
      * @throws FlareException
      */
-    protected function createFilterSet(ListSpec $list, InteractiveContext $context): FormHarness
+    protected function createFormHarness(ListSpec $list, InteractiveContext $context): FormHarness
     {
-        $filterSet = $this->filterSetFactory->create($list, $context);
+        $harness = $this->formHarnessFactory->create($list, $context);
 
-        $filterSet->getForm()->handleRequest($this->getCurrentRequest());
+        $harness->getForm()->handleRequest($this->getCurrentRequest());
 
-        return $filterSet;
+        return $harness;
     }
 
     /**
-     * Collects each filter's form data, keyed by the filter's list-specification key.
-     *
-     * Filters that contribute nothing stay absent from the map, so a filter's programmatically
-     * set data can take over downstream.
-     *
-     * @return array<string|int, FilterData>
-     */
-    protected function collectFilterData(ListSpec $list, FormInterface $form): array
-    {
-        $data = [];
-
-        foreach ($list->filters as $key => $filter)
-        {
-            if (!$form->has($key)) {
-                continue;
-            }
-
-            $child = $form->get($key);
-
-            if ($child->getConfig()->getAttribute(FilterContext::ATTR_SINGLE_FIELD))
-            {
-                // Submitted value, or the field's configured default (e.g., a `preselect`) when
-                // unsubmitted. Unsubmitted null defaults stay unset, so Filter::$data can take over.
-                $value = $child->getData();
-
-                if ($form->isSubmitted() || !\is_null($value)) {
-                    $data[$key] = FilterData::single($value);
-                }
-
-                continue;
-            }
-
-            if ($form->isSubmitted())
-            {
-                $data[$key] = FilterData::of((array) $child->getData());
-                continue;
-            }
-
-            // Unsubmitted forms never map the fields' default data (e.g., preselects) back onto
-            // the compound filter child, so collect the defaults from the fields directly.
-            // Filters without defaults stay unset here, so Filter::$data can take over.
-            $values = \array_filter(
-                \array_map(static fn (FormInterface $field): mixed => $field->getData(), $child->all()),
-                static fn (mixed $value): bool => !\is_null($value),
-            );
-
-            if ($values) {
-                $data[$key] = FilterData::of($values);
-            }
-        }
-
-        return $data;
-    }
-
-    /**
-     * @param array<string|int, FilterData> $filterValues
+     * @param array<string, ?ValueInterface> $filterValues Filter values keyed by filter alias.
      *
      * @throws FlareException
      */
@@ -208,11 +202,7 @@ class InteractiveProjector extends AbstractProjector
 
     public function createPaginator(FormInterface $form, PaginatedContextInterface $context, int $totalItems): Paginator
     {
-        $pageParam = $context->getPaginatorQueryParameter() ?: $form->getName();
-        $pageParam = $this->paginatorFactory->sanitizePageParam($pageParam);
-        if ($pageParam === $form->getName()) {
-            $pageParam .= '_page';
-        }
+        $pageParam = $this->getPageParam($form, $context);
 
         if ($form->isSubmitted() && !$form->isValid()) {
             return $this->paginatorFactory->createEmpty(pageParam: $pageParam);
@@ -222,5 +212,17 @@ class InteractiveProjector extends AbstractProjector
             config: $context->getPaginatorConfig()->with(totalItems: $totalItems),
             pageParam: $pageParam,
         );
+    }
+
+    protected function getPageParam(FormInterface $form, PaginatedContextInterface $context): string
+    {
+        $pageParam = $context->getPaginatorQueryParameter() ?: $form->getName();
+        $pageParam = $this->paginatorFactory->sanitizePageParam($pageParam);
+
+        if ($pageParam === $form->getName()) {
+            $pageParam .= '_page';
+        }
+
+        return $pageParam;
     }
 }

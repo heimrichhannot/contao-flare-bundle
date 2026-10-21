@@ -13,7 +13,6 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BelongsToRelationPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
@@ -94,33 +93,6 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
         $builder->addPredicate(BelongsToRelationPredicate::class, [
             'field_pid' => $fieldPid,
             'whitelist' => $whitelistParents,
-        ]);
-    }
-
-    /**
-     * Expected format:
-     * ```php
-     *   $submittedData = [
-     *       'tl_article' => [1, 5, 35, ...],
-     *       'tl_news' => [2, 3, 4, ...],
-     *   ];
-     * ```
-     *
-     * @param array $groupWhitelistParents Deserialized group whitelist, as stored in the
-     *   `group_whitelist_parents` config key.
-     */
-    public function addDynamicPtableFilter(
-        FormulaBuilderInterface $builder,
-        array                   $groupWhitelistParents,
-        string                  $fieldDynamicPtable,
-        string                  $fieldPid,
-        ?array                  $submittedData = null,
-    ): void {
-        $builder->add(BelongsToRelationPredicate::class, [
-            'field_pid' => $fieldPid,
-            'field_dynamic_ptable' => $fieldDynamicPtable,
-            'parent_groups' => $this->getDynamicParentGroups($groupWhitelistParents),
-            'submitted_data' => $submittedData,
         ]);
     }
 

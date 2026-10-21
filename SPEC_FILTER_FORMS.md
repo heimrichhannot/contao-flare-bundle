@@ -1,6 +1,6 @@
 # SPEC: Decoupling Filter Controls from Filter Elements
 
-**Status:** Design settled (2026-10-20/21, §13.6-13.27). Step 0 (§12) implemented and partly
+**Status:** Design settled (2026-10-20/21, §13.6-13.28). Step 0 (§12) implemented and partly
 re-renamed by #48; step 1 partially implemented and red mid-cut; steps 2-6 not started. Progress
 and the open checklist live in `PLAN_FILTER_FORMS.md`.
 **Scope:** `src/Filter/` (incl. the new `src/Filter/Control/`), `src/Form/`, `src/Query/`, `src/Event/`, `src/EventListener/NamedDispatch/`,
@@ -297,7 +297,7 @@ extracts it uniformly with `getData()` — model data, never view data:
 |---|---|
 | single field | `$mount->getData()` |
 | compound, submitted | `$mount->getData()` (array keyed by child name) |
-| compound, not submitted | the children's own data (the hydrated defaults), because Symfony does not map them onto an unsubmitted compound parent |
+| compound, not submitted | `$mount->getData()` — the array `hydrate()` set as the mount's `data` (§8 step 1) |
 
 The "cleared vs. never touched" distinction survives in the data itself: an unsubmitted form yields
 its hydrated value or `null`; a submitted, unchecked checkbox yields `false`. The reason `decode()`
@@ -466,7 +466,11 @@ price of occasional duplicates (an element and a control may each have a column 
 | `ctl_` | `label`, `placeholder`, `isMandatory`, `isMultiple`, `isExpanded`, `hasEmptyOption`, `formatLabel`, `formatLabelCustom`, `formatEmptyOption`, `formatEmptyOptionCustom`, `boolBinaryChoices` |
 | removed | `intrinsic` (→ blank `control`), `preselect` and `prefill` (→ `value`), `boolMode` (→ `control`, §7.5) |
 
-Columns of the Codefog integration are classified by the same rule.
+Columns of the Codefog integration are classified by the same rule. `elm_groupWhitelistParents` is a
+`group` widget whose stored blob uses its sub-fields' names as keys (`tablePtable`,
+`whitelistParents`, `formatLabel`, `formatLabelCustom`); those inner keys are **not** renamed — they
+are not columns — and the group defines its sub-fields itself instead of referencing the renamed
+columns. The per-group label format is element-owned labelling (§3.5).
 
 ### 4.2 One value, one column
 
@@ -567,12 +571,14 @@ change is needed.
 
 Pair the mechanism with distinct legends so the split is visible to the editor:
 element contributes `{filter_legend},elm_fieldGeneric`, control contributes
-`{form_legend},ctl_label,ctl_isMultiple,ctl_isExpanded`.
+`{control_legend},ctl_label,ctl_isMultiple,ctl_isExpanded`.
 
 ### 6.3 Known gaps
 
-- **`__selector__` is static** in `contao/dca/tl_flare_filter.php`. A control contributing a subpalette
-  needs a `DcaBuilder::selector()` API. This gap exists today.
+- **`__selector__` is static** in `contao/dca/tl_flare_filter.php`. `DcaBuilder::selector()` is built
+  in step 2: the choice control's `ctl_formatLabel` / `ctl_formatEmptyOption` already have `_custom`
+  subpalettes, and the renamed element columns (`elm_usePublished`, `elm_whichPtable`, …) need their
+  selector entries rewritten anyway.
 - **Columns are shared** — `tl_flare_filter` is one wide table. Element and control columns are kept
   apart by the `elm_` / `ctl_` prefixes (§4.1); within each side, names are global across all
   elements resp. controls.
@@ -658,8 +664,10 @@ interface ChoiceObjectInterface
 - `ContaoModelChoice` covers models: `::from(Model $model)` for option lists — labels from the row,
   model held internally, never hashed; `::ref(string $table, int $id)` for programmatic values
   without a database round trip. Scope = table, local key = id.
-- `FieldValueChoice(value, label)` covers `FieldValueChoice` and `DcaSelectField`: no scope, local
-  key = the field value. Equal labels now have different keys, which is the §7.1 fix.
+- `ValueChoice(value, label)` covers `FieldValueChoice`, `DcaSelectField` and `CodefogTagsChoice`:
+  no scope, local key = the field value (resp. the tag id). Equal labels now have different keys,
+  which is the §7.1 fix. Tags are deliberately not `ContaoModelChoice`s: their stored keys are bare
+  ids today and stay valid. *(Builder's call recorded: §13.28.)*
 
 Every control reads **model data** (§3.1): the selected choice objects, already validated by Symfony
 against the option list — a submitted key outside it makes the form invalid, and the projector then
@@ -675,6 +683,9 @@ final readonly class ChoiceValue implements ValueInterface
 }
 ```
 
+- **The `value` field is always multiple** (§13.28): a stored choice value is a set. A single-select
+  control's `hydrate()` uses the first choice in key order; `ChoiceValueProvider` never reads control
+  config.
 - **The empty option is "no selection".** `ChoiceValue::tryFrom()` returns `null` when nothing or
   only the empty option is selected. No element gives the empty option its own meaning —
   `Archive::processRuntimeValue()` already treats "empty option" and "nothing" identically — so
@@ -862,7 +873,7 @@ the new control columns from the legacy ones, per row:
 | target | source |
 |---|---|
 | `control` | `intrinsic = 1` → `''`; otherwise a frozen literal per element type: `flare_archive`, `flare_fieldValueChoice`, `flare_dcaSelectField`, `cfg_tags_choice` → `flare_choice`; `flare_dateRange`, `flare_calendar_current` → `flare_date_range`; `flare_search_keywords` → `flare_keywords`; `flare_bool` → `boolMode`: `binary` → `flare_checkbox`, `ternary` → `flare_choice_bool`; element types without a value class → `''` |
-| `value` | `preselect` (bool and choice types) or `prefill` (keywords), converted to the provider's storage format: bool `true`/`false`/`null` → `1`/`0`/empty; choices → a serialized list of keys, which are already canonical (`"<table>.<id>"` for Archive, bare values for `FieldValueChoice`/`DcaSelect`/tags) whether single or multiple; date types have no stored value |
+| `value` | copied **only where the old code read it**, so no leftover becomes a restriction: `preselect` for bool, `flare_fieldValueChoice`, `flare_dcaSelectField`, `cfg_tags_choice` (intrinsic and not); `preselect` for `flare_archive` only when `intrinsic = 0` (intrinsic Archive filters ignored it); `prefill` for `flare_search_keywords` only when `intrinsic = 1` (the form never read it). Converted to the provider's storage format: bool `true`/`false`/`null` → `1`/`0`/empty; choices → a serialized list of keys, which are already canonical (`"<table>.<id>"` for Archive, bare values/ids for the others) whether single or multiple; date types have no stored value |
 | `ctl_boolBinaryChoices` | `null_false` → `true_false` (§7.5) |
 | `ctl_hasEmptyOption`, `ctl_formatEmptyOption(Custom)`, `ctl_placeholder` | per element, so existing choice widgets look the same: `FieldValueChoice` single-select → empty option on; `DcaSelect`/`CodefogTagsChoice` single-select and not expanded → empty option on, the old placeholder text becomes its custom label; otherwise the placeholder stays `ctl_placeholder`; `Archive` 1:1 |
 
@@ -972,7 +983,7 @@ Recorded here because each one closes a branch the design could otherwise have t
    choice objects were badly chosen.
 9. **Choices are objects that name their key** (§7.2): `ChoiceObjectInterface` with
    `getChoiceScope()`, `getChoiceLocalKey()` and `getLabelParameters()`, `ContaoModelChoice::from()` /
-   `::ref()`, `FieldValueChoice`. Custom choice semantics mean a custom choice class, not a
+   `::ref()`, `ValueChoice`. Custom choice semantics mean a custom choice class, not a
    translation step.
 10. **Value objects stay at widget level** (§2). Domain interpretation happens in `buildContext()`.
     `ChoiceValue` carries choice objects; `ParentRefValue` and `valueFromChoiceKeys()` are gone.
@@ -1031,6 +1042,10 @@ Recorded here because each one closes a branch the design could otherwise have t
     "Form" names only the Symfony level (`FormHarness`, `FilterFormBuilder`); the strategy above it
     is a control. Column `control`, prefix `ctl_`, directory `src/Filter/Control/`, attribute
     `#[AsFilterControl]`. The SPEC/PLAN file names keep "FILTER_FORMS" to avoid churn in links.
+28. **Builder's calls from the second review**: Codefog tags use `ValueChoice` (bare ids, as stored);
+    the choice `value` field is always multiple; the data migration copies `preselect`/`prefill` only
+    where the old code read them; `elm_groupWhitelistParents` keeps its inner blob keys;
+    `DcaBuilder::selector()` is built in step 2.
 ---
 
 ## 14. Remaining unknowns
@@ -1039,8 +1054,7 @@ Recorded here because each one closes a branch the design could otherwise have t
    06fc013 on `feat/filter-types`, not carried over): `serialize()` is not a pure value function
    over an object graph (repeated objects become back-references). **Moot** since §13.15: value
    objects state their identity through `fingerprint()`, and only in-request caching is required.
-2. **`DcaBuilder::selector()`** (§6.3) has no consumer yet. Confirm whether any control in the initial
-   migration actually contributes a subpalette; if none does, defer the API.
+2. ~~`DcaBuilder::selector()`~~ — resolved: it has consumers and is built in step 2 (§6.3).
 3. ~~`ArchiveFilterElement::buildPreselectData()`~~ — resolved: hydration goes through
    `ChoiceFilterControl::hydrate()` from `Filter::$value` (§8), backend options through the port (§6.4).
 4. **Whether `ListSpec::$filters` should become a collection object.** The naming side is settled

@@ -358,7 +358,7 @@ There is no `value:`, `requires:` or `default:` on `AsFilterControl` (§13.11, �
 ### 3.4 Control registration
 
 `RegisterFilterControlsPass` follows `RegisterFilterElementsPass` exactly (§13.14):
-`findAndSortTaggedServices()`, `addMethodCall('add', [Reference, attribute, name, valueClass])`
+`findAndSortTaggedServices()`, `addMethodCall('add', [Reference, name, valueClass])`
 on an eager `FilterControlRegistry`, public alias `flare.filter_control.{name}`. On top of that pattern it
 does two checks only: the value class (§3.1) and name uniqueness (§3.3). It has no ordering
 constraint relative to the element pass.
@@ -613,7 +613,8 @@ frontend, so the backend needs a `FilterScope` (§13.21):
 
 - `DcaContext` gains the element and a lazy `getFilterScope(): ?FilterScope`, built from the
   `ListSpec` that `ElementDcaListener::createExecutionContext()` already builds, the edited filter
-  (`FilterFactory::createFromFilterModel()`), and a `ConfigurationContext`. It is `null` when the
+  (`FilterFactory::createFromFilterModel()` without control and value — options need neither), and a
+  `ConfigurationContext`. It is `null` when the
   list cannot be built — the same "backend must not fail on broken list configs" rule as
   `getExecutionContext()`.
 - `ChoiceValueProvider::buildDcaField()` calls `createChoices($scope)->buildContaoOptions()`. A

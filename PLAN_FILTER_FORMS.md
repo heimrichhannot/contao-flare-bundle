@@ -29,7 +29,7 @@
 2. **Old Archive URLs `?archive=5` in static-ptable mode** must keep matching, while stored keys are `tl_news_archive.5` (§7.2, §13.22). → Task 2 test `testSingleScopeListSubmitsLocalKeys`, Task 9 test `testHydratedCanonicalReferenceMatchesShortSubmittedKey`.
 3. **A controlled filter's initial value on a reader page** must not restrict validation; a fixed value must (§4.2, §13.30). → Task 11 tests `testInitialValueIsIgnoredWithoutAFormValueMap`, `testFixedValueAppliesInValidation`.
 4. **TRUE_FALSE checkbox, form never submitted, no initial value** must not filter `false` (untouched ≠ unchecked). → Task 9 test `testUntouchedCheckboxContributesNothingEvenUnderTrueFalse`.
-5. **Broken fixed filter vs. broken control** (§8.1): fixed → list fails (message, HTTP 200; reader 500); control → filter skipped with a warning. → Task 6 tests `testUnknownControlThrowsControlUnavailable`, Task 11 tests `testFailingControlledFilterIsSkipped`, `testFailingFixedFilterFailsTheList`, `testProjectorReturnsFailedViewWhenAFixedFilterFails`.
+5. **Broken fixed filter vs. broken control** (§8.1): fixed → list fails (message, HTTP 200; reader 500); control → filter skipped with a warning. → Task 6 tests `testUnknownControlDegradesToNoControlAndNoValue`, `testFailingFixedFilterIsRecordedAsListFailure`, Task 10 test `testControlFailingToBuildIsSkipped`, Task 11 tests `testFailingControlledFilterIsSkipped`, `testFailingFixedFilterFailsTheList`, `testProjectorReturnsFailedViewWhenAFixedFilterFails`.
 
 ## File map
 
@@ -43,7 +43,7 @@ Created:
 - `src/DependencyInjection/Attribute/AsFilterControl.php`, `src/DependencyInjection/Compiler/{RegisterFilterControlsPass,RegisterValueProvidersPass,ValueClassReflector}.php`
 - `src/Registry/{FilterControlRegistry,ValueProviderRegistry}.php`
 - `src/Event/FilterControlBuiltEvent.php`, `src/EventListener/NamedDispatch/FilterControlListener.php`
-- `src/Exception/{FilterControlUnavailableException,UnreadableValueException}.php`
+- `src/Exception/UnreadableValueException.php`, `src/List/Collector/CollectedFilters.php`
 - `src/Migration/{RenameFilterColumnsMigration,BackfillFilterValuesMigration}.php`
 
 Deleted: `src/Filter/Form/*`, `AsFilterForm`, `RegisterFilterFormsPass`, `FilterFormRegistry`, `FilterFormBuiltEvent`, NamedDispatch `FilterFormListener` and `FilterElementListener`, `FilterElementBuildingEvent`, `FilterElementBuiltEvent`, `IntrinsicContract`, `FilterData`, `Value/ParentRefValue`, `Util/Fingerprint`, `Enum/BoolMode`, and their tests.
@@ -112,7 +112,7 @@ public function testFingerprintIsOrderIndependentAndKeyBased(): void
 }
 ```
 
-Add one fingerprint assertion each to `BoolValueTest` (`'1'`), `DateRangeValueTest` (`'0|'` for `tryFrom(0, null)`), `KeywordsValueTest` (`'foo bar'` for `"  foo   bar "`). Reduce `ValueObjectContainmentTest` to one test: every class in `src/Filter/Value/` (non-recursive) and every `#[AsFilterElement(value: …)]` class is `final`, `readonly` and implements `ValueInterface`; delete its property-type walk and samples.
+Add one fingerprint assertion each to `BoolValueTest` (`'1'`), `DateRangeValueTest` (`'0|'` for `tryFrom(0, null)`), `KeywordsValueTest` (`'foo bar'` for `"  foo   bar "`). In `BoolValueTest` delete `testTryFromMatchesTheElementItReplaces` and `testBinaryChoicesDecideWhetherFalsyCollapses` (the `BoolBinaryChoices` parameter is gone; Task 9 tests the mapping). Reduce `ValueObjectContainmentTest` to one test: every concrete class in `src/Filter/Value/` (non-recursive; `ValueInterface` excluded) and every value class *named* in an `#[AsFilterElement(value: …)]` is `final`, `readonly` and implements `ValueInterface`; delete its property-type walk and samples.
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -223,7 +223,8 @@ git commit -m "feat!: ChoicesBuilder takes choice objects and shortens keys per 
   - `FilterContextBuilderFactory::create(FilterScope $scope): FilterContextBuilder` — computes the formula's default target alias with the **v0.1 stopgap** (§15): `isTargeted` (from `FilterElementRegistry::getAttribute($filter->type)`) or `targetingForced` ⇒ `$filter->targetAlias ?: TableAliasRegistry::ALIAS_MAIN`; otherwise `ALIAS_MAIN`.
   - `FilterContextFactory::create(FilterScope $scope, ?ValueInterface $value): FilterContext` — keeps the SQL-name check on `$scope->list->dc`, calls `$scope->filter->element->buildContext($builder, $value)`.
   - `@internal` docblock tag on `Proposition`, `Formula`, `FormulaBuilder`, `FormulaBuilderInterface`, `FormulaBuilderFactory`.
-  - Test helper `trait BuildsFilterContextsTrait { protected function buildFilterContext(FilterElementInterface $element, array $config = [], ?ValueInterface $value = null, ?ContextInterface $engineContext = null, string $dc = 'tl_test'): FilterContext }` — real `FormulaBuilderFactory` over a `FilterPredicateRegistry` holding every predicate in `src/Filter/Predicate/`; default engine context `new ConfigurationContext()`.
+  - Test helper `trait BuildsFilterContextsTrait { protected function buildFilterContext(FilterElementInterface $element, array $config = [], ?ValueInterface $value = null, ?ContextInterface $engineContext = null, string $dc = 'tl_test'): FilterContext }` — real `FormulaBuilderFactory` over a `FilterPredicateRegistry` holding every predicate in `src/Filter/Predicate/` (`SearchKeywordsPredicate` takes a `ConfigProvider`: pass a test double); default engine context `new ConfigurationContext()`.
+  - `FormulaBuilderTest` (renamed) reads `$builder->build()->propositions`; the old `$builder->all()` no longer exists.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -313,7 +314,7 @@ public function testFindNamesFiltersByValueClassInRegistrationOrder(): void
 }
 ```
 
-Port `FilterFormListenerTest` to `FilterControlListenerTest` (alias name only changes). Add `TypeNameFactoryTest::testCreatesFilterControlType` (`ChoiceFilterControl` → `choice`).
+Port `FilterFormListenerTest` to `FilterControlListenerTest` (alias name only changes). Port the four `createFilterFormType` tests in `TypeNameFactoryTest` to `createFilterControlType` (e.g. `ChoiceFilterControl` → `choice`).
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -352,12 +353,12 @@ git commit -m "feat!: FilterControl contracts, eager registry, value class from 
   - `RegisterValueProvidersPass` — value class from `provide()`'s return type via `ValueClassReflector`; one provider per value class (duplicate ⇒ `\InvalidArgumentException`); `addMethodCall('add', [$reference, $valueClass])`. **Registered before `RegisterFilterElementsPass`**, which then fails the build when an element's `value:` has no provider (it reads the provider registry definition's `add` method calls).
   - `class UnreadableValueException extends FilterException` — a non-empty stored value yielded no readable key (§8.1, fail closed).
   - Providers (`provide()` / storage format / `buildDcaField()`):
-    - `BoolValueProvider::provide(): ?BoolValue` — `'1'` ⇒ true, `'0'` ⇒ false, else null; field: `select`, options `['1' => …yes, '0' => …no]`, `includeBlankOption`.
+    - `BoolValueProvider::provide(): ?BoolValue` — `'1'` ⇒ true, `'0'` ⇒ false, `null`/`''` ⇒ null, anything else ⇒ `UnreadableValueException` (fail closed); field: `select`, options `['1' => …yes, '0' => …no]`, `includeBlankOption`.
     - `KeywordsValueProvider::provide(): ?KeywordsValue` — `KeywordsValue::tryFrom()`; field: `text`.
-    - `DateRangeValueProvider::provide(): ?DateRangeValue` — stored = serialized `[from, to]` date strings in Contao's numeric date format; field: `text`, `eval: ['multiple' => true, 'size' => 2, 'rgxp' => 'date']`.
+    - `DateRangeValueProvider::provide(): ?DateRangeValue` — stored = serialized `[fromTs|null, toTs|null]` **timestamps**; non-numeric non-empty entries ⇒ `UnreadableValueException`. Field: `text`, `eval: ['multiple' => true, 'size' => 2, 'rgxp' => 'date']` with a `load()` callback (timestamps → `Date::parse(Date::getNumericDateFormat(), $ts)`) and a `save()` callback (date strings → `(new Date($s, Date::getNumericDateFormat()))->tstamp`), because Contao does not convert `multiple` text values itself.
     - `ChoiceValueProvider::provide(): ?ChoiceValue` — stored = serialized list of canonical keys; element must implement `ChoiceSourceContract` (else `FilterException`); maps `choiceFromKey()`; non-empty stored but no readable key ⇒ `UnreadableValueException`; empty ⇒ null. Field: `select`, `eval: ['multiple' => true, 'chosen' => true]`, options = `$element->createChoices($scope)->buildContaoOptions()` from `$context->getFilterScope()`; a `FilterException` or a `null` scope ⇒ `Message::addError()` and `[]`.
   - `DcaContext`: new ctor params `public readonly ?FilterElementInterface $element = null` and `private readonly ?\Closure $filterScopeFactory = null`; `getFilterScope(): ?FilterScope` (lazy, memoised, `null` on failure).
-  - `ElementDcaListener` builds the scope from the `ListSpec` it already builds in `createExecutionContext()` (memoise the spec), `FilterFactory::createFromFilterModel($filterModel)` and `new ConfigurationContext()`; any `\Throwable` ⇒ `null`.
+  - `ElementDcaListener` builds the scope from the `ListSpec` it already builds in `createExecutionContext()` (memoise the spec), `FilterFactory::createFromFilterModel($filterModel, withControlAndValue: false)` (Task 6 — options need neither, and a stale control right after a `type` change must not empty them) and `new ConfigurationContext()`; any `\Throwable` ⇒ `null`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -378,6 +379,8 @@ public function testElementWithoutChoiceSourceIsRejected(): void { $this->expect
 
 // BoolValueProviderTest
 public function testMapsStoredFlags(): void { self::assertTrue($p->provide('1', $el)->state); self::assertFalse($p->provide('0', $el)->state); self::assertNull($p->provide('', $el)); }
+public function testUnreadableFlagFailsClosed(): void { $this->expectException(UnreadableValueException::class); $p->provide('yes', $el); }
+// DateRangeValueProviderTest: serialize([0, null]) ⇒ from = epoch, to = null; serialize(['x', null]) ⇒ UnreadableValueException
 
 // RegisterValueProvidersPassTest: registers by return type; duplicate fails; unnarrowed fails
 // RegisterFilterElementsPassTest
@@ -407,21 +410,24 @@ git commit -m "feat!: element ports, per-value-class value providers, backend Fi
 ### Task 6: Filter DTO, resolvers, FilterFactory and the collector
 
 **Files:**
-- Modify: `src/Filter/Filter.php`, `src/Filter/Factory/FilterFactory.php`, `src/Filter/Resolver/{FilterOptionsResolver,FilterTransformerResolver}.php`, `src/List/Collector/ListModelFilterCollector.php`
-- Create: `src/Exception/FilterControlUnavailableException.php`
-- Test: `tests/Filter/{FilterTest,FilterFactoryTest,FilterOptionsResolverTest,FilterTransformerResolverTest}.php`, `tests/List/{ListSpecTest,StubFilterElement}.php`
+- Modify: `src/Filter/Filter.php`, `src/Filter/Element/FilterElementInterface.php`, `src/Filter/Factory/FilterFactory.php`, `src/Filter/Resolver/{FilterOptionsResolver,FilterTransformerResolver}.php`, `src/List/Collector/ListModelFilterCollector.php`, `src/List/Factory/ListSpecBuilderFactory.php`, `src/List/{ListSpec,ListSpecBuilder}.php`
+- Create: `src/List/Collector/CollectedFilters.php`
+- Test: `tests/Filter/{FilterTest,FilterFactoryTest,FilterOptionsResolverTest,FilterTransformerResolverTest}.php`, `tests/List/{ListSpecTest,ListSpecBuilderTest,StubFilterElement,ListModelFilterCollectorTest}.php`
 
 **Interfaces:**
 - Consumes: `FilterControlRegistry` (Task 4), `ValueProviderRegistry` (Task 5).
 - Produces:
+  - `FilterElementInterface` declares only `buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void` (`buildForm()` leaves the interface here so `StubFilterElement` loads; elements drop their bodies in Tasks 7/8).
   - `Filter::__construct(FilterElementInterface $element, string $type, string $alias, array $config = [], ?FilterControlInterface $control = null, array $controlConfig = [], ?ValueInterface $value = null, ?string $targetAlias = null, bool $targetingForced = false, ?string $source = null)`; withers `withValue(?ValueInterface)`, `withControl(?FilterControlInterface, array $controlConfig = [])`, `withTargetAlias(?string, bool $forced = true)` (each enumerates every ctor arg); `withData()` and `withAlias()` are deleted.
   - `Filter::fingerprint(): array` keys: `element`, `type`, `alias`, `config`, `control` (class or null), `controlConfig`, `value` (`$value?->fingerprint()`), `targetAlias`, `targetingForced`.
   - `FilterOptionsResolver::resolve(FilterElementInterface|FilterControlInterface $owner, array $config): array` — schema key `$owner::class`.
   - `FilterTransformerResolver::transform(FilterElementInterface|FilterControlInterface $owner, string $type, object $source): ?array` — `FilterTransformerEvent` is dispatched for elements only.
-  - `FilterFactory::create(FilterElementInterface|string $element, ?string $alias = null, array $config = [], FilterControlInterface|string|null $control = null, array $controlConfig = [], ?ValueInterface $value = null, ?string $targetAlias = null, bool $targetingForced = false, ?string $source = null): Filter` — a control name resolves via the registry; a control or value whose class does not match the element's declared value class ⇒ `FlareException` (programming error).
-  - `FilterFactory::createFromFilterModel(FilterModel $model): Filter` — element config as today; control name `(string) $model->formVariant` (column renamed in Task 13): unknown or value-class mismatch ⇒ `FilterControlUnavailableException`; control config via transformer + resolver; value: if the element declares a value class, `ValueProviderRegistry::get($class)->provide($model->value, $element)` (`value` column arrives in Task 12; until then `null`).
-  - `class FilterControlUnavailableException extends FlareException`.
-  - `ListModelFilterCollector::collect()` (§8.1): on `FlareException` from `createFromFilterModel()` — if `(string) $model->formVariant !== ''` ⇒ log a **warning** and skip (fail open); otherwise log an **error** and rethrow as `FlareException` naming the filter source (fail closed).
+  - Element value class: `FilterElementRegistry::getAttribute($type)?->value`, falling back to reading `#[AsFilterElement]` by reflection on the element class (elements passed as instances have no registry attribute).
+  - `FilterFactory::create(FilterElementInterface|string $element, ?string $alias = null, array $config = [], FilterControlInterface|string|null $control = null, array $controlConfig = [], ?ValueInterface $value = null, ?string $targetAlias = null, bool $targetingForced = false, ?string $source = null): Filter` — a control name resolves via the registry; a control or value whose class does not match the element's value class ⇒ `FlareException` (programming error).
+  - `FilterFactory::createFromFilterModel(FilterModel $model, bool $withControlAndValue = true): Filter` — element config as today (its failure throws). With `$withControlAndValue`: control name `(string) $model->formVariant` (renamed `control` in Task 13). **Fail open (§8.1):** an unknown control, a control registered for another value class, or an `UnreadableValueException` for a controlled filter ⇒ warning logged, filter kept with `control: null, value: null` (it keeps the element's own bounds, e.g. Archive's whitelist). Without a control, the value comes from `ValueProviderRegistry::get($class)->provide($model->value, $element)`; an `UnreadableValueException` there propagates (fail closed). (`value` column arrives in Task 12; until then `null`.)
+  - `final readonly class CollectedFilters { public function __construct(public array $filters = [], public array $failures = []) }` — `array<string, Filter>` and `list<string>` (failure messages with source).
+  - `ListModelFilterCollector::collect(ListModel $listModel): ?CollectedFilters` — a `FlareException` from `createFromFilterModel()`: `(string) $model->formVariant !== ''` ⇒ warning, skip (fail open, only element config can fail here); `''` ⇒ error logged and the message added to `failures` (fail closed). It never throws for a broken filter, so backend callbacks building the ListSpec keep working. Extract the per-model loop as `collectFromModels(iterable $models, ListModel $listModel): CollectedFilters` for tests.
+  - `ListSpecBuilder::addFailure(string $failure): self`; `ListSpec` gains `public array $failures = []` (`list<string>`), carried over by every `with*()`; `ListSpecBuilderFactory` adds the collected filters and failures.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -436,13 +442,23 @@ public function testFingerprintChangesWithControlAndValue(): void
 }
 
 // FilterFactoryTest
-public function testUnknownControlThrowsControlUnavailable(): void { /* model with formVariant 'gone' */ }
-public function testControlForAnotherValueClassThrowsControlUnavailable(): void {}
+public function testUnknownControlDegradesToNoControlAndNoValue(): void { /* formVariant 'gone' ⇒ control null, value null, warning logged */ }
+public function testControlForAnotherValueClassDegradesLikeAnUnknownOne(): void {}
+public function testUnreadableFixedValueThrows(): void { $this->expectException(UnreadableValueException::class); }
 public function testValueComesFromTheProviderOfTheElementsValueClass(): void {}
+public function testWithoutControlAndValueSkipsBoth(): void {}
 public function testProgrammaticValueOfTheWrongClassIsRejected(): void { $this->expectException(FlareException::class); }
+public function testValueClassIsReadFromTheAttributeOfAnElementInstance(): void {}
+
+// ListModelFilterCollectorTest (FilterModel instances created without constructor, properties set directly)
+public function testFailingFixedFilterIsRecordedAsListFailure(): void {}
+public function testFailingControlledFilterIsSkippedWithAWarning(): void {}
+
+// ListSpecTest
+public function testFailuresSurviveWithers(): void {}
 ```
 
-Update `StubFilterElement` to the current `FilterElementInterface` (`buildContext()` only) and drop `FilterData` from `ListSpecTest`.
+Update `StubFilterElement` (`buildContext()` only) and drop `FilterData` from `ListSpecTest`/`ListSpecBuilderTest`.
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -459,7 +475,7 @@ Run: same as Step 2. Expected: PASS
 
 ```bash
 git add -A src tests
-git commit -m "feat!: Filter carries control, control config and value object"
+git commit -m "feat!: Filter carries control, control config and value; list records filter failures"
 ```
 
 ---
@@ -467,19 +483,28 @@ git commit -m "feat!: Filter carries control, control config and value object"
 ### Task 7: Element base and the four choice elements
 
 **Files:**
-- Modify: `src/Filter/Element/{FilterElementInterface,AbstractFilterElement,FieldValueChoiceFilterElement,DcaSelectFieldFilterElement,ArchiveFilterElement}.php`, `src/Integration/CodefogTags/FilterElement/CodefogTagsChoiceFilterElement.php`
+- Modify: `src/Filter/Element/{AbstractFilterElement,FieldValueChoiceFilterElement,DcaSelectFieldFilterElement,ArchiveFilterElement}.php`, `src/Integration/CodefogTags/FilterElement/CodefogTagsChoiceFilterElement.php`, `src/EventListener/DataContainer/FlareFilter/FieldsLoadAndSaveCallbacks.php` (delete `onLoadField_intrinsic()`/`onSaveField_intrinsic()`, the only `IntrinsicContract` users)
 - Delete: `src/Contract/FilterElement/IntrinsicContract.php`
-- Test: `tests/Filter/Element/{ArchiveFilterElementTest,FieldValueChoiceFilterElementTest,DcaSelectFieldFilterElementTest}.php`
+- Test: `tests/Filter/Element/{ArchiveFilterElementTest,FieldValueChoiceFilterElementTest,DcaSelectFieldFilterElementTest,ChoicePortCoverageTest}.php`
 
 **Interfaces:**
 - Consumes: `BuildsFilterContextsTrait` (Task 3), `ChoiceSourceContract` (Task 5), `ExpectsValueTrait` (Task 4).
 - Produces:
-  - `FilterElementInterface` has only `buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void`. `AbstractFilterElement` drops `buildForm()`, `isOnlyIntrinsic()`, `IntrinsicContract`; uses `ExpectsValueTrait`.
+  - `AbstractFilterElement` drops `buildForm()`, `isOnlyIntrinsic()`, `IntrinsicContract`; uses `ExpectsValueTrait`.
+  - **`buildDca()` of these four elements** drops every control/value field and every `intrinsic` branch (§13.4): remaining palettes `{filter_legend},fieldGeneric` (FieldValueChoice, DcaSelectField), Archive's whitelist/ptable fields, nothing for CodefogTagsChoice; no call to a removed method (`getPreselectOptions()`, the old private `createChoices($table, $field)`).
   - All four: `#[AsFilterElement(…, value: ChoiceValue::class)]`, `implements ChoiceSourceContract`; no `buildForm()`; no `'intrinsic'`, `'preselect'`, `'multiple'`, `'expanded'`, `'is_*'`, `'label'`, `'placeholder'`, `'format_*'`, `'has_empty_option'` options (those are control config or `value` now); config read from `$builder->scope->filter->config`.
   - `FieldValueChoiceFilterElement`: options `field`; `createChoices()` → `ValueChoice((string) $id, $label)` (foreign key) / `ValueChoice($v, $v)` (local); `choiceFromKey($k)` → `new ValueChoice($k)`; `buildContext()` → `FieldValueChoicePredicate(field, values: [ValueChoice::$value …])`. **Remove the `ValidationContext` early return** — a fixed value must restrict validation (§4.2). Delete `normalizeRuntimeValue`, `buildPreselectData`, `extractSubmittedData`, `normalizePreselect`.
   - `DcaSelectFieldFilterElement`: options `field`; `createChoices()` → `ValueChoice((string) $key, (string) $label)` from `getOptions()`; `choiceFromKey()` → `ValueChoice`; `buildContext()` → `DcaSelectPredicate(field, selected: values, valid_options, is_multiple_dca_field)`. Delete `normalizeSubmittedValue`, `buildPreselectData`.
   - `CodefogTagsChoiceFilterElement`: no options; `createChoices()` → `ValueChoice((string) $tagId, $label)` (options from `getOptions()` with an execution context for `$scope->list`); `choiceFromKey()` → `ValueChoice` only for digit strings; `buildContext()` → `IntegerIdChoicePredicate(field: 'id', ids: int values)`.
-  - `ArchiveFilterElement`: options `whitelist_parents`, `group_whitelist_parents`, `use_whitelist_for_options_only`; `createChoices()` = the choice part of today's `buildForm()` with `ContaoModelChoice::from($parent)` (keep its four `FilterException`s; dynamic mode keeps `setLabelForTable()` per group and `setModelSuffix('(%@name%)')`); `choiceFromKey()` parses `"<table>.<id>"` with a positive int id into `ContaoModelChoice::ref()`, else `null`; `buildContext()` per the spec's Archive sketch (§7.4): group selected `table`/`id`, intersect with allowed ids, `return`/`abort()` per `use_whitelist_for_options_only`, `ArchivePredicate` (static) or `BelongsToRelationPredicate` (dynamic); no model loading on the query path. `getPtableInferrer()` caches on `\sha1(\serialize([$list->dc, $list->config]))`. Delete `processRuntimeValue`, `normalizeFilterValue`, `buildPreselectData`, `getPreselectOptions`, `getWhitelistedParents`.
+  - `ArchiveFilterElement`: options `whitelist_parents`, `group_whitelist_parents`, `use_whitelist_for_options_only`; `createChoices()` = the choice part of today's `buildForm()` with `ContaoModelChoice::from($parent)` (keep its four `FilterException`s; dynamic mode keeps `setLabelForTable()` per group and `setModelSuffix('(%@name%)')`); `choiceFromKey()` parses `"<table>.<id>"` with a positive int id into `ContaoModelChoice::ref()`, else `null`. `buildContext()` (§3.6, §7.4) works on ids grouped `array<table, list<int>>`, allowed = the whitelist (static: main ptable ⇒ `whitelist_parents`; dynamic: `group_whitelist_parents`):
+
+    | value | `use_whitelist_for_options_only` | result |
+    |---|---|---|
+    | none | false | the whole allowed set |
+    | none | true | no condition (`return`) |
+    | present | any | selected ∩ allowed; **empty ⇒ `abort()`** (stale or foreign keys never widen the list) |
+
+    then `ArchivePredicate(field: 'pid', parent_ids)` (static) or `BelongsToRelationPredicate(field_pid: 'pid', field_dynamic_ptable: 'ptable', parent_groups, submitted_data: grouped)` (dynamic); no model loading on the query path. `getPtableInferrer()` caches on `\sha1(\serialize([$list->dc, $list->config]))`. Delete `processRuntimeValue`, `normalizeFilterValue`, `buildPreselectData`, `getPreselectOptions`, `getWhitelistedParents`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -499,6 +524,12 @@ public function testNoValueAddsNothing(): void {}
 public function testChoiceFromKeyKeepsDotsInTheValue(): void { self::assertSame('1.5', $el->choiceFromKey('1.5')->value); }
 
 // ArchiveFilterElementTest (keep transformer test, drop intrinsic/preselect keys)
+public function testStaleSelectionAbortsInsteadOfWidening(): void { /* value ref to an id outside the whitelist ⇒ AbortFilteringException */ }
+
+// ChoicePortCoverageTest (§3.5): every element class under src/Filter/Element and src/Integration/*/FilterElement
+// whose #[AsFilterElement(value:)] is ChoiceValue::class implements ChoiceSourceContract
+public function testEveryChoiceElementImplementsTheChoicePort(): void {}
+
 public function testChoiceFromKeyParsesTableAndId(): void
 {
     $ref = $el->choiceFromKey('tl_news_archive.5');
@@ -542,6 +573,7 @@ git commit -m "feat!: choice elements implement the choice port and work on choi
   - `DateRangeFilterElement`: `value: DateRangeValue::class`; options `field` (no field ⇒ `FilterException`); no value ⇒ nothing; else `DateRangePredicate(field, from, to)`. Delete `validateRange`, `from_enabled`/`to_enabled`.
   - `CalendarCurrentFilterElement`: `value: DateRangeValue::class`, `implements DateBoundsContract`; options `is_limited`, `configure_start`, `configure_stop`, `start_at`, `stop_at`, `has_extended_events`; `getDateBounds()` = today's `resolveFormLimits()` when `is_limited`, else `[null, null]`; `buildContext()` as today but reading `$v->from`/`$v->to`. Delete `buildForm`, `validateRange`, the positional `processRuntimeValue` fallback.
   - `PublishedFilterElement`, `BelongsToRelationFilterElement`, `SimpleEquationFilterElement`, `CodefogTagsSearchElement`: `value` stays `null`; bodies read `$builder->scope->filter->config` / `$builder->scope->list`.
+  - **`buildDca()` of these elements** drops every control/value field (`preselect`, `prefill`, `label`, `placeholder`, `boolMode`, …) and every `intrinsic` branch (§13.4); `CalendarCurrent` keeps `isLimited` as element config.
   - Remove `'intrinsic' => true` from the programmatic configs in `ValidationLoader` (×2), `SimpleEquationMod`, `NewsListDriver`, `EventsListDriver`, `ChangelanguageListener` (×2) — the option no longer exists and would be rejected.
 
 - [ ] **Step 1: Write the failing tests** (via `BuildsFilterContextsTrait`)
@@ -661,7 +693,7 @@ git commit -m "feat: choice, checkbox, choice-bool, date-range and keywords cont
 **Interfaces:**
 - Consumes: `FilterControlInterface`, `FilterControlBuiltEvent` (Task 4); `Filter::$control`, `$value` (Task 6).
 - Produces:
-  - `FormHarnessFactory::__construct(EventDispatcherInterface $eventDispatcher, FormFactoryInterface $formFactory)`; `create(ListSpec $list, FormContextInterface $context): FormHarness` — per filter with a control and a valid alias: `$scope = new FilterScope($list, $filter, $context)`; collector builder carries `FilterScope::ATTR_SELF`; `$filter->control->buildForm($builder, $scope)`; dispatch `FilterControlBuiltEvent`; mount as today; the mount's `data` option = `$filter->control->hydrate($filter->value, $scope)` when not `null`; `$mounts[$alias] = new FilterMount($filter, $alias, $scope)`. No `FilterContextFactory`.
+  - `FormHarnessFactory::__construct(EventDispatcherInterface $eventDispatcher, FormFactoryInterface $formFactory, LoggerInterface $logger)`; `create(ListSpec $list, FormContextInterface $context): FormHarness` — per filter with a control and a valid alias: `$scope = new FilterScope($list, $filter, $context)`; collector builder carries `FilterScope::ATTR_SELF`; `$filter->control->buildForm($builder, $scope)`; dispatch `FilterControlBuiltEvent`; mount as today; the mount's `data` option = `$filter->control->hydrate($filter->value, $scope)` when not `null`; `$mounts[$alias] = new FilterMount($filter, $alias, $scope)`. A `FilterException` from `buildForm()` or `hydrate()` ⇒ warning logged, filter not mounted (fail open, §8.1). No `FilterContextFactory`.
   - `final readonly class FilterMount { __construct(public Filter $filter, public string $alias, public FilterScope $scope) }`
   - `FormHarness::decode(): array<string, ?ValueInterface>` — per mount: `$data = $child->getData()`; `$value = $filter->control->decode($data, $scope)`; submitted root form ⇒ an entry for every mounted alias (null included); unsubmitted ⇒ non-null entries only. Docblocks say "keyed by alias".
 
@@ -680,6 +712,7 @@ public function testSubmittedEmptyValueIsKeptAsNull(): void
     // submit ['list' => ['q' => '']] ⇒ array_key_exists('q', $values) && $values['q'] === null
 }
 public function testFiltersWithoutAControlAreNotMounted(): void {}
+public function testControlFailingToBuildIsSkipped(): void { /* control throws FilterException in buildForm ⇒ no mount, warning logged, other filters mounted */ }
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -706,7 +739,7 @@ git commit -m "feat!: FormHarness mounts controls, hydrates initial values and d
 ### Task 11: Value path, failure state, event and FilterData removal — tree green
 
 **Files:**
-- Modify: `src/Engine/Projector/InteractiveProjector.php`, `src/Engine/View/InteractiveView.php`, `src/Query/Executor/ListQueryDirector.php`, `src/Query/ListQueryConfig.php`, `src/Engine/Loader/{InteractiveLoaderConfig,AggregationLoaderConfig}.php`, `src/Engine/Context/{AggregationContext,ValidationContext}.php`, `src/Filter/FilterFormBuilderInterface.php` (docblock), `contao/templates/content_element/flare_listview.html.twig`, `translations/flare.en.yaml`, `translations/flare.de.yaml`
+- Modify: `src/Engine/Projector/{AbstractProjector,InteractiveProjector}.php`, `src/Integration/ContaoCalendar/Projector/EventsInteractiveProjector.php`, `src/Engine/View/InteractiveView.php` (and `InteractiveEventsView` if it has its own ctor), `contao/templates/content_element/flare_listview/*.html.twig`, `src/Query/Executor/ListQueryDirector.php`, `src/Query/ListQueryConfig.php`, `src/Engine/Loader/{InteractiveLoaderConfig,AggregationLoaderConfig}.php`, `src/Engine/Context/{AggregationContext,ValidationContext}.php`, `src/Filter/FilterFormBuilderInterface.php` (docblock), `contao/templates/content_element/flare_listview.html.twig`, `translations/flare.en.yaml`, `translations/flare.de.yaml`
 - Delete: `src/Filter/FilterData.php`, `src/Event/{FilterElementBuildingEvent,FilterElementBuiltEvent}.php`, `src/EventListener/NamedDispatch/FilterElementListener.php`, `tests/Filter/FilterDataTest.php`, `tests/Query/Executor/FilterExecutorTest.php`
 - Test: `tests/Query/Executor/ListQueryDirectorTest.php`, `tests/Engine/Projector/InteractiveProjectorTest.php`
 
@@ -714,10 +747,12 @@ git commit -m "feat!: FormHarness mounts controls, hydrates initial values and d
 - Consumes: `FormHarness::decode()` (Task 10), `FilterContextFactory::create(FilterScope, ?ValueInterface)` (Task 3).
 - Produces:
   - Filter value maps everywhere are `array<string, ?ValueInterface>` keyed by alias (docblocks only).
+  - `ListQueryDirector::createQueryBuilder()` — a `ListSpec` with `failures` ⇒ `FilterException` naming them, before any filter runs (fail closed for every context: the interactive projector turns it into the failed view, the reader into a 500).
   - `ListQueryDirector::invokeFilters()` — per filter: `$value = $filter->control !== null ? ($values[$filter->alias] ?? null) : $filter->value` (§8 step 4); `FilterFactory`-built scope `new FilterScope($list, $filter, $options->context)`; a `FilterException` from `create()` or a predicate: control ⇒ log warning and skip the filter (fail open); no control ⇒ rethrow wrapped via `CreatesFilterExceptionTrait` (fail closed). `AbortFilteringException` keeps returning `null`.
-  - `InteractiveProjector`: `createFormHarness()` (renamed from `createFilterSet()`), `project()` uses `$harness->decode()`; `collectFilterData()` deleted; a `FilterException` while computing the aggregation count ⇒ returns `new InteractiveView(…, failed: true)` with `InteractiveEmptyLoader`, `paginatorFactory->createEmpty()` and `totalItems: 0`; error logged.
-  - `InteractiveView`: ctor param `bool $failed = false`, `isFailed(): bool` (Twig: `flare_list.failed`).
-  - Template: `{% if flare_list.failed %}<p class="flare-list__failed">{{ 'list.failed'|trans({}, 'flare') }}</p>{% else %}…entries and pagination…{% endif %}`; keys `list.failed`: en `The list could not be created.`, de `Die Liste konnte nicht erstellt werden.`
+  - `AbstractProjector::getSubscribedServices()` adds `LoggerInterface` and the `kernel.debug` parameter (via `ParameterBagInterface`); accessors `getLogger()`, `isDebug()`.
+  - `InteractiveProjector`: `createFormHarness()` (renamed from `createFilterSet()`), `project()` uses `$harness->decode()`; `collectFilterData()` deleted; a `FilterException` while computing the aggregation count ⇒ error logged; in debug mode rethrown (§8.1); otherwise `createView(…, failed: true)` with `InteractiveEmptyLoader`, `paginatorFactory->createEmpty()` and `totalItems: 0`.
+  - `createView(…, bool $failed = false)` gains the flag in `InteractiveProjector` **and** its override in `EventsInteractiveProjector` (which returns `InteractiveEventsView`); `InteractiveView` ctor param `bool $failed = false`, `isFailed(): bool` (Twig: `flare_list.failed`).
+  - Templates: inside the `list` block `{% if flare_list.failed %}<p class="flare-list__failed">{{ 'list.failed'|trans({}, 'flare') }}</p>{% else %}…{% endif %}`, and the `pagination` block renders nothing when failed — so the partials `list_only`/`pagination_only` (which extend the main template) inherit it. Keys `list.failed`: en `The list could not be created.`, de `Die Liste konnte nicht erstellt werden.`
   - Reader: no code change — a `FlareException` in `ReaderController` already becomes `InternalServerErrorHttpException` (500). Add a test or a note asserting it stays.
 
 - [ ] **Step 1: Write the failing tests**
@@ -736,6 +771,8 @@ public function testFailingFixedFilterFailsTheList(): void { $this->expectExcept
 
 // InteractiveProjectorTest
 public function testProjectorReturnsFailedViewWhenAFixedFilterFails(): void { self::assertTrue($view->isFailed()); self::assertSame(0, $view->getCount()); }
+public function testListFailuresRecordedAtBuildTimeYieldTheFailedView(): void { /* ListSpec(failures: ['…']) ⇒ isFailed() */ }
+public function testFailuresAreRethrownInDebugMode(): void { $this->expectException(FilterException::class); }
 public function testValuesComeFromTheHarness(): void {}
 ```
 
@@ -750,7 +787,7 @@ Expected: FAIL
 
 Run: `make test` — Expected: all PASS
 Run: `make phpstan` — Expected: `[OK] No errors`
-Run: `grep -rn "FilterData\|FilterFormInterface\|AsFilterForm\|FilterElementBuildingEvent\|IntrinsicContract\|ParentRefValue" src tests` — Expected: no output
+Run: `grep -rnw "FilterData\|FilterFormInterface\|AsFilterForm\|FilterElementBuildingEvent\|IntrinsicContract\|ParentRefValue" src tests` — Expected: no output (`-w`, so `FilterModel::getFilterData()` does not match)
 
 - [ ] **Step 5: Commit**
 
@@ -771,13 +808,12 @@ git commit -m "feat!: role-based value path, failed list state; drop FilterData 
 - Consumes: controls' `buildDca()` (Task 9), `ValueProviderInterface::buildDcaField()` (Task 5), `FilterControlRegistry::findNames()` (Task 4).
 - Produces:
   - `DcaBuilderInterface::scope(string $segment): DcaBuilderInterface` — `'control'` returns a sub-builder whose `palette()` fills the control segment; `field()` is shared with the parent.
-  - `DcaBuilderInterface::subpalette(string $selector, string $palette, ?string $value = null): self` — adds `$selector` to `__selector__` and sets `subpalettes[$value === null ? $selector : "{$selector}_{$value}"]`.
+  - `DcaBuilderInterface::selector(string $field, string $palette, ?string $value = null): self` — adds `$field` to `__selector__` and sets `subpalettes[$value === null ? $field : "{$field}_{$value}"]` (named `selector()` as in spec §6.3).
   - `apply()`: `palettes[$type] = Str::mergePalettes($prefix, $elementPalette, $controlPalette, $suffix)`.
   - `Str::mergePalettes(?string ...$palettes): string` — drops `null`/empty segments **before** trimming.
   - `ElementDcaListener::configure()`: after the element's `buildDca()`, if the edited row's `formVariant` names a registered control implementing `DcaContract` ⇒ `$control->buildDca($dca->scope('control'), $context)`; if the element declares a value class ⇒ `ValueProviderRegistry::get($class)->buildDcaField($dca->field('value'), $context)` and the prefix gains `,value` (via `DcaBuilder::prefix()` callable).
   - DCA: new field `value` (`exclude`, `sql` `['type' => 'blob', 'notnull' => false]`); `formVariant` gets `submitOnChange` and `options_callback` `FieldsOptionsCallbacks::getFieldOptions_formVariant(DataContainer $dc): array` (names from `findNames($elementValueClass)`, labels from `$GLOBALS['TL_LANG']['tl_flare_filter']['formVariant_options'][$name] ?? $name`); `__prefix__` = `{title_legend},title,type,formVariant`.
-  - Element palettes drop every control/value field (`preselect`, `prefill`, `label`, `placeholder`, `isMultiple`, `isExpanded`, `isMandatory`, `hasEmptyOption`, `format*`, `boolMode`, `isLimited` stays on CalendarCurrent as element config) and every `intrinsic` branch (§13.4).
-  - Delete `FieldsLoadAndSaveCallbacks::onLoadField_intrinsic()` / `onSaveField_intrinsic()`.
+  - `__prefix__` loses `intrinsic`, so `AddTargetAliasFieldCallback` re-anchors `targetAlias` on `formVariant` here (Task 13 renames it to `control`).
   - Language keys: `value`, `formVariant_options` (`flare_choice`, `flare_checkbox`, `flare_choice_bool`, `flare_date_range`, `flare_keywords`), `control_legend` in en/de.
 
 - [ ] **Step 1: Write the failing tests**
@@ -794,9 +830,9 @@ public function testSegmentsMergeInPrefixElementControlSuffixOrder(): void
     self::assertSame('{a},p;{e},el;{control_legend},ctl;{z},s', $GLOBALS['TL_DCA']['tl_test']['palettes']['x']);
 }
 public function testMissingSegmentsAreDropped(): void {}
-public function testSubpaletteRegistersSelectorAndKey(): void
+public function testSelectorRegistersFieldAndSubpaletteKey(): void
 {
-    // subpalette('ctl_formatLabel', 'ctl_formatLabelCustom', 'custom') ⇒ __selector__ contains it; subpalettes['ctl_formatLabel_custom']
+    // selector('formatLabel', 'formatLabelCustom', 'custom') ⇒ __selector__ contains it; subpalettes['formatLabel_custom']
 }
 
 // StrTest
@@ -832,9 +868,10 @@ git commit -m "feat!: control palette segment, subpalettes and the backend value
 
 **Interfaces:**
 - Produces:
-  - Column map (§4.1), frozen as a constant in the migration: `elm_` for `fieldGeneric`, `columnsGeneric`, `usePublished`, `fieldPublished`, `invertPublished`, `useStart`, `fieldStart`, `useStop`, `fieldStop`, `whichPtable`, `fieldPid`, `fieldPtable`, `tablePtable`, `whitelistParents`, `groupWhitelistParents`, `useWhitelistForOptionsOnly`, `equationLeft`, `equationOperator`, `equationRight`, `configureStart`, `startAt`, `configureStop`, `stopAt`, `hasExtendedEvents`, `isLimited`; `ctl_` for `label`, `placeholder`, `isMandatory`, `isMultiple`, `isExpanded`, `hasEmptyOption`, `formatLabel`, `formatLabelCustom`, `formatEmptyOption`, `formatEmptyOptionCustom`, `boolBinaryChoices`; `formAlias` → `alias`. `formVariant` → `control` is **not** migrated (v0.2-only and empty; the schema diff drops/adds it). Codefog integration columns follow the same rule (inspect its DCA and add them to the map).
+  - Column map (§4.1), frozen as a constant in the migration: `elm_` for `fieldGeneric`, `columnsGeneric`, `usePublished`, `fieldPublished`, `invertPublished`, `useStart`, `fieldStart`, `useStop`, `fieldStop`, `whichPtable`, `fieldPid`, `fieldPtable`, `tablePtable`, `whitelistParents`, `groupWhitelistParents`, `useWhitelistForOptionsOnly`, `equationLeft`, `equationOperator`, `equationRight`, `configureStart`, `startAt`, `configureStop`, `stopAt`, `hasExtendedEvents`, `isLimited`; `ctl_` for `label`, `placeholder`, `isMandatory`, `isMultiple`, `isExpanded`, `hasEmptyOption`, `formatLabel`, `formatLabelCustom`, `formatEmptyOption`, `formatEmptyOptionCustom`, `boolBinaryChoices`; `formAlias` → `alias`. `formVariant` → `control` is **not** migrated (v0.2-only and empty; the schema diff drops/adds it). (All columns, including those the Codefog elements use, live in `contao/dca/tl_flare_filter.php`.)
   - `RenameFilterColumnsMigration extends AbstractMigration` (pattern: `RenameContentListColumnMigration`): `shouldRun()` = table exists and at least one old column exists whose new column does not; `run()` = per pending pair `ALTER TABLE tl_flare_filter CHANGE {old} {new} {Type} {NULL|NOT NULL} {DEFAULT …}` composed from the old column's `SHOW COLUMNS` row.
   - `elm_groupWhitelistParents` keeps its inner blob keys (`tablePtable`, `whitelistParents`, `formatLabel`, `formatLabelCustom`); the group widget defines its sub-fields itself instead of referencing the renamed columns (§4.1).
+  - `ElementDcaListener::checkDuplicateFilterAliases()` queries `alias`.
   - `FilterModel::getFilterAlias(): string` replaces `getFilterFormName()`; `generateFormName()` reads `alias`. `FilterFactory`/collector read `$model->control`. `AddTargetAliasFieldCallback` anchors on `control`. `ListCallbacks`: `is_intrinsic` = `($row['control'] ?? '') === ''`. All `#[AsCallback]` targets use the new field names; `__selector__`/subpalette keys use the new names (`elm_usePublished`, `elm_whichPtable_*`, `ctl_formatLabel_custom`, …).
 
 - [ ] **Step 1: Write the failing test** (mocked `Doctrine\DBAL\Connection`)
@@ -859,7 +896,7 @@ Expected: FAIL
 - [ ] **Step 4: Verify**
 
 Run: `make test && make phpstan` — Expected: PASS / `[OK] No errors`
-Run: `grep -rnE "\->(fieldGeneric|columnsGeneric|isMultiple|formatLabel|formAlias|formVariant)\b|'(formAlias|formVariant)'" src contao templates` — Expected: no output
+Run: `grep -rnE "\->(fieldGeneric|columnsGeneric|isMultiple|formatLabel|formAlias|formVariant)\b|'(formAlias|formVariant)'|\`formAlias\`" src contao templates --exclude-dir=Migration` — Expected: no output (`ElementDcaListener::checkDuplicateFilterAliases()` uses the backticked column in SQL)
 
 - [ ] **Step 5: Commit**
 
@@ -879,7 +916,8 @@ git commit -m "feat!: elm_/ctl_ column prefixes, control and alias columns, rena
 
 **Interfaces:**
 - Produces: `BackfillFilterValuesMigration extends AbstractMigration` per §11 B with **frozen string literals** (no class constants, no registry):
-  - `shouldRun()`: table exists, `intrinsic` present, the renamed `ctl_*` columns present (so it waits for the rename migration — `contao:migrate` re-runs pending migrations until none remain), and a count of rows of the mapped types still needing work > 0. `false` when `intrinsic` is absent.
+  - `shouldRun()`: table exists, `intrinsic` present, the renamed `ctl_*` columns present (so it waits for the rename migration — `contao:migrate` re-runs pending migrations until none remain), and at least one row matches the **pending predicate**: type in the mapped set AND ( (`intrinsic = 0` AND `control = ''`) OR (copy source non-empty per the `value` rules below AND `value` empty) OR `ctl_boolBinaryChoices = 'null_false'` ); when `control`/`value` do not exist yet, every mapped row counts as pending. `false` when `intrinsic` is absent.
+  - `run()` first adds `control` (`varchar(128) NOT NULL DEFAULT ''`) and `value` (`blob NULL`) with `ALTER TABLE … ADD` when absent — on an upgrading install they would otherwise only arrive with the schema diff, which runs after migrations and also drops the sources.
   - `run()`, per row:
     - `control`: `intrinsic = 1` ⇒ `''`; else `flare_archive|flare_fieldValueChoice|flare_dcaSelectField|cfg_tags_choice` ⇒ `flare_choice`; `flare_dateRange|flare_calendar_current` ⇒ `flare_date_range`; `flare_search_keywords` ⇒ `flare_keywords`; `flare_bool` ⇒ `boolMode = 'ternary'` ? `flare_choice_bool` : `flare_checkbox`; others ⇒ `''`.
     - `value`: `preselect` for `flare_bool`, `flare_fieldValueChoice`, `flare_dcaSelectField`, `cfg_tags_choice`; for `flare_archive` only when `intrinsic = 0`; `prefill` for `flare_search_keywords` only when `intrinsic = 1`. Bool `true|false|null` ⇒ `'1'|'0'|''`; choices ⇒ `serialize(list of keys)` whether stored single or multiple.
@@ -896,6 +934,8 @@ public function testTernaryBoolBecomesChoiceBoolAndNullFalseBecomesTrueFalse(): 
 public function testSingleDcaSelectPlaceholderBecomesEmptyOptionLabel(): void {}
 public function testShouldRunIsFalseOnceIntrinsicIsGone(): void {}
 public function testShouldRunWaitsForTheRenamedColumns(): void {}
+public function testShouldRunGoesQuietAfterARun(): void { /* rows after run() match no pending predicate, intrinsic-only databases included */ }
+public function testRunAddsMissingTargetColumnsFirst(): void {}
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**

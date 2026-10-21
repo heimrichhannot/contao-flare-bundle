@@ -6,12 +6,9 @@ namespace HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareFilter;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicContract;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
-use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
-use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * @internal For internal use only. Do not call this class or its methods directly.
@@ -19,11 +16,6 @@ use Symfony\Component\HttpFoundation\RequestStack;
 readonly class FieldsLoadAndSaveCallbacks
 {
     public const TABLE_NAME = FilterContainer::TABLE_NAME;
-
-    public function __construct(
-        private FilterElementRegistry $filterElementRegistry,
-        private RequestStack          $requestStack,
-    ) {}
 
     #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.load')]
     #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.save')]
@@ -58,56 +50,6 @@ readonly class FieldsLoadAndSaveCallbacks
     public function onLoadField_fieldPtable(mixed $value, DataContainer $dc): string
     {
         return $value ?: DcaHelper::tryGetColumnName($dc, 'ptable', '');
-    }
-
-    #[AsCallback(self::TABLE_NAME, 'fields.intrinsic.load')]
-    public function onLoadField_intrinsic(mixed $value, DataContainer $dc): bool
-    {
-        $value = (bool) $value;
-
-        if (!$request = $this->requestStack->getCurrentRequest()) {
-            return $value;
-        }
-
-        if ($request->getMethod() === 'POST' && $request->request->get('FORM_SUBMIT') === self::TABLE_NAME)
-        {
-            // do not disable intrinsic field if form is being submitted
-            // otherwise the save callback will not be called
-            return $value;
-        }
-
-        if (!$row = DcaHelper::rowOf($dc)) {
-            return $value;
-        }
-
-        $filterElement = $this->filterElementRegistry->getService($row['type'] ?? null);
-
-        if ($filterElement instanceof IntrinsicContract && $filterElement->isOnlyIntrinsic())
-        {
-            $eval = &$GLOBALS['TL_DCA'][self::TABLE_NAME]['fields']['intrinsic']['eval'];
-
-            $eval['disabled'] = true;
-
-            return true;
-        }
-
-        return $value;
-    }
-
-    #[AsCallback(self::TABLE_NAME, 'fields.intrinsic.save')]
-    public function onSaveField_intrinsic(mixed $value, DataContainer $dc): mixed
-    {
-        if ($value || !$row = DcaHelper::rowOf($dc)) {
-            return $value;
-        }
-
-        $element = $this->filterElementRegistry->getService($row['type'] ?? null);
-
-        if ($element instanceof IntrinsicContract && $element->isOnlyIntrinsic()) {
-            return '1';
-        }
-
-        return $value;
     }
 
     #[AsCallback(self::TABLE_NAME, 'fields.configureStart.save')]

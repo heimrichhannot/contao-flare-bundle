@@ -10,6 +10,7 @@ use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
+use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
@@ -96,8 +97,10 @@ readonly class ListQueryDirector
      * The value is taken by the filter's role (SPEC_FILTER_FORMS.md §4.2, §8): with a control, only
      * the form's value map applies; without one, the filter's fixed value applies in every context.
      *
-     * A failing filter fails by its role (§8.1): with a control, it is skipped with a warning (fail
-     * open); without one, the failure is rethrown and fails the list (fail closed).
+     * A failing filter fails by what it bounds (§4.2, §8.1). A filter with a control that fails with
+     * a value is retried without it: the element's own config (e.g. a whitelist) still bounds the
+     * whole list, only the user's or initial value is dropped with a warning (fail open). A filter
+     * that fails without a value, or a filter without a control, fails the list (fail closed).
      *
      * @return FilterConditionsBuilder[]
      *
@@ -122,18 +125,19 @@ readonly class ListQueryDirector
             }
             catch (FilterException $e)
             {
-                if ($filter->control === null) {
+                if ($filter->control === null || $value === null) {
                     throw $e;
                 }
 
+                // Throws if the element's config is broken regardless of the value: fail closed.
+                $builders = $this->buildFilterConditionsBuilders($scope, null);
+
                 $this->logger->warning(\sprintf(
-                    '[FLARE] Filter "%s" (%s) failed and is skipped: %s',
+                    '[FLARE] Filter "%s" (%s) failed with its value, which is dropped: %s',
                     $filter->alias,
                     $filter->source ?: 'filter inlined',
                     $e->getMessage(),
                 ), ['method' => __METHOD__, 'exception' => $e]);
-
-                continue;
             }
 
             \array_push($filterQueryBuilders, ...$builders);
@@ -157,18 +161,9 @@ readonly class ListQueryDirector
         {
             $context = $this->filterContextFactory->create($scope, $value);
         }
-        catch (FilterException $e)
+        catch (\Exception $e)
         {
-            throw $this->createFilterException($e, $filter, $filter->element::class . '::buildContext');
-        }
-        catch (FlareException $e)
-        {
-            throw $e;
-        }
-        catch (\Throwable $e)
-        {
-            throw new FilterException($e->getMessage(), code: $e->getCode(), previous: $e,
-                method: $filter->element::class . '::buildContext', source: $filter->source ?: 'filter inlined');
+            throw $this->wrapFilterFailure($e, $filter, $filter->element::class . '::buildContext');
         }
 
         $filterQueryBuilders = [];
@@ -183,24 +178,31 @@ readonly class ListQueryDirector
             {
                 $proposition->predicate->buildConditions($filterQueryBuilder, $proposition->options);
             }
-            catch (AbortFilteringException $e)
+            catch (\Exception $e)
             {
-                throw $e;
-            }
-            catch (FilterException $e)
-            {
-                throw $this->createFilterException($e, $filter, $proposition->predicateClass . '::buildConditions');
-            }
-            catch (\Throwable $e)
-            {
-                throw new FilterException($e->getMessage(), code: $e->getCode(), previous: $e,
-                    method: $proposition->predicateClass, source: $filter->source ?: 'filter inlined');
+                throw $this->wrapFilterFailure($e, $filter, $proposition->predicateClass . '::buildConditions');
             }
 
             $filterQueryBuilders[] = $filterQueryBuilder;
         }
 
         return $filterQueryBuilders;
+    }
+
+    /**
+     * The exception to rethrow for a failure while applying a filter: a {@see FilterException} is
+     * wrapped with the filter's source, any other {@see FlareException} (incl. aborting) passes through
+     * unchanged, and other exceptions become a {@see FilterException}. Errors (`\Error`) are programming
+     * errors and are never caught.
+     */
+    private function wrapFilterFailure(\Exception $e, Filter $filter, string $method): FlareException
+    {
+        return match (true) {
+            $e instanceof FilterException => $this->createFilterException($e, $filter, $method),
+            $e instanceof FlareException => $e,
+            default => new FilterException($e->getMessage(), code: $e->getCode(), previous: $e,
+                method: $method, source: $filter->source ?: 'filter inlined'),
+        };
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Query\Executor;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
 use HeimrichHannot\FlareBundle\Engine\Context\AggregationContext;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
@@ -15,6 +16,7 @@ use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
+use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
@@ -23,6 +25,7 @@ use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\QueryBuilderFactory;
+use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
 use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
 use PHPUnit\Framework\TestCase;
@@ -77,20 +80,67 @@ final class ListQueryDirectorTest extends TestCase
         self::assertSame($fixed, $spy->received);
     }
 
-    public function testFailingControlledFilterIsSkipped(): void
+    public function testControlledFilterFailingWithItsValueDropsOnlyTheValue(): void
     {
+        $element = new DirectorValueRejectingElement();
         $next = new DirectorSpyElement();
         $filters = [
-            $this->filter(new DirectorFailingElement(), alias: 'broken', control: new DirectorStubControl()),
+            $this->filter($element, alias: 'broken', control: new DirectorStubControl()),
             $this->filter($next, alias: 'next', value: new BoolValue(true)),
         ];
 
-        $this->invoke($filters, new AggregationContext());
+        $builders = $this->invoke($filters, new ValidationContext(), ['broken' => new BoolValue(true)]);
 
-        self::assertSame(1, $next->calls, 'The filters after a skipped one still run.');
+        self::assertSame([true, false], $element->calledWithValue, 'Retried once without the value.');
+        self::assertCount(1, $builders, 'The config-bound predicate of the retry applies.');
+        self::assertSame(1, $next->calls, 'The filters after it still run.');
         self::assertCount(1, $this->logs);
         self::assertSame('warning', $this->logs[0][0]);
-        self::assertStringContainsString('broken element', $this->logs[0][1]);
+        self::assertStringContainsString('value rejected', $this->logs[0][1]);
+    }
+
+    public function testControlledFilterFailingWithoutAValueFailsTheList(): void
+    {
+        $filter = $this->filter(new DirectorFailingElement(), alias: 'broken', control: new DirectorStubControl());
+
+        $this->expectException(FilterException::class);
+        $this->expectExceptionMessage('broken element');
+
+        $this->invoke([$filter], new AggregationContext(), ['broken' => new BoolValue(true)]);
+    }
+
+    public function testControlledFilterFailingWithANullValueFailsTheList(): void
+    {
+        $filter = $this->filter(new DirectorFailingElement(), alias: 'broken', control: new DirectorStubControl());
+
+        $this->expectException(FilterException::class);
+
+        $this->invoke([$filter], new AggregationContext());
+    }
+
+    public function testErrorsEscapeUnwrapped(): void
+    {
+        $filter = $this->filter(new DirectorErroringElement(), control: new DirectorStubControl());
+
+        $this->expectException(\TypeError::class);
+
+        $this->invoke([$filter], new AggregationContext(), ['f' => new BoolValue(true)]);
+    }
+
+    public function testOtherExceptionsBecomeFilterExceptions(): void
+    {
+        $filter = $this->filter(new DirectorThrowingElement(), source: 'tl_flare_filter.9');
+
+        try
+        {
+            $this->invoke([$filter], new AggregationContext());
+            self::fail('A failing filter without a control must fail the list.');
+        }
+        catch (FilterException $e)
+        {
+            self::assertInstanceOf(\RuntimeException::class, $e->getPrevious());
+            self::assertSame('tl_flare_filter.9', $e->getSource());
+        }
     }
 
     public function testFailingFixedFilterFailsTheList(): void
@@ -147,10 +197,12 @@ final class ListQueryDirectorTest extends TestCase
     /**
      * @param list<Filter> $filters
      * @param array<string, ?ValueInterface> $filterValues
+     *
+     * @return FilterConditionsBuilder[]
      */
-    private function invoke(array $filters, ContextInterface $context, array $filterValues = []): void
+    private function invoke(array $filters, ContextInterface $context, array $filterValues = []): array
     {
-        $this->createDirector()->invokeFilters(new ListQueryConfig(
+        return $this->createDirector()->invokeFilters(new ListQueryConfig(
             list: $this->list($filters),
             context: $context,
             filterValues: $filterValues,
@@ -197,6 +249,8 @@ final class ListQueryDirectorTest extends TestCase
     private function createDirector(): ListQueryDirector
     {
         $connection = $this->createMock(Connection::class);
+        $connection->method('quoteIdentifier')->willReturnArgument(0);
+        $connection->method('createExpressionBuilder')->willReturn(new ExpressionBuilder($connection));
         $dispatcher = new EventDispatcher();
 
         $logs = &$this->logs;
@@ -240,6 +294,42 @@ class DirectorFailingElement implements FilterElementInterface
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
         throw new FilterException('broken element');
+    }
+}
+
+/**
+ * Rejects any value; without a value it applies its config-bound predicate.
+ */
+class DirectorValueRejectingElement implements FilterElementInterface
+{
+    /** @var list<bool> Whether each call received a value. */
+    public array $calledWithValue = [];
+
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
+    {
+        $this->calledWithValue[] = $value !== null;
+
+        if ($value !== null) {
+            throw new FilterException('value rejected');
+        }
+
+        $builder->addPredicate(BooleanPredicate::class, ['field' => 'published', 'value' => true]);
+    }
+}
+
+class DirectorErroringElement implements FilterElementInterface
+{
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
+    {
+        throw new \TypeError('programming error');
+    }
+}
+
+class DirectorThrowingElement implements FilterElementInterface
+{
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
+    {
+        throw new \RuntimeException('unexpected');
     }
 }
 

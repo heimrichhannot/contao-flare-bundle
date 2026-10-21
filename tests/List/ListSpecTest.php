@@ -70,6 +70,24 @@ final class ListSpecTest extends TestCase
         $spec->withFilter(self::filter('c', 'foo'));
     }
 
+    /**
+     * @dataProvider customKeyCases
+     */
+    public function testWithFilterRejectsAnAliasTakenUnderACustomKey(string $key, string $alias): void
+    {
+        $spec = self::spec()->withFilters([$key => self::filter('a', $alias)]);
+
+        $this->expectException(FlareException::class);
+
+        $spec->withFilter(self::filter('b', 'foo'));
+    }
+
+    public static function customKeyCases(): iterable
+    {
+        yield 'existing alias under another key' => ['custom', 'foo'];
+        yield 'another alias under the alias as key' => ['foo', 'bar'];
+    }
+
     public function testAFilterIsReplacedByRemovingItFirst(): void
     {
         $spec = self::spec()

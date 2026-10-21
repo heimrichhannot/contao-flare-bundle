@@ -49,14 +49,20 @@ final readonly class ListSpec
     /**
      * Adds a filter under its alias.
      *
-     * A filter of the same alias is never replaced silently: replacing a filter without a control
-     * would widen the list (SPEC_FILTER_FORMS.md §8.1). Remove it first with {@see withoutFilter()}.
+     * A filter of the same alias, or one stored under that alias as its key, is never replaced
+     * silently: replacing a filter without a control would widen the list (SPEC_FILTER_FORMS.md
+     * §8.1). Remove it first with {@see withoutFilter()}.
      *
-     * @throws FlareException If the list already has a filter with the same alias.
+     * @throws FlareException If the alias is already taken by a filter or a filter's key.
      */
     public function withFilter(Filter $filter): self
     {
-        if (isset($this->filters[$filter->alias]))
+        $taken = isset($this->filters[$filter->alias]) || \array_filter(
+            $this->filters,
+            static fn (Filter $existing): bool => $existing->alias === $filter->alias,
+        );
+
+        if ($taken)
         {
             throw new FlareException(
                 \sprintf('The list already has a filter with the alias "%s".', $filter->alias),

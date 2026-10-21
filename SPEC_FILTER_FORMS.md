@@ -1,16 +1,16 @@
-# SPEC: Decoupling Filter Forms from Filter Elements
+# SPEC: Decoupling Filter Controls from Filter Elements
 
-**Status:** Design settled (2026-10-20/21, §13.6-13.26). Step 0 (§12) implemented and partly
+**Status:** Design settled (2026-10-20/21, §13.6-13.27). Step 0 (§12) implemented and partly
 re-renamed by #48; step 1 partially implemented and red mid-cut; steps 2-6 not started. Progress
 and the open checklist live in `PLAN_FILTER_FORMS.md`.
-**Scope:** `src/Filter/`, `src/Form/`, `src/Query/`, `src/Event/`, `src/EventListener/NamedDispatch/`,
+**Scope:** `src/Filter/` (incl. the new `src/Filter/Control/`), `src/Form/`, `src/Query/`, `src/Event/`, `src/EventListener/NamedDispatch/`,
 `src/Registry/`, `src/DependencyInjection/`, `src/DataContainer/Builder/`, `src/Util/`,
 `contao/dca/tl_flare_filter.php`, `src/EventListener/Contao/ElementDcaListener.php`,
 `src/Engine/Projector/InteractiveProjector.php`
 **Breaking:** yes, deliberately — v0.2 is unreleased and the goal is a stable architecture, not
 compatibility. `FilterElementInterface`, `Filter::$data`, `ChoicesBuilder::add()`, the
 `tl_flare_filter` schema, the renames of §2.2 (service ids, event classes, the dispatch alias
-`flare.filter_element.{type}.form_built`), the predicate layer of §2.3 replacing filter types,
+`flare.filter_element.{type}.form_built`, and the per-filter strategy `FilterForm` → `FilterControl`), the predicate layer of §2.3 replacing filter types,
 `FilterBuilder` and `FilterExecutor`, and the removal of `FilterElementBuildingEvent` /
 `FilterElementBuiltEvent` (§13.16).
 
@@ -67,22 +67,24 @@ flag. Two concepts fighting over one column.
 
 ## 2. Target model
 
-A filter's **presentation** becomes a separate, registrable, per-instance-selectable concern that
-owns its own config and its own slice of the backend palette. The **element owns its lifecycle**:
-it alone decides, from its config and the value, which predicates apply.
+A filter's **presentation** becomes a separate, registrable, per-instance-selectable concern — the
+**filter control** — that owns its own config and its own slice of the backend palette. The
+**element owns its lifecycle**: it alone decides, from its config and the value, which predicates
+apply.
 
 ```
-FilterForm      — how the user supplies the value. Turns submitted form data into a value object.
+FilterControl   — how the user supplies the value. Turns submitted form data into a value object.
 Value object    — what the user said, typed: a selection, a bool, a range, a phrase.
 FilterElement   — what rows match. Applies its config triple and the value object, and emits
                   predicates with bound arguments (§2.3).
 Predicate       — how bound arguments become SQL conditions. Stateless, public API.
 ```
 
-Registration is **one-directional**: a form binds to a *value class*, never to an element type.
-Selectable forms for an element = registry lookup by the element's declared value class. A form's
-value class is the narrowed return type of its `decode()` (§3.1), so a form that produces the wrong
-shape fails at container build or as a native `TypeError` — it is never a silently wrong query.
+Registration is **one-directional**: a control binds to a *value class*, never to an element type.
+Selectable controls for an element = registry lookup by the element's declared value class. A
+control's value class is the narrowed return type of its `decode()` (§3.1), so a control that
+produces the wrong shape fails at container build or as a native `TypeError` — it is never a
+silently wrong query.
 
 **The value object stays at widget level** (§13.10). It records *what the user said* — which
 options, which bool, which range, which phrase — and nothing about what that means for the query.
@@ -91,90 +93,95 @@ the element's job in `buildContext()`, the one place that also holds the config.
 
 ### 2.1 Nomenclature
 
-`FilterForm` is the *per-filter* strategy. That name is currently occupied by the whole-form
-machinery (`FilterFormFactory`, `FilterFormBuildEvent`, `flare.form.{name}.build`), which must
-therefore be renamed before anything else — Phase 0 in §12.
-
-The renaming axis is **not** filter-versus-list. A form belongs to filtering; the list is
+The renaming axis is **not** filter-versus-list. Input belongs to filtering; the list is
 exclusively output. The three concerns are peers:
 
 | concern | meaning |
 |---|---|
 | **Filter** | what matches — the predicate, query side |
 | **List** | what comes out — output |
-| **Form** | what goes in — input |
+| **Form** | what goes in — input, rendered as one Symfony form per list |
 
-The aggregate is therefore not list-scoped but simply the *plural* of the singular. Four layers,
-one word each:
+Two levels must not share a word: the **Symfony level** (a real form: root form, builder, mounted
+fields) and the **strategy level** above it (which kind of input a filter offers, and how its data
+becomes a value). "Form" names only the Symfony level; the strategy is a **control** (§13.27):
 
-| term | multiplicity | what it is |
-|---|---|---|
-| `FormHarness` | one per list × form context | the filters, their root form, and the mount↔filter map |
-| `FilterForm` | one per filter | registrable presentation strategy (`buildForm()`, `decode()`) |
-| `FilterFormBuilder` | one per filter, transient | collect-only builder handed to `buildForm()` |
-| **mount** | one per filter that has a form | the node mounted into the root form — flat field or compound group |
+| term | multiplicity | level | what it is |
+|---|---|---|---|
+| `FormHarness` | one per list × form context | Symfony | the root form, and the mount↔filter map |
+| `FilterControl` | one per filter | strategy | registrable presentation strategy (`buildForm()`, `decode()`, `hydrate()`) — checkbox, choice, date range, keywords |
+| `FilterFormBuilder` | one per filter, transient | Symfony | collect-only builder handed to `FilterControl::buildForm()` |
+| **mount** | one per filter that has a control | Symfony | the node mounted into the root form — flat field or compound group |
+
+"Control" is the technology-neutral UI word for an input element ("Bedienelement" in the German
+backend). How a control renders — Symfony fields, HTML — is its means, not its identity.
 
 `FormHarness` is an **object**, not a bare `FormInterface` returned by a factory: it owns the
 `decode()` loop (§8), which otherwise has no home but `InteractiveProjector` — where its
-predecessor already landed wrongly (§8).
+predecessor already landed wrongly.
 
-**"Mount"** is the codebase's own word; `FilterFormFactory` already names the variable `$mount`.
+**"Mount"** is the codebase's own word; `FilterFormFactory` already named the variable `$mount`.
 It replaces "field" throughout this spec, because in the compound case the mounted node is a
 `FormType` group with children and not a field at all.
 
-Directory split, unchanged by the rename: `src/Filter/Form/` holds FLARE `FilterForm`
-implementations (peers of `src/Filter/Element/`); `src/Form/` keeps Symfony-level building blocks
-(`ChoicesBuilder`, `Form/Type/DateRangeFormType`). Mixing the two is the ambiguity this section
-exists to remove.
+Directory split: `src/Filter/Control/` holds the `FilterControl` implementations (peers of
+`src/Filter/Element/`); `src/Form/` keeps Symfony-level building blocks (`FormHarness`,
+`FilterMount`, `ChoicesBuilder`, `Form/Type/DateRangeFormType`).
 
-### 2.2 Renaming (Phase 0, revised by #48)
+### 2.2 Renaming
 
-Phase 0 first named the aggregate `FilterSet`; #48 renamed it to `FormHarness` and moved it, with
-its factory and `FilterMount`, from `src/Filter/` to `src/Form/`. The table gives the final names:
+Phase 0 freed the name `FilterForm` from the whole-form machinery and first named the aggregate
+`FilterSet`; #48 renamed the aggregate to `FormHarness` and moved it to `src/Form/`; this design
+renames the per-filter strategy from `FilterForm` to `FilterControl`. Final names:
 
 | before | now | scope |
 |---|---|---|
 | `Form\Factory\FilterFormFactory` | `Form\Factory\FormHarnessFactory` | harness |
-| — | `Form\FormHarness` (new) | harness |
-| — | `Form\FilterMount` (new) | harness |
+| — | `Form\FormHarness`, `Form\FilterMount` (new) | harness |
 | `Event\FilterFormBuildEvent` | `Event\FormHarnessBuildEvent` | harness |
 | `EventListener\NamedDispatch\FilterFormListener` | `…\FormHarnessListener` | harness |
 | `flare.form.{name}.build` | unchanged (was `flare.filter_set.{name}.build` in between) | harness |
-| `Event\FilterElementFormBuiltEvent` | `Event\FilterFormBuiltEvent` | filter |
-| `flare.filter_element.{type}.form_built` | `flare.filter_form.{type}.built` | filter |
-| — | `EventListener\NamedDispatch\FilterFormListener` (new) | filter |
-| `Filter\FilterFormBuilder`, `…Interface` | unchanged | filter |
+| `Event\FilterElementFormBuiltEvent` | `Event\FilterControlBuiltEvent` (was `FilterFormBuiltEvent` in between) | control |
+| `flare.filter_element.{type}.form_built` | `flare.filter_control.{type}.built` (was `flare.filter_form.{type}.built`) | control |
+| — | `EventListener\NamedDispatch\FilterControlListener` (new) | control |
+| `Filter\Form\FilterFormInterface`, `AbstractFilterForm` (v0.2-only) | `Filter\Control\FilterControlInterface`, `AbstractFilterControl` | control |
+| `#[AsFilterForm]`, tag `flare.filter_form`, alias `flare.filter_form.{name}` (v0.2-only) | `#[AsFilterControl]`, tag `flare.filter_control`, alias `flare.filter_control.{name}` | control |
+| `FilterFormRegistry`, `RegisterFilterFormsPass`, `TypeNameFactory::createFilterFormType()` (v0.2-only) | `FilterControlRegistry`, `RegisterFilterControlsPass`, `createFilterControlType()` (suffixes `FilterControl`, `Control`) | control |
+| `Filter\FilterFormBuilder`, `…Interface` | unchanged | Symfony |
 
 The query-side renames of #48 are in §2.3.
 
 `FormHarnessFactory` builds a `FormHarness`, not a form; the root form is `FormHarness::getForm()`.
-Because the aggregate is now named after the form again, its dispatch alias went back to the
-original `flare.form.{name}.build`. `FilterElementFormBuiltEvent` loses its detour over the element:
-it was named after the element only because `FilterForm*` was taken — and its dispatch alias follows
-the class, moving out of `FilterElementListener` into the `FilterFormListener` whose name the
-`FilterFormListener` → `FormHarnessListener` rename frees. `{type}` there remains the *element* type,
-which is what listeners target; the alias names the concern, not the key.
+Because the aggregate is named after the form, its dispatch alias went back to the original
+`flare.form.{name}.build`. `FilterElementFormBuiltEvent` loses its detour over the element: it was
+named after the element only because `FilterForm*` was taken; it is dispatched after a control built
+its fields, so it is named after the control, and its alias moves out of `FilterElementListener`
+into `FilterControlListener`. `{type}` there remains the *element* type, which is what listeners
+target; the alias names the concern, not the key.
 
-`FilterFormBuilder` keeps its name deliberately. Symfony's own
-`FormTypeInterface::buildForm(FormBuilderInterface)` names the builder after what it builds, not
-after who receives it, so `FilterForm::buildForm(FilterFormBuilderInterface)` reads as the familiar
-pattern. `single()` is moreover a statement about the form, not about fields, which rules out
-`FilterFieldsBuilder`.
+`FilterFormBuilder` keeps its name deliberately: it is a Symfony-level builder for one filter's
+part of the form. Symfony's own `FormTypeInterface::buildForm(FormBuilderInterface)` names the
+builder after what it builds, so `FilterControl::buildForm(FilterFormBuilderInterface)` reads as
+"the control builds its part of the form". `single()` is a statement about the form, not about
+fields, which rules out `FilterFieldsBuilder`.
 
 Rejected names, recorded so the branches stay closed:
 
-- **`ListForm…`** — puts the form on the output side of the model, contradicting the table above.
-- **`ListFilterForm…`** — contains `FilterForm` as a substring, so every search for the per-filter
-  concept also hits the aggregate.
+- **`FilterForm`** for the per-filter strategy — the name this spec used until 2026-10-21. It evokes
+  HTML and Symfony forms, while the strategy is a layer above them, and it blurred the line to
+  `FormHarness` / `FilterFormBuilder`, which *are* Symfony forms.
+- **`FilterInput`** — collides with `Contao\Input`, used in the same code, and evokes `<input>`.
+- **`FilterPresenter`** — accurate as a pattern, opaque to editors, and sounds like output.
+- **`FilterWidget`** — promises rendering and hides `decode()`/`hydrate()` and the DCA slice; the
+  term is also already occupied by Contao.
+- **`ListForm…`** — puts input on the output side of the model, contradicting the table above.
+- **`ListFilterForm…`** — contains `FilterForm` as a substring, so every search for one concept
+  also hits the other.
 - **`FilterFormType`** — `FilterType` was the old name of the SQL predicate (now
   `src/Filter/Predicate/`, §2.3), and the suffix falsely promises a Symfony `AbstractType`.
 - **`FilterSet`** — Phase 0's name for the aggregate, replaced in #48 (§13.5).
-- **`FilterBar` / `FilterPanel`** — commit to a layout no template is obliged to honour, and
-  understate an object that also owns `decode()`.
+- **`FilterBar` / `FilterPanel`** — commit to a layout no template is obliged to honour.
 - **`QueryForm`** — `src/Query/` is the SQL layer.
-- **`FilterWidget` for the per-filter strategy** (leaving `FilterForm` on the aggregate) — the
-  strategy has `decode()` and its own DCA slice, so "widget" promises rendering and hides half the
-  contract; the term is also already occupied by Contao.
 
 ### 2.3 Two stages: `FilterScope` and `FilterContext`
 
@@ -187,15 +194,15 @@ final readonly class FilterScope
 {
     public function __construct(
         public ListSpec         $list,
-        public Filter           $filter,         // carries element config and form config (§8)
+        public Filter           $filter,         // carries element config and control config (§8)
         public ContextInterface $engineContext,  // the context the list is built / filter is executed in
     ) {}
 }
 ```
 
-Everything that happens before a value exists receives the scope: `FilterFormInterface::buildForm()`,
+Everything that happens before a value exists receives the scope: `FilterControlInterface::buildForm()`,
 `::decode()` and `::hydrate()`, the element ports (§3.5), value providers (§3.6),
-`FilterFormBuiltEvent`, `FilterMount`. `FormHarnessFactory` creates scopes directly. The form-side
+`FilterControlBuiltEvent`, `FilterMount`. `FormHarnessFactory` creates scopes directly. The form-side
 attribute keys `ATTR_SELF` and `ATTR_SINGLE_FIELD` move from `FilterContext` to `FilterScope`.
 
 **Engine contexts** are `InteractiveContext`, `ValidationContext`, `AggregationContext` and, new,
@@ -241,28 +248,28 @@ is out of scope here (§15).
 
 ## 3. Contracts
 
-### 3.1 `FilterFormInterface`
+### 3.1 `FilterControlInterface`
 
 ```php
-interface FilterFormInterface
+interface FilterControlInterface
 {
     public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void;
 
     /**
-     * Turns the mount's data into this form's value object, or null to contribute nothing.
+     * Turns the mount's data into this control's value object, or null to contribute nothing.
      * Implementations MUST narrow the return type to one concrete value class.
      */
     public function decode(mixed $data, FilterScope $scope): ?ValueInterface;
 
     /**
-     * The inverse of decode(): the widget data for a value of this form's value class.
+     * The inverse of decode(): the widget data for a value of this control's value class.
      * Used to hydrate an unsubmitted form from Filter::$value (§8).
      */
     public function hydrate(?ValueInterface $value, FilterScope $scope): mixed;
 }
 
-#[AsFilterForm(name: 'flare_choice')]
-final class ChoiceFilterForm extends AbstractFilterForm
+#[AsFilterControl(name: 'flare_choice')]
+final class ChoiceFilterControl extends AbstractFilterControl
 {
     public function decode(mixed $data, FilterScope $scope): ?ChoiceValue
     {
@@ -274,13 +281,13 @@ final class ChoiceFilterForm extends AbstractFilterForm
 ```
 
 **The value class is the narrowed return type of `decode()`.** PHP return types are covariant, so a
-form may declare `?ChoiceValue` against the interface's `?ValueInterface`. `RegisterFilterFormsPass`
+control may declare `?ChoiceValue` against the interface's `?ValueInterface`. `RegisterFilterControlsPass`
 reads it by reflection — no instantiation — and fails the container build if it is not a single
 concrete class implementing `ValueInterface` (a bare `?ValueInterface`, a union, `mixed`). At run
-time PHP itself enforces it: a form returning anything else is a `TypeError`. There is no
+time PHP itself enforces it: a control returning anything else is a `TypeError`. There is no
 `getValueClass()` and no `@template` (§13.11). The asymmetry with elements is deliberate: an element
 *cannot* narrow its `$value` parameter (contravariance, §3.2), so it declares its value class in the
-attribute; a form *can* narrow its return, so it declares nothing. `hydrate()` cannot narrow its
+attribute; a control *can* narrow its return, so it declares nothing. `hydrate()` cannot narrow its
 parameter for the same reason as elements, and checks its argument the same way.
 
 **`decode()` receives the mount's data, not the `FormInterface`** (§13.13). `FormHarness::decode()`
@@ -294,13 +301,13 @@ extracts it uniformly with `getData()` — model data, never view data:
 
 The "cleared vs. never touched" distinction survives in the data itself: an unsubmitted form yields
 its hydrated value or `null`; a submitted, unchecked checkbox yields `false`. The reason `decode()`
-used to receive the `FormInterface` — letting a form pick view data over model data — disappears with
+used to receive the `FormInterface` — letting a control pick view data over model data — disappears with
 choice objects (§7).
 
-**Form config.** A form MAY implement `OptionsContract` (`configureOptions`), `TransformerContract`
-(`configureTransformers`) and `DcaContract` (`buildDca`). They apply to the form's own config,
-`Filter::$formConfig`, which is resolved and stored separately from the element's (§8, §13.20). A
-form never reads element config; what it needs from the element it gets through a port (§3.5).
+**Control config.** A control MAY implement `OptionsContract` (`configureOptions`), `TransformerContract`
+(`configureTransformers`) and `DcaContract` (`buildDca`). They apply to the control's own config,
+`Filter::$controlConfig`, which is resolved and stored separately from the element's (§8, §13.20). A
+control never reads element config; what it needs from the element it gets through a port (§3.5).
 
 ### 3.2 `FilterElementInterface` (revised)
 
@@ -332,44 +339,44 @@ own config only.
 
 ```php
 #[AsFilterElement(type: self::TYPE, value: BoolValue::class)]
-#[AsFilterForm(name: 'flare_checkbox')]
+#[AsFilterControl(name: 'flare_checkbox')]
 ```
 
 - `AsFilterElement::$value` — the value class this element consumes. `null` means the element has no
   runtime value at all: its config *is* the value (§5.3). A non-null value class requires a value
   provider (§3.6).
-- `AsFilterForm::$name` — the identifier persisted in `tl_flare_filter.form`. Defaults to
-  `TypeNameFactory::createFilterFormType()` over the class (suffixes `Controller`, `FilterForm`,
-  `Form` stripped). `""` (= intrinsic) and `"default"` are reserved; a duplicate name fails the
+- `AsFilterControl::$name` — the identifier persisted in `tl_flare_filter.control`. Defaults to
+  `TypeNameFactory::createFilterControlType()` over the class (suffixes `FilterControl`,
+  `Control` stripped). `""` (= intrinsic) and `"default"` are reserved; a duplicate name fails the
   container build, because a silent override would re-interpret stored rows. The value class is not
-  a discriminator — several forms share one — so the name is needed; FQCNs are not stored because a
+  a discriminator — several controls share one — so the name is needed; FQCNs are not stored because a
   class rename would orphan every row.
 
-There is no `value:`, `requires:` or `default:` on `AsFilterForm` (§13.11, §13.12, §13.14).
-`AsFilterForm` stays repeatable (one class under several names); no bundle form uses that.
+There is no `value:`, `requires:` or `default:` on `AsFilterControl` (§13.11, §13.12, §13.14).
+`AsFilterControl` stays repeatable (one class under several names); no bundle control uses that.
 
-### 3.4 Form registration
+### 3.4 Control registration
 
-`RegisterFilterFormsPass` follows `RegisterFilterElementsPass` exactly (§13.14):
+`RegisterFilterControlsPass` follows `RegisterFilterElementsPass` exactly (§13.14):
 `findAndSortTaggedServices()`, `addMethodCall('add', [Reference, attribute, name, valueClass])`
-on an eager `FilterFormRegistry`, public alias `flare.filter_form.{name}`. On top of that pattern it
+on an eager `FilterControlRegistry`, public alias `flare.filter_control.{name}`. On top of that pattern it
 does two checks only: the value class (§3.1) and name uniqueness (§3.3). It has no ordering
 constraint relative to the element pass.
 
-`FilterFormRegistry::findNames(string $valueClass): list<string>` is the whole election: the forms
+`FilterControlRegistry::findNames(string $valueClass): list<string>` is the whole election: the controls
 whose value class equals the element's declared one, in registration order. It feeds the
-`form` options callback (§5.2) and the consistency check in `FilterFactory` (§8). An element
-whose value class has no form is legal — it is used intrinsically or programmatically, and its
-`form` select offers only the blank option.
+`control` options callback (§5.2) and the consistency check in `FilterFactory` (§8). An element
+whose value class has no control is legal — it is used intrinsically or programmatically, and its
+`control` select offers only the blank option.
 
 ### 3.5 Ports
 
-A form reads nothing from the element but what the element offers through a **port**: a plain
+A control reads nothing from the element but what the element offers through a **port**: a plain
 interface the element implements, checked with `instanceof` where it is used (§13.12). There is no
 declarative capability mechanism.
 
 ```php
-/** Required by ChoiceFilterForm and ChoiceValueProvider. */
+/** Required by ChoiceFilterControl and ChoiceValueProvider. */
 interface ChoiceSourceContract
 {
     /**
@@ -378,7 +385,7 @@ interface ChoiceSourceContract
     public function createChoices(FilterScope $scope): ChoicesBuilder;
 }
 
-/** Optional for DateRangeFilterForm: bounds for the widget's min/max attributes. */
+/** Optional for DateRangeFilterControl: bounds for the widget's min/max attributes. */
 interface DateBoundsContract
 {
     /** @return array{0: ?\DateTimeInterface, 1: ?\DateTimeInterface} */
@@ -386,16 +393,16 @@ interface DateBoundsContract
 }
 ```
 
-- `ChoiceSourceContract` is **required**: `ChoiceFilterForm::buildForm()` and
+- `ChoiceSourceContract` is **required**: `ChoiceFilterControl::buildForm()` and
   `ChoiceValueProvider` throw a `FilterException` if the element does not implement it, and a unit
   test asserts that every bundle element declaring `value: ChoiceValue::class` does. It is the one
   source of options for the frontend widget *and* the backend value field (§6.4).
-- `DateBoundsContract` is **optional**: `DateRangeFilterForm` sets `min`/`max` only when the element
+- `DateBoundsContract` is **optional**: `DateRangeFilterControl` sets `min`/`max` only when the element
   implements it (`CalendarCurrent` with `elm_isLimited`), and otherwise renders unbounded
   (`DateRange`).
 
 Labelling is split: `createChoices()` MAY set labels the element owns — `setLabelForTable()` fed
-from element-owned whitelist rows is the real case. The form owns only global overrides
+from element-owned whitelist rows is the real case. The control owns only global overrides
 (`setLabel()`, `setModelSuffix()`, `setEmptyOption()`) and `applyFormOptions()`.
 
 (`ChoicesBuilder::buildChoices()` keeps its name; the port method is `createChoices()` so the two no
@@ -429,7 +436,7 @@ final class BoolValueProvider implements ValueProviderInterface
 ```
 
 - **Registration** — a compiler pass reads the narrowed return type of `provide()` by reflection,
-  exactly as for forms. One provider per value class; a duplicate, an un-narrowed return type, or an
+  exactly as for controls. One provider per value class; a duplicate, an un-narrowed return type, or an
   element declaring a value class that has no provider fails the container build.
 - **Providers are services**, so they inject what they need (translator, `ChoicesBuilderFactory`, …);
   value objects stay plain values without Contao or DI dependencies.
@@ -446,34 +453,34 @@ final class BoolValueProvider implements ValueProviderInterface
 ### 4.1 Backend fields
 
 > A field belongs to the **element** if its value changes *which rows match*.
-> It belongs to the **form** if its value changes only *what the user sees or can submit*.
+> It belongs to the **control** if its value changes only *what the user sees or can submit*.
 
-The ownership is visible in the column name (§13.19): element columns carry `elm_`, form columns
-`frm_`, framework columns no prefix. Element and form config can therefore never collide, at the
-price of occasional duplicates (an element and a form may each have a column of the same base name).
+The ownership is visible in the column name (§13.19): element columns carry `elm_`, control columns
+`ctl_`, framework columns no prefix. Element and control config can therefore never collide, at the
+price of occasional duplicates (an element and a control may each have a column of the same base name).
 
 | prefix | columns |
 |---|---|
-| none (framework) | `id`, `pid`, `sorting`, `tstamp`, `title`, `type`, `published`, **`form`** (formerly `formVariant`), **`alias`** (formerly `formAlias`, the query-parameter name), `targetAlias` (rethought in §15), **`value`** (new, §4.2) |
+| none (framework) | `id`, `pid`, `sorting`, `tstamp`, `title`, `type`, `published`, **`control`** (formerly `formVariant`), **`alias`** (formerly `formAlias`, the query-parameter name), `targetAlias` (rethought in §15), **`value`** (new, §4.2) |
 | `elm_` | `fieldGeneric`, `columnsGeneric`, `usePublished`, `fieldPublished`, `invertPublished`, `useStart`, `fieldStart`, `useStop`, `fieldStop`, `whichPtable`, `fieldPid`, `fieldPtable`, `tablePtable`, `whitelistParents`, `groupWhitelistParents`, `useWhitelistForOptionsOnly`, `equationLeft`, `equationOperator`, `equationRight`, `configureStart`, `startAt`, `configureStop`, `stopAt`, `hasExtendedEvents`, `isLimited` |
-| `frm_` | `label`, `placeholder`, `isMandatory`, `isMultiple`, `isExpanded`, `hasEmptyOption`, `formatLabel`, `formatLabelCustom`, `formatEmptyOption`, `formatEmptyOptionCustom`, `boolBinaryChoices` |
-| removed | `intrinsic` (→ blank `form`), `preselect` and `prefill` (→ `value`), `boolMode` (→ `form`, §7.5) |
+| `ctl_` | `label`, `placeholder`, `isMandatory`, `isMultiple`, `isExpanded`, `hasEmptyOption`, `formatLabel`, `formatLabelCustom`, `formatEmptyOption`, `formatEmptyOptionCustom`, `boolBinaryChoices` |
+| removed | `intrinsic` (→ blank `control`), `preselect` and `prefill` (→ `value`), `boolMode` (→ `control`, §7.5) |
 
 Columns of the Codefog integration are classified by the same rule.
 
 ### 4.2 One value, one column
 
 The `value` column holds a value of the element's value class, stored in the format of its value
-provider (§3.6). Its meaning depends on `form`:
+provider (§3.6). Its meaning depends on `control`:
 
-| `form` | `value` is | effect |
+| `control` | `value` is | effect |
 |---|---|---|
 | blank (intrinsic) | the fixed value | the element always receives it |
-| a form | the initial value | the form is hydrated with it, and it applies while the form is not submitted; a submission replaces it — even an empty one |
+| a control | the initial value | the control is hydrated with it, and it applies while the form is not submitted; a submission replaces it — even an empty one |
 
 This is the same rule as for programmatic values (§8): `Filter::$value` is the value unless a
 submission overrides it. `preselect` (form hydration) and the intrinsic value were always mutually
-exclusive per row, so they share the column; switching `form` keeps the stored value as
+exclusive per row, so they share the column; switching `control` keeps the stored value as
 long as the value class stays the same.
 
 Elements without a value class (`SimpleEquation`, `Published`, `BelongsToRelation`) have no
@@ -481,12 +488,12 @@ Elements without a value class (`SimpleEquation`, `Published`, `BelongsToRelatio
 
 ### 4.3 Value object semantics, not structure
 
-> Two elements share a value object only if every form registered for one is meaningful for the other.
+> Two elements share a value object only if every control registered for one is meaningful for the other.
 
 `ChoiceValue` for the four choice-based elements (`FieldValueChoice`, `DcaSelectField`,
 `CodefogTagsChoice`, `Archive`); `KeywordsValue` for `SearchKeywordsFilterElement` — even though
 both are "some strings". Merging structurally identical value objects reintroduces the silent
-mismatch one level up, because a choice form would be offered for a free-text filter.
+mismatch one level up, because a choice control would be offered for a free-text filter.
 
 The value classes are `BoolValue`, `ChoiceValue`, `DateRangeValue`, `KeywordsValue`.
 `ParentRefValue` is deleted (§7.4).
@@ -497,33 +504,33 @@ The value classes are `BoolValue`, `ChoiceValue`, `DateRangeValue`, `KeywordsVal
 
 ### 5.1 Config shape
 
-The `intrinsic` boolean is replaced by `form`: blank = intrinsic. It is framework data, not
+The `intrinsic` boolean is replaced by `control`: blank = intrinsic. It is framework data, not
 part of either config. An intrinsic filter with a value class takes its value from `value` (§4.2);
 one without a value class needs nothing.
 
-The programmatic call sites in §1.3 keep working by simply not setting a form.
+The programmatic call sites in §1.3 keep working by simply not setting a control.
 
-**Column names** (§13.26). The framework columns that select or name the filter's parts are
-`type` (the `FilterElement`), `form` (the `FilterForm`, by its registered name) and `alias` (the
-filter's name in the URL query and the form, formerly `formAlias`; Contao uses `alias` for "name in
-the URL" throughout). `formVariant` — the column's name while v0.2 was in development — implied a
-variant of the element's widget, which the model no longer has. `FilterModel::getFilterFormName()`,
+**Column names** (§13.26, §13.27). The framework columns that select or name the filter's parts
+are `type` (the `FilterElement`), `control` (the `FilterControl`, by its registered name) and `alias`
+(the filter's name in the URL query and the form, formerly `formAlias`; Contao uses `alias` for
+"name in the URL" throughout). `formVariant` — the column's name while v0.2 was in development —
+implied a variant of the element's widget, which the model no longer has. `FilterModel::getFilterFormName()`,
 which returns the alias (or the id as fallback), becomes `getFilterAlias()`.
 
 ### 5.2 Backend fields
 
-`form` is a `select` with `submitOnChange => true`. Its blank option *is* intrinsic.
-Options come from `FilterFormRegistry::findNames()` for the element's declared value class.
-`ElementDcaListener` reads it alongside `$filterModel->type` to resolve the form service before
-calling the form's `buildDca()`.
+`control` is a `select` with `submitOnChange => true`. Its blank option *is* intrinsic.
+Options come from `FilterControlRegistry::findNames()` for the element's declared value class.
+`ElementDcaListener` reads it alongside `$filterModel->type` to resolve the control service before
+calling the control's `buildDca()`.
 
 `value` is configured by the value provider of the element's value class
 (`ValueProviderInterface::buildDcaField()`) and shown in the framework part of the palette whenever
-the element has a value class — as the fixed value or as the initial value of the form.
+the element has a value class — as the fixed value or as the initial value of the control.
 
 ### 5.3 `IntrinsicContract` is deleted
 
-`#[AsFilterElement(value: null)]` ⇒ no value object ⇒ no forms ⇒ intrinsic-only. This is more
+`#[AsFilterElement(value: null)]` ⇒ no value object ⇒ no controls ⇒ intrinsic-only. This is more
 precise than the interface it replaces, and it removes:
 
 - `src/Contract/FilterElement/IntrinsicContract.php`
@@ -546,12 +553,12 @@ $dca['palettes'][$predicate] = Str::mergePalettes($prefix, $this->palette, $suff
 A third segment is required, with fixed order:
 
 ```
-__prefix__  +  element palette  +  form palette  +  __suffix__
+__prefix__  +  element palette  +  control palette  +  __suffix__
 ```
 
-`ElementDcaListener` passes a scoped sub-builder to the form (e.g. `$dca->scope('form')`) whose
-`palette()` lands in the form segment. `field()` stays **shared** — it already returns a shared
-`DcaFieldBuilder`, and a form occasionally needs to tweak an element field's `eval`.
+`ElementDcaListener` passes a scoped sub-builder to the control (e.g. `$dca->scope('control')`) whose
+`palette()` lands in the control segment. `field()` stays **shared** — it already returns a shared
+`DcaFieldBuilder`, and a control occasionally needs to tweak an element field's `eval`.
 
 `apply()` keeps keying `palettes[$type]`; the palette is recomputed per record load, so no key
 change is needed.
@@ -559,16 +566,16 @@ change is needed.
 ### 6.2 Legend convention
 
 Pair the mechanism with distinct legends so the split is visible to the editor:
-element contributes `{filter_legend},elm_fieldGeneric`, form contributes
-`{form_legend},frm_label,frm_isMultiple,frm_isExpanded`.
+element contributes `{filter_legend},elm_fieldGeneric`, control contributes
+`{form_legend},ctl_label,ctl_isMultiple,ctl_isExpanded`.
 
 ### 6.3 Known gaps
 
-- **`__selector__` is static** in `contao/dca/tl_flare_filter.php`. A form contributing a subpalette
+- **`__selector__` is static** in `contao/dca/tl_flare_filter.php`. A control contributing a subpalette
   needs a `DcaBuilder::selector()` API. This gap exists today.
-- **Columns are shared** — `tl_flare_filter` is one wide table. Element and form columns are kept
-  apart by the `elm_` / `frm_` prefixes (§4.1); within each side, names are global across all
-  elements resp. forms.
+- **Columns are shared** — `tl_flare_filter` is one wide table. Element and control columns are kept
+  apart by the `elm_` / `ctl_` prefixes (§4.1); within each side, names are global across all
+  elements resp. controls.
 
 
 ### 6.4 Backend scope
@@ -592,7 +599,7 @@ frontend, so the backend needs a `FilterScope` (§13.21):
 ### 6.5 Outlook: Contao 5
 
 One column per config value is a Contao 4.13 constraint. With Contao 5 as the minimum, element and
-form config can become virtual fields stored in one JSON column each, which removes the prefixes and
+control config can become virtual fields stored in one JSON column each, which removes the prefixes and
 the duplicates. Not part of this refactor.
 
 ---
@@ -654,11 +661,11 @@ interface ChoiceObjectInterface
 - `FieldValueChoice(value, label)` covers `FieldValueChoice` and `DcaSelectField`: no scope, local
   key = the field value. Equal labels now have different keys, which is the §7.1 fix.
 
-Every form reads **model data** (§3.1): the selected choice objects, already validated by Symfony
+Every control reads **model data** (§3.1): the selected choice objects, already validated by Symfony
 against the option list — a submitted key outside it makes the form invalid, and the projector then
 uses its empty loader, as today.
 
-### 7.3 `ChoiceValue` and `ChoiceFilterForm`
+### 7.3 `ChoiceValue` and `ChoiceFilterControl`
 
 ```php
 final readonly class ChoiceValue implements ValueInterface
@@ -672,20 +679,20 @@ final readonly class ChoiceValue implements ValueInterface
   only the empty option is selected. No element gives the empty option its own meaning —
   `Archive::processRuntimeValue()` already treats "empty option" and "nothing" identically — so
   there is no flag for it.
-- `ChoiceFilterForm::buildForm()` calls `$element->createChoices($scope)` and owns `ChoiceType`,
+- `ChoiceFilterControl::buildForm()` calls `$element->createChoices($scope)` and owns `ChoiceType`,
   the empty option, labels and `applyFormOptions()`. The write-only `flare.choices_builder`
   attribute is dropped (§13.17).
-- **One palette for all four choice elements** (§13.23): `frm_label`, `frm_formatLabel`(+custom),
-  `frm_isMandatory`, `frm_isMultiple`, `frm_isExpanded`, `frm_hasEmptyOption`,
-  `frm_formatEmptyOption`(+custom), `frm_placeholder`.
+- **One palette for all four choice elements** (§13.23): `ctl_label`, `ctl_formatLabel`(+custom),
+  `ctl_isMandatory`, `ctl_isMultiple`, `ctl_isExpanded`, `ctl_hasEmptyOption`,
+  `ctl_formatEmptyOption`(+custom), `ctl_placeholder`.
 - **Empty option vs. placeholder.** The empty option is always a real option via `ChoicesBuilder`
-  (works for expanded radios too), labelled by `frm_formatEmptyOption`. Symfony's `placeholder`
-  option is no longer used. `frm_placeholder` means the HTML `placeholder` attribute everywhere; the
-  choice form sets it as `attr.placeholder` **only when the widget has no empty option** (multiple
-  select, e.g. for a JS tag widget, or empty option off). `KeywordsFilterForm` sets it as today.
+  (works for expanded radios too), labelled by `ctl_formatEmptyOption`. Symfony's `placeholder`
+  option is no longer used. `ctl_placeholder` means the HTML `placeholder` attribute everywhere; the
+  choice control sets it as `attr.placeholder` **only when the widget has no empty option** (multiple
+  select, e.g. for a JS tag widget, or empty option off). `KeywordsFilterControl` sets it as today.
 - Existing rows keep their look through the migration (§11).
 
-| stays on the element | moves to `ChoiceFilterForm` | disappears |
+| stays on the element | moves to `ChoiceFilterControl` | disappears |
 |---|---|---|
 | choice provision → `createChoices()` (`getForeignValues()`, `getLocalValues()`, whitelists) | widget options, empty option, labels, placeholder | `normalizeRuntimeValue()`, `normalizeSubmittedValue()` |
 | interpretation of the selected objects → `buildContext()` | hydration from `ChoiceValue` | the second `ChoicesBuilder`, the reverse lookup, `buildPreselectData()`, `getPreselectOptions()` |
@@ -710,7 +717,7 @@ Archive is the stress test, and it gets simpler:
 
 **Config ownership** per §4.1: `whitelistParents`, `groupWhitelistParents`,
 `useWhitelistForOptionsOnly` are `elm_`; `formatLabel`, `formatEmptyOption`, `hasEmptyOption`,
-`isMandatory`, `isMultiple`, `isExpanded` are `frm_`; the old `preselect` is `value`.
+`isMandatory`, `isMultiple`, `isExpanded` are `ctl_`; the old `preselect` is `value`.
 
 ### 7.5 Bools
 
@@ -719,7 +726,7 @@ Archive is the stress test, and it gets simpler:
 mapping is widget → logical value, i.e. `decode()` (§13.24):
 
 - **`BoolValue`** carries `true` or `false`. "No filter" is no value object.
-- **`CheckboxFilterForm`** (`flare_checkbox`) owns `frm_boolBinaryChoices`:
+- **`CheckboxFilterControl`** (`flare_checkbox`) owns `ctl_boolBinaryChoices`:
 
   | setting | unchecked | checked |
   |---|---|---|
@@ -729,9 +736,9 @@ mapping is widget → logical value, i.e. `decode()` (§13.24):
   `hydrate()` is the inverse; a value the checkbox cannot show (`false` under `NULL_TRUE`) shows
   unchecked. **`NULL_FALSE` is dropped**: it was never implemented (`normalizeValue()` treated it as
   `TRUE_FALSE`), so existing rows migrate to `TRUE_FALSE` without a behaviour change.
-- **`ChoiceBoolFilterForm`** (`flare_choice_bool`) is the former `ternary` mode: a choice of
+- **`ChoiceBoolFilterControl`** (`flare_choice_bool`) is the former `ternary` mode: a choice of
   "any / yes / no", no config.
-- **`boolMode` becomes `form`:** `binary` → `flare_checkbox`, `ternary` → `flare_choice_bool`.
+- **`boolMode` becomes `control`:** `binary` → `flare_checkbox`, `ternary` → `flare_choice_bool`.
 - **Intrinsic bool filters** store `true`/`false` in `value` via `BoolValueProvider`.
 
 ---
@@ -748,8 +755,8 @@ final readonly class Filter
         public string                 $type,
         public string                 $alias,
         public array                  $config = [],      // element-owned, resolved by the element's schema
-        public ?FilterFormInterface   $form = null,
-        public array                  $formConfig = [],  // form-owned, resolved by the form's schema
+        public ?FilterControlInterface $control = null,
+        public array                  $controlConfig = [],  // control-owned, resolved by the control's schema
         public ?ValueInterface        $value = null,     // fixed (intrinsic) or initial value
         /* target alias, source, … unchanged until §15 */
     ) {}
@@ -758,12 +765,12 @@ final readonly class Filter
 
 **Where `Filter::$value` comes from.**
 - `FilterFactory::createFromFilterModel()` resolves the element config from the `elm_` columns, the
-  form from the `form` column, the form config from the `frm_` columns, and — if the element has a value
-  class — the value via its provider's `provide($model->value, $scope)`. An unknown `form`, or
+  control from the `control` column, the control config from the `ctl_` columns, and — if the element has a value
+  class — the value via its provider's `provide($model->value, $scope)`. An unknown `control`, or
   one not registered for the element's value class, degrades to intrinsic with a logged warning: it
-  is a data condition (a renamed or uninstalled form), not a programming error. Each config has its
+  is a data condition (a renamed or uninstalled control), not a programming error. Each config has its
   own resolver cache key, so the composite-key problem of the old plan does not arise.
-- `FilterFactory::create()` takes `?FilterFormInterface $form`, `array $formConfig` and
+- `FilterFactory::create()` takes `?FilterControlInterface $control`, `array $controlConfig` and
   `?ValueInterface $value` for programmatic filters, e.g.
   `value: new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5)])`. Programmatic filter
   creation is a first-class use case going forward.
@@ -773,9 +780,9 @@ final readonly class Filter
 throughout:
 
 1. `FormHarnessFactory` keys mounts by alias and hydrates each mount with
-   `$filter->form->hydrate($filter->value, $scope)` as the field's `data`.
+   `$filter->control->hydrate($filter->value, $scope)` as the field's `data`.
 2. `FormHarness::decode()` extracts each mount's data (§3.1) and calls
-   `$mount->filter->form->decode($data, $mount->scope)`. For a **submitted** form it returns an entry
+   `$mount->filter->control->decode($data, $mount->scope)`. For a **submitted** form it returns an entry
    for every mount, `null` included; for an unsubmitted one, the non-null results.
    `InteractiveProjector::collectFilterData()` is deleted; this is why the aggregate is an object
    (§2.1).
@@ -805,7 +812,7 @@ whole spec.
 > A value object is `final readonly`, implements `ValueInterface`, normalizes equal representations
 > in its constructor, and expresses its identity through `ValueInterface::fingerprint(): string`.
 
-`Filter::fingerprint()` covers element, type, alias, both configs, the form's class name and
+`Filter::fingerprint()` covers element, type, alias, both configs, the control's class name and
 `$this->value?->fingerprint()`. Per class:
 
 | value | fingerprint |
@@ -825,13 +832,13 @@ whole spec.
 
 | risk | mechanism | when it fires |
 |---|---|---|
-| form produces the wrong shape | narrowed `decode()` return type, read by the compiler pass | container build; `TypeError` at run time |
+| control produces the wrong shape | narrowed `decode()` return type, read by the compiler pass | container build; `TypeError` at run time |
 | value class without a (unique) provider | narrowed `provide()` return type, read by the compiler pass | container build |
 | element receives the wrong type | `expectValue()` inside `buildContext()` (§3.2) | `FilterException`, at query build |
-| stored `form` does not fit the element | `findNames()` check in `FilterFactory` (§8) | degrades to intrinsic, logged |
-| choice form/provider on an element without options | `instanceof ChoiceSourceContract`, plus a unit test over bundle elements | `FilterException` / test suite |
-| two forms claim one name | uniqueness check in the compiler pass | container build |
-| element and form config collide | `elm_` / `frm_` column prefixes, separate configs | by construction |
+| stored `control` does not fit the element | `findNames()` check in `FilterFactory` (§8) | degrades to intrinsic, logged |
+| choice control/provider on an element without options | `instanceof ChoiceSourceContract`, plus a unit test over bundle elements | `FilterException` / test suite |
+| two controls claim one name | uniqueness check in the compiler pass | container build |
+| element and control config collide | `elm_` / `ctl_` column prefixes, separate configs | by construction |
 | value object not final/readonly | reflection test | test suite |
 
 ---
@@ -842,37 +849,37 @@ Three kinds of change, with different constraints. Columns come only from `sql` 
 `contao/dca/tl_flare_filter.php`; there is no schema listener. Contao runs migrations **before** the
 schema diff in one `contao:migrate`.
 
-**A. Renames** (`elm_` / `frm_`, `formAlias` → `alias`, §4.1). `formVariant` → `form` needs no
+**A. Renames** (`elm_` / `ctl_`, `formAlias` → `alias`, §4.1). `formVariant` → `control` needs no
 migration: the column is v0.2-only and still empty everywhere, so dropping and re-adding it loses
 nothing. A rename migration (`ALTER TABLE … CHANGE`, guarded by
 `SHOW COLUMNS`) MUST land in the same commit as the DCA rename: a schema diff that sees the DCA
 renamed but the column not yet renamed drops the column and adds an empty one. Renames are
-mechanical and do not depend on form names, so they need not wait for step 6.
+mechanical and do not depend on control names, so they need not wait for step 6.
 
 **B. Data migration** (step 6) — written last, see below. It fills the new framework columns and
-the new form columns from the legacy ones, per row:
+the new control columns from the legacy ones, per row:
 
 | target | source |
 |---|---|
-| `form` | `intrinsic = 1` → `''`; otherwise a frozen literal per element type: `flare_archive`, `flare_fieldValueChoice`, `flare_dcaSelectField`, `cfg_tags_choice` → `flare_choice`; `flare_dateRange`, `flare_calendar_current` → `flare_date_range`; `flare_search_keywords` → `flare_keywords`; `flare_bool` → `boolMode`: `binary` → `flare_checkbox`, `ternary` → `flare_choice_bool`; element types without a value class → `''` |
+| `control` | `intrinsic = 1` → `''`; otherwise a frozen literal per element type: `flare_archive`, `flare_fieldValueChoice`, `flare_dcaSelectField`, `cfg_tags_choice` → `flare_choice`; `flare_dateRange`, `flare_calendar_current` → `flare_date_range`; `flare_search_keywords` → `flare_keywords`; `flare_bool` → `boolMode`: `binary` → `flare_checkbox`, `ternary` → `flare_choice_bool`; element types without a value class → `''` |
 | `value` | `preselect` (bool and choice types) or `prefill` (keywords), converted to the provider's storage format: bool `true`/`false`/`null` → `1`/`0`/empty; choices → a serialized list of keys, which are already canonical (`"<table>.<id>"` for Archive, bare values for `FieldValueChoice`/`DcaSelect`/tags) whether single or multiple; date types have no stored value |
-| `frm_boolBinaryChoices` | `null_false` → `true_false` (§7.5) |
-| `frm_hasEmptyOption`, `frm_formatEmptyOption(Custom)`, `frm_placeholder` | per element, so existing choice widgets look the same: `FieldValueChoice` single-select → empty option on; `DcaSelect`/`CodefogTagsChoice` single-select and not expanded → empty option on, the old placeholder text becomes its custom label; otherwise the placeholder stays `frm_placeholder`; `Archive` 1:1 |
+| `ctl_boolBinaryChoices` | `null_false` → `true_false` (§7.5) |
+| `ctl_hasEmptyOption`, `ctl_formatEmptyOption(Custom)`, `ctl_placeholder` | per element, so existing choice widgets look the same: `FieldValueChoice` single-select → empty option on; `DcaSelect`/`CodefogTagsChoice` single-select and not expanded → empty option on, the old placeholder text becomes its custom label; otherwise the placeholder stays `ctl_placeholder`; `Archive` 1:1 |
 
 **C. Drops** (step 4): `intrinsic`, `boolMode`, `preselect`, `prefill` and the `boolMode` selector /
 subpalette. Every dropped column is a source of B.
 
 ### Why the data migration comes last
 
-The mapping can be frozen only once the forms exist with their final names:
+The mapping can be frozen only once the controls exist with their final names:
 
 1. **A migration file auto-registers the moment it exists.** `src/Migration` is not excluded from
    the PSR-4 service resource, and `autoconfigure: true` plus `AbstractMigration` earns Contao's
-   `contao.migration` tag. So the file's mere presence means `contao:migrate` runs it, against form
+   `contao.migration` tag. So the file's mere presence means `contao:migrate` runs it, against control
    names that may not exist yet. It is one-shot: once `shouldRun()` has been satisfied it goes quiet,
    so wrong values stay committed and need a *second* corrective migration.
-2. **Form names are permanent data.** The migration hardcodes `element type → form name` as frozen
-   literals rather than resolving through `FilterFormRegistry`: a migration describes historical
+2. **Control names are permanent data.** The migration hardcodes `element type → control name` as frozen
+   literals rather than resolving through `FilterControlRegistry`: a migration describes historical
    rows, and resolving through live code would let a later rename retroactively change what
    already-migrated rows meant.
 
@@ -887,7 +894,7 @@ sources unrecoverably. Therefore:
 - `shouldRun()` MUST return `false` when its source columns are already absent (fail closed).
 - `shouldRun()` MUST NOT key on target columns being absent — they arrive with the schema step.
   Key on `intrinsic` being present plus a type-restricted count of rows still needing work; without
-  the type restriction, element types that get no form keep the migration pending forever.
+  the type restriction, element types that get no control keep the migration pending forever.
 
 
 ---
@@ -901,25 +908,26 @@ merges steps 1 and 3 into one atomic cut (no pilot, no legacy adapter) and track
 0. **Nomenclature refactor.** ✅ **Done** (#47), then revised by #48 (§2.2). Pure rename plus one new
    object, no behaviour or schema change. Left over: two test files still carry the Phase 0 names
    (`FilterSetFactoryTest`, `FilterSetListenerTest`).
-1. **Contracts + the cut.** 🟡 **In progress — tree red.** Landed: value objects, form/element
-   contract signatures, `ChoiceSourceContract`, `AsFilterForm(name:)`, the registry and pass in
-   their first shape, the `formVariant` column (to be renamed `form`), the predicate layer (§2.3). To do, in the target shape of this
-   spec: `FilterScope`, `ConfigurationContext` and the two-stage split (§2.3); `decode()`/`hydrate()`
+1. **Contracts + the cut.** 🟡 **In progress — tree red.** Landed: value objects, element and
+   (still `FilterForm`-named) control contract signatures, `ChoiceSourceContract`, `AsFilterForm(name:)`,
+   the registry and pass in their first shape, the `formVariant` column, the predicate layer (§2.3).
+   To do, in the target shape of this spec: the `FilterForm` → `FilterControl` rename (§2.2) and
+   `formVariant` → `control`; `FilterScope`, `ConfigurationContext` and the two-stage split (§2.3); `decode()`/`hydrate()`
    with the value class from the return type (§3.1); registry/pass aligned with elements,
    `requires`/`default` removed (§3.4); ports incl. `DateBoundsContract` (§3.5); value providers and
-   the `value` column (§3.6, §4.2); separate element/form config (§8); choice objects with
-   scope/local key, `ChoiceValue` of choice objects, `ParentRefValue` removed (§7); the five forms;
-   element bodies and `expectValue()`; `Filter::$value`/`$form`/`$formConfig`; `FormHarness::decode()`
+   the `value` column (§3.6, §4.2); separate element/control config (§8); choice objects with
+   scope/local key, `ChoiceValue` of choice objects, `ParentRefValue` removed (§7); the five controls;
+   element bodies and `expectValue()`; `Filter::$value`/`$control`/`$controlConfig`; `FormHarness::decode()`
    and the value path (§8); the backend scope (§6.4); value fingerprints, `Util\Fingerprint` removed
    (§9); the two element events removed (§13.16); `IntrinsicContract` removed.
 2. **DCA composition.** `DcaBuilder` palette segments, `scope()`, `selector()`; `ElementDcaListener`
-   resolves and invokes the form's `buildDca()`.
+   resolves and invokes the control's `buildDca()`.
 3. **Migrate the rest.** Merged into step 1 (atomic cut). `CodefogTagsSearchElement` has neither
    `buildForm()` nor `buildContext()` (only `buildDca()`) — it needs `value: null` and nothing else.
-4. **Schema changes** per §11: the `elm_`/`frm_` renames with their rename migration (§11 A), the
+4. **Schema changes** per §11: the `elm_`/`ctl_` renames with their rename migration (§11 A), the
    new `value` column, and the drops of §11 C. No data migration yet.
 5. **Fold `FilterData`** out per §8.
-6. **Data migration** per §11 B. Written last, once the forms and their names exist. Subject to
+6. **Data migration** per §11 B. Written last, once the controls and their names exist. Subject to
    the ordering hazard §11 records: it reads the columns step 4 drops, so it must land before any
    environment with real rows applies the schema diff.
 
@@ -932,18 +940,18 @@ Targeting (§15) is a separate piece of work after this one and before the v0.2 
 Recorded here because each one closes a branch the design could otherwise have taken.
 
 1. **`ArchiveFilterElement` shares the choice port** with `FieldValueChoice`, `DcaSelectField` and
-   `CodefogTagsChoice`, all served by one generic choice form. No second port is needed (§7.4).
+   `CodefogTagsChoice`, all served by one generic choice control. No second port is needed (§7.4).
 2. **No compound case needs per-child capability negotiation.** `DateRangeFilterElement` needs
    nothing from the element at all.
-3. **Form-owned field labels stay in the central language files**
-   (`contao/languages/{en,de}/tl_flare_filter.php`). Forms declare fields and palette segments; they
+3. **Control-owned field labels stay in the central language files**
+   (`contao/languages/{en,de}/tl_flare_filter.php`). Controls declare fields and palette segments; they
    do not declare translations. This keeps `tl_flare_filter`'s label surface in one place, consistent
    with the shared-column reality of §6.3.
 4. **`intrinsic`-branching `buildDca()` methods collapse into the §6 palette segments.**
    `CalendarCurrentFilterElement::buildDca()` already appends `{form_legend},isLimited` only when not
    intrinsic — hand-rolling exactly the split §6 formalises. Under the target model that branch
    disappears. (`isLimited` is **element**-owned, `elm_isLimited`: it clamps the range and skips the
-   filter in a `ValidationContext`, i.e. it changes matching; the date form learns the bounds through
+   filter in a `ValidationContext`, i.e. it changes matching; the date-range control learns the bounds through
    `DateBoundsContract`, §3.5.) The same applies to
    `SearchKeywordsFilterElement::buildDca()`, `DcaSelectFieldFilterElement::buildDca()` and
    `BooleanFilterElement::buildDca()`.
@@ -960,7 +968,7 @@ Recorded here because each one closes a branch the design could otherwise have t
 7. **Elements describe conditions; predicates execute them** (#48). `PredicateInterface` is public
    API; `Proposition`, `Formula` and `FormulaBuilder` are `@internal`; `FilterContextBuilder::addPredicate()`
    is how an element applies a predicate. Predicates are registered by class, not by type name.
-8. **Forms read model data, always** (§3.1). The view-vs-model choice was only ever needed because
+8. **Controls read model data, always** (§3.1). The view-vs-model choice was only ever needed because
    choice objects were badly chosen.
 9. **Choices are objects that name their key** (§7.2): `ChoiceObjectInterface` with
    `getChoiceScope()`, `getChoiceLocalKey()` and `getLabelParameters()`, `ContaoModelChoice::from()` /
@@ -968,7 +976,7 @@ Recorded here because each one closes a branch the design could otherwise have t
    translation step.
 10. **Value objects stay at widget level** (§2). Domain interpretation happens in `buildContext()`.
     `ChoiceValue` carries choice objects; `ParentRefValue` and `valueFromChoiceKeys()` are gone.
-11. **A form's value class is its narrowed `decode()` return type** (§3.1), read by reflection at
+11. **A control's value class is its narrowed `decode()` return type** (§3.1), read by reflection at
     compile time. No `getValueClass()`, no `@template`, no `value:` on the attribute.
 12. **No declarative `requires` mechanism** (§3.5). Ports are plain interfaces checked with
     `instanceof` where used: `ChoiceSourceContract` required, `DateBoundsContract` optional. A
@@ -976,10 +984,10 @@ Recorded here because each one closes a branch the design could otherwise have t
     third parties use could not.
 13. **`decode()` takes data, not a `FormInterface`** (§3.1). Extraction lives once, in
     `FormHarness::decode()`.
-14. **Form registration mirrors element registration** (§3.4): eager registry, `addMethodCall`,
+14. **Control registration mirrors element registration** (§3.4): eager registry, `addMethodCall`,
     public alias. No `ServiceLocator`, no `default` / `findDefaultName()`, no "every value class has a
-    form" check, no ordering constraint. The migration uses frozen literals, so nothing needs a
-    default form.
+    control" check, no ordering constraint. The migration uses frozen literals, so nothing needs a
+    default control.
 15. **Hashing is for in-request caching only** (§9). Value objects state their identity through
     `fingerprint(): string`; `Util\Fingerprint` and the strict containment rule are gone.
 16. **`FilterElementBuildingEvent` and `FilterElementBuiltEvent` are removed**, with their
@@ -991,33 +999,38 @@ Recorded here because each one closes a branch the design could otherwise have t
     context, which needs a custom element. The 0.1 events `FilterElementInvokingEvent` /
     `FilterElementInvokedEvent` therefore have no direct successor; the migration guide says so.
 17. **`flare.choices_builder` is dropped.** The attribute was write-only (set in four `buildForm()`s,
-    read nowhere); `ChoiceFilterForm` owns its `ChoicesBuilder`. Custom form themes that read it
+    read nowhere); `ChoiceFilterControl` owns its `ChoicesBuilder`. Custom form themes that read it
     from `form.vars` lose it — release note.
 18. **Each value class has one authoritative `ValueProvider` service** (§3.6): `provide()` turns the
     stored column into the value object (its narrowed return type registers the provider),
     `buildDcaField()` renders the column in the backend. Not static methods on the value class:
     providers need services, and value objects stay free of Contao and DI. Named *provider*, not
     *builder*, because builders in this codebase are mutable accumulators.
-19. **Element and form config are separated down to the column**: `elm_` / `frm_` prefixes, no prefix
+19. **Element and control config are separated down to the column**: `elm_` / `ctl_` prefixes, no prefix
     for framework columns (§4.1). Duplicated base names are accepted. JSON storage waits for Contao 5
     (§6.5).
-20. **`Filter` carries two configs**, `$config` (element) and `$formConfig` (form), each with its own
-    schema and transformers. A form never reads element config; it uses ports.
+20. **`Filter` carries two configs**, `$config` (element) and `$controlConfig` (control), each with its own
+    schema and transformers. A control never reads element config; it uses ports.
 21. **The backend evaluates filters in a `ConfigurationContext`** (§6.4), so the choice port serves
     frontend and backend alike.
 22. **The URL carries a choice's scope only when the option list needs it** (§7.2), decided per list
     by `ChoicesBuilder`; storage always uses the canonical key.
-23. **One `ChoiceFilterForm` palette for all four choice elements**, with a migration that keeps
+23. **One `ChoiceFilterControl` palette for all four choice elements**, with a migration that keeps
     existing widgets looking the same; the empty option is a real option with its own label, and
-    `frm_placeholder` is always the HTML attribute (§7.3).
-24. **Bools: the checkbox mapping belongs to the form** (§7.5). `NULL_FALSE` is dropped;
-    `boolMode` becomes `form`.
+    `ctl_placeholder` is always the HTML attribute (§7.3).
+24. **Bools: the checkbox mapping belongs to the control** (§7.5). `NULL_FALSE` is dropped;
+    `boolMode` becomes `control`.
 25. **One value column, one rule** (§4.2, §8): `Filter::$value` is the fixed value (intrinsic) or the
-    initial value (with a form); a submission — even an empty one — overrides it.
+    initial value (with a control); a submission — even an empty one — overrides it.
 
-26. **Framework columns are `type`, `form`, `alias`** (§5.1): `formVariant` → `form`, `formAlias` →
-    `alias`, `FilterModel::getFilterFormName()` → `getFilterAlias()`. `filterForm` was considered;
-    within `tl_flare_filter` the `filter` prefix is redundant, as it is for `type`.
+26. **Framework columns are `type`, `control`, `alias`** (§5.1): `formVariant` → `control`,
+    `formAlias` → `alias`, `FilterModel::getFilterFormName()` → `getFilterAlias()`. A `filter`
+    prefix was considered and rejected; within `tl_flare_filter` it is redundant, as it is for
+    `type`.
+27. **The per-filter presentation strategy is a `FilterControl`** (§2.1), not a `FilterForm`.
+    "Form" names only the Symfony level (`FormHarness`, `FilterFormBuilder`); the strategy above it
+    is a control. Column `control`, prefix `ctl_`, directory `src/Filter/Control/`, attribute
+    `#[AsFilterControl]`. The SPEC/PLAN file names keep "FILTER_FORMS" to avoid churn in links.
 ---
 
 ## 14. Remaining unknowns
@@ -1026,20 +1039,20 @@ Recorded here because each one closes a branch the design could otherwise have t
    06fc013 on `feat/filter-types`, not carried over): `serialize()` is not a pure value function
    over an object graph (repeated objects become back-references). **Moot** since §13.15: value
    objects state their identity through `fingerprint()`, and only in-request caching is required.
-2. **`DcaBuilder::selector()`** (§6.3) has no consumer yet. Confirm whether any form in the initial
+2. **`DcaBuilder::selector()`** (§6.3) has no consumer yet. Confirm whether any control in the initial
    migration actually contributes a subpalette; if none does, defer the API.
 3. ~~`ArchiveFilterElement::buildPreselectData()`~~ — resolved: hydration goes through
-   `ChoiceFilterForm::hydrate()` from `Filter::$value` (§8), backend options through the port (§6.4).
+   `ChoiceFilterControl::hydrate()` from `Filter::$value` (§8), backend options through the port (§6.4).
 4. **Whether `ListSpec::$filters` should become a collection object.** The naming side is settled
    (§13.5); the alias is the key everywhere (§8). Open only whether the plain list deserves its own
    type. Not needed for this refactor.
 5. ~~Form-time vs. query-time context~~ — resolved, §13.6.
-6. ~~How the compiler pass learns a form's value class~~ — resolved, §13.11 and §13.14.
+6. ~~How the compiler pass learns a control's value class~~ — resolved, §13.11 and §13.14.
 7. ~~The element events~~ — resolved, §13.16.
 8. ~~`DateRangeValue` holding `\DateTimeImmutable`~~ — resolved by the relaxed rule, §9.
 9. ~~Archive's stored preselect keys vs. its static-mode choice keys~~ — resolved by canonical keys
    for storage and per-list short keys for URLs, §13.22.
-10. **The exact frontend label of the empty option and of the bool choice form** (`flare_form`
+10. **The exact frontend label of the empty option and of the bool choice control** (`flare_form`
     translation keys) — builder's call; keep today's keys where they exist.
 
 ---

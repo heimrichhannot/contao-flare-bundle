@@ -5,54 +5,37 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Contract\FilterElement;
 
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterScope;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceObjectInterface;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 
 /**
  * Implemented by filter elements whose value is picked from a server-provided option set.
  *
- * The capability port a generic choice control depends on
- * (SPEC_FILTER_FORMS.md §3.4). The division it enforces:
- *
- * > The **form** decodes the *widget*: which choice keys did the user pick.
- * > The **element** decodes the *domain*: what do those keys mean.
- *
- * Two methods, not one, because choice keys are element-defined: `FieldValueChoice` uses bare field
- * values, `CodefogTagsChoice` tag ids, `ArchiveFilterElement` `"<table>.<id>"` in dynamic-ptable
- * mode (§7.4). A form that parsed them would be reading element knowledge through the back door —
- * the very thing `requires` exists to prevent.
- *
- * Labelling is split: buildChoices() MAY set labels the element owns (setLabelForTable() fed from
- * element-owned whitelist rows is the real case); the form owns only global overrides (setLabel(),
- * setModelSuffix(), setEmptyOption()) and applyFormOptions().
+ * The capability port a generic choice control and the `ChoiceValueProvider` depend on
+ * (SPEC_FILTER_FORMS.md §3.5). It is the one source of options for the frontend widget and the
+ * backend value field (§6.4).
  *
  * @api
  */
 interface ChoiceSourceContract
 {
     /**
-     * Builds the element's choices for the current filter invocation.
+     * Builds the element's choices for the given filter scope.
      *
-     * Doubles as the single source of truth for the choice set: the same builder serves the form's
-     * field, the choice value callback and — via §7.2's view-data decode — the reverse mapping,
-     * which therefore no longer needs a second, rebuilt ChoicesBuilder.
+     * Labelling is split: this method MAY set labels the element owns (setLabelForTable() fed from
+     * element-owned whitelist rows); the control owns only global overrides.
      *
      * @throws FilterException On invalid filter configuration (no whitelist, no inferrable ptable,
      *   no valid target field, …).
      */
-    public function buildChoices(FilterContext $context): ChoicesBuilder;
+    public function createChoices(FilterScope $scope): ChoicesBuilder;
 
     /**
-     * Interprets submitted choice keys as this element's domain value.
+     * A reference choice for a canonical key — no database access; null for an unreadable key.
      *
-     * @param list<string> $keys Selected choice keys, verbatim — MAY include
-     *   {@see ChoicesBuilder::EMPTY_CHOICE}, whose meaning is element-defined. The sentinel is
-     *   passed through rather than swallowed because it can carry domain meaning:
-     *   ArchiveFilterElement treats a selected empty option as "use the full whitelist" unless
-     *   `use_whitelist_for_options_only`.
-     *
-     * @return object|null A value object of the class this element declares in
-     *   `AsFilterElement::$value`; null when the keys carry no query information.
+     * Only the element knows which choice class a key belongs to ("tl_news_archive.5" is table + id
+     * for Archive, but may be a plain field value containing a dot for FieldValueChoice).
      */
-    public function valueFromChoiceKeys(array $keys, FilterContext $context): ?object;
+    public function choiceFromKey(string $key): ?ChoiceObjectInterface;
 }

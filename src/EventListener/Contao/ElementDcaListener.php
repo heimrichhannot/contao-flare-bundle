@@ -11,9 +11,14 @@ use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Event\ElementDcaEvent;
 use HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareFilter\ListCallbacks;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
+use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
@@ -39,6 +44,7 @@ final readonly class ElementDcaListener
         private Connection                  $connection,
         private EventDispatcherInterface    $eventDispatcher,
         private FilterElementRegistry       $filterElementRegistry,
+        private FilterFactory               $filterFactory,
         private ListExecutionContextFactory $listExecutionContextFactory,
         private ListSpecBuilderFactory      $listFactory,
         private ListDriverRegistry          $listDriverRegistry,
@@ -97,12 +103,19 @@ final readonly class ElementDcaListener
             return;
         }
 
+        $spec = null;
+        $getSpec = function () use (&$spec, $listModel): ListSpec {
+            return $spec ??= $this->listFactory->createFromListModel($listModel)->build();
+        };
+
         $context = new DcaContext(
             table: $table,
             type: $type,
             listModel: $listModel,
             filterModel: $filterModel,
-            executionContextFactory: fn (): ?ListExecutionContext => $this->createExecutionContext($listModel),
+            executionContextFactory: fn (): ?ListExecutionContext => $this->createExecutionContext($getSpec),
+            element: $service instanceof FilterElementInterface ? $service : null,
+            filterScopeFactory: fn (): ?FilterScope => $this->createFilterScope($getSpec, $filterModel),
         );
 
         $dca = new DcaBuilder();
@@ -121,13 +134,34 @@ final readonly class ElementDcaListener
     /**
      * @mago-expect lint:no-empty-catch-clause Backend configuration must not fail on broken list configs.
      */
-    private function createExecutionContext(ListModel $listModel): ?ListExecutionContext
+    private function createExecutionContext(\Closure $getSpec): ?ListExecutionContext
     {
+        try {
+            return $this->listExecutionContextFactory->create($getSpec());
+        }
+        catch (\Throwable) {}
+
+        return null;
+    }
+
+    /**
+     * The backend scope (§6.4): options need neither a control nor a value, so none is resolved.
+     *
+     * @mago-expect lint:no-empty-catch-clause Backend configuration must not fail on broken list configs.
+     */
+    private function createFilterScope(\Closure $getSpec, ?FilterModel $filterModel): ?FilterScope
+    {
+        if ($filterModel === null) {
+            return null;
+        }
+
         try
         {
-            $specification = $this->listFactory->createFromListModel($listModel)->build();
-
-            return $this->listExecutionContextFactory->create($specification);
+            return new FilterScope(
+                list: $getSpec(),
+                filter: $this->filterFactory->createFromFilterModel($filterModel),
+                engineContext: new ConfigurationContext(),
+            );
         }
         catch (\Throwable) {}
 

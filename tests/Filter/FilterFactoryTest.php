@@ -96,7 +96,7 @@ final class FilterFactoryTest extends TestCase
 
         (function (array $row): void {
             $this->arrData = $row;
-        })->call($model, $row + ['id' => 7, 'type' => self::BOOL_ELEMENT, 'formVariant' => '']);
+        })->call($model, $row + ['id' => 7, 'type' => self::BOOL_ELEMENT, 'control' => '']);
 
         return $model;
     }
@@ -214,7 +214,7 @@ final class FilterFactoryTest extends TestCase
         self::assertEquals(new BoolValue(true), $fixed->value);
 
         $initial = $this->factory()->createFromFilterModel(
-            self::model(['formVariant' => self::BOOL_CONTROL, 'value' => '0']),
+            self::model(['control' => self::BOOL_CONTROL, 'value' => '0']),
         );
 
         self::assertSame($this->boolControl, $initial->control);
@@ -232,7 +232,7 @@ final class FilterFactoryTest extends TestCase
 
     public function testUnknownControlDegradesToNoControlAndNoValue(): void
     {
-        $filter = $this->factory()->createFromFilterModel(self::model(['formVariant' => 'gone', 'value' => '1']));
+        $filter = $this->factory()->createFromFilterModel(self::model(['control' => 'gone', 'value' => '1']));
 
         self::assertSame($this->boolElement, $filter->element);
         self::assertNull($filter->control);
@@ -244,7 +244,7 @@ final class FilterFactoryTest extends TestCase
     public function testControlForAnotherValueClassDegradesLikeAnUnknownOne(): void
     {
         $filter = $this->factory()->createFromFilterModel(
-            self::model(['formVariant' => self::KEYWORDS_CONTROL, 'value' => '1']),
+            self::model(['control' => self::KEYWORDS_CONTROL, 'value' => '1']),
         );
 
         self::assertNull($filter->control);
@@ -255,7 +255,7 @@ final class FilterFactoryTest extends TestCase
     public function testUnreadableInitialValueDegradesToNoControlAndNoValue(): void
     {
         $filter = $this->factory()->createFromFilterModel(
-            self::model(['formVariant' => self::BOOL_CONTROL, 'value' => 'garbage']),
+            self::model(['control' => self::BOOL_CONTROL, 'value' => 'garbage']),
         );
 
         self::assertNull($filter->control);
@@ -275,7 +275,7 @@ final class FilterFactoryTest extends TestCase
         $factory = $this->factory();
 
         $controlled = $factory->createFromFilterModel(
-            self::model(['formVariant' => self::BOOL_CONTROL, 'value' => '1']),
+            self::model(['control' => self::BOOL_CONTROL, 'value' => '1']),
             withControlAndValue: false,
         );
 

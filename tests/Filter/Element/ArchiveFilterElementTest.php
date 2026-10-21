@@ -42,14 +42,14 @@ final class ArchiveFilterElementTest extends TestCase
     public function testTransformsPopulatedModel(): void
     {
         $config = $this->transform([
-            'whitelistParents' => \serialize(['3', '5', '5', '0']),
-            'groupWhitelistParents' => \serialize([
+            'elm_whitelistParents' => \serialize(['3', '5', '5', '0']),
+            'elm_groupWhitelistParents' => \serialize([
                 ['tablePtable' => 'tl_news_archive', 'whitelistParents' => \serialize(['1']), 'formatLabel' => ''],
                 ['tablePtable' => 'tl_calendar', 'whitelistParents' => ['7'], 'formatLabel' => 'custom',
                     'formatLabelCustom' => '%title%'],
                 ['tablePtable' => 'tl_empty', 'whitelistParents' => ''],
             ]),
-            'useWhitelistForOptionsOnly' => '1',
+            'elm_useWhitelistForOptionsOnly' => '1',
         ]);
 
         self::assertSame([
@@ -70,7 +70,7 @@ final class ArchiveFilterElementTest extends TestCase
         $element->configureOptions($resolver);
 
         $resolved = $resolver->resolve($this->transform([
-            'whitelistParents' => \serialize(['2']),
+            'elm_whitelistParents' => \serialize(['2']),
         ]));
 
         self::assertSame([2], $resolved['whitelist_parents']);

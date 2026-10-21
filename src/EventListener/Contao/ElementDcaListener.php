@@ -145,8 +145,7 @@ final readonly class ElementDcaListener
      */
     private function buildFrameworkDca(DcaBuilder $dca, DcaContext $context, FilterModel $filterModel): void
     {
-        // The control's name column is still `formVariant` (renamed `control` in Task 13).
-        $control = $this->filterControlRegistry->get((string) $filterModel->formVariant);
+        $control = $this->filterControlRegistry->get((string) $filterModel->control);
 
         if ($control instanceof DcaContract) {
             $control->buildDca($dca->scope('control'), $context);
@@ -205,32 +204,32 @@ final readonly class ElementDcaListener
         $qTable = $this->connection->quoteIdentifier(FilterModel::getTable());
 
         $sql = <<<SQL
-            SELECT `formAlias`
+            SELECT `alias`
             FROM {$qTable}
             WHERE `pid` = :pid
               AND `published` = 1
               AND `tstamp` > 0
-              AND `formAlias` IS NOT NULL
-              AND `formAlias` <> ''
-            GROUP BY `formAlias`
+              AND `alias` IS NOT NULL
+              AND `alias` <> ''
+            GROUP BY `alias`
             HAVING COUNT(*) > 1
         SQL;
 
-        $duplicateFormAliases = $this->connection->fetchFirstColumn($sql, [
+        $duplicateAliases = $this->connection->fetchFirstColumn($sql, [
             'pid' => $listModel->id,
         ]);
 
-        if (!$duplicateFormAliases) {
+        if (!$duplicateAliases) {
             return;
         }
 
         /** Used in {@see ListCallbacks} to notify user of duplicate filter aliases in the Contao backend. */
-        $GLOBALS['FLARE']['duplicate_filter_aliases'] = $duplicateFormAliases;
+        $GLOBALS['FLARE']['duplicate_filter_aliases'] = $duplicateAliases;
 
         Message::addError($this->translator->trans('list.info.duplicate_filter_alias', [
             '%alias%' => implode(', ', \array_map(
                 static fn (string $alias): string => "\"{$alias}\"",
-                $duplicateFormAliases
+                $duplicateAliases
             )),
         ], 'flare'));
     }

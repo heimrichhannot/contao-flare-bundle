@@ -37,12 +37,12 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
         $config
-            ->set('is_limited', (bool) $model->isLimited)
-            ->set('configure_start', $model->configureStart ?: null)
-            ->set('configure_stop', $model->configureStop ?: null)
-            ->set('start_at', $model->startAt ?: null)
-            ->set('stop_at', $model->stopAt ?: null)
-            ->set('has_extended_events', (bool) $model->hasExtendedEvents);
+            ->set('is_limited', (bool) $model->elm_isLimited)
+            ->set('configure_start', $model->elm_configureStart ?: null)
+            ->set('configure_stop', $model->elm_configureStop ?: null)
+            ->set('start_at', $model->elm_startAt ?: null)
+            ->set('stop_at', $model->elm_stopAt ?: null)
+            ->set('has_extended_events', (bool) $model->elm_hasExtendedEvents);
     }
 
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
@@ -86,9 +86,9 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
         $dca->palette(
-            '{date_start_legend},configureStart,hasExtendedEvents;'
-            . '{date_stop_legend},configureStop;'
-            . '{form_legend},isLimited;'
+            '{date_start_legend},elm_configureStart,elm_hasExtendedEvents;'
+            . '{date_stop_legend},elm_configureStop;'
+            . '{form_legend},elm_isLimited;'
         );
     }
 

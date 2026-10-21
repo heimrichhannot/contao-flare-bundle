@@ -46,7 +46,7 @@ class CheckboxFilterControl extends AbstractFilterControl
 
     private function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $choices = BoolBinaryChoices::tryFrom((string) $model->boolBinaryChoices) ?? BoolBinaryChoices::NULL_TRUE;
+        $choices = BoolBinaryChoices::tryFrom((string) $model->ctl_boolBinaryChoices) ?? BoolBinaryChoices::NULL_TRUE;
 
         // NULL_FALSE is retired; it behaved like TRUE_FALSE for a checkbox.
         if ($choices === BoolBinaryChoices::NULL_FALSE) {
@@ -54,13 +54,13 @@ class CheckboxFilterControl extends AbstractFilterControl
         }
 
         $config
-            ->set('label', $model->label ?: null)
+            ->set('label', $model->ctl_label ?: null)
             ->set('binary_choices', $choices);
     }
 
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
-        $dca->palette('{control_legend},label,boolBinaryChoices');
+        $dca->palette('{control_legend},ctl_label,ctl_boolBinaryChoices');
     }
 
     public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void

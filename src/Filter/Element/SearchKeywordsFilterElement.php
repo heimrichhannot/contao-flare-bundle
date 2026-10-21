@@ -29,7 +29,7 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $config->set('columns', StringUtil::deserialize($model->columnsGeneric, true));
+        $config->set('columns', StringUtil::deserialize($model->elm_columnsGeneric, true));
     }
 
     /**
@@ -54,6 +54,6 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
 
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},columnsGeneric');
+        $dca->palette('{filter_legend},elm_columnsGeneric');
     }
 }

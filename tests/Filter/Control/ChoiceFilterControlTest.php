@@ -196,16 +196,16 @@ final class ChoiceFilterControlTest extends TestCase
         $ctl = new ChoiceFilterControl();
 
         $config = $this->transform($ctl, [
-            'label' => 'L',
-            'formatLabel' => 'custom',
-            'formatLabelCustom' => '%title%',
-            'isMandatory' => '1',
-            'isMultiple' => '1',
-            'isExpanded' => '',
-            'hasEmptyOption' => '1',
-            'formatEmptyOption' => 'custom',
-            'formatEmptyOptionCustom' => 'Any',
-            'placeholder' => 'P',
+            'ctl_label' => 'L',
+            'ctl_formatLabel' => 'custom',
+            'ctl_formatLabelCustom' => '%title%',
+            'ctl_isMandatory' => '1',
+            'ctl_isMultiple' => '1',
+            'ctl_isExpanded' => '',
+            'ctl_hasEmptyOption' => '1',
+            'ctl_formatEmptyOption' => 'custom',
+            'ctl_formatEmptyOptionCustom' => 'Any',
+            'ctl_placeholder' => 'P',
         ]);
 
         self::assertSame([
@@ -219,7 +219,10 @@ final class ChoiceFilterControlTest extends TestCase
             'placeholder' => 'P',
         ], $config);
 
-        $plain = $this->transform($ctl, ['formatLabel' => 'format.title', 'formatEmptyOption' => 'empty_option.all']);
+        $plain = $this->transform($ctl, [
+            'ctl_formatLabel' => 'format.title',
+            'ctl_formatEmptyOption' => 'empty_option.all',
+        ]);
         self::assertSame('format.title', $plain['format_label']);
         self::assertSame('empty_option.all', $plain['format_empty_option']);
         self::assertNull($plain['label']);
@@ -228,7 +231,8 @@ final class ChoiceFilterControlTest extends TestCase
     public function testPaletteOffersTheEmptyOptionLabel(): void
     {
         $dca = $this->createMock(DcaBuilderInterface::class);
-        $dca->expects(self::once())->method('palette')->with(self::stringContains('hasEmptyOption,formatEmptyOption,placeholder'));
+        $dca->expects(self::once())->method('palette')
+            ->with(self::stringContains('ctl_hasEmptyOption,ctl_formatEmptyOption,ctl_placeholder'));
 
         (new ChoiceFilterControl())->buildDca($dca, new DcaContext(
             'tl_flare_filter',

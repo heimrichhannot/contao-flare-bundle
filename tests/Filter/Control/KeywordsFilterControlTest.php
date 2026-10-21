@@ -56,7 +56,7 @@ final class KeywordsFilterControlTest extends TestCase
 
     public function testTransformer(): void
     {
-        $config = $this->transform(new KeywordsFilterControl(), ['label' => 'Q', 'placeholder' => '']);
+        $config = $this->transform(new KeywordsFilterControl(), ['ctl_label' => 'Q', 'ctl_placeholder' => '']);
 
         self::assertSame(['label' => 'Q', 'placeholder' => null], $config);
     }

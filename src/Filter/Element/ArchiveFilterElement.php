@@ -45,9 +45,9 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
         $config
-            ->set('whitelist_parents', $this->normalizeIds($model->whitelistParents))
-            ->set('group_whitelist_parents', $this->normalizeGroups($model->groupWhitelistParents))
-            ->set('use_whitelist_for_options_only', (bool) $model->useWhitelistForOptionsOnly);
+            ->set('whitelist_parents', $this->normalizeIds($model->elm_whitelistParents))
+            ->set('group_whitelist_parents', $this->normalizeGroups($model->elm_groupWhitelistParents))
+            ->set('use_whitelist_for_options_only', (bool) $model->elm_useWhitelistForOptionsOnly);
     }
 
     /**
@@ -257,12 +257,12 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
 
         if ($inferrer->getDcaMainPtable())
         {
-            $dca->palette('{archive_legend},whitelistParents,useWhitelistForOptionsOnly');
+            $dca->palette('{archive_legend},elm_whitelistParents,elm_useWhitelistForOptionsOnly');
         }
         /** @mago-expect lint:no-else-clause This else clause is fine. */
         elseif ($inferrer->isDcaDynamicPtable())
         {
-            $dca->palette('{archive_legend},groupWhitelistParents,useWhitelistForOptionsOnly');
+            $dca->palette('{archive_legend},elm_groupWhitelistParents,elm_useWhitelistForOptionsOnly');
         }
     }
 

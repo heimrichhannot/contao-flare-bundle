@@ -19,7 +19,7 @@ class FilterModel extends Model implements PtableInferrableInterface
 
     protected static $strTable = FilterContainer::TABLE_NAME;
 
-    private string $_formName;
+    private string $_alias;
 
     public function getFilterIdentifier(): string
     {
@@ -41,9 +41,12 @@ class FilterModel extends Model implements PtableInferrableInterface
         return (string) $this->targetAlias;
     }
 
-    public function getFilterFormName(): string
+    /**
+     * The filter's name in the URL query and the form: its alias, or its id as fallback.
+     */
+    public function getFilterAlias(): string
     {
-        return $this->_formName ??= static::generateFormName($this);
+        return $this->_alias ??= static::generateFormName($this);
     }
 
     public function getFilterData(): array
@@ -88,24 +91,32 @@ class FilterModel extends Model implements PtableInferrableInterface
     {
         if (\is_array($model_or_row))
         {
-            $formAlias = $model_or_row['formAlias'] ?? null;
+            $alias = $model_or_row['alias'] ?? null;
             $filterId = $model_or_row['id'] ?? null;
         }
         else
         {
-            $formAlias = $model_or_row->formAlias;
+            $alias = $model_or_row->alias;
             $filterId = $model_or_row->id;
         }
 
-        $formAlias = \preg_replace('/[^A-Za-z0-9\-._]/', '', \trim((string) $formAlias));
+        $alias = \preg_replace('/[^A-Za-z0-9\-._]/', '', \trim((string) $alias));
 
-        $name = (string) ($formAlias ?: $filterId);
+        $name = (string) ($alias ?: $filterId);
 
         if ($name !== '') {
             return $name;
         }
 
         throw new \RuntimeException('Unable to generate form name for filter model.');
+    }
+
+    /**
+     * The parent-table inference columns are element-owned and therefore `elm_`-prefixed (§4.1).
+     */
+    protected static function getPtableInferColumn(string $name): string
+    {
+        return 'elm_' . $name;
     }
 
     public function __get($strKey)

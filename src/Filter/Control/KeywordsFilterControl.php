@@ -38,15 +38,15 @@ class KeywordsFilterControl extends AbstractFilterControl
             sourceClass: FilterModel::class,
             transformer: new CallbackFilterModelTransformer(
                 static fn (ConfigBuilder $config, FilterModel $model): ConfigBuilder => $config
-                    ->set('label', $model->label ?: null)
-                    ->set('placeholder', $model->placeholder ?: null),
+                    ->set('label', $model->ctl_label ?: null)
+                    ->set('placeholder', $model->ctl_placeholder ?: null),
             ),
         );
     }
 
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
-        $dca->palette('{control_legend},label,placeholder');
+        $dca->palette('{control_legend},ctl_label,ctl_placeholder');
     }
 
     public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void

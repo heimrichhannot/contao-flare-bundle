@@ -69,8 +69,8 @@ readonly class FieldsOptionsCallbacks
      *
      * @return array<string, string>
      */
-    #[AsCallback(self::TABLE_NAME, 'fields.formVariant.options')]
-    public function getFieldOptions_formVariant(DataContainer $dc): array
+    #[AsCallback(self::TABLE_NAME, 'fields.control.options')]
+    public function getFieldOptions_control(DataContainer $dc): array
     {
         $type = (string) (DcaHelper::rowOf($dc)['type'] ?? '');
         $valueClass = $this->filterElementRegistry->getAttribute($type)?->value;
@@ -82,13 +82,13 @@ readonly class FieldsOptionsCallbacks
         $options = [];
 
         foreach ($this->filterControlRegistry->findNames($valueClass) as $name) {
-            $options[$name] = $GLOBALS['TL_LANG'][self::TABLE_NAME]['formVariant_options'][$name] ?? $name;
+            $options[$name] = $GLOBALS['TL_LANG'][self::TABLE_NAME]['control_options'][$name] ?? $name;
         }
 
         return $options;
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldPublished.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_fieldPublished.options')]
     public function getFieldOptions_fieldBool(?DataContainer $dc): array
     {
         return DcaHelper::getFieldOptions(
@@ -98,8 +98,8 @@ readonly class FieldsOptionsCallbacks
         );
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldStart.options')]
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldStop.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_fieldStart.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_fieldStop.options')]
     public function getFieldOptions_fieldDatim(?DataContainer $dc): array
     {
         return DcaHelper::getFieldOptions(
@@ -109,20 +109,20 @@ readonly class FieldsOptionsCallbacks
         );
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldPid.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_fieldPid.options')]
     public function getFieldOptions_fieldPid(DataContainer $dc): array
     {
         return DcaHelper::getFieldOptions($dc, DcaFieldFilter::pid(...));
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldPtable.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_fieldPtable.options')]
     public function getFieldOptions_fieldPtable(DataContainer $dc): array
     {
         return DcaHelper::getFieldOptions($dc, DcaFieldFilter::ptable(...));
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.fieldGeneric.options')]
-    #[AsCallback(self::TABLE_NAME, 'fields.columnsGeneric.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_fieldGeneric.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_columnsGeneric.options')]
     public function getFieldOptions_fieldGeneric(DataContainer $dc): array
     {
         /** @var ?FilterModel $filterModel */
@@ -153,7 +153,8 @@ readonly class FieldsOptionsCallbacks
         return DcaHelper::getFieldOptions($table);
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.tablePtable.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_tablePtable.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_groupWhitelistParents.fields.tablePtable.options')]
     public function getFieldOptions_tablePtable(DataContainer $dc): array
     {
         $db = $this->contaoFramework->createInstance(Database::class);
@@ -166,7 +167,8 @@ readonly class FieldsOptionsCallbacks
         return \array_combine($tables, $tables) ?: [];
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.whitelistParents.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_whitelistParents.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_groupWhitelistParents.fields.whitelistParents.options')]
     public function getOptions_whitelistParents(DataContainer $dc): array
     {
         [$filterModel, $listModel] = $this->filterContainer->getModelsFromDataContainer($dc);
@@ -190,11 +192,11 @@ readonly class FieldsOptionsCallbacks
         [$field, $groupField, $index] = $groupParts;
         // $sourcePtableField = \sprintf('%s__tablePtable__%s', $field, $index);
 
-        if ($field !== 'groupWhitelistParents' || $groupField !== 'whitelistParents') {
+        if ($field !== 'elm_groupWhitelistParents' || $groupField !== 'whitelistParents') {
             return [];
         }
 
-        if (!$savedGroups = StringUtil::deserialize($filterModel->groupWhitelistParents ?? '')) {
+        if (!$savedGroups = StringUtil::deserialize($filterModel->elm_groupWhitelistParents ?? '')) {
             return [];
         }
 
@@ -207,20 +209,29 @@ readonly class FieldsOptionsCallbacks
         return DcaHelper::getArchiveOptions($ptable);
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.formatLabel.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.ctl_formatLabel.options')]
     public function getOptions_formatLabel(DataContainer $dc): array
     {
-        return $this->getFormatOptions('formatLabel');
+        return $this->getFormatOptions('format.', 'ctl_formatLabel_custom');
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.formatEmptyOption.options')]
+    /**
+     * The per-group label format of the parent whitelist groups (element-owned, §4.1).
+     */
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_groupWhitelistParents.fields.formatLabel.options')]
+    public function getOptions_groupFormatLabel(DataContainer $dc): array
+    {
+        return $this->getFormatOptions('format.', 'elm_groupWhitelistParents_.formatLabel_custom');
+    }
+
+    #[AsCallback(self::TABLE_NAME, 'fields.ctl_formatEmptyOption.options')]
     public function getOptions_formatEmptyOption(DataContainer $dc): array
     {
-        return $this->getFormatOptions('formatEmptyOption');
+        return $this->getFormatOptions('empty_option.', 'ctl_formatEmptyOption_custom');
     }
 
-    #[AsCallback(self::TABLE_NAME, 'fields.configureStart.options')]
-    #[AsCallback(self::TABLE_NAME, 'fields.configureStop.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_configureStart.options')]
+    #[AsCallback(self::TABLE_NAME, 'fields.elm_configureStop.options')]
     public function getOptions_configureDate(): array
     {
         return [
@@ -268,7 +279,11 @@ readonly class FieldsOptionsCallbacks
         return $options;
     }
 
-    public function getFormatOptions(string $field, ?string $prefix = null): array
+    /**
+     * @param string $prefix         The translation key prefix of the offered formats in the `flare_form` domain.
+     * @param string $customLabelKey The `tl_flare_filter` language key of the "custom" option's label.
+     */
+    public function getFormatOptions(string $prefix, string $customLabelKey): array
     {
         if (!$this->translator instanceof TranslatorBagInterface) {
             return [];
@@ -279,15 +294,9 @@ readonly class FieldsOptionsCallbacks
 
         $options = [];
 
-        $prefix ??= match ($field) {
-            'formatLabel' => 'format.',
-            'formatEmptyOption' => 'empty_option.',
-            default => null
-        };
-
         foreach ($labels as $key => $label)
         {
-            if ($prefix && !\str_starts_with($key, $prefix)) {
+            if (!\str_starts_with($key, $prefix)) {
                 continue;
             }
 
@@ -299,6 +308,8 @@ readonly class FieldsOptionsCallbacks
         \asort($options);
 
         /** @noinspection PhpTranslationDomainInspection */
-        return ['custom' => $this->translator->trans("tl_flare_filter.{$field}_custom", [], 'contao_tl_flare_filter')] + $options;
+        $customLabel = $this->translator->trans("tl_flare_filter.{$customLabelKey}", [], 'contao_tl_flare_filter');
+
+        return ['custom' => $customLabel] + $options;
     }
 }

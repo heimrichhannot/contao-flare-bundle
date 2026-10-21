@@ -53,15 +53,15 @@ final class CheckboxFilterControlTest extends TestCase
 
         self::assertSame(
             BoolBinaryChoices::TRUE_FALSE,
-            $this->transform($ctl, ['boolBinaryChoices' => 'null_false'])['binary_choices'],
+            $this->transform($ctl, ['ctl_boolBinaryChoices' => 'null_false'])['binary_choices'],
         );
         self::assertSame(
             BoolBinaryChoices::TRUE_FALSE,
-            $this->transform($ctl, ['boolBinaryChoices' => 'true_false'])['binary_choices'],
+            $this->transform($ctl, ['ctl_boolBinaryChoices' => 'true_false'])['binary_choices'],
         );
         self::assertSame(
             BoolBinaryChoices::NULL_TRUE,
-            $this->transform($ctl, ['boolBinaryChoices' => ''])['binary_choices'],
+            $this->transform($ctl, ['ctl_boolBinaryChoices' => ''])['binary_choices'],
         );
     }
 
@@ -69,8 +69,8 @@ final class CheckboxFilterControlTest extends TestCase
     {
         $ctl = new CheckboxFilterControl();
 
-        self::assertSame('Only open', $this->transform($ctl, ['label' => 'Only open'])['label']);
-        self::assertNull($this->transform($ctl, ['label' => ''])['label']);
+        self::assertSame('Only open', $this->transform($ctl, ['ctl_label' => 'Only open'])['label']);
+        self::assertNull($this->transform($ctl, ['ctl_label' => ''])['label']);
     }
 
     public function testBuildsSingleCheckbox(): void

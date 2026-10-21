@@ -40,12 +40,12 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $whitelistParents = StringUtil::deserialize($model->whitelistParents);
-        $groupWhitelistParents = StringUtil::deserialize($model->groupWhitelistParents);
+        $whitelistParents = StringUtil::deserialize($model->elm_whitelistParents);
+        $groupWhitelistParents = StringUtil::deserialize($model->elm_groupWhitelistParents);
 
         $config
-            ->set('field_pid', $model->fieldPid ?: null)
-            ->set('which_ptable', $model->whichPtable ?: null)
+            ->set('field_pid', $model->elm_fieldPid ?: null)
+            ->set('which_ptable', $model->elm_whichPtable ?: null)
             ->set('whitelist_parents', $whitelistParents ? (array) $whitelistParents : [])
             ->set('group_whitelist_parents', \is_array($groupWhitelistParents) ? $groupWhitelistParents : []);
     }
@@ -147,7 +147,7 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
             return;
         }
 
-        $palette = '{filter_legend},fieldPid,whichPtable';
+        $palette = '{filter_legend},elm_fieldPid,elm_whichPtable';
 
         $inferrer = new PtableInferrer($filterModel, $listModel->dc);
         $table = $inferrer->getEntityTable();
@@ -182,14 +182,14 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
             $filterModel->whichPtable_disableAutoOption();
         }
 
-        if ($filterModel->whichPtable === 'dynamic')
+        if ($filterModel->elm_whichPtable === 'dynamic')
         {
-            $palette .= ';{archive_legend},groupWhitelistParents';
+            $palette .= ';{archive_legend},elm_groupWhitelistParents';
         }
         /** @mago-expect lint:no-else-clause This else clause is fine. */
         elseif ($ptable ?? null)
         {
-            $palette .= ',whitelistParents';
+            $palette .= ',elm_whitelistParents';
         }
 
         $dca->palette($palette);

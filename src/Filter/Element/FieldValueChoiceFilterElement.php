@@ -43,7 +43,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement implements Cho
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $config->set('field', $model->fieldGeneric ?: null);
+        $config->set('field', $model->elm_fieldGeneric ?: null);
     }
 
     /**
@@ -83,7 +83,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement implements Cho
 
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},fieldGeneric');
+        $dca->palette('{filter_legend},elm_fieldGeneric');
     }
 
     /**

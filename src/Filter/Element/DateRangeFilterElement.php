@@ -28,7 +28,7 @@ class DateRangeFilterElement extends AbstractFilterElement
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $config->set('field', $model->fieldGeneric ?: null);
+        $config->set('field', $model->elm_fieldGeneric ?: null);
     }
 
     /**
@@ -39,7 +39,7 @@ class DateRangeFilterElement extends AbstractFilterElement
         $value = $this->expectValue($value, DateRangeValue::class);
 
         if (!$field = $builder->scope->filter->config['field'] ?? null) {
-            throw new FilterException('Set fieldGeneric in filter model.', method: __METHOD__);
+            throw new FilterException('Set elm_fieldGeneric in filter model.', method: __METHOD__);
         }
 
         if (!$value) {
@@ -55,6 +55,6 @@ class DateRangeFilterElement extends AbstractFilterElement
 
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},fieldGeneric');
+        $dca->palette('{filter_legend},elm_fieldGeneric');
     }
 }

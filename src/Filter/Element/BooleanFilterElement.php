@@ -29,7 +29,7 @@ class BooleanFilterElement extends AbstractFilterElement
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $config->set('field', $model->fieldGeneric ?: null);
+        $config->set('field', $model->elm_fieldGeneric ?: null);
     }
 
     /**
@@ -55,9 +55,9 @@ class BooleanFilterElement extends AbstractFilterElement
 
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},fieldGeneric');
+        $dca->palette('{filter_legend},elm_fieldGeneric');
 
-        $dca->field('fieldGeneric')
+        $dca->field('elm_fieldGeneric')
             ->options(fn (): array => $this->getFieldGenericOptions($context->getTargetTable()));
     }
 

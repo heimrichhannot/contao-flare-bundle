@@ -46,14 +46,14 @@ class DateRangeFilterControl extends AbstractFilterControl
             sourceClass: FilterModel::class,
             transformer: new CallbackFilterModelTransformer(
                 static fn (ConfigBuilder $config, FilterModel $model): ConfigBuilder
-                    => $config->set('label', $model->label ?: null),
+                    => $config->set('label', $model->ctl_label ?: null),
             ),
         );
     }
 
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
-        $dca->palette('{control_legend},label');
+        $dca->palette('{control_legend},ctl_label');
     }
 
     public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void

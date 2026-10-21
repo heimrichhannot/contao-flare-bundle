@@ -51,26 +51,27 @@ class ChoiceFilterControl extends AbstractFilterControl
 
     private function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $formatLabel = $model->formatLabel === 'custom' ? $model->formatLabelCustom : $model->formatLabel;
-        $formatEmptyOption = $model->formatEmptyOption === 'custom'
-            ? $model->formatEmptyOptionCustom
-            : $model->formatEmptyOption;
+        $formatLabel = $model->ctl_formatLabel === 'custom' ? $model->ctl_formatLabelCustom : $model->ctl_formatLabel;
+        $formatEmptyOption = $model->ctl_formatEmptyOption === 'custom'
+            ? $model->ctl_formatEmptyOptionCustom
+            : $model->ctl_formatEmptyOption;
 
         $config
-            ->set('label', $model->label ?: null)
+            ->set('label', $model->ctl_label ?: null)
             ->set('format_label', $formatLabel ?: null)
-            ->set('is_mandatory', (bool) $model->isMandatory)
-            ->set('is_multiple', (bool) $model->isMultiple)
-            ->set('is_expanded', (bool) $model->isExpanded)
-            ->set('has_empty_option', (bool) $model->hasEmptyOption)
+            ->set('is_mandatory', (bool) $model->ctl_isMandatory)
+            ->set('is_multiple', (bool) $model->ctl_isMultiple)
+            ->set('is_expanded', (bool) $model->ctl_isExpanded)
+            ->set('has_empty_option', (bool) $model->ctl_hasEmptyOption)
             ->set('format_empty_option', $formatEmptyOption ?: null)
-            ->set('placeholder', $model->placeholder ?: null);
+            ->set('placeholder', $model->ctl_placeholder ?: null);
     }
 
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
         $dca->palette(
-            '{control_legend},label,formatLabel,isMandatory,isMultiple,isExpanded,hasEmptyOption,formatEmptyOption,placeholder',
+            '{control_legend},ctl_label,ctl_formatLabel,ctl_isMandatory,ctl_isMultiple,ctl_isExpanded,'
+            . 'ctl_hasEmptyOption,ctl_formatEmptyOption,ctl_placeholder',
         );
     }
 

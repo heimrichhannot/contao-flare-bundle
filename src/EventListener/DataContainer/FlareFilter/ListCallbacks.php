@@ -31,7 +31,8 @@ readonly class ListCallbacks
     #[AsCallback(FilterContainer::TABLE_NAME, 'list.sorting.child_record')]
     public function listLabelLabel(array $row): string
     {
-        $isIntrinsic = $row['intrinsic'] ?? false;
+        // A filter without a control is intrinsic (§5.1).
+        $isIntrinsic = ($row['control'] ?? '') === '';
         $isPublished = $row['published'] ?? false;
 
         $title = StringUtil::specialchars($row['title'] ?? '');
@@ -43,7 +44,7 @@ readonly class ListCallbacks
 
         $cutLabel = $this->translator->trans('DCA.cut.0', [$row['id']], 'contao_default');
 
-        $formFieldName = FilterModel::generateFormName($row);
+        $filterAlias = FilterModel::generateFormName($row);
 
         $duplicateFilterAliases = $GLOBALS['FLARE']['duplicate_filter_aliases'] ?? [];
         $duplicateFilterAliases = \array_fill_keys($duplicateFilterAliases, true);
@@ -55,7 +56,7 @@ readonly class ListCallbacks
             'title' => $title,
             'type_label' => $typeLabel,
             'cut_label' => $cutLabel,
-            'form_alias' => $formFieldName,
+            'filter_alias' => $filterAlias,
             'duplicate_filter_aliases' => $duplicateFilterAliases,
         ]);
     }

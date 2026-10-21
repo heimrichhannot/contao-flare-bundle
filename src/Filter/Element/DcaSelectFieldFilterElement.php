@@ -35,7 +35,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $config->set('field', $model->fieldGeneric ?: null);
+        $config->set('field', $model->elm_fieldGeneric ?: null);
     }
 
     /**
@@ -110,9 +110,9 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
 
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},fieldGeneric');
+        $dca->palette('{filter_legend},elm_fieldGeneric');
 
-        $dca->field('fieldGeneric')
+        $dca->field('elm_fieldGeneric')
             ->eval(['alwaysSave' => true, 'submitOnChange' => true])
             ->options(fn (): array => $this->getFieldGenericOptions($context->listModel->dc));
     }

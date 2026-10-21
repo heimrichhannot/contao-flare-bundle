@@ -17,9 +17,9 @@ final class SimpleEquationFilterElementTest extends TestCase
     public function testTransformsPopulatedModel(): void
     {
         $config = $this->transform([
-            'equationLeft' => 'pid',
-            'equationOperator' => '=',
-            'equationRight' => '42',
+            'elm_equationLeft' => 'pid',
+            'elm_equationOperator' => '=',
+            'elm_equationRight' => '42',
         ]);
 
         self::assertArrayNotHasKey('intrinsic', $config);
@@ -31,9 +31,9 @@ final class SimpleEquationFilterElementTest extends TestCase
     public function testTransformsEmptyModelToDefaults(): void
     {
         $config = $this->transform([
-            'equationLeft' => '',
-            'equationOperator' => '',
-            'equationRight' => null,
+            'elm_equationLeft' => '',
+            'elm_equationOperator' => '',
+            'elm_equationRight' => null,
         ]);
 
         self::assertNull($config['left']);
@@ -49,8 +49,8 @@ final class SimpleEquationFilterElementTest extends TestCase
         $element->configureOptions($resolver);
 
         $resolved = $resolver->resolve($this->transform([
-            'equationLeft' => 'id',
-            'equationOperator' => '>',
+            'elm_equationLeft' => 'id',
+            'elm_equationOperator' => '>',
         ]));
 
         self::assertSame('id', $resolved['left']);

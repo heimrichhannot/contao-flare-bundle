@@ -81,7 +81,7 @@ readonly class ListModelFilterCollector
                     $e->getMessage(),
                 );
 
-                if ((string) $model->formVariant !== '')
+                if ((string) $model->control !== '')
                 {
                     $this->logger->warning('[FLARE] ' . $message . ' -- The filter is skipped.');
 

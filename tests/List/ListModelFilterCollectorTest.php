@@ -84,12 +84,12 @@ final class ListModelFilterCollectorTest extends TestCase
         return $model;
     }
 
-    private static function filterModel(int $id, string $type, string $formVariant = ''): FilterModel
+    private static function filterModel(int $id, string $type, string $control = ''): FilterModel
     {
         return self::model(FilterModel::class, [
             'id' => $id,
             'type' => $type,
-            'formVariant' => $formVariant,
+            'control' => $control,
             'published' => '1',
         ]);
     }

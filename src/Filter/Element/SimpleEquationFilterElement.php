@@ -31,10 +31,12 @@ class SimpleEquationFilterElement extends AbstractFilterElement
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
+        $operator = $model->elm_equationOperator;
+
         $config
-            ->set('left', $model->equationLeft ?: null)
-            ->set('operator', $model->equationOperator ? SqlEquationOperator::match($model->equationOperator) : null)
-            ->set('right', $model->equationRight);
+            ->set('left', $model->elm_equationLeft ?: null)
+            ->set('operator', $operator ? SqlEquationOperator::match($operator) : null)
+            ->set('right', $model->elm_equationRight);
     }
 
     /**
@@ -57,14 +59,14 @@ class SimpleEquationFilterElement extends AbstractFilterElement
 
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
-        $operatorValue = $context->filterModel?->equationOperator;
+        $operatorValue = $context->filterModel?->elm_equationOperator;
         $operator = $operatorValue ? SqlEquationOperator::match($operatorValue) : null;
 
         $dca->palette($operator?->isUnary()
-            ? '{flare_simple_equation_legend},equationLeft,equationOperator'
-            : '{flare_simple_equation_legend},equationLeft,equationOperator,equationRight');
+            ? '{flare_simple_equation_legend},elm_equationLeft,elm_equationOperator'
+            : '{flare_simple_equation_legend},elm_equationLeft,elm_equationOperator,elm_equationRight');
 
-        $dca->field('equationLeft')
+        $dca->field('elm_equationLeft')
             ->options(static fn (): array => DcaHelper::getFieldOptions($context->getTargetTable()));
     }
 }

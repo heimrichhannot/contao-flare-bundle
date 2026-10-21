@@ -29,18 +29,18 @@ class PublishedFilterElement extends AbstractFilterElement
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $usePublished = (bool) ($model->usePublished ?? true);
-        $useStart = (bool) ($model->useStart ?? true);
-        $useStop = (bool) ($model->useStop ?? true);
-        $fieldPublished = $model->fieldPublished ?: 'published';
-        $fieldStart = $model->fieldStart ?: 'start';
-        $fieldStop = $model->fieldStop ?: 'stop';
+        $usePublished = (bool) ($model->elm_usePublished ?? true);
+        $useStart = (bool) ($model->elm_useStart ?? true);
+        $useStop = (bool) ($model->elm_useStop ?? true);
+        $fieldPublished = $model->elm_fieldPublished ?: 'published';
+        $fieldStart = $model->elm_fieldStart ?: 'start';
+        $fieldStop = $model->elm_fieldStop ?: 'stop';
 
         $config
             ->set('published_field', $usePublished ? $fieldPublished : null)
             ->set('start_field', $useStart ? $fieldStart : null)
             ->set('stop_field', $useStop ? $fieldStop : null)
-            ->set('invert', (bool) $model->invertPublished);
+            ->set('invert', (bool) $model->elm_invertPublished);
     }
 
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
@@ -58,6 +58,6 @@ class PublishedFilterElement extends AbstractFilterElement
 
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},usePublished,useStart,useStop');
+        $dca->palette('{filter_legend},elm_usePublished,elm_useStart,elm_useStop');
     }
 }

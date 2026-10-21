@@ -126,7 +126,7 @@ final readonly class FilterFactory
         $filter = new Filter(
             element: $element,
             type: $type,
-            alias: $filterModel->getFilterFormName(),
+            alias: $filterModel->getFilterAlias(),
             config: $this->filterOptionsResolver->resolve($element, $config),
             targetAlias: $filterModel->getFilterTargetAlias() ?: null,
             source: $source,
@@ -137,7 +137,7 @@ final readonly class FilterFactory
         }
 
         $valueClass = $this->getElementValueClass($type, $element);
-        $controlName = (string) $filterModel->formVariant;
+        $controlName = (string) $filterModel->control;
 
         if ($controlName === '') {
             return $filter->withValue($this->provideValue($valueClass, $filterModel, $element));

@@ -14,7 +14,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\OptionsResolver\Exception\MissingOptionsException;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-final class FilterBuilderTest extends TestCase
+final class FormulaBuilderTest extends TestCase
 {
     public function testRegistryLooksUpFilterTypesByClassName(): void
     {
@@ -37,7 +37,7 @@ final class FilterBuilderTest extends TestCase
             ->add(TestPredicate::class, ['value' => 'first'])
             ->add(TestPredicate::class, ['value' => 'second', 'enabled' => true], 'translation');
 
-        $calls = $builder->all();
+        $calls = $builder->build()->propositions;
 
         self::assertCount(2, $calls);
         self::assertSame('main', $calls[0]->targetAlias);

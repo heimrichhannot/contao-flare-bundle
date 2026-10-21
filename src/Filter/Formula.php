@@ -2,6 +2,9 @@
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
+/**
+ * @internal
+ */
 final readonly class Formula
 {
     public function __construct(

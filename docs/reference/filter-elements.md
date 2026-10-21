@@ -2,8 +2,7 @@
 
 All classes live in `HeimrichHannot\FlareBundle\Filter\Element\` unless noted otherwise and are named after
 their type with a `FilterElement` suffix (e.g. `flare_bool` → `BooleanFilterElement`).
-"Form controls" are the Symfony form fields the element builds in the frontend filter form; elements without
-any are applied without a user-facing form field (typically as intrinsic filters).
+"Form controls" are the Symfony form fields of the [filter controls](../dev/filter-controls.md) an editor can choose for the element; elements without a value class (or with the control left blank) are applied without a user-facing form field (intrinsic filters).
 
 | Type | Backend label | Form controls | Purpose |
 |---|---|---|---|
@@ -19,7 +18,7 @@ any are applied without a user-facing form field (typically as intrinsic filters
 | `flare_search_keywords` | Keyword search | `TextType` | Keyword search across configured columns. |
 
 Each element translates its configuration into calls to reusable
-[filter types](./filter-types.md), which build the actual query fragments.
+[predicates](./predicates.md), which build the actual query fragments.
 
 ## Integration filter elements
 

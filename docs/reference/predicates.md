@@ -1,11 +1,12 @@
-# Built-in Filter Types
+# Built-in Predicates
 
-Filter types are reusable query-fragment builders in the namespace `HeimrichHannot\FlareBundle\Filter\Type\`.
-They are consumed by filter elements (via `FilterBuilderInterface::add()`) — including
-[inline filters](../dev/filter-elements/index.md#9-inline-filters-without-a-service) added
-programmatically — see the [filter types guide](../dev/filter-types.md).
+Predicates (formerly called "filter types") are reusable query-fragment builders in the namespace
+`HeimrichHannot\FlareBundle\Filter\Predicate\`. They are consumed by filter elements (via
+`FilterContextBuilder::addPredicate()`) — including
+[inline filters](../dev/filter-elements/index.md#9-programmatic-filters-without-a-backend-record) added
+programmatically — see the [predicates guide](../dev/predicates.md).
 
-Options are validated against each type's `configureOptions()` schema. Required options have no default.
+Options are validated against each predicate's `configureOptions()` schema. Required options have no default.
 
 | Class | Options | Purpose |
 | :---- | :------ | :------ |
@@ -22,5 +23,5 @@ Options are validated against each type's `configureOptions()` schema. Required 
 | `SimpleEquationPredicate` | `operand_left` (string, **required**), `operator` (`SqlEquationOperator`\|string, **required**), `operand_right` (string\|int\|null, default `''`) | Generic `column <operator> value` equation (`=`, `!=`, `>`, `>=`, `<`, `<=`, `LIKE`, ...). |
 
 To write your own, implement `PredicateInterface` (or extend `AbstractPredicate`) — registration is
-automatic via the `huh.flare.filter_type` service tag. See the
-[custom filter types guide](../dev/filter-types.md).
+automatic via the `flare.filter_predicate` service tag. See the
+[predicates guide](../dev/predicates.md).

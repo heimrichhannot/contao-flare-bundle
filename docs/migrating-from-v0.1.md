@@ -5,13 +5,16 @@ sidebar_position: 10
 
 # Migrating from v0.1
 
-v0.2 rebuilds the filter subsystem around an **element-owned architecture**: a filter element now owns its
-config schema, backend DCA, frontend form, and query translation — and delegates the actual SQL to reusable
-[filter types](./dev/filter-types.md). The invoker and DCA-callback subsystems are gone.
+v0.2 rebuilds the filter subsystem around three decoupled concerns: a **filter element** owns its config schema,
+backend DCA and which rows match; a **[filter control](./dev/filter-controls.md)** owns how the user supplies the
+value and turns it into a typed value object; and reusable **[predicates](./dev/predicates.md)** write the SQL.
+The invoker and DCA-callback subsystems are gone.
 
-**If you only configure lists and filters in the Contao backend, nothing changes for you.** DCA fields,
-palettes, backend filter labels, templates, and the content elements are unchanged. This guide is for
-developers who extended FLARE in PHP.
+**If you only configure lists and filters in the Contao backend, the content stays but the schema changes:**
+`tl_flare_filter` columns are renamed and a few settings were reshaped (see
+[Database & Backend](#database--backend) — run `contao:migrate`). Templates and the content elements are
+unchanged apart from the failure state described there. This guide is for everyone who upgrades; the
+developer sections cover PHP extensions.
 
 For the exhaustive list of deleted APIs, see [Removed in v0.2](./removed-in-v0.2.md).
 
@@ -22,7 +25,7 @@ For the exhaustive list of deleted APIs, see [Removed in v0.2](./removed-in-v0.2
 | `HeimrichHannot\FlareBundle\FilterElement\FooElement` | `HeimrichHannot\FlareBundle\Filter\Element\FooFilterElement` — all elements moved and renamed with a `FilterElement` suffix; the `::TYPE` strings (e.g. `flare_bool`) are unchanged |
 | `Specification\FilterDefinition`, `Collection\FilterDefinitionCollection` | `Filter\Filter` — a single immutable value object; see [Filter Pipeline](./spec/filtering.md) |
 | `FilterCollector\*` | `Filter\Collector\*`; `collect()` now returns `array<string\|int, Filter>\|null` |
-| `Form\Type\DateRangeFilterType` (Symfony form type) | `Form\Type\DateRangeFormType` — renamed; note that `Filter\Type\DateRangeFilterType` now names a *query* filter type instead |
+| `Form\Type\DateRangeFilterType` (Symfony form type) | `Form\Type\DateRangeFormType` — renamed; the query-side `Filter\Type\*FilterType` classes are now `Filter\Predicate\*Predicate` |
 | `ListType\ListTypeInterface`, `ListType\AbstractListType` | `List\Driver\ListDriverInterface`, `List\Driver\AbstractListDriver` — "list types" are implemented by **list drivers**; the registered type aliases (e.g. `flare_news`) are unchanged |
 | `ListType\NewsListType`, `ListType\GenericDataContainerListType`, ... | `List\Driver\NewsListDriver`, `List\Driver\GenericDataContainerListDriver`, ... — built-in drivers renamed accordingly (see [built-in list types](./reference/list-types.md)) |
 | `Contract\ListType\*` | `Contract\ListDriver\*`; `DataContainerContract::getDataContainerName()` is now `resolveDataContainerTable()` — the old name lives on `ListDriverInterface` and resolves the runtime table from canonical config |
@@ -31,53 +34,110 @@ For the exhaustive list of deleted APIs, see [Removed in v0.2](./removed-in-v0.2
 
 | v0.1 | v0.2 |
 |---|---|
-| `#[AsFilterElement(type:, formType:, palette:, method:, isTargeted:)]` | `#[AsFilterElement(type:, isTargeted:)]` — form type moves into `buildForm()`, palette into `buildDca()`, the invoked method is always `buildFilter()`; always-intrinsic elements implement `IntrinsicContract` |
+| `#[AsFilterElement(type:, formType:, palette:, method:, isTargeted:)]` | `#[AsFilterElement(type:, isTargeted:, value:)]` — palette moves into `buildDca()`, the form type into a [filter control](./dev/filter-controls.md), the invoked method is always `buildContext()`; `value:` names the value class the element consumes (none = always intrinsic) |
+| — | `#[AsFilterControl(name:)]` — registers a [filter control](./dev/filter-controls.md); new in v0.2 |
 | `#[AsListType(type:, dataContainer:, palette:)]` | `#[AsListDriver(type:, dataContainer:)]` — renamed; palette moves into `buildDca()`; `dataContainer` is only a backend default for new records |
 | `#[AsFilterInvoker]` | Removed — branch on `$context->engineContext` inside `buildFilter()` |
 | `#[AsFilterCallback]`, `#[AsListCallback]`, `#[AsFlareCallback]` | Removed — use [`buildDca()` / `ElementDcaEvent`](./dev/dca-builder.md) |
 
 ## Filter Element API
 
-The `__invoke(FilterInvocation $invocation, FilterQueryBuilder $qb)` entry point is replaced by three
-lifecycle methods (see the [custom filter elements guide](./dev/filter-elements/index.md)):
+The `__invoke(FilterInvocation $invocation, FilterQueryBuilder $qb)` entry point is replaced by a single
+lifecycle method on the element, plus a separate control (see the
+[custom filter elements guide](./dev/filter-elements/index.md) and the
+[custom filter controls guide](./dev/filter-controls.md)):
 
 | v0.1 | v0.2 |
 |---|---|
-| `formType:` attribute parameter | `buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void` — declare one field via `single()` or add children under local names |
-| `__invoke(FilterInvocation, FilterQueryBuilder)` | `buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void` — emit filter-type calls instead of writing SQL |
-| SQL written directly in the element | A [`PredicateInterface`](./dev/filter-types.md) service; the element calls `$builder->add(MyFilterType::class, [...])` |
-| `FilterInvocation->getValue()` | `$data` (a `FilterData`: `$data->get('from')` by local child name, `$data->getSingleValue()` for a `single()` field) and `$context->config` (resolved config) |
-| `FilterQueryBuilder::abort()` in the element | `$builder->abort()` on the `FormulaBuilderInterface` (filter types may still use `FilterQueryBuilder::abort()`) |
+| `formType:` attribute parameter | A [`FilterControlInterface`](./dev/filter-controls.md): `buildForm(FilterFormBuilderInterface $builder, FilterScope $scope)`, `decode()`, `hydrate()` — registered with `#[AsFilterControl]` and chosen per filter record in the `control` field |
+| `__invoke(FilterInvocation, FilterQueryBuilder)` | `buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void` — emit predicate calls instead of writing SQL |
+| SQL written directly in the element | A [`PredicateInterface`](./dev/predicates.md) service; the element calls `$builder->addPredicate(MyPredicate::class, [...])` |
+| `FilterInvocation->getValue()` | `$value` — a typed value object (`BoolValue`, `ChoiceValue`, `DateRangeValue`, `KeywordsValue`) — and `$builder->scope->filter->config` (resolved config) |
+| `FilterQueryBuilder::abort()` in the element | `$builder->abort()` on the `FilterContextBuilder` (predicates may still use `FilterConditionsBuilder::abort()`) |
+| `$filter->data` / `FilterData` | Removed. Programmatic runtime data is `Filter::$value` — a fixed value without a control, an initial value with one |
+| `IntrinsicContract` / `intrinsic` config option | Removed. An element without a value class is intrinsic; otherwise the editor leaves `control` blank (the `value` is then a fixed value) |
+| `ChoicesBuilder::add(string\|int $key, Model\|... $value)` | `ChoicesBuilder::add(ChoiceObjectInterface $choice)` — pass a `ContaoModelChoice` or `ValueChoice`; `setLabelForModel()`, `getChoice()`, `addGroup()` and `removeGroup()` are gone |
 
 ## Contracts
 
 | v0.1 contract | v0.2 equivalent |
 |---|---|
-| `FormDataContract::extractFormData()` | Read `$data` in `buildFilter()` — it contains the filter's submitted data |
-| `RuntimeValueContract::processRuntimeValue()` | Normalize values inside `buildFilter()` |
-| `IntrinsicValueContract::getIntrinsicValue()` | Read `$context->config` in `buildFilter()` (intrinsic values are config) |
-| `HydrateFormContract::hydrateForm()` | Pass defaults via the fields' `data` option in `buildForm()` |
-| `FormTypeOptionsContract::handleFormTypeOptions()` | Build options directly in `buildForm()`; third parties use `FilterFormBuiltEvent` |
+| `FormDataContract::extractFormData()` | The control's `decode()` — returns a value object |
+| `RuntimeValueContract::processRuntimeValue()` | Normalize values in the control's `decode()` or the element's `buildContext()` |
+| `IntrinsicValueContract::getIntrinsicValue()` | `$value` of a filter without a control — the fixed value |
+| `HydrateFormContract::hydrateForm()` | The control's `hydrate()` |
+| `FormTypeOptionsContract::handleFormTypeOptions()` | Build options directly in the control's `buildForm()`; third parties use `FilterControlBuiltEvent` |
 | `PaletteContract::getPalette()` | [`DcaContract::buildDca()`](./dev/contracts/dca-contract.md) |
 
-New interfaces: `FilterElementInterface` (required), `OptionsContract` (config schema),
-`TransformerContract` (source-to-config translation), `DcaContract` (backend DCA), and
-`IntrinsicContract` (always-intrinsic marker). `AbstractFilterElement` implements all of them plus
-`IsSupportedContract`.
+New interfaces: `FilterElementInterface` (required, one method), `FilterControlInterface`,
+`ValueProviderInterface`, the capability ports `ChoiceSourceContract` / `DateBoundsContract`,
+`OptionsContract` (config schema), `TransformerContract` (source-to-config translation) and `DcaContract`
+(backend DCA). `AbstractFilterElement` / `AbstractFilterControl` implement the optional ones.
 
 ## Events
 
 | v0.1 | v0.2 |
 |---|---|
-| `FilterElementInvokingEvent` (`flare.filter_element.{type}.invoking`) | `FilterElementBuildingEvent` (`flare.filter_element.{type}.building`) — cancellable via `setShouldBuild(false)` |
-| `FilterElementInvokedEvent` (`flare.filter_element.{type}.invoked`) | `FilterElementBuiltEvent` (`flare.filter_element.{type}.built`) |
-| `FilterFormChildOptionsEvent` (`flare.form.{parent}.child.{name}.options`) | Removed — customize in `buildForm()`, or listen to `FilterFormBuiltEvent` (`flare.filter_form.{type}.built`) |
+| `FilterElementInvokingEvent` (`flare.filter_element.{type}.invoking`) | **No successor.** Add or remove filters in a `ListBuildEvent` (`flare.list.{type}.build`), set `Filter::$value` programmatically, or write a custom filter element |
+| `FilterElementInvokedEvent` (`flare.filter_element.{type}.invoked`) | **No successor** — same alternatives |
+| `FilterFormChildOptionsEvent` (`flare.form.{parent}.child.{name}.options`) | Removed — customize in the control's `buildForm()`, or listen to `FilterControlBuiltEvent` (`flare.filter_control.{type}.built`) |
 | `FilterElementFormTypeOptionsEvent` | Removed — same replacement as above |
 | `PaletteEvent` (`flare.filter_element.{alias}.palette`, `flare.list.{type}.palette`) | `ElementDcaEvent` (`flare.filter_element.{type}.dca`, `flare.list.{type}.dca`) |
 | `FilterDefinitionCreatedEvent` | `FilterCollectedEvent` — dispatched per filter collected from the database; `$event->filter` is replaceable |
 
-`flare.form.{formName}.build` (`FilterFormBuildEvent`) is now `flare.filter_set.{formName}.build`
-(`FormHarnessBuildEvent`) — the `FilterForm*` names were freed for the per-filter presentation concern.
+`flare.form.{formName}.build` is now fired with a `FormHarnessBuildEvent` (formerly `FilterFormBuildEvent`); the
+alias is unchanged. The `flare.filter_element.{type}.building` / `.built` events that existed during v0.2
+development are gone as well.
+
+The form attribute `flare.choices_builder`, which exposed a filter's `ChoicesBuilder` on the mounted field, was
+removed: a control keeps its choices to itself and a value is read back through the choice objects' keys.
+
+## Database & Backend
+
+v0.2 renames the `tl_flare_filter` columns and replaces several settings. **Run `contao:migrate`** after
+updating; two migrations ship with the bundle:
+
+- `RenameFilterColumnsMigration` renames the columns (`ALTER TABLE ... CHANGE`, compatible with MySQL 5.7/8 and
+  MariaDB): element columns get the prefix **`elm_`** (`fieldGeneric` → `elm_fieldGeneric`, ...), control columns
+  **`ctl_`** (`label` → `ctl_label`, `isMultiple` → `ctl_isMultiple`, ...), and `formAlias` becomes **`alias`**.
+  `RenameContentListColumnMigration` renames `tl_content.flare_list` to `flare_listId`.
+- `BackfillFilterValuesMigration` fills the new framework columns from the legacy settings, **once per row**
+  (tracked in the migration-managed marker column `legacyBackfilled`):
+  - `control`: filters with `intrinsic` become a blank control; the others get the control matching their
+    element — `flare_choice` (archive, field value, DCA select, Codefog tags), `flare_date_range`
+    (date range, calendar current), `flare_keywords`, and for bools `flare_checkbox` (`boolMode` = binary) or
+    `flare_choice_bool` (ternary).
+  - `value`: from `preselect` / `prefill`, only where the old code actually read it, so no leftover becomes a
+    restriction.
+  - `ctl_boolBinaryChoices`: `null_false` → `true_false` (the `NULL_FALSE` enum case is removed).
+  - `ctl_hasEmptyOption` / `ctl_formatEmptyOption(Custom)` / `ctl_placeholder`: derived so choice widgets look
+    the same as before (single-selects get an empty option unless expanded and mandatory; an old placeholder
+    becomes the custom empty-option label).
+
+**Migrations never delete.** `contao:migrate` is run **without** deletes (`--with-deletes` off, the default).
+The legacy columns **`intrinsic`**, **`boolMode`**, **`preselect`** and **`prefill`**, and the
+**`legacyBackfilled`** marker, remain in the table until you run the proposed DROPs manually
+(`contao:migrate --with-deletes`) — do that only after you tested the migrated site, never before the backfill
+has run, because the deletes destroy its source data. On **MariaDB** the old index names may remain as
+duplicates of the renamed ones until the deletes have been run; this is harmless.
+
+Backend changes in the filter form:
+
+- The `intrinsic` checkbox is replaced by the **Control** (`control`) field. Leave it blank for a filter that
+  applies a fixed value (the new `value` field); choose a control for a filter the user can operate (then
+  `value` is the initial value).
+- `boolMode` and the `preselect` / `prefill` fields are gone; a bool filter offers both bool controls and swaps
+  the palette on change.
+
+## Behaviour Changes
+
+- **Reader pages.** Only fixed values and the elements' own config bound the *whole list*. A bool (or any)
+  filter *with* a control no longer restricts reader pages — before, a bool `preselect` also acted as a
+  fallback in validation.
+- **Failed lists.** A broken filter without a control (fixed value) makes the list *fail* instead of silently
+  dropping the filter: the list view renders the `list.failed` message (HTTP 200), and a reader of such a list
+  answers 500. Controlled filters fail open (the filter loses its initial value, warning logged). Custom
+  list templates that replace `flare_listview` should check `flare_list.failed`.
 
 ## ListSpecification → ListSpec
 
@@ -92,16 +152,16 @@ or a `ListBuildEvent` listener), use the mutable builder; on a finished spec, us
 | v0.1 | v0.2 |
 |---|---|
 | `$spec->getFilters()->add($definition)` | `$builder->addFilter($filter)` while building; `$spec = $spec->withFilter($filter)` afterwards |
-| `$spec->getFilters()->set('name', $definition)` | `$builder->addFilter($filter, 'name')` / `$spec->withFilter($filter, 'name')` — an existing key is replaced |
+| `$spec->getFilters()->set('name', $definition)` | `$builder->addFilter($filter, 'name')` while building (an existing key is replaced); on a finished spec `$spec->withFilter($filter)` — the key is the filter's alias and **a duplicate alias throws a `FlareException`**, nothing is replaced silently (remove it first with `withoutFilter()`) |
 | `$spec->getFilters()->hasType('flare_bool')` | `hasFilterInstance(BooleanFilterElement::class)` on builder or spec |
 | — | `$builder->getFilter('name')`, `$builder->removeFilter('name')`, `$spec->withoutFilter('name')` |
 | `$definition->forceTargetAlias('alias')` | `$filter->withTargetAlias('alias')` — **returns a new instance** (`Filter` is immutable) |
 
 Element `define()` factories (e.g. `PublishedFilterElement::define()`,
 `SimpleEquationFilterElement::define(...)`) were removed: construct a
-[`Filter`](./dev/filter-elements/index.md#9-inline-filters-without-a-service) directly with the element's
+[`Filter`](./dev/filter-elements/index.md#9-programmatic-filters-without-a-backend-record) directly with the element's
 type alias and canonical config, e.g.
-`new Filter(element: PublishedFilterElement::TYPE, config: ['intrinsic' => true, ...])`.
+`FilterFactory::create(element: PublishedFilterElement::TYPE, config: [...])`.
 
 ## Before / After
 
@@ -124,8 +184,8 @@ class CityElement extends AbstractFilterElement
 ```
 
 ```php
-// v0.2
-#[AsFilterElement(type: 'app_city', isTargeted: true)]
+// v0.2 — the element
+#[AsFilterElement(type: 'app_city', isTargeted: true, value: KeywordsValue::class)]
 class CityFilterElement extends AbstractFilterElement
 {
     public function configureOptions(OptionsResolver $resolver): void
@@ -135,30 +195,29 @@ class CityFilterElement extends AbstractFilterElement
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $config->set('field', $model->fieldGeneric ?: 'city');
+        $config->set('field', $model->elm_fieldGeneric ?: 'city');
     }
 
-    public function buildDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},fieldGeneric');
+        $dca->palette('{filter_legend},elm_fieldGeneric');
     }
 
-    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
-        $builder->single(TextType::class, ['required' => false]);
-    }
-
-    public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
-    {
-        if (!$value = $data->getSingleValue()) {
+        if (!$value = $this->expectValue($value, KeywordsValue::class)) {
             return;
         }
 
-        $builder->add(SimpleEquationFilterType::class, [
-            'operand_left' => $context->config['field'],
+        $builder->addPredicate(SimpleEquationPredicate::class, [
+            'operand_left' => $builder->scope->filter->config['field'],
             'operator' => SqlEquationOperator::EQUALS,
-            'operand_right' => (string) $value,
+            'operand_right' => $value->keywords,
         ]);
     }
 }
 ```
+
+The text input is no longer part of the element: the built-in `flare_keywords` control (also a `KeywordsValue`
+producer) is selectable for this element in the backend. A custom input would be a
+[filter control](./dev/filter-controls.md).

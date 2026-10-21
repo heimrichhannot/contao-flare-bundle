@@ -8,8 +8,8 @@ import Link from '@docusaurus/Link';
 
 Extending Flare is easy! Create your own list and filter element types by tagging any of your services with one
 of our provided PHP 8 attributes, or hook into the existing list and filter element types with
-Events and per-element backend DCA building. Filter elements build their frontend controls on Flare's
-`FilterFormBuilderInterface` and translate submissions into reusable filter types — so your users filter your
+Events and per-element backend DCA building. Filter elements decide which rows match; interchangeable filter controls build the frontend input on Flare's
+`FilterFormBuilderInterface` and turn submissions into typed value objects — so your users filter your
 lists with ease.
 
 ## Overview
@@ -23,4 +23,6 @@ In this documentation, we will cover how to create custom list and filter elemen
 
 <Link to="./filter-elements" className="button button--primary">Full Guide on Filter Elements</Link>
 
-<Link to="./filter-types" className="button button--secondary">Full Guide on Filter Types</Link>
+<Link to="./filter-controls" className="button button--secondary">Full Guide on Filter Controls</Link>
+
+<Link to="./predicates" className="button button--secondary">Full Guide on Predicates</Link>

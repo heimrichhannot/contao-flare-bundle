@@ -127,7 +127,6 @@ class MyCustomListDriver extends AbstractListDriver
         $builder->addFilter($this->filterFactory->create(
             element: PublishedFilterElement::TYPE,
             config: [
-                'intrinsic' => true,
                 'published_field' => 'published',
                 'start_field' => 'start',
                 'stop_field' => 'stop',

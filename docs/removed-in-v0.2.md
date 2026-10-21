@@ -16,7 +16,7 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - `#[AsFlareCallback]` (internal base attribute)
 - `#[AsListType]` — renamed to `#[AsListDriver]` (see [behavioral notes](#behavioral-notes))
 - Parameters removed from kept attributes: `#[AsFilterElement]` lost `palette`, `formType`, and `method`
-  (always-intrinsic elements now implement `Contract\FilterElement\IntrinsicContract` instead);
+  (it gained `value:`, the element's value class);
   `#[AsListType]` lost `palette` on its way to becoming `#[AsListDriver]`
 
 ## Classes
@@ -34,6 +34,15 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - `DataContainer\FlareCallbackContainerInterface`
 - `Contract\Config\PaletteConfig`, `Contract\Config\ListItemProviderConfig`
 - `Util\MethodInjector`
+- `Filter\FilterData` and `Filter::$data` / `Filter::withData()` — programmatic runtime values are `Filter::$value`
+- `Filter\FilterExecutor` and `Filter\FilterBuilder` — replaced by the `ListQueryDirector`, `FilterContextBuilder` and
+  `FormulaBuilder`
+- `Util\Fingerprint` — value objects express their identity through `ValueInterface::fingerprint()`
+- `Filter\Value\ParentRefValue` (use `ChoiceValue` of `ContaoModelChoice` references)
+- `ChoicesBuilder::setLabelForModel()`, `::getChoice()`, `::addGroup()`, `::removeGroup()` and the `@api`
+  string/model forms of `::add()` — `add()` takes a `ChoiceObjectInterface` (`ContaoModelChoice`, `ValueChoice`)
+- The `flare.choices_builder` attribute on mounted filter form fields
+- `BoolBinaryChoices::NULL_FALSE` — migrated to `TRUE_FALSE`
 
 ## Contracts
 
@@ -43,6 +52,10 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - `Contract\FilterElement\HydrateFormContract`
 - `Contract\FilterElement\IntrinsicValueContract`
 - `Contract\FilterElement\RuntimeValueContract`
+- `Contract\FilterElement\IntrinsicContract` — an element without a value class is intrinsic; otherwise the
+  filter record's `control` field is left blank
+- `FilterElementInterface::buildForm()` and `::buildFilter()` — replaced by `buildContext()` on the element and
+  `buildForm()` / `decode()` / `hydrate()` on a [filter control](./dev/filter-controls.md)
 
 ## Events
 
@@ -52,14 +65,25 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - `FilterFormChildOptionsEvent`
 - `PaletteEvent`
 - `FilterDefinitionCreatedEvent`
+- `FilterElementBuildingEvent` and `FilterElementBuiltEvent` (v0.2 development only) — and with them
+  `FilterElementInvokingEvent` / `FilterElementInvokedEvent` have **no successor**: use `ListBuildEvent`
+  (`flare.list.{type}.build`), a programmatic `Filter::$value`, or a custom filter element
 
 ### Named event aliases
 
-- `flare.filter_element.{type}.invoking` → now `.building`
-- `flare.filter_element.{type}.invoked` → now `.built`
+- `flare.filter_element.{type}.invoking`, `.invoked` (and the interim `.building`, `.built`) → removed without
+  replacement
 - `flare.filter_element.{alias}.palette`, `flare.list.{type}.palette` → now `.dca`
 - `flare.form.{parentFormName}.child.{formName}.options` → removed without a named replacement
-  (use `flare.filter_form.{type}.built`)
+  (use `flare.filter_control.{type}.built`)
+
+## Database
+
+- `tl_flare_filter` columns `intrinsic`, `boolMode`, `preselect`, `prefill` (field definitions removed; the
+  columns and their data remain until deletes are run manually, as does the `legacyBackfilled` marker
+  column) — replaced by `control` and `value`; see [Database & Backend](./migrating-from-v0.1.md#database--backend)
+- All other `tl_flare_filter` columns keep their data under new names: `elm_*` / `ctl_*` prefixes and
+  `formAlias` → `alias` (`contao:migrate`)
 
 ## Twig
 
@@ -67,6 +91,12 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
   file system is planned for a future release
 
 ## Behavioral notes
+
+- Bool filters with a control no longer restrict reader pages: only fixed values and the elements' own config
+  bound the whole list.
+- A list with a broken filter that has no control now renders `list.failed` (HTTP 200) instead of an empty or
+  unfiltered result; its reader answers 500.
+- `ListSpec::withFilter()` throws a `FlareException` on a duplicate alias instead of replacing the filter.
 
 - Filter element classes moved from `FilterElement\` to `Filter\Element\` and gained a `FilterElement`
   class-name suffix — a rename rather than a removal, but any `use` statement referencing the old FQCNs

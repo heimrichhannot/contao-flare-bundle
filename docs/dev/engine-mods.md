@@ -70,7 +70,6 @@ class BooleanTrueMod extends AbstractMod
         $filter = $this->filterFactory->create(
             element: SimpleEquationFilterElement::TYPE,
             config: [
-                'intrinsic' => true,
                 'left' => $options['field'],
                 'operator' => SqlEquationOperator::EQUALS,
                 'right' => '1',

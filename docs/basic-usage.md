@@ -38,17 +38,19 @@ The **Flare Reader** content element uses the `auto_item` feature to display a s
 - It provides metadata (Page Title, Description) via events.
 
 ### 4. What is an "Intrinsic" Filter?
-In Flare, a filter can be marked as **Intrinsic**:
-- **Checked**: The filter is applied automatically (e.g., `published = 1`) and is **hidden** from the user.
-- **Unchecked**: The filter is **visible** in the frontend form, allowing the user to interact with it.
+Every filter has a **Control** setting that decides how the user operates it:
+- **Control left blank (intrinsic)**: The filter is applied automatically with its fixed *value* (e.g., `published = 1`)
+  and is **hidden** from the user.
+- **A control chosen** (checkbox, choice, date range, keywords, ...): The filter is **visible** in the frontend
+  form, allowing the user to interact with it. Its *value* is then only the initial value.
 
 ---
 
 ## Example: News List
 
 1. Create a list of type **News**, which automatically uses the `tl_news` table.
-2. Add an **Intrinsic** filter, e.g., a published filter using the published filter type.
-3. Add a **Visible** filter, e.g., a news archives filter using the archive filter type.
+2. Add an **intrinsic** filter (no control), e.g., a published filter.
+3. Add a **visible** filter (with a control), e.g., a news archives filter using the archive filter element and the choice control.
 4. Add the content element to a page.
 5. Flare will show a dropdown of news archives and list only published the news articles belonging to the selected archive.
 

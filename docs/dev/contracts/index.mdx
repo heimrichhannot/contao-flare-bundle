@@ -18,11 +18,12 @@ Contracts are grouped into three categories:
 The element lifecycle interfaces live in `HeimrichHannot\FlareBundle\Filter\Element\` and are covered in
 depth by the [custom filter elements guide](../filter-elements/index.md):
 
-- **`FilterElementInterface`**: The core contract every element implements — `buildForm()` adds the
-  frontend form controls, `buildFilter()` translates config and submitted data into filter-type calls.
-- **`IntrinsicContract`** (`Contract\FilterElement\`): Marks an element as always intrinsic via
-  `isOnlyIntrinsic()` — it never renders form controls, and the backend forces the intrinsic flag on its
-  filter records.
+- **`FilterElementInterface`**: The core contract every element implements — `buildContext()` translates
+  config and the filter's value object into predicate calls. Presentation is the job of a
+  [filter control](../filter-controls.md).
+- **Capability ports** (`Contract\FilterElement\`): `ChoiceSourceContract` (the element offers a set of
+  choices) and `DateBoundsContract` (the element bounds a date range) — what controls and value providers pull
+  from an element. See [filter controls](../filter-controls.md#3-capability-ports).
 
 ## 2. List Driver Contracts
 

@@ -1,15 +1,25 @@
 # Custom Filter Elements
 
-A filter element owns everything specific to one kind of filter:
+A filter element owns **what rows match**. It owns:
 
 - its **config schema** — `configureOptions()` + `configureTransformers()`
 - its **backend DCA** representation — `buildDca()`
-- its **frontend form** controls — `buildForm()`
-- the **translation** of config and submitted data into query fragments — `buildFilter()`
+- the **translation** of its config and the filter's value into query fragments — `buildContext()`
 
-Elements never write SQL themselves — that is the job of reusable [filter types](../filter-types.md), which
-elements invoke from `buildFilter()`. For the filter elements that ship with FLARE, see the
+How the user *supplies* the value (checkbox, select, date inputs, ...) is not the element's concern: that is the
+job of a [filter control](../filter-controls.md), which the editor picks per filter record. The two meet in a
+typed **value object** (`BoolValue`, `ChoiceValue`, `DateRangeValue`, `KeywordsValue`).
+
+Elements never write SQL themselves — that is the job of reusable [predicates](../predicates.md), which
+elements add from `buildContext()`. For the filter elements that ship with FLARE, see the
 [built-in filter elements reference](../../reference/filter-elements.md).
+
+```
+FilterControl   how the user supplies the value; turns submitted form data into a value object
+Value object    what the user said, typed
+FilterElement   what rows match: applies its config and the value object, emits predicates
+Predicate       turns bound arguments into SQL conditions
+```
 
 ## 1. Registration (`#[AsFilterElement]`)
 
@@ -18,8 +28,9 @@ Annotate your class with `#[AsFilterElement]` and extend `AbstractFilterElement`
 ```php
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 
-#[AsFilterElement(type: 'app_city', isTargeted: true)]
+#[AsFilterElement(type: 'app_city', isTargeted: true, value: KeywordsValue::class)]
 class CityFilterElement extends AbstractFilterElement
 {
     // ...
@@ -27,27 +38,30 @@ class CityFilterElement extends AbstractFilterElement
 ```
 
 ### Attribute Parameters:
-- **`type`**: Unique identifier for the filter type — this is the value stored in `tl_flare_filter.type`.
+- **`type`**: Unique identifier of the element — the value stored in `tl_flare_filter.type`.
 - **`isTargeted`**: (Optional) Boolean. If true, the filter respects the table alias configured on the
   filter record (see [target aliases](../../spec/filtering.md#5-target-aliases)).
+- **`value`**: (Optional) The **value class** the element consumes in `buildContext()`. The editor can choose
+  among all [controls](../filter-controls.md) that produce this class, and the backend shows the matching
+  `value` field. Without it the element has no runtime value and is always intrinsic (e.g. `flare_published`,
+  `flare_simpleEquation`). An element declaring a value class for which no
+  [value provider](../filter-controls.md#4-value-providers) exists fails the container build.
 
 :::info[Changed in v0.2]
 
-The `palette`, `formType`, and `method` parameters were removed: the palette is now built in
-[`buildDca()`](#4-backend-dca-builddca), form controls in [`buildForm()`](#5-form-building-buildform), and
-the query translation always happens in [`buildFilter()`](#6-query-translation-buildfilter). Elements that
-are always intrinsic implement [`IntrinsicContract`](#8-intrinsic-filters).
+`palette`, `formType` and `method` were removed: the palette is built in [`buildDca()`](#4-backend-dca-builddca),
+and the query translation always happens in [`buildContext()`](#5-query-translation-buildcontext). There is no
+`buildForm()` on elements any more, and no `IntrinsicContract`: an element without a value class is
+intrinsic, and for every other element the editor leaves the *control* blank to apply it with a fixed value.
 
 :::
 
 ## 2. The Interfaces
 
-Every element implements `FilterElementInterface`:
+Every element implements `FilterElementInterface`, which has a single method:
 
 ```php
-public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void;
-
-public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void;
+public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void;
 ```
 
 Elements with configuration additionally implement [`OptionsContract`](../contracts/index.mdx) and
@@ -60,39 +74,44 @@ public function configureTransformers(TransformerResolver $resolver): void;
 ```
 
 `AbstractFilterElement` implements all of the above, plus
-[`IsSupportedContract`](../contracts/is-supported-contract.md) (returns `true`),
-[`DcaContract`](../contracts/dca-contract.md) (no-op), and `IntrinsicContract`
-(`isOnlyIntrinsic()` returns `false`). Only `configureOptions()` and the protected
-`transformFilterModel()` hook are abstract; `buildDca()`, `buildForm()`, and `buildFilter()` default
-to no-ops.
+[`IsSupportedContract`](../contracts/is-supported-contract.md) (returns `true`) and
+[`DcaContract`](../contracts/dca-contract.md) (no-op). Only `configureOptions()` and the protected
+`transformFilterModel()` hook are abstract; `buildDca()` and `buildContext()` default to no-ops. It also
+provides `expectValue()` (see [below](#5-query-translation-buildcontext)).
 
-### The `FilterContext`
+### The `FilterScope` and the `FilterContext`
 
-Both `buildForm()` and `buildFilter()` receive a `FilterContext`
-(`HeimrichHannot\FlareBundle\Filter\FilterContext`, final readonly):
+A filter is applied in two stages:
 
-| Member | Description |
-|---|---|
-| `$context->list` | The [`ListSpec`](../../spec/specifications.md) the filter belongs to |
-| `$context->filter` | The [`Filter` value object](../../spec/filtering.md#1-the-filter-value-object) |
-| `$context->config` | The **resolved** canonical config (validated against `configureOptions()`) |
-| `$context->engineContext` | The engine context (`ContextInterface`) — interactive, validation, ... |
-| `$context->key` | Key of the filter within `ListSpec::$filters` |
-| `FilterContext::ATTR_SELF` | Attribute-bag key under which the context is stored on the per-filter form builder |
+1. **`FilterScope`** (`HeimrichHannot\FlareBundle\Filter\FilterScope`, final readonly) is *value-free*: the
+   triple a filter is evaluated in. Everything that happens before a value exists receives it — controls,
+   [capability ports](../filter-controls.md#3-capability-ports) and value providers.
+
+   | Member | Description |
+   |---|---|
+   | `$scope->list` | The [`ListSpec`](../../spec/specifications.md) the filter belongs to |
+   | `$scope->filter` | The [`Filter` value object](../../spec/filtering.md#1-the-filter-value-object); `$scope->filter->config` is the **resolved** element config (validated against `configureOptions()`) and `controlConfig` the control's |
+   | `$scope->engineContext` | The engine context (`ContextInterface`) — interactive, validation, aggregation, or configuration (the backend) |
+
+2. **`FilterContext`** is the element's *product* for one invocation: the scope plus the formula of
+   predicates the element produced for a given value. It is created by the query director only, via
+   `buildContext()`; elements never construct one.
 
 ## 3. Config Schema (`configureOptions` + `configureTransformers`)
 
 `configureOptions()` declares the element's canonical config with Symfony's `OptionsResolver`.
 `configureTransformers()` declares how stored sources translate onto that schema: it registers one
 transformer per source class on a `TransformerResolver`. Everything downstream — `buildDca()`,
-`buildForm()`, `buildFilter()` — works with the resolved config, never with raw DCA rows, which is
-what makes filters equally usable from the database, PHP, and Twig.
+`buildContext()` — works with the resolved config, never with raw DCA rows, which is what makes filters
+equally usable from the database, PHP, and Twig.
 
 Both methods are declarative, memoizable setup: they are run once per element class, not per filter.
 
 `AbstractFilterElement` already registers a transformer for `FilterModel` (a stored `tl_flare_filter`
 record) that delegates to the abstract `transformFilterModel()` hook — for most elements, that hook is
-all you implement. All deserialization, casting, and enum parsing belongs there:
+all you implement. All deserialization, casting, and enum parsing belongs there. **Element columns carry the
+`elm_` prefix** — a column belongs to the element if its value changes *which rows match*; columns that only
+change what the user sees or can submit belong to the control (`ctl_`):
 
 ```php
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
@@ -101,14 +120,11 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 public function configureOptions(OptionsResolver $resolver): void
 {
     $resolver->define('field')->default('city')->allowedTypes('string');
-    $resolver->define('label')->default(null)->allowedTypes('string', 'null');
 }
 
 protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
 {
-    $config
-        ->set('field', $model->fieldGeneric ?: 'city')
-        ->set('label', $model->label ?: null);
+    $config->set('field', $model->elm_fieldGeneric ?: 'city');
 }
 ```
 
@@ -118,214 +134,175 @@ one — by listening to the [`FilterTransformerEvent`](../events.md)
 
 ## 4. Backend DCA (`buildDca`)
 
-Declare the element's palette and field tweaks for `tl_flare_filter`:
+Declare the element's palette and field tweaks for `tl_flare_filter`. The element contributes the
+`filter_legend` segment; the chosen control appends its own `control_legend` segment after it:
 
 ```php
-public function buildDca(DcaBuilder $dca, DcaContext $context): void
+public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
 {
-    $dca->palette('{filter_legend},fieldGeneric,label');
+    $dca->palette('{filter_legend},elm_fieldGeneric');
 }
 ```
 
 See the [Backend DCA Building guide](../dca-builder.md) for the full API, including per-field option
 callbacks and reacting to the record's state.
 
-## 5. Form Building (`buildForm`)
+## 5. Query Translation (`buildContext`)
 
-`buildForm()` receives a Flare-owned `FilterFormBuilderInterface`. **Single-field elements** declare their
-one control via `single()` — the field is then mounted flat on the root form under the filter's form name,
-so the query parameter reads `form[alias]=x`:
+`buildContext()` turns config and the filter's value into one or more **predicate calls** — it does not
+write SQL:
 
-```php
-use Symfony\Component\Form\Extension\Core\Type\TextType;
-
-public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
-{
-    if ($context->config['intrinsic'] ?? false) {
-        return; // intrinsic filters render no controls
-    }
-
-    $builder->single(TextType::class, [
-        'label' => $context->config['label'] ?? false,
-        'required' => false,
-    ]);
-}
-```
-
-**Multi-field elements** `add()` children under local names instead (e.g. `'from'`/`'to'`); they mount as
-a compound sub-form named after the filter's form name (`form[alias][from]=x`). Declare no fields and the
-filter simply has no form representation.
-
-Pre-submission defaults go into the fields' native `data` option. Event listeners registered on the builder
-are replayed onto the mounted form; event subscribers are not supported and throw. After your element
-declared its fields, a [`FilterFormBuiltEvent`](../events.md) is dispatched so third parties can
-adjust or cancel the filter's form. Declaring a `single()` field and adding children at the same time is
-not supported and fails when the form is built.
-
-## 6. Query Translation (`buildContext`)
-
-`buildFilter()` turns config and data into one or more **filter-type calls** — it does not write SQL:
-
-- `$context->config` is the resolved canonical config.
-- `$data` is a [`FilterData`](#filterdata) holding the submitted form data — `$data->get('from')` by the
-  local field names from `buildForm()`, or `$data->getSingleValue()` for a `single()` field. It falls back
-  to the filter's programmatic data, and is `FilterData::none()` when neither exists.
-- `$builder->add(SomeFilterType::class, $options, ?$targetAlias)` records a call; the options are validated
-  against the filter type's own schema.
-- `$builder->abort()` stops filtering entirely and yields an empty result set.
+- `$builder->scope->filter->config` is the resolved element config.
+- `$value` is a value object of the element's declared value class — or `null` if the filter has no value
+  (nothing submitted, empty selection, no fixed value). Narrowing the parameter type is not possible in PHP;
+  check it with `$this->expectValue($value, KeywordsValue::class)`, which passes `null` through and throws a
+  `FilterException` for a value of another class.
+- `$builder->addPredicate(SomePredicate::class, $options, ?$targetAlias)` records a call; the options are
+  validated against the predicate's own schema.
+- `$builder->abort()` stops filtering entirely and yields an empty result set (e.g. an empty selection that
+  must not widen the list).
 
 ```php
-public function buildFilter(FilterBuilderInterface $builder, FilterContext $context, FilterData $data): void
+public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
 {
-    if (!$value = $data->getSingleValue()) {
-        return; // nothing submitted — this filter adds no conditions
+    if (!$value = $this->expectValue($value, KeywordsValue::class)) {
+        return; // no value — this filter adds no conditions
     }
 
-    $builder->add(SimpleEquationFilterType::class, [
-        'operand_left' => $context->config['field'],
+    $builder->addPredicate(SimpleEquationPredicate::class, [
+        'operand_left' => $builder->scope->filter->config['field'],
         'operator' => SqlEquationOperator::EQUALS,
-        'operand_right' => (string) $value,
+        'operand_right' => $value->keywords,
     ]);
 }
 ```
 
-### FilterData
+**Where the value comes from.** A filter *with* a control receives what the control decoded from the
+submitted form (or, before submission, the initial value). A filter *without* a control receives its fixed
+`Filter::$value` in every context. See [Intrinsic Filters](#8-intrinsic-and-initial-values).
 
-`FilterData` is an immutable object holding *either* a single field's value *or* the named values of a
-compound filter — never both, mirroring how the filter was mounted.
-
-| Member | Description |
-|---|---|
-| `getSingleValue(mixed $default = null)` | The `single()` field's value, or `$default` if none was supplied |
-| `hasSingle()` | Whether a single value was supplied at all — tells a submitted `null` from "never submitted" |
-| `get(string $name, mixed $default = null)` | A named field's value, or `$default` if the field is absent |
-| `has(string $name)` | Whether the named field was supplied at all |
-| `all()` | All named values; always empty for single-field data |
-| `isEmpty()` | Whether neither a single value nor any named values are present |
-| `count()` / iteration | Over the named values only |
-
-Construct one programmatically with `FilterData::single($value)`, `FilterData::of(['from' => $x])`, or
-`FilterData::none()`.
-
-## 7. Complete Example
+## 6. Complete Example
 
 ```php
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Type\SimpleEquationFilterLogic;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\Predicate\SimpleEquationPredicate;
+use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-#[AsFilterElement(type: 'app_city', isTargeted: true)]
+#[AsFilterElement(type: 'app_city', isTargeted: true, value: KeywordsValue::class)]
 class CityFilterElement extends AbstractFilterElement
 {
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->define('field')->default('city')->allowedTypes('string');
-        $resolver->define('label')->default(null)->allowedTypes('string', 'null');
     }
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $config
-            ->set('field', $model->fieldGeneric ?: 'city')
-            ->set('label', $model->label ?: null);
+        $config->set('field', $model->elm_fieldGeneric ?: 'city');
     }
 
-    public function buildDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},fieldGeneric,label');
+        $dca->palette('{filter_legend},elm_fieldGeneric');
     }
 
-    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
-        $builder->single(TextType::class, [
-            'label' => $context->config['label'] ?? false,
-            'required' => false,
-        ]);
-    }
-
-    public function buildFilter(FormulaBuilderInterface $builder, FilterContext $context, FilterData $data): void
-    {
-        if (!$value = $data->getSingleValue()) {
+        if (!$value = $this->expectValue($value, KeywordsValue::class)) {
             return;
         }
 
-        $builder->add(SimpleEquationFilterLogic::class, [
-            'operand_left' => $context->config['field'],
+        $builder->addPredicate(SimpleEquationPredicate::class, [
+            'operand_left' => $builder->scope->filter->config['field'],
             'operator' => SqlEquationOperator::EQUALS,
-            'operand_right' => (string) $value,
+            'operand_right' => $value->keywords,
         ]);
     }
 }
 ```
 
-## 8. Intrinsic Filters
+The editor can now pick the built-in `flare_keywords` control for this element (both produce a
+`KeywordsValue`) — no element code for the input. Because `elm_fieldGeneric` is an existing column, no
+schema change is needed; a new column needs an `elm_`-prefixed `sql` entry in `tl_flare_filter`.
 
-An **intrinsic** filter contributes conditions without user input — its values come from config, not from
-a submitted form. Two flavors exist:
+## 7. Choice and Date Elements: Capability Ports
 
-- **Optionally intrinsic** elements expose an `intrinsic` config option (backed by the
-  `tl_flare_filter.intrinsic` checkbox) and skip their form controls when it is set — see the
-  `buildForm()` example above. Most built-in elements work this way.
-- **Always intrinsic** elements implement `IntrinsicContract`
-  (`HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicContract`) and return `true` from
-  `isOnlyIntrinsic()`. They never render form controls, and the backend forces (and hides) the
-  intrinsic flag on their filter records. Built-in examples: `flare_published`,
-  `flare_belongsToRelation`, `flare_simpleEquation`.
+Elements whose value is picked from a server-side option set implement `ChoiceSourceContract`
+(`createChoices(FilterScope)` and `choiceFromKey(string)`); date-range elements may implement
+`DateBoundsContract`. The generic controls and the value providers use these ports instead of reaching into
+the element. See [Capability Ports](../filter-controls.md#3-capability-ports).
 
-`AbstractFilterElement` implements the contract with `isOnlyIntrinsic(): false`, so an always-intrinsic
-element just overrides it:
+## 8. Intrinsic and Initial Values
 
-```php
-public function isOnlyIntrinsic(): bool
-{
-    return true;
-}
-```
+There is no `intrinsic` checkbox any more. The **`control`** field of a filter record decides:
 
-## 9. Inline Filters Without a Service
+| `control` | `value` is | Initial display of the list | Whole list (readers, validation) |
+|---|---|---|---|
+| blank (**intrinsic**) | the **fixed value** | restricted | restricted |
+| a control | the **initial value** | pre-filtered, the user can change it | **not applied** |
 
-`Filter` (`HeimrichHannot\FlareBundle\Filter\Filter`) is an immutable value object pairing a filter
-element instance with its canonical config. For one-off filters that reuse a registered element, create
-one through the `FilterFactory` service (`HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory`) —
-it resolves a registered type alias to its element service and records the alias as the filter's `type`
-(which is what the `flare.filter_element.{type}.*` named events key on):
+Elements without a value class (`value: null`), e.g. `flare_published`, `flare_belongsToRelation`,
+`flare_simpleEquation`, are always intrinsic: they never have a control and `buildContext()` receives `null`.
+
+Only fixed values and the elements' own config (e.g. a whitelist) bound the **whole list** — everything the
+user can reach through controls. A bool filter with a control therefore no longer restricts reader pages.
+
+## 9. Programmatic Filters Without a Backend Record
+
+`Filter` (`HeimrichHannot\FlareBundle\Filter\Filter`) is an immutable value object holding a filter element
+instance with its canonical config, an optional control with its config, and an optional value. For one-off
+filters that reuse a registered element, create one through the `FilterFactory` service
+(`HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory`) — it resolves registered type aliases and control
+names to their services and records the alias as the filter's `type` (what the
+`flare.filter_element.{type}.*` named events key on):
 
 ```php
 use HeimrichHannot\FlareBundle\Filter\Element\BooleanFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 
+// Without a control the value is fixed: only featured entries.
 $filter = $this->filterFactory->create(
     element: BooleanFilterElement::TYPE,
-    config: [
-        'intrinsic' => true,
-        'field' => 'featured',
-        'preselect' => true,
-    ],
+    config: ['field' => 'featured'],
+    value: new BoolValue(true),
 );
 ```
 
-`create()` also accepts a `FilterElementInterface` instance — as does `new Filter(element: ...)`
-directly — for elements that are not registered as a service at all (see the anonymous-class example
-under [Consuming Filter Types](../filter-types.md#4-consuming-filter-types)). Such filters have no
-`type` alias and fire no named events.
+```php
+// With a control the value is only the initial value of the user-changeable input.
+$filter = $this->filterFactory->create(
+    element: ArchiveFilterElement::TYPE,
+    config: [/* ... */],
+    control: 'flare_choice',
+    value: new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5)]),
+);
+```
+
+`create()` throws a `FlareException` if the control is not registered for the element's value class, or the
+value is not of its class. It also accepts a `FilterElementInterface` instance — as does `new Filter(element: ..., type:
+..., alias: ...)` directly — for elements that are not registered as a service at all (see the anonymous-class
+example under [Consuming Predicates](../predicates.md#4-consuming-predicates)). Such filters fire no named
+events.
 
 The `config` array must satisfy the element's `configureOptions()` schema — no DCA row or transformer is
-involved. An optional `data` argument supplies runtime values as a `FilterData` — `FilterData::single($v)`
-for single-field elements, `FilterData::of([...])` for compound ones; submitted form data takes precedence
-over it. Use the `with*()` methods (`withData()`, `withAlias()`, `withTargetAlias()`) to derive variants —
+involved. Use the `with*()` methods (`withValue()`, `withControl()`, `withTargetAlias()`) to derive variants —
 `Filter` is immutable, so they return new instances.
 
 Add programmatic filters to a list while it is being built — from a list driver's `buildList()` hook or a
 [`ListBuildEvent`](../events.md) listener via `ListSpecBuilder::addFilter()` — or derive a new spec from an
-existing one via `ListSpec::withFilter()`. See [Custom List Drivers](../list-types/index.md) for the build
-lifecycle.
+existing one via `ListSpec::withFilter()`; **a duplicate alias throws a `FlareException`**, a filter is never
+silently replaced. See [Custom List Drivers](../list-types/index.md) for the build lifecycle.
+
+A broken filter *without* a control (fixed value) bounds the whole list, so it fails the list: the list view
+renders the translated `list.failed` message with HTTP 200 and the reader answers 500. A broken filter *with* a
+control only loses its initial value, and a warning is logged. See
+[failure handling](../../spec/filtering.md#6-failure-handling).

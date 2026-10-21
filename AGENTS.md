@@ -26,6 +26,12 @@ ContentElement Controller
             → View (formats data for Twig template)
 ```
 
+Filter execution inside the projector: the `FormHarness` decodes submitted form data per filter control into value
+objects; `ListQueryDirector` (`src/Query/Executor/`) picks each filter's value (with a control: the form's value;
+without: the fixed `Filter::$value`), creates the `FilterContext` via `FilterContextFactory::create(FilterScope, ?value)`
+(the element's `buildContext()` adds predicates) and runs each predicate into a `FilterConditionsBuilder`. A
+failed filter without a control fails the whole list (`list.failed` in the view, HTTP 500 in the reader).
+
 Note: Contexts and Projectors/Views are separate axes — (Export Context/Projector/View are currently not implemented).
 
 The bundle follows standard Symfony Bundle architecture with deep Contao integration.
@@ -39,21 +45,35 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 - `src/List/` — `ListSpec` (immutable list DTO: type, dc, filters, canonical config, source), `ListBuilder`
   (build lifecycle: type's `buildList()` hook → `ListBuildEvent` → config assembly → schema resolution),
   `BaseListOptions` (framework-owned base schema for tl_flare_list columns)
-- `src/Filter/` — `Filter` DTO, elements (`Element/`), types (`Type/`), collector, resolvers
-  (`FilterOptionsResolver`, `FilterTransformerResolver`, `FilterElementResolver`), `FilterContextFactory`,
-  and the form aggregate: `FormHarnessFactory` builds a `FormHarness` (root form + mount↔filter map of
-  `FilterMount`s) per list × form context
+- `src/Filter/` — `Filter` DTO (element + element config `elm_*`, optional control + control config `ctl_*`,
+  `?ValueInterface $value`), elements (`Element/`), predicates (`Predicate/`, the public SQL-fragment
+  layer, formerly "filter types"), collector, resolvers (`FilterOptionsResolver`, `FilterTransformerResolver`).
+  A filter is applied in two stages: `FilterScope` (value-free triple list × filter × engine context; handed to
+  everything that happens before a value exists) and `FilterContext` (the element's product for one
+  invocation, built by `FilterContextFactory` from scope + value, only inside `ListQueryDirector`).
+  `FormHarnessFactory` builds a `FormHarness` (root form + mount↔filter map of `FilterMount`s) per list ×
+  form context; the harness owns the `decode()` loop
+- `src/Filter/Control/` — `FilterControl` implementations (peers of `src/Filter/Element/`) behind
+  `FilterControlInterface` (`buildForm()`, `decode()`, `hydrate()`), registered with `#[AsFilterControl]`.
+  Controls bind to a value *class* (the narrowed return type of `decode()`), never to an element type:
+  `flare_choice`, `flare_checkbox`, `flare_choice_bool`, `flare_date_range`, `flare_keywords`. "Form" names only
+  the Symfony level (`FormHarness`, `FilterFormBuilder`, mount). `src/Form/` — Symfony-level building blocks
+  (`FormHarness`, `FilterMount`, `ChoicesBuilder`, `Form/Type/DateRangeFormType`)
+- `src/Contract/FilterElement/` — capability ports an element implements for controls/providers to pull from
+  (`ChoiceSourceContract`, `DateBoundsContract`); controls never reach into an element otherwise
+- `src/Filter/ValueProvider/` — one `ValueProviderInterface` service per value class (`provide()` turns the
+  stored `value` column into a value object; `buildDcaField()` renders the backend widget), registered via the
+  `flare.value_provider` tag and `ValueProviderRegistry`
+- `src/Migration/` — `RenameFilterColumnsMigration` (`elm_`/`ctl_` renames), `BackfillFilterValuesMigration`
+  (run-once per row via the migration-managed `legacyBackfilled` marker column), `RenameContentListColumnMigration`.
+  Migrations never delete; legacy columns stay until deletes are run manually
 - `src/Config/` — `ConfigBuilder` (fluent canonical-config accumulator; no cast helpers — transformers cast
   declaratively off the typed model) and `TransformerResolver` (source class → transformer map)
-- `src/Filter/Form/` — FLARE filter form implementations (peers of `src/Filter/Element/`) behind
-  `FilterFormInterface` (`buildForm()` + `decode()`); `src/Form/` — Symfony-level building blocks only
-  (`ChoicesBuilder`, `Form/Type/DateRangeFormType`)
 - `src/Filter/Value/` — immutable filter value objects (`BoolValue`, `ChoiceValue`, `KeywordsValue`,
-  `DateRangeValue`, `ParentRefValue`), the typed channel between a form's `decode()` and an element's
-  `buildFilter()`. Each is `final readonly` with only public scalar/enum/nested-VO/array properties —
-  the containment rule `tests/Filter/Value/ValueObjectContainmentTest.php` enforces by reflection, so
-  `Util\Fingerprint::flatten()` can hash them without object identity leaking in. Deliberately not
-  services (excluded in `config/services.yaml`)
+  `DateRangeValue`; choices in `Value/Choice/`), the typed channel between a control's `decode()` and an
+  element's `buildContext()`. Each is `final readonly`, implements `ValueInterface` and expresses its identity
+  through `fingerprint()` (`ValueObjectContainmentTest` enforces this by reflection). Deliberately not services
+  (excluded in `config/services.yaml`)
 - `src/Reader/` — reader/detail-page URL generation (`ReaderUrlGenerator`)
 - `src/InferPtable/` — parent-table inference for DCAs
 - `src/Integration/` — optional integrations (Codefog Tags, Terminal42 ChangeLanguage), wired via `config/integrations/*.yaml`
@@ -66,9 +86,10 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 - `src/Controller/ContentElement/ListViewController.php` / `ReaderController.php` — frontend controllers
 
 **Extensibility via PHP 8 attributes** (compiler passes auto-register tagged services):
-- `#[AsFilterElement(type: '...', isTargeted: ...)]` — register a filter element
-- `#[AsFilterForm(name: '...', value: '...', requires: [...], default: ...)]` — register a filter form,
-  bound to a value class rather than to an element type (repeatable)
+- `#[AsFilterElement(type: '...', isTargeted: ..., value: SomeValue::class)]` — register a filter element and
+  declare the value class it consumes (null = no runtime value, intrinsic-only)
+- `#[AsFilterControl(name: '...')]` — register a filter control (repeatable); the value class is the narrowed
+  return type of `decode()`, not an attribute argument. Tag `flare.filter_control`
 - `#[AsListDriver(type: '...', dataContainer: '...')]` — register a list driver
 
 Attributes are in `src/DependencyInjection/Attribute/`, compiler passes in `src/DependencyInjection/Compiler/`.
@@ -76,14 +97,16 @@ Backend palettes/fields are declared in code via `DcaContract::buildDca(DcaBuild
 tl_flare_filter and tl_flare_list).
 
 **Event system** — Events, some with aliased dispatch for targeted listening
-(`flare.form.{name}.build`, `flare.filter_form.{type}.built`, `flare.list.{type}.build`,
-`flare.filter_element.{type}.transformers`, `flare.filter_element.{type}.dca` / `flare.list.{type}.dca`,
-etc., implemented by the listeners in `src/EventListener/NamedDispatch/`). All events are in `src/Event/`.
+(`flare.form.{name}.build`, `flare.filter_control.{type}.built` (`FilterControlBuiltEvent`),
+`flare.list.{type}.build`, `flare.filter_element.{type}.transformers`,
+`flare.filter_element.{type}.dca` / `flare.list.{type}.dca`, etc., implemented by the listeners in `src/EventListener/NamedDispatch/`). All events are in `src/Event/`.
+The former per-element `FilterElementBuildingEvent`/`FilterElementBuiltEvent` (and their `.building`/`.built`
+aliases) are removed; use `ListBuildEvent` or a programmatic `Filter::$value` instead.
 Prefer events over overriding services for customization.
 
-**Registry pattern** — Registries in `src/Registry/` map type names to implementations: `FilterElementRegistry`, `FilterFormRegistry`, `ListDriverRegistry`, `FilterPredicateRegistry`, `ProjectorRegistry`, `EngineModRegistry`. `FilterFormRegistry` differs from the others: it holds
-compile-time metadata as plain arrays and resolves the form services through a lazy
-`container.service_locator`, so reading metadata (the `formVariant` options, the form election)
+**Registry pattern** — Registries in `src/Registry/` map type names to implementations: `FilterElementRegistry`, `FilterControlRegistry`, `ValueProviderRegistry`, `ListDriverRegistry`, `FilterPredicateRegistry`, `ProjectorRegistry`, `EngineModRegistry`. `FilterControlRegistry` differs from the others: it holds
+compile-time metadata as plain arrays and resolves the control services through a lazy
+`container.service_locator`, so reading metadata (the `control` options, the control election)
 instantiates nothing.
 
 **Query safety** — `FilterConditionsBuilder` (`src/Query/FilterConditionsBuilder.php`) enforces parameterized queries. `TableAliasRegistry` (`src/Query/TableAliasRegistry.php`) manages table aliases and JOINs safely.

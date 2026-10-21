@@ -91,4 +91,9 @@ final class DateRangeValueTest extends TestCase
         self::assertSame(100, $value?->from);
         self::assertSame(50, $value?->to);
     }
+
+    public function testFingerprint(): void
+    {
+        self::assertSame('0|', DateRangeValue::tryFrom(0, null)?->fingerprint());
+    }
 }

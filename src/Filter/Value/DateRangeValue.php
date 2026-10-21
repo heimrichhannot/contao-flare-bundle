@@ -73,4 +73,9 @@ final readonly class DateRangeValue implements ValueInterface
             ? $dateTime->setTimezone($timezone)
             : null;
     }
+
+    public function fingerprint(): string
+    {
+        return ($this->from?->getTimestamp() ?? '') . '|' . ($this->to?->getTimestamp() ?? '');
+    }
 }

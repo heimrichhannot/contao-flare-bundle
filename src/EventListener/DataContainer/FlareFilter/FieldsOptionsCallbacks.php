@@ -17,6 +17,7 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
+use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use HeimrichHannot\FlareBundle\Util\DcaFieldFilter;
@@ -34,6 +35,7 @@ readonly class FieldsOptionsCallbacks
     public function __construct(
         private ContaoFramework             $contaoFramework,
         private FilterContainer             $filterContainer,
+        private FilterControlRegistry       $filterControlRegistry,
         private FilterElementRegistry       $filterElementRegistry,
         private TranslatorInterface         $translator,
         private ListSpecBuilderFactory      $listFactory,
@@ -58,6 +60,30 @@ readonly class FieldsOptionsCallbacks
         }
 
         \asort($options, \SORT_NATURAL);
+
+        return $options;
+    }
+
+    /**
+     * The controls producing the value class of the edited filter's element; blank means intrinsic.
+     *
+     * @return array<string, string>
+     */
+    #[AsCallback(self::TABLE_NAME, 'fields.formVariant.options')]
+    public function getFieldOptions_formVariant(DataContainer $dc): array
+    {
+        $type = (string) (DcaHelper::rowOf($dc)['type'] ?? '');
+        $valueClass = $this->filterElementRegistry->getAttribute($type)?->value;
+
+        if ($valueClass === null) {
+            return [];
+        }
+
+        $options = [];
+
+        foreach ($this->filterControlRegistry->findNames($valueClass) as $name) {
+            $options[$name] = $GLOBALS['TL_LANG'][self::TABLE_NAME]['formVariant_options'][$name] ?? $name;
+        }
 
         return $options;
     }

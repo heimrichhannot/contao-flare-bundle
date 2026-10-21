@@ -162,6 +162,11 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'string', 'length' => 128, 'default' => '', 'notnull' => true],
     ],
+    'value' => [
+        'exclude' => true,
+        'eval' => ['tl_class' => 'clr'],
+        'sql' => ['type' => 'blob', 'notnull' => false],
+    ],
     'targetAlias' => [
         'inputType' => 'select',
         'exclude' => true,
@@ -656,7 +661,7 @@ $dca['palettes'] = [
         'type', 'usePublished', 'useStart', 'useStop', 'whichPtable', 'formatLabel', 'formatEmptyOption',
         'configureStart', 'configureStop', 'boolMode',
     ],
-    '__prefix__' => '{title_legend},title,type,intrinsic',
+    '__prefix__' => '{title_legend},title,type,formVariant',
     '__suffix__' => '{expert_legend:hide},formAlias;{publish_legend},published',
 ];
 

@@ -16,6 +16,13 @@ final class DcaBuilder implements DcaBuilderInterface
 {
     private ?string $palette = null;
 
+    private ?string $controlPalette = null;
+
+    /**
+     * @var array<string, list<array{key: string, palette: string}>> Subpalettes by selector field.
+     */
+    private array $selectors = [];
+
     private string|\Closure|null $prefix = null;
 
     private string|\Closure|null $suffix = null;
@@ -68,6 +75,24 @@ final class DcaBuilder implements DcaBuilderInterface
         return $this->fields[$name] ??= new DcaFieldBuilder();
     }
 
+    public function scope(string $segment): DcaBuilderInterface
+    {
+        return match ($segment) {
+            'control' => new ControlScopeDcaBuilder($this, fn (?string $palette) => $this->controlPalette = $palette),
+            default => throw new \InvalidArgumentException(\sprintf('Unknown DCA scope "%s".', $segment)),
+        };
+    }
+
+    public function selector(string $field, string $palette, ?string $value = null): self
+    {
+        $this->selectors[$field][] = [
+            'key' => $value === null ? $field : "{$field}_{$value}",
+            'palette' => $palette,
+        ];
+
+        return $this;
+    }
+
     /**
      * Writes the collected configuration into `$GLOBALS['TL_DCA'][$table]`.
      *
@@ -86,7 +111,18 @@ final class DcaBuilder implements DcaBuilderInterface
             $prefix = self::resolveAffix($this->prefix, (string) ($dca['palettes']['__prefix__'] ?? ''));
             $suffix = self::resolveAffix($this->suffix, (string) ($dca['palettes']['__suffix__'] ?? ''));
 
-            $dca['palettes'][$type] = Str::mergePalettes($prefix, $this->palette, $suffix);
+            $dca['palettes'][$type] = Str::mergePalettes($prefix, $this->palette, $this->controlPalette, $suffix);
+        }
+
+        foreach ($this->selectors as $selector => $subpalettes)
+        {
+            if (!\in_array($selector, $dca['palettes']['__selector__'] ?? [], true)) {
+                $dca['palettes']['__selector__'][] = $selector;
+            }
+
+            foreach ($subpalettes as ['key' => $key, 'palette' => $palette]) {
+                $dca['subpalettes'][$key] = $palette;
+            }
         }
 
         foreach ($this->fields as $name => $field)

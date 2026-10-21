@@ -23,8 +23,10 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
+use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
+use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -43,6 +45,7 @@ final readonly class ElementDcaListener
     public function __construct(
         private Connection                  $connection,
         private EventDispatcherInterface    $eventDispatcher,
+        private FilterControlRegistry       $filterControlRegistry,
         private FilterElementRegistry       $filterElementRegistry,
         private FilterFactory               $filterFactory,
         private ListExecutionContextFactory $listExecutionContextFactory,
@@ -50,6 +53,7 @@ final readonly class ElementDcaListener
         private ListDriverRegistry          $listDriverRegistry,
         private RequestStack                $requestStack,
         private TranslatorInterface         $translator,
+        private ValueProviderRegistry       $valueProviderRegistry,
     ) {}
 
     public function __invoke(string $table): void
@@ -124,11 +128,39 @@ final readonly class ElementDcaListener
             $service->buildDca($dca, $context);
         }
 
+        if ($filterModel !== null) {
+            $this->buildFrameworkDca($dca, $context, $filterModel);
+        }
+
         $this->eventDispatcher->dispatch(new ElementDcaEvent($dca, $context));
 
         $isEditAction = $this->requestStack->getCurrentRequest()?->query->get('act') === 'edit';
 
         $dca->apply($table, $type, applyPalette: $isEditAction);
+    }
+
+    /**
+     * The framework's part of the palette (§5.2, §6.1): the selected control fills the control segment,
+     * and an element with a value class shows the `value` field after the framework prefix.
+     */
+    private function buildFrameworkDca(DcaBuilder $dca, DcaContext $context, FilterModel $filterModel): void
+    {
+        // The control's name column is still `formVariant` (renamed `control` in Task 13).
+        $control = $this->filterControlRegistry->get((string) $filterModel->formVariant);
+
+        if ($control instanceof DcaContract) {
+            $control->buildDca($dca->scope('control'), $context);
+        }
+
+        $valueClass = $this->filterElementRegistry->getAttribute($context->type)?->value;
+
+        if ($valueClass === null) {
+            return;
+        }
+
+        $this->valueProviderRegistry->get($valueClass)?->buildDcaField($dca->field('value'), $context);
+
+        $dca->prefix(static fn (string $prefix): string => $prefix . ',value');
     }
 
     /**

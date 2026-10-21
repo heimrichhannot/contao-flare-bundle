@@ -10,8 +10,20 @@ $lang['title'] = ['Titel', 'Bitte geben Sie einen Titel für diesen Listenfilter
 $lang['type'] = ['Typ', 'Bitte wählen Sie den Typ der Liste aus.'];
 $lang['intrinsic'] = ['Intrinsisch', 'Diesen Filter immer anwenden und vor dem Benutzer verstecken.'];
 $lang['formVariant'] = ['Formular', 'Legt fest, wie dieser Filter dargestellt wird. Leer lassen, um ihn unsichtbar anzuwenden (intrinsisch).'];
+$lang['value'] = ['Wert', 'Der feste Wert des Filters bzw. der Startwert seines Bedienelements.'];
+$lang['formVariant_options'] = [
+    'flare_choice' => 'Auswahl',
+    'flare_checkbox' => 'Checkbox',
+    'flare_choice_bool' => 'Ja/Nein-Auswahl',
+    'flare_date_range' => 'Datumsbereich',
+    'flare_keywords' => 'Stichwortsuche',
+];
 $lang['targetAlias'] = ['Anwenden auf', 'Wählen Sie, auf welche Relation dieser Filter angewendet werden soll.'];
 ###< title_legend ###
+
+###> control_legend ###
+$lang['control_legend'] = 'Bedienelement-Einstellungen';
+###< control_legend ###
 
 ###> publish_legend ###
 $lang['publish_legend'] = 'Veröffentlichung';

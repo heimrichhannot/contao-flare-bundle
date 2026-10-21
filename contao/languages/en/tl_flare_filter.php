@@ -10,8 +10,20 @@ $lang['title'] = ['Title', 'Please enter a title for this list filter.'];
 $lang['type'] = ['Type', 'Please select the type of the filter.'];
 $lang['intrinsic'] = ['Intrinsic', 'Always apply this filter and hide it from the user.'];
 $lang['formVariant'] = ['Form', 'Choose how this filter is presented. Leave empty to apply it silently (intrinsic).'];
+$lang['value'] = ['Value', 'The fixed value of the filter, or the initial value of its control.'];
+$lang['formVariant_options'] = [
+    'flare_choice' => 'Choice',
+    'flare_checkbox' => 'Checkbox',
+    'flare_choice_bool' => 'Yes/No choice',
+    'flare_date_range' => 'Date range',
+    'flare_keywords' => 'Keyword search',
+];
 $lang['targetAlias'] = ['Apply to', 'Select the relation this filter should be applied to.'];
 ###< title_legend ###
+
+###> control_legend ###
+$lang['control_legend'] = 'Control Settings';
+###< control_legend ###
 
 ###> publish_legend ###
 $lang['publish_legend'] = 'Publishing';

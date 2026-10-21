@@ -70,7 +70,7 @@ class ChoiceFilterControl extends AbstractFilterControl
     public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
     {
         $dca->palette(
-            '{control_legend},label,formatLabel,isMandatory,isMultiple,isExpanded,hasEmptyOption,placeholder',
+            '{control_legend},label,formatLabel,isMandatory,isMultiple,isExpanded,hasEmptyOption,formatEmptyOption,placeholder',
         );
     }
 

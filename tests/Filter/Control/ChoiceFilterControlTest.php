@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Filter\Control;
 
 use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\ChoiceFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
@@ -220,5 +223,19 @@ final class ChoiceFilterControlTest extends TestCase
         self::assertSame('format.title', $plain['format_label']);
         self::assertSame('empty_option.all', $plain['format_empty_option']);
         self::assertNull($plain['label']);
+    }
+
+    public function testPaletteOffersTheEmptyOptionLabel(): void
+    {
+        $dca = $this->createMock(DcaBuilderInterface::class);
+        $dca->expects(self::once())->method('palette')->with(self::stringContains('hasEmptyOption,formatEmptyOption,placeholder'));
+
+        (new ChoiceFilterControl())->buildDca($dca, new DcaContext(
+            'tl_flare_filter',
+            'test',
+            (new \ReflectionClass(ListModel::class))->newInstanceWithoutConstructor(),
+            null,
+            static fn () => null,
+        ));
     }
 }

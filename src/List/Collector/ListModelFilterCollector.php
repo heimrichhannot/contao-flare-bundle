@@ -8,7 +8,6 @@ use Contao\Controller;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
-use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
@@ -17,7 +16,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Collects the published tl_flare_filter rows of a list model as Filter DTOs,
- * translating each row through its element's transformers.
+ * translating each row through its element's and control's transformers.
  */
 readonly class ListModelFilterCollector
 {
@@ -29,10 +28,10 @@ readonly class ListModelFilterCollector
     ) {}
 
     /**
-     * @return array<string, Filter>|null
-     * @throws FlareException
+     * @throws FlareException If no list driver is registered for the list's type. A broken filter
+     *   never throws, so backend callbacks building the ListSpec keep working.
      */
-    public function collect(ListModel $listModel): ?array
+    public function collect(ListModel $listModel): ?CollectedFilters
     {
         if (!$listModel->id || !$table = $listModel::getTable()) {
             return null;
@@ -44,11 +43,22 @@ readonly class ListModelFilterCollector
 
         Controller::loadDataContainer($table);
 
-        $filters = [];
+        return $this->collectFromModels(FilterModel::findByPid((int) $listModel->id, published: true), $listModel);
+    }
 
-        /** @var FilterModel $model */
-        foreach (FilterModel::findByPid((int) $listModel->id, published: true) as $model)
-            // Collect filters defined in the backend
+    /**
+     * Creates the filters of the given models. A filter that cannot be created fails by its role
+     * (SPEC_FILTER_FORMS.md §8.1): with a control it is skipped with a warning (fail open); without
+     * one, the failure is logged as an error and recorded, failing the list (fail closed).
+     *
+     * @param iterable<FilterModel> $models
+     */
+    public function collectFromModels(iterable $models, ListModel $listModel): CollectedFilters
+    {
+        $filters = [];
+        $failures = [];
+
+        foreach ($models as $model)
         {
             if (!$model->published) {
                 continue;
@@ -60,13 +70,25 @@ readonly class ListModelFilterCollector
             }
             catch (FlareException $e)
             {
-                $this->logger->warning(\sprintf(
-                    '[FLARE] Error while creating Filter of type "%s" on [%s.%s] -- [Message] %s',
+                $message = \sprintf(
+                    'Filter %s.%s of type "%s" on %s.%s could not be created: %s',
+                    $model::getTable(),
+                    $model->id,
                     $model->getFilterElementType(),
                     $listModel::getTable(),
                     $listModel->id,
                     $e->getMessage(),
-                ));
+                );
+
+                if ((string) $model->formVariant !== '')
+                {
+                    $this->logger->warning('[FLARE] ' . $message . ' -- The filter is skipped.');
+
+                    continue;
+                }
+
+                $this->logger->error('[FLARE] ' . $message . ' -- The list fails.');
+                $failures[] = $message;
 
                 continue;
             }
@@ -76,6 +98,6 @@ readonly class ListModelFilterCollector
             $filters[$filter->alias] = $filter;
         }
 
-        return $filters;
+        return new CollectedFilters($filters, $failures);
     }
 }

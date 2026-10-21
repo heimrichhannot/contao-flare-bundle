@@ -12,10 +12,6 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
 use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
@@ -31,13 +27,11 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 
 final class ListSpecBuilderTest extends TestCase
 {
-    public static function filter(string $type, ?string $alias = null): Filter
+    public static function filter(string $type, string $alias): Filter
     {
         static $element = null;
 
         $element ??= new class implements FilterElementInterface {
-            public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
-
             public function buildContext(
                 FilterContextBuilder $builder,
                 ?ValueInterface      $value,
@@ -52,10 +46,13 @@ final class ListSpecBuilderTest extends TestCase
         $dispatchedWith = null;
 
         $dispatcher = new EventDispatcher();
-        $dispatcher->addListener(ListBuildEvent::class, static function (ListBuildEvent $event) use (&$dispatchedWith): void {
-            $dispatchedWith = $event->builder;
-            $event->builder->addFilter(self::filter('from_event', 'via_event'));
-        });
+        $dispatcher->addListener(
+            ListBuildEvent::class,
+            static function (ListBuildEvent $event) use (&$dispatchedWith): void {
+                $dispatchedWith = $event->builder;
+                $event->builder->addFilter(self::filter('from_event', 'via_event'));
+            },
+        );
 
         $driver = new class extends AbstractListDriver {
             public int $buildListCalls = 0;
@@ -81,8 +78,10 @@ final class ListSpecBuilderTest extends TestCase
         $builder = $this->createBuilder(new EventDispatcher());
 
         $builder->addFilter(new Filter(element: new StubFilterElement(), type: 'stub', alias: 'x'));
-        $builder->addFilter(self::filter('b'));
+        $builder->addFilter(self::filter('b', 'y'));
+        $builder->addFilter(self::filter('c', 'z'), 'custom');
         $builder->removeFilter('x');
+        $builder->addFailure('tl_flare_filter.3: broken');
 
         self::assertTrue($builder->hasFilterInstance(FilterElementInterface::class));
         self::assertFalse($builder->hasFilterInstance(StubFilterElement::class));
@@ -93,8 +92,8 @@ final class ListSpecBuilderTest extends TestCase
         self::assertSame('tl_test', $spec->dc);
         self::assertSame('tl_test', $spec->config['dc']);
         self::assertSame('tl_flare_list.9', $spec->source);
-        self::assertArrayHasKey('_generated_0', $spec->filters);
-        self::assertArrayNotHasKey('x', $spec->filters);
+        self::assertSame(['y', 'custom'], \array_keys($spec->filters));
+        self::assertSame(['tl_flare_filter.3: broken'], $spec->failures);
     }
 
     public function testModelTransformationAndOverridePrecedence(): void

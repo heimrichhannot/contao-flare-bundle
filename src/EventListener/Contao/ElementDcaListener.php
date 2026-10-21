@@ -159,7 +159,7 @@ final readonly class ElementDcaListener
         {
             return new FilterScope(
                 list: $getSpec(),
-                filter: $this->filterFactory->createFromFilterModel($filterModel),
+                filter: $this->filterFactory->createFromFilterModel($filterModel, withControlAndValue: false),
                 engineContext: new ConfigurationContext(),
             );
         }

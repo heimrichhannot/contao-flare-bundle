@@ -14,6 +14,8 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property bool   $published
  * @property bool   $intrinsic
  * @property string $formAlias
+ * @property string $formVariant
+ * @property string|null $value
  * @property string $targetAlias
  * @property bool   $isMandatory
  * @property bool   $isMultiple

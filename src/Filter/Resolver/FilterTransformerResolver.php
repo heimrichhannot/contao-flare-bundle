@@ -8,18 +8,20 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\FilterTransformerEvent;
+use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
- * Runs an element's source transformers ({@see TransformerContract}) to translate a stored
- * source (e.g. a FilterModel) into canonical config values. The configured transformer map
- * is memoized per element class; listeners extend it via {@see FilterTransformerEvent}.
+ * Runs the source transformers ({@see TransformerContract}) of a filter element or control to
+ * translate a stored source (e.g. a FilterModel) into canonical config values. The configured
+ * transformer map is memoized per type and owner class; listeners extend an element's map via
+ * {@see FilterTransformerEvent}.
  */
 final class FilterTransformerResolver
 {
     /**
-     * @var array<class-string, TransformerResolver>
+     * @var array<string, TransformerResolver>
      */
     private array $resolvers = [];
 
@@ -28,21 +30,27 @@ final class FilterTransformerResolver
     ) {}
 
     /**
+     * @param string $type The element type or the control name.
      * @return array<string, mixed>|null Canonical config values, or null when no transformer matches the source.
      */
-    public function transform(FilterElementInterface $element, string $type, object $source): ?array
-    {
-        $cacheKey = \sprintf('%s@%s', $type, $element::class);
+    public function transform(
+        FilterElementInterface|FilterControlInterface $owner,
+        string                                        $type,
+        object                                        $source,
+    ): ?array {
+        $cacheKey = \sprintf('%s@%s', $type, $owner::class);
 
         if (!isset($this->resolvers[$cacheKey]))
         {
             $resolver = new TransformerResolver();
 
-            if ($element instanceof TransformerContract) {
-                $element->configureTransformers($resolver);
+            if ($owner instanceof TransformerContract) {
+                $owner->configureTransformers($resolver);
             }
 
-            $this->eventDispatcher->dispatch(new FilterTransformerEvent($resolver, $element, $type));
+            if ($owner instanceof FilterElementInterface) {
+                $this->eventDispatcher->dispatch(new FilterTransformerEvent($resolver, $owner, $type));
+            }
 
             $this->resolvers[$cacheKey] = $resolver;
         }

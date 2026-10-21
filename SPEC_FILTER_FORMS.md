@@ -1,6 +1,6 @@
 # SPEC: Decoupling Filter Controls from Filter Elements
 
-**Status:** Design settled (2026-10-20/21, §13.6-13.30). Step 0 (§12) implemented and partly
+**Status:** Design settled (2026-10-20/21, §13.6-13.31). Step 0 (§12) implemented and partly
 re-renamed by #48; step 1 partially implemented and red mid-cut; steps 2-6 not started. Progress
 and the open checklist live in `PLAN_FILTER_FORMS.md`.
 **Scope:** `src/Filter/` (incl. the new `src/Filter/Control/`), `src/Form/`, `src/Query/`, `src/Event/`, `src/EventListener/NamedDispatch/`,
@@ -801,7 +801,7 @@ final readonly class Filter
   control from the `control` column, the control config from the `ctl_` columns, and — if the element has a value
   class — the value via its provider's `provide($model->value, $element)`. An unknown `control`, or
   one not registered for the element's value class, is a data condition (a renamed or uninstalled
-  control), not a programming error; how it degrades is open (§14.11). Each config has its
+  control), not a programming error; it fails open (§8.1). Each config has its
   own resolver cache key, so the composite-key problem of the old plan does not arise.
 - `FilterFactory::create()` takes `?FilterControlInterface $control`, `array $controlConfig` and
   `?ValueInterface $value` for programmatic filters, e.g.
@@ -831,6 +831,35 @@ throughout:
 is carried by step 2; `toArray()`'s hashing role moves to the value object's fingerprint (§9).
 `FilterFormBuilder`'s `single()` vs. compound mount decision is unaffected.
 
+
+### 8.1 Failure handling
+
+The rule follows the two scopes of §4.2 (§13.31):
+
+| what fails | bounds | behaviour |
+|---|---|---|
+| a filter **without a control** (fixed value, intrinsic) cannot be built — its config is broken, `createFromFilterModel()` throws, or a non-empty stored value yields no readable key | the whole list | **fail closed**: the list fails as a whole; error logged |
+| a filter **with a control** cannot be built, or its `control` names no registered control for the element's value class | only the initial display | **fail open**: the filter is not mounted and its initial value does not apply; warning logged |
+
+Stale keys of deleted records are not a failure: they resolve to references that match nothing
+(§3.6).
+
+**A failed list is not an empty list.** `ListModelFilterCollector` no longer drops a broken filter
+without a control; it records the failure, and the engine treats the list as failed. This is a
+separate state from `AbortFilteringException`, which keeps meaning "this filter legitimately matches
+nothing" (e.g. an empty selection without `elm_useWhitelistForOptionsOnly`):
+
+- **List view:** the view exposes the failed state (e.g. `flare_list.failed`); the template renders
+  a translated "the list could not be created" message instead of the entries, the empty-result
+  text and the pagination. The response status stays **200** — no HTTP error code. The filter form
+  may still render; it cannot repair a broken fixed filter.
+- **Reader (`ValidationContext`):** membership cannot be decided, so the entry is not rendered;
+  the reader shows the same kind of message, also with status 200 — not a 404, because the entry is
+  not known to be absent. *(Builder's call, consistent with the list view.)*
+- **Debug mode** keeps today's behaviour of the controllers' `getErrorResponse()`: the exception is
+  rethrown so developers see it. *(Builder's call.)*
+- Today `ReaderController::getErrorResponse()` answers a misconfigured list with status 500; it is
+  aligned with the list view's status 200.
 ---
 
 ## 9. Value objects and hashing
@@ -1080,6 +1109,9 @@ Recorded here because each one closes a branch the design could otherwise have t
     membership in everything the controls can reach; initial values only pre-filter the initial
     display. Bool filters with a control and a preselect therefore stop restricting reader pages —
     a correction by this definition, noted in the release notes.
+31. **Fail closed for what bounds the whole list, fail open for what only shapes the initial
+    display** (§8.1). A list that fails closed shows an explicit "could not be created" message —
+    never "no entries found" — and keeps HTTP status 200.
 ---
 
 ## 14. Remaining unknowns
@@ -1102,9 +1134,7 @@ Recorded here because each one closes a branch the design could otherwise have t
    for storage and per-list short keys for URLs, §13.22.
 10. **The exact frontend label of the empty option and of the bool choice control** (`flare_form`
     translation keys) — builder's call; keep today's keys where they exist.
-11. **Unresolvable or unknown at run time — fail open or closed?** An unknown `control` value, and a
-    fixed choice value whose `createChoices()`-side config is broken (empty whitelist, no ptable).
-    Stale stored keys already fail closed (§3.6).
+11. ~~Unresolvable or unknown at run time~~ — resolved, §8.1 and §13.31.
 
 ---
 

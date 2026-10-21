@@ -94,9 +94,11 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 
 - Bool filters with a control no longer restrict reader pages: only fixed values and the elements' own config
   bound the whole list.
-- A list with a broken filter that has no control now renders `list.failed` (HTTP 200) instead of an empty or
-  unfiltered result; its reader answers 500.
-- `ListSpec::withFilter()` throws a `FlareException` on a duplicate alias instead of replacing the filter.
+- A list with a broken filter element (with or without a control), a broken fixed value, or two published
+  filters sharing an alias now renders `list.failed` (HTTP 200) instead of an empty or unfiltered result; its
+  reader answers 500.
+- `ListSpec::withFilter()` and `ListSpecBuilder::addFilter()` throw a `FlareException` on a duplicate alias
+  (`addFilter()` also on a taken key) instead of replacing the filter.
 
 - Filter element classes moved from `FilterElement\` to `Filter\Element\` and gained a `FilterElement`
   class-name suffix — a rename rather than a removal, but any `use` statement referencing the old FQCNs

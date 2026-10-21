@@ -48,7 +48,7 @@ The controls FLARE ships:
 | `flare_choice` | `ChoiceFilterControl` | `ChoiceValue` | Select, radios or checkboxes over the element's choices (single / multiple / expanded, optional empty option) |
 | `flare_checkbox` | `CheckboxFilterControl` | `BoolValue` | A single checkbox (checked = true; unchecked = no filtering, or false with `ctl_boolBinaryChoices` = `true_false`) |
 | `flare_choice_bool` | `ChoiceBoolFilterControl` | `BoolValue` | Yes / no / any select |
-| `flare_date_range` | `DateRangeFilterControl` | `DateRangeValue` | From / to date inputs (honours `DateBoundsContract`) |
+| `flare_date_range` | `DateRangeFilterControl` | `DateRangeValue` | From / to date inputs (honours `DateBoundsContract`); `ctl_label` labels the pair |
 | `flare_keywords` | `KeywordsFilterControl` | `KeywordsValue` | Free-text search phrase |
 
 ## 2. The Interface
@@ -64,8 +64,9 @@ public function hydrate(?ValueInterface $value, FilterScope $scope): mixed;
 - **`buildForm()`** declares the filter's fields on the collect-only builder. A **single-field** control calls
   `$builder->single(TextType::class, [...])`; the field is mounted flat on the root form under the filter's
   alias (`form[alias]=x`). A **multi-field** control `add()`s children under local names (`from`/`to`); they
-  mount as a compound sub-form (`form[alias][from]=x`). Declaring both is not supported. A control that
-  declares nothing is not mounted.
+  mount as a compound sub-form (`form[alias][from]=x`); `$builder->compound(['label' => ...])` sets form
+  options of that sub-form (by default it has no label and is not required). Declaring both is not supported. A
+  control that declares nothing is not mounted.
 - **`decode()`** turns the mount's submitted data into the control's value object, or `null` to contribute
   nothing (an empty submission clears the filter). Implementations MUST narrow the return type to one concrete
   value class.
@@ -205,8 +206,9 @@ The former element events `FilterElementBuildingEvent` / `FilterElementBuiltEven
   class, a broken control config, or an unreadable initial value: the filter is kept **without control and
   value** (warning logged), bounded only by the element's own config. A control whose `buildForm()` or
   `hydrate()` throws a `FilterException` is skipped: it is not mounted and contributes no form field (warning).
-- **Build time, element side.** A broken element config, or an unreadable fixed value of a filter without a
-  control, fails the list (**fail closed**).
+- **Build time, element side.** An unknown element type or a broken element config fails the list
+  (**fail closed**) — also for a filter *with* a control, because the element config bounds the whole list. So
+  does an unreadable fixed value of a filter without a control.
 - **Query time.** If a controlled filter fails with a non-null value, it is retried once with value `null`.
   Success drops only the value (warning); if the retry fails too, or the value was already `null`, the element
   config is broken and the list fails closed. `\Error`s escape unwrapped.

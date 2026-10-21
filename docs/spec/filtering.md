@@ -93,7 +93,8 @@ For each filter *with a control* whose alias is a valid Symfony form name, the `
 `FilterScope` and hands a collect-only per-filter builder (`FilterFormBuilderInterface`) to the control's
 `buildForm()`. **Single-field controls** declare their one field via `single()` — it is mounted flat on the root
 form under the filter's alias (`form[alias]=x`). **Multi-field controls** `add()` children under local names,
-which mount as a compound sub-form (`form[alias][from]=x`). Each mount is hydrated with
+which mount as a compound sub-form (`form[alias][from]=x`); `compound()` sets its form options, e.g. a label.
+Each mount is hydrated with
 `control->hydrate($filter->value, $scope)`.
 
 The per-filter builder carries the `FilterScope` in its attribute bag under `FilterScope::ATTR_SELF`. After the
@@ -141,13 +142,14 @@ programmatic filter can force one with `Filter::withTargetAlias('my_alias')`. In
 
 ## 6. Failure Handling
 
-Failures follow the two scopes of a filter: a filter *without* a control bounds the **whole list**, a filter
-*with* a control only bounds the **initial display**.
+Failures follow the two scopes of a filter: the element config and a fixed value bound the **whole list**, a
+control and its initial value only bound the **initial display**.
 
 | What fails | Behaviour |
 |---|---|
-| A filter **without a control** (fixed value) cannot be built — broken element config, unreadable stored value — or fails at query time | **Fail closed:** the list as a whole fails; error logged |
-| A filter **with a control** cannot be built, or its `control` names no control registered for the element's value class | **Fail open:** the filter is kept without control and initial value; warning logged |
+| A filter's **element** cannot be built, **with or without a control** — unknown element type, broken element config — or a filter **without a control** has an unreadable stored (fixed) value or fails at query time | **Fail closed:** the list as a whole fails; error logged |
+| Two published filters of a list share an **alias** | **Fail closed:** the second one is recorded as a list failure instead of replacing the first; error logged |
+| A filter's **control** cannot be built — its `control` names no control registered for the element's value class, its control config is broken, or its initial value is unreadable | **Fail open:** the filter is kept without control and initial value, bounded only by its element config; warning logged |
 | A **controlled filter fails at query time with a non-null value** | Retried **once with value `null`**. Success: only the value is dropped (warning). Failure, or the value was already `null`: the element config is broken and bounds the whole list — fail closed |
 
 `\Error`s (programming errors) are never wrapped or retried. Stale references (a stored choice whose record was

@@ -287,8 +287,9 @@ $filter = $this->filterFactory->create(
 );
 ```
 
-`create()` throws a `FlareException` if the control is not registered for the element's value class, or the
-value is not of its class. It also accepts a `FilterElementInterface` instance — as does `new Filter(element: ..., type:
+Without an `alias`, `create()` generates one: `_.{type}_{random}` for a filter without a control (never mounted
+as a form field), a form-valid `{type}_{random}` for one with a control. `create()` throws a `FlareException` if
+the control is not registered for the element's value class, or the value is not of its class. It also accepts a `FilterElementInterface` instance — as does `new Filter(element: ..., type:
 ..., alias: ...)` directly — for elements that are not registered as a service at all (see the anonymous-class
 example under [Consuming Predicates](../predicates.md#4-consuming-predicates)). Such filters fire no named
 events.
@@ -299,10 +300,12 @@ involved. Use the `with*()` methods (`withValue()`, `withControl()`, `withTarget
 
 Add programmatic filters to a list while it is being built — from a list driver's `buildList()` hook or a
 [`ListBuildEvent`](../events.md) listener via `ListSpecBuilder::addFilter()` — or derive a new spec from an
-existing one via `ListSpec::withFilter()`; **a duplicate alias throws a `FlareException`**, a filter is never
-silently replaced. See [Custom List Drivers](../list-types/index.md) for the build lifecycle.
+existing one via `ListSpec::withFilter()`. Both **throw a `FlareException` on a duplicate alias** (and
+`addFilter()` also on a taken key); a filter is never silently replaced — remove it first with
+`removeFilter()` / `withoutFilter()`. See [Custom List Drivers](../list-types/index.md) for the build lifecycle.
 
-A broken filter *without* a control (fixed value) bounds the whole list, so it fails the list: the list view
+A broken element config — with or without a control — or a broken fixed value bounds the whole list, so it
+fails the list: the list view
 renders the translated `list.failed` message with HTTP 200 and the reader answers 500. A filter *with* a
 control that fails at query time with a value is retried once without it: if that succeeds only the value is
 dropped (warning logged); if the retry fails too, the element config is broken and the list fails closed. See

@@ -134,8 +134,8 @@ Backend changes in the filter form:
 - **Reader pages.** Only fixed values and the elements' own config bound the *whole list*. A bool (or any)
   filter *with* a control no longer restricts reader pages — before, a bool `preselect` also acted as a
   fallback in validation.
-- **Failed lists.** A broken filter without a control (fixed value) makes the list *fail* instead of silently
-  dropping the filter: the list view renders the `list.failed` message (HTTP 200), and a reader of such a list
+- **Failed lists.** A broken filter element (with or without a control), a broken fixed value, or two
+  published filters sharing an alias make the list *fail* instead of silently dropping or replacing the filter: the list view renders the `list.failed` message (HTTP 200), and a reader of such a list
   answers 500. A controlled filter that fails with a value is retried once without it: if that works only the value is dropped (warning logged); if it fails too, the element config is broken and the list fails closed like a fixed filter. Custom
   list templates that replace `flare_listview` should check `flare_list.failed`.
 
@@ -152,7 +152,7 @@ or a `ListBuildEvent` listener), use the mutable builder; on a finished spec, us
 | v0.1 | v0.2 |
 |---|---|
 | `$spec->getFilters()->add($definition)` | `$builder->addFilter($filter)` while building; `$spec = $spec->withFilter($filter)` afterwards |
-| `$spec->getFilters()->set('name', $definition)` | `$builder->addFilter($filter, 'name')` while building (an existing key is replaced); on a finished spec `$spec->withFilter($filter)` — the key is the filter's alias and **a duplicate alias throws a `FlareException`**, nothing is replaced silently (remove it first with `withoutFilter()`) |
+| `$spec->getFilters()->set('name', $definition)` | `$builder->addFilter($filter, 'name')` while building; on a finished spec `$spec->withFilter($filter)`, keyed by the filter's alias. Neither replaces: **a taken key or a duplicate alias throws a `FlareException`** (remove the filter first with `removeFilter()` / `withoutFilter()`) |
 | `$spec->getFilters()->hasType('flare_bool')` | `hasFilterInstance(BooleanFilterElement::class)` on builder or spec |
 | — | `$builder->getFilter('name')`, `$builder->removeFilter('name')`, `$spec->withoutFilter('name')` |
 | `$definition->forceTargetAlias('alias')` | `$filter->withTargetAlias('alias')` — **returns a new instance** (`Filter` is immutable) |

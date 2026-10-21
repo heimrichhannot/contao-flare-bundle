@@ -142,16 +142,10 @@ The `Engine` passed to your mod exposes:
 ### Common operations
 
 **Add a filter** (a [`Filter`](../spec/filtering.md#1-the-filter-value-object) value object; keyed by its
-alias, or an auto-generated key):
+alias — a duplicate alias throws a `FlareException`, nothing is replaced silently):
 
 ```php
 $engine->setList($engine->getList()->withFilter($filter));
-```
-
-**Add a named filter** (an existing key is replaced):
-
-```php
-$engine->setList($engine->getList()->withFilter($filter, 'my_filter'));
 ```
 
 **Remove a filter by key:**

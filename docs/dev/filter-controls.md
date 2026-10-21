@@ -201,7 +201,14 @@ The former element events `FilterElementBuildingEvent` / `FilterElementBuiltEven
 
 ## 6. Failure Behaviour
 
-A control (or its config) that cannot be built, or a stored `control` name that is no longer registered for
-the element's value class (renamed, uninstalled), is a *data condition*: the filter loses only its control and
-initial value (**fail open**, warning logged). The element's own config and fixed values continue to bound
-the list.
+- **Build time, control side.** A stored `control` that is unknown or not registered for the element's value
+  class, a broken control config, or an unreadable initial value: the filter is kept **without control and
+  value** (warning logged), bounded only by the element's own config. A control whose `buildForm()` or
+  `hydrate()` throws a `FilterException` is skipped: it is not mounted and contributes no form field (warning).
+- **Build time, element side.** A broken element config, or an unreadable fixed value of a filter without a
+  control, fails the list (**fail closed**).
+- **Query time.** If a controlled filter fails with a non-null value, it is retried once with value `null`.
+  Success drops only the value (warning); if the retry fails too, or the value was already `null`, the element
+  config is broken and the list fails closed. `\Error`s escape unwrapped.
+
+See [failure handling](../spec/filtering.md#6-failure-handling).

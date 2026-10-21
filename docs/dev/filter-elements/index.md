@@ -303,6 +303,7 @@ existing one via `ListSpec::withFilter()`; **a duplicate alias throws a `FlareEx
 silently replaced. See [Custom List Drivers](../list-types/index.md) for the build lifecycle.
 
 A broken filter *without* a control (fixed value) bounds the whole list, so it fails the list: the list view
-renders the translated `list.failed` message with HTTP 200 and the reader answers 500. A broken filter *with* a
-control only loses its initial value, and a warning is logged. See
+renders the translated `list.failed` message with HTTP 200 and the reader answers 500. A filter *with* a
+control that fails at query time with a value is retried once without it: if that succeeds only the value is
+dropped (warning logged); if the retry fails too, the element config is broken and the list fails closed. See
 [failure handling](../../spec/filtering.md#6-failure-handling).

@@ -37,7 +37,7 @@ For the exhaustive list of deleted APIs, see [Removed in v0.2](./removed-in-v0.2
 | `#[AsFilterElement(type:, formType:, palette:, method:, isTargeted:)]` | `#[AsFilterElement(type:, isTargeted:, value:)]` — palette moves into `buildDca()`, the form type into a [filter control](./dev/filter-controls.md), the invoked method is always `buildContext()`; `value:` names the value class the element consumes (none = always intrinsic) |
 | — | `#[AsFilterControl(name:)]` — registers a [filter control](./dev/filter-controls.md); new in v0.2 |
 | `#[AsListType(type:, dataContainer:, palette:)]` | `#[AsListDriver(type:, dataContainer:)]` — renamed; palette moves into `buildDca()`; `dataContainer` is only a backend default for new records |
-| `#[AsFilterInvoker]` | Removed — branch on `$context->engineContext` inside `buildFilter()` |
+| `#[AsFilterInvoker]` | Removed — branch on `$builder->scope->engineContext` inside `buildContext()` (or `$scope->engineContext` in a control) |
 | `#[AsFilterCallback]`, `#[AsListCallback]`, `#[AsFlareCallback]` | Removed — use [`buildDca()` / `ElementDcaEvent`](./dev/dca-builder.md) |
 
 ## Filter Element API
@@ -136,7 +136,7 @@ Backend changes in the filter form:
   fallback in validation.
 - **Failed lists.** A broken filter without a control (fixed value) makes the list *fail* instead of silently
   dropping the filter: the list view renders the `list.failed` message (HTTP 200), and a reader of such a list
-  answers 500. Controlled filters fail open (the filter loses its initial value, warning logged). Custom
+  answers 500. A controlled filter that fails with a value is retried once without it: if that works only the value is dropped (warning logged); if it fails too, the element config is broken and the list fails closed like a fixed filter. Custom
   list templates that replace `flare_listview` should check `flare_list.failed`.
 
 ## ListSpecification → ListSpec

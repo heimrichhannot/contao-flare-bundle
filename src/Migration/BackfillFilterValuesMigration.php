@@ -78,10 +78,17 @@ class BackfillFilterValuesMigration extends AbstractMigration
 
     public function run(): MigrationResult
     {
-        // Plain DDL valid on MySQL 5.7/8 and MariaDB; existing rows start as pending ('0').
-        if (!isset(($this->findColumns() ?? [])[\strtolower(self::MARKER)])) {
+        // Plain DDL valid on MySQL 5.7/8 and MariaDB. The rows existing now start as pending ('0'); switching the
+        // default right away means rows created from now on, even during an interrupted run, are never pending.
+        if (!isset(($this->findColumns() ?? [])[\strtolower(self::MARKER)]))
+        {
             $this->connection->executeStatement(\sprintf(
                 "ALTER TABLE %s ADD %s CHAR(1) NOT NULL DEFAULT '0'",
+                self::TABLE,
+                self::MARKER,
+            ));
+            $this->connection->executeStatement(\sprintf(
+                "ALTER TABLE %s ALTER %s SET DEFAULT '1'",
                 self::TABLE,
                 self::MARKER,
             ));
@@ -103,13 +110,6 @@ class BackfillFilterValuesMigration extends AbstractMigration
         // Rows of element types without a control have nothing to backfill; marking them keeps a later change of
         // their type from turning them pending.
         $this->connection->update(self::TABLE, [self::MARKER => '1'], [self::MARKER => '0']);
-
-        // Rows created from now on are never pending.
-        $this->connection->executeStatement(\sprintf(
-            "ALTER TABLE %s ALTER %s SET DEFAULT '1'",
-            self::TABLE,
-            self::MARKER,
-        ));
 
         return $this->createResult(true, \sprintf('%s (%d filters updated)', $this->getName(), $updated));
     }
@@ -279,10 +279,13 @@ class BackfillFilterValuesMigration extends AbstractMigration
     }
 
     /**
-     * Keeps the look of existing choice widgets: single-select field value choices always showed an empty option;
-     * single-select, non-expanded DCA select and Codefog tags choices showed Symfony's placeholder as an empty option,
-     * whose text becomes the empty option's custom label (SPEC_FILTER_FORMS §7.3). Archive maps 1:1.
-     * Multiple or expanded widgets keep `ctl_placeholder` as the HTML placeholder.
+     * Keeps the look of existing choice widgets (SPEC_FILTER_FORMS §7.3); Archive maps 1:1.
+     *
+     * - Single-select field value choices always showed an empty option with the default label.
+     * - Single-select DCA select and Codefog tags choices always passed Symfony's `placeholder`, which renders as an
+     *   empty option unless the widget is expanded and mandatory. Its text becomes the empty option's custom label;
+     *   without a text, the fallback label the old widget used.
+     * - Multiple widgets, and expanded mandatory ones, keep `ctl_placeholder` as the HTML placeholder.
      *
      * @param array<string, mixed> $row
      *
@@ -295,11 +298,13 @@ class BackfillFilterValuesMigration extends AbstractMigration
         }
 
         if ($type === 'flare_fieldValueChoice') {
-            return ['ctl_hasEmptyOption' => '1'];
+            return ['ctl_hasEmptyOption' => '1', 'ctl_formatEmptyOption' => ''];
         }
 
+        $isMandatory = (bool) (int) ($row['ctl_isMandatory'] ?? 0);
+
         if (($type !== 'flare_dcaSelectField' && $type !== 'cfg_tags_choice')
-            || (bool) (int) ($row['ctl_isExpanded'] ?? 0))
+            || ((bool) (int) ($row['ctl_isExpanded'] ?? 0) && $isMandatory))
         {
             return [];
         }
@@ -311,9 +316,7 @@ class BackfillFilterValuesMigration extends AbstractMigration
             // Without a placeholder text the old widget fell back to these Symfony placeholders.
             return [
                 'ctl_hasEmptyOption' => '1',
-                'ctl_formatEmptyOption' => (bool) (int) ($row['ctl_isMandatory'] ?? 0)
-                    ? 'empty_option.prompt'
-                    : 'empty_option.no_selection',
+                'ctl_formatEmptyOption' => $isMandatory ? 'empty_option.prompt' : 'empty_option.no_selection',
             ];
         }
 

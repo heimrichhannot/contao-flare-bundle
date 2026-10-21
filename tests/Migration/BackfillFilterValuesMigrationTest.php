@@ -67,11 +67,27 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         self::assertSame('1', $this->rows[2][self::MARKER], 'types without a control are marked as well');
         self::assertFalse($this->migration()->shouldRun());
 
-        // A second run (e.g. after an interruption) does not add the column again.
+        // A second run does not touch the column again.
         $this->statements = [];
         $this->migration()->run();
 
-        self::assertSame(["ALTER TABLE tl_flare_filter ALTER legacyBackfilled SET DEFAULT '1'"], $this->statements);
+        self::assertSame([], $this->statements);
+    }
+
+    public function testRunResumesAnInterruptedRun(): void
+    {
+        $this->columns[] = self::MARKER;
+        $this->markerDefault = '1';
+        $this->addRow(1, 'flare_archive', ['intrinsic' => '0', self::MARKER => '1', 'control' => 'flare_choice']);
+        $this->addRow(2, 'flare_archive', ['intrinsic' => '0', self::MARKER => '0']);
+
+        self::assertTrue($this->migration()->shouldRun());
+
+        $this->migration()->run();
+
+        self::assertSame([], $this->statements, 'no second ADD');
+        self::assertSame([[['control' => 'flare_choice', self::MARKER => '1'], ['id' => 2]]], $this->rowUpdates());
+        self::assertFalse($this->migration()->shouldRun());
     }
 
     public function testShouldRunWhileTheMarkerIsAbsent(): void
@@ -136,9 +152,9 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         $this->migration()->run();
 
         self::assertSame([
-            [['value' => '1'], ['id' => 1]],
-            [['value' => \serialize(['berlin'])], ['id' => 2]],
-            [[], ['id' => 3]],
+            [['value' => '1', self::MARKER => '1'], ['id' => 1]],
+            [['value' => \serialize(['berlin']), self::MARKER => '1'], ['id' => 2]],
+            [[self::MARKER => '1'], ['id' => 3]],
         ], $this->rowUpdates());
         self::assertSame('', $this->rows[1]['control']);
         self::assertFalse($this->migration()->shouldRun());
@@ -153,7 +169,7 @@ final class BackfillFilterValuesMigrationTest extends TestCase
 
         $this->migration()->run();
 
-        self::assertSame([[[], ['id' => 1]]], $this->rowUpdates());
+        self::assertSame([[[self::MARKER => '1'], ['id' => 1]]], $this->rowUpdates());
         self::assertSame('', $this->rows[1]['control']);
         self::assertNull($this->rows[1]['value']);
     }
@@ -171,7 +187,7 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         $this->migration()->run();
 
         self::assertSame([[
-            ['control' => 'flare_choice', 'value' => \serialize(['tl_news_archive.5'])],
+            ['control' => 'flare_choice', 'value' => \serialize(['tl_news_archive.5']), self::MARKER => '1'],
             ['id' => 1],
         ]], $this->rowUpdates());
 
@@ -235,7 +251,10 @@ final class BackfillFilterValuesMigrationTest extends TestCase
 
         $this->migration()->run();
 
-        self::assertSame([[['ctl_boolBinaryChoices' => 'true_false'], ['id' => 1]]], $this->rowUpdates());
+        self::assertSame(
+            [[['ctl_boolBinaryChoices' => 'true_false', self::MARKER => '1'], ['id' => 1]]],
+            $this->rowUpdates(),
+        );
     }
 
     public function testSingleDcaSelectPlaceholderBecomesEmptyOptionLabel(): void
@@ -256,6 +275,7 @@ final class BackfillFilterValuesMigrationTest extends TestCase
                 'ctl_formatEmptyOption' => 'custom',
                 'ctl_formatEmptyOptionCustom' => 'Any colour',
                 'ctl_placeholder' => '',
+                self::MARKER => '1',
             ],
             ['id' => 1],
         ]], $this->rowUpdates());
@@ -278,7 +298,7 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         self::assertSame('empty_option.prompt', $this->rows[2]['ctl_formatEmptyOption']);
     }
 
-    public function testMultipleOrExpandedDcaSelectKeepsItsPlaceholder(): void
+    public function testMultipleOrExpandedMandatorySelectKeepsItsPlaceholder(): void
     {
         $this->addRow(1, 'flare_dcaSelectField', [
             'intrinsic' => '0',
@@ -289,6 +309,7 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         $this->addRow(2, 'cfg_tags_choice', [
             'intrinsic' => '0',
             'ctl_isExpanded' => '1',
+            'ctl_isMandatory' => '1',
             'ctl_placeholder' => 'Tags',
         ]);
 
@@ -304,9 +325,33 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         }
     }
 
+    public function testExpandedNonMandatorySelectKeepsItsNoSelectionRadio(): void
+    {
+        $this->addRow(1, 'cfg_tags_choice', [
+            'intrinsic' => '0',
+            'ctl_isExpanded' => '1',
+            'ctl_placeholder' => 'Any tag',
+        ]);
+        $this->addRow(2, 'flare_dcaSelectField', ['intrinsic' => '0', 'ctl_isExpanded' => '1']);
+
+        $this->migration()->run();
+
+        self::assertSame('1', $this->rows[1]['ctl_hasEmptyOption']);
+        self::assertSame('custom', $this->rows[1]['ctl_formatEmptyOption']);
+        self::assertSame('Any tag', $this->rows[1]['ctl_formatEmptyOptionCustom']);
+        self::assertSame('', $this->rows[1]['ctl_placeholder']);
+
+        self::assertSame('1', $this->rows[2]['ctl_hasEmptyOption']);
+        self::assertSame('empty_option.no_selection', $this->rows[2]['ctl_formatEmptyOption']);
+    }
+
     public function testFieldValueChoiceSingleSelectGetsAnEmptyOption(): void
     {
-        $this->addRow(1, 'flare_fieldValueChoice', ['intrinsic' => '0', 'preselect' => 'berlin']);
+        $this->addRow(1, 'flare_fieldValueChoice', [
+            'intrinsic' => '0',
+            'preselect' => 'berlin',
+            'ctl_formatEmptyOption' => 'empty_option.all',
+        ]);
         $this->addRow(2, 'flare_fieldValueChoice', [
             'intrinsic' => '0',
             'ctl_isMultiple' => '1',
@@ -319,6 +364,7 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         self::assertSame('flare_choice', $this->rows[1]['control']);
         self::assertSame(\serialize(['berlin']), $this->rows[1]['value']);
         self::assertSame('1', $this->rows[1]['ctl_hasEmptyOption']);
+        self::assertSame('', $this->rows[1]['ctl_formatEmptyOption'], 'the default label, not a leftover');
 
         self::assertSame(\serialize(['berlin', 'hamburg']), $this->rows[2]['value']);
         self::assertSame('0', $this->rows[2]['ctl_hasEmptyOption']);
@@ -336,9 +382,9 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         $this->migration()->run();
 
         self::assertSame([
-            [['control' => 'flare_date_range'], ['id' => 1]],
-            [['control' => 'flare_date_range'], ['id' => 2]],
-            [[], ['id' => 3]],
+            [['control' => 'flare_date_range', self::MARKER => '1'], ['id' => 1]],
+            [['control' => 'flare_date_range', self::MARKER => '1'], ['id' => 2]],
+            [[self::MARKER => '1'], ['id' => 3]],
         ], $this->rowUpdates());
     }
 
@@ -372,8 +418,15 @@ final class BackfillFilterValuesMigrationTest extends TestCase
 
         $this->migration()->run();
 
-        self::assertSame([[[], ['id' => 1]], [['control' => 'flare_choice', 'ctl_hasEmptyOption' => '1',
-            'ctl_formatEmptyOption' => 'empty_option.no_selection'], ['id' => 2]]], $this->rowUpdates());
+        self::assertSame([
+            [[self::MARKER => '1'], ['id' => 1]],
+            [[
+                'control' => 'flare_choice',
+                'ctl_hasEmptyOption' => '1',
+                'ctl_formatEmptyOption' => 'empty_option.no_selection',
+                self::MARKER => '1',
+            ], ['id' => 2]],
+        ], $this->rowUpdates());
         self::assertSame(\serialize(['blue']), $this->rows[1]['value']);
         self::assertSame(\serialize(['blue']), $this->rows[2]['value']);
         self::assertSame('flare_choice', $this->rows[2]['control']);
@@ -430,7 +483,7 @@ final class BackfillFilterValuesMigrationTest extends TestCase
 
         $this->migration()->run();
 
-        self::assertSame([[['control' => 'flare_checkbox'], ['id' => 1]]], $this->rowUpdates());
+        self::assertSame([[['control' => 'flare_checkbox', self::MARKER => '1'], ['id' => 1]]], $this->rowUpdates());
     }
 
     public function testShouldRunGoesQuietAfterARun(): void
@@ -490,23 +543,16 @@ final class BackfillFilterValuesMigrationTest extends TestCase
     }
 
     /**
-     * The per-row `update()` calls, without the marker.
+     * The per-row `update()` calls.
      *
      * @return list<array{array<string, mixed>, array<string, mixed>}>
      */
     private function rowUpdates(): array
     {
-        $updates = [];
-
-        foreach ($this->updates as [$data, $criteria])
-        {
-            if (isset($criteria['id'])) {
-                unset($data[self::MARKER]);
-                $updates[] = [$data, $criteria];
-            }
-        }
-
-        return $updates;
+        return \array_values(\array_filter(
+            $this->updates,
+            static fn (array $update): bool => isset($update[1]['id']),
+        ));
     }
 
     /**

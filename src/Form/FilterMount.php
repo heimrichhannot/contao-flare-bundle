@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterContext;
  * One filter's node in the root filter form, as recorded by {@see Factory\FormHarnessFactory}.
  *
  * Only filters that actually mounted get an entry — filters skipped for an invalid alias, for
- * declaring no fields, or by a cancelled {@see \HeimrichHannot\FlareBundle\Event\FilterFormBuiltEvent}
+ * declaring no fields, or by a cancelled {@see \HeimrichHannot\FlareBundle\Event\FilterControlBuiltEvent}
  * are absent from {@see FormHarness::getMounts()}.
  *
  * {@see $filter} is deliberately redundant with `$context->filter`: it is the field consumers

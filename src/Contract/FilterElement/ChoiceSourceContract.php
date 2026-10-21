@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 /**
  * Implemented by filter elements whose value is picked from a server-provided option set.
  *
- * The capability port a generic choice form declares in `AsFilterForm::$requires`
+ * The capability port a generic choice control depends on
  * (SPEC_FILTER_FORMS.md §3.4). The division it enforces:
  *
  * > The **form** decodes the *widget*: which choice keys did the user pick.

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\EventListener\NamedDispatch;
 
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
-use HeimrichHannot\FlareBundle\Event\FilterFormBuiltEvent;
-use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterFormListener;
+use HeimrichHannot\FlareBundle\Event\FilterControlBuiltEvent;
+use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterControlListener;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
+use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Tests\List\StubFilterElement;
@@ -17,11 +17,11 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\Forms;
 
-final class FilterFormListenerTest extends TestCase
+final class FilterControlListenerTest extends TestCase
 {
     public function testDispatchesNamedEventForTheFilterElementType(): void
     {
-        self::assertSame(['flare.filter_form.a.built'], $this->dispatchedNames('a'));
+        self::assertSame(['flare.filter_control.a.built'], $this->dispatchedNames('a'));
     }
 
     public function testUntypedFilterTriggersNoNamedDispatch(): void
@@ -41,9 +41,9 @@ final class FilterFormListenerTest extends TestCase
         foreach (['a', 'b'] as $candidate)
         {
             $dispatcher->addListener(
-                "flare.filter_form.{$candidate}.built",
+                "flare.filter_control.{$candidate}.built",
                 static function () use (&$names, $candidate): void {
-                    $names[] = "flare.filter_form.{$candidate}.built";
+                    $names[] = "flare.filter_control.{$candidate}.built";
                 },
             );
         }
@@ -65,18 +65,12 @@ final class FilterFormListenerTest extends TestCase
         $list = new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test');
         $filter = new Filter(element: new StubFilterElement(), type: $type, alias: 'suche');
 
-        $context = new FilterContext(
-            list: $list,
-            filter: $filter,
-            config: [],
-            engineContext: $engineContext,
-            key: 'suche',
-        );
+        $scope = new FilterScope(list: $list, filter: $filter, engineContext: $engineContext);
 
         $builder = new FilterFormBuilder('suche', null, new EventDispatcher(), Forms::createFormFactory());
 
-        $listener = new FilterFormListener($dispatcher);
-        $listener->onFilterFormBuiltEvent(new FilterFormBuiltEvent($builder, $context));
+        $listener = new FilterControlListener($dispatcher);
+        $listener->onFilterControlBuiltEvent(new FilterControlBuiltEvent($builder, $scope));
 
         return $names;
     }

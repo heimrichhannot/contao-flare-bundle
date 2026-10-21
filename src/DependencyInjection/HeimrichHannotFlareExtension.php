@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\DependencyInjection;
 
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterForm;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Util\Env;
 use Symfony\Component\Config\FileLocator;
@@ -54,7 +54,7 @@ final class HeimrichHannotFlareExtension extends Extension implements PrependExt
         $attributesForAutoconfiguration = [
             AsListDriver::class => AsListDriver::TAG,
             AsFilterElement::class => AsFilterElement::TAG,
-            AsFilterForm::class => AsFilterForm::TAG,
+            AsFilterControl::class => AsFilterControl::TAG,
         ];
 
         foreach ($attributesForAutoconfiguration as $attributeClass => $tag)

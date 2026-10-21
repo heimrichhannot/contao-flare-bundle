@@ -46,9 +46,7 @@ final class HeimrichHannotFlareBundle extends Bundle
         ###< Integrations ###
 
         ###> Fill Registries ###
-        // Must precede RegisterFilterElementsPass: that pass clears the `flare.filter_element`
-        // tags this one reads to verify every element value class is served by a form.
-        $container->addCompilerPass(new DependencyInjection\Compiler\RegisterFilterFormsPass());
+        $container->addCompilerPass(new DependencyInjection\Compiler\RegisterFilterControlsPass());
         $container->addCompilerPass(new DependencyInjection\Compiler\RegisterFilterElementsPass());
         $container->addCompilerPass(new DependencyInjection\Compiler\RegisterListDriversPass());
         ###< Fill Registries ###

@@ -13,65 +13,65 @@ use PHPUnit\Framework\TestCase;
 final class TypeNameFactoryTest extends TestCase
 {
     /**
-     * @dataProvider provideFilterFormClassNames
+     * @dataProvider provideFilterControlClassNames
      */
-    public function testCreateFilterFormType(string $className, string $expected): void
+    public function testCreateFilterControlType(string $className, string $expected): void
     {
-        self::assertSame($expected, TypeNameFactory::createFilterFormType($className));
+        self::assertSame($expected, TypeNameFactory::createFilterControlType($className));
     }
 
     /**
      * @return iterable<string, array{string, string}>
      */
-    public static function provideFilterFormClassNames(): iterable
+    public static function provideFilterControlClassNames(): iterable
     {
-        $ns = 'HeimrichHannot\\FlareBundle\\Filter\\Form\\';
+        $ns = 'HeimrichHannot\\FlareBundle\\Filter\\Control\\';
 
-        yield 'choice' => [$ns . 'ChoiceFilterForm', 'choice'];
-        yield 'checkbox' => [$ns . 'CheckboxFilterForm', 'checkbox'];
-        yield 'choice bool snake-cases' => [$ns . 'ChoiceBoolFilterForm', 'choice_bool'];
-        yield 'date range snake-cases' => [$ns . 'DateRangeFilterForm', 'date_range'];
-        yield 'keywords' => [$ns . 'KeywordsFilterForm', 'keywords'];
-        yield 'bare Form suffix' => [$ns . 'ChoiceForm', 'choice'];
-        yield 'Controller strips first' => [$ns . 'ChoiceFormController', 'choice'];
+        yield 'choice' => [$ns . 'ChoiceFilterControl', 'choice'];
+        yield 'checkbox' => [$ns . 'CheckboxFilterControl', 'checkbox'];
+        yield 'choice bool snake-cases' => [$ns . 'ChoiceBoolFilterControl', 'choice_bool'];
+        yield 'date range snake-cases' => [$ns . 'DateRangeFilterControl', 'date_range'];
+        yield 'keywords' => [$ns . 'KeywordsFilterControl', 'keywords'];
+        yield 'bare Control suffix' => [$ns . 'ChoiceControl', 'choice'];
+        yield 'Controller strips first' => [$ns . 'ChoiceControlController', 'choice'];
         yield 'no suffix at all' => [$ns . 'Choice', 'choice'];
-        yield 'degenerate empty name' => [$ns . 'FilterForm', ''];
+        yield 'degenerate empty name' => [$ns . 'FilterControl', ''];
     }
 
     /**
      * The suffix order is load-bearing: `Str::trimSubstrings()` strips each entry at most once, in
-     * order, so `'FilterForm'` must be tried before `'Form'`. With the order reversed,
-     * `ChoiceFilterForm` would reduce to `choice_filter`.
+     * order, so `'FilterControl'` must be tried before `'Control'`. With the order reversed,
+     * `ChoiceFilterControl` would reduce to `choice_filter`.
      */
-    public function testFilterFormSuffixOrderDoesNotLeaveTheFilterWordBehind(): void
+    public function testFilterControlSuffixOrderDoesNotLeaveTheFilterWordBehind(): void
     {
-        $name = TypeNameFactory::createFilterFormType('Acme\\ChoiceFilterForm');
+        $name = TypeNameFactory::createFilterControlType('Acme\\ChoiceFilterControl');
 
         self::assertSame('choice', $name);
         self::assertNotSame('choice_filter', $name);
     }
 
     /**
-     * A class named exactly `FilterForm` reduces to the empty string, because `trimSubstrings()`
+     * A class named exactly `FilterControl` reduces to the empty string, because `trimSubstrings()`
      * only early-returns on empty *input*. The empty string is the intrinsic sentinel in
-     * `tl_flare_filter.formVariant`, so `RegisterFilterFormsPass` rejects it rather than publishing
-     * a registry key that means "no form". Pinned here so nobody "fixes" the factory without
+     * `tl_flare_filter.control`, so `RegisterFilterControlsPass` rejects it rather than publishing
+     * a registry key that means "no control". Pinned here so nobody "fixes" the factory without
      * noticing what depends on this.
      */
     public function testDegenerateNameIsEmptyAndMustBeGuardedByTheCaller(): void
     {
-        self::assertSame('', TypeNameFactory::createFilterFormType('Acme\\FilterForm'));
+        self::assertSame('', TypeNameFactory::createFilterControlType('Acme\\FilterControl'));
     }
 
     /**
-     * Form and element names may coincide. Only the separate registries and the distinct
-     * `flare.filter_form.` / `flare.filter_element.` alias prefixes keep them apart.
+     * Control and element names may coincide. Only the separate registries and the distinct
+     * `flare.filter_control.` / `flare.filter_element.` alias prefixes keep them apart.
      */
-    public function testFormAndElementNamesMayCoincide(): void
+    public function testControlAndElementNamesMayCoincide(): void
     {
         self::assertSame(
             TypeNameFactory::createFilterElementType('Acme\\ChoiceFilterElement'),
-            TypeNameFactory::createFilterFormType('Acme\\ChoiceFilterForm'),
+            TypeNameFactory::createFilterControlType('Acme\\ChoiceFilterControl'),
         );
     }
 }

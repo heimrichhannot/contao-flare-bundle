@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Event;
 
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use Symfony\Contracts\EventDispatcher\Event;
 
 /**
- * Dispatched after a filter element built its fields on the collect-only per-filter builder,
+ * Dispatched after a filter control built its fields on the collect-only per-filter builder,
  * before {@see \HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory} mounts them onto the
  * root form (flat for single() fields without companions, nested compound otherwise).
  *
@@ -18,14 +18,14 @@ use Symfony\Contracts\EventDispatcher\Event;
  * or cancel mounting altogether. Adding a child alongside a single() declaration switches the
  * filter to the nested compound layout.
  *
- * Also dispatched under the name `flare.filter_form.{type}.built`
- * ({@see \HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterFormListener}).
+ * Also dispatched under the name `flare.filter_control.{type}.built`
+ * ({@see \HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterControlListener}).
  */
-class FilterFormBuiltEvent extends Event
+class FilterControlBuiltEvent extends Event
 {
     public function __construct(
         public readonly FilterFormBuilderInterface $builder,
-        public readonly FilterContext              $context,
+        public readonly FilterScope                $scope,
         private bool                               $cancelled = false,
     ) {}
 

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Form;
 
 use HeimrichHannot\FlareBundle\Contract\LabelableInterface;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
@@ -12,72 +14,73 @@ use Symfony\Component\Form\ChoiceList\Loader\CallbackChoiceLoader;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Characterisation tests: they pin `ChoicesBuilder`'s behaviour *as it is today*, so the planned
- * change to `add()` — making `choice` carry identity rather than the display string, which fixes
- * the duplicate-label collision — has a safety net. Several assertions below therefore document
- * quirks rather than endorse them.
- *
- * Scope: string and {@see LabelableInterface} choices only. Every `Contao\Model` label path needs
- * `$GLOBALS['TL_MODELS']` and `Model::getClassFromTable()`, and this suite deliberately boots
- * neither a kernel nor the Contao framework, so model label resolution stays uncovered.
+ * Contract tests for `ChoicesBuilder` on choice objects. Model label resolution that needs a loaded
+ * `Contao\Model` stays uncovered: this suite boots neither a kernel nor the Contao framework.
  */
 final class ChoicesBuilderTest extends TestCase
 {
     public function testBuildChoicesPreservesInsertionOrderAndAddsNothingByDefault(): void
     {
-        $builder = self::builder()->add('b', 'Beta')->add('a', 'Alpha');
+        $b = new ValueChoice('b', 'Beta');
+        $a = new ValueChoice('a', 'Alpha');
+        $builder = self::builder()->add($b)->add($a);
 
-        self::assertSame(['b' => 'Beta', 'a' => 'Alpha'], $builder->buildChoices());
+        self::assertSame(['b' => $b, 'a' => $a], $builder->buildChoices());
         self::assertFalse($builder->hasEmptyOption());
     }
 
-    /** The sentinel is prepended, so its position in the rendered widget is first. */
     public function testEmptyOptionIsPrependedAsTheFirstKey(): void
     {
-        $builder = self::builder()->add('a', 'Alpha')->setEmptyOption(true);
+        $builder = self::builder()->add(new ValueChoice('a'))->setEmptyOption(true);
 
-        self::assertSame(
-            [ChoicesBuilder::EMPTY_CHOICE, 'a'],
-            \array_keys($builder->buildChoices()),
-        );
+        self::assertSame([ChoicesBuilder::EMPTY_CHOICE, 'a'], \array_keys($builder->buildChoices()));
         self::assertSame(ChoicesBuilder::EMPTY_CHOICE, $builder->buildChoices()[ChoicesBuilder::EMPTY_CHOICE]);
     }
 
-    /**
-     * `count()` counts the real choices only, unlike `buildChoices()`. `ArchiveFilterElement` relies
-     * on exactly this to decide whether any whitelisted parent survived.
-     */
     public function testCountExcludesTheEmptyOption(): void
     {
-        $builder = self::builder()->add('a', 'Alpha')->add('b', 'Beta')->setEmptyOption(true);
+        $builder = self::builder()->add(new ValueChoice('a'))->add(new ValueChoice('b'))->setEmptyOption(true);
 
         self::assertSame(2, $builder->count());
         self::assertCount(3, $builder->buildChoices());
     }
 
-    /** Plain array re-assignment, so a re-added alias keeps its original position. */
-    public function testReAddingAnAliasOverwritesInPlace(): void
+    public function testReAddingAKeyOverwritesInPlace(): void
     {
-        $builder = self::builder()->add('a', 'Alpha')->add('b', 'Beta')->add('a', 'Alpha2');
+        $second = new ValueChoice('a', 'Alpha2');
+        $builder = self::builder()->add(new ValueChoice('a', 'Alpha'))->add(new ValueChoice('b'))->add($second);
 
-        self::assertSame(['a' => 'Alpha2', 'b' => 'Beta'], $builder->buildChoices());
+        self::assertSame(['a', 'b'], \array_keys($builder->buildChoices()));
+        self::assertSame($second, $builder->buildChoices()['a']);
         self::assertSame(2, $builder->count());
     }
 
-    public function testGetChoiceRoundTripsAndReturnsNullForUnknownKeys(): void
+    public function testEqualLabelsKeepDistinctSubmittedValues(): void
     {
-        $builder = self::builder()->add('a', 'Alpha');
-
-        self::assertSame('Alpha', $builder->getChoice('a'));
-        self::assertNull($builder->getChoice('nope'));
+        $builder = self::builder()->add(new ValueChoice('1', 'Same'))->add(new ValueChoice('2', 'Same'));
+        $toValue = $builder->buildChoiceValueCallback();
+        self::assertSame(['1', '2'], \array_map($toValue, \array_values($builder->buildChoices())));
     }
 
-    public function testChoiceValueCallbackPrefersAnExplicitValueOverTheAlias(): void
+    public function testSingleScopeListSubmitsLocalKeys(): void
     {
-        $toValue = self::builder()->add('a', 'Alpha')->add('b', 'Beta', 42)->buildChoiceValueCallback();
+        $builder = self::builder()->add(ContaoModelChoice::ref('tl_news_archive', 5));
+        self::assertTrue($builder->usesLocalKeys());
+        self::assertSame('5', ($builder->buildChoiceValueCallback())(ContaoModelChoice::ref('tl_news_archive', 5)));
+    }
 
-        self::assertSame('a', $toValue('Alpha'));
-        self::assertSame('42', $toValue('Beta'));
+    public function testMixedScopesSubmitCanonicalKeys(): void
+    {
+        $builder = self::builder()->add(ContaoModelChoice::ref('tl_a', 1))->add(ContaoModelChoice::ref('tl_b', 1));
+        self::assertFalse($builder->usesLocalKeys());
+        self::assertSame('tl_b.1', ($builder->buildChoiceValueCallback())(ContaoModelChoice::ref('tl_b', 1)));
+    }
+
+    public function testContaoOptionsAreKeyedByCanonicalKey(): void
+    {
+        $options = self::builder()->add(ContaoModelChoice::ref('tl_a', 1))->buildContaoOptions();
+        self::assertSame(['tl_a.1'], \array_keys($options));
+        self::assertSame('tl_a.1', $options['tl_a.1']);
     }
 
     public function testChoiceValueCallbackMapsTheSentinelToTheEmptyOptionValue(): void
@@ -90,48 +93,23 @@ final class ChoicesBuilderTest extends TestCase
             ->setEmptyOption(true, ChoicesBuilder::EMPTY_CHOICE_VALUE_ALTERNATIVE)
             ->buildChoiceValueCallback();
 
-        self::assertSame(
-            ChoicesBuilder::EMPTY_CHOICE_VALUE_ALTERNATIVE,
-            $alternative(ChoicesBuilder::EMPTY_CHOICE),
-        );
+        self::assertSame(ChoicesBuilder::EMPTY_CHOICE_VALUE_ALTERNATIVE, $alternative(ChoicesBuilder::EMPTY_CHOICE));
     }
 
-    public function testChoiceValueCallbackReturnsAnEmptyStringForUnknownChoices(): void
+    public function testChoiceValueCallbackReturnsAnEmptyStringForNonChoices(): void
     {
-        self::assertSame('', (self::builder()->add('a', 'Alpha')->buildChoiceValueCallback())('Missing'));
+        self::assertSame('', (self::builder()->buildChoiceValueCallback())('Missing'));
+        self::assertSame('', (self::builder()->buildChoiceValueCallback())(null));
     }
 
-    /**
-     * The reverse lookup is a strict `array_search`, so an int `1` does not match the string `'1'`.
-     * This strictness is what lets `ArchiveFilterElement` get Contao model *instances* back by
-     * identity — and it is also why a scalar type mismatch silently yields `''`.
-     */
-    public function testChoiceValueCallbackIsStrictAboutTypes(): void
+    public function testChoiceValueCallbackNeedsNoListLookup(): void
     {
-        $toValue = self::builder()->add('a', '1')->buildChoiceValueCallback();
+        $toValue = self::builder()->add(new ValueChoice('a'))->buildChoiceValueCallback();
 
-        self::assertSame('a', $toValue('1'));
-        self::assertSame('', $toValue(1));
+        self::assertSame('a', $toValue(new ValueChoice('a')));
+        self::assertSame('zzz', $toValue(new ValueChoice('zzz')));
     }
 
-    /**
-     * Two choices sharing a display string collapse onto the first alias, because the reverse
-     * lookup searches by the choice rather than by identity. This is the §7.1 defect; the assertion
-     * records the current behaviour so the fix is visible as a diff to this test.
-     */
-    public function testDuplicateDisplayStringsCollapseOntoTheFirstAlias(): void
-    {
-        $toValue = self::builder()->add('a', 'Same')->add('b', 'Same')->buildChoiceValueCallback();
-
-        self::assertSame('a', $toValue('Same'));
-    }
-
-    /**
-     * The deferral contract `ArchiveFilterElement` and `CodefogTagsChoiceFilterElement` depend on:
-     * both call `applyFormOptions()` *before* populating choices, which only works because the
-     * loader closes over `buildChoices(...)` rather than a snapshot. Breaking this makes the archive
-     * filter silently lose every option.
-     */
     public function testApplyFormOptionsInstallsADeferredChoiceLoader(): void
     {
         $builder = self::builder();
@@ -139,15 +117,14 @@ final class ChoicesBuilderTest extends TestCase
 
         $builder->applyFormOptions($options);
 
-        // Every choice is added only after the loader was installed.
-        $builder->add('late', 'Late');
-        $builder->add('later', 'Later');
+        $builder->add(new ValueChoice('late'));
+        $builder->add(new ValueChoice('later'));
 
         self::assertInstanceOf(CallbackChoiceLoader::class, $options['choice_loader']);
 
         $choices = $options['choice_loader']->loadChoiceList($options['choice_value'])->getChoices();
 
-        self::assertSame(['Late', 'Later'], \array_values($choices));
+        self::assertSame(['late', 'later'], \array_keys($choices));
     }
 
     public function testApplyFormOptionsMutatesByReferenceAndIsFluent(): void
@@ -159,10 +136,7 @@ final class ChoicesBuilderTest extends TestCase
 
         self::assertSame($builder, $returned);
         self::assertSame('Untouched', $options['label']);
-        self::assertSame(
-            ['label', 'choice_loader', 'choice_label', 'choice_value'],
-            \array_keys($options),
-        );
+        self::assertSame(['label', 'choice_loader', 'choice_label', 'choice_value'], \array_keys($options));
     }
 
     public function testBuildFormOptionsReturnsExactlyTheThreeChoiceKeys(): void
@@ -173,13 +147,9 @@ final class ChoicesBuilderTest extends TestCase
         );
     }
 
-    /**
-     * The empty option is keyed differently by the two builders: `EMPTY_CHOICE` for the Symfony
-     * choice list, `''` for the Contao options array. Pinned so nobody unifies them by accident.
-     */
     public function testEmptyOptionKeyDiffersBetweenSymfonyAndContaoOutput(): void
     {
-        $builder = self::builder()->add('a', 'Alpha')->setEmptyOption(true);
+        $builder = self::builder()->add(new ValueChoice('a'))->setEmptyOption(true);
 
         self::assertArrayHasKey(ChoicesBuilder::EMPTY_CHOICE, $builder->buildChoices());
         self::assertArrayNotHasKey('', $builder->buildChoices());
@@ -188,15 +158,27 @@ final class ChoicesBuilderTest extends TestCase
         self::assertArrayNotHasKey(ChoicesBuilder::EMPTY_CHOICE, $builder->buildContaoOptions());
     }
 
-    /** A string choice is translated as the message id itself, in the `flare_form` domain. */
-    public function testStringChoicesAreTranslatedAsTheirOwnMessageId(): void
+    public function testValueChoiceLabelIsTranslatedWithItsPlaceholders(): void
     {
         $recorded = [];
         $builder = new ChoicesBuilder(self::translator($recorded), self::parameterBag());
         $label = $builder->buildChoiceLabelCallback();
 
-        self::assertSame('Alpha', $label('Alpha', 'a', 'a'));
-        self::assertSame([['Alpha', 'flare_form']], $recorded);
+        self::assertSame('Alpha', $label(new ValueChoice('a', 'Alpha'), 'a', 'a'));
+        self::assertSame([['Alpha', 'flare_form', ['%value%' => 'a']]], self::withoutAt($recorded));
+    }
+
+    public function testValueChoiceWithoutLabelFallsBackToItsValue(): void
+    {
+        self::assertSame('a', self::builder()->buildChoiceLabel(new ValueChoice('a'), 'a', 'a'));
+    }
+
+    public function testModellessModelChoiceLabelIsTableDotId(): void
+    {
+        self::assertSame(
+            'tl_a.7',
+            self::builder()->buildChoiceLabel(ContaoModelChoice::ref('tl_a', 7), 'tl_a.7', '7'),
+        );
     }
 
     public function testEmptyOptionLabelIsUsedForTheSentinelKey(): void
@@ -207,7 +189,6 @@ final class ChoicesBuilderTest extends TestCase
         self::assertSame('empty_option.prompt', $label(null, ChoicesBuilder::EMPTY_CHOICE, ''));
     }
 
-    /** A null choice falls back to the ndash message rather than rendering as an empty label. */
     public function testNullChoiceFallsBackToTheNdashMessage(): void
     {
         self::assertSame('empty_option.ndash', self::builder()->buildChoiceLabel(null, '', ''));
@@ -217,17 +198,16 @@ final class ChoicesBuilderTest extends TestCase
     {
         $recorded = [];
         $builder = new ChoicesBuilder(self::translator($recorded), self::parameterBag());
-        $builder->setLabel('label.custom');
-
-        $choice = new class implements LabelableInterface {
+        $builder->setEmptyOption(new class implements LabelableInterface {
             public function getLabelParameters(): array
             {
                 return ['%name%' => 'Widget'];
             }
-        };
+        });
 
-        self::assertSame('label.custom', $builder->buildChoiceLabel($choice, 'k', 'v'));
-        self::assertSame([['label.custom', 'flare_form']], $recorded);
+        $builder->buildChoiceLabelCallback()(null, ChoicesBuilder::EMPTY_CHOICE, '');
+
+        self::assertSame('Widget', $recorded[0][2]['%name%']);
     }
 
     public function testSetModelSuffixRoundTrips(): void
@@ -236,11 +216,22 @@ final class ChoicesBuilderTest extends TestCase
         self::assertSame('(%@name%)', self::builder()->setModelSuffix('(%@name%)')->getModelSuffix());
     }
 
-    /** `setEmptyOption()` with a label turns the option on as a side effect. */
     public function testSetEmptyOptionWithALabelEnablesIt(): void
     {
         self::assertTrue(self::builder()->setEmptyOption('some.label')->hasEmptyOption());
         self::assertFalse(self::builder()->setEmptyOption(false)->hasEmptyOption());
+    }
+
+    /**
+     * @param list<array{string, string, array}> $recorded
+     * @return list<array{string, string, array}>
+     */
+    private static function withoutAt(array $recorded): array
+    {
+        return \array_map(
+            static fn (array $r): array => [$r[0], $r[1], \array_filter($r[2], static fn ($k) => !\str_starts_with($k, '%@'), \ARRAY_FILTER_USE_KEY)],
+            $recorded,
+        );
     }
 
     private static function builder(): ChoicesBuilder
@@ -253,17 +244,17 @@ final class ChoicesBuilderTest extends TestCase
     /**
      * Returns the message id verbatim, so assertions read as the key that would be translated.
      *
-     * @param list<array{string, string}> $recorded Receives [id, domain] per call.
+     * @param list<array{string, string, array}> $recorded Receives [id, domain] per call.
      */
     private static function translator(array &$recorded): TranslatorInterface
     {
         return new class ($recorded) implements TranslatorInterface {
-            /** @param list<array{string, string}> $recorded */
+            /** @param list<array{string, string, array}> $recorded */
             public function __construct(private array &$recorded) {}
 
             public function trans(?string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
             {
-                $this->recorded[] = [(string) $id, (string) $domain];
+                $this->recorded[] = [(string) $id, (string) $domain, $parameters];
 
                 return (string) $id;
             }

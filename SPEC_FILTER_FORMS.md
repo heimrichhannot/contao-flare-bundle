@@ -1,6 +1,6 @@
 # SPEC: Decoupling Filter Controls from Filter Elements
 
-**Status:** Design settled (2026-10-20/21, §13.6-13.28). Step 0 (§12) implemented and partly
+**Status:** Design settled (2026-10-20/21, §13.6-13.30). Step 0 (§12) implemented and partly
 re-renamed by #48; step 1 partially implemented and red mid-cut; steps 2-6 not started. Progress
 and the open checklist live in `PLAN_FILTER_FORMS.md`.
 **Scope:** `src/Filter/` (incl. the new `src/Filter/Control/`), `src/Form/`, `src/Query/`, `src/Event/`, `src/EventListener/NamedDispatch/`,
@@ -383,6 +383,13 @@ interface ChoiceSourceContract
      * @throws FilterException On invalid filter configuration (no whitelist, no inferrable ptable, …).
      */
     public function createChoices(FilterScope $scope): ChoicesBuilder;
+
+    /**
+     * A reference choice for a canonical key — no database access; null for an unreadable key.
+     * Only the element knows which choice class a key belongs to ("tl_news_archive.5" is table + id
+     * for Archive, but may be a plain field value containing a dot for FieldValueChoice).
+     */
+    public function choiceFromKey(string $key): ?ChoiceObjectInterface;
 }
 
 /** Optional for DateRangeFilterControl: bounds for the widget's min/max attributes. */
@@ -422,7 +429,7 @@ interface ValueProviderInterface
      * The value object for the stored column content, or null for "no value".
      * Implementations MUST narrow the return type to one concrete value class.
      */
-    public function provide(mixed $stored, FilterScope $scope): ?ValueInterface;
+    public function provide(mixed $stored, FilterElementInterface $element): ?ValueInterface;
 
     /** Configures the backend widget of the `value` column for an element of this value class. */
     public function buildDcaField(DcaFieldBuilder $field, DcaContext $context): void;
@@ -430,7 +437,7 @@ interface ValueProviderInterface
 
 final class BoolValueProvider implements ValueProviderInterface
 {
-    public function provide(mixed $stored, FilterScope $scope): ?BoolValue { … }
+    public function provide(mixed $stored, FilterElementInterface $element): ?BoolValue { … }
     public function buildDcaField(DcaFieldBuilder $field, DcaContext $context): void { … }
 }
 ```
@@ -440,11 +447,19 @@ final class BoolValueProvider implements ValueProviderInterface
   element declaring a value class that has no provider fails the container build.
 - **Providers are services**, so they inject what they need (translator, `ChoicesBuilderFactory`, …);
   value objects stay plain values without Contao or DI dependencies.
+- **`provide()` needs no scope** (§13.29). A `Filter` must not carry stored (DCA) data, so the stored
+  value is turned into a value object while the filter is created (`FilterFactory`, §8) — before any
+  `ListSpec` or engine context exists. Choices can be resolved without loading options because they
+  match by key, never by identity (§7.2): `ChoiceValueProvider` asks the element's
+  `choiceFromKey()` for reference choices (`ContaoModelChoice::ref()`, `ValueChoice`), which serve
+  the query (table/id, value), hydration (`choice_value` = key) and the fingerprint (keys) alike.
 - **Bundle providers:** `BoolValueProvider` (select yes/no; stores `'1'`/`'0'`), `ChoiceValueProvider`
-  (options from `ChoiceSourceContract::createChoices()` → `buildContaoOptions()`, keyed by canonical
-  choice key; stores a serialized list of canonical keys; `provide()` resolves the keys against the
-  element's choices, which costs one option load per intrinsic choice filter and request),
-  `DateRangeValueProvider`, `KeywordsValueProvider`.
+  (backend options from `ChoiceSourceContract::createChoices()` → `buildContaoOptions()` keyed by
+  canonical choice key, via the backend scope of §6.4; stores a serialized list of canonical keys;
+  `provide()` via `choiceFromKey()`), `DateRangeValueProvider`, `KeywordsValueProvider`.
+- **Stale references fail closed.** A stored key whose record was deleted still yields a reference
+  that matches nothing in the query (and, for Archive, drops out of the whitelist intersection); if
+  nothing remains, the filter aborts and the list is empty rather than unfiltered.
 
 ---
 
@@ -477,15 +492,22 @@ columns. The per-group label format is element-owned labelling (§3.5).
 The `value` column holds a value of the element's value class, stored in the format of its value
 provider (§3.6). Its meaning depends on `control`:
 
-| `control` | `value` is | effect |
-|---|---|---|
-| blank (intrinsic) | the fixed value | the element always receives it |
-| a control | the initial value | the control is hydrated with it, and it applies while the form is not submitted; a submission replaces it — even an empty one |
+| `control` | `value` is | initial display of the list | whole list (`ValidationContext`) |
+|---|---|---|---|
+| blank (intrinsic) | the **fixed value** | restricted | restricted |
+| a control | the **initial value** (what `prefill` meant) | pre-filtered: the control is hydrated with it, and an unsubmitted form decodes to it | **not applied** — the user can change it |
 
-This is the same rule as for programmatic values (§8): `Filter::$value` is the value unless a
-submission overrides it. `preselect` (form hydration) and the intrinsic value were always mutually
-exclusive per row, so they share the column; switching `control` keeps the stored value as
-long as the value class stays the same.
+**The whole list** is everything the user can reach through the controls; only fixed values and the
+elements' own config (e.g. a whitelist) bound it. The `ValidationContext` decides membership in
+exactly that, so a reader may render whatever belongs to the whole list. **The initial display** is
+a pre-filtered view of it (§13.30).
+
+The old `preselect` conflated three things — widget hydration, the intrinsic value, and (for bools)
+a fallback that also restricted validation. The first two map to the two rows above; the fallback is
+gone. `prefill` only ever meant the initial form output. Fixed and initial value are mutually
+exclusive per row, so they share the column; switching `control` keeps the stored value as long as
+the value class stays the same. The same rule holds for programmatic filters (§8): with a control,
+`Filter::$value` is an initial value; without one, it is fixed.
 
 Elements without a value class (`SimpleEquation`, `Published`, `BelongsToRelation`) have no
 `value` field: their config *is* the value.
@@ -777,9 +799,9 @@ final readonly class Filter
 **Where `Filter::$value` comes from.**
 - `FilterFactory::createFromFilterModel()` resolves the element config from the `elm_` columns, the
   control from the `control` column, the control config from the `ctl_` columns, and — if the element has a value
-  class — the value via its provider's `provide($model->value, $scope)`. An unknown `control`, or
-  one not registered for the element's value class, degrades to intrinsic with a logged warning: it
-  is a data condition (a renamed or uninstalled control), not a programming error. Each config has its
+  class — the value via its provider's `provide($model->value, $element)`. An unknown `control`, or
+  one not registered for the element's value class, is a data condition (a renamed or uninstalled
+  control), not a programming error; how it degrades is open (§14.11). Each config has its
   own resolver cache key, so the composite-key problem of the old plan does not arise.
 - `FilterFactory::create()` takes `?FilterControlInterface $control`, `array $controlConfig` and
   `?ValueInterface $value` for programmatic filters, e.g.
@@ -798,9 +820,12 @@ throughout:
    `InteractiveProjector::collectFilterData()` is deleted; this is why the aggregate is an object
    (§2.1).
 3. The map travels through `ListQueryConfig::$filterValues` and the loader/context configs.
-4. `ListQueryDirector` uses `array_key_exists($alias, $values) ? $values[$alias] : $filter->value`.
-   A submission overrides the stored or programmatic value even when it is empty, as today — the
-   user can clear a preset filter (§13.25).
+4. `ListQueryDirector` takes the value by the filter's role (§4.2):
+   - **with a control:** `$values[$alias] ?? null` — only the form's values. In the interactive list
+     and its aggregation the map holds the submission or, unsubmitted, the decoded initial value; in
+     a `ValidationContext` or a standalone aggregation there is no map, so the initial value does not
+     apply. An empty submission clears the filter.
+   - **without a control:** `$filter->value`, in every context.
 
 **`FilterData` disappears** (introduced in #46). `hasSingle()`'s submitted-vs-untouched distinction
 is carried by step 2; `toArray()`'s hashing role moves to the value object's fingerprint (§9).
@@ -1031,8 +1056,9 @@ Recorded here because each one closes a branch the design could otherwise have t
     `ctl_placeholder` is always the HTML attribute (§7.3).
 24. **Bools: the checkbox mapping belongs to the control** (§7.5). `NULL_FALSE` is dropped;
     `boolMode` becomes `control`.
-25. **One value column, one rule** (§4.2, §8): `Filter::$value` is the fixed value (intrinsic) or the
-    initial value (with a control); a submission — even an empty one — overrides it.
+25. **One value column; the control decides its role** (§4.2, §8): without a control the value is
+    fixed and applies everywhere; with a control it is the initial value and applies only through the
+    form.
 
 26. **Framework columns are `type`, `control`, `alias`** (§5.1): `formVariant` → `control`,
     `formAlias` → `alias`, `FilterModel::getFilterFormName()` → `getFilterAlias()`. A `filter`
@@ -1046,6 +1072,14 @@ Recorded here because each one closes a branch the design could otherwise have t
     the choice `value` field is always multiple; the data migration copies `preselect`/`prefill` only
     where the old code read them; `elm_groupWhitelistParents` keeps its inner blob keys;
     `DcaBuilder::selector()` is built in step 2.
+29. **Stored values are resolved without a scope** (§3.6): `provide(mixed $stored,
+    FilterElementInterface $element)` in `FilterFactory`, with `ChoiceSourceContract::choiceFromKey()`
+    building reference choices. A `Filter` carries no DCA data, the backend scope has no cycle, and
+    intrinsic choice filters cost no option load.
+30. **Initial values never restrict the whole list** (§4.2). The `ValidationContext` checks
+    membership in everything the controls can reach; initial values only pre-filter the initial
+    display. Bool filters with a control and a preselect therefore stop restricting reader pages —
+    a correction by this definition, noted in the release notes.
 ---
 
 ## 14. Remaining unknowns
@@ -1068,6 +1102,9 @@ Recorded here because each one closes a branch the design could otherwise have t
    for storage and per-list short keys for URLs, §13.22.
 10. **The exact frontend label of the empty option and of the bool choice control** (`flare_form`
     translation keys) — builder's call; keep today's keys where they exist.
+11. **Unresolvable or unknown at run time — fail open or closed?** An unknown `control` value, and a
+    fixed choice value whose `createChoices()`-side config is broken (empty whitelist, no ptable).
+    Stale stored keys already fail closed (§3.6).
 
 ---
 

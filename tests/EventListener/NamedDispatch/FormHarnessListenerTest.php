@@ -13,7 +13,7 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\Forms;
 
-final class FilterSetListenerTest extends TestCase
+final class FormHarnessListenerTest extends TestCase
 {
     public function testDispatchesNamedEventForTheFormName(): void
     {

@@ -105,11 +105,11 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement implements Ch
     }
 
     /**
-     * Tag ids are stored as bare keys; anything but a digit string is unreadable.
+     * Tag ids are stored as bare keys; anything but a positive integer without leading zeros is unreadable.
      */
     public function choiceFromKey(string $key): ?ValueChoice
     {
-        return \preg_match('/^\d+\z/', $key) ? new ValueChoice($key) : null;
+        return \preg_match('/^[1-9]\d*\z/', $key) ? new ValueChoice($key) : null;
     }
 
     /**

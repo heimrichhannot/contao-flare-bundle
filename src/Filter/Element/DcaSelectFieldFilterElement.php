@@ -177,7 +177,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
 
     protected function tryGetOptionsFromField(string $table, array $optionsField): ?array
     {
-        if (\is_array($options =$optionsField['options'] ?? null))
+        if (\is_array($options = $optionsField['options'] ?? null))
         {
             return $options;
         }

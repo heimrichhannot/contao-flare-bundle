@@ -55,17 +55,19 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement implements Cho
             return;
         }
 
+        // A value that cannot be applied must not widen the list.
         if (!$field = $builder->scope->filter->config['field'] ?? null) {
-            return;
+            $builder->abort();
         }
 
-        // The predicate compares LOWER(TRIM(field)), so the values are normalized alike.
+        // The predicate compares LOWER(TRIM(field)), so the values are normalized alike;
+        // a blank value would match every empty row.
         $values = [];
 
         foreach ($value->choices as $choice)
         {
-            if ($choice instanceof ValueChoice) {
-                $values[] = \mb_strtolower(\trim($choice->value));
+            if ($choice instanceof ValueChoice && ($normalized = \mb_strtolower(\trim($choice->value))) !== '') {
+                $values[] = $normalized;
             }
         }
 

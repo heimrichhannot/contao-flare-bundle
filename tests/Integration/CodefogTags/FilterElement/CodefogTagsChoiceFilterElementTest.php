@@ -39,7 +39,7 @@ final class CodefogTagsChoiceFilterElementTest extends TestCase
         self::assertSame([], $this->buildFilterContext($this->createElement())->formula->propositions);
     }
 
-    public function testChoiceFromKeyAcceptsDigitStringsOnly(): void
+    public function testChoiceFromKeyAcceptsPositiveIdsOnly(): void
     {
         $element = $this->createElement();
 
@@ -49,6 +49,8 @@ final class CodefogTagsChoiceFilterElementTest extends TestCase
 
         self::assertNull($element->choiceFromKey('tl_cfg_tag.42'));
         self::assertNull($element->choiceFromKey('-1'));
+        self::assertNull($element->choiceFromKey('0'));
+        self::assertNull($element->choiceFromKey('042'));
         self::assertNull($element->choiceFromKey('foo'));
     }
 

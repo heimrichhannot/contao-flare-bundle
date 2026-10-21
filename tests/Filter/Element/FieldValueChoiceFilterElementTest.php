@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter\Element;
 
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
+use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Element\FieldValueChoiceFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Predicate\FieldValueChoicePredicate;
@@ -79,15 +80,40 @@ final class FieldValueChoiceFilterElementTest extends TestCase
         self::assertSame([], $context->formula->propositions);
     }
 
-    public function testNoFieldAddsNothing(): void
+    public function testNoValueAndNoFieldAddsNothing(): void
+    {
+        $context = $this->buildFilterContext($this->createElement(), ['field' => null]);
+
+        self::assertSame([], $context->formula->propositions);
+    }
+
+    public function testValueWithoutFieldAborts(): void
+    {
+        $this->expectException(AbortFilteringException::class);
+
+        $this->buildFilterContext($this->createElement(), ['field' => null], new ChoiceValue([new ValueChoice('a')]));
+    }
+
+    public function testBlankValuesAreDropped(): void
     {
         $context = $this->buildFilterContext(
             $this->createElement(),
-            ['field' => null],
-            new ChoiceValue([new ValueChoice('a')]),
+            ['field' => 'category'],
+            new ChoiceValue([new ValueChoice('  '), new ValueChoice('a')]),
         );
 
-        self::assertSame([], $context->formula->propositions);
+        self::assertSame(['a'], $context->formula->propositions[0]->options['values']);
+    }
+
+    public function testOnlyBlankValuesAbort(): void
+    {
+        $this->expectException(AbortFilteringException::class);
+
+        $this->buildFilterContext(
+            $this->createElement(),
+            ['field' => 'category'],
+            new ChoiceValue([new ValueChoice(''), new ValueChoice(' ')]),
+        );
     }
 
     public function testValueOfAnotherClassFails(): void

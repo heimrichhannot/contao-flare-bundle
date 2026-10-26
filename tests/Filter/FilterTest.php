@@ -102,6 +102,20 @@ final class FilterTest extends TestCase
         self::assertSame($value, $withoutControl->value);
     }
 
+    public function testControlTypeDefaultsToTheControlClassAndSurvivesTheWithers(): void
+    {
+        $control = self::control();
+
+        self::assertSame($control::class, self::filter()->withControl($control)->controlType);
+        self::assertNull(self::filter()->withControl(null, [], 'ignored')->controlType);
+
+        $typed = self::filter()->withControl($control, [], 'app_control');
+
+        self::assertSame('app_control', $typed->controlType);
+        self::assertSame('app_control', $typed->withValue(new BoolValue(true))->controlType);
+        self::assertSame('app_control', $typed->withTargetAlias('translation')->controlType);
+    }
+
     public function testFingerprintReflectsIdentityAndContent(): void
     {
         $filter = self::filter();
@@ -115,6 +129,7 @@ final class FilterTest extends TestCase
             'config' => ['a' => 1],
             'control' => null,
             'controlConfig' => [],
+            'controlType' => null,
             'value' => null,
             'targetAlias' => null,
             'targetingForced' => false,

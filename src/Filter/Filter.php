@@ -35,6 +35,8 @@ final readonly class Filter
      * @param FilterControlInterface|null $control The control presenting the filter, or null for a filter
      *   without user input (intrinsic).
      * @param array<string, mixed> $controlConfig Canonical control config (control-defined schema).
+     * @param string|null $controlType Registered control type, or the class name of an inline control; null
+     *   without a control. Only used for named event dispatch (`flare.filter_control.{type}.*`).
      * @param ValueInterface|null $value A value of the element's value class: the initial value with a
      *   control, the fixed value without one (SPEC_FILTER_FORMS.md §4.2).
      * @param string|null $targetAlias Table alias the filter's conditions apply to.
@@ -50,6 +52,7 @@ final readonly class Filter
         public array                   $config = [],
         public ?FilterControlInterface $control = null,
         public array                   $controlConfig = [],
+        public ?string                 $controlType = null,
         public ?ValueInterface         $value = null,
         public ?string                 $targetAlias = null,
         public bool                    $targetingForced = false,
@@ -65,6 +68,7 @@ final readonly class Filter
             config: $this->config,
             control: $this->control,
             controlConfig: $this->controlConfig,
+            controlType: $this->controlType,
             value: $value,
             targetAlias: $this->targetAlias,
             targetingForced: $this->targetingForced,
@@ -74,9 +78,13 @@ final readonly class Filter
 
     /**
      * @param array<string, mixed> $controlConfig Canonical, already resolved control config.
+     * @param string|null $controlType The registered control type; defaults to the control's class name.
      */
-    public function withControl(?FilterControlInterface $control, array $controlConfig = []): self
-    {
+    public function withControl(
+        ?FilterControlInterface $control,
+        array                   $controlConfig = [],
+        ?string                 $controlType = null,
+    ): self {
         return new self(
             element: $this->element,
             type: $this->type,
@@ -84,6 +92,7 @@ final readonly class Filter
             config: $this->config,
             control: $control,
             controlConfig: $controlConfig,
+            controlType: $control !== null ? ($controlType ?? $control::class) : null,
             value: $this->value,
             targetAlias: $this->targetAlias,
             targetingForced: $this->targetingForced,
@@ -100,6 +109,7 @@ final readonly class Filter
             config: $this->config,
             control: $this->control,
             controlConfig: $this->controlConfig,
+            controlType: $this->controlType,
             value: $this->value,
             targetAlias: $targetAlias,
             targetingForced: $targetAlias !== null && $forced,
@@ -121,6 +131,7 @@ final readonly class Filter
             'config' => $this->config,
             'control' => $this->control !== null ? $this->control::class : null,
             'controlConfig' => $this->controlConfig,
+            'controlType' => $this->controlType,
             'value' => $this->value?->fingerprint(),
             'targetAlias' => $this->targetAlias,
             'targetingForced' => $this->targetingForced,

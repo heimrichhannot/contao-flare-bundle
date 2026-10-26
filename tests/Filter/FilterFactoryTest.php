@@ -158,6 +158,7 @@ final class FilterFactoryTest extends TestCase
         );
 
         self::assertSame($this->boolControl, $filter->control);
+        self::assertSame(self::BOOL_CONTROL, $filter->controlType);
         self::assertSame(['label' => 'default'], $filter->controlConfig);
         self::assertEquals(new BoolValue(true), $filter->value);
     }
@@ -231,6 +232,7 @@ final class FilterFactoryTest extends TestCase
         );
 
         self::assertSame($this->boolControl, $initial->control);
+        self::assertSame(self::BOOL_CONTROL, $initial->controlType);
         self::assertSame(['label' => 'from model'], $initial->controlConfig);
         self::assertEquals(new BoolValue(false), $initial->value);
         self::assertSame([], $this->logs);

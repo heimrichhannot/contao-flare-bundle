@@ -149,9 +149,10 @@ renames the per-filter strategy from `FilterForm` to `FilterControl`. Final name
 | `#[AsFilterForm]`, tag `flare.filter_form`, alias `flare.filter_form.{name}` (v0.2-only) | `#[AsFilterControl]`, tag `flare.filter_control`, alias `flare.filter_control.{type}` | control |
 | `FilterFormRegistry`, `RegisterFilterFormsPass`, `TypeNameFactory::createFilterFormType()` (v0.2-only) | `FilterControlRegistry`, `RegisterFilterControlsPass`, `createFilterControlType()` (suffixes `FilterControl`, `Control`) | control |
 | `Filter\FilterFormBuilder`, `…Interface` | unchanged | Symfony |
-| `Event\ElementDcaEvent` (fired for list drivers and filter elements) | `Event\ListDcaEvent` (`flare.list.{type}.dca`), `Event\FilterElementDcaEvent` (`flare.filter_element.{type}.dca`) | element / list |
+| `Event\ElementDcaEvent` (fired for list drivers and filter elements) | `Event\ListDriverDcaEvent` (`flare.list_driver.{type}.dca`), `Event\FilterElementDcaEvent` (`flare.filter_element.{type}.dca`) | element / list driver |
+| `Event\ListTransformerEvent`, `flare.list.{type}.transformers` | `Event\ListDriverTransformerEvent`, `flare.list_driver.{type}.transformers` (`…\ListDriverTransformerListener`) | list driver |
 | — | `Event\FilterControlDcaEvent`, `flare.filter_control.{type}.dca` with the *control* type (new) | control |
-| `EventListener\NamedDispatch\ElementDcaEventListener` | `…\DcaEventListener` | element / list / control |
+| `EventListener\NamedDispatch\ElementDcaEventListener` | `…\DcaEventListener` | element / list driver / control |
 | `FilterTransformerEvent::$element`, element-only | `FilterTransformerEvent::$owner` (`FilterComponentInterface`), also `flare.filter_control.{type}.transformers` | element / control |
 
 The query-side renames of #48 are in §2.3.
@@ -1176,7 +1177,12 @@ Recorded here because each one closes a branch the design could otherwise have t
     display** (§8.1). A list that fails closed shows an explicit "could not be created" message —
     never "no entries found" — and keeps HTTP status 200; a reader that cannot validate its entry
     answers 5xx, so broken config is never indexed.
-32. **Elements and controls share `FilterComponentInterface`** (review of PR #49). Both are registered
+32. **Event names state whose type they carry** (review of PR #49): `flare.filter_element.{type}.*` always
+    carries the registered element type, `flare.filter_control.{type}.*` the registered control type
+    (`Filter::$controlType`; `.built` switched from the element type) and `flare.list_driver.{type}.*` the
+    list driver type (`ListDriverDcaEvent`, `ListDriverTransformerEvent`), so further list components can
+    get their own prefix without another rename.
+33. **Elements and controls share `FilterComponentInterface`** (review of PR #49). Both are registered
     by type and own their config, so `FilterOptionsResolver`, `FilterTransformerResolver` and
     `FilterTransformerEvent` type against the common interface instead of a union. The DCA events stay
     separate classes, because the control's builder is scoped to its palette segment.

@@ -18,7 +18,7 @@ use Symfony\Contracts\EventDispatcher\Event;
  * or cancel mounting altogether. Adding a child alongside a single() declaration switches the
  * filter to the nested compound layout.
  *
- * Also dispatched under the name `flare.filter_control.{type}.built`
+ * Also dispatched under the name `flare.filter_control.{type}.built` with the control type
  * ({@see \HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterControlListener}).
  */
 class FilterControlBuiltEvent extends Event

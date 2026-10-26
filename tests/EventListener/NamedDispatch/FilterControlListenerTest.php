@@ -19,12 +19,12 @@ use Symfony\Component\Form\Forms;
 
 final class FilterControlListenerTest extends TestCase
 {
-    public function testDispatchesNamedEventForTheFilterElementType(): void
+    public function testDispatchesNamedEventForTheControlType(): void
     {
         self::assertSame(['flare.filter_control.a.built'], $this->dispatchedNames('a'));
     }
 
-    public function testUntypedFilterTriggersNoNamedDispatch(): void
+    public function testFilterWithoutControlTypeTriggersNoNamedDispatch(): void
     {
         self::assertSame([], $this->dispatchedNames(''));
     }
@@ -32,7 +32,7 @@ final class FilterControlListenerTest extends TestCase
     /**
      * @return list<string>
      */
-    private function dispatchedNames(string $type): array
+    private function dispatchedNames(string $controlType): array
     {
         $names = [];
 
@@ -63,7 +63,12 @@ final class FilterControlListenerTest extends TestCase
         };
 
         $list = new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test');
-        $filter = new Filter(element: new StubFilterElement(), type: $type, alias: 'suche');
+        $filter = new Filter(
+            element: new StubFilterElement(),
+            type: 'b',
+            alias: 'suche',
+            controlType: $controlType ?: null,
+        );
 
         $scope = new FilterScope(list: $list, filter: $filter, engineContext: $engineContext);
 

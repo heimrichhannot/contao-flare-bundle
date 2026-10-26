@@ -68,9 +68,12 @@ final readonly class FilterFactory
 
         $config = $this->filterOptionsResolver->resolve($element, $config);
 
+        $controlType = \is_string($control) ? $control : null;
+
         if ($control !== null)
         {
             $control = $this->resolveControl($control, $valueClass, $source);
+            $controlType ??= $control::class;
             $controlConfig = $this->filterOptionsResolver->resolve($control, $controlConfig);
         }
 
@@ -92,6 +95,7 @@ final readonly class FilterFactory
             config: $config,
             control: $control,
             controlConfig: $control !== null ? $controlConfig : [],
+            controlType: $controlType,
             value: $value,
             targetAlias: $targetAlias,
             targetingForced: $targetingForced,
@@ -163,7 +167,7 @@ final readonly class FilterFactory
             return $filter;
         }
 
-        return $filter->withControl($control, $controlConfig)->withValue($value);
+        return $filter->withControl($control, $controlConfig, $controlType)->withValue($value);
     }
 
     /**

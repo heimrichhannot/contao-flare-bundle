@@ -147,7 +147,7 @@ control and its initial value only bound the **initial display**.
 
 | What fails | Behaviour |
 |---|---|
-| A filter's **element** cannot be built, **with or without a control** — unknown element type, broken element config — or a filter **without a control** has an unreadable stored (fixed) value or fails at query time | **Fail closed:** the list as a whole fails; error logged |
+| A filter's **element** cannot be built, **with or without a control** — unknown element type, broken element config (including a transformer that throws on the stored record) — or a filter **without a control** has an unreadable stored (fixed) value or fails at query time | **Fail closed:** the list as a whole fails; error logged |
 | Two published filters of a list share an **alias** | **Fail closed:** the second one is recorded as a list failure instead of replacing the first; error logged |
 | A filter's **control** cannot be built — its `control` names no control registered for the element's value class, its control config is broken, or its initial value is unreadable | **Fail open:** the filter is kept without control and initial value, bounded only by its element config; warning logged |
 | A **controlled filter fails at query time with a non-null value** | Retried **once with value `null`**. Success: only the value is dropped (warning). Failure, or the value was already `null`: the element config is broken and bounds the whole list — fail closed |

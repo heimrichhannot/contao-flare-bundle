@@ -70,7 +70,7 @@ Elements with configuration additionally implement [`OptionsContract`](../contra
 ```php
 public function configureOptions(OptionsResolver $resolver): void;
 
-public function configureTransformers(TransformerResolver $resolver): void;
+public function configureTransformers(TransformerMap $transformers): void;
 ```
 
 `AbstractFilterElement` implements all of the above, plus
@@ -101,11 +101,16 @@ A filter is applied in two stages:
 
 `configureOptions()` declares the element's canonical config with Symfony's `OptionsResolver`.
 `configureTransformers()` declares how stored sources translate onto that schema: it registers one
-transformer per source class on a `TransformerResolver`. Everything downstream — `buildDca()`,
+transformer per source class on a `TransformerMap`. Everything downstream — `buildDca()`,
 `buildContext()` — works with the resolved config, never with raw DCA rows, which is what makes filters
 equally usable from the database, PHP, and Twig.
 
 Both methods are declarative, memoizable setup: they are run once per element class, not per filter.
+
+If either fails — a config that violates the schema, or a transformer that throws, e.g. a `ValueError` while
+parsing an enum from a broken record — FLARE wraps the error in a `FilterException` that names the element and
+the record (`tl_flare_filter.42`). For an element this fails the list closed; for a control it drops the
+control (see [failure handling](../../spec/filtering.md#6-failure-handling)).
 
 `AbstractFilterElement` already registers a transformer for `FilterModel` (a stored `tl_flare_filter`
 record) that delegates to the abstract `transformFilterModel()` hook — for most elements, that hook is

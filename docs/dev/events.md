@@ -38,7 +38,7 @@ Dispatched once per filter element or filter control class and type when its tra
 - **Use Case:** Registering transformers for additional source classes, or replacing the element's or
   control's `FilterModel` transformer (re-registering a source class overrides the default).
 - **Class:** `HeimrichHannot\FlareBundle\Event\FilterTransformerEvent`
-- **Properties:** `transformers` (readonly `TransformerResolver`), `owner` (readonly
+- **Properties:** `transformers` (readonly `TransformerMap`), `owner` (readonly
   `FilterComponentInterface` — the element or the control), `type` (readonly `string`)
 
 ### `ListDriverTransformerEvent`
@@ -46,7 +46,7 @@ Dispatched once per list driver class when its transformer map is configured.
 - **Use Case:** Registering transformers for additional source classes, or replacing the driver's
   `ListModel` transformer.
 - **Class:** `HeimrichHannot\FlareBundle\Event\ListDriverTransformerEvent`
-- **Properties:** `transformers` (readonly `TransformerResolver`), `driver` (readonly
+- **Properties:** `transformers` (readonly `TransformerMap`), `driver` (readonly
   `ListDriverInterface`), `type` (readonly `string`)
 
 ## 3. List View Lifecycle

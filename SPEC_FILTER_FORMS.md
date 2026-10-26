@@ -618,7 +618,10 @@ change is needed.
 
 Pair the mechanism with distinct legends so the split is visible to the editor:
 element contributes `{filter_legend},elm_fieldGeneric`, control contributes
-`{control_legend},ctl_label,ctl_isMultiple,ctl_isExpanded`.
+`{control_legend},ctl_label,ctl_isMultiple,ctl_isExpanded`. Element fields never sit in a control legend
+and vice versa; CalendarCurrent's `elm_isLimited` therefore moved from `{form_legend}` to its own
+`{date_limits_legend}`. The DCA fields, the language files and the model docblock list the framework
+fields first, then `elm_*`, then `ctl_*`; the language files keep one section per legend.
 
 > **Implementation note (R7).** The `control` backend field is labelled "Control" (German
 > "Bedienelement"); its blank option is the intrinsic (fixed value) mode.

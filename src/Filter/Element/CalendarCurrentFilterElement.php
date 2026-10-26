@@ -97,7 +97,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
         $builder->palette(
             '{date_start_legend},elm_configureStart,elm_hasExtendedEvents;'
             . '{date_stop_legend},elm_configureStop;'
-            . '{form_legend},elm_isLimited;'
+            . '{date_limits_legend},elm_isLimited;'
         );
     }
 

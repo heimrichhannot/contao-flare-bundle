@@ -111,30 +111,6 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
-    'alias' => [
-        'exclude' => true,
-        'search' => true,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
-        'inputType' => 'text',
-        'eval' => [
-            'mandatory' => false,
-            'maxlength' => 128,
-            'tl_class' => 'w50',
-            'doNotCopy' => true,
-            'rgxp' => 'alias',
-        ],
-        'sql' => ['type' => 'string', 'length' => 128, 'default' => '', 'notnull' => true],
-    ],
-    'published' => [
-        'exclude' => true,
-        'toggle' => true,
-        'filter' => true,
-        'default' => true,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
-        'inputType' => 'checkbox',
-        'eval' => ['doNotCopy' => true, 'tl_class' => 'w50'],
-        'sql' => ['type' => 'boolean', 'default' => false],
-    ],
     'control' => [
         'exclude' => true,
         'inputType' => 'select',
@@ -168,82 +144,28 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'string', 'length' => 128, 'default' => TableAliasRegistry::ALIAS_MAIN],
     ],
-    'ctl_isMandatory' => [
+    'alias' => [
         'exclude' => true,
-        'toggle' => true,
-        'filter' => false,
-        'default' => false,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
-        'inputType' => 'checkbox',
+        'search' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
+        'inputType' => 'text',
         'eval' => [
-            'submitOnChange' => false,
-            'tl_class' => 'cbx w50'
+            'mandatory' => false,
+            'maxlength' => 128,
+            'tl_class' => 'w50',
+            'doNotCopy' => true,
+            'rgxp' => 'alias',
         ],
-        'sql' => ['type' => 'boolean', 'default' => false],
+        'sql' => ['type' => 'string', 'length' => 128, 'default' => '', 'notnull' => true],
     ],
-    'ctl_isMultiple' => [
+    'published' => [
         'exclude' => true,
         'toggle' => true,
-        'filter' => false,
-        'default' => false,
+        'filter' => true,
+        'default' => true,
         'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
         'inputType' => 'checkbox',
-        'eval' => [
-            'submitOnChange' => true,
-            'tl_class' => 'cbx w50'
-        ],
-        'sql' => ['type' => 'boolean', 'default' => false],
-    ],
-    'ctl_isExpanded' => [
-        'exclude' => true,
-        'toggle' => true,
-        'filter' => false,
-        'default' => false,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
-        'inputType' => 'checkbox',
-        'eval' => [
-            'submitOnChange' => false,
-            'tl_class' => 'cbx w50'
-        ],
-        'sql' => ['type' => 'boolean', 'default' => false],
-    ],
-    'elm_isLimited' => [
-        'exclude' => true,
-        'toggle' => true,
-        'filter' => false,
-        'default' => false,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
-        'inputType' => 'checkbox',
-        'eval' => [
-            'submitOnChange' => false,
-            'tl_class' => 'cbx w50'
-        ],
-        'sql' => ['type' => 'boolean', 'default' => false],
-    ],
-    'elm_useWhitelistForOptionsOnly' => [
-        'exclude' => true,
-        'toggle' => true,
-        'filter' => false,
-        'default' => false,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
-        'inputType' => 'checkbox',
-        'eval' => [
-            'submitOnChange' => false,
-            'tl_class' => 'cbx w50 m12'
-        ],
-        'sql' => ['type' => 'boolean', 'default' => false],
-    ],
-    'ctl_hasEmptyOption' => [
-        'exclude' => true,
-        'toggle' => true,
-        'filter' => false,
-        'default' => false,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
-        'inputType' => 'checkbox',
-        'eval' => [
-            'submitOnChange' => true,
-            'tl_class' => 'cbx w50'
-        ],
+        'eval' => ['doNotCopy' => true, 'tl_class' => 'w50'],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
     'elm_usePublished' => [
@@ -259,103 +181,6 @@ $dca['fields'] = [
         ],
         'sql' => ['type' => 'boolean', 'default' => true],
     ],
-    'elm_useStart' => [
-        'exclude' => true,
-        'toggle' => true,
-        'filter' => false,
-        'default' => true,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
-        'inputType' => 'checkbox',
-        'eval' => [
-            'submitOnChange' => true,
-            'tl_class' => 'cbx w50 clr'
-        ],
-        'sql' => ['type' => 'boolean', 'default' => true],
-    ],
-    'elm_useStop' => [
-        'exclude' => true,
-        'toggle' => true,
-        'filter' => false,
-        'default' => true,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
-        'inputType' => 'checkbox',
-        'eval' => [
-            'submitOnChange' => true,
-            'tl_class' => 'cbx w50 clr'
-        ],
-        'sql' => ['type' => 'boolean', 'default' => true],
-    ],
-    'elm_invertPublished' => [
-        'exclude' => true,
-        'toggle' => true,
-        'filter' => false,
-        'default' => false,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
-        'inputType' => 'checkbox',
-        'eval' => [
-            'tl_class' => 'w50'
-        ],
-        'sql' => ['type' => 'boolean', 'default' => false],
-    ],
-    'ctl_formatLabel' => [
-        'inputType' => 'select',
-        'exclude' => true,
-        'filter' => false,
-        'eval' => [
-            'mandatory' => false,
-            'submitOnChange' => true,
-            'includeBlankOption' => true,
-            'alwaysSave' => true,
-            'chosen' => true,
-            'tl_class' => 'w50',
-        ],
-        'sql' => "varchar(128) NOT NULL default ''",
-    ],
-    'ctl_formatLabelCustom' => [
-        'exclude' => true,
-        'search' => false,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
-        'inputType' => 'text',
-        'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
-        'sql' => "varchar(255) NOT NULL default ''",
-    ],
-    'ctl_formatEmptyOption' => [
-        'inputType' => 'select',
-        'exclude' => true,
-        'filter' => false,
-        'eval' => [
-            'mandatory' => false,
-            'submitOnChange' => true,
-            'includeBlankOption' => true,
-            'alwaysSave' => true,
-            'chosen' => true,
-            'tl_class' => 'w50 clr',
-        ],
-        'sql' => "varchar(128) NOT NULL default ''",
-    ],
-    'ctl_formatEmptyOptionCustom' => [
-        'exclude' => true,
-        'search' => false,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
-        'inputType' => 'text',
-        'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
-        'sql' => "varchar(255) NOT NULL default ''",
-    ],
-    'elm_whichPtable' => [
-        'exclude' => true,
-        'filter' => false,
-        'default' => 'auto',
-        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
-        'inputType' => 'radio',
-        'options' => ['auto', 'dynamic', 'static'],
-        'reference' => &$GLOBALS['TL_LANG'][$table]['elm_whichPtable_options'],
-        'eval' => [
-            'submitOnChange' => true,
-            'alwaysSave' => true,
-            'tl_class' => 'w50 clr'
-        ],
-        'sql' => "varchar(32) NOT NULL default 'auto'",
-    ],
     'elm_fieldPublished' => [
         'inputType' => 'select',
         'exclude' => true,
@@ -369,6 +194,31 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
+    'elm_invertPublished' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'tl_class' => 'w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'elm_useStart' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => true,
+            'tl_class' => 'cbx w50 clr'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => true],
+    ],
     'elm_fieldStart' => [
         'inputType' => 'select',
         'exclude' => true,
@@ -381,6 +231,19 @@ $dca['fields'] = [
             'tl_class' => 'w50',
         ],
         'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'elm_useStop' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => true,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => true,
+            'tl_class' => 'cbx w50 clr'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => true],
     ],
     'elm_fieldStop' => [
         'inputType' => 'select',
@@ -409,6 +272,21 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
+    'elm_whichPtable' => [
+        'exclude' => true,
+        'filter' => false,
+        'default' => 'auto',
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'radio',
+        'options' => ['auto', 'dynamic', 'static'],
+        'reference' => &$GLOBALS['TL_LANG'][$table]['elm_whichPtable_options'],
+        'eval' => [
+            'submitOnChange' => true,
+            'alwaysSave' => true,
+            'tl_class' => 'w50 clr'
+        ],
+        'sql' => "varchar(32) NOT NULL default 'auto'",
+    ],
     'elm_fieldPtable' => [
         'inputType' => 'select',
         'exclude' => true,
@@ -436,15 +314,6 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(128) NOT NULL default ''",
     ],
-    'elm_whitelistParents' => [
-        'inputType' => 'select',
-        'default' => null,
-        'eval' => [
-            'chosen' => true,
-            'multiple' => true,
-        ],
-        'sql' => ['type' => 'blob', 'notnull' => false],
-    ],
     'elm_fieldGeneric' => [
         'inputType' => 'select',
         'exclude' => true,
@@ -469,6 +338,100 @@ $dca['fields'] = [
             'mandatory' => true,
             'includeBlankOption' => true,
             'tl_class' => 'clr w100',
+        ],
+        'sql' => ['type' => 'blob', 'notnull' => false],
+    ],
+    'elm_configureStart' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'select',
+        'reference' => &$GLOBALS['TL_LANG']['FLARE']['date_time'],
+        'default' => 'today',
+        'eval' => [
+            'mandatory' => false,
+            'maxlength' => 255,
+            'tl_class' => 'clr w50',
+            'includeBlankOption' => true,
+            'chosen' => true,
+            'submitOnChange' => true,
+            'alwaysSave' => true,
+        ],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'elm_startAt' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'text',
+        'eval' => [
+            'mandatory' => false,
+            'maxlength' => 255,
+            'rgxp' => 'datim',
+            'datepicker' => true,
+            'tl_class' => 'w50 wizard',
+        ],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'elm_configureStop' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'select',
+        'reference' => &$GLOBALS['TL_LANG']['FLARE']['date_time'],
+        'default' => '',
+        'eval' => [
+            'mandatory' => false,
+            'maxlength' => 255,
+            'tl_class' => 'clr w50',
+            'includeBlankOption' => true,
+            'chosen' => true,
+            'submitOnChange' => true,
+            'alwaysSave' => true,
+        ],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'elm_stopAt' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'text',
+        'eval' => [
+            'mandatory' => false,
+            'maxlength' => 255,
+            'rgxp' => 'datim',
+            'datepicker' => true,
+            'tl_class' => 'w50 wizard',
+        ],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'elm_hasExtendedEvents' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'tl_class' => 'cbx w50 clr'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'elm_isLimited' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => false,
+            'tl_class' => 'cbx w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'elm_whitelistParents' => [
+        'inputType' => 'select',
+        'default' => null,
+        'eval' => [
+            'chosen' => true,
+            'multiple' => true,
         ],
         'sql' => ['type' => 'blob', 'notnull' => false],
     ],
@@ -512,6 +475,26 @@ $dca['fields'] = [
         'order' => false,
         'sql' => ['type' => 'blob', 'notnull' => false]
     ],
+    'elm_useWhitelistForOptionsOnly' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => false,
+            'tl_class' => 'cbx w50 m12'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'elm_equationLeft' => [
+        'exclude' => true,
+        'search' => false,
+        'inputType' => 'select',
+        'eval' => ['mandatory' => true, 'maxlength' => 255, 'chosen' => true],
+        'sql' => "varchar(255) NOT NULL default ''",
+    ],
     'elm_equationOperator' => [
         'exclude' => true,
         'search' => false,
@@ -526,25 +509,11 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
-    'elm_equationLeft' => [
-        'exclude' => true,
-        'search' => false,
-        'inputType' => 'select',
-        'eval' => ['mandatory' => true, 'maxlength' => 255, 'chosen' => true],
-        'sql' => "varchar(255) NOT NULL default ''",
-    ],
     'elm_equationRight' => [
         'exclude' => true,
         'search' => false,
         'inputType' => 'text',
         'eval' => ['mandatory' => false, 'maxlength' => 255, 'chosen' => true],
-        'sql' => "varchar(255) NOT NULL default ''",
-    ],
-    'ctl_placeholder' => [
-        'exclude' => true,
-        'search' => false,
-        'inputType' => 'text',
-        'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
     'ctl_label' => [
@@ -554,67 +523,36 @@ $dca['fields'] = [
         'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
-    'elm_configureStart' => [
-        'exclude' => true,
-        'search' => false,
-        'inputType' => 'select',
-        'reference' => &$GLOBALS['TL_LANG']['FLARE']['date_time'],
-        'default' => 'today',
-        'eval' => [
-            'mandatory' => false,
-            'maxlength' => 255,
-            'tl_class' => 'clr w50',
-            'includeBlankOption' => true,
-            'chosen' => true,
-            'submitOnChange' => true,
-            'alwaysSave' => true,
-        ],
-        'sql' => "varchar(255) NOT NULL default ''",
-    ],
-    'elm_configureStop' => [
-        'exclude' => true,
-        'search' => false,
-        'inputType' => 'select',
-        'reference' => &$GLOBALS['TL_LANG']['FLARE']['date_time'],
-        'default' => '',
-        'eval' => [
-            'mandatory' => false,
-            'maxlength' => 255,
-            'tl_class' => 'clr w50',
-            'includeBlankOption' => true,
-            'chosen' => true,
-            'submitOnChange' => true,
-            'alwaysSave' => true,
-        ],
-        'sql' => "varchar(255) NOT NULL default ''",
-    ],
-    'elm_startAt' => [
+    'ctl_placeholder' => [
         'exclude' => true,
         'search' => false,
         'inputType' => 'text',
-        'eval' => [
-            'mandatory' => false,
-            'maxlength' => 255,
-            'rgxp' => 'datim',
-            'datepicker' => true,
-            'tl_class' => 'w50 wizard',
-        ],
+        'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
-    'elm_stopAt' => [
+    'ctl_formatLabel' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => false,
+            'submitOnChange' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'ctl_formatLabelCustom' => [
         'exclude' => true,
         'search' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
         'inputType' => 'text',
-        'eval' => [
-            'mandatory' => false,
-            'maxlength' => 255,
-            'rgxp' => 'datim',
-            'datepicker' => true,
-            'tl_class' => 'w50 wizard',
-        ],
+        'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
-    'elm_hasExtendedEvents' => [
+    'ctl_isMandatory' => [
         'exclude' => true,
         'toggle' => true,
         'filter' => false,
@@ -622,9 +560,71 @@ $dca['fields'] = [
         'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
         'inputType' => 'checkbox',
         'eval' => [
-            'tl_class' => 'cbx w50 clr'
+            'submitOnChange' => false,
+            'tl_class' => 'cbx w50'
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'ctl_isMultiple' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => true,
+            'tl_class' => 'cbx w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'ctl_isExpanded' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => false,
+            'tl_class' => 'cbx w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'ctl_hasEmptyOption' => [
+        'exclude' => true,
+        'toggle' => true,
+        'filter' => false,
+        'default' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'submitOnChange' => true,
+            'tl_class' => 'cbx w50'
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'ctl_formatEmptyOption' => [
+        'inputType' => 'select',
+        'exclude' => true,
+        'filter' => false,
+        'eval' => [
+            'mandatory' => false,
+            'submitOnChange' => true,
+            'includeBlankOption' => true,
+            'alwaysSave' => true,
+            'chosen' => true,
+            'tl_class' => 'w50 clr',
+        ],
+        'sql' => "varchar(128) NOT NULL default ''",
+    ],
+    'ctl_formatEmptyOptionCustom' => [
+        'exclude' => true,
+        'search' => false,
+        'flag' => DataContainer::SORT_INITIAL_LETTER_ASC,
+        'inputType' => 'text',
+        'eval' => ['mandatory' => false, 'maxlength' => 255, 'tl_class' => 'w50'],
+        'sql' => "varchar(255) NOT NULL default ''",
     ],
     'ctl_boolBinaryChoices' => [
         'exclude' => true,
@@ -638,8 +638,8 @@ $dca['fields'] = [
 
 $dca['palettes'] = [
     '__selector__' => [
-        'type', 'elm_usePublished', 'elm_useStart', 'elm_useStop', 'elm_whichPtable', 'ctl_formatLabel',
-        'ctl_formatEmptyOption', 'elm_configureStart', 'elm_configureStop',
+        'type', 'elm_usePublished', 'elm_useStart', 'elm_useStop', 'elm_whichPtable', 'elm_configureStart',
+        'elm_configureStop', 'ctl_formatLabel', 'ctl_formatEmptyOption',
     ],
     '__prefix__' => '{title_legend},title,type,control',
     '__suffix__' => '{expert_legend:hide},alias;{publish_legend},published',
@@ -654,10 +654,10 @@ $dca['subpalettes'] = [
     'elm_whichPtable_auto' => '',
     'elm_whichPtable_dynamic' => 'elm_fieldPtable',
     'elm_whichPtable_static' => 'elm_tablePtable',
-    'ctl_formatLabel_custom' => 'ctl_formatLabelCustom',
-    'ctl_formatEmptyOption_custom' => 'ctl_formatEmptyOptionCustom',
     'elm_configureStart_str' => 'elm_startAt',
     'elm_configureStart_date' => 'elm_startAt',
     'elm_configureStop_str' => 'elm_stopAt',
     'elm_configureStop_date' => 'elm_stopAt',
+    'ctl_formatLabel_custom' => 'ctl_formatLabelCustom',
+    'ctl_formatEmptyOption_custom' => 'ctl_formatEmptyOptionCustom',
 ];

@@ -204,7 +204,7 @@ Like elements, controls have their own [backend](./events.md#filtercontroldcaeve
 
 After a control declared its fields on the per-filter builder — and before they are mounted onto the root
 form — a [`FilterControlBuiltEvent`](./events.md#filtercontrolbuiltevent) is dispatched, also as
-`flare.filter_control.{type}.built` (`{type}` is the *element* type). Listeners can add, remove or replace
+`flare.filter_control.{type}.built` (`{type}` is the *control* type). Listeners can add, remove or replace
 children, adjust `single()`, or `cancel()` the mount.
 
 The former element events `FilterElementBuildingEvent` / `FilterElementBuiltEvent` no longer exist; see

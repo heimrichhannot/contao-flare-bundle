@@ -41,13 +41,13 @@ Dispatched once per filter element or filter control class and type when its tra
 - **Properties:** `transformers` (readonly `TransformerResolver`), `owner` (readonly
   `FilterComponentInterface` — the element or the control), `type` (readonly `string`)
 
-### `ListTransformerEvent`
+### `ListDriverTransformerEvent`
 Dispatched once per list driver class when its transformer map is configured.
 - **Use Case:** Registering transformers for additional source classes, or replacing the driver's
   `ListModel` transformer.
-- **Class:** `HeimrichHannot\FlareBundle\Event\ListTransformerEvent`
+- **Class:** `HeimrichHannot\FlareBundle\Event\ListDriverTransformerEvent`
 - **Properties:** `transformers` (readonly `TransformerResolver`), `driver` (readonly
-  `ListDriverInterface`)
+  `ListDriverInterface`), `type` (readonly `string`)
 
 ## 3. List View Lifecycle
 
@@ -111,9 +111,9 @@ All three are dispatched before the collected configuration is applied to the li
 backend palette or fields of a type from outside its class — see
 [Backend DCA Building](./dca-builder.md#5-modifying-another-types-dca).
 
-### `ListDcaEvent`
+### `ListDriverDcaEvent`
 Dispatched after a list driver's `buildDca()` ran.
-- **Class:** `HeimrichHannot\FlareBundle\Event\ListDcaEvent`
+- **Class:** `HeimrichHannot\FlareBundle\Event\ListDriverDcaEvent`
 - **Properties:** `builder` (readonly `DcaBuilder`), `context` (readonly `DcaContext`)
 
 ### `FilterElementDcaEvent`
@@ -147,25 +147,28 @@ object is identical to the base event.
 | `flare.filter_control.{type}.built` | `FilterControlBuiltEvent` |
 | `flare.form.{formName}.build` | `FormHarnessBuildEvent` |
 | `flare.list.{type}.build` | `ListBuildEvent` |
-| `flare.list.{type}.transformers` | `ListTransformerEvent` |
+| `flare.list_driver.{type}.transformers` | `ListDriverTransformerEvent` |
 | `flare.filter_element.{type}.dca` | `FilterElementDcaEvent` |
 | `flare.filter_control.{type}.dca` | `FilterControlDcaEvent` |
-| `flare.list.{type}.dca` | `ListDcaEvent` |
+| `flare.list_driver.{type}.dca` | `ListDriverDcaEvent` |
+
+The prefix states whose type `{type}` is: `filter_element` always carries a registered filter element type,
+`filter_control` a registered filter control type, `list_driver` (and, for the list build, `list`) a list driver
+type.
 
 How `{type}` is derived:
 
-- **`flare.list.{type}.build` / `.transformers`** look the driver instance up in the
+- **`flare.list.{type}.build` / `flare.list_driver.{type}.transformers`** look the driver instance up in the
   `ListDriverRegistry` and fire once per type alias it is registered under (a driver registered under
   several aliases dispatches once per alias). An inline driver instance that is not registered fires no
   named events — the base event still fires.
-- **`flare.filter_element.{type}.transformers` and `flare.filter_control.{type}.built`** use the filter's
-  `type` — the registered *element* alias captured when the filter was created from one (e.g. via
-  `FilterFactory`). Filters constructed around a plain element
-  instance have no `type` and fire no named events.
-- **`flare.filter_control.{type}.transformers`** uses the registered *control* type the control was resolved
-  from.
+- **`flare.filter_element.{type}.transformers`** uses the filter's `type` — the registered *element* type
+  captured when the filter was created from one (e.g. via `FilterFactory`).
+- **`flare.filter_control.{type}.transformers` and `.built`** use the registered *control* type the control
+  was resolved from (`Filter::$controlType`). For a control passed to `FilterFactory` as an instance, the type
+  is its class name.
 - **`.dca`** events run in the backend and use the type stored on the record being edited — the element type
-  (`type`), the control type (`control`) or the list type.
+  (`type`), the control type (`control`) or the list driver type.
 
 Example — listen only to the build of the form named `my_form`:
 

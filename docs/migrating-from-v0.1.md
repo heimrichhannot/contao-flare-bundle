@@ -83,7 +83,7 @@ New interfaces: `FilterElementInterface` (required, one method), `FilterControlI
 | `FilterElementInvokedEvent` (`flare.filter_element.{type}.invoked`) | **No successor** — same alternatives |
 | `FilterFormChildOptionsEvent` (`flare.form.{parent}.child.{name}.options`) | Removed — customize in the control's `buildForm()`, or listen to `FilterControlBuiltEvent` (`flare.filter_control.{type}.built`) |
 | `FilterElementFormTypeOptionsEvent` | Removed — same replacement as above |
-| `PaletteEvent` (`flare.filter_element.{alias}.palette`, `flare.list.{type}.palette`) | `FilterElementDcaEvent` (`flare.filter_element.{type}.dca`), `ListDcaEvent` (`flare.list.{type}.dca`); controls have `FilterControlDcaEvent` (`flare.filter_control.{type}.dca`) |
+| `PaletteEvent` (`flare.filter_element.{alias}.palette`, `flare.list.{type}.palette`) | `FilterElementDcaEvent` (`flare.filter_element.{type}.dca`), `ListDriverDcaEvent` (`flare.list_driver.{type}.dca`); controls have `FilterControlDcaEvent` (`flare.filter_control.{type}.dca`) |
 | `FilterDefinitionCreatedEvent` | `FilterCollectedEvent` — dispatched per filter collected from the database; `$event->filter` is replaceable |
 
 `flare.form.{formName}.build` is now fired with a `FormHarnessBuildEvent` (formerly `FilterFormBuildEvent`); the

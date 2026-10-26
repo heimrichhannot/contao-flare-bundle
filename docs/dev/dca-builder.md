@@ -36,7 +36,7 @@ the type:
 - `FilterElementDcaEvent` as `flare.filter_element.{type}.dca` for filter elements (on `tl_flare_filter`)
 - `FilterControlDcaEvent` as `flare.filter_control.{type}.dca` for filter controls (on `tl_flare_filter`); its
   builder is scoped to the control's palette segment, and `$type` holds the control type
-- `ListDcaEvent` as `flare.list.{type}.dca` for list drivers (on `tl_flare_list`)
+- `ListDriverDcaEvent` as `flare.list_driver.{type}.dca` for list drivers (on `tl_flare_list`)
 
 ```php
 use HeimrichHannot\FlareBundle\Event\FilterElementDcaEvent;
@@ -60,5 +60,5 @@ instead of merging into it.
 | `#[AsFilterElement(palette: '...')]` / `#[AsListType(palette: '...')]` | `$builder->palette('...')` in `buildDca()` |
 | `#[AsFilterCallback(TYPE, 'fields.myField.options')]` | `$builder->field('myField')->options(...)` — or `FilterElementDcaEvent` on `flare.filter_element.{type}.dca` for foreign types |
 | `#[AsFilterCallback(TYPE, 'fields.myField.load')]` / `'fields.myField.save'` | `$builder->field('myField')->load(...)` / `->save(...)` |
-| `#[AsFilterCallback(TYPE, 'config.onload')]` / list `config.onload` | `buildDca()` (own type) / `FilterElementDcaEvent` or `ListDcaEvent` listener (foreign type) |
-| `PaletteContract::getPalette()` / `PaletteEvent` (`flare.*.palette`) | `buildDca()` with `palette()`/`prefix()`/`suffix()` / `FilterElementDcaEvent`, `FilterControlDcaEvent`, `ListDcaEvent` (`flare.*.dca`) |
+| `#[AsFilterCallback(TYPE, 'config.onload')]` / list `config.onload` | `buildDca()` (own type) / `FilterElementDcaEvent` or `ListDriverDcaEvent` listener (foreign type) |
+| `PaletteContract::getPalette()` / `PaletteEvent` (`flare.*.palette`) | `buildDca()` with `palette()`/`prefix()`/`suffix()` / `FilterElementDcaEvent`, `FilterControlDcaEvent`, `ListDriverDcaEvent` (`flare.*.dca`) |

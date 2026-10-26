@@ -19,7 +19,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * Builds Symfony form choice configurations from choice objects ({@see ChoiceObjectInterface}).
  *
  * Aggregates choices keyed by their canonical key ({@see ChoiceKey::of()}), then produces the artifacts a Symfony
- * ChoiceType field needs: a choices array via {@see buildChoices()}, a value callback via
+ * ChoiceType field needs: a choices array via {@see build()}, a value callback via
  * {@see buildChoiceValueCallback()}, and a label callback via {@see buildChoiceLabelCallback()}.
  * For Contao-style option arrays, use {@see buildOptions()} instead.
  *
@@ -40,7 +40,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * {@see LabelableInterface::getLabelParameters()}.
  *
  * An optional empty option is enabled via {@see setEmptyOption()}. It is rendered under the
- * sentinel key {@see self::EMPTY_CHOICE} in {@see buildChoices()} (and under an empty-string key
+ * sentinel key {@see self::EMPTY_CHOICE} in {@see build()} (and under an empty-string key
  * in {@see buildOptions()}), with its submitted value controlled by {@see setEmptyOptionValue()}.
  * Use {@see self::EMPTY_CHOICE_VALUE_DEFAULT} for no value or
  * {@see self::EMPTY_CHOICE_VALUE_ALTERNATIVE} when a non-empty URL parameter value is required.
@@ -197,7 +197,7 @@ final class ChoicesBuilder
      * @return array<string, ChoiceObjectInterface|string>
      * @api
      */
-    public function buildChoices(): array
+    public function build(): array
     {
         $choices = [];
 
@@ -216,7 +216,7 @@ final class ChoicesBuilder
 
     public function buildCallbackChoiceLoader(): CallbackChoiceLoader
     {
-        return new CallbackChoiceLoader($this->buildChoices(...));
+        return new CallbackChoiceLoader($this->build(...));
     }
 
     /**

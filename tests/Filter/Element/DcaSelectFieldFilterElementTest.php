@@ -155,7 +155,7 @@ final class DcaSelectFieldFilterElementTest extends TestCase
 
         $this->createElement()->buildChoices($choices, $this->createScope($field));
 
-        return $choices->buildChoices();
+        return $choices->build();
     }
 
     private function createScope(string $field): FilterScope

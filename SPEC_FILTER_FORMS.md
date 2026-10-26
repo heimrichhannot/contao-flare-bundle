@@ -432,8 +432,8 @@ Labelling is split: `buildChoices()` MAY set labels the element owns — `setLab
 from element-owned whitelist rows is the real case. The control owns only global overrides
 (`setLabel()`, `setModelSuffix()`, `setEmptyOption()`) and `applyFormOptions()`.
 
-(`ChoicesBuilder::buildChoices()` keeps its name: it returns the built choices, while the port method
-fills the builder.)
+(`ChoicesBuilder::buildChoices()` is renamed to `ChoicesBuilder::build()`, so the port method that fills
+the builder and the builder method that returns the choices no longer share a name.)
 
 ### 3.6 Value providers
 

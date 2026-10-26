@@ -26,7 +26,7 @@ final class ChoicesBuilderTest extends TestCase
         $a = new ValueChoice('a', 'Alpha');
         $builder = self::builder()->add($b)->add($a);
 
-        self::assertSame(['b' => $b, 'a' => $a], $builder->buildChoices());
+        self::assertSame(['b' => $b, 'a' => $a], $builder->build());
         self::assertFalse($builder->hasEmptyOption());
     }
 
@@ -34,8 +34,8 @@ final class ChoicesBuilderTest extends TestCase
     {
         $builder = self::builder()->add(new ValueChoice('a'))->setEmptyOption(true);
 
-        self::assertSame([ChoicesBuilder::EMPTY_CHOICE, 'a'], \array_keys($builder->buildChoices()));
-        self::assertSame(ChoicesBuilder::EMPTY_CHOICE, $builder->buildChoices()[ChoicesBuilder::EMPTY_CHOICE]);
+        self::assertSame([ChoicesBuilder::EMPTY_CHOICE, 'a'], \array_keys($builder->build()));
+        self::assertSame(ChoicesBuilder::EMPTY_CHOICE, $builder->build()[ChoicesBuilder::EMPTY_CHOICE]);
     }
 
     public function testCountExcludesTheEmptyOption(): void
@@ -43,7 +43,7 @@ final class ChoicesBuilderTest extends TestCase
         $builder = self::builder()->add(new ValueChoice('a'))->add(new ValueChoice('b'))->setEmptyOption(true);
 
         self::assertSame(2, $builder->count());
-        self::assertCount(3, $builder->buildChoices());
+        self::assertCount(3, $builder->build());
     }
 
     public function testReAddingAKeyOverwritesInPlace(): void
@@ -51,8 +51,8 @@ final class ChoicesBuilderTest extends TestCase
         $second = new ValueChoice('a', 'Alpha2');
         $builder = self::builder()->add(new ValueChoice('a', 'Alpha'))->add(new ValueChoice('b'))->add($second);
 
-        self::assertSame(['a', 'b'], \array_keys($builder->buildChoices()));
-        self::assertSame($second, $builder->buildChoices()['a']);
+        self::assertSame(['a', 'b'], \array_keys($builder->build()));
+        self::assertSame($second, $builder->build()['a']);
         self::assertSame(2, $builder->count());
     }
 
@@ -60,7 +60,7 @@ final class ChoicesBuilderTest extends TestCase
     {
         $builder = self::builder()->add(new ValueChoice('1', 'Same'))->add(new ValueChoice('2', 'Same'));
         $toValue = $builder->buildChoiceValueCallback();
-        self::assertSame(['1', '2'], \array_map($toValue, \array_values($builder->buildChoices())));
+        self::assertSame(['1', '2'], \array_map($toValue, \array_values($builder->build())));
     }
 
     public function testSingleScopeListSubmitsLocalKeys(): void
@@ -152,8 +152,8 @@ final class ChoicesBuilderTest extends TestCase
     {
         $builder = self::builder()->add(new ValueChoice('a'))->setEmptyOption(true);
 
-        self::assertArrayHasKey(ChoicesBuilder::EMPTY_CHOICE, $builder->buildChoices());
-        self::assertArrayNotHasKey('', $builder->buildChoices());
+        self::assertArrayHasKey(ChoicesBuilder::EMPTY_CHOICE, $builder->build());
+        self::assertArrayNotHasKey('', $builder->build());
 
         self::assertArrayHasKey('', $builder->buildContaoOptions());
         self::assertArrayNotHasKey(ChoicesBuilder::EMPTY_CHOICE, $builder->buildContaoOptions());

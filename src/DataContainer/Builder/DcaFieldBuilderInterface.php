@@ -12,6 +12,11 @@ interface DcaFieldBuilderInterface
 
     public function merge(array $definition): self;
 
+    /**
+     * Replaces the field's label and description, e.g. for a field whose meaning depends on the type.
+     */
+    public function label(string $label, ?string $description = null): self;
+
     public function options(callable|array $options): self;
 
     public function load(callable $fn): self;

@@ -17,6 +17,11 @@ list:
         duplicate_filter_alias: "Duplicate filter aliases: %alias%. The last filter overwrites the previous ones with the same alias."
 
 filter:
+    value:
+        date_range:
+            label: "Date range"
+            description: "Start and end as a date (e.g. 2026-10-26) or a relative time expression in PHP strtotime() syntax (e.g. today, +1 week, first day of next month). Leave empty for an open bound. Relative expressions are recalculated on every request."
+            invalid: '"%expression%" is neither a date nor a valid relative time expression (e.g. today, +1 week, 2026-10-26).'
     limited_scope:
         single: "This filter is limited to the following scope: %scopes%"
         multiple: "This filter is limited to the following scopes: %scopes%"

@@ -476,7 +476,10 @@ final class BoolValueProvider implements ValueProviderInterface
 - **Bundle providers:** `BoolValueProvider` (select yes/no; stores `'1'`/`'0'`), `ChoiceValueProvider`
   (backend options from `ChoiceSourceContract::buildChoices()` → `buildContaoOptions()` keyed by
   canonical choice key, via the backend scope of §6.4; stores a serialized list of canonical keys;
-  `provide()` via `choiceFromKey()`), `DateRangeValueProvider`, `KeywordsValueProvider`.
+  `provide()` via `choiceFromKey()`), `DateRangeValueProvider` (two text inputs without `rgxp`;
+  stores a serialized `[from, to]` of time expressions — timestamps, time span keys or `strtotime()`
+  strings such as `today` — validated on save and resolved in `provide()`, so relative bounds move
+  with the request time), `KeywordsValueProvider`.
 - **Stale references fail closed.** A stored key whose record was deleted still yields a reference
   that matches nothing in the query (and, for Archive, drops out of the whitelist intersection); if
   nothing remains, the filter aborts and the list is empty rather than unfiltered.

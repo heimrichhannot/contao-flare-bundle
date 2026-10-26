@@ -17,6 +17,11 @@ list:
         duplicate_filter_alias: "Duplizierte Filter-Aliasse: %alias%. Der letzte Filter überschreibt vorherige mit dem gleichen Alias."
 
 filter:
+    value:
+        date_range:
+            label: "Zeitraum"
+            description: "Beginn und Ende als Datum (z. B. 2026-10-26) oder relative Zeitangabe nach PHP strtotime() (z. B. today, +1 week, first day of next month). Leer lassen für eine offene Grenze. Relative Angaben werden bei jedem Aufruf neu berechnet."
+            invalid: '„%expression%“ ist weder ein Datum noch eine gültige relative Zeitangabe (z. B. today, +1 week, 2026-10-26).'
     limited_scope:
         single: "Dieser Filter ist ausschließlich anwendbar auf: %scopes%"
         multiple: "Dieser Filter ist anwendbar auf: %scopes%"

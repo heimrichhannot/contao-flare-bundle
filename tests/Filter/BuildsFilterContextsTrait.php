@@ -87,8 +87,8 @@ trait BuildsFilterContextsTrait
     {
         $translator = new class implements TranslatorInterface {
             public function trans(
-                string $id,
-                array $parameters = [],
+                string  $id,
+                array   $parameters = [],
                 ?string $domain = null,
                 ?string $locale = null,
             ): string {

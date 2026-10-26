@@ -10,7 +10,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Value\Choice;
 final readonly class ValueChoice implements ChoiceObjectInterface
 {
     public function __construct(
-        public string $value,
+        public string  $value,
         public ?string $label = null,
     ) {}
 

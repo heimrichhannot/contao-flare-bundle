@@ -12,8 +12,8 @@ use Contao\Model;
 final readonly class ContaoModelChoice implements ChoiceObjectInterface
 {
     private function __construct(
-        public string $table,
-        public int $id,
+        public string  $table,
+        public int     $id,
         private ?Model $model = null,
     ) {}
 

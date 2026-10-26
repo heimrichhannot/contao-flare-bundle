@@ -15,12 +15,12 @@ readonly class ListQueryConfig
      * @param array<string, mixed> $attributes
      */
     public function __construct(
-        public ListSpec $list,
-        public ContextInterface  $context,
-        public array             $filterValues,
-        public bool              $isCounting = false,
-        public bool              $onlyId = false,
-        public array             $attributes = [],
+        public ListSpec         $list,
+        public ContextInterface $context,
+        public array            $filterValues,
+        public bool             $isCounting = false,
+        public bool             $onlyId = false,
+        public array            $attributes = [],
     ) {}
 
     /**

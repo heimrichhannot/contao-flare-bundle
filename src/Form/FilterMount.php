@@ -30,8 +30,8 @@ final readonly class FilterMount
      * @param FilterScope $scope Scope the filter's control was built, hydrated and decoded with.
      */
     public function __construct(
-        public Filter       $filter,
-        public string       $alias,
+        public Filter      $filter,
+        public string      $alias,
         public FilterScope $scope,
     ) {}
 }

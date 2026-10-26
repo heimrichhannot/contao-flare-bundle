@@ -14,7 +14,7 @@ readonly class ReaderUrlGenerator implements ReaderUrlGeneratorInterface
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
-        private ReaderUrlConfig $config,
+        private ReaderUrlConfig          $config,
     ) {}
 
     public function generate(Model $model): ?string

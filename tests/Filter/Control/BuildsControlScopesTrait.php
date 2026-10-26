@@ -27,8 +27,8 @@ trait BuildsControlScopesTrait
      * @param array<string, mixed> $controlConfig Overrides over the control's option defaults.
      */
     private function scope(
-        AbstractFilterControl $control,
-        array $controlConfig = [],
+        AbstractFilterControl   $control,
+        array                   $controlConfig = [],
         ?FilterElementInterface $element = null,
     ): FilterScope {
         $resolver = new OptionsResolver();

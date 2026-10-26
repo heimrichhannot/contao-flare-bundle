@@ -63,10 +63,10 @@ final class FilterContextFactoryTest extends TestCase
      * @dataProvider targetAliasCases
      */
     public function testResolvesTheDefaultTargetAliasLikeV01(
-        bool $isTargeted,
-        bool $forced,
+        bool    $isTargeted,
+        bool    $forced,
         ?string $alias,
-        string $expected,
+        string  $expected,
     ): void {
         $element = new SpyFilterElement();
         $registry = new FilterElementRegistry();

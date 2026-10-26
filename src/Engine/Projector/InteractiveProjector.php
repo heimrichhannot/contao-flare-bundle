@@ -184,7 +184,7 @@ class InteractiveProjector extends AbstractProjector
      * @throws FlareException
      */
     protected function createAggregationView(
-        ListSpec  $spec,
+        ListSpec           $spec,
         InteractiveContext $interactiveConfig,
         array              $filterValues,
     ): AggregationView {

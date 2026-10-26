@@ -14,7 +14,7 @@ use HeimrichHannot\FlareBundle\Filter\Predicate\PredicateInterface;
 class FilterContextBuilder
 {
     public function __construct(
-        public readonly FilterScope $scope,
+        public readonly FilterScope              $scope,
         private readonly FormulaBuilderInterface $formulaBuilder,
     ) {}
 

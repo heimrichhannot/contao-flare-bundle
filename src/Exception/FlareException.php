@@ -11,9 +11,9 @@ namespace HeimrichHannot\FlareBundle\Exception;
 class FlareException extends \Exception
 {
     public function __construct(
-        string $message = "",
-        int $code = 0,
-        ?\Throwable $previous = null,
+        string            $message = "",
+        int               $code = 0,
+        ?\Throwable       $previous = null,
         protected ?string $method = null,
         protected ?string $source = null,
     ) {

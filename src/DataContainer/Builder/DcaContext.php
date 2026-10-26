@@ -24,13 +24,13 @@ final class DcaContext
      * @param \Closure(): ?FilterScope|null $filterScopeFactory
      */
     public function __construct(
-        public readonly string       $table,
-        public readonly string       $type,
-        public readonly ListModel    $listModel,
-        public readonly ?FilterModel $filterModel,
-        private readonly \Closure    $executionContextFactory,
+        public readonly string                  $table,
+        public readonly string                  $type,
+        public readonly ListModel               $listModel,
+        public readonly ?FilterModel            $filterModel,
+        private readonly \Closure               $executionContextFactory,
         public readonly ?FilterElementInterface $element = null,
-        private readonly ?\Closure   $filterScopeFactory = null,
+        private readonly ?\Closure              $filterScopeFactory = null,
     ) {}
 
     public function getExecutionContext(): ?ListExecutionContext

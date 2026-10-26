@@ -74,7 +74,7 @@ final class ChoicesBuilder
     private array $mapTypeLabel = [];
 
     public function __construct(
-        private readonly TranslatorInterface $translator,
+        private readonly TranslatorInterface   $translator,
         private readonly ParameterBagInterface $parameterBag,
     ) {}
 

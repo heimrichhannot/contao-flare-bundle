@@ -15,7 +15,7 @@ readonly class QueryBuilderFactory
 {
     public function __construct(
         private ValidatorInterface $validator,
-        private Connection $connection,
+        private Connection         $connection,
     ) {}
 
     public function create(SqlQueryStruct $struct): QueryBuilder

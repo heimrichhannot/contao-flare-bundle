@@ -163,8 +163,8 @@ class ChangelanguageListener
 
     private function applyMlQueriesIfNecessary(
         ListQueryBuilder $listQueryBuilder,
-        string $table,
-        string $language,
+        string           $table,
+        string           $language,
     ): void
     {
         if (in_array('translation', $listQueryBuilder->getMandatoryTableAliases(), true)) {

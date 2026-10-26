@@ -19,7 +19,7 @@ final class ControlScopeDcaBuilder implements DcaBuilderInterface
      */
     public function __construct(
         private readonly DcaBuilderInterface $parent,
-        private readonly \Closure $sink,
+        private readonly \Closure            $sink,
     ) {}
 
     public function palette(?string $palette): self

@@ -102,9 +102,9 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
      * @throws FlareException
      */
     protected function getProjectorFor(
-        ListSpec $spec,
-        ContextInterface  $config,
-        ?array            $exclude = null,
+        ListSpec         $spec,
+        ContextInterface $config,
+        ?array           $exclude = null,
     ): ProjectorInterface {
         try
         {

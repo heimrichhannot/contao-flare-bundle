@@ -21,10 +21,10 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 readonly class ListModelFilterCollector
 {
     public function __construct(
-        private EventDispatcherInterface  $eventDispatcher,
-        private FilterFactory             $filterFactory,
-        private ListDriverRegistry        $listDriverRegistry,
-        private LoggerInterface           $logger,
+        private EventDispatcherInterface $eventDispatcher,
+        private FilterFactory            $filterFactory,
+        private ListDriverRegistry       $listDriverRegistry,
+        private LoggerInterface          $logger,
     ) {}
 
     /**

@@ -35,8 +35,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Applies each element's backend configuration ({@see DcaContract::buildDca()}) and the extension points
- * {@see ListDriverBuildDcaEvent}, {@see FilterElementBuildDcaEvent} and {@see FilterControlBuildDcaEvent} to the live DCA of
- * the edited record.
+ * {@see ListDriverBuildDcaEvent}, {@see FilterElementBuildDcaEvent} and {@see FilterControlBuildDcaEvent}
+ * to the live DCA of the edited record.
  *
  * The actual configuration runs as an appended `onload_callback` so that service callbacks
  * with positive priorities (e.g. prefix manipulation) execute first — matching the timing

@@ -13,7 +13,7 @@ use Contao\NewsArchiveModel;
 use Contao\NewsModel;
 use Contao\UserModel;
 use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\Event\ListDriverDcaEvent;
+use HeimrichHannot\FlareBundle\Event\ListDriverBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\Model\ContentModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -103,7 +103,7 @@ readonly class ContaoCommentsListener
      * Attach the comments_enabled field to the flare_news palette.
      */
     #[AsEventListener('flare.list_driver.flare_news.dca')]
-    public function onListDriverDca(ListDriverDcaEvent $event): void
+    public function onListDriverDca(ListDriverBuildDcaEvent $event): void
     {
         $pm = PaletteManipulator::create()
             ->addLegend('comments_legend')

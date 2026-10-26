@@ -8,7 +8,8 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
-use HeimrichHannot\FlareBundle\Event\FilterTransformerEvent;
+use HeimrichHannot\FlareBundle\Event\FilterControlConfigureTransformersEvent;
+use HeimrichHannot\FlareBundle\Event\FilterElementConfigureTransformersEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
@@ -48,7 +49,7 @@ final class FilterTransformerResolverTest extends TestCase
         $dispatched = 0;
 
         $dispatcher = new EventDispatcher();
-        $dispatcher->addListener(FilterTransformerEvent::class, static function () use (&$dispatched): void {
+        $dispatcher->addListener(FilterElementConfigureTransformersEvent::class, static function () use (&$dispatched): void {
             $dispatched++;
         });
 
@@ -65,8 +66,8 @@ final class FilterTransformerResolverTest extends TestCase
     {
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(
-            FilterTransformerEvent::class,
-            static function (FilterTransformerEvent $event): void {
+            FilterElementConfigureTransformersEvent::class,
+            static function (FilterElementConfigureTransformersEvent $event): void {
                 $event->transformers->set(
                     \stdClass::class,
                     static fn (ConfigBuilder $config, object $source) => $config->set('external', true),
@@ -87,11 +88,14 @@ final class FilterTransformerResolverTest extends TestCase
 
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(
-            FilterTransformerEvent::class,
-            static function (FilterTransformerEvent $event) use (&$owners): void {
-                $owners[] = [$event->owner::class, $event->type];
+            FilterControlConfigureTransformersEvent::class,
+            static function (FilterControlConfigureTransformersEvent $event) use (&$owners): void {
+                $owners[] = [$event->control::class, $event->type];
             },
         );
+        $dispatcher->addListener(FilterElementConfigureTransformersEvent::class, static function (): void {
+            self::fail('A control must not dispatch the element event.');
+        });
 
         $resolver = new FilterTransformerResolver(new SourceTransformer(), $dispatcher);
 

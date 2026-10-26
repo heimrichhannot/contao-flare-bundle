@@ -8,7 +8,7 @@ use Contao\Model;
 use Contao\PageModel;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class DetailsPageUrlGeneratedEvent extends Event
+class ReaderUrlGeneratedEvent extends Event
 {
     public function __construct(
         public readonly Model $model,

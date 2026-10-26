@@ -7,15 +7,19 @@ namespace HeimrichHannot\FlareBundle\Filter\Resolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
-use HeimrichHannot\FlareBundle\Event\FilterTransformerEvent;
+use HeimrichHannot\FlareBundle\Event\FilterControlConfigureTransformersEvent;
+use HeimrichHannot\FlareBundle\Event\FilterElementConfigureTransformersEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterComponentInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Runs the source transformers ({@see TransformerContract}) of a filter component (element or control)
  * to translate a stored source (e.g. a FilterModel) into canonical config values. The transformer map is
- * memoized per type and component class; listeners extend a component's map via {@see FilterTransformerEvent}.
+ * memoized per type and component class; listeners extend a component's map via
+ * {@see FilterElementConfigureTransformersEvent} and {@see FilterControlConfigureTransformersEvent}.
  */
 final readonly class FilterTransformerResolver
 {
@@ -46,7 +50,7 @@ final readonly class FilterTransformerResolver
                         $owner->configureTransformers($transformers);
                     }
 
-                    $this->eventDispatcher->dispatch(new FilterTransformerEvent($transformers, $owner, $type));
+                    $this->dispatchEvent($transformers, $owner, $type);
                 },
                 $source,
             );
@@ -63,6 +67,21 @@ final readonly class FilterTransformerResolver
                 previous: $e,
                 method: $owner::class . '::configureTransformers',
                 source: $origin,
+            );
+        }
+    }
+
+    private function dispatchEvent(TransformerMap $transformers, FilterComponentInterface $owner, string $type): void
+    {
+        if ($owner instanceof FilterElementInterface) {
+            $this->eventDispatcher->dispatch(
+                new FilterElementConfigureTransformersEvent($transformers, $owner, $type),
+            );
+        }
+
+        if ($owner instanceof FilterControlInterface) {
+            $this->eventDispatcher->dispatch(
+                new FilterControlConfigureTransformersEvent($transformers, $owner, $type),
             );
         }
     }

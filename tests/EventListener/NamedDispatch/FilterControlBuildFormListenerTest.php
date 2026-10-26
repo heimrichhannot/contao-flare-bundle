@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\EventListener\NamedDispatch;
 
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
-use HeimrichHannot\FlareBundle\Event\FilterControlBuiltEvent;
-use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterControlListener;
+use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
+use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterControlBuildFormListener;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
@@ -17,11 +17,11 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\Forms;
 
-final class FilterControlListenerTest extends TestCase
+final class FilterControlBuildFormListenerTest extends TestCase
 {
     public function testDispatchesNamedEventForTheControlType(): void
     {
-        self::assertSame(['flare.filter_control.a.built'], $this->dispatchedNames('a'));
+        self::assertSame(['flare.filter_control.a.build_form'], $this->dispatchedNames('a'));
     }
 
     public function testFilterWithoutControlTypeTriggersNoNamedDispatch(): void
@@ -41,9 +41,9 @@ final class FilterControlListenerTest extends TestCase
         foreach (['a', 'b'] as $candidate)
         {
             $dispatcher->addListener(
-                "flare.filter_control.{$candidate}.built",
+                "flare.filter_control.{$candidate}.build_form",
                 static function () use (&$names, $candidate): void {
-                    $names[] = "flare.filter_control.{$candidate}.built";
+                    $names[] = "flare.filter_control.{$candidate}.build_form";
                 },
             );
         }
@@ -74,8 +74,8 @@ final class FilterControlListenerTest extends TestCase
 
         $builder = new FilterFormBuilder('suche', null, new EventDispatcher(), Forms::createFormFactory());
 
-        $listener = new FilterControlListener($dispatcher);
-        $listener->onFilterControlBuiltEvent(new FilterControlBuiltEvent($builder, $scope));
+        $listener = new FilterControlBuildFormListener($dispatcher);
+        $listener->onFilterControlBuildForm(new FilterControlBuildFormEvent($builder, $scope));
 
         return $names;
     }

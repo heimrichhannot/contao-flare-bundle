@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\EventListener\NamedDispatch;
 
-use HeimrichHannot\FlareBundle\Event\FilterControlDcaEvent;
-use HeimrichHannot\FlareBundle\Event\FilterElementDcaEvent;
-use HeimrichHannot\FlareBundle\Event\ListDriverDcaEvent;
+use HeimrichHannot\FlareBundle\Event\FilterControlBuildDcaEvent;
+use HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent;
+use HeimrichHannot\FlareBundle\Event\ListDriverBuildDcaEvent;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -17,7 +17,7 @@ readonly class DcaEventListener
     ) {}
 
     #[AsEventListener(priority: -200)]
-    public function onListDriverDca(ListDriverDcaEvent $event): void
+    public function onListDriverDca(ListDriverBuildDcaEvent $event): void
     {
         $this->eventDispatcher->dispatch(
             event: $event,
@@ -26,7 +26,7 @@ readonly class DcaEventListener
     }
 
     #[AsEventListener(priority: -200)]
-    public function onFilterElementDca(FilterElementDcaEvent $event): void
+    public function onFilterElementDca(FilterElementBuildDcaEvent $event): void
     {
         $this->eventDispatcher->dispatch(
             event: $event,
@@ -35,7 +35,7 @@ readonly class DcaEventListener
     }
 
     #[AsEventListener(priority: -200)]
-    public function onFilterControlDca(FilterControlDcaEvent $event): void
+    public function onFilterControlDca(FilterControlBuildDcaEvent $event): void
     {
         $this->eventDispatcher->dispatch(event: $event, eventName: "flare.filter_control.{$event->type}.dca");
     }

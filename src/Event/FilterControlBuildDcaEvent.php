@@ -15,7 +15,7 @@ use Symfony\Contracts\EventDispatcher\Event;
  *
  * `$context->type` is the element type; the control type is {@see self::$type}.
  */
-class FilterControlDcaEvent extends Event
+class FilterControlBuildDcaEvent extends Event
 {
     public function __construct(
         public readonly DcaBuilderInterface $builder,

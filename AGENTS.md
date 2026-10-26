@@ -107,14 +107,20 @@ Backend palettes/fields are declared in code via `DcaContract::buildDca(DcaBuild
 tl_flare_filter and tl_flare_list).
 
 **Event system** — Events, some with aliased dispatch for targeted listening
-(`flare.form.{name}.build`, `flare.filter_control.{type}.built` (`FilterControlBuiltEvent`),
-`flare.list_driver.{type}.build_list` (`ListDriverBuildListEvent`), `flare.filter_element.{type}.transformers` / `flare.filter_control.{type}.transformers`
-(`FilterTransformerEvent`), `flare.list_driver.{type}.transformers` (`ListDriverTransformerEvent`),
-`flare.list_driver.{type}.dca` (`ListDriverDcaEvent`), `flare.filter_element.{type}.dca`
-(`FilterElementDcaEvent`), `flare.filter_control.{type}.dca` (`FilterControlDcaEvent`, control type, builder scoped to
-the control segment), etc., implemented by the listeners in `src/EventListener/NamedDispatch/`). All events are in
-`src/Event/`. Elements and controls share `FilterComponentInterface`, the type the config resolvers and
-`FilterTransformerEvent::$owner` use.
+(`flare.form.{name}.build`, `flare.filter_control.{type}.build_form` (`FilterControlBuildFormEvent`),
+`flare.list_driver.{type}.build_list` (`ListDriverBuildListEvent`),
+`flare.filter_element.{type}.transformers` (`FilterElementConfigureTransformersEvent`),
+`flare.filter_control.{type}.transformers` (`FilterControlConfigureTransformersEvent`),
+`flare.list_driver.{type}.transformers` (`ListDriverConfigureTransformersEvent`),
+`flare.filter_element.{type}.dca` (`FilterElementBuildDcaEvent`), `flare.filter_control.{type}.dca`
+(`FilterControlBuildDcaEvent`, builder scoped to the control segment), `flare.list_driver.{type}.dca`
+(`ListDriverBuildDcaEvent`), etc., implemented by the listeners in `src/EventListener/NamedDispatch/`). All events
+are in `src/Event/`. Naming: a hook event is `{Component}{Hook}Event` after the hook it follows (`buildForm()` →
+`FilterControlBuildFormEvent`); the named event is `flare.{component}.{type}.{suffix}`, where `{type}` is always
+that component's registered type and the suffix is short (`dca`, `transformers`) unless it would be unclear
+(`build_list`, `build_form`). The query events (`QueryBaseInitializedEvent`, `ModifyListQueryStructEvent`) are
+left as they are until the query architecture is reworked. Elements and controls share
+`FilterComponentInterface`, the type the config resolvers use.
 The former per-element `FilterElementBuildingEvent`/`FilterElementBuiltEvent` (and their `.building`/`.built`
 aliases) are removed; use `ListDriverBuildListEvent` or a programmatic `Filter::$value` instead.
 Prefer events over overriding services for customization.

@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterScope;
  * One filter's node in the root filter form, as recorded by {@see Factory\FormHarnessFactory}.
  *
  * Only filters that actually mounted get an entry — filters skipped for an invalid alias, for
- * declaring no fields, having no control, or by a cancelled {@see \HeimrichHannot\FlareBundle\Event\FilterControlBuiltEvent}
+ * declaring no fields, having no control, or by a cancelled {@see \HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent}
  * are absent from {@see FormHarness::getMounts()}.
  *
  * {@see $filter} is deliberately redundant with `$scope->filter`: it is the field consumers

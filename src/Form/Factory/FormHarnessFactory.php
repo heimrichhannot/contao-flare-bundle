@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Form\Factory;
 
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\FormContextInterface;
-use HeimrichHannot\FlareBundle\Event\FilterControlBuiltEvent;
+use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -97,8 +97,8 @@ final readonly class FormHarnessFactory
                 continue;
             }
 
-            /** @var FilterControlBuiltEvent $event */
-            $event = $this->eventDispatcher->dispatch(new FilterControlBuiltEvent($builder, $scope));
+            /** @var FilterControlBuildFormEvent $event */
+            $event = $this->eventDispatcher->dispatch(new FilterControlBuildFormEvent($builder, $scope));
 
             if ($event->isCancelled())
                 // Filters can be skipped by event listeners.

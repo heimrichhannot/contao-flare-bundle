@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
-use HeimrichHannot\FlareBundle\Event\ListDriverTransformerEvent;
+use HeimrichHannot\FlareBundle\Event\ListDriverConfigureTransformersEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
@@ -57,8 +57,8 @@ final class ListTransformerResolverTest extends TestCase
 
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(
-            ListDriverTransformerEvent::class,
-            static function (ListDriverTransformerEvent $event) use (&$dispatchedWith): void {
+            ListDriverConfigureTransformersEvent::class,
+            static function (ListDriverConfigureTransformersEvent $event) use (&$dispatchedWith): void {
                 $dispatchedWith[] = $event;
             },
         );
@@ -78,8 +78,8 @@ final class ListTransformerResolverTest extends TestCase
     {
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(
-            ListDriverTransformerEvent::class,
-            static function (ListDriverTransformerEvent $event): void {
+            ListDriverConfigureTransformersEvent::class,
+            static function (ListDriverConfigureTransformersEvent $event): void {
                 $event->transformers->set(
                     \stdClass::class,
                     static fn (ConfigBuilder $config, object $source) => $config->set('external', true),

@@ -13,7 +13,7 @@ use Symfony\Contracts\EventDispatcher\Event;
  * Listeners may adjust the palette or field configuration — also per type via the named event
  * `flare.filter_element.{type}.dca` (the element type).
  */
-class FilterElementDcaEvent extends Event
+class FilterElementBuildDcaEvent extends Event
 {
     public function __construct(
         public readonly DcaBuilder $builder,

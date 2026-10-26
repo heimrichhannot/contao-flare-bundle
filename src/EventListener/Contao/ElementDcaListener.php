@@ -12,9 +12,9 @@ use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
-use HeimrichHannot\FlareBundle\Event\FilterControlDcaEvent;
-use HeimrichHannot\FlareBundle\Event\FilterElementDcaEvent;
-use HeimrichHannot\FlareBundle\Event\ListDriverDcaEvent;
+use HeimrichHannot\FlareBundle\Event\FilterControlBuildDcaEvent;
+use HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent;
+use HeimrichHannot\FlareBundle\Event\ListDriverBuildDcaEvent;
 use HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareFilter\ListCallbacks;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
@@ -35,7 +35,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Applies each element's backend configuration ({@see DcaContract::buildDca()}) and the extension points
- * {@see ListDriverDcaEvent}, {@see FilterElementDcaEvent} and {@see FilterControlDcaEvent} to the live DCA of
+ * {@see ListDriverBuildDcaEvent}, {@see FilterElementBuildDcaEvent} and {@see FilterControlBuildDcaEvent} to the live DCA of
  * the edited record.
  *
  * The actual configuration runs as an appended `onload_callback` so that service callbacks
@@ -144,8 +144,8 @@ final readonly class ElementDcaListener
         }
 
         $this->eventDispatcher->dispatch($table === FilterModel::getTable()
-            ? new FilterElementDcaEvent($dcaBuilder, $context)
-            : new ListDriverDcaEvent($dcaBuilder, $context));
+            ? new FilterElementBuildDcaEvent($dcaBuilder, $context)
+            : new ListDriverBuildDcaEvent($dcaBuilder, $context));
 
         $isEditAction = $this->requestStack->getCurrentRequest()?->query->get('act') === 'edit';
 
@@ -168,7 +168,7 @@ final readonly class ElementDcaListener
                 $control->buildDca($controlBuilder, $context);
             }
 
-            $this->eventDispatcher->dispatch(new FilterControlDcaEvent($controlBuilder, $context, $controlType));
+            $this->eventDispatcher->dispatch(new FilterControlBuildDcaEvent($controlBuilder, $context, $controlType));
         }
 
         $valueClass = $this->filterElementRegistry->getAttribute($context->type)?->value;

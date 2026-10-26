@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Form;
 
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\FormContextInterface;
-use HeimrichHannot\FlareBundle\Event\FilterControlBuiltEvent;
+use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -277,8 +277,8 @@ final class FormHarnessFactoryTest extends TestCase
     public function testCancelledEventPreventsMounting(): void
     {
         $this->eventDispatcher->addListener(
-            FilterControlBuiltEvent::class,
-            static fn (FilterControlBuiltEvent $event) => $event->cancel(),
+            FilterControlBuildFormEvent::class,
+            static fn (FilterControlBuildFormEvent $event) => $event->cancel(),
         );
 
         $this->assertFalse($this->createForm([$this->filter('suche', $this->single())])->has('suche'));
@@ -390,8 +390,8 @@ final class FormHarnessFactoryTest extends TestCase
     {
         if ($cancel) {
             $this->eventDispatcher->addListener(
-                FilterControlBuiltEvent::class,
-                static fn (FilterControlBuiltEvent $event) => $event->cancel(),
+                FilterControlBuildFormEvent::class,
+                static fn (FilterControlBuildFormEvent $event) => $event->cancel(),
             );
         }
 

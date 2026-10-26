@@ -6,9 +6,9 @@ namespace HeimrichHannot\FlareBundle\Tests\EventListener\NamedDispatch;
 
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
-use HeimrichHannot\FlareBundle\Event\FilterControlDcaEvent;
-use HeimrichHannot\FlareBundle\Event\FilterElementDcaEvent;
-use HeimrichHannot\FlareBundle\Event\ListDriverDcaEvent;
+use HeimrichHannot\FlareBundle\Event\FilterControlBuildDcaEvent;
+use HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent;
+use HeimrichHannot\FlareBundle\Event\ListDriverBuildDcaEvent;
 use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\DcaEventListener;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use PHPUnit\Framework\TestCase;
@@ -20,7 +20,7 @@ final class DcaEventListenerTest extends TestCase
     {
         $listener = new DcaEventListener($this->recordingDispatcher($names));
 
-        $listener->onListDriverDca(new ListDriverDcaEvent(new DcaBuilder(), self::context('tl_flare_list', 'flare_news')));
+        $listener->onListDriverDca(new ListDriverBuildDcaEvent(new DcaBuilder(), self::context('tl_flare_list', 'flare_news')));
 
         self::assertSame(['flare.list_driver.flare_news.dca'], $names);
     }
@@ -30,7 +30,7 @@ final class DcaEventListenerTest extends TestCase
         $listener = new DcaEventListener($this->recordingDispatcher($names));
 
         $listener->onFilterElementDca(
-            new FilterElementDcaEvent(new DcaBuilder(), self::context('tl_flare_filter', 'flare_archive')),
+            new FilterElementBuildDcaEvent(new DcaBuilder(), self::context('tl_flare_filter', 'flare_archive')),
         );
 
         self::assertSame(['flare.filter_element.flare_archive.dca'], $names);
@@ -40,7 +40,7 @@ final class DcaEventListenerTest extends TestCase
     {
         $listener = new DcaEventListener($this->recordingDispatcher($names));
 
-        $listener->onFilterControlDca(new FilterControlDcaEvent(
+        $listener->onFilterControlDca(new FilterControlBuildDcaEvent(
             (new DcaBuilder())->scope('control'),
             self::context('tl_flare_filter', 'flare_archive'),
             'flare_choice',

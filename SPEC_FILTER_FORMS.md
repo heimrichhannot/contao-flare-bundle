@@ -142,18 +142,20 @@ renames the per-filter strategy from `FilterForm` to `FilterControl`. Final name
 | `Event\FilterFormBuildEvent` | `Event\FormHarnessBuildEvent` | harness |
 | `EventListener\NamedDispatch\FilterFormListener` | `…\FormHarnessListener` | harness |
 | `flare.form.{name}.build` | unchanged (was `flare.filter_set.{name}.build` in between) | harness |
-| `Event\FilterElementFormBuiltEvent` | `Event\FilterControlBuiltEvent` (was `FilterFormBuiltEvent` in between) | control |
-| `flare.filter_element.{type}.form_built` | `flare.filter_control.{type}.built` (was `flare.filter_form.{type}.built`) | control |
-| — | `EventListener\NamedDispatch\FilterControlListener` (new) | control |
+| `Event\FilterElementFormBuiltEvent` | `Event\FilterControlBuildFormEvent` (was `FilterFormBuiltEvent`, then `FilterControlBuiltEvent` in between) | control |
+| `flare.filter_element.{type}.form_built` | `flare.filter_control.{type}.build_form` (was `flare.filter_form.{type}.built`, then `.built`) | control |
+| — | `EventListener\NamedDispatch\FilterControlBuildFormListener` (new) | control |
 | `Filter\Form\FilterFormInterface`, `AbstractFilterForm` (v0.2-only) | `Filter\Control\FilterControlInterface`, `AbstractFilterControl` | control |
 | `#[AsFilterForm]`, tag `flare.filter_form`, alias `flare.filter_form.{name}` (v0.2-only) | `#[AsFilterControl]`, tag `flare.filter_control`, alias `flare.filter_control.{type}` | control |
 | `FilterFormRegistry`, `RegisterFilterFormsPass`, `TypeNameFactory::createFilterFormType()` (v0.2-only) | `FilterControlRegistry`, `RegisterFilterControlsPass`, `createFilterControlType()` (suffixes `FilterControl`, `Control`) | control |
 | `Filter\FilterFormBuilder`, `…Interface` | unchanged | Symfony |
-| `Event\ElementDcaEvent` (fired for list drivers and filter elements) | `Event\ListDriverDcaEvent` (`flare.list_driver.{type}.dca`), `Event\FilterElementDcaEvent` (`flare.filter_element.{type}.dca`) | element / list driver |
-| `Event\ListTransformerEvent`, `flare.list.{type}.transformers` | `Event\ListDriverTransformerEvent`, `flare.list_driver.{type}.transformers` (`…\ListDriverTransformerListener`) | list driver |
-| — | `Event\FilterControlDcaEvent`, `flare.filter_control.{type}.dca` with the *control* type (new) | control |
+| `Event\ElementDcaEvent` (fired for list drivers and filter elements) | `Event\ListDriverBuildDcaEvent` (`flare.list_driver.{type}.dca`), `Event\FilterElementBuildDcaEvent` (`flare.filter_element.{type}.dca`) | element / list driver |
+| `Event\ListTransformerEvent`, `flare.list.{type}.transformers` | `Event\ListDriverConfigureTransformersEvent`, `flare.list_driver.{type}.transformers` | list driver |
+| — | `Event\FilterControlBuildDcaEvent`, `flare.filter_control.{type}.dca` with the *control* type (new) | control |
 | `EventListener\NamedDispatch\ElementDcaEventListener` | `…\DcaEventListener` | element / list driver / control |
-| `FilterTransformerEvent::$element`, element-only | `FilterTransformerEvent::$owner` (`FilterComponentInterface`), also `flare.filter_control.{type}.transformers` | element / control |
+| `FilterTransformerEvent` (element-only) | `Event\FilterElementConfigureTransformersEvent` (`$element`, `flare.filter_element.{type}.transformers`) and `Event\FilterControlConfigureTransformersEvent` (`$control`, `flare.filter_control.{type}.transformers`) (new) | element / control |
+| `FilterTransformerListener`, `ListTransformerListener` | `…\TransformersEventListener` (one handler per event) | element / control / list driver |
+| `Event\DetailsPageUrlGeneratedEvent` | `Event\ReaderUrlGeneratedEvent` | reader |
 
 The query-side renames of #48 are in §2.3.
 
@@ -162,7 +164,7 @@ Because the aggregate is named after the form, its dispatch alias went back to t
 `flare.form.{name}.build`. `FilterElementFormBuiltEvent` loses its detour over the element: it was
 named after the element only because `FilterForm*` was taken; it is dispatched after a control built
 its fields, so it is named after the control, and its alias moves out of `FilterElementListener`
-into `FilterControlListener`. `{type}` there is the *control* type (`Filter::$controlType`), like in every
+into `FilterControlBuildFormListener`. `{type}` there is the *control* type (`Filter::$controlType`), like in every
 other `flare.filter_control.{type}.*` event (§13.32); it carried the element type until the review of PR #49.
 
 `FilterFormBuilder` keeps its name deliberately: it is a Symfony-level builder for one filter's
@@ -208,7 +210,7 @@ final readonly class FilterScope
 
 Everything that happens before a value exists receives the scope: `FilterControlInterface::buildForm()`,
 `::decode()` and `::hydrate()`, the element ports (§3.5), value providers (§3.6),
-`FilterControlBuiltEvent`, `FilterMount`. `FormHarnessFactory` creates scopes directly. The form-side
+`FilterControlBuildFormEvent`, `FilterMount`. `FormHarnessFactory` creates scopes directly. The form-side
 attribute keys `ATTR_SELF` and `ATTR_SINGLE_FIELD` move from `FilterContext` to `FilterScope`.
 
 **Engine contexts** are `InteractiveContext`, `ValidationContext`, `AggregationContext` and, new,
@@ -607,8 +609,8 @@ __prefix__  +  element palette  +  control palette  +  __suffix__
 ```
 
 `ElementDcaListener` passes a scoped sub-builder to the control (e.g. `$dca->scope('control')`) whose
-`palette()` lands in the control segment, then dispatches `FilterControlDcaEvent` with that sub-builder
-and the control type, so listeners adjust only the control's part. `FilterElementDcaEvent` follows once
+`palette()` lands in the control segment, then dispatches `FilterControlBuildDcaEvent` with that sub-builder
+and the control type, so listeners adjust only the control's part. `FilterElementBuildDcaEvent` follows once
 the framework fields are in place. `field()` stays **shared** — it already returns a shared
 `DcaFieldBuilder`, and a control occasionally needs to tweak an element field's `eval`.
 
@@ -1179,14 +1181,19 @@ Recorded here because each one closes a branch the design could otherwise have t
     answers 5xx, so broken config is never indexed.
 32. **Event names state whose type they carry** (review of PR #49): `flare.filter_element.{type}.*` always
     carries the registered element type, `flare.filter_control.{type}.*` the registered control type
-    (`Filter::$controlType`; `.built` switched from the element type) and `flare.list_driver.{type}.*` the
-    list driver type (`ListDriverDcaEvent`, `ListDriverTransformerEvent`, `ListDriverBuildListEvent` —
-    `build_list`, because `ListSpec` is the list), so further list components can
-    get their own prefix without another rename.
+    (`Filter::$controlType`; `build_form` switched from the element type) and `flare.list_driver.{type}.*`
+    the list driver type (`ListDriverBuildDcaEvent`, `ListDriverConfigureTransformersEvent`,
+    `ListDriverBuildListEvent` — `build_list`, because `ListSpec` is the list), so further list components
+    can get their own prefix without another rename. Hook event classes are `{Component}{Hook}Event` after
+    the hook they follow (`FilterControlBuildFormEvent`, `FilterElementBuildDcaEvent`,
+    `FilterElementConfigureTransformersEvent`); the named event keeps a short suffix (`dca`,
+    `transformers`) unless it would be unclear (`build_list`, `build_form`). The query events are left
+    alone until the query architecture is reworked.
 33. **Elements and controls share `FilterComponentInterface`** (review of PR #49). Both are registered
-    by type and own their config, so `FilterOptionsResolver`, `FilterTransformerResolver` and
-    `FilterTransformerEvent` type against the common interface instead of a union. The DCA events stay
-    separate classes, because the control's builder is scoped to its palette segment.
+    by type and own their config, so `FilterOptionsResolver` and `FilterTransformerResolver` type against
+    the common interface instead of a union. Their events are separate classes per component (the DCA
+    events, because the control's builder is scoped to its palette segment; the transformer events, so a
+    listener receives a typed `$element` or `$control`).
 34. **Config resolution has two generic cores and thin domain wrappers** (review of PR #49).
     `Config\SchemaResolver` (options) and `Config\SourceTransformer` (transformers) memoize per
     `"{type}@{class}"` key; `FilterOptionsResolver`/`FilterTransformerResolver` and

@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use Symfony\Contracts\EventDispatcher\Event;
 
 /**
- * Dispatched after a filter control built its fields on the collect-only per-filter builder,
+ * Dispatched after a filter control's `buildForm()` declared its fields on the collect-only per-filter builder,
  * before {@see \HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory} mounts them onto the
  * root form (flat for single() fields without companions, nested compound otherwise).
  *
@@ -18,10 +18,10 @@ use Symfony\Contracts\EventDispatcher\Event;
  * or cancel mounting altogether. Adding a child alongside a single() declaration switches the
  * filter to the nested compound layout.
  *
- * Also dispatched under the name `flare.filter_control.{type}.built` with the control type
- * ({@see \HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterControlListener}).
+ * Also dispatched under the name `flare.filter_control.{type}.build_form` with the control type
+ * ({@see \HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterControlBuildFormListener}).
  */
-class FilterControlBuiltEvent extends Event
+class FilterControlBuildFormEvent extends Event
 {
     public function __construct(
         public readonly FilterFormBuilderInterface $builder,

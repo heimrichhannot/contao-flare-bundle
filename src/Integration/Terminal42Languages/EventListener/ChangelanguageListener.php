@@ -11,7 +11,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Event\AbstractFetchEvent;
-use HeimrichHannot\FlareBundle\Event\DetailsPageUrlGeneratedEvent;
+use HeimrichHannot\FlareBundle\Event\ReaderUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Event\FetchAutoItemEvent;
 use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
 use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
@@ -206,7 +206,7 @@ class ChangelanguageListener
     }
 
     #[AsEventListener(priority: 220)]
-    public function onListViewDetailsPageUrlGenerated(DetailsPageUrlGeneratedEvent $event): void
+    public function onListViewDetailsPageUrlGenerated(ReaderUrlGeneratedEvent $event): void
     {
         if (!$langPage = $this->findPageForLanguage($event->page)) {
             return;

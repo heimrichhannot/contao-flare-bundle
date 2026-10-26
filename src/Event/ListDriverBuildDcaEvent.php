@@ -13,7 +13,7 @@ use Symfony\Contracts\EventDispatcher\Event;
  * Listeners may adjust the palette or field configuration — also per type via the named event
  * `flare.list_driver.{type}.dca`.
  */
-class ListDriverDcaEvent extends Event
+class ListDriverBuildDcaEvent extends Event
 {
     public function __construct(
         public readonly DcaBuilder $builder,

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterCallback;
 
-use HeimrichHannot\FlareBundle\Event\ElementDcaEvent;
+use HeimrichHannot\FlareBundle\Event\FilterElementDcaEvent;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement\CodefogTagsChoiceFilterElement;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement\CodefogTagsSearchElement;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegistry;
@@ -22,7 +22,7 @@ readonly class TargetAliasCallback
         private CfgTagsJoinsRegistry $joinsRegistry,
     ) {}
 
-    public function __invoke(ElementDcaEvent $event): void
+    public function __invoke(FilterElementDcaEvent $event): void
     {
         if (!$context = $event->context->getExecutionContext()) {
             return;

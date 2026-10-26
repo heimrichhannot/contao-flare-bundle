@@ -12,7 +12,9 @@ use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
-use HeimrichHannot\FlareBundle\Event\ElementDcaEvent;
+use HeimrichHannot\FlareBundle\Event\FilterControlDcaEvent;
+use HeimrichHannot\FlareBundle\Event\FilterElementDcaEvent;
+use HeimrichHannot\FlareBundle\Event\ListDcaEvent;
 use HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareFilter\ListCallbacks;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
@@ -32,8 +34,9 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Applies each element's backend configuration ({@see DcaContract::configureDca()}) and
- * the {@see ElementDcaEvent} extension point to the live DCA of the edited record.
+ * Applies each element's backend configuration ({@see DcaContract::buildDca()}) and the extension points
+ * {@see ListDcaEvent}, {@see FilterElementDcaEvent} and {@see FilterControlDcaEvent} to the live DCA of
+ * the edited record.
  *
  * The actual configuration runs as an appended `onload_callback` so that service callbacks
  * with positive priorities (e.g. prefix manipulation) execute first — matching the timing
@@ -140,7 +143,9 @@ final readonly class ElementDcaListener
             $this->buildFrameworkDca($dcaBuilder, $context, $filterModel);
         }
 
-        $this->eventDispatcher->dispatch(new ElementDcaEvent($dcaBuilder, $context));
+        $this->eventDispatcher->dispatch($table === FilterModel::getTable()
+            ? new FilterElementDcaEvent($dcaBuilder, $context)
+            : new ListDcaEvent($dcaBuilder, $context));
 
         $isEditAction = $this->requestStack->getCurrentRequest()?->query->get('act') === 'edit';
 
@@ -153,10 +158,17 @@ final readonly class ElementDcaListener
      */
     private function buildFrameworkDca(DcaBuilder $builder, DcaContext $context, FilterModel $filterModel): void
     {
-        $control = $this->filterControlRegistry->get((string) $filterModel->control);
+        $controlType = (string) $filterModel->control;
 
-        if ($control instanceof DcaContract) {
-            $control->buildDca($builder->scope('control'), $context);
+        if ($control = $this->filterControlRegistry->get($controlType))
+        {
+            $controlBuilder = $builder->scope('control');
+
+            if ($control instanceof DcaContract) {
+                $control->buildDca($controlBuilder, $context);
+            }
+
+            $this->eventDispatcher->dispatch(new FilterControlDcaEvent($controlBuilder, $context, $controlType));
         }
 
         $valueClass = $this->filterElementRegistry->getAttribute($context->type)?->value;

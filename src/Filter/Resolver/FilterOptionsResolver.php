@@ -7,12 +7,11 @@ namespace HeimrichHannot\FlareBundle\Filter\Resolver;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
-use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterComponentInterface;
 
 /**
- * Resolves a filter's canonical element or control config through its owner's declared schema.
- * Owners without an {@see OptionsContract} receive their config verbatim (unvalidated).
+ * Resolves the canonical config of a filter component (element or control) through its declared schema.
+ * Components without an {@see OptionsContract} receive their config verbatim (unvalidated).
  */
 final readonly class FilterOptionsResolver
 {
@@ -24,9 +23,9 @@ final readonly class FilterOptionsResolver
      * @param array<string, mixed> $config
      * @return array<string, mixed>
      *
-     * @throws FilterException If the config does not satisfy the owner's schema.
+     * @throws FilterException If the config does not satisfy the component's schema.
      */
-    public function resolve(FilterElementInterface|FilterControlInterface $owner, array $config): array
+    public function resolve(FilterComponentInterface $owner, array $config): array
     {
         if (!$owner instanceof OptionsContract) {
             return $config;
@@ -39,12 +38,7 @@ final readonly class FilterOptionsResolver
         catch (\Throwable $e)
         {
             throw new FilterException(
-                \sprintf(
-                    '[FLARE] Invalid filter config for %s "%s": %s',
-                    $owner instanceof FilterControlInterface ? 'control' : 'element',
-                    $owner::class,
-                    $e->getMessage(),
-                ),
+                \sprintf('[FLARE] Invalid config for "%s": %s', $owner::class, $e->getMessage()),
                 previous: $e,
                 method: $owner::class . '::configureOptions',
             );

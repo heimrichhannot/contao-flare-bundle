@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Control;
 
+use HeimrichHannot\FlareBundle\Filter\FilterComponentInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -25,7 +26,7 @@ use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
  *
  * @api
  */
-interface FilterControlInterface
+interface FilterControlInterface extends FilterComponentInterface
 {
     /**
      * Declares the filter's form fields on the collect-only per-filter builder.

@@ -79,21 +79,24 @@ final class FilterTransformerResolverTest extends TestCase
         self::assertSame(['external' => true], $config);
     }
 
-    public function testTransformsSourceThroughControlTransformerWithoutDispatchingTheElementEvent(): void
+    public function testTransformsSourceThroughControlTransformerAndDispatchesTheEventForTheControl(): void
     {
-        $dispatched = 0;
+        $owners = [];
 
         $dispatcher = new EventDispatcher();
-        $dispatcher->addListener(FilterTransformerEvent::class, static function () use (&$dispatched): void {
-            $dispatched++;
-        });
+        $dispatcher->addListener(
+            FilterTransformerEvent::class,
+            static function (FilterTransformerEvent $event) use (&$owners): void {
+                $owners[] = [$event->owner::class, $event->type];
+            },
+        );
 
         $resolver = new FilterTransformerResolver($dispatcher);
 
         $config = $resolver->transform(new TransformingControl(), 'transforming_control', new RowSource(['b' => 2]));
 
         self::assertSame(['b' => 2], $config);
-        self::assertSame(0, $dispatched);
+        self::assertSame([[TransformingControl::class, 'transforming_control']], $owners);
     }
 }
 

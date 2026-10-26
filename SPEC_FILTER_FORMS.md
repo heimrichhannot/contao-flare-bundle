@@ -149,6 +149,10 @@ renames the per-filter strategy from `FilterForm` to `FilterControl`. Final name
 | `#[AsFilterForm]`, tag `flare.filter_form`, alias `flare.filter_form.{name}` (v0.2-only) | `#[AsFilterControl]`, tag `flare.filter_control`, alias `flare.filter_control.{type}` | control |
 | `FilterFormRegistry`, `RegisterFilterFormsPass`, `TypeNameFactory::createFilterFormType()` (v0.2-only) | `FilterControlRegistry`, `RegisterFilterControlsPass`, `createFilterControlType()` (suffixes `FilterControl`, `Control`) | control |
 | `Filter\FilterFormBuilder`, `…Interface` | unchanged | Symfony |
+| `Event\ElementDcaEvent` (fired for list drivers and filter elements) | `Event\ListDcaEvent` (`flare.list.{type}.dca`), `Event\FilterElementDcaEvent` (`flare.filter_element.{type}.dca`) | element / list |
+| — | `Event\FilterControlDcaEvent`, `flare.filter_control.{type}.dca` with the *control* type (new) | control |
+| `EventListener\NamedDispatch\ElementDcaEventListener` | `…\DcaEventListener` | element / list / control |
+| `FilterTransformerEvent::$element`, element-only | `FilterTransformerEvent::$owner` (`FilterComponentInterface`), also `flare.filter_control.{type}.transformers` | element / control |
 
 The query-side renames of #48 are in §2.3.
 
@@ -593,7 +597,9 @@ __prefix__  +  element palette  +  control palette  +  __suffix__
 ```
 
 `ElementDcaListener` passes a scoped sub-builder to the control (e.g. `$dca->scope('control')`) whose
-`palette()` lands in the control segment. `field()` stays **shared** — it already returns a shared
+`palette()` lands in the control segment, then dispatches `FilterControlDcaEvent` with that sub-builder
+and the control type, so listeners adjust only the control's part. `FilterElementDcaEvent` follows once
+the framework fields are in place. `field()` stays **shared** — it already returns a shared
 `DcaFieldBuilder`, and a control occasionally needs to tweak an element field's `eval`.
 
 `apply()` keeps keying `palettes[$type]`; the palette is recomputed per record load, so no key
@@ -1155,6 +1161,11 @@ Recorded here because each one closes a branch the design could otherwise have t
     display** (§8.1). A list that fails closed shows an explicit "could not be created" message —
     never "no entries found" — and keeps HTTP status 200; a reader that cannot validate its entry
     answers 5xx, so broken config is never indexed.
+32. **Elements and controls share `FilterComponentInterface`** (review of PR #49). Both are registered
+    by type and own their config, so `FilterOptionsResolver`, `FilterTransformerResolver` and
+    `FilterTransformerEvent` type against the common interface instead of a union. The DCA events stay
+    separate classes, because the control's builder is scoped to its palette segment.
+
 ---
 
 ## 14. Remaining unknowns

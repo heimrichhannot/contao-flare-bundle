@@ -69,7 +69,7 @@ final class FilterOptionsResolverTest extends TestCase
         }
         catch (FilterException $e)
         {
-            self::assertStringContainsString('control', $e->getMessage());
+            self::assertStringStartsWith('[FLARE] Invalid config for', $e->getMessage());
             self::assertStringContainsString(ConfigAwareControl::class, $e->getMessage());
         }
     }

@@ -21,11 +21,12 @@ final readonly class FilterOptionsResolver
 
     /**
      * @param array<string, mixed> $config
+     * @param string|null $origin Provenance for the exception, e.g. "tl_flare_filter.42".
      * @return array<string, mixed>
      *
      * @throws FilterException If the config does not satisfy the component's schema.
      */
-    public function resolve(FilterComponentInterface $owner, array $config): array
+    public function resolve(FilterComponentInterface $owner, array $config, ?string $origin = null): array
     {
         if (!$owner instanceof OptionsContract) {
             return $config;
@@ -41,6 +42,7 @@ final readonly class FilterOptionsResolver
                 \sprintf('[FLARE] Invalid config for "%s": %s', $owner::class, $e->getMessage()),
                 previous: $e,
                 method: $owner::class . '::configureOptions',
+                source: $origin,
             );
         }
     }

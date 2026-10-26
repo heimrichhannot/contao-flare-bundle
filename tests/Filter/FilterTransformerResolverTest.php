@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
+use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\FilterTransformerEvent;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
@@ -25,7 +27,7 @@ final class FilterTransformerResolverTest extends TestCase
 {
     public function testTransformsSourceThroughElementTransformer(): void
     {
-        $resolver = new FilterTransformerResolver(new EventDispatcher());
+        $resolver = new FilterTransformerResolver(new SourceTransformer(), new EventDispatcher());
         $element = new TransformingElement();
 
         $config = $resolver->transform($element, 'transforming', new RowSource(['value' => 'x']));
@@ -35,7 +37,7 @@ final class FilterTransformerResolverTest extends TestCase
 
     public function testReturnsNullWithoutMatchingTransformer(): void
     {
-        $resolver = new FilterTransformerResolver(new EventDispatcher());
+        $resolver = new FilterTransformerResolver(new SourceTransformer(), new EventDispatcher());
 
         self::assertNull($resolver->transform(new TransformingElement(), 'transforming', new \stdClass()));
         self::assertNull($resolver->transform(new PlainTransformerlessElement(), 'plain', new RowSource([])));
@@ -50,7 +52,7 @@ final class FilterTransformerResolverTest extends TestCase
             $dispatched++;
         });
 
-        $resolver = new FilterTransformerResolver($dispatcher);
+        $resolver = new FilterTransformerResolver(new SourceTransformer(), $dispatcher);
         $element = new TransformingElement();
 
         $resolver->transform($element, 'transforming', new RowSource([]));
@@ -72,7 +74,7 @@ final class FilterTransformerResolverTest extends TestCase
             },
         );
 
-        $resolver = new FilterTransformerResolver($dispatcher);
+        $resolver = new FilterTransformerResolver(new SourceTransformer(), $dispatcher);
 
         $config = $resolver->transform(new PlainTransformerlessElement(), 'plain', new \stdClass());
 
@@ -91,12 +93,41 @@ final class FilterTransformerResolverTest extends TestCase
             },
         );
 
-        $resolver = new FilterTransformerResolver($dispatcher);
+        $resolver = new FilterTransformerResolver(new SourceTransformer(), $dispatcher);
 
         $config = $resolver->transform(new TransformingControl(), 'transforming_control', new RowSource(['b' => 2]));
 
         self::assertSame(['b' => 2], $config);
         self::assertSame([[TransformingControl::class, 'transforming_control']], $owners);
+    }
+
+    public function testFailuresAreWrappedInAFilterExceptionWithTheOrigin(): void
+    {
+        $resolver = new FilterTransformerResolver(new SourceTransformer(), new EventDispatcher());
+
+        try
+        {
+            $resolver->transform(new FailingElement(), 'failing', new RowSource(), 'tl_flare_filter.42');
+            self::fail('Expected FilterException.');
+        }
+        catch (FilterException $e)
+        {
+            self::assertStringContainsString(FailingElement::class, $e->getMessage());
+            self::assertSame('tl_flare_filter.42', $e->getSource());
+            self::assertSame(FailingElement::class . '::configureTransformers', $e->getMethod());
+        }
+    }
+}
+
+final class FailingElement implements FilterElementInterface, TransformerContract
+{
+    public function configureTransformers(TransformerMap $transformers): void
+    {
+        throw new \RuntimeException('broken map');
+    }
+
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
+    {
     }
 }
 

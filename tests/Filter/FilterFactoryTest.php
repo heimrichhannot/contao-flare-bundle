@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
+use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaFieldBuilderInterface;
@@ -21,10 +22,10 @@ use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
+use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
-use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
@@ -83,7 +84,7 @@ final class FilterFactoryTest extends TestCase
             filterControlRegistry: $controls,
             valueProviderRegistry: $providers,
             filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
-            filterTransformerResolver: new FilterTransformerResolver(new EventDispatcher()),
+            filterTransformerResolver: new FilterTransformerResolver(new SourceTransformer(), new EventDispatcher()),
             logger: $logger,
         );
     }

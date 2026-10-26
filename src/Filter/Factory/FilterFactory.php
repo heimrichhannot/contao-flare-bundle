@@ -66,7 +66,7 @@ final readonly class FilterFactory
 
         $alias = $alias ?: self::generateAlias($type, mounted: $control !== null);
 
-        $config = $this->filterOptionsResolver->resolve($element, $config);
+        $config = $this->filterOptionsResolver->resolve($element, $config, $source);
 
         $controlType = \is_string($control) ? $control : null;
 
@@ -74,7 +74,7 @@ final readonly class FilterFactory
         {
             $control = $this->resolveControl($control, $valueClass, $source);
             $controlType ??= $control::class;
-            $controlConfig = $this->filterOptionsResolver->resolve($control, $controlConfig);
+            $controlConfig = $this->filterOptionsResolver->resolve($control, $controlConfig, $source);
         }
 
         if ($value !== null && ($valueClass === null || !$value instanceof $valueClass))
@@ -123,13 +123,13 @@ final readonly class FilterFactory
         $type = $this->resolveType($filterModel->getFilterElementType(), $source);
         $element = $this->resolveElement($type, $source);
 
-        $config = $this->filterTransformerResolver->transform($element, $type, $filterModel) ?? [];
+        $config = $this->filterTransformerResolver->transform($element, $type, $filterModel, $source) ?? [];
 
         $filter = new Filter(
             element: $element,
             type: $type,
             alias: $filterModel->getFilterAlias(),
-            config: $this->filterOptionsResolver->resolve($element, $config),
+            config: $this->filterOptionsResolver->resolve($element, $config, $source),
             targetAlias: $filterModel->getFilterTargetAlias() ?: null,
             source: $source,
         );
@@ -149,8 +149,9 @@ final readonly class FilterFactory
         {
             $control = $this->resolveControl($controlType, $valueClass, $source);
 
-            $controlConfig = $this->filterTransformerResolver->transform($control, $controlType, $filterModel) ?? [];
-            $controlConfig = $this->filterOptionsResolver->resolve($control, $controlConfig);
+            $controlConfig = $this->filterTransformerResolver
+                ->transform($control, $controlType, $filterModel, $source) ?? [];
+            $controlConfig = $this->filterOptionsResolver->resolve($control, $controlConfig, $source);
 
             $value = $this->provideValue($valueClass, $filterModel, $element);
         }

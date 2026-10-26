@@ -72,7 +72,12 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   (run-once per row via the migration-managed `legacyBackfilled` marker column), `RenameContentListColumnMigration`.
   Migrations never delete; legacy columns stay until deletes are run manually
 - `src/Config/` — `ConfigBuilder` (fluent canonical-config accumulator; no cast helpers — transformers cast
-  declaratively off the typed model) and `TransformerResolver` (source class → transformer map)
+  declaratively off the typed model), `TransformerMap` (source class → transformer, what
+  `TransformerContract::configureTransformers()` fills) and the two memoizing cores `SchemaResolver` (options)
+  and `SourceTransformer` (transformers). The domain wrappers `FilterOptionsResolver` /
+  `FilterTransformerResolver` and `ListOptionsResolver` / `ListTransformerResolver` only add the contract
+  check, their event and the wrapping of any failure into `FilterException` / `FlareException` (with
+  `$origin` as the exception's source)
 - `src/Filter/Value/` — immutable filter value objects (`BoolValue`, `ChoiceValue`, `KeywordsValue`,
   `DateRangeValue`; choices in `Value/Choice/`), the typed channel between a control's `decode()` and an
   element's `buildContext()`. Each is `final readonly`, implements `ValueInterface` and expresses its identity

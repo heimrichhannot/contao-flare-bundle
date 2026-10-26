@@ -31,6 +31,10 @@ services:
     HeimrichHannot\FlareBundle\Config\SchemaResolver:
         shared: false
 
+    # Not shared either: each consumer keeps its own per-key transformer maps
+    HeimrichHannot\FlareBundle\Config\SourceTransformer:
+        shared: false
+
 #    bind:
 #      $projectDir: '%kernel.project_dir%'
 #      $csrfTokenName: '%contao.csrf_token_name%'

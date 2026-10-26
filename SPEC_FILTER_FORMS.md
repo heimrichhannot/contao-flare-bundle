@@ -1186,6 +1186,15 @@ Recorded here because each one closes a branch the design could otherwise have t
     by type and own their config, so `FilterOptionsResolver`, `FilterTransformerResolver` and
     `FilterTransformerEvent` type against the common interface instead of a union. The DCA events stay
     separate classes, because the control's builder is scoped to its palette segment.
+34. **Config resolution has two generic cores and thin domain wrappers** (review of PR #49).
+    `Config\SchemaResolver` (options) and `Config\SourceTransformer` (transformers) memoize per
+    `"{type}@{class}"` key; `FilterOptionsResolver`/`FilterTransformerResolver` and
+    `ListOptionsResolver`/`ListTransformerResolver` add only the contract check, their event and the
+    error wrapping. Every failure — schema violation or a throwing transformer, `\Error`s included,
+    since stored data typically fails with a `ValueError`/`TypeError` — becomes a `FilterException`
+    (filters) or `FlareException` (lists) with the record as source (`$origin`), so a broken record
+    fails the list closed instead of escaping the collector. The source-class → transformer map is
+    `Config\TransformerMap` (formerly `TransformerResolver`).
 
 ---
 

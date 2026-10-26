@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\List;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
+use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildListContract;
 use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -13,13 +14,13 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
+use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
 use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
 use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
-use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
-use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use PHPUnit\Framework\TestCase;
@@ -199,7 +200,7 @@ final class ListSpecBuilderTest extends TestCase
         return new ListSpecFactory(
             $registry,
             new ListOptionsResolver(new SchemaResolver()),
-            new ListTransformerResolver($dispatcher ?? new EventDispatcher()),
+            new ListTransformerResolver(new SourceTransformer(), $dispatcher ?? new EventDispatcher()),
             $listDriverResolver,
         );
     }

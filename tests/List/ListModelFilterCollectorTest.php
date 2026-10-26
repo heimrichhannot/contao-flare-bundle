@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\List;
 
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
+use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
@@ -53,7 +54,7 @@ final class ListModelFilterCollectorTest extends TestCase
             filterControlRegistry: new FilterControlRegistry(),
             valueProviderRegistry: new ValueProviderRegistry(),
             filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
-            filterTransformerResolver: new FilterTransformerResolver($this->dispatcher),
+            filterTransformerResolver: new FilterTransformerResolver(new SourceTransformer(), $this->dispatcher),
             logger: $logger,
         );
 

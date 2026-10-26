@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\EventListener\NamedDispatch;
 
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
-use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
+use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\ListBuildListener;
+use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
+use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
+use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
 use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
 use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
-use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
-use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -59,7 +60,7 @@ final class ListBuildListenerTest extends TestCase
             specFactory: new ListSpecFactory(
                 $registry,
                 new ListOptionsResolver(new SchemaResolver()),
-                new ListTransformerResolver($dispatcher),
+                new ListTransformerResolver(new SourceTransformer(), $dispatcher),
                 $listDriverResolver,
             ),
             eventDispatcher: $dispatcher,

@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\List;
 
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
+use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
 use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
-use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -24,7 +25,7 @@ final class ListSpecFactoryTest extends TestCase
         return new ListSpecFactory(
             $registry,
             new ListOptionsResolver(new SchemaResolver()),
-            new ListTransformerResolver(new EventDispatcher()),
+            new ListTransformerResolver(new SourceTransformer(), new EventDispatcher()),
             new ListDriverResolver($registry),
         );
     }

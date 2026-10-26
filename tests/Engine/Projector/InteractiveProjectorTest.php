@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Engine\Projector;
 
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
+use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\AggregationContextFactory;
 use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
 use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
@@ -194,7 +195,7 @@ final class InteractiveProjectorTest extends TestCase
             filterControlRegistry: new FilterControlRegistry(),
             valueProviderRegistry: new ValueProviderRegistry(),
             filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
-            filterTransformerResolver: new FilterTransformerResolver($dispatcher),
+            filterTransformerResolver: new FilterTransformerResolver(new SourceTransformer(), $dispatcher),
             logger: $logger,
         );
 

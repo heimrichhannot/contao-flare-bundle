@@ -150,7 +150,7 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
         {
             $builder->addPredicate(ArchivePredicate::class, [
                 'field' => 'pid',
-                'parent_ids' => $parentIds[$ptable],
+                'parent_ids' => $parentIds[$ptable] ?? $builder->abort(),
             ]);
 
             return;

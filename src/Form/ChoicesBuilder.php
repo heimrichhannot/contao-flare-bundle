@@ -309,12 +309,10 @@ final class ChoicesBuilder
                 $label = (string) $model->id;
             }
 
+            // The row's fields come from ContaoModelChoice::getLabelParameters() below; only the table
+            // parameters need the translator.
             $params['%@table%'] = $table;
             $params['%@name%'] = $this->translator->trans('table.' . $table, [], 'flare_form');
-
-            foreach ($model->row() as $field => $v) {
-                $params['%' . $field . '%'] = $v;
-            }
 
             if ($this->getModelSuffix()) {
                 $label = \trim((string) $label) . ' ' . \trim($this->getModelSuffix());

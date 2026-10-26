@@ -8,6 +8,7 @@ use HeimrichHannot\FlareBundle\Contract\LabelableInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 use Symfony\Component\Form\ChoiceList\Loader\CallbackChoiceLoader;
@@ -179,6 +180,28 @@ final class ChoicesBuilderTest extends TestCase
             'tl_a.7',
             self::builder()->buildChoiceLabel(ContaoModelChoice::ref('tl_a', 7), 'tl_a.7', '7'),
         );
+    }
+
+    public function testModelChoiceLabelReceivesTheScalarRowFieldsAndTheTable(): void
+    {
+        $model = new class(['id' => 7, 'title' => 'News', 'meta' => ['x']]) extends FilterModel {
+            /** @noinspection PhpMissingParentConstructorInspection */
+            public function __construct(array $row)
+            {
+                $this->arrData = $row;
+            }
+        };
+
+        $recorded = [];
+        $builder = new ChoicesBuilder(self::translator($recorded), self::parameterBag());
+        $builder->buildChoiceLabel(ContaoModelChoice::from($model), 'tl_flare_filter.7', '7');
+
+        $params = \end($recorded)[2];
+
+        self::assertSame('News', $params['%title%']);
+        self::assertSame(7, $params['%id%']);
+        self::assertSame('tl_flare_filter', $params['%@table%']);
+        self::assertArrayNotHasKey('%meta%', $params);
     }
 
     public function testEmptyOptionLabelIsUsedForTheSentinelKey(): void

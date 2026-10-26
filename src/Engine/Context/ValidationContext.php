@@ -10,9 +10,7 @@ use HeimrichHannot\FlareBundle\Reader\BackLink;
 use HeimrichHannot\FlareBundle\Util\LazyPage;
 use Symfony\Component\Validator\Constraints as Assert;
 
-readonly class ValidationContext implements
-    ContextInterface,
-    PaginatedContextInterface
+readonly class ValidationContext implements ContextInterface, PaginatedContextInterface
 {
     use ReaderUrlConfigCreatorTrait;
 

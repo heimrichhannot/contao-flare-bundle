@@ -79,10 +79,12 @@ final readonly class ChoiceValueProvider implements ValueProviderInterface
                     return [];
                 }
 
-                try {
+                try
+                {
                     return $element->createChoices($scope)->buildContaoOptions();
                 }
-                catch (FilterException $e) {
+                catch (FilterException $e)
+                {
                     Message::addError($e->getMessage());
                 }
 

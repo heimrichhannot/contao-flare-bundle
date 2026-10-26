@@ -70,7 +70,12 @@ final readonly class ElementDcaListener
             return;
         }
 
-        if (!$id = \filter_var($rawId, \FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]])) {
+        $filterOptions = [
+            'options' => ['min_range' => 1],
+            'flags' => \FILTER_NULL_ON_FAILURE,
+        ];
+
+        if (!$id = \filter_var($rawId, \FILTER_VALIDATE_INT, $filterOptions)) {
             return;
         }
 

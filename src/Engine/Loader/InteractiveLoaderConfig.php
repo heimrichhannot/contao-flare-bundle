@@ -14,7 +14,7 @@ readonly class InteractiveLoaderConfig
      * @param array<string, ?ValueInterface> $filterValues Filter values keyed by filter alias.
      */
     public function __construct(
-        public ListSpec  $list,
+        public ListSpec           $list,
         public InteractiveContext $context,
         public array              $filterValues,
     ) {}

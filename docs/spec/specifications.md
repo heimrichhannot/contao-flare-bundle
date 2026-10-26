@@ -52,7 +52,7 @@ through the `ListSpecBuilderFactory` — content elements use `createFromListMod
 
 1. The driver's `buildList()` hook (if it implements `BuildListContract`) adds filters or config
    overrides.
-2. The [`ListBuildEvent`](../dev/events.md) (`flare.list.{type}.build`) gives third parties the same
+2. The [`ListDriverBuildListEvent`](../dev/events.md) (`flare.list_driver.{type}.build_list`) gives third parties the same
    access.
 3. The config is assembled: the framework's `BaseListOptions` translates the stored model's base columns
    (including `dc`), the driver's transformers translate its own columns, and explicit `set()` overrides

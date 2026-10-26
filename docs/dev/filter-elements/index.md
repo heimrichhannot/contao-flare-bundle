@@ -305,7 +305,7 @@ involved. Use the `with*()` methods (`withValue()`, `withControl()`, `withTarget
 `Filter` is immutable, so they return new instances.
 
 Add programmatic filters to a list while it is being built — from a list driver's `buildList()` hook or a
-[`ListBuildEvent`](../events.md) listener via `ListSpecBuilder::addFilter()` — or derive a new spec from an
+[`ListDriverBuildListEvent`](../events.md) listener via `ListSpecBuilder::addFilter()` — or derive a new spec from an
 existing one via `ListSpec::withFilter()`. Both **throw a `FlareException` on a duplicate alias** (and
 `addFilter()` also on a taken key); a filter is never silently replaced — remove it first with
 `removeFilter()` / `withoutFilter()`. See [Custom List Drivers](../list-types/index.md) for the build lifecycle.

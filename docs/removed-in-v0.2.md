@@ -66,8 +66,8 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - `PaletteEvent`
 - `FilterDefinitionCreatedEvent`
 - `FilterElementBuildingEvent` and `FilterElementBuiltEvent` (v0.2 development only) — and with them
-  `FilterElementInvokingEvent` / `FilterElementInvokedEvent` have **no successor**: use `ListBuildEvent`
-  (`flare.list.{type}.build`), a programmatic `Filter::$value`, or a custom filter element
+  `FilterElementInvokingEvent` / `FilterElementInvokedEvent` have **no successor**: use `ListDriverBuildListEvent`
+  (`flare.list_driver.{type}.build_list`), a programmatic `Filter::$value`, or a custom filter element
 
 ### Named event aliases
 

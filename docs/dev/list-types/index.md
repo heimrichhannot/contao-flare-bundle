@@ -101,8 +101,8 @@ part in runtime resolution.
 A list is built by the `ListSpecBuilder` into an immutable
 [`ListSpec`](../../spec/specifications.md). Drivers that implement
 `Contract\ListDriver\BuildListContract` take part in that lifecycle: `buildList()` runs first and may add
-filters or set config overrides. Afterwards, the [`ListBuildEvent`](../events.md)
-(`flare.list.{type}.build`) gives third parties the same access, then the config is assembled and
+filters or set config overrides. Afterwards, the [`ListDriverBuildListEvent`](../events.md)
+(`flare.list_driver.{type}.build_list`) gives third parties the same access, then the config is assembled and
 resolved.
 
 The built-in news list driver uses this to guarantee a published-state filter:

@@ -20,11 +20,11 @@ Dispatched after the `TableAliasRegistry` and base `SqlQueryStruct` are initiali
 
 ## 2. List Build & Filter Collection Lifecycle
 
-### `ListBuildEvent`
+### `ListDriverBuildListEvent`
 Dispatched while a list is being built into its [`ListSpec`](../spec/specifications.md) — after the
 driver's `buildList()` hook and before the config is resolved.
 - **Use Case:** Adding or removing filters and setting canonical config overrides at runtime.
-- **Class:** `HeimrichHannot\FlareBundle\Event\ListBuildEvent`
+- **Class:** `HeimrichHannot\FlareBundle\Event\ListDriverBuildListEvent`
 - **Properties:** `builder` (readonly `ListSpecBuilder` — `addFilter()`, `removeFilter()`, `set()`, ...)
 
 ### `FilterCollectedEvent`
@@ -100,7 +100,7 @@ nested compound otherwise).
 
 `FilterElementBuildingEvent` and `FilterElementBuiltEvent` were removed together with the `buildFilter()`
 element lifecycle they surrounded. To add or remove filters, use
-[`ListBuildEvent`](#listbuildevent); to influence a filter's value, set `Filter::$value` programmatically; for
+[`ListDriverBuildListEvent`](#listdriverbuildlistevent); to influence a filter's value, set `Filter::$value` programmatically; for
 bespoke matching, write a custom filter element.
 
 :::
@@ -146,19 +146,18 @@ object is identical to the base event.
 | `flare.filter_control.{type}.transformers` | `FilterTransformerEvent` (filter controls) |
 | `flare.filter_control.{type}.built` | `FilterControlBuiltEvent` |
 | `flare.form.{formName}.build` | `FormHarnessBuildEvent` |
-| `flare.list.{type}.build` | `ListBuildEvent` |
+| `flare.list_driver.{type}.build_list` | `ListDriverBuildListEvent` |
 | `flare.list_driver.{type}.transformers` | `ListDriverTransformerEvent` |
 | `flare.filter_element.{type}.dca` | `FilterElementDcaEvent` |
 | `flare.filter_control.{type}.dca` | `FilterControlDcaEvent` |
 | `flare.list_driver.{type}.dca` | `ListDriverDcaEvent` |
 
 The prefix states whose type `{type}` is: `filter_element` always carries a registered filter element type,
-`filter_control` a registered filter control type, `list_driver` (and, for the list build, `list`) a list driver
-type.
+`filter_control` a registered filter control type, `list_driver` a list driver type.
 
 How `{type}` is derived:
 
-- **`flare.list.{type}.build` / `flare.list_driver.{type}.transformers`** look the driver instance up in the
+- **`flare.list_driver.{type}.build_list` / `.transformers`** look the driver instance up in the
   `ListDriverRegistry` and fire once per type alias it is registered under (a driver registered under
   several aliases dispatches once per alias). An inline driver instance that is not registered fires no
   named events — the base event still fires.

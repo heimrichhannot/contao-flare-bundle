@@ -79,7 +79,7 @@ New interfaces: `FilterElementInterface` (required, one method), `FilterControlI
 
 | v0.1 | v0.2 |
 |---|---|
-| `FilterElementInvokingEvent` (`flare.filter_element.{type}.invoking`) | **No successor.** Add or remove filters in a `ListBuildEvent` (`flare.list.{type}.build`), set `Filter::$value` programmatically, or write a custom filter element |
+| `FilterElementInvokingEvent` (`flare.filter_element.{type}.invoking`) | **No successor.** Add or remove filters in a `ListDriverBuildListEvent` (`flare.list_driver.{type}.build_list`), set `Filter::$value` programmatically, or write a custom filter element |
 | `FilterElementInvokedEvent` (`flare.filter_element.{type}.invoked`) | **No successor** — same alternatives |
 | `FilterFormChildOptionsEvent` (`flare.form.{parent}.child.{name}.options`) | Removed — customize in the control's `buildForm()`, or listen to `FilterControlBuiltEvent` (`flare.filter_control.{type}.built`) |
 | `FilterElementFormTypeOptionsEvent` | Removed — same replacement as above |
@@ -159,7 +159,7 @@ Backend changes in the filter form:
 list's data container definitively. The spec carries the driver instance as `$spec->driver`; the main
 table is `$spec->dc`. Filters are a keyed `array<string, Filter>`
 instead of a `FilterDefinitionCollection`. While a list is being built (a driver's `buildList()` hook
-or a `ListBuildEvent` listener), use the mutable builder; on a finished spec, use the withers:
+or a `ListDriverBuildListEvent` listener), use the mutable builder; on a finished spec, use the withers:
 
 | v0.1 | v0.2 |
 |---|---|

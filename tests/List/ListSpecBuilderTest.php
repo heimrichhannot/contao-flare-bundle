@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildListContract;
-use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
+use HeimrichHannot\FlareBundle\Event\ListDriverBuildListEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
@@ -48,8 +48,8 @@ final class ListSpecBuilderTest extends TestCase
 
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(
-            ListBuildEvent::class,
-            static function (ListBuildEvent $event) use (&$dispatchedWith): void {
+            ListDriverBuildListEvent::class,
+            static function (ListDriverBuildListEvent $event) use (&$dispatchedWith): void {
                 $dispatchedWith = $event->builder;
                 $event->builder->addFilter(self::filter('from_event', 'via_event'));
             },

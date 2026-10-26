@@ -1122,8 +1122,8 @@ Recorded here because each one closes a branch the design could otherwise have t
 16. **`FilterElementBuildingEvent` and `FilterElementBuiltEvent` are removed**, with their
     `flare.filter_element.{type}.building|built` aliases. An event is public API whose payload would
     pin `FilterScope`, the value and `FilterContextBuilder` while they are new; adding an event later
-    breaks nothing. The use cases are covered: skip or add filters via `ListBuildEvent` /
-    `flare.list.{type}.build`, preset values via programmatic `Filter::$value`, extra conditions via
+    breaks nothing. The use cases are covered: skip or add filters via `ListDriverBuildListEvent` /
+    `flare.list_driver.{type}.build_list` (formerly `ListBuildEvent` / `flare.list.{type}.build`), preset values via programmatic `Filter::$value`, extra conditions via
     another filter or a custom element. Lost: a per-execution decision depending on the engine
     context, which needs a custom element. The 0.1 events `FilterElementInvokingEvent` /
     `FilterElementInvokedEvent` therefore have no direct successor; the migration guide says so.
@@ -1180,7 +1180,8 @@ Recorded here because each one closes a branch the design could otherwise have t
 32. **Event names state whose type they carry** (review of PR #49): `flare.filter_element.{type}.*` always
     carries the registered element type, `flare.filter_control.{type}.*` the registered control type
     (`Filter::$controlType`; `.built` switched from the element type) and `flare.list_driver.{type}.*` the
-    list driver type (`ListDriverDcaEvent`, `ListDriverTransformerEvent`), so further list components can
+    list driver type (`ListDriverDcaEvent`, `ListDriverTransformerEvent`, `ListDriverBuildListEvent` —
+    `build_list`, because `ListSpec` is the list), so further list components can
     get their own prefix without another rename.
 33. **Elements and controls share `FilterComponentInterface`** (review of PR #49). Both are registered
     by type and own their config, so `FilterOptionsResolver`, `FilterTransformerResolver` and

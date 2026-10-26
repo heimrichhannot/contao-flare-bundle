@@ -6,8 +6,8 @@ namespace HeimrichHannot\FlareBundle\Tests\EventListener\NamedDispatch;
 
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
-use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\ListBuildListener;
-use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
+use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\ListDriverBuildListListener;
+use HeimrichHannot\FlareBundle\Event\ListDriverBuildListEvent;
 use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
@@ -19,11 +19,11 @@ use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
-final class ListBuildListenerTest extends TestCase
+final class ListDriverBuildListListenerTest extends TestCase
 {
     public function testDispatchesNamedEventForStringDriverType(): void
     {
-        self::assertSame(['flare.list.a.build'], $this->dispatchedNames('a'));
+        self::assertSame(['flare.list_driver.a.build_list'], $this->dispatchedNames('a'));
     }
 
     public function testInstanceDriverTriggersNoNamedDispatch(): void
@@ -45,9 +45,9 @@ final class ListBuildListenerTest extends TestCase
         foreach (['a', 'b'] as $type)
         {
             $dispatcher->addListener(
-                "flare.list.{$type}.build",
+                "flare.list_driver.{$type}.build_list",
                 static function () use (&$names, $type): void {
-                    $names[] = "flare.list.{$type}.build";
+                    $names[] = "flare.list_driver.{$type}.build_list";
                 },
             );
         }
@@ -67,8 +67,8 @@ final class ListBuildListenerTest extends TestCase
             driver: $driver,
         );
 
-        $listener = new ListBuildListener($dispatcher);
-        $listener(new ListBuildEvent($builder));
+        $listener = new ListDriverBuildListListener($dispatcher);
+        $listener(new ListDriverBuildListEvent($builder));
 
         return $names;
     }

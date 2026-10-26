@@ -18,7 +18,7 @@ The core execution flow is:
 
 ```
 ContentElement Controller
-  → ListBuilderFactory::createFromListModel(...)->build() — builds the immutable ListSpec (src/List/)
+  → ListSpecBuilderFactory::createFromListModel(...)->build() — builds the immutable ListSpec (src/List/)
     → EngineFactory → Engine
       → Context (Interactive / Validation / Aggregation) — src/Engine/Context/
         → Loader (src/Engine/Loader/) + Mods (src/Engine/Mod/)
@@ -46,8 +46,9 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 (`buildDca`, `buildForm`, `buildContext`, `buildList`, `buildTableRegistry`/`buildBaseQuery`).
 
 **Notable subsystems** (beyond the flow above):
-- `src/List/` — `ListSpec` (immutable list DTO: type, dc, filters, canonical config, source), `ListBuilder`
-  (build lifecycle: type's `buildList()` hook → `ListBuildEvent` → config assembly → schema resolution),
+- `src/List/` — `ListSpec` (immutable list DTO: type, dc, filters, canonical config, source; named "Spec" only
+  because `List` is reserved in PHP — conceptually it is the list, as `Filter` is the filter), `ListSpecBuilder`
+  (build lifecycle: driver's `buildList()` hook → `ListDriverBuildListEvent` → config assembly → schema resolution),
   `BaseListOptions` (framework-owned base schema for tl_flare_list columns)
 - `src/Filter/` — `Filter` DTO (element + element config `elm_*`, optional control + control config `ctl_*`,
   `?ValueInterface $value`), elements (`Element/`), predicates (`Predicate/`, the public SQL-fragment
@@ -107,7 +108,7 @@ tl_flare_filter and tl_flare_list).
 
 **Event system** — Events, some with aliased dispatch for targeted listening
 (`flare.form.{name}.build`, `flare.filter_control.{type}.built` (`FilterControlBuiltEvent`),
-`flare.list.{type}.build`, `flare.filter_element.{type}.transformers` / `flare.filter_control.{type}.transformers`
+`flare.list_driver.{type}.build_list` (`ListDriverBuildListEvent`), `flare.filter_element.{type}.transformers` / `flare.filter_control.{type}.transformers`
 (`FilterTransformerEvent`), `flare.list_driver.{type}.transformers` (`ListDriverTransformerEvent`),
 `flare.list_driver.{type}.dca` (`ListDriverDcaEvent`), `flare.filter_element.{type}.dca`
 (`FilterElementDcaEvent`), `flare.filter_control.{type}.dca` (`FilterControlDcaEvent`, control type, builder scoped to
@@ -115,7 +116,7 @@ the control segment), etc., implemented by the listeners in `src/EventListener/N
 `src/Event/`. Elements and controls share `FilterComponentInterface`, the type the config resolvers and
 `FilterTransformerEvent::$owner` use.
 The former per-element `FilterElementBuildingEvent`/`FilterElementBuiltEvent` (and their `.building`/`.built`
-aliases) are removed; use `ListBuildEvent` or a programmatic `Filter::$value` instead.
+aliases) are removed; use `ListDriverBuildListEvent` or a programmatic `Filter::$value` instead.
 Prefer events over overriding services for customization.
 
 **Registry pattern** — Registries in `src/Registry/` map type names to implementations: `FilterElementRegistry`, `FilterControlRegistry`, `ValueProviderRegistry`, `ListDriverRegistry`, `FilterPredicateRegistry`, `ProjectorRegistry`, `EngineModRegistry`. `FilterControlRegistry` differs from the others: it stores

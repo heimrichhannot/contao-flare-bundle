@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\List;
 
 use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildListContract;
-use HeimrichHannot\FlareBundle\Event\ListBuildEvent;
+use HeimrichHannot\FlareBundle\Event\ListDriverBuildListEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
@@ -19,7 +19,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  * Configures a list and its filters, then builds the immutable {@see ListSpec}.
  *
  * Build order: the driver's {@see BuildListContract::buildList()} hook, the
- * {@see ListBuildEvent} (named dispatch `flare.list.{type}.build`), then config assembly —
+ * {@see ListDriverBuildListEvent} (named dispatch `flare.list_driver.{type}.build_list`), then config assembly —
  * base translation, the driver's model transformers, and explicit {@see set()} overrides —
  * handed to {@see ListSpecFactory} for schema resolution and construction.
  */
@@ -165,7 +165,7 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
             $driver->driver->buildList($this);
         }
 
-        $this->eventDispatcher->dispatch(new ListBuildEvent($this));
+        $this->eventDispatcher->dispatch(new ListDriverBuildListEvent($this));
 
         $spec = $this->model
             ? $this->specFactory->createFromListModel(

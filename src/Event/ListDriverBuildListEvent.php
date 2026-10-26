@@ -8,11 +8,11 @@ use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
 use Symfony\Contracts\EventDispatcher\Event;
 
 /**
- * Dispatched while a list is being built, after the type's buildList() hook and before the
+ * Dispatched while a list is being built, after the list driver's buildList() hook and before the
  * config is resolved. Listeners may add filters or config overrides — also per type via
- * the named event `flare.list.{type}.build`.
+ * the named event `flare.list_driver.{type}.build_list`.
  */
-class ListBuildEvent extends Event
+class ListDriverBuildListEvent extends Event
 {
     public function __construct(
         public readonly ListSpecBuilder $builder,

@@ -20,7 +20,7 @@ final class DcaSelectPredicateTest extends TestCase
             'field' => 'status',
             'selected' => ['a', 'b'],
             'valid_options' => ['a' => 'Same', 'b' => 'Same', 'c' => 'Other'],
-            'is_multiple_dca_field' => false,
+            'is_serialized' => false,
         ]);
 
         self::assertCount(1, $builder->getConditions());

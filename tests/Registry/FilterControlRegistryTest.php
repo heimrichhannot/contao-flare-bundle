@@ -30,6 +30,13 @@ final class FilterControlRegistryTest extends TestCase
         self::assertNull($r->get('nope'));
     }
 
+    public function testRejectsEmptyName(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        (new FilterControlRegistry())->add(self::control(), '', BoolValue::class);
+    }
+
     public function testLookupByName(): void
     {
         $control = self::control();

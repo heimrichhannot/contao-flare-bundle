@@ -30,7 +30,7 @@ final readonly class BoolValueProvider implements ValueProviderInterface
             '1', 1, true => new BoolValue(true),
             '0', 0, false => new BoolValue(false),
             default => throw new UnreadableValueException(\sprintf(
-                'The stored bool value %s is neither "1" nor "0".',
+                'The stored bool value %s is neither empty, "1" nor "0".',
                 \json_encode($stored),
             )),
         };

@@ -14,7 +14,7 @@ class DcaSelectPredicate extends AbstractPredicate
         $resolver->define('field')->required()->allowedTypes('string');
         $resolver->define('selected')->required()->allowedTypes('array');
         $resolver->define('valid_options')->required()->allowedTypes('array');
-        $resolver->define('is_multiple_dca_field')->default(false)->allowedTypes('bool');
+        $resolver->define('is_serialized')->default(false)->allowedTypes('bool');
     }
 
     public function buildConditions(FilterConditionsBuilder $builder, array $options): void
@@ -38,7 +38,7 @@ class DcaSelectPredicate extends AbstractPredicate
                 $builder::abort();
             }
 
-            if ($options['is_multiple_dca_field']) {
+            if ($options['is_serialized']) {
                 $builder->whereInSerialized($value, $field);
                 return;
             }
@@ -60,7 +60,7 @@ class DcaSelectPredicate extends AbstractPredicate
             $builder::abort();
         }
 
-        if ($options['is_multiple_dca_field']) {
+        if ($options['is_serialized']) {
             $builder->whereInSerialized($filtered, $field);
             return;
         }

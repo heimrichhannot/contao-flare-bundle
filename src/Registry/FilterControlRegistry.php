@@ -23,9 +23,18 @@ final class FilterControlRegistry
 
     /**
      * @param class-string<ValueInterface> $valueClass The narrowed `decode()` return type.
+     *
+     * @throws \InvalidArgumentException If the name is empty; the empty string means "no control".
      */
     public function add(FilterControlInterface $control, string $name, string $valueClass): self
     {
+        if ($name === '') {
+            throw new \InvalidArgumentException(\sprintf(
+                'The filter control %s must not be registered under an empty name.',
+                $control::class,
+            ));
+        }
+
         $this->controls[$name] = ['control' => $control, 'value' => $valueClass];
 
         return $this;

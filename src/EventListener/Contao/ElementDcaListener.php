@@ -112,6 +112,9 @@ final readonly class ElementDcaListener
             return;
         }
 
+        // The DCA is loaded on every backend request to the table, list views included, but only option
+        // callbacks need the list spec. Building it runs the whole list build (all filters, schema
+        // resolution) and fails on broken configurations, so it is built on first use and at most once.
         $spec = null;
         $getSpec = function () use (&$spec, $listModel): ListSpec {
             return $spec ??= $this->listFactory->createFromListModel($listModel)->build();

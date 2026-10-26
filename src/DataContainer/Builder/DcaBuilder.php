@@ -92,7 +92,7 @@ final class DcaBuilder implements DcaBuilderInterface
     public function scope(string $segment): DcaBuilderInterface
     {
         return match ($segment) {
-            'control' => new ControlScopeDcaBuilder($this, fn (?string $palette) => $this->controlPalette = $palette),
+            'control' => new ControlScopeDcaBuilder($this, fn (?string $palette): ?string => $this->controlPalette = $palette),
             default => throw new \InvalidArgumentException(\sprintf('Unknown DCA scope "%s".', $segment)),
         };
     }

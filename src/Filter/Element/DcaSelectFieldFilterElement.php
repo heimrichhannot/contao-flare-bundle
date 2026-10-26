@@ -76,7 +76,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
             'field' => $field,
             'selected' => $selected,
             'valid_options' => $options,
-            'is_multiple_dca_field' => (bool) $isMultiple,
+            'is_serialized' => (bool) $isMultiple,
         ]);
     }
 

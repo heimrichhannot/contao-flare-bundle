@@ -64,7 +64,7 @@ final class DcaSelectFieldFilterElementTest extends TestCase
         self::assertSame('status', $p->options['field']);
         self::assertSame(['published'], $p->options['selected']);
         self::assertSame(['draft' => 'Draft', 'published' => 'Published'], $p->options['valid_options']);
-        self::assertFalse($p->options['is_multiple_dca_field']);
+        self::assertFalse($p->options['is_serialized']);
     }
 
     public function testMultipleDcaFieldIsPassedOn(): void
@@ -77,7 +77,7 @@ final class DcaSelectFieldFilterElementTest extends TestCase
 
         $p = $context->formula->propositions[0];
         self::assertSame(['a', 'b'], $p->options['selected']);
-        self::assertTrue($p->options['is_multiple_dca_field']);
+        self::assertTrue($p->options['is_serialized']);
     }
 
     public function testFixedValueAppliesInValidation(): void

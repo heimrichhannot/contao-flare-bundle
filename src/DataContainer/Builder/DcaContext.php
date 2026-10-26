@@ -35,9 +35,7 @@ final class DcaContext
 
     public function getExecutionContext(): ?ListExecutionContext
     {
-        if ($this->executionContext === null) {
-            $this->executionContext = ($this->executionContextFactory)() ?? false;
-        }
+        $this->executionContext ??= ($this->executionContextFactory)() ?? false;
 
         return $this->executionContext ?: null;
     }
@@ -48,9 +46,7 @@ final class DcaContext
      */
     public function getFilterScope(): ?FilterScope
     {
-        if ($this->filterScope === null) {
-            $this->filterScope = $this->filterScopeFactory?->__invoke() ?? false;
-        }
+        $this->filterScope ??= $this->filterScopeFactory?->__invoke() ?? false;
 
         return $this->filterScope ?: null;
     }

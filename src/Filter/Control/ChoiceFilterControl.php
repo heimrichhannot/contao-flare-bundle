@@ -16,6 +16,7 @@ use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceObjectInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
+use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -27,6 +28,10 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 class ChoiceFilterControl extends AbstractFilterControl
 {
     public const TYPE = 'flare_choice';
+
+    public function __construct(
+        private readonly ChoicesBuilderFactory $choicesBuilderFactory,
+    ) {}
 
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -83,7 +88,8 @@ class ChoiceFilterControl extends AbstractFilterControl
         }
 
         $config = $scope->filter->controlConfig;
-        $choices = $element->createChoices($scope);
+        $choices = $this->choicesBuilderFactory->createChoicesBuilder();
+        $element->buildChoices($choices, $scope);
 
         if ($config['format_label']) {
             $choices->setLabel($config['format_label']);

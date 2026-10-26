@@ -55,13 +55,11 @@ class DateRangeFilterControl extends AbstractFilterControl
 
         if ($element instanceof DateBoundsContract)
         {
-            [$min, $max] = $element->getDateBounds($scope);
+            $bounds = $element->getDateBounds($scope);
 
             $attr = \array_filter([
-                'min' => $min?->format('Y-m-d'),
-                'max' => $max === null
-                    ? null
-                    : \DateTime::createFromInterface($max)->modify('-1 second')->format('Y-m-d'),
+                'min' => $bounds->min?->format('Y-m-d'),
+                'max' => $bounds->max?->modify('-1 second')->format('Y-m-d'),
             ]);
         }
 

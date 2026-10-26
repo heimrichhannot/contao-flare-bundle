@@ -53,11 +53,10 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
     /**
      * @throws FilterException
      */
-    public function createChoices(FilterScope $scope): ChoicesBuilder
+    public function buildChoices(ChoicesBuilder $choices, FilterScope $scope): void
     {
         $config = $scope->filter->config;
         $inferrer = $this->getPtableInferrer($scope->list);
-        $choices = $this->createChoicesBuilder();
 
         if ($ptable = $inferrer->getDcaMainPtable())
         {
@@ -75,7 +74,7 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
                 $choices->add(ContaoModelChoice::from($parent));
             }
 
-            return $choices;
+            return;
         }
 
         if (!$inferrer->isDcaDynamicPtable())
@@ -108,7 +107,7 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
             throw new FilterException('No valid whitelisted parents defined.', method: __METHOD__);
         }
 
-        return $choices->setModelSuffix('(%@name%)');
+        $choices->setModelSuffix('(%@name%)');
     }
 
     /**

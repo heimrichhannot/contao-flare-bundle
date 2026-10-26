@@ -15,12 +15,9 @@ use HeimrichHannot\FlareBundle\Filter\Predicate\ArchivePredicate;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BelongsToRelationPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
-use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class ArchiveFilterElementTest extends TestCase
 {
@@ -246,13 +243,7 @@ final class ArchiveFilterElementTest extends TestCase
 
     private function createElement(): ArchiveFilterElement
     {
-        $element = new ArchiveFilterElement();
-        $element->setChoicesBuilderFactory(new ChoicesBuilderFactory(
-            $this->createMock(TranslatorInterface::class),
-            $this->createMock(ParameterBagInterface::class),
-        ));
-
-        return $element;
+        return new ArchiveFilterElement();
     }
 
     /**

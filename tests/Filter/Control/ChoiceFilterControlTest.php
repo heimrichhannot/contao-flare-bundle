@@ -18,6 +18,7 @@ use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
+use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -29,28 +30,26 @@ final class ChoiceFilterControlTest extends TestCase
 {
     use BuildsControlScopesTrait;
 
-    /** @var list<ChoicesBuilder> */
-    private array $createdBuilders = [];
-
-    private function element(int ...$ids): FilterElementInterface&ChoiceSourceContract
+    private function control(): ChoiceFilterControl
     {
         $translator = $this->createStub(TranslatorInterface::class);
         $translator->method('trans')->willReturnArgument(0);
 
-        return new class($ids, $translator) implements FilterElementInterface, ChoiceSourceContract {
-            public function __construct(private array $ids, private TranslatorInterface $translator) {}
+        return new ChoiceFilterControl(new ChoicesBuilderFactory($translator, new ParameterBag()));
+    }
+
+    private function element(int ...$ids): FilterElementInterface&ChoiceSourceContract
+    {
+        return new class($ids) implements FilterElementInterface, ChoiceSourceContract {
+            public function __construct(private array $ids) {}
 
             public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
 
-            public function createChoices(FilterScope $scope): ChoicesBuilder
+            public function buildChoices(ChoicesBuilder $choices, FilterScope $scope): void
             {
-                $choices = new ChoicesBuilder($this->translator, new ParameterBag());
-
                 foreach ($this->ids as $id) {
                     $choices->add(ContaoModelChoice::ref('tl_news_archive', $id));
                 }
-
-                return $choices;
             }
 
             public function choiceFromKey(string $key): ?ChoiceObjectInterface
@@ -65,7 +64,7 @@ final class ChoiceFilterControlTest extends TestCase
      */
     private function form(array $config, mixed $data, int ...$ids): FormInterface
     {
-        $ctl = new ChoiceFilterControl();
+        $ctl = $this->control();
         $builder = $this->newFormBuilder();
         $ctl->buildForm($builder, $this->scope($ctl, $config, $this->element(...($ids ?: [5, 7]))));
 
@@ -77,7 +76,7 @@ final class ChoiceFilterControlTest extends TestCase
 
     public function testHydratedCanonicalReferenceMatchesShortSubmittedKey(): void
     {
-        $ctl = new ChoiceFilterControl();
+        $ctl = $this->control();
         $scope = $this->scope($ctl, [], $this->element(5, 7));
 
         $data = $ctl->hydrate(new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5)]), $scope);
@@ -91,7 +90,7 @@ final class ChoiceFilterControlTest extends TestCase
 
     public function testMultipleHydratesAllChoices(): void
     {
-        $ctl = new ChoiceFilterControl();
+        $ctl = $this->control();
         $scope = $this->scope($ctl, ['is_multiple' => true], $this->element(5, 7));
 
         $value = new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5), ContaoModelChoice::ref('tl_news_archive', 7)]);
@@ -105,7 +104,7 @@ final class ChoiceFilterControlTest extends TestCase
 
     public function testSingleSelectHydratesTheFirstChoice(): void
     {
-        $ctl = new ChoiceFilterControl();
+        $ctl = $this->control();
         $scope = $this->scope($ctl, [], $this->element(5, 7));
         $value = new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 7), ContaoModelChoice::ref('tl_news_archive', 5)]);
 
@@ -115,7 +114,7 @@ final class ChoiceFilterControlTest extends TestCase
 
     public function testDecode(): void
     {
-        $ctl = new ChoiceFilterControl();
+        $ctl = $this->control();
         $scope = $this->scope($ctl, [], $this->element(5));
         $choice = ContaoModelChoice::ref('tl_news_archive', 5);
 
@@ -128,7 +127,7 @@ final class ChoiceFilterControlTest extends TestCase
 
     public function testElementWithoutChoiceSourceFails(): void
     {
-        $ctl = new ChoiceFilterControl();
+        $ctl = $this->control();
 
         $this->expectException(FilterException::class);
 
@@ -137,7 +136,7 @@ final class ChoiceFilterControlTest extends TestCase
 
     public function testPlaceholderAttributeOnlyWithoutEmptyOption(): void
     {
-        $ctl = new ChoiceFilterControl();
+        $ctl = $this->control();
 
         $without = $this->newFormBuilder();
         $ctl->buildForm($without, $this->scope($ctl, ['placeholder' => 'Pick'], $this->element(5)));
@@ -160,7 +159,7 @@ final class ChoiceFilterControlTest extends TestCase
 
     public function testFormOptionsAndNoChoicesBuilderAttribute(): void
     {
-        $ctl = new ChoiceFilterControl();
+        $ctl = $this->control();
         $builder = $this->newFormBuilder();
 
         $ctl->buildForm($builder, $this->scope($ctl, [
@@ -182,7 +181,7 @@ final class ChoiceFilterControlTest extends TestCase
 
     public function testEmptyOptionValueIsAlternativeWhenExpandedAndMultiple(): void
     {
-        $ctl = new ChoiceFilterControl();
+        $ctl = $this->control();
 
         $builder = $this->newFormBuilder();
         $ctl->buildForm($builder, $this->scope($ctl, [
@@ -203,7 +202,7 @@ final class ChoiceFilterControlTest extends TestCase
 
     public function testTransformerResolvesCustomFormats(): void
     {
-        $ctl = new ChoiceFilterControl();
+        $ctl = $this->control();
 
         $config = $this->transform($ctl, [
             'ctl_label' => 'L',
@@ -244,7 +243,7 @@ final class ChoiceFilterControlTest extends TestCase
         $dca->expects(self::once())->method('palette')
             ->with(self::stringContains('ctl_hasEmptyOption,ctl_formatEmptyOption,ctl_placeholder'));
 
-        (new ChoiceFilterControl())->buildDca($dca, new DcaContext(
+        ($this->control())->buildDca($dca, new DcaContext(
             'tl_flare_filter',
             'test',
             (new \ReflectionClass(ListModel::class))->newInstanceWithoutConstructor(),

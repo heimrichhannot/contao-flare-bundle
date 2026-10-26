@@ -70,7 +70,7 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement implements Ch
     /**
      * @throws FilterException
      */
-    public function createChoices(FilterScope $scope): ChoicesBuilder
+    public function buildChoices(ChoicesBuilder $choices, FilterScope $scope): void
     {
         try
         {
@@ -95,13 +95,9 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement implements Ch
             );
         }
 
-        $choices = $this->createChoicesBuilder();
-
         foreach ($options as $tagId => $label) {
             $choices->add(new ValueChoice((string) $tagId, (string) $label));
         }
-
-        return $choices;
     }
 
     /**

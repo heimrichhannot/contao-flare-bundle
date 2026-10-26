@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 /** Knows only the keys "k1" and "k2". */
 final class ProviderStubChoiceElement extends ProviderStubElement implements ChoiceSourceContract
 {
-    public function createChoices(FilterScope $scope): ChoicesBuilder
+    public function buildChoices(ChoicesBuilder $choices, FilterScope $scope): void
     {
         throw new \LogicException('Not needed.');
     }

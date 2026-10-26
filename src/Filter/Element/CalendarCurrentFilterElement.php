@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBounds;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
@@ -86,7 +87,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
         ]);
     }
 
-    public function getDateBounds(FilterScope $scope): array
+    public function getDateBounds(FilterScope $scope): DateBounds
     {
         return $this->resolveFormLimits($scope->filter->config);
     }
@@ -105,13 +106,11 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
      * the former handleFormTypeOptions() logic (from_min/to_min and from_max/to_max).
      *
      * @param array<string, mixed> $config
-     *
-     * @return array{0: ?\DateTime, 1: ?\DateTime}
      */
-    private function resolveFormLimits(array $config): array
+    private function resolveFormLimits(array $config): DateBounds
     {
         if (!$config['is_limited']) {
-            return [null, null];
+            return new DateBounds();
         }
 
         $min = null;
@@ -131,6 +130,6 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
             $max = DateTimeHelper::timestampToDateTime($stopAt);
         }
 
-        return [$min, $max];
+        return new DateBounds($min, $max);
     }
 }

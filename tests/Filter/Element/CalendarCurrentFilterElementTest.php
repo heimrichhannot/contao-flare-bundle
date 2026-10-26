@@ -88,7 +88,9 @@ final class CalendarCurrentFilterElementTest extends TestCase
     {
         $element = new CalendarCurrentFilterElement();
 
-        self::assertSame([null, null], $element->getDateBounds($this->createScope($element, self::BASE)));
+        $open = $element->getDateBounds($this->createScope($element, self::BASE));
+        self::assertNull($open->min);
+        self::assertNull($open->max);
 
         $bounds = $element->getDateBounds($this->createScope($element, [
             'is_limited' => true,
@@ -98,7 +100,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
             'stop_at' => '@2000',
         ] + self::BASE));
 
-        self::assertSame([1000, 2000], [$bounds[0]->getTimestamp(), $bounds[1]->getTimestamp()]);
+        self::assertSame([1000, 2000], [$bounds->min?->getTimestamp(), $bounds->max?->getTimestamp()]);
     }
 
     public function testWrongValueClassIsRejected(): void

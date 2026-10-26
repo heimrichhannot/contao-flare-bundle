@@ -14,8 +14,5 @@ use HeimrichHannot\FlareBundle\Filter\FilterScope;
  */
 interface DateBoundsContract
 {
-    /**
-     * @return array{0: ?\DateTimeInterface, 1: ?\DateTimeInterface} Lower and upper bound.
-     */
-    public function getDateBounds(FilterScope $scope): array;
+    public function getDateBounds(FilterScope $scope): DateBounds;
 }

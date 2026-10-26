@@ -19,7 +19,6 @@ use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
-use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -33,7 +32,6 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement implements Cho
 
     public function __construct(
         private readonly Connection $connection,
-        private readonly ChoicesBuilderFactory $choicesBuilderFactory,
     ) {}
 
     public function configureOptions(OptionsResolver $resolver): void
@@ -92,15 +90,13 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement implements Cho
      *
      * @throws FilterException
      */
-    public function createChoices(FilterScope $scope): ChoicesBuilder
+    public function buildChoices(ChoicesBuilder $choices, FilterScope $scope): void
     {
         $table = $scope->list->dc;
 
         if (!$field = (string) ($scope->filter->config['field'] ?? '')) {
             throw new FilterException('No target field configured.', method: __METHOD__);
         }
-
-        $choices = $this->choicesBuilderFactory->createChoicesBuilder();
 
         if (!\is_null($foreignValues = $this->getForeignValues($table, $field)))
         {
@@ -116,8 +112,6 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement implements Cho
                 $choices->add(new ValueChoice((string) $value, (string) $value));
             }
         }
-
-        return $choices;
     }
 
     public function choiceFromKey(string $key): ValueChoice

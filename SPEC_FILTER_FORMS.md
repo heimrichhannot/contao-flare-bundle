@@ -396,7 +396,7 @@ interface ChoiceSourceContract
     /**
      * @throws FilterException On invalid filter configuration (no whitelist, no inferrable ptable, …).
      */
-    public function createChoices(FilterScope $scope): ChoicesBuilder;
+    public function buildChoices(ChoicesBuilder $choices, FilterScope $scope): void;
 
     /**
      * A reference choice for a canonical key — no database access; null for an unreadable key.
@@ -409,8 +409,7 @@ interface ChoiceSourceContract
 /** Optional for DateRangeFilterControl: bounds for the widget's min/max attributes. */
 interface DateBoundsContract
 {
-    /** @return array{0: ?\DateTimeInterface, 1: ?\DateTimeInterface} */
-    public function getDateBounds(FilterScope $scope): array;
+    public function getDateBounds(FilterScope $scope): DateBounds;
 }
 ```
 
@@ -422,12 +421,19 @@ interface DateBoundsContract
   implements it (`CalendarCurrent` with `elm_isLimited`), and otherwise renders unbounded
   (`DateRange`).
 
-Labelling is split: `createChoices()` MAY set labels the element owns — `setLabelForTable()` fed
+`DateBounds` is a `final readonly` DTO with `?\DateTimeImmutable $min` and `$max` (exclusive); a null
+bound is open.
+
+Following the lifecycle taxonomy (`build*` methods fill a builder the caller hands in), the caller
+creates the `ChoicesBuilder` through `ChoicesBuilderFactory` and the element fills it; elements no
+longer depend on the factory.
+
+Labelling is split: `buildChoices()` MAY set labels the element owns — `setLabelForTable()` fed
 from element-owned whitelist rows is the real case. The control owns only global overrides
 (`setLabel()`, `setModelSuffix()`, `setEmptyOption()`) and `applyFormOptions()`.
 
-(`ChoicesBuilder::buildChoices()` keeps its name; the port method is `createChoices()` so the two no
-longer collide.)
+(`ChoicesBuilder::buildChoices()` keeps its name: it returns the built choices, while the port method
+fills the builder.)
 
 ### 3.6 Value providers
 
@@ -468,7 +474,7 @@ final class BoolValueProvider implements ValueProviderInterface
   `choiceFromKey()` for reference choices (`ContaoModelChoice::ref()`, `ValueChoice`), which serve
   the query (table/id, value), hydration (`choice_value` = key) and the fingerprint (keys) alike.
 - **Bundle providers:** `BoolValueProvider` (select yes/no; stores `'1'`/`'0'`), `ChoiceValueProvider`
-  (backend options from `ChoiceSourceContract::createChoices()` → `buildContaoOptions()` keyed by
+  (backend options from `ChoiceSourceContract::buildChoices()` → `buildContaoOptions()` keyed by
   canonical choice key, via the backend scope of §6.4; stores a serialized list of canonical keys;
   `provide()` via `choiceFromKey()`), `DateRangeValueProvider`, `KeywordsValueProvider`.
 - **Stale references fail closed.** A stored key whose record was deleted still yields a reference
@@ -636,7 +642,7 @@ frontend, so the backend needs a `FilterScope` (§13.21):
   `ConfigurationContext`. It is `null` when the
   list cannot be built — the same "backend must not fail on broken list configs" rule as
   `getExecutionContext()`.
-- `ChoiceValueProvider::buildDcaField()` calls `createChoices($scope)->buildContaoOptions()`. A
+- `ChoiceValueProvider::buildDcaField()` fills a fresh builder via `buildChoices($choices, $scope)` and calls `buildContaoOptions()`. A
   `FilterException` (empty whitelist, no inferrable ptable, …) or a `null` scope yields a backend
   message and an empty option list, never an error page.
 - Element-specific backend option builders such as `ArchiveFilterElement::getPreselectOptions()`
@@ -656,7 +662,7 @@ the duplicates. Not part of this refactor.
 
 ### 7.1 The current defect
 
-`FieldValueChoiceFilterElement::createChoices()` does:
+`FieldValueChoiceFilterElement::buildChoices()` does:
 
 ```php
 $choices->add((string) $id, (string) $label, $id);   // alias=id, choice=label, value=id
@@ -732,7 +738,7 @@ final readonly class ChoiceValue implements ValueInterface
   only the empty option is selected. No element gives the empty option its own meaning —
   `Archive::processRuntimeValue()` already treats "empty option" and "nothing" identically — so
   there is no flag for it.
-- `ChoiceFilterControl::buildForm()` calls `$element->createChoices($scope)` and owns `ChoiceType`,
+- `ChoiceFilterControl::buildForm()` creates the builder, calls `$element->buildChoices($choices, $scope)` and owns `ChoiceType`,
   the empty option, labels and `applyFormOptions()`. The write-only `flare.choices_builder`
   attribute is dropped (§13.17).
 - **One palette for all four choice elements** (§13.23): `ctl_label`, `ctl_formatLabel`(+custom),
@@ -747,7 +753,7 @@ final readonly class ChoiceValue implements ValueInterface
 
 | stays on the element | moves to `ChoiceFilterControl` | disappears |
 |---|---|---|
-| choice provision → `createChoices()` (`getForeignValues()`, `getLocalValues()`, whitelists) | widget options, empty option, labels, placeholder | `normalizeRuntimeValue()`, `normalizeSubmittedValue()` |
+| choice provision → `buildChoices()` (`getForeignValues()`, `getLocalValues()`, whitelists) | widget options, empty option, labels, placeholder | `normalizeRuntimeValue()`, `normalizeSubmittedValue()` |
 | interpretation of the selected objects → `buildContext()` | hydration from `ChoiceValue` | the second `ChoicesBuilder`, the reverse lookup, `buildPreselectData()`, `getPreselectOptions()` |
 
 ### 7.4 `ArchiveFilterElement`

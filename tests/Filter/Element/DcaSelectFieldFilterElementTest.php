@@ -113,9 +113,9 @@ final class DcaSelectFieldFilterElementTest extends TestCase
         $this->buildFilterContext($this->createElement(), ['field' => 'free'], new ChoiceValue([new ValueChoice('a')]));
     }
 
-    public function testCreateChoicesKeysTheFieldOptionsByValue(): void
+    public function testBuildChoicesKeysTheFieldOptionsByValue(): void
     {
-        $choices = $this->createElement()->createChoices($this->createScope('status'))->buildChoices();
+        $choices = $this->buildChoices('status');
 
         self::assertEquals(
             ['draft' => new ValueChoice('draft', 'Draft'), 'published' => new ValueChoice('published', 'Published')],
@@ -123,9 +123,9 @@ final class DcaSelectFieldFilterElementTest extends TestCase
         );
     }
 
-    public function testCreateChoicesSkipsTheBlankOption(): void
+    public function testBuildChoicesSkipsTheBlankOption(): void
     {
-        $choices = $this->createElement()->createChoices($this->createScope('blank'))->buildChoices();
+        $choices = $this->buildChoices('blank');
 
         self::assertEquals(['x' => new ValueChoice('x', 'Ex')], $choices);
     }
@@ -140,13 +140,22 @@ final class DcaSelectFieldFilterElementTest extends TestCase
 
     private function createElement(): DcaSelectFieldFilterElement
     {
-        $element = new DcaSelectFieldFilterElement();
-        $element->setChoicesBuilderFactory(new ChoicesBuilderFactory(
+        return new DcaSelectFieldFilterElement();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildChoices(string $field): array
+    {
+        $choices = (new ChoicesBuilderFactory(
             $this->createMock(TranslatorInterface::class),
             $this->createMock(ParameterBagInterface::class),
-        ));
+        ))->createChoicesBuilder();
 
-        return $element;
+        $this->createElement()->buildChoices($choices, $this->createScope($field));
+
+        return $choices->buildChoices();
     }
 
     private function createScope(string $field): FilterScope

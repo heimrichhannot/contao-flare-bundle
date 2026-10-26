@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Filter\Control;
 
+use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBounds;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
 use HeimrichHannot\FlareBundle\Filter\Control\DateRangeFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
@@ -40,9 +41,9 @@ final class DateRangeFilterControlTest extends TestCase
         $bounded = new class implements FilterElementInterface, DateBoundsContract {
             public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
 
-            public function getDateBounds(FilterScope $scope): array
+            public function getDateBounds(FilterScope $scope): DateBounds
             {
-                return [new \DateTimeImmutable('2024-01-01'), new \DateTimeImmutable('2025-01-01 00:00:00')];
+                return new DateBounds(new \DateTimeImmutable('2024-01-01'), new \DateTimeImmutable('2025-01-01 00:00:00'));
             }
         };
 
@@ -76,9 +77,9 @@ final class DateRangeFilterControlTest extends TestCase
         $element = new class implements FilterElementInterface, DateBoundsContract {
             public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
 
-            public function getDateBounds(FilterScope $scope): array
+            public function getDateBounds(FilterScope $scope): DateBounds
             {
-                return [new \DateTimeImmutable('2024-01-01'), null];
+                return new DateBounds(new \DateTimeImmutable('2024-01-01'));
             }
         };
 

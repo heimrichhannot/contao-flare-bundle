@@ -17,8 +17,6 @@ use HeimrichHannot\FlareBundle\Filter\CallbackFilterModelTransformer;
 use HeimrichHannot\FlareBundle\Filter\ExpectsValueTrait;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
-use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
-use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Service\Attribute\Required;
@@ -28,7 +26,6 @@ abstract class AbstractFilterElement implements
 {
     use ExpectsValueTrait;
 
-    private ChoicesBuilderFactory $choicesBuilderFactory;
     private Connection $connection;
 
     abstract public function configureOptions(OptionsResolver $resolver): void;
@@ -54,17 +51,6 @@ abstract class AbstractFilterElement implements
     public function isSupported(): bool
     {
         return true;
-    }
-
-    #[Required]
-    public function setChoicesBuilderFactory(ChoicesBuilderFactory $choicesBuilderFactory): void
-    {
-        $this->choicesBuilderFactory = $choicesBuilderFactory;
-    }
-
-    protected function createChoicesBuilder(): ChoicesBuilder
-    {
-        return $this->choicesBuilderFactory->createChoicesBuilder();
     }
 
     #[Required]

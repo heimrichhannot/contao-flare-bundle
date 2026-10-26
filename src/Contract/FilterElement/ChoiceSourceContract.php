@@ -21,7 +21,7 @@ use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 interface ChoiceSourceContract
 {
     /**
-     * Builds the element's choices for the given filter scope.
+     * Adds the element's choices for the given filter scope to a fresh builder the caller provides.
      *
      * Labelling is split: this method MAY set labels the element owns (setLabelForTable() fed from
      * element-owned whitelist rows); the control owns only global overrides.
@@ -29,7 +29,7 @@ interface ChoiceSourceContract
      * @throws FilterException On invalid filter configuration (no whitelist, no inferrable ptable,
      *   no valid target field, …).
      */
-    public function createChoices(FilterScope $scope): ChoicesBuilder;
+    public function buildChoices(ChoicesBuilder $choices, FilterScope $scope): void;
 
     /**
      * A reference choice for a canonical key — no database access; null for an unreadable key.

@@ -83,7 +83,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
     /**
      * @throws FilterException
      */
-    public function createChoices(FilterScope $scope): ChoicesBuilder
+    public function buildChoices(ChoicesBuilder $choices, FilterScope $scope): void
     {
         $field = $scope->filter->config['field'] ?? null;
 
@@ -94,8 +94,6 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
             );
         }
 
-        $choices = $this->createChoicesBuilder();
-
         foreach ($options as $key => $label)
         {
             // A blank option (e.g. a DCA's "-" entry) would collide with the control's empty option (§7.3).
@@ -105,8 +103,6 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
 
             $choices->add(new ValueChoice($key, (string) $label));
         }
-
-        return $choices;
     }
 
     public function choiceFromKey(string $key): ValueChoice

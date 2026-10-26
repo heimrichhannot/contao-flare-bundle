@@ -13,11 +13,8 @@ use HeimrichHannot\FlareBundle\Filter\Predicate\FieldValueChoicePredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
-use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class FieldValueChoiceFilterElementTest extends TestCase
 {
@@ -133,13 +130,6 @@ final class FieldValueChoiceFilterElementTest extends TestCase
 
     private function createElement(): FieldValueChoiceFilterElement
     {
-        // ChoicesBuilderFactory is readonly (not doublable); buildContext() never touches it.
-        return new FieldValueChoiceFilterElement(
-            $this->createMock(Connection::class),
-            new ChoicesBuilderFactory(
-                $this->createMock(TranslatorInterface::class),
-                $this->createMock(ParameterBagInterface::class),
-            ),
-        );
+        return new FieldValueChoiceFilterElement($this->createMock(Connection::class));
     }
 }

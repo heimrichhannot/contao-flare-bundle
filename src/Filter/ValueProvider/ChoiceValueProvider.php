@@ -13,12 +13,17 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
+use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 
 /**
  * Stores a serialized list of canonical choice keys; the element maps them to reference choices.
  */
 final readonly class ChoiceValueProvider implements ValueProviderInterface
 {
+    public function __construct(
+        private ChoicesBuilderFactory $choicesBuilderFactory,
+    ) {}
+
     public function provide(mixed $stored, FilterElementInterface $element): ?ChoiceValue
     {
         if (!$element instanceof ChoiceSourceContract) {
@@ -68,7 +73,7 @@ final readonly class ChoiceValueProvider implements ValueProviderInterface
         $field
             ->inputType('select')
             ->eval(['multiple' => true, 'chosen' => true, 'tl_class' => 'clr'])
-            ->options(static function () use ($context): array {
+            ->options(function () use ($context): array {
                 $element = $context->element;
                 $scope = $context->getFilterScope();
 
@@ -81,7 +86,10 @@ final readonly class ChoiceValueProvider implements ValueProviderInterface
 
                 try
                 {
-                    return $element->createChoices($scope)->buildContaoOptions();
+                    $choices = $this->choicesBuilderFactory->createChoicesBuilder();
+                    $element->buildChoices($choices, $scope);
+
+                    return $choices->buildContaoOptions();
                 }
                 catch (FilterException $e)
                 {

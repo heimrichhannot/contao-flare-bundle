@@ -15,7 +15,7 @@ Options are validated against each predicate's `configureOptions()` schema. Requ
 | `BooleanPredicate` | `field` (string, **required**), `value` (bool, **required**) | Matches a boolean/checkbox column against an expected value. |
 | `CalendarCurrentPredicate` | `start` (int, **required**), `stop` (int, **required**), `has_extended_events` (bool, default `false`) | Constrains calendar events to a time window. |
 | `DateRangePredicate` | `field` (string, **required**), `from` (?`\DateTimeInterface`, default `null`), `to` (?`\DateTimeInterface`, default `null`) | Matches a timestamp column against a date range. |
-| `DcaSelectPredicate` | `field` (string, **required**), `selected` (array, **required**), `valid_options` (array, **required**), `is_multiple_dca_field` (bool, default `false`) | Matches a DCA select field against chosen options, incl. serialized multi-value fields. |
+| `DcaSelectPredicate` | `field` (string, **required**), `selected` (array, **required**), `valid_options` (array, **required**), `is_serialized` (bool, default `false`) | Matches a DCA select field against chosen options, incl. serialized multi-value fields. |
 | `FieldValueChoicePredicate` | `field` (string, **required**), `values` (array, **required**) | Matches a column against a set of concrete values. |
 | `IntegerIdChoicePredicate` | `field` (string, default `id`), `ids` (array, **required**) | Matches an integer ID column against a set of IDs. |
 | `PublishedPredicate` | `published_field` (?string, default `null`), `start_field` (?string, default `null`), `stop_field` (?string, default `null`), `invert_published` (bool, default `false`), `now` (int, **required**) | Standard Contao published/start/stop visibility check. |

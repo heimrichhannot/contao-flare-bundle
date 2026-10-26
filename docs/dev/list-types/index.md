@@ -191,14 +191,14 @@ If your list driver requires specific configuration fields in the Contao backend
 `Contract\DcaContract` and declare the palette — the legends and fields to display — in `buildDca()`:
 
 ```php
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 
 class MyCustomListDriver extends AbstractListDriver
 {
-    public function buildDca(DcaBuilder $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->palette('{my_legend},myCustomField,anotherField');
+        $builder->palette('{my_legend},myCustomField,anotherField');
     }
 }
 ```

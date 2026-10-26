@@ -34,12 +34,12 @@ Dispatched for every filter collected from the database, before it is added to t
 - **Properties:** `filter` (mutable `Filter` — assign a replacement), `model` (readonly `FilterModel`)
 
 ### `FilterTransformerEvent`
-Dispatched once per filter element class when its transformer map is configured.
-- **Use Case:** Registering transformers for additional source classes, or replacing the element's
-  `FilterModel` transformer (re-registering a source class overrides the element's default).
+Dispatched once per filter element or filter control class and type when its transformer map is configured.
+- **Use Case:** Registering transformers for additional source classes, or replacing the element's or
+  control's `FilterModel` transformer (re-registering a source class overrides the default).
 - **Class:** `HeimrichHannot\FlareBundle\Event\FilterTransformerEvent`
-- **Properties:** `transformers` (readonly `TransformerResolver`), `element` (readonly
-  `FilterElementInterface`), `type` (readonly `?string`)
+- **Properties:** `transformers` (readonly `TransformerResolver`), `owner` (readonly
+  `FilterComponentInterface` — the element or the control), `type` (readonly `string`)
 
 ### `ListTransformerEvent`
 Dispatched once per list driver class when its transformer map is configured.
@@ -107,13 +107,26 @@ bespoke matching, write a custom filter element.
 
 ## 6. Backend DCA Lifecycle
 
-### `ElementDcaEvent`
-Dispatched after an element's or list type's `buildDca()` ran, before the collected configuration is applied
-to the live DCA.
-- **Use Case:** Modifying the backend palette or fields of a list type or filter element from outside its
-  class — see [Backend DCA Building](./dca-builder.md#5-modifying-another-types-dca).
-- **Class:** `HeimrichHannot\FlareBundle\Event\ElementDcaEvent`
-- **Properties:** `dca` (readonly `DcaBuilder`), `context` (readonly `DcaContext`)
+All three are dispatched before the collected configuration is applied to the live DCA. Use them to modify the
+backend palette or fields of a type from outside its class — see
+[Backend DCA Building](./dca-builder.md#5-modifying-another-types-dca).
+
+### `ListDcaEvent`
+Dispatched after a list driver's `buildDca()` ran.
+- **Class:** `HeimrichHannot\FlareBundle\Event\ListDcaEvent`
+- **Properties:** `builder` (readonly `DcaBuilder`), `context` (readonly `DcaContext`)
+
+### `FilterElementDcaEvent`
+Dispatched after a filter element's `buildDca()` and the framework fields (the control segment, `value`) ran.
+- **Class:** `HeimrichHannot\FlareBundle\Event\FilterElementDcaEvent`
+- **Properties:** `builder` (readonly `DcaBuilder`), `context` (readonly `DcaContext`)
+
+### `FilterControlDcaEvent`
+Dispatched after the selected filter control's `buildDca()` ran, before `FilterElementDcaEvent`.
+- **Class:** `HeimrichHannot\FlareBundle\Event\FilterControlDcaEvent`
+- **Properties:** `builder` (readonly `DcaBuilderInterface`, scoped to the control's palette segment),
+  `context` (readonly `DcaContext`; `context->type` is the *element* type), `type` (readonly `string`, the
+  control type)
 
 ## 7. Other Events
 
@@ -129,13 +142,15 @@ object is identical to the base event.
 
 | Named event pattern | Base event |
 |---|---|
-| `flare.filter_element.{type}.transformers` | `FilterTransformerEvent` |
+| `flare.filter_element.{type}.transformers` | `FilterTransformerEvent` (filter elements) |
+| `flare.filter_control.{type}.transformers` | `FilterTransformerEvent` (filter controls) |
 | `flare.filter_control.{type}.built` | `FilterControlBuiltEvent` |
 | `flare.form.{formName}.build` | `FormHarnessBuildEvent` |
 | `flare.list.{type}.build` | `ListBuildEvent` |
 | `flare.list.{type}.transformers` | `ListTransformerEvent` |
-| `flare.filter_element.{type}.dca` | `ElementDcaEvent` (filter elements) |
-| `flare.list.{type}.dca` | `ElementDcaEvent` (list drivers) |
+| `flare.filter_element.{type}.dca` | `FilterElementDcaEvent` |
+| `flare.filter_control.{type}.dca` | `FilterControlDcaEvent` |
+| `flare.list.{type}.dca` | `ListDcaEvent` |
 
 How `{type}` is derived:
 
@@ -147,7 +162,10 @@ How `{type}` is derived:
   `type` — the registered *element* alias captured when the filter was created from one (e.g. via
   `FilterFactory`). Filters constructed around a plain element
   instance have no `type` and fire no named events.
-- **`.dca`** events run in the backend and use the type alias stored on the record being edited.
+- **`flare.filter_control.{type}.transformers`** uses the registered *control* type the control was resolved
+  from.
+- **`.dca`** events run in the backend and use the type stored on the record being edited — the element type
+  (`type`), the control type (`control`) or the list type.
 
 Example — listen only to the build of the form named `my_form`:
 

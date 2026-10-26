@@ -12,7 +12,8 @@ The invoker and DCA-callback subsystems are gone.
 
 **If you only configure lists and filters in the Contao backend, the content stays but the schema changes:**
 `tl_flare_filter` columns are renamed and a few settings were reshaped (see
-[Database & Backend](#database--backend) — run `contao:migrate`). Templates and the content elements are
+[Database & Backend](#database--backend) — run `contao:migrate` **without deletes** until the migrated site is
+verified). Templates and the content elements are
 unchanged apart from the failure state described there. This guide is for everyone who upgrades; the
 developer sections cover PHP extensions.
 
@@ -35,10 +36,10 @@ For the exhaustive list of deleted APIs, see [Removed in v0.2](./removed-in-v0.2
 | v0.1 | v0.2 |
 |---|---|
 | `#[AsFilterElement(type:, formType:, palette:, method:, isTargeted:)]` | `#[AsFilterElement(type:, isTargeted:, value:)]` — palette moves into `buildDca()`, the form type into a [filter control](./dev/filter-controls.md), the invoked method is always `buildContext()`; `value:` names the value class the element consumes (none = always intrinsic) |
-| — | `#[AsFilterControl(name:)]` — registers a [filter control](./dev/filter-controls.md); new in v0.2 |
+| — | `#[AsFilterControl(type:)]` — registers a [filter control](./dev/filter-controls.md); new in v0.2 |
 | `#[AsListType(type:, dataContainer:, palette:)]` | `#[AsListDriver(type:, dataContainer:)]` — renamed; palette moves into `buildDca()`; `dataContainer` is only a backend default for new records |
 | `#[AsFilterInvoker]` | Removed — branch on `$builder->scope->engineContext` inside `buildContext()` (or `$scope->engineContext` in a control) |
-| `#[AsFilterCallback]`, `#[AsListCallback]`, `#[AsFlareCallback]` | Removed — use [`buildDca()` / `ElementDcaEvent`](./dev/dca-builder.md) |
+| `#[AsFilterCallback]`, `#[AsListCallback]`, `#[AsFlareCallback]` | Removed — use [`buildDca()` / the DCA events](./dev/dca-builder.md) |
 
 ## Filter Element API
 
@@ -82,7 +83,7 @@ New interfaces: `FilterElementInterface` (required, one method), `FilterControlI
 | `FilterElementInvokedEvent` (`flare.filter_element.{type}.invoked`) | **No successor** — same alternatives |
 | `FilterFormChildOptionsEvent` (`flare.form.{parent}.child.{name}.options`) | Removed — customize in the control's `buildForm()`, or listen to `FilterControlBuiltEvent` (`flare.filter_control.{type}.built`) |
 | `FilterElementFormTypeOptionsEvent` | Removed — same replacement as above |
-| `PaletteEvent` (`flare.filter_element.{alias}.palette`, `flare.list.{type}.palette`) | `ElementDcaEvent` (`flare.filter_element.{type}.dca`, `flare.list.{type}.dca`) |
+| `PaletteEvent` (`flare.filter_element.{alias}.palette`, `flare.list.{type}.palette`) | `FilterElementDcaEvent` (`flare.filter_element.{type}.dca`), `ListDcaEvent` (`flare.list.{type}.dca`); controls have `FilterControlDcaEvent` (`flare.filter_control.{type}.dca`) |
 | `FilterDefinitionCreatedEvent` | `FilterCollectedEvent` — dispatched per filter collected from the database; `$event->filter` is replaceable |
 
 `flare.form.{formName}.build` is now fired with a `FormHarnessBuildEvent` (formerly `FilterFormBuildEvent`); the
@@ -95,7 +96,18 @@ removed: a control keeps its choices to itself and a value is read back through 
 ## Database & Backend
 
 v0.2 renames the `tl_flare_filter` columns and replaces several settings. **Run `contao:migrate`** after
-updating; two migrations ship with the bundle:
+updating; two migrations ship with the bundle.
+
+:::warning Run the migrations without deletes
+
+Run `contao:migrate` **without** `--with-deletes` and keep it that way until you have verified that the migrated
+site works: lists, filters, filter forms and reader pages. The legacy columns are the only copy of the old
+settings; the backfill reads them, and you need them to compare or to repeat a migration. Only then run the
+proposed DROPs (see below).
+
+:::
+
+The migrations:
 
 - `RenameFilterColumnsMigration` renames the columns (`ALTER TABLE ... CHANGE`, compatible with MySQL 5.7/8 and
   MariaDB): element columns get the prefix **`elm_`** (`fieldGeneric` → `elm_fieldGeneric`, ...), control columns
@@ -198,9 +210,9 @@ class CityFilterElement extends AbstractFilterElement
         $config->set('field', $model->elm_fieldGeneric ?: 'city');
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},elm_fieldGeneric');
+        $builder->palette('{filter_legend},elm_fieldGeneric');
     }
 
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void

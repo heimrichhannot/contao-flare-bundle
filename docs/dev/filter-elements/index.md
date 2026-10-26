@@ -138,9 +138,9 @@ Declare the element's palette and field tweaks for `tl_flare_filter`. The elemen
 `filter_legend` segment; the chosen control appends its own `control_legend` segment after it:
 
 ```php
-public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
 {
-    $dca->palette('{filter_legend},elm_fieldGeneric');
+    $builder->palette('{filter_legend},elm_fieldGeneric');
 }
 ```
 
@@ -210,9 +210,9 @@ class CityFilterElement extends AbstractFilterElement
         $config->set('field', $model->elm_fieldGeneric ?: 'city');
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},elm_fieldGeneric');
+        $builder->palette('{filter_legend},elm_fieldGeneric');
     }
 
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
@@ -237,8 +237,9 @@ schema change is needed; a new column needs an `elm_`-prefixed `sql` entry in `t
 ## 7. Choice and Date Elements: Capability Ports
 
 Elements whose value is picked from a server-side option set implement `ChoiceSourceContract`
-(`createChoices(FilterScope)` and `choiceFromKey(string)`); date-range elements may implement
-`DateBoundsContract`. The generic controls and the value providers use these ports instead of reaching into
+(`buildChoices(ChoicesBuilder, FilterScope)`, which fills a builder the caller provides, and
+`choiceFromKey(string)`); date-range elements may implement `DateBoundsContract` (`getDateBounds()` returns a
+`DateBounds`). The generic controls and the value providers use these ports instead of reaching into
 the element. See [Capability Ports](../filter-controls.md#3-capability-ports).
 
 ## 8. Intrinsic and Initial Values

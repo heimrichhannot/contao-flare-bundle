@@ -353,9 +353,15 @@ These are the main blocks available for extension.
 
 - `content_start`
 - `filter`
-- `list`
-- `pagination`
+- `body` — renders `failure` for a list that could not be created (`flare_list.failed`), `list` otherwise
+  - `failure` — the translated `list.failed` message
+  - `list`
+- `pagination_wrapper` — renders `pagination` only for a list that did not fail
+  - `pagination`
 - `content_end`
+
+Overriding `list` or `pagination` therefore never renders entries or a paginator for a failed list; override
+`failure` to change the failure message, or `body` / `pagination_wrapper` to take over the whole decision.
 
 ### Reader Template
 

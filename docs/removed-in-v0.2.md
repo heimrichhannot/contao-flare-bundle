@@ -76,7 +76,7 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - `flare.filter_element.{alias}.palette` → `flare.filter_element.{type}.dca`; `flare.list.{type}.palette` →
   `flare.list_driver.{type}.dca`
 - `flare.form.{parentFormName}.child.{formName}.options` → removed without a named replacement
-  (use `flare.filter_control.{type}.built`)
+  (use `flare.filter_control.{type}.build_form`)
 
 ## Database
 

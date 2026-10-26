@@ -194,17 +194,17 @@ nothing, so the filter never silently widens the list.
 
 ## 5. Events
 
-Like elements, controls have their own [backend](./events.md#filtercontroldcaevent) and
-[transformer](./events.md#filtertransformerevent) events, named after the **control** type:
+Like elements, controls have their own [backend](./events.md#filtercontrolbuilddcaevent) and
+[transformer](./events.md#filtercontrolconfiguretransformersevent) events, named after the **control** type:
 
-- `flare.filter_control.{type}.dca` (`FilterControlDcaEvent`) — dispatched after the control's `buildDca()`;
+- `flare.filter_control.{type}.dca` (`FilterControlBuildDcaEvent`) — dispatched after the control's `buildDca()`;
   its builder is scoped to the control's palette segment.
-- `flare.filter_control.{type}.transformers` (`FilterTransformerEvent`) — extend or replace the control's
+- `flare.filter_control.{type}.transformers` (`FilterControlConfigureTransformersEvent`) — extend or replace the control's
   transformer map.
 
 After a control declared its fields on the per-filter builder — and before they are mounted onto the root
-form — a [`FilterControlBuiltEvent`](./events.md#filtercontrolbuiltevent) is dispatched, also as
-`flare.filter_control.{type}.built` (`{type}` is the *control* type). Listeners can add, remove or replace
+form — a [`FilterControlBuildFormEvent`](./events.md#filtercontrolbuildformevent) is dispatched, also as
+`flare.filter_control.{type}.build_form` (`{type}` is the *control* type). Listeners can add, remove or replace
 children, adjust `single()`, or `cancel()` the mount.
 
 The former element events `FilterElementBuildingEvent` / `FilterElementBuiltEvent` no longer exist; see

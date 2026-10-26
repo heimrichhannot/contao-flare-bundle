@@ -134,7 +134,7 @@ protected function transformFilterModel(ConfigBuilder $config, FilterModel $mode
 ```
 
 Third parties can register transformers for additional source classes — or replace the `FilterModel`
-one — by listening to the [`FilterTransformerEvent`](../events.md)
+one — by listening to the [`FilterElementConfigureTransformersEvent`](../events.md#filterelementconfiguretransformersevent)
 (`flare.filter_element.{type}.transformers`).
 
 ## 4. Backend DCA (`buildDca`)

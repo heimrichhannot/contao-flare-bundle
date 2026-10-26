@@ -49,11 +49,12 @@ Constructor properties:
 | Property | Description |
 |---|---|
 | `element` | The `FilterElementInterface` instance — a registered element service or an inline instance |
-| `type` | The registered element type alias (e.g. `flare_bool`), used for the `flare.filter_element.{type}.*` / `flare.filter_control.{type}.built` named events and targeting lookups |
+| `type` | The registered element type alias (e.g. `flare_bool`), used for the `flare.filter_element.{type}.*` named events and targeting lookups |
 | `alias` | The filter's key within the list **and** its form name / query-parameter name. An alias that is not a valid Symfony form name never mounts form children |
 | `config` | Canonical **element** config following the element's schema (`elm_*` columns); scalars, arrays, and enums only |
 | `control` | The `FilterControlInterface` instance, or `null` for a filter without user input (intrinsic) |
 | `controlConfig` | Canonical **control** config following the control's schema (`ctl_*` columns) |
+| `controlType` | The registered control type (the class name of an inline control), used for the `flare.filter_control.{type}.*` named events; `null` without a control |
 | `value` | The filter's `ValueInterface` — the **fixed value** without a control, the **initial value** with one |
 | `targetAlias` | Table alias the filter's conditions apply to |
 | `targetingForced` | Whether the target alias applies even if the element is not marked as targeted |
@@ -98,7 +99,7 @@ Each mount is hydrated with
 `control->hydrate($filter->value, $scope)`.
 
 The per-filter builder carries the `FilterScope` in its attribute bag under `FilterScope::ATTR_SELF`. After the
-control built its fields, a `FilterControlBuiltEvent` is dispatched — listeners can add, remove, or replace
+control built its fields, a `FilterControlBuildFormEvent` is dispatched — listeners can add, remove, or replace
 children, adjust the `single()` declaration, or `cancel()` the filter's form entirely. Filters that declare no
 fields are not mounted onto the root form.
 

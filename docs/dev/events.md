@@ -33,19 +33,26 @@ Dispatched for every filter collected from the database, before it is added to t
 - **Class:** `HeimrichHannot\FlareBundle\Event\FilterCollectedEvent`
 - **Properties:** `filter` (mutable `Filter` — assign a replacement), `model` (readonly `FilterModel`)
 
-### `FilterTransformerEvent`
-Dispatched once per filter element or filter control class and type when its transformer map is configured.
-- **Use Case:** Registering transformers for additional source classes, or replacing the element's or
-  control's `FilterModel` transformer (re-registering a source class overrides the default).
-- **Class:** `HeimrichHannot\FlareBundle\Event\FilterTransformerEvent`
-- **Properties:** `transformers` (readonly `TransformerMap`), `owner` (readonly
-  `FilterComponentInterface` — the element or the control), `type` (readonly `string`)
+### `FilterElementConfigureTransformersEvent`
+Dispatched once per filter element class and type when its transformer map is configured, after the
+element's `configureTransformers()`.
+- **Use Case:** Setting transformers for additional source classes, or replacing the element's `FilterModel`
+  transformer (setting a source class again replaces the default).
+- **Class:** `HeimrichHannot\FlareBundle\Event\FilterElementConfigureTransformersEvent`
+- **Properties:** `transformers` (readonly `TransformerMap`), `element` (readonly `FilterElementInterface`),
+  `type` (readonly `string`)
 
-### `ListDriverTransformerEvent`
-Dispatched once per list driver class when its transformer map is configured.
-- **Use Case:** Registering transformers for additional source classes, or replacing the driver's
+### `FilterControlConfigureTransformersEvent`
+The same for a [filter control](./filter-controls.md), after the control's `configureTransformers()`.
+- **Class:** `HeimrichHannot\FlareBundle\Event\FilterControlConfigureTransformersEvent`
+- **Properties:** `transformers` (readonly `TransformerMap`), `control` (readonly `FilterControlInterface`),
+  `type` (readonly `string`)
+
+### `ListDriverConfigureTransformersEvent`
+The same for a list driver, after the driver's `configureTransformers()`.
+- **Use Case:** Setting transformers for additional source classes, or replacing the driver's
   `ListModel` transformer.
-- **Class:** `HeimrichHannot\FlareBundle\Event\ListDriverTransformerEvent`
+- **Class:** `HeimrichHannot\FlareBundle\Event\ListDriverConfigureTransformersEvent`
 - **Properties:** `transformers` (readonly `TransformerMap`), `driver` (readonly
   `ListDriverInterface`), `type` (readonly `string`)
 
@@ -84,15 +91,15 @@ Dispatched after every filter mounted onto the root form, before the form is bui
 - **Class:** `HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent`
 - **Properties:** `list` (readonly `ListSpec`), `formName` (readonly), `formBuilder`
 
-### `FilterControlBuiltEvent`
-Dispatched after a filter's [control](./filter-controls.md) declared its fields on the collect-only per-filter
+### `FilterControlBuildFormEvent`
+Dispatched after a filter's [control](./filter-controls.md) `buildForm()` declared its fields on the collect-only per-filter
 builder, before the factory mounts them onto the root form (flat for `single()` fields without companions,
 nested compound otherwise).
 - **Use Case:** Adding, removing, or replacing one filter's form children (re-adding a same-named child
   overwrites it), adjusting the single-field declaration via `single()`/`getSingle()`, or preventing the
   filter from being mounted at all. Adding a child alongside a `single()` declaration switches the filter
   to the nested compound layout.
-- **Class:** `HeimrichHannot\FlareBundle\Event\FilterControlBuiltEvent`
+- **Class:** `HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent`
 - **Properties:** `builder` (readonly `FilterFormBuilderInterface`), `scope` (readonly `FilterScope`)
 - **API:** `cancel()` / `isCancelled()`
 
@@ -111,28 +118,28 @@ All three are dispatched before the collected configuration is applied to the li
 backend palette or fields of a type from outside its class — see
 [Backend DCA Building](./dca-builder.md#5-modifying-another-types-dca).
 
-### `ListDriverDcaEvent`
+### `ListDriverBuildDcaEvent`
 Dispatched after a list driver's `buildDca()` ran.
-- **Class:** `HeimrichHannot\FlareBundle\Event\ListDriverDcaEvent`
+- **Class:** `HeimrichHannot\FlareBundle\Event\ListDriverBuildDcaEvent`
 - **Properties:** `builder` (readonly `DcaBuilder`), `context` (readonly `DcaContext`)
 
-### `FilterElementDcaEvent`
+### `FilterElementBuildDcaEvent`
 Dispatched after a filter element's `buildDca()` and the framework fields (the control segment, `value`) ran.
-- **Class:** `HeimrichHannot\FlareBundle\Event\FilterElementDcaEvent`
+- **Class:** `HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent`
 - **Properties:** `builder` (readonly `DcaBuilder`), `context` (readonly `DcaContext`)
 
-### `FilterControlDcaEvent`
-Dispatched after the selected filter control's `buildDca()` ran, before `FilterElementDcaEvent`.
-- **Class:** `HeimrichHannot\FlareBundle\Event\FilterControlDcaEvent`
+### `FilterControlBuildDcaEvent`
+Dispatched after the selected filter control's `buildDca()` ran, before `FilterElementBuildDcaEvent`.
+- **Class:** `HeimrichHannot\FlareBundle\Event\FilterControlBuildDcaEvent`
 - **Properties:** `builder` (readonly `DcaBuilderInterface`, scoped to the control's palette segment),
   `context` (readonly `DcaContext`; `context->type` is the *element* type), `type` (readonly `string`, the
   control type)
 
 ## 7. Other Events
 
-### `DetailsPageUrlGeneratedEvent`
-Dispatched when a URL to a details (reader) page is generated.
-- **Class:** `HeimrichHannot\FlareBundle\Event\DetailsPageUrlGeneratedEvent`
+### `ReaderUrlGeneratedEvent`
+Dispatched when a URL to a reader (details) page is generated; `url` can be replaced.
+- **Class:** `HeimrichHannot\FlareBundle\Event\ReaderUrlGeneratedEvent`
 
 ## 8. Named Events (Aliased Dispatch)
 
@@ -142,18 +149,21 @@ object is identical to the base event.
 
 | Named event pattern | Base event |
 |---|---|
-| `flare.filter_element.{type}.transformers` | `FilterTransformerEvent` (filter elements) |
-| `flare.filter_control.{type}.transformers` | `FilterTransformerEvent` (filter controls) |
-| `flare.filter_control.{type}.built` | `FilterControlBuiltEvent` |
+| `flare.filter_element.{type}.transformers` | `FilterElementConfigureTransformersEvent` |
+| `flare.filter_control.{type}.transformers` | `FilterControlConfigureTransformersEvent` |
+| `flare.filter_control.{type}.build_form` | `FilterControlBuildFormEvent` |
 | `flare.form.{formName}.build` | `FormHarnessBuildEvent` |
 | `flare.list_driver.{type}.build_list` | `ListDriverBuildListEvent` |
-| `flare.list_driver.{type}.transformers` | `ListDriverTransformerEvent` |
-| `flare.filter_element.{type}.dca` | `FilterElementDcaEvent` |
-| `flare.filter_control.{type}.dca` | `FilterControlDcaEvent` |
-| `flare.list_driver.{type}.dca` | `ListDriverDcaEvent` |
+| `flare.list_driver.{type}.transformers` | `ListDriverConfigureTransformersEvent` |
+| `flare.filter_element.{type}.dca` | `FilterElementBuildDcaEvent` |
+| `flare.filter_control.{type}.dca` | `FilterControlBuildDcaEvent` |
+| `flare.list_driver.{type}.dca` | `ListDriverBuildDcaEvent` |
 
-The prefix states whose type `{type}` is: `filter_element` always carries a registered filter element type,
-`filter_control` a registered filter control type, `list_driver` a list driver type.
+Naming: an event following a hook is named `{Component}{Hook}Event` after that hook (`buildForm()` →
+`FilterControlBuildFormEvent`). The named event is `flare.{component}.{type}.{suffix}`: the prefix states whose
+type `{type}` is — `filter_element` always a registered filter element type, `filter_control` a registered
+filter control type, `list_driver` a list driver type — and the suffix stays short (`dca`, `transformers`)
+unless that would be unclear (`build_list`, `build_form`).
 
 How `{type}` is derived:
 
@@ -163,7 +173,7 @@ How `{type}` is derived:
   named events — the base event still fires.
 - **`flare.filter_element.{type}.transformers`** uses the filter's `type` — the registered *element* type
   captured when the filter was created from one (e.g. via `FilterFactory`).
-- **`flare.filter_control.{type}.transformers` and `.built`** use the registered *control* type the control
+- **`flare.filter_control.{type}.transformers` and `.build_form`** use the registered *control* type the control
   was resolved from (`Filter::$controlType`). For a control passed to `FilterFactory` as an instance, the type
   is its class name.
 - **`.dca`** events run in the backend and use the type stored on the record being edited — the element type

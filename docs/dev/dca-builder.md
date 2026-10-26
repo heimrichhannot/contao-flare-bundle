@@ -33,17 +33,17 @@ To adjust the backend configuration of a type you don't own, listen to its DCA e
 `$builder` and `$context`). Each is dispatched after the type's own `buildDca()` ran, under a name specific to
 the type:
 
-- `FilterElementDcaEvent` as `flare.filter_element.{type}.dca` for filter elements (on `tl_flare_filter`)
-- `FilterControlDcaEvent` as `flare.filter_control.{type}.dca` for filter controls (on `tl_flare_filter`); its
+- `FilterElementBuildDcaEvent` as `flare.filter_element.{type}.dca` for filter elements (on `tl_flare_filter`)
+- `FilterControlBuildDcaEvent` as `flare.filter_control.{type}.dca` for filter controls (on `tl_flare_filter`); its
   builder is scoped to the control's palette segment, and `$type` holds the control type
-- `ListDriverDcaEvent` as `flare.list_driver.{type}.dca` for list drivers (on `tl_flare_list`)
+- `ListDriverBuildDcaEvent` as `flare.list_driver.{type}.dca` for list drivers (on `tl_flare_list`)
 
 ```php
-use HeimrichHannot\FlareBundle\Event\FilterElementDcaEvent;
+use HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsEventListener('flare.filter_element.flare_bool.dca')]
-public function __invoke(FilterElementDcaEvent $event): void
+public function __invoke(FilterElementBuildDcaEvent $event): void
 {
     $event->builder->field('elm_fieldGeneric')->eval(['tl_class' => 'w50']);
 }
@@ -58,7 +58,7 @@ instead of merging into it.
 | v0.1 | v0.2 |
 |---|---|
 | `#[AsFilterElement(palette: '...')]` / `#[AsListType(palette: '...')]` | `$builder->palette('...')` in `buildDca()` |
-| `#[AsFilterCallback(TYPE, 'fields.myField.options')]` | `$builder->field('myField')->options(...)` — or `FilterElementDcaEvent` on `flare.filter_element.{type}.dca` for foreign types |
+| `#[AsFilterCallback(TYPE, 'fields.myField.options')]` | `$builder->field('myField')->options(...)` — or `FilterElementBuildDcaEvent` on `flare.filter_element.{type}.dca` for foreign types |
 | `#[AsFilterCallback(TYPE, 'fields.myField.load')]` / `'fields.myField.save'` | `$builder->field('myField')->load(...)` / `->save(...)` |
-| `#[AsFilterCallback(TYPE, 'config.onload')]` / list `config.onload` | `buildDca()` (own type) / `FilterElementDcaEvent` or `ListDriverDcaEvent` listener (foreign type) |
-| `PaletteContract::getPalette()` / `PaletteEvent` (`flare.*.palette`) | `buildDca()` with `palette()`/`prefix()`/`suffix()` / `FilterElementDcaEvent`, `FilterControlDcaEvent`, `ListDriverDcaEvent` (`flare.*.dca`) |
+| `#[AsFilterCallback(TYPE, 'config.onload')]` / list `config.onload` | `buildDca()` (own type) / `FilterElementBuildDcaEvent` or `ListDriverBuildDcaEvent` listener (foreign type) |
+| `PaletteContract::getPalette()` / `PaletteEvent` (`flare.*.palette`) | `buildDca()` with `palette()`/`prefix()`/`suffix()` / `FilterElementBuildDcaEvent`, `FilterControlBuildDcaEvent`, `ListDriverBuildDcaEvent` (`flare.*.dca`) |

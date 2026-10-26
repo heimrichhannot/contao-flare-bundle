@@ -14,8 +14,8 @@ record being edited (`listModel`, `filterModel`) and lazy access to the list's e
 aliases, target table).
 
 FLARE's `loadDataContainer` listener applies the collected configuration to `$GLOBALS['TL_DCA']` for
-`tl_flare_filter` and `tl_flare_list`. After `buildDca()` runs, the type's DCA event — `ListDriverDcaEvent`,
-`FilterElementDcaEvent` or `FilterControlDcaEvent` ([details](../dca-builder.md#5-modifying-another-types-dca))
+`tl_flare_filter` and `tl_flare_list`. After `buildDca()` runs, the type's DCA event — `ListDriverBuildDcaEvent`,
+`FilterElementBuildDcaEvent` or `FilterControlBuildDcaEvent` ([details](../dca-builder.md#5-modifying-another-types-dca))
 — is dispatched so third parties can adjust the result.
 
 `AbstractFilterElement` implements this contract with a no-op default; list types opt in by implementing the

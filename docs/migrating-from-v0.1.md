@@ -67,7 +67,7 @@ lifecycle method on the element, plus a separate control (see the
 | `RuntimeValueContract::processRuntimeValue()` | Normalize values in the control's `decode()` or the element's `buildContext()` |
 | `IntrinsicValueContract::getIntrinsicValue()` | `$value` of a filter without a control — the fixed value |
 | `HydrateFormContract::hydrateForm()` | The control's `hydrate()` |
-| `FormTypeOptionsContract::handleFormTypeOptions()` | Build options directly in the control's `buildForm()`; third parties use `FilterControlBuiltEvent` |
+| `FormTypeOptionsContract::handleFormTypeOptions()` | Build options directly in the control's `buildForm()`; third parties use `FilterControlBuildFormEvent` |
 | `PaletteContract::getPalette()` | [`DcaContract::buildDca()`](./dev/contracts/dca-contract.md) |
 
 New interfaces: `FilterElementInterface` (required, one method), `FilterControlInterface`,
@@ -81,9 +81,9 @@ New interfaces: `FilterElementInterface` (required, one method), `FilterControlI
 |---|---|
 | `FilterElementInvokingEvent` (`flare.filter_element.{type}.invoking`) | **No successor.** Add or remove filters in a `ListDriverBuildListEvent` (`flare.list_driver.{type}.build_list`), set `Filter::$value` programmatically, or write a custom filter element |
 | `FilterElementInvokedEvent` (`flare.filter_element.{type}.invoked`) | **No successor** — same alternatives |
-| `FilterFormChildOptionsEvent` (`flare.form.{parent}.child.{name}.options`) | Removed — customize in the control's `buildForm()`, or listen to `FilterControlBuiltEvent` (`flare.filter_control.{type}.built`) |
+| `FilterFormChildOptionsEvent` (`flare.form.{parent}.child.{name}.options`) | Removed — customize in the control's `buildForm()`, or listen to `FilterControlBuildFormEvent` (`flare.filter_control.{type}.build_form`) |
 | `FilterElementFormTypeOptionsEvent` | Removed — same replacement as above |
-| `PaletteEvent` (`flare.filter_element.{alias}.palette`, `flare.list.{type}.palette`) | `FilterElementDcaEvent` (`flare.filter_element.{type}.dca`), `ListDriverDcaEvent` (`flare.list_driver.{type}.dca`); controls have `FilterControlDcaEvent` (`flare.filter_control.{type}.dca`) |
+| `PaletteEvent` (`flare.filter_element.{alias}.palette`, `flare.list.{type}.palette`) | `FilterElementBuildDcaEvent` (`flare.filter_element.{type}.dca`), `ListDriverBuildDcaEvent` (`flare.list_driver.{type}.dca`); controls have `FilterControlBuildDcaEvent` (`flare.filter_control.{type}.dca`) |
 | `FilterDefinitionCreatedEvent` | `FilterCollectedEvent` — dispatched per filter collected from the database; `$event->filter` is replaceable |
 
 `flare.form.{formName}.build` is now fired with a `FormHarnessBuildEvent` (formerly `FilterFormBuildEvent`); the

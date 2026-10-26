@@ -162,8 +162,8 @@ Because the aggregate is named after the form, its dispatch alias went back to t
 `flare.form.{name}.build`. `FilterElementFormBuiltEvent` loses its detour over the element: it was
 named after the element only because `FilterForm*` was taken; it is dispatched after a control built
 its fields, so it is named after the control, and its alias moves out of `FilterElementListener`
-into `FilterControlListener`. `{type}` there remains the *element* type, which is what listeners
-target; the alias names the concern, not the key.
+into `FilterControlListener`. `{type}` there is the *control* type (`Filter::$controlType`), like in every
+other `flare.filter_control.{type}.*` event (§13.32); it carried the element type until the review of PR #49.
 
 `FilterFormBuilder` keeps its name deliberately: it is a Symfony-level builder for one filter's
 part of the form. Symfony's own `FormTypeInterface::buildForm(FormBuilderInterface)` names the

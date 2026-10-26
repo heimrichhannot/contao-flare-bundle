@@ -1,5 +1,10 @@
 <?php
 
+use HeimrichHannot\FlareBundle\Filter\Control\CheckboxFilterControl;
+use HeimrichHannot\FlareBundle\Filter\Control\ChoiceBoolFilterControl;
+use HeimrichHannot\FlareBundle\Filter\Control\ChoiceFilterControl;
+use HeimrichHannot\FlareBundle\Filter\Control\DateRangeFilterControl;
+use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 
 $lang = &$GLOBALS['TL_LANG'][FilterModel::getTable()];
@@ -11,11 +16,11 @@ $lang['type'] = ['Typ', 'Bitte wählen Sie den Typ der Liste aus.'];
 $lang['control'] = ['Bedienelement', 'Legt fest, wie dieser Filter dargestellt wird. Leer lassen, um ihn unsichtbar anzuwenden (intrinsisch).'];
 $lang['value'] = ['Wert', 'Der feste Wert des Filters bzw. der Startwert seines Bedienelements.'];
 $lang['control_options'] = [
-    'flare_choice' => 'Auswahl',
-    'flare_checkbox' => 'Checkbox',
-    'flare_choice_bool' => 'Ja/Nein-Auswahl',
-    'flare_date_range' => 'Datumsbereich',
-    'flare_keywords' => 'Stichwortsuche',
+    ChoiceFilterControl::TYPE => 'Auswahl',
+    CheckboxFilterControl::TYPE => 'Checkbox',
+    ChoiceBoolFilterControl::TYPE => 'Ja/Nein-Auswahl',
+    DateRangeFilterControl::TYPE => 'Datumsbereich',
+    KeywordsFilterControl::TYPE => 'Stichwortsuche',
 ];
 $lang['targetAlias'] = ['Anwenden auf', 'Wählen Sie, auf welche Relation dieser Filter angewendet werden soll.'];
 ###< title_legend ###

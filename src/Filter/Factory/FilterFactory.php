@@ -22,7 +22,7 @@ use HeimrichHannot\FlareBundle\Util\Str;
 use Psr\Log\LoggerInterface;
 
 /**
- * Creates {@see Filter} DTOs, resolving registered type aliases and control names to their services.
+ * Creates {@see Filter} DTOs, resolving registered element and control types to their services.
  */
 final readonly class FilterFactory
 {
@@ -41,7 +41,7 @@ final readonly class FilterFactory
      *
      * @param FilterElementInterface|string $element Filter element instance or registered type alias.
      * @param array<string, mixed> $config Element config, resolved through the element's schema.
-     * @param FilterControlInterface|string|null $control Filter control instance or registered control name.
+     * @param FilterControlInterface|string|null $control Filter control instance or registered control type.
      * @param array<string, mixed> $controlConfig Control config, resolved through the control's schema.
      *
      * @throws FlareException If the element or control cannot be resolved, a config does not satisfy its
@@ -135,17 +135,17 @@ final readonly class FilterFactory
         }
 
         $valueClass = $this->getElementValueClass($type, $element);
-        $controlName = (string) $filterModel->control;
+        $controlType = (string) $filterModel->control;
 
-        if ($controlName === '') {
+        if ($controlType === '') {
             return $filter->withValue($this->provideValue($valueClass, $filterModel, $element));
         }
 
         try
         {
-            $control = $this->resolveControl($controlName, $valueClass, $source);
+            $control = $this->resolveControl($controlType, $valueClass, $source);
 
-            $controlConfig = $this->filterTransformerResolver->transform($control, $controlName, $filterModel) ?? [];
+            $controlConfig = $this->filterTransformerResolver->transform($control, $controlType, $filterModel) ?? [];
             $controlConfig = $this->filterOptionsResolver->resolve($control, $controlConfig);
 
             $value = $this->provideValue($valueClass, $filterModel, $element);
@@ -155,7 +155,7 @@ final readonly class FilterFactory
             $this->logger->warning(\sprintf(
                 '[FLARE] Filter control "%s" of filter %s is ignored, the filter applies without control and'
                 . ' initial value -- [Message] %s',
-                $controlName,
+                $controlType,
                 $source,
                 $e->getMessage(),
             ));
@@ -237,14 +237,14 @@ final readonly class FilterFactory
 
         if (\is_string($control))
         {
-            $name = $control;
-            $control = $this->filterControlRegistry->get($name)
+            $controlType = $control;
+            $control = $this->filterControlRegistry->get($controlType)
                 ?? throw new FlareException(
-                    \sprintf('Filter control "%s" not found%s.', $name, $at),
+                    \sprintf('Filter control "%s" not found%s.', $controlType, $at),
                     method: __METHOD__,
                     source: $source,
                 );
-            $controlValueClass = $this->filterControlRegistry->getValueClass($name);
+            $controlValueClass = $this->filterControlRegistry->getValueClass($controlType);
         }
 
         // An inline instance is not registered: its value class comes from its narrowed decode() return type.

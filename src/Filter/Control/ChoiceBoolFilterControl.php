@@ -21,10 +21,10 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 /**
  * A yes/no/any select for a boolean value.
  */
-#[AsFilterControl(name: self::NAME)]
+#[AsFilterControl(type: self::TYPE)]
 class ChoiceBoolFilterControl extends AbstractFilterControl
 {
-    public const NAME = 'flare_choice_bool';
+    public const TYPE = 'flare_choice_bool';
 
     public function configureOptions(OptionsResolver $resolver): void
     {

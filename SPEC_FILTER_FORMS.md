@@ -146,7 +146,7 @@ renames the per-filter strategy from `FilterForm` to `FilterControl`. Final name
 | `flare.filter_element.{type}.form_built` | `flare.filter_control.{type}.built` (was `flare.filter_form.{type}.built`) | control |
 | — | `EventListener\NamedDispatch\FilterControlListener` (new) | control |
 | `Filter\Form\FilterFormInterface`, `AbstractFilterForm` (v0.2-only) | `Filter\Control\FilterControlInterface`, `AbstractFilterControl` | control |
-| `#[AsFilterForm]`, tag `flare.filter_form`, alias `flare.filter_form.{name}` (v0.2-only) | `#[AsFilterControl]`, tag `flare.filter_control`, alias `flare.filter_control.{name}` | control |
+| `#[AsFilterForm]`, tag `flare.filter_form`, alias `flare.filter_form.{name}` (v0.2-only) | `#[AsFilterControl]`, tag `flare.filter_control`, alias `flare.filter_control.{type}` | control |
 | `FilterFormRegistry`, `RegisterFilterFormsPass`, `TypeNameFactory::createFilterFormType()` (v0.2-only) | `FilterControlRegistry`, `RegisterFilterControlsPass`, `createFilterControlType()` (suffixes `FilterControl`, `Control`) | control |
 | `Filter\FilterFormBuilder`, `…Interface` | unchanged | Symfony |
 
@@ -273,7 +273,7 @@ interface FilterControlInterface
     public function hydrate(?ValueInterface $value, FilterScope $scope): mixed;
 }
 
-#[AsFilterControl(name: 'flare_choice')]
+#[AsFilterControl(type: 'flare_choice')]
 final class ChoiceFilterControl extends AbstractFilterControl
 {
     public function decode(mixed $data, FilterScope $scope): ?ChoiceValue
@@ -344,31 +344,31 @@ own config only.
 
 ```php
 #[AsFilterElement(type: self::TYPE, value: BoolValue::class)]
-#[AsFilterControl(name: 'flare_checkbox')]
+#[AsFilterControl(type: 'flare_checkbox')]
 ```
 
 - `AsFilterElement::$value` — the value class this element consumes. `null` means the element has no
   runtime value at all: its config *is* the value (§5.3). A non-null value class requires a value
   provider (§3.6).
-- `AsFilterControl::$name` — the identifier persisted in `tl_flare_filter.control`. Defaults to
+- `AsFilterControl::$type` — the identifier persisted in `tl_flare_filter.control`. Defaults to
   `TypeNameFactory::createFilterControlType()` over the class (suffixes `FilterControl`,
-  `Control` stripped). `""` (= intrinsic) and `"default"` are reserved; a duplicate name fails the
+  `Control` stripped). `""` (= intrinsic) and `"default"` are reserved; a duplicate type fails the
   container build, because a silent override would re-interpret stored rows. The value class is not
   a discriminator — several controls share one — so the name is needed; FQCNs are not stored because a
   class rename would orphan every row.
 
 There is no `value:`, `requires:` or `default:` on `AsFilterControl` (§13.11, §13.12, §13.14).
-`AsFilterControl` stays repeatable (one class under several names); no bundle control uses that.
+`AsFilterControl` stays repeatable (one class under several types); no bundle control uses that.
 
 ### 3.4 Control registration
 
 `RegisterFilterControlsPass` follows `RegisterFilterElementsPass` exactly (§13.14):
 `findAndSortTaggedServices()`, `addMethodCall('add', [Reference, name, valueClass])`
-on an eager `FilterControlRegistry`, public alias `flare.filter_control.{name}`. On top of that pattern it
+on an eager `FilterControlRegistry`, public alias `flare.filter_control.{type}`. On top of that pattern it
 does two checks only: the value class (§3.1) and name uniqueness (§3.3). It has no ordering
 constraint relative to the element pass.
 
-`FilterControlRegistry::findNames(string $valueClass): list<string>` is the whole election: the controls
+`FilterControlRegistry::findTypes(string $valueClass): list<string>` is the whole election: the controls
 whose value class equals the element's declared one, in registration order. It feeds the
 `control` options callback (§5.2) and the consistency check in `FilterFactory` (§8). An element
 whose value class has no control is legal — it is used intrinsically or programmatically, and its
@@ -551,7 +551,7 @@ which returns the alias (or the id as fallback), becomes `getFilterAlias()`.
 ### 5.2 Backend fields
 
 `control` is a `select` with `submitOnChange => true`. Its blank option *is* intrinsic.
-Options come from `FilterControlRegistry::findNames()` for the element's declared value class.
+Options come from `FilterControlRegistry::findTypes()` for the element's declared value class.
 `ElementDcaListener` reads it alongside `$filterModel->type` to resolve the control service before
 calling the control's `buildDca()`.
 
@@ -925,7 +925,7 @@ whole spec.
 | control produces the wrong shape | narrowed `decode()` return type, read by the compiler pass | container build; `TypeError` at run time |
 | value class without a (unique) provider | narrowed `provide()` return type, read by the compiler pass | container build |
 | element receives the wrong type | `expectValue()` inside `buildContext()` (§3.2) | `FilterException`, at query build |
-| stored `control` does not fit the element | `findNames()` check in `FilterFactory` (§8) | degrades to intrinsic, logged |
+| stored `control` does not fit the element | `findTypes()` check in `FilterFactory` (§8) | degrades to intrinsic, logged |
 | choice control/provider on an element without options | `instanceof ChoiceSourceContract`, plus a unit test over bundle elements | `FilterException` / test suite |
 | two controls claim one name | uniqueness check in the compiler pass | container build |
 | element and control config collide | `elm_` / `ctl_` column prefixes, separate configs | by construction |
@@ -944,7 +944,7 @@ migration: the column is v0.2-only and still empty everywhere, so dropping and r
 nothing. A rename migration (`ALTER TABLE … CHANGE`, guarded by
 `SHOW COLUMNS`) MUST land in the same commit as the DCA rename: a schema diff that sees the DCA
 renamed but the column not yet renamed drops the column and adds an empty one. Renames are
-mechanical and do not depend on control names, so they need not wait for step 6.
+mechanical and do not depend on control types, so they need not wait for step 6.
 
 **B. Data migration** (step 6) — written last, see below. It fills the new framework columns and
 the new control columns from the legacy ones, per row:
@@ -970,14 +970,14 @@ stays until deletes are run manually.
 
 ### Why the data migration comes last
 
-The mapping can be frozen only once the controls exist with their final names:
+The mapping can be frozen only once the controls exist with their final types:
 
 1. **A migration file auto-registers the moment it exists.** `src/Migration` is not excluded from
    the PSR-4 service resource, and `autoconfigure: true` plus `AbstractMigration` earns Contao's
    `contao.migration` tag. So the file's mere presence means `contao:migrate` runs it, against control
    names that may not exist yet. It is one-shot: once `shouldRun()` has been satisfied it goes quiet,
    so wrong values stay committed and need a *second* corrective migration.
-2. **Control names are permanent data.** The migration hardcodes `element type → control name` as frozen
+2. **Control types are permanent data.** The migration hardcodes `element type → control type` as frozen
    literals rather than resolving through `FilterControlRegistry`: a migration describes historical
    rows, and resolving through live code would let a later rename retroactively change what
    already-migrated rows meant.
@@ -1029,7 +1029,7 @@ merges steps 1 and 3 into one atomic cut (no pilot, no legacy adapter) and track
 4. **Schema changes** ✅ Done: per §11: the `elm_`/`ctl_` renames with their rename migration (§11 A), the
    new `value` column, and the drops of §11 C. No data migration yet.
 5. **Fold `FilterData`** ✅ Done: out per §8.
-6. **Data migration** ✅ Done: per §11 B. Written last, once the controls and their names exist. Subject to
+6. **Data migration** ✅ Done: per §11 B. Written last, once the controls and their types exist. Subject to
    the ordering hazard §11 records: it reads the columns step 4 drops, so it must land before any
    environment with real rows applies the schema diff.
 

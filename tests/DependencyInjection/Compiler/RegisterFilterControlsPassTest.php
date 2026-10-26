@@ -33,10 +33,10 @@ final class RegisterFilterControlsPassTest extends TestCase
         self::assertNotSame([], $container->getDefinition('test.ctl')->getTag(AsFilterControl::TAG));
     }
 
-    public function testRegistersNameValueClassAndPublicAlias(): void
+    public function testRegistersTypeValueClassAndPublicAlias(): void
     {
         $container = self::container();
-        self::control($container, 'test.ctl', PassBoolControl::class, ['name' => 'flare_checkbox']);
+        self::control($container, 'test.ctl', PassBoolControl::class, ['type' => 'flare_checkbox']);
 
         (new RegisterFilterControlsPass())->process($container);
 
@@ -51,7 +51,7 @@ final class RegisterFilterControlsPassTest extends TestCase
         self::assertSame([], $container->getDefinition('test.ctl')->getTag(AsFilterControl::TAG));
     }
 
-    public function testDerivesTheNameFromTheClass(): void
+    public function testDerivesTheTypeFromTheClass(): void
     {
         $container = self::container();
         self::control($container, 'test.derived', PassDerivedFilterControl::class, []);
@@ -64,12 +64,12 @@ final class RegisterFilterControlsPassTest extends TestCase
         self::assertTrue($container->hasAlias('flare.filter_control.pass_derived'));
     }
 
-    public function testOneServiceMayRegisterSeveralNames(): void
+    public function testOneServiceMayRegisterSeveralTypes(): void
     {
         $container = self::container();
         $container->setDefinition('test.multi', (new Definition(PassBoolControl::class))
-            ->addTag(AsFilterControl::TAG, ['name' => 'a'])
-            ->addTag(AsFilterControl::TAG, ['name' => 'b']));
+            ->addTag(AsFilterControl::TAG, ['type' => 'a'])
+            ->addTag(AsFilterControl::TAG, ['type' => 'b']));
 
         (new RegisterFilterControlsPass())->process($container);
 
@@ -81,7 +81,7 @@ final class RegisterFilterControlsPassTest extends TestCase
     public function testUnnarrowedDecodeReturnTypeFailsTheBuild(): void
     {
         $container = self::container();
-        self::control($container, 'test.bad', PassUnnarrowedControl::class, ['name' => 'a']);
+        self::control($container, 'test.bad', PassUnnarrowedControl::class, ['type' => 'a']);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessageMatches('/ValueInterface/');
@@ -89,11 +89,11 @@ final class RegisterFilterControlsPassTest extends TestCase
         (new RegisterFilterControlsPass())->process($container);
     }
 
-    public function testDuplicateNameFailsTheBuild(): void
+    public function testDuplicateTypeFailsTheBuild(): void
     {
         $container = self::container();
-        self::control($container, 'test.one', PassBoolControl::class, ['name' => 'flare_choice']);
-        self::control($container, 'test.two', PassDerivedFilterControl::class, ['name' => 'flare_choice']);
+        self::control($container, 'test.one', PassBoolControl::class, ['type' => 'flare_choice']);
+        self::control($container, 'test.two', PassDerivedFilterControl::class, ['type' => 'flare_choice']);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessageMatches('/already registered by service/');
@@ -107,7 +107,7 @@ final class RegisterFilterControlsPassTest extends TestCase
      * @param class-string $class
      * @param array<string, mixed> $tag
      */
-    public function testReservedNamesFailTheBuild(string $class, array $tag, string $messagePattern): void
+    public function testReservedTypesFailTheBuild(string $class, array $tag, string $messagePattern): void
     {
         $container = self::container();
         self::control($container, 'test.reserved', $class, $tag);
@@ -123,14 +123,14 @@ final class RegisterFilterControlsPassTest extends TestCase
      */
     public static function provideReservedNames(): iterable
     {
-        yield 'explicit default' => [PassBoolControl::class, ['name' => 'default'], '/reserved/'];
-        yield 'derived empty name' => [FilterControl::class, [], '/Cannot derive a filter control name/'];
+        yield 'explicit default' => [PassBoolControl::class, ['type' => 'default'], '/reserved/'];
+        yield 'derived empty type' => [FilterControl::class, [], '/Cannot derive a filter control type/'];
     }
 
     public function testNonControlServiceFailsTheBuild(): void
     {
         $container = self::container();
-        self::control($container, 'test.plain', \stdClass::class, ['name' => 'a']);
+        self::control($container, 'test.plain', \stdClass::class, ['type' => 'a']);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessageMatches('/does not implement/');

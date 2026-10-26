@@ -9,9 +9,9 @@ use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 
 /**
- * Maps filter control names to their services and value classes.
+ * Maps filter control types to their services and value classes.
  *
- * Populated at compile time by {@see RegisterFilterControlsPass}. The name is the value persisted in
+ * Populated at compile time by {@see RegisterFilterControlsPass}. The type is the value persisted in
  * `tl_flare_filter.control`; the empty string is reserved for "no control" (intrinsic).
  */
 final class FilterControlRegistry
@@ -24,38 +24,38 @@ final class FilterControlRegistry
     /**
      * @param class-string<ValueInterface> $valueClass The narrowed `decode()` return type.
      *
-     * @throws \InvalidArgumentException If the name is empty; the empty string means "no control".
+     * @throws \InvalidArgumentException If the type is empty; the empty string means "no control".
      */
-    public function add(FilterControlInterface $control, string $name, string $valueClass): self
+    public function add(FilterControlInterface $control, string $type, string $valueClass): self
     {
-        if ($name === '') {
+        if ($type === '') {
             throw new \InvalidArgumentException(\sprintf(
-                'The filter control %s must not be registered under an empty name.',
+                'The filter control %s must not be registered under an empty type.',
                 $control::class,
             ));
         }
 
-        $this->controls[$name] = ['control' => $control, 'value' => $valueClass];
+        $this->controls[$type] = ['control' => $control, 'value' => $valueClass];
 
         return $this;
     }
 
-    public function has(string $name): bool
+    public function has(string $type): bool
     {
-        return isset($this->controls[$name]);
+        return isset($this->controls[$type]);
     }
 
-    public function get(?string $name): ?FilterControlInterface
+    public function get(?string $type): ?FilterControlInterface
     {
-        return $name !== null ? ($this->controls[$name]['control'] ?? null) : null;
+        return $type !== null ? ($this->controls[$type]['control'] ?? null) : null;
     }
 
     /**
      * @return class-string<ValueInterface>|null
      */
-    public function getValueClass(?string $name): ?string
+    public function getValueClass(?string $type): ?string
     {
-        return $name !== null ? ($this->controls[$name]['value'] ?? null) : null;
+        return $type !== null ? ($this->controls[$type]['value'] ?? null) : null;
     }
 
     /**
@@ -64,18 +64,18 @@ final class FilterControlRegistry
      * @param class-string<ValueInterface> $valueClass
      * @return list<string>
      */
-    public function findNames(string $valueClass): array
+    public function findTypes(string $valueClass): array
     {
-        $names = [];
+        $types = [];
 
-        foreach ($this->controls as $name => $entry)
+        foreach ($this->controls as $type => $entry)
         {
             if ($entry['value'] === $valueClass) {
-                $names[] = $name;
+                $types[] = $type;
             }
         }
 
-        return $names;
+        return $types;
     }
 
     /**

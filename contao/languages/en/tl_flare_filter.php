@@ -1,5 +1,10 @@
 <?php
 
+use HeimrichHannot\FlareBundle\Filter\Control\CheckboxFilterControl;
+use HeimrichHannot\FlareBundle\Filter\Control\ChoiceBoolFilterControl;
+use HeimrichHannot\FlareBundle\Filter\Control\ChoiceFilterControl;
+use HeimrichHannot\FlareBundle\Filter\Control\DateRangeFilterControl;
+use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 
 $lang = &$GLOBALS['TL_LANG'][FilterModel::getTable()];
@@ -11,11 +16,11 @@ $lang['type'] = ['Type', 'Please select the type of the filter.'];
 $lang['control'] = ['Control', 'Choose how this filter is presented. Leave empty to apply it silently (intrinsic).'];
 $lang['value'] = ['Value', 'The fixed value of the filter, or the initial value of its control.'];
 $lang['control_options'] = [
-    'flare_choice' => 'Choice',
-    'flare_checkbox' => 'Checkbox',
-    'flare_choice_bool' => 'Yes/No choice',
-    'flare_date_range' => 'Date range',
-    'flare_keywords' => 'Keyword search',
+    ChoiceFilterControl::TYPE => 'Choice',
+    CheckboxFilterControl::TYPE => 'Checkbox',
+    ChoiceBoolFilterControl::TYPE => 'Yes/No choice',
+    DateRangeFilterControl::TYPE => 'Date range',
+    KeywordsFilterControl::TYPE => 'Keyword search',
 ];
 $lang['targetAlias'] = ['Apply to', 'Select the relation this filter should be applied to.'];
 ###< title_legend ###

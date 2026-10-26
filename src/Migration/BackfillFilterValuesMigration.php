@@ -25,7 +25,7 @@ use Doctrine\DBAL\Schema\Column;
  * default becomes '1', so rows created later are never pending. The schema diff proposes dropping the marker together
  * with the other retired columns.
  *
- * Element types and control names are frozen literals, not resolved through the registries: the migration describes
+ * Element and control types are frozen literals, not resolved through the registries: the migration describes
  * historical rows, and a later rename in live code must not change what already-migrated rows meant.
  */
 class BackfillFilterValuesMigration extends AbstractMigration

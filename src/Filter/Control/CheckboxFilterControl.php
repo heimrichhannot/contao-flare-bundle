@@ -23,10 +23,10 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  * A single checkbox. Checked means true; unchecked means false only under the `true_false` binary
  * choices, otherwise the filter contributes nothing.
  */
-#[AsFilterControl(name: self::NAME)]
+#[AsFilterControl(type: self::TYPE)]
 class CheckboxFilterControl extends AbstractFilterControl
 {
-    public const NAME = 'flare_checkbox';
+    public const TYPE = 'flare_checkbox';
 
     public function configureOptions(OptionsResolver $resolver): void
     {

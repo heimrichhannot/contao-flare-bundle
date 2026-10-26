@@ -21,10 +21,10 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 /**
  * A free-text input for a search phrase.
  */
-#[AsFilterControl(name: self::NAME)]
+#[AsFilterControl(type: self::TYPE)]
 class KeywordsFilterControl extends AbstractFilterControl
 {
-    public const NAME = 'flare_keywords';
+    public const TYPE = 'flare_keywords';
 
     public function configureOptions(OptionsResolver $resolver): void
     {

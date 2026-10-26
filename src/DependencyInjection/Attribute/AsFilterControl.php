@@ -18,22 +18,22 @@ class AsFilterControl
 {
     public const TAG = 'flare.filter_control';
 
-    public ?string $name;
+    public ?string $type;
     /** @var array<string, mixed> */
     public array $attributes;
 
     /**
-     * @param string|null $name Stable identifier persisted in `tl_flare_filter.control`. Defaults to
+     * @param string|null $type Stable identifier persisted in `tl_flare_filter.control`. Defaults to
      *   {@see TypeNameFactory::createFilterControlType()} over the service class. Prefix third-party
-     *   names; the empty string (intrinsic) and "default" are reserved.
+     *   types; the empty string (intrinsic) and "default" are reserved.
      */
     public function __construct(
-        ?string $name = null,
+        ?string $type = null,
         mixed   ...$attributes
     ) {
-        $this->name = $name;
+        $this->type = $type;
 
-        $attributes['name'] = $this->name;
+        $attributes['type'] = $this->type;
 
         $this->attributes = $attributes;
     }

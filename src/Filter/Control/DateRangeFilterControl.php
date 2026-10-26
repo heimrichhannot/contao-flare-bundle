@@ -26,10 +26,10 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 /**
  * A from/to pair of date inputs. An element implementing {@see DateBoundsContract} restricts them.
  */
-#[AsFilterControl(name: self::NAME)]
+#[AsFilterControl(type: self::TYPE)]
 class DateRangeFilterControl extends AbstractFilterControl
 {
-    public const NAME = 'flare_date_range';
+    public const TYPE = 'flare_date_range';
 
     public function __construct(
         private readonly TranslatorInterface $translator,

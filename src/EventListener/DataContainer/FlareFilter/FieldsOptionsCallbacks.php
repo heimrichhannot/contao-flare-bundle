@@ -81,8 +81,10 @@ readonly class FieldsOptionsCallbacks
 
         $options = [];
 
-        foreach ($this->filterControlRegistry->findNames($valueClass) as $name) {
-            $options[$name] = $GLOBALS['TL_LANG'][self::TABLE_NAME]['control_options'][$name] ?? $name;
+        $labels = $GLOBALS['TL_LANG'][self::TABLE_NAME]['control_options'] ?? [];
+
+        foreach ($this->filterControlRegistry->findTypes($valueClass) as $controlType) {
+            $options[$controlType] = $labels[$controlType] ?? $controlType;
         }
 
         return $options;

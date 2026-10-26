@@ -92,7 +92,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 **Extensibility via PHP 8 attributes** (compiler passes auto-register tagged services):
 - `#[AsFilterElement(type: '...', isTargeted: ..., value: SomeValue::class)]` — register a filter element and
   declare the value class it consumes (null = no runtime value, intrinsic-only)
-- `#[AsFilterControl(name: '...')]` — register a filter control (repeatable); the value class is the narrowed
+- `#[AsFilterControl(type: '...')]` — register a filter control (repeatable); the value class is the narrowed
   return type of `decode()`, not an attribute argument. Tag `flare.filter_control`
 - `#[AsListDriver(type: '...', dataContainer: '...')]` — register a list driver
 
@@ -110,7 +110,7 @@ Prefer events over overriding services for customization.
 
 **Registry pattern** — Registries in `src/Registry/` map type names to implementations: `FilterElementRegistry`, `FilterControlRegistry`, `ValueProviderRegistry`, `ListDriverRegistry`, `FilterPredicateRegistry`, `ProjectorRegistry`, `EngineModRegistry`. `FilterControlRegistry` differs from the others: it stores
 `FilterControlInterface` instances together with their value class (the narrowed `decode()` return type),
-registered by `RegisterFilterControlsPass` via `add($control, $name, $valueClass)`; `findNames($valueClass)`
+registered by `RegisterFilterControlsPass` via `add($control, $type, $valueClass)`; `findTypes($valueClass)`
 serves the control election (the `control` options).
 
 **Query safety** — `FilterConditionsBuilder` (`src/Query/FilterConditionsBuilder.php`) enforces parameterized queries. `TableAliasRegistry` (`src/Query/TableAliasRegistry.php`) manages table aliases and JOINs safely.

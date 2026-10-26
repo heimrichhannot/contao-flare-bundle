@@ -30,7 +30,7 @@ final class FilterTransformerResolver
     ) {}
 
     /**
-     * @param string $type The element type or the control name.
+     * @param string $type The element type or the control type.
      * @return array<string, mixed>|null Canonical config values, or null when no transformer matches the source.
      */
     public function transform(

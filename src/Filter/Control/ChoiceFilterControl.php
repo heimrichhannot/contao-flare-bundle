@@ -24,10 +24,10 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 /**
  * Presents the options of a {@see ChoiceSourceContract} element as a select, radio or checkbox group.
  */
-#[AsFilterControl(name: self::NAME)]
+#[AsFilterControl(type: self::TYPE)]
 class ChoiceFilterControl extends AbstractFilterControl
 {
-    public const NAME = 'flare_choice';
+    public const TYPE = 'flare_choice';
 
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -85,7 +85,7 @@ class ChoiceFilterControl extends AbstractFilterControl
         if (!$element instanceof ChoiceSourceContract) {
             throw new FilterException(\sprintf(
                 'The control "%s" requires an element implementing %s, got %s.',
-                self::NAME,
+                self::TYPE,
                 ChoiceSourceContract::class,
                 $element::class,
             ));

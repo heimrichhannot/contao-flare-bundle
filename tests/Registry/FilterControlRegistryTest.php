@@ -16,28 +16,28 @@ use PHPUnit\Framework\TestCase;
 
 final class FilterControlRegistryTest extends TestCase
 {
-    public function testFindNamesFiltersByValueClassInRegistrationOrder(): void
+    public function testFindTypesFiltersByValueClassInRegistrationOrder(): void
     {
         $r = (new FilterControlRegistry())
             ->add(self::control(), 'a', BoolValue::class)
             ->add(self::control(), 'b', ChoiceValue::class)
             ->add(self::control(), 'c', BoolValue::class);
 
-        self::assertSame(['a', 'c'], $r->findNames(BoolValue::class));
-        self::assertSame(['b'], $r->findNames(ChoiceValue::class));
-        self::assertSame([], $r->findNames(\stdClass::class));
+        self::assertSame(['a', 'c'], $r->findTypes(BoolValue::class));
+        self::assertSame(['b'], $r->findTypes(ChoiceValue::class));
+        self::assertSame([], $r->findTypes(\stdClass::class));
         self::assertSame(['a', 'b', 'c'], $r->keys());
         self::assertNull($r->get('nope'));
     }
 
-    public function testRejectsEmptyName(): void
+    public function testRejectsEmptyType(): void
     {
         $this->expectException(\InvalidArgumentException::class);
 
         (new FilterControlRegistry())->add(self::control(), '', BoolValue::class);
     }
 
-    public function testLookupByName(): void
+    public function testLookupByType(): void
     {
         $control = self::control();
         $r = (new FilterControlRegistry())->add($control, 'a', BoolValue::class);

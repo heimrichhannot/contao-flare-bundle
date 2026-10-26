@@ -17,7 +17,7 @@ use Symfony\Component\DependencyInjection\Definition;
 /**
  * Collects `flare.filter_control` tags into {@see FilterControlRegistry}. Besides the pattern of
  * {@see RegisterFilterElementsPass} it checks only the value class (the narrowed `decode()` return
- * type) and name uniqueness.
+ * type) and type uniqueness.
  */
 final class RegisterFilterControlsPass implements CompilerPassInterface
 {
@@ -32,7 +32,7 @@ final class RegisterFilterControlsPass implements CompilerPassInterface
         $tag = AsFilterControl::TAG;
         $registry = $container->findDefinition(FilterControlRegistry::class);
 
-        /** @var array<string, string> $services Service id by registered name. */
+        /** @var array<string, string> $services Service id by registered type. */
         $services = [];
 
         foreach ($this->findAndSortTaggedServices($tag, $container) as $reference)
@@ -47,27 +47,27 @@ final class RegisterFilterControlsPass implements CompilerPassInterface
 
             foreach ($tags as $attributes)
             {
-                $name = $this->getFilterControlName($definition, $attributes);
+                $type = $this->getFilterControlType($definition, $attributes);
 
-                if (isset($services[$name]))
+                if (isset($services[$type]))
                 {
                     throw new \InvalidArgumentException(\sprintf(
-                        'The filter control name "%s" is already registered by service "%s"; service "%s" must'
-                        . ' declare a different name. Control names are persisted in "%s.control" and must be unique.',
-                        $name,
-                        $services[$name],
+                        'The filter control type "%s" is already registered by service "%s"; service "%s" must'
+                        . ' declare a different type. Control types are persisted in "%s.control" and must be unique.',
+                        $type,
+                        $services[$type],
                         $serviceId,
                         FilterContainer::TABLE_NAME,
                     ));
                 }
 
-                $services[$name] = $serviceId;
+                $services[$type] = $serviceId;
 
                 /** @see FilterControlRegistry::add() */
-                $registry->addMethodCall('add', [$reference, $name, $valueClass]);
+                $registry->addMethodCall('add', [$reference, $type, $valueClass]);
 
                 $container
-                    ->setAlias('flare.filter_control.' . $name, $serviceId)
+                    ->setAlias('flare.filter_control.' . $type, $serviceId)
                     ->setPublic(true);
             }
         }
@@ -76,40 +76,40 @@ final class RegisterFilterControlsPass implements CompilerPassInterface
     /**
      * @param array<string, mixed> $attributes
      */
-    protected function getFilterControlName(Definition $definition, array $attributes): string
+    protected function getFilterControlType(Definition $definition, array $attributes): string
     {
-        if ($name = (string) ($attributes['name'] ?? ''))
+        if ($type = (string) ($attributes['type'] ?? ''))
         {
-            if ($name === 'default') {
+            if ($type === 'default') {
                 throw new \InvalidArgumentException(
-                    'The filter control name "default" is reserved and cannot be used. Choose a different name.',
+                    'The filter control type "default" is reserved and cannot be used. Choose a different type.',
                 );
             }
 
-            return $name;
+            return $type;
         }
 
         $class = $definition->getClass();
 
         if (!$class) {
             throw new \InvalidArgumentException(
-                'A filter control service without a class must declare an explicit name.',
+                'A filter control service without a class must declare an explicit type.',
             );
         }
 
-        $name = TypeNameFactory::createFilterControlType($class);
+        $type = TypeNameFactory::createFilterControlType($class);
 
         // A class named exactly "FilterControl" reduces to "", the intrinsic sentinel in tl_flare_filter.control.
-        if ($name === '' || $name === 'default')
+        if ($type === '' || $type === 'default')
         {
             throw new \InvalidArgumentException(\sprintf(
-                'Cannot derive a filter control name from class "%s" (derived "%s"). Declare an explicit name.',
+                'Cannot derive a filter control type from class "%s" (derived "%s"). Declare an explicit type.',
                 $class,
-                $name,
+                $type,
             ));
         }
 
-        return $name;
+        return $type;
     }
 
     /**

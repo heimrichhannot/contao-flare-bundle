@@ -885,7 +885,10 @@ nothing" (e.g. an empty selection without `elm_useWhitelistForOptionsOnly`):
 - **List view:** the view exposes the failed state (e.g. `flare_list.failed`); the template renders
   a translated "the list could not be created" message instead of the entries, the empty-result
   text and the pagination. The response status stays **200** — no HTTP error code. The filter form
-  may still render; it cannot repair a broken fixed filter.
+  may still render; it cannot repair a broken fixed filter. In `flare_listview.html.twig` the `body`
+  block chooses between the `failure` and `list` blocks, and `pagination_wrapper` renders the
+  `pagination` block only for a list that did not fail, so overrides of `list` and `pagination` keep
+  working.
 - **Reader (`ValidationContext`):** membership cannot be decided, so the entry is not rendered and
   the reader answers with a **5xx status** — today's `ReaderController::getErrorResponse()` with 500.
   A broken server config must not end up as indexed content, and a 404 would wrongly claim the entry

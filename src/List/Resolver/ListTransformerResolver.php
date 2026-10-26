@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\List\Resolver;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\ListDriverTransformerEvent;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
@@ -19,7 +19,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 final class ListTransformerResolver
 {
     /**
-     * @var array<class-string, TransformerResolver>
+     * @var array<class-string, TransformerMap>
      */
     private array $resolvers = [];
 
@@ -36,7 +36,7 @@ final class ListTransformerResolver
 
         if (!isset($this->resolvers[$cacheKey]))
         {
-            $resolver = new TransformerResolver();
+            $resolver = new TransformerMap();
 
             if ($driver instanceof TransformerContract) {
                 $driver->configureTransformers($resolver);

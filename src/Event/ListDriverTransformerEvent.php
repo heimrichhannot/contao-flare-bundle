@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Event;
 
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use Symfony\Contracts\EventDispatcher\Event;
 
@@ -16,7 +16,7 @@ use Symfony\Contracts\EventDispatcher\Event;
 class ListDriverTransformerEvent extends Event
 {
     public function __construct(
-        public readonly TransformerResolver $transformers,
+        public readonly TransformerMap $transformers,
         public readonly ListDriverInterface $driver,
         public readonly string              $type,
     ) {}

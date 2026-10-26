@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\Control;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
@@ -33,9 +33,9 @@ abstract class AbstractFilterControl implements FilterControlInterface, OptionsC
 
     abstract public function configureOptions(OptionsResolver $resolver): void;
 
-    public function configureTransformers(TransformerResolver $resolver): void
+    public function configureTransformers(TransformerMap $transformers): void
     {
-        $resolver->for(
+        $transformers->for(
             sourceClass: FilterModel::class,
             transformer: new CallbackFilterModelTransformer($this->transformFilterModel(...)),
         );

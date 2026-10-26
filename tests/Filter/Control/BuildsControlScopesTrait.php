@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Filter\Control;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
@@ -68,7 +68,7 @@ trait BuildsControlScopesTrait
      */
     private function transform(AbstractFilterControl $control, array $row): array
     {
-        $transformers = new TransformerResolver();
+        $transformers = new TransformerMap();
         $control->configureTransformers($transformers);
 
         $transformer = $transformers->resolve($model = new ControlFilterModelStub($row));

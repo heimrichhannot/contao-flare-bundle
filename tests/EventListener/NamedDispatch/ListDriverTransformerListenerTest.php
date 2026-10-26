@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\EventListener\NamedDispatch;
 
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Event\ListDriverTransformerEvent;
 use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\ListDriverTransformerListener;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
@@ -25,7 +25,7 @@ final class ListDriverTransformerListenerTest extends TestCase
         }
 
         (new ListDriverTransformerListener($dispatcher))(new ListDriverTransformerEvent(
-            new TransformerResolver(),
+            new TransformerMap(),
             $this->createMock(ListDriverInterface::class),
             'flare_news',
         ));

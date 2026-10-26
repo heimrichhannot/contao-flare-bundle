@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Filter\Element;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
@@ -253,7 +253,7 @@ final class ArchiveFilterElementTest extends TestCase
     {
         $element = $this->createElement();
 
-        $transformers = new TransformerResolver();
+        $transformers = new TransformerMap();
         $element->configureTransformers($transformers);
 
         $transformer = $transformers->resolve($model = new FilterModelStub($row));

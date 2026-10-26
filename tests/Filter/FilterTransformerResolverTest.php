@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\FilterTransformerEvent;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
@@ -109,9 +109,9 @@ final class RowSource
 
 final class TransformingElement implements FilterElementInterface, TransformerContract
 {
-    public function configureTransformers(TransformerResolver $resolver): void
+    public function configureTransformers(TransformerMap $transformers): void
     {
-        $resolver->for(RowSource::class, static function (ConfigBuilder $config, RowSource $source): void {
+        $transformers->for(RowSource::class, static function (ConfigBuilder $config, RowSource $source): void {
             foreach ($source->row as $key => $value) {
                 $config->set($key, $value);
             }
@@ -132,9 +132,9 @@ final class PlainTransformerlessElement implements FilterElementInterface
 
 final class TransformingControl extends AbstractFilterControl
 {
-    public function configureTransformers(TransformerResolver $resolver): void
+    public function configureTransformers(TransformerMap $transformers): void
     {
-        $resolver->for(RowSource::class, static function (ConfigBuilder $config, RowSource $source): void {
+        $transformers->for(RowSource::class, static function (ConfigBuilder $config, RowSource $source): void {
             foreach ($source->row as $key => $value) {
                 $config->set($key, $value);
             }

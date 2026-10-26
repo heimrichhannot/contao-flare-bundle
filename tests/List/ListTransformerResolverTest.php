@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\List;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\ListDriverTransformerEvent;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
@@ -92,11 +92,11 @@ final class TransformingDriver implements ListDriverInterface, TransformerContra
         return (string) ($config['dc'] ?? '');
     }
 
-    public function configureTransformers(TransformerResolver $resolver): void
+    public function configureTransformers(TransformerMap $transformers): void
     {
         $this->configureCalls++;
 
-        $resolver->for(SourceStub::class, static function (ConfigBuilder $config, SourceStub $source): void {
+        $transformers->for(SourceStub::class, static function (ConfigBuilder $config, SourceStub $source): void {
             $config->set('title', $source->title);
         });
     }

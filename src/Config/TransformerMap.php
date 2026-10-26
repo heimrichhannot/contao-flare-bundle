@@ -8,7 +8,7 @@ namespace HeimrichHannot\FlareBundle\Config;
  * Maps source classes to transformers translating a stored source object into canonical
  * config values. Configured declaratively per element/type class and extensible via events.
  */
-final class TransformerResolver
+final class TransformerMap
 {
     /**
      * @var array<class-string, TransformerInterface|(callable(object, ConfigBuilder): void)>

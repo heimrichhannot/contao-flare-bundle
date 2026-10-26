@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Config;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use PHPUnit\Framework\TestCase;
 
-final class TransformerResolverTest extends TestCase
+final class TransformerMapTest extends TestCase
 {
     public function testResolvesRegisteredSourceClass(): void
     {
-        $transformers = new TransformerResolver();
+        $transformers = new TransformerMap();
         $transformer = static function (ConfigBuilder $config, object $source): void {};
 
         $result = $transformers->for(SourceA::class, $transformer);
@@ -23,7 +23,7 @@ final class TransformerResolverTest extends TestCase
 
     public function testResolvesSubclassSources(): void
     {
-        $transformers = new TransformerResolver();
+        $transformers = new TransformerMap();
         $transformer = static function (ConfigBuilder $config, object $source): void {};
 
         $transformers->for(SourceA::class, $transformer);
@@ -33,7 +33,7 @@ final class TransformerResolverTest extends TestCase
 
     public function testReRegistrationOverrides(): void
     {
-        $transformers = new TransformerResolver();
+        $transformers = new TransformerMap();
         $first = static function (ConfigBuilder $config, object $source): void {};
         $second = static function (ConfigBuilder $config, object $source): void {};
 
@@ -45,7 +45,7 @@ final class TransformerResolverTest extends TestCase
 
     public function testReturnsNullWithoutMatch(): void
     {
-        $transformers = new TransformerResolver();
+        $transformers = new TransformerMap();
         $transformers->for(SourceA::class, static function (ConfigBuilder $config, object $source): void {});
 
         self::assertNull($transformers->resolve(new SourceB()));
@@ -53,7 +53,7 @@ final class TransformerResolverTest extends TestCase
 
     public function testExactClassMatchWinsOverEarlierBaseClassRegistration(): void
     {
-        $transformers = new TransformerResolver();
+        $transformers = new TransformerMap();
         $base = static function (ConfigBuilder $config, object $source): void {};
         $specific = static function (ConfigBuilder $config, object $source): void {};
 

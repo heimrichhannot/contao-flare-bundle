@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\List\Driver;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildListContract;
 use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildQueryContract;
@@ -33,9 +33,9 @@ abstract class AbstractListDriver implements
      */
     public function configureOptions(OptionsResolver $resolver): void {}
 
-    public function configureTransformers(TransformerResolver $resolver): void
+    public function configureTransformers(TransformerMap $transformers): void
     {
-        $resolver->for(
+        $transformers->for(
             sourceClass: ListModel::class,
             transformer: new CallbackListModelTransformer($this->transformListModel(...)),
         );

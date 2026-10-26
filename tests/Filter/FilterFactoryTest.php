@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaFieldBuilderInterface;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -323,9 +323,9 @@ final class FactoryStubBoolControl extends AbstractFilterControl
         $resolver->define('label')->default('default')->allowedTypes('string');
     }
 
-    public function configureTransformers(TransformerResolver $resolver): void
+    public function configureTransformers(TransformerMap $transformers): void
     {
-        $resolver->for(FilterModel::class, static function (ConfigBuilder $config, FilterModel $model): void {
+        $transformers->for(FilterModel::class, static function (ConfigBuilder $config, FilterModel $model): void {
             $config->set('label', 'from model');
         });
     }

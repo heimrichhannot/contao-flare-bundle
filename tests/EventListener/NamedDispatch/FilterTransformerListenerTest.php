@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\EventListener\NamedDispatch;
 
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Event\FilterTransformerEvent;
 use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterTransformerListener;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
@@ -45,7 +45,7 @@ final class FilterTransformerListenerTest extends TestCase
             });
         }
 
-        (new FilterTransformerListener($dispatcher))(new FilterTransformerEvent(new TransformerResolver(), $owner, 'x'));
+        (new FilterTransformerListener($dispatcher))(new FilterTransformerEvent(new TransformerMap(), $owner, 'x'));
 
         return $names;
     }

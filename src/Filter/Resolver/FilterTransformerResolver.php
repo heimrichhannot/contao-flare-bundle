@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\Resolver;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\FilterTransformerEvent;
 use HeimrichHannot\FlareBundle\Filter\FilterComponentInterface;
@@ -20,7 +20,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 final class FilterTransformerResolver
 {
     /**
-     * @var array<string, TransformerResolver>
+     * @var array<string, TransformerMap>
      */
     private array $resolvers = [];
 
@@ -41,7 +41,7 @@ final class FilterTransformerResolver
 
         if (!isset($this->resolvers[$cacheKey]))
         {
-            $resolver = new TransformerResolver();
+            $resolver = new TransformerMap();
 
             if ($owner instanceof TransformerContract) {
                 $owner->configureTransformers($resolver);

@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\Contract\IsSupportedContract;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
@@ -30,9 +30,9 @@ abstract class AbstractFilterElement implements
 
     abstract public function configureOptions(OptionsResolver $resolver): void;
 
-    public function configureTransformers(TransformerResolver $resolver): void
+    public function configureTransformers(TransformerMap $transformers): void
     {
-        $resolver->for(
+        $transformers->for(
             sourceClass: FilterModel::class,
             transformer: new CallbackFilterModelTransformer($this->transformFilterModel(...)),
         );

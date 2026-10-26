@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\Control;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
-use HeimrichHannot\FlareBundle\Filter\CallbackFilterModelTransformer;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
@@ -40,15 +38,9 @@ class DateRangeFilterControl extends AbstractFilterControl
         $resolver->define('label')->default(null)->allowedTypes('string', 'null');
     }
 
-    public function configureTransformers(TransformerResolver $resolver): void
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $resolver->for(
-            sourceClass: FilterModel::class,
-            transformer: new CallbackFilterModelTransformer(
-                static fn (ConfigBuilder $config, FilterModel $model): ConfigBuilder
-                    => $config->set('label', $model->ctl_label ?: null),
-            ),
-        );
+        $config->set('label', $model->ctl_label ?: null);
     }
 
     public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
@@ -91,6 +83,10 @@ class DateRangeFilterControl extends AbstractFilterControl
         $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validateRange(...));
     }
 
+    /**
+     * @param array{from?: ?\DateTimeInterface, to?: ?\DateTimeInterface}|null $data The data of the compound
+     *   form, keyed by its children.
+     */
     public function decode(mixed $data, FilterScope $scope): ?DateRangeValue
     {
         if (!\is_array($data)) {
@@ -100,7 +96,10 @@ class DateRangeFilterControl extends AbstractFilterControl
         return DateRangeValue::tryFrom($data['from'] ?? null, $data['to'] ?? null);
     }
 
-    public function hydrate(?ValueInterface $value, FilterScope $scope): mixed
+    /**
+     * @return array{from: ?\DateTimeImmutable, to: ?\DateTimeImmutable}
+     */
+    public function hydrate(?ValueInterface $value, FilterScope $scope): array
     {
         $value = $this->expectValue($value, DateRangeValue::class);
 

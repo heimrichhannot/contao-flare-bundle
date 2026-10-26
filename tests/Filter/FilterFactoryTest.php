@@ -328,6 +328,8 @@ final class FactoryStubBoolControl extends AbstractFilterControl
         });
     }
 
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
+
     public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void {}
 
     public function decode(mixed $data, FilterScope $scope): ?BoolValue
@@ -343,6 +345,10 @@ final class FactoryStubBoolControl extends AbstractFilterControl
 
 final class FactoryStubKeywordsControl extends AbstractFilterControl
 {
+    public function configureOptions(OptionsResolver $resolver): void {}
+
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
+
     public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void {}
 
     public function decode(mixed $data, FilterScope $scope): ?KeywordsValue

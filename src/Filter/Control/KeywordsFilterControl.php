@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\Control;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
-use HeimrichHannot\FlareBundle\Filter\CallbackFilterModelTransformer;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
@@ -32,16 +30,11 @@ class KeywordsFilterControl extends AbstractFilterControl
         $resolver->define('placeholder')->default(null)->allowedTypes('string', 'null');
     }
 
-    public function configureTransformers(TransformerResolver $resolver): void
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $resolver->for(
-            sourceClass: FilterModel::class,
-            transformer: new CallbackFilterModelTransformer(
-                static fn (ConfigBuilder $config, FilterModel $model): ConfigBuilder => $config
-                    ->set('label', $model->ctl_label ?: null)
-                    ->set('placeholder', $model->ctl_placeholder ?: null),
-            ),
-        );
+        $config
+            ->set('label', $model->ctl_label ?: null)
+            ->set('placeholder', $model->ctl_placeholder ?: null);
     }
 
     public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
@@ -65,12 +58,15 @@ class KeywordsFilterControl extends AbstractFilterControl
         $builder->single(TextType::class, $options);
     }
 
+    /**
+     * @param string|null $data The submitted search phrase.
+     */
     public function decode(mixed $data, FilterScope $scope): ?KeywordsValue
     {
         return KeywordsValue::tryFrom($data);
     }
 
-    public function hydrate(?ValueInterface $value, FilterScope $scope): mixed
+    public function hydrate(?ValueInterface $value, FilterScope $scope): ?string
     {
         return $this->expectValue($value, KeywordsValue::class)?->keywords;
     }

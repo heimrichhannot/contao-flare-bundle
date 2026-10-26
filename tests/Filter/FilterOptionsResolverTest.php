@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
@@ -15,6 +16,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -99,6 +101,8 @@ final class ConfigAwareControl extends AbstractFilterControl
     {
         $resolver->define('label')->default('default')->allowedTypes('string');
     }
+
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
 
     public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void
     {

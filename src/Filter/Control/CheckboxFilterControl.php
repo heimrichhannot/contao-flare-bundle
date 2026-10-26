@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\Control;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
-use HeimrichHannot\FlareBundle\Filter\CallbackFilterModelTransformer;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
@@ -36,15 +34,7 @@ class CheckboxFilterControl extends AbstractFilterControl
             ->allowedTypes(BoolBinaryChoices::class);
     }
 
-    public function configureTransformers(TransformerResolver $resolver): void
-    {
-        $resolver->for(
-            sourceClass: FilterModel::class,
-            transformer: new CallbackFilterModelTransformer($this->transformFilterModel(...)),
-        );
-    }
-
-    private function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
         $config
             ->set('label', $model->ctl_label ?: null)
@@ -67,6 +57,9 @@ class CheckboxFilterControl extends AbstractFilterControl
         ]);
     }
 
+    /**
+     * @param bool|null $data The checkbox state.
+     */
     public function decode(mixed $data, FilterScope $scope): ?BoolValue
     {
         if ($data === true) {
@@ -78,7 +71,7 @@ class CheckboxFilterControl extends AbstractFilterControl
         return $data === false && $choices === BoolBinaryChoices::TRUE_FALSE ? new BoolValue(false) : null;
     }
 
-    public function hydrate(?ValueInterface $value, FilterScope $scope): mixed
+    public function hydrate(?ValueInterface $value, FilterScope $scope): ?bool
     {
         return $this->expectValue($value, BoolValue::class)?->state;
     }

@@ -16,8 +16,10 @@ use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 final class FilterTransformerResolverTest extends TestCase
 {
@@ -135,6 +137,10 @@ final class TransformingControl extends AbstractFilterControl
             }
         });
     }
+
+    public function configureOptions(OptionsResolver $resolver): void {}
+
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
 
     public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void
     {

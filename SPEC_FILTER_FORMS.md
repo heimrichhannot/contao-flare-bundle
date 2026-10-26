@@ -313,6 +313,11 @@ choice objects (§7).
 (`configureTransformers`) and `DcaContract` (`buildDca`). They apply to the control's own config,
 `Filter::$controlConfig`, which is resolved and stored separately from the element's (§8, §13.20). A
 control never reads element config; what it needs from the element it gets through a port (§3.5).
+`AbstractFilterControl` mirrors `AbstractFilterElement`: `configureOptions()` and a protected
+`transformFilterModel(ConfigBuilder, FilterModel)` are abstract, the default `configureTransformers()`
+registers the latter for `FilterModel`, `buildDca()` is a no-op, and the interface methods are redeclared
+abstract. Concrete controls document the `$data` shape of `decode()` and narrow the return type of
+`hydrate()`.
 
 ### 3.2 `FilterElementInterface` (revised)
 

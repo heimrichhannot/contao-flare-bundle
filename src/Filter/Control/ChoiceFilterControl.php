@@ -5,15 +5,14 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\Control;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\CallbackFilterModelTransformer;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceObjectInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
@@ -41,15 +40,7 @@ class ChoiceFilterControl extends AbstractFilterControl
         $resolver->define('placeholder')->default(null)->allowedTypes('string', 'null');
     }
 
-    public function configureTransformers(TransformerResolver $resolver): void
-    {
-        $resolver->for(
-            sourceClass: FilterModel::class,
-            transformer: new CallbackFilterModelTransformer($this->transformFilterModel(...)),
-        );
-    }
-
-    private function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
         $formatLabel = $model->ctl_formatLabel === 'custom' ? $model->ctl_formatLabelCustom : $model->ctl_formatLabel;
         $formatEmptyOption = $model->ctl_formatEmptyOption === 'custom'
@@ -126,12 +117,19 @@ class ChoiceFilterControl extends AbstractFilterControl
         $builder->single(ChoiceType::class, $options);
     }
 
+    /**
+     * @param ChoiceObjectInterface|iterable<mixed>|null $data The selected choice, or the selected choices of a
+     *   multiple widget; entries that are no choice objects (e.g. the empty option) are ignored.
+     */
     public function decode(mixed $data, FilterScope $scope): ?ChoiceValue
     {
         return ChoiceValue::tryFrom($data);
     }
 
-    public function hydrate(?ValueInterface $value, FilterScope $scope): mixed
+    /**
+     * @return ChoiceObjectInterface|list<ChoiceObjectInterface>|null A list for a multiple widget.
+     */
+    public function hydrate(?ValueInterface $value, FilterScope $scope): ChoiceObjectInterface|array|null
     {
         $value = $this->expectValue($value, ChoiceValue::class);
 

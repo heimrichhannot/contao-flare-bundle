@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\Control;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
-use HeimrichHannot\FlareBundle\Filter\CallbackFilterModelTransformer;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
@@ -31,15 +29,9 @@ class ChoiceBoolFilterControl extends AbstractFilterControl
         $resolver->define('label')->default(null)->allowedTypes('string', 'null');
     }
 
-    public function configureTransformers(TransformerResolver $resolver): void
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $resolver->for(
-            sourceClass: FilterModel::class,
-            transformer: new CallbackFilterModelTransformer(
-                static fn (ConfigBuilder $config, FilterModel $model): ConfigBuilder
-                    => $config->set('label', $model->ctl_label ?: null),
-            ),
-        );
+        $config->set('label', $model->ctl_label ?: null);
     }
 
     public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
@@ -61,6 +53,9 @@ class ChoiceBoolFilterControl extends AbstractFilterControl
         ]);
     }
 
+    /**
+     * @param string|null $data The selected choice value: "1", "0", or null for the empty option.
+     */
     public function decode(mixed $data, FilterScope $scope): ?BoolValue
     {
         return match ($data) {
@@ -70,7 +65,7 @@ class ChoiceBoolFilterControl extends AbstractFilterControl
         };
     }
 
-    public function hydrate(?ValueInterface $value, FilterScope $scope): mixed
+    public function hydrate(?ValueInterface $value, FilterScope $scope): ?string
     {
         $value = $this->expectValue($value, BoolValue::class);
 

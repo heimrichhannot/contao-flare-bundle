@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
@@ -11,8 +12,10 @@ use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Tests\List\StubFilterElement;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 final class FilterTest extends TestCase
 {
@@ -32,6 +35,10 @@ final class FilterTest extends TestCase
     private static function control(): FilterControlInterface
     {
         return new class extends AbstractFilterControl {
+            public function configureOptions(OptionsResolver $resolver): void {}
+
+            protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
+
             public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void {}
 
             public function decode(mixed $data, FilterScope $scope): ?BoolValue

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\DependencyInjection\Compiler;
 
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
 use HeimrichHannot\FlareBundle\DependencyInjection\Compiler\RegisterFilterControlsPass;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
@@ -11,11 +12,13 @@ use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
  * Calls `process()` directly on an uncompiled `ContainerBuilder` rather than `compile()`, which
@@ -157,6 +160,10 @@ final class RegisterFilterControlsPassTest extends TestCase
 
 abstract class PassControlBase extends AbstractFilterControl
 {
+    public function configureOptions(OptionsResolver $resolver): void {}
+
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
+
     public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void {}
 
     public function hydrate(?ValueInterface $value, FilterScope $scope): mixed

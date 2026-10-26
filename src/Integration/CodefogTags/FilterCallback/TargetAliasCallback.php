@@ -28,19 +28,21 @@ readonly class TargetAliasCallback
             return;
         }
 
-        $event->builder->field('targetAlias')->options(function () use ($context): array {
-            $activeTagsAliases = \array_intersect_key(
-                $this->joinsRegistry->all(),
-                \array_flip($context->tableAliasRegistry->getAliases()),
-            );
+        $event->builder
+            ->field('targetAlias')
+            ->options(function () use ($context): array {
+                $activeTagsAliases = \array_intersect_key(
+                    $this->joinsRegistry->all(),
+                    \array_flip($context->tableAliasRegistry->getAliases()),
+                );
 
-            $options = [];
+                $options = [];
 
-            foreach ($activeTagsAliases as $alias => $config) {
-                $options[$alias] = "{$alias} [tl_cfg_tag]";
-            }
+                foreach ($activeTagsAliases as $alias => $config) {
+                    $options[$alias] = "{$alias} [tl_cfg_tag]";
+                }
 
-            return $options;
-        });
+                return $options;
+            });
     }
 }

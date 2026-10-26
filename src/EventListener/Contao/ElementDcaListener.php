@@ -172,7 +172,8 @@ final readonly class ElementDcaListener
      */
     private function createExecutionContext(\Closure $getSpec): ?ListExecutionContext
     {
-        try {
+        try
+        {
             return $this->listExecutionContextFactory->create($getSpec());
         }
         catch (\Throwable) {}
@@ -221,7 +222,7 @@ final readonly class ElementDcaListener
         SQL;
 
         $duplicateAliases = $this->connection->fetchFirstColumn($sql, [
-            'pid' => $listModel->id,
+            'pid' => (int) $listModel->id,
         ]);
 
         if (!$duplicateAliases) {

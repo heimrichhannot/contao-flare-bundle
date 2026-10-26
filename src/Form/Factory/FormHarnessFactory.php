@@ -86,7 +86,8 @@ final readonly class FormHarnessFactory
             $builder = new FilterFormBuilder($alias, null, new EventDispatcher(), $this->formFactory);
             $builder->setAttribute(FilterScope::ATTR_SELF, $scope);
 
-            try {
+            try
+            {
                 $control->buildForm($builder, $scope);
             }
             catch (FilterException $e)
@@ -121,10 +122,12 @@ final readonly class FormHarnessFactory
                 );
             }
 
-            try {
+            try
+            {
                 $initial = $control->hydrate($filter->value, $scope);
             }
-            catch (FilterException $e) {
+            catch (FilterException $e)
+            {
                 $this->logSkipped($alias, $e);
                 continue;
             }

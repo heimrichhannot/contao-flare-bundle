@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\Event\FilterControlDcaEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementDcaEvent;
-use HeimrichHannot\FlareBundle\Event\ListDcaEvent;
+use HeimrichHannot\FlareBundle\Event\ListDriverDcaEvent;
 use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\DcaEventListener;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use PHPUnit\Framework\TestCase;
@@ -16,13 +16,13 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 
 final class DcaEventListenerTest extends TestCase
 {
-    public function testListEventIsDispatchedUnderTheListType(): void
+    public function testListDriverEventIsDispatchedUnderTheListDriverType(): void
     {
         $listener = new DcaEventListener($this->recordingDispatcher($names));
 
-        $listener->onListDca(new ListDcaEvent(new DcaBuilder(), self::context('tl_flare_list', 'flare_news')));
+        $listener->onListDriverDca(new ListDriverDcaEvent(new DcaBuilder(), self::context('tl_flare_list', 'flare_news')));
 
-        self::assertSame(['flare.list.flare_news.dca'], $names);
+        self::assertSame(['flare.list_driver.flare_news.dca'], $names);
     }
 
     public function testFilterElementEventIsDispatchedUnderTheElementType(): void
@@ -58,7 +58,7 @@ final class DcaEventListenerTest extends TestCase
         $dispatcher = new EventDispatcher();
 
         foreach ([
-            'flare.list.flare_news.dca',
+            'flare.list_driver.flare_news.dca',
             'flare.filter_element.flare_archive.dca',
             'flare.filter_control.flare_choice.dca',
             'flare.filter_control.flare_archive.dca',

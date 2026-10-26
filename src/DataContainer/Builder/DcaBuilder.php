@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Util\Str;
 /**
  * Collects per-type DCA configuration (palette and field tweaks) declared by a list driver's, filter
  * element's or filter control's {@see \HeimrichHannot\FlareBundle\Contract\DcaContract::buildDca()} and by
- * the listeners of {@see \HeimrichHannot\FlareBundle\Event\ListDcaEvent},
+ * the listeners of {@see \HeimrichHannot\FlareBundle\Event\ListDriverDcaEvent},
  * {@see \HeimrichHannot\FlareBundle\Event\FilterElementDcaEvent} and
  * {@see \HeimrichHannot\FlareBundle\Event\FilterControlDcaEvent}, then materializes it into the live
  * `$GLOBALS['TL_DCA']` array.

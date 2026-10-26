@@ -11,9 +11,9 @@ use Symfony\Contracts\EventDispatcher\Event;
 /**
  * Dispatched once per list driver class when its transformer map is configured.
  * Listeners may register transformers for additional source classes — for registered
- * drivers also per type via the named event `flare.list.{type}.transformers`.
+ * drivers also per type via the named event `flare.list_driver.{type}.transformers`.
  */
-class ListTransformerEvent extends Event
+class ListDriverTransformerEvent extends Event
 {
     public function __construct(
         public readonly TransformerResolver $transformers,

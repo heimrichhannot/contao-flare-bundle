@@ -7,14 +7,14 @@ namespace HeimrichHannot\FlareBundle\List\Resolver;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerResolver;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
-use HeimrichHannot\FlareBundle\Event\ListTransformerEvent;
+use HeimrichHannot\FlareBundle\Event\ListDriverTransformerEvent;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Runs a list type's source transformers ({@see TransformerContract}) to translate a stored
  * source (e.g. a ListModel) into canonical config values. The configured transformer map
- * is memoized per type class; listeners extend it via {@see ListTransformerEvent}.
+ * is memoized per type class; listeners extend it via {@see ListDriverTransformerEvent}.
  */
 final class ListTransformerResolver
 {
@@ -42,7 +42,7 @@ final class ListTransformerResolver
                 $driver->configureTransformers($resolver);
             }
 
-            $this->eventDispatcher->dispatch(new ListTransformerEvent($resolver, $driver, $type));
+            $this->eventDispatcher->dispatch(new ListDriverTransformerEvent($resolver, $driver, $type));
 
             $this->resolvers[$cacheKey] = $resolver;
         }

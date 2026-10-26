@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\EventListener\NamedDispatch;
 
 use HeimrichHannot\FlareBundle\Event\FilterControlDcaEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementDcaEvent;
-use HeimrichHannot\FlareBundle\Event\ListDcaEvent;
+use HeimrichHannot\FlareBundle\Event\ListDriverDcaEvent;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -17,9 +17,12 @@ readonly class DcaEventListener
     ) {}
 
     #[AsEventListener(priority: -200)]
-    public function onListDca(ListDcaEvent $event): void
+    public function onListDriverDca(ListDriverDcaEvent $event): void
     {
-        $this->eventDispatcher->dispatch(event: $event, eventName: "flare.list.{$event->context->type}.dca");
+        $this->eventDispatcher->dispatch(
+            event: $event,
+            eventName: "flare.list_driver.{$event->context->type}.dca",
+        );
     }
 
     #[AsEventListener(priority: -200)]

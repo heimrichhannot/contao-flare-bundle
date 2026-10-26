@@ -57,16 +57,16 @@ class SimpleEquationFilterElement extends AbstractFilterElement
         ]);
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
         $operatorValue = $context->filterModel?->elm_equationOperator;
         $operator = $operatorValue ? SqlEquationOperator::match($operatorValue) : null;
 
-        $dca->palette($operator?->isUnary()
+        $builder->palette($operator?->isUnary()
             ? '{flare_simple_equation_legend},elm_equationLeft,elm_equationOperator'
             : '{flare_simple_equation_legend},elm_equationLeft,elm_equationOperator,elm_equationRight');
 
-        $dca->field('elm_equationLeft')
+        $builder->field('elm_equationLeft')
             ->options(static fn (): array => DcaHelper::getFieldOptions($context->getTargetTable()));
     }
 }

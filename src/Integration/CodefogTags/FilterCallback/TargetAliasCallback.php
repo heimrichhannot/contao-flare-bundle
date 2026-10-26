@@ -28,7 +28,7 @@ readonly class TargetAliasCallback
             return;
         }
 
-        $event->dca->field('targetAlias')->options(function () use ($context): array {
+        $event->builder->field('targetAlias')->options(function () use ($context): array {
             $activeTagsAliases = \array_intersect_key(
                 $this->joinsRegistry->all(),
                 \array_flip($context->tableAliasRegistry->getAliases()),

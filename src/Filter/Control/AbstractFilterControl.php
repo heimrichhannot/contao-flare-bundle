@@ -26,5 +26,5 @@ abstract class AbstractFilterControl implements FilterControlInterface, OptionsC
 
     public function configureTransformers(TransformerResolver $resolver): void {}
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void {}
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void {}
 }

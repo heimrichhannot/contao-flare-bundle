@@ -31,9 +31,9 @@ class EventsListDriver extends AbstractListDriver
         return self::DATA_CONTAINER;
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->suffix(static function (string $suffix): string {
+        $builder->suffix(static function (string $suffix): string {
             if (!$suffix) {
                 return $suffix;
             }

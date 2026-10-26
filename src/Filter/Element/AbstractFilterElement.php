@@ -47,7 +47,7 @@ abstract class AbstractFilterElement implements
      */
     abstract protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void;
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void {}
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void {}
 
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
 

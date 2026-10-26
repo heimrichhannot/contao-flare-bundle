@@ -67,9 +67,9 @@ class ChoiceFilterControl extends AbstractFilterControl
             ->set('placeholder', $model->ctl_placeholder ?: null);
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->palette(
+        $builder->palette(
             '{control_legend},ctl_label,ctl_formatLabel,ctl_isMandatory,ctl_isMultiple,ctl_isExpanded,'
             . 'ctl_hasEmptyOption,ctl_formatEmptyOption,ctl_placeholder',
         );

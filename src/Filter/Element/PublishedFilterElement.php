@@ -56,8 +56,8 @@ class PublishedFilterElement extends AbstractFilterElement
         ]);
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},elm_usePublished,elm_useStart,elm_useStop');
+        $builder->palette('{filter_legend},elm_usePublished,elm_useStart,elm_useStop');
     }
 }

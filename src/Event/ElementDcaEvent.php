@@ -16,7 +16,7 @@ use Symfony\Contracts\EventDispatcher\Event;
 class ElementDcaEvent extends Event
 {
     public function __construct(
-        public readonly DcaBuilder $dca,
+        public readonly DcaBuilder $builder,
         public readonly DcaContext $context,
     ) {}
 }

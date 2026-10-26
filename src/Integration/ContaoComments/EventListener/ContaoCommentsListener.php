@@ -113,7 +113,7 @@ readonly class ContaoCommentsListener
             $pm->addField('comments_sendNativeEmails', 'comments_legend', PaletteManipulator::POSITION_APPEND);
         }
 
-        $event->dca->palette($pm->applyToString((string) $event->dca->getPalette()));
+        $event->builder->palette($pm->applyToString((string) $event->builder->getPalette()));
     }
 
     /**

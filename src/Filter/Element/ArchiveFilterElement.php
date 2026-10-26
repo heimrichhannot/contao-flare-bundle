@@ -247,7 +247,7 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
         );
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
         if (!$filterModel = $context->filterModel) {
             return;
@@ -257,12 +257,12 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
 
         if ($inferrer->getDcaMainPtable())
         {
-            $dca->palette('{archive_legend},elm_whitelistParents,elm_useWhitelistForOptionsOnly');
+            $builder->palette('{archive_legend},elm_whitelistParents,elm_useWhitelistForOptionsOnly');
         }
         /** @mago-expect lint:no-else-clause This else clause is fine. */
         elseif ($inferrer->isDcaDynamicPtable())
         {
-            $dca->palette('{archive_legend},elm_groupWhitelistParents,elm_useWhitelistForOptionsOnly');
+            $builder->palette('{archive_legend},elm_groupWhitelistParents,elm_useWhitelistForOptionsOnly');
         }
     }
 

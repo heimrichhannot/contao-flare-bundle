@@ -91,9 +91,9 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
         return $this->resolveFormLimits($scope->filter->config);
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->palette(
+        $builder->palette(
             '{date_start_legend},elm_configureStart,elm_hasExtendedEvents;'
             . '{date_stop_legend},elm_configureStop;'
             . '{form_legend},elm_isLimited;'

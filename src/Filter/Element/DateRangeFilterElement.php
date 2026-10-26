@@ -53,8 +53,8 @@ class DateRangeFilterElement extends AbstractFilterElement
         ]);
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},elm_fieldGeneric');
+        $builder->palette('{filter_legend},elm_fieldGeneric');
     }
 }

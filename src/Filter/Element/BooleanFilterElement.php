@@ -53,11 +53,11 @@ class BooleanFilterElement extends AbstractFilterElement
         ]);
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},elm_fieldGeneric');
+        $builder->palette('{filter_legend},elm_fieldGeneric');
 
-        $dca->field('elm_fieldGeneric')
+        $builder->field('elm_fieldGeneric')
             ->options(fn (): array => $this->getFieldGenericOptions($context->getTargetTable()));
     }
 

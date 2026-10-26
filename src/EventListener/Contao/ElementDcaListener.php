@@ -66,19 +66,19 @@ final readonly class ElementDcaListener
             return;
         }
 
-        if (!Input::get('id')) {
+        if (!$rawId = Input::get('id')) {
             return;
         }
 
-        $this->configure($table);
+        if (!$id = \filter_var($rawId, \FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]])) {
+            return;
+        }
+
+        $this->configure($table, (int) $id);
     }
 
-    private function configure(string $table): void
+    private function configure(string $table, int $id): void
     {
-        if (!$id = Input::get('id')) {
-            return;
-        }
-
         $type = '';
         $service = null;
 
@@ -122,33 +122,33 @@ final readonly class ElementDcaListener
             filterScopeFactory: fn (): ?FilterScope => $this->createFilterScope($getSpec, $filterModel),
         );
 
-        $dca = new DcaBuilder();
+        $dcaBuilder = new DcaBuilder();
 
         if ($service instanceof DcaContract) {
-            $service->buildDca($dca, $context);
+            $service->buildDca($dcaBuilder, $context);
         }
 
         if ($filterModel !== null) {
-            $this->buildFrameworkDca($dca, $context, $filterModel);
+            $this->buildFrameworkDca($dcaBuilder, $context, $filterModel);
         }
 
-        $this->eventDispatcher->dispatch(new ElementDcaEvent($dca, $context));
+        $this->eventDispatcher->dispatch(new ElementDcaEvent($dcaBuilder, $context));
 
         $isEditAction = $this->requestStack->getCurrentRequest()?->query->get('act') === 'edit';
 
-        $dca->apply($table, $type, applyPalette: $isEditAction);
+        $dcaBuilder->apply($table, $type, applyPalette: $isEditAction);
     }
 
     /**
      * The framework's part of the palette (§5.2, §6.1): the selected control fills the control segment,
      * and an element with a value class shows the `value` field after the framework prefix.
      */
-    private function buildFrameworkDca(DcaBuilder $dca, DcaContext $context, FilterModel $filterModel): void
+    private function buildFrameworkDca(DcaBuilder $builder, DcaContext $context, FilterModel $filterModel): void
     {
         $control = $this->filterControlRegistry->get((string) $filterModel->control);
 
         if ($control instanceof DcaContract) {
-            $control->buildDca($dca->scope('control'), $context);
+            $control->buildDca($builder->scope('control'), $context);
         }
 
         $valueClass = $this->filterElementRegistry->getAttribute($context->type)?->value;
@@ -157,9 +157,9 @@ final readonly class ElementDcaListener
             return;
         }
 
-        $this->valueProviderRegistry->get($valueClass)?->buildDcaField($dca->field('value'), $context);
+        $this->valueProviderRegistry->get($valueClass)?->buildDcaField($builder->field('value'), $context);
 
-        $dca->composePrefix(static fn (string $prefix): string => $prefix . ',value');
+        $builder->composePrefix(static fn (string $prefix): string => $prefix . ',value');
     }
 
     /**

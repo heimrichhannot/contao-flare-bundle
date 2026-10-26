@@ -44,9 +44,9 @@ class KeywordsFilterControl extends AbstractFilterControl
         );
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->palette('{control_legend},ctl_label,ctl_placeholder');
+        $builder->palette('{control_legend},ctl_label,ctl_placeholder');
     }
 
     public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void

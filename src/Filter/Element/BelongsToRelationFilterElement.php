@@ -128,7 +128,7 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
         return $groups;
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
         $listModel = $context->listModel;
         $filterModel = $context->filterModel;
@@ -136,14 +136,14 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
         if (!$filterModel)
         {
             Message::addError($this->trans->trans('errors.missing_model', [], 'flare'));
-            $dca->palette('');
+            $builder->palette('');
             return;
         }
 
         if (!$listModel->dc)
         {
             Message::addError($this->trans->trans('errors.missing_datacontainer', ['%id%' => $listModel->id], 'flare'));
-            $dca->palette('');
+            $builder->palette('');
             return;
         }
 
@@ -192,6 +192,6 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
             $palette .= ',elm_whitelistParents';
         }
 
-        $dca->palette($palette);
+        $builder->palette($palette);
     }
 }

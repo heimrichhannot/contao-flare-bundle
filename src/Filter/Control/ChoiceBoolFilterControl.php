@@ -42,9 +42,9 @@ class ChoiceBoolFilterControl extends AbstractFilterControl
         );
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->palette('{control_legend},ctl_label');
+        $builder->palette('{control_legend},ctl_label');
     }
 
     public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void

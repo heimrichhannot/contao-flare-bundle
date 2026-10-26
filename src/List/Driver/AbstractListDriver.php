@@ -47,7 +47,7 @@ abstract class AbstractListDriver implements
      */
     protected function transformListModel(ConfigBuilder $config, ListModel $model): void {}
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void {}
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void {}
 
     public function buildTableRegistry(TableAliasRegistry $registry): void {}
 

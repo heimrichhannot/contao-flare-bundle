@@ -114,11 +114,11 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
         return new ValueChoice($key);
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},elm_fieldGeneric');
+        $builder->palette('{filter_legend},elm_fieldGeneric');
 
-        $dca->field('elm_fieldGeneric')
+        $builder->field('elm_fieldGeneric')
             ->eval(['alwaysSave' => true, 'submitOnChange' => true])
             ->options(fn (): array => $this->getFieldGenericOptions($context->listModel->dc));
     }

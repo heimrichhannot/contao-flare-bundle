@@ -1194,7 +1194,8 @@ Recorded here because each one closes a branch the design could otherwise have t
     since stored data typically fails with a `ValueError`/`TypeError` — becomes a `FilterException`
     (filters) or `FlareException` (lists) with the record as source (`$origin`), so a broken record
     fails the list closed instead of escaping the collector. The source-class → transformer map is
-    `Config\TransformerMap` (formerly `TransformerResolver`).
+    `Config\TransformerMap` (formerly `TransformerResolver`) with `set(sourceClass, transformer)`, which replaces, and
+    `find(source)`, which matches by exact class first, then by inheritance (formerly `for()` and `resolve()`).
 
 ---
 

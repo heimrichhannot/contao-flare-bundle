@@ -32,7 +32,7 @@ abstract class AbstractFilterElement implements
 
     public function configureTransformers(TransformerMap $transformers): void
     {
-        $transformers->for(
+        $transformers->set(
             sourceClass: FilterModel::class,
             transformer: new CallbackFilterModelTransformer($this->transformFilterModel(...)),
         );

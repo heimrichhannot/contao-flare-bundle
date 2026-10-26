@@ -67,7 +67,7 @@ final class SimpleEquationFilterElementTest extends TestCase
         $transformers = new TransformerMap();
         $element->configureTransformers($transformers);
 
-        $transformer = $transformers->resolve($model = new FilterModelStub($row));
+        $transformer = $transformers->find($model = new FilterModelStub($row));
         self::assertNotNull($transformer);
 
         $transformer($config = new ConfigBuilder(), $model);

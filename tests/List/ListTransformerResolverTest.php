@@ -80,7 +80,7 @@ final class ListTransformerResolverTest extends TestCase
         $dispatcher->addListener(
             ListDriverTransformerEvent::class,
             static function (ListDriverTransformerEvent $event): void {
-                $event->transformers->for(
+                $event->transformers->set(
                     \stdClass::class,
                     static fn (ConfigBuilder $config, object $source) => $config->set('external', true),
                 );
@@ -115,7 +115,7 @@ final class TransformingDriver implements ListDriverInterface, TransformerContra
     {
         $this->configureCalls++;
 
-        $transformers->for(SourceStub::class, static function (ConfigBuilder $config, SourceStub $source): void {
+        $transformers->set(SourceStub::class, static function (ConfigBuilder $config, SourceStub $source): void {
             $config->set('title', $source->title);
         });
     }
@@ -130,7 +130,7 @@ final class FailingDriver implements ListDriverInterface, TransformerContract
 
     public function configureTransformers(TransformerMap $transformers): void
     {
-        $transformers->for(SourceStub::class, static function (): void {
+        $transformers->set(SourceStub::class, static function (): void {
             throw new \ValueError('"x" is not a valid backing value');
         });
     }

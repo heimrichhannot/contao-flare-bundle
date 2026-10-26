@@ -11,18 +11,18 @@ namespace HeimrichHannot\FlareBundle\Config;
 final class TransformerMap
 {
     /**
-     * @var array<class-string, TransformerInterface|(callable(object, ConfigBuilder): void)>
+     * @var array<class-string, TransformerInterface|(callable(ConfigBuilder, object): void)>
      */
     private array $transformers = [];
 
     /**
-     * Registers a transformer for a source class. Registering the same class again replaces
-     * the previous transformer, so event listeners can override element defaults.
+     * Sets the transformer for a source class, replacing a previous one, so event listeners can
+     * override the defaults of an element, control or list driver.
      *
      * @param class-string $sourceClass
      * @param TransformerInterface|callable(ConfigBuilder $config, object $source): void $transformer
      */
-    public function for(string $sourceClass, TransformerInterface|callable $transformer): self
+    public function set(string $sourceClass, TransformerInterface|callable $transformer): self
     {
         $this->transformers[$sourceClass] = $transformer;
 
@@ -30,15 +30,15 @@ final class TransformerMap
     }
 
     /**
-     * Returns the transformer registered for the source's exact class, falling back to the
-     * first registration matching by inheritance (subclasses, interfaces); null if none matches.
+     * Finds the transformer set for the source's exact class, falling back to the first one
+     * matching by inheritance (subclasses, interfaces); null if none matches.
      * The exact-class fast path lets a specific registration win over an earlier base-class one.
      *
      * @param object $source The stored source object to be transformed.
      *
      * @return TransformerInterface|(callable(ConfigBuilder $config, object $source): void)|null
      */
-    public function resolve(object $source): TransformerInterface|callable|null
+    public function find(object $source): TransformerInterface|callable|null
     {
         if ($transformer = $this->transformers[$source::class] ?? null) {
             return $transformer;

@@ -35,7 +35,7 @@ abstract class AbstractFilterControl implements FilterControlInterface, OptionsC
 
     public function configureTransformers(TransformerMap $transformers): void
     {
-        $transformers->for(
+        $transformers->set(
             sourceClass: FilterModel::class,
             transformer: new CallbackFilterModelTransformer($this->transformFilterModel(...)),
         );

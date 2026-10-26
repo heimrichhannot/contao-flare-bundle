@@ -71,7 +71,7 @@ trait BuildsControlScopesTrait
         $transformers = new TransformerMap();
         $control->configureTransformers($transformers);
 
-        $transformer = $transformers->resolve($model = new ControlFilterModelStub($row));
+        $transformer = $transformers->find($model = new ControlFilterModelStub($row));
         self::assertNotNull($transformer);
 
         $transformer($config = new ConfigBuilder(), $model);

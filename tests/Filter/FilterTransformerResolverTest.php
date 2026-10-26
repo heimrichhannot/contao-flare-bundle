@@ -67,7 +67,7 @@ final class FilterTransformerResolverTest extends TestCase
         $dispatcher->addListener(
             FilterTransformerEvent::class,
             static function (FilterTransformerEvent $event): void {
-                $event->transformers->for(
+                $event->transformers->set(
                     \stdClass::class,
                     static fn (ConfigBuilder $config, object $source) => $config->set('external', true),
                 );
@@ -142,7 +142,7 @@ final class TransformingElement implements FilterElementInterface, TransformerCo
 {
     public function configureTransformers(TransformerMap $transformers): void
     {
-        $transformers->for(RowSource::class, static function (ConfigBuilder $config, RowSource $source): void {
+        $transformers->set(RowSource::class, static function (ConfigBuilder $config, RowSource $source): void {
             foreach ($source->row as $key => $value) {
                 $config->set($key, $value);
             }
@@ -165,7 +165,7 @@ final class TransformingControl extends AbstractFilterControl
 {
     public function configureTransformers(TransformerMap $transformers): void
     {
-        $transformers->for(RowSource::class, static function (ConfigBuilder $config, RowSource $source): void {
+        $transformers->set(RowSource::class, static function (ConfigBuilder $config, RowSource $source): void {
             foreach ($source->row as $key => $value) {
                 $config->set($key, $value);
             }

@@ -16,7 +16,7 @@ final class SourceTransformerTest extends TestCase
         $calls = 0;
         $configure = static function (TransformerMap $transformers) use (&$calls): void {
             $calls++;
-            $transformers->for(\ArrayObject::class, static function (ConfigBuilder $config, \ArrayObject $source): void {
+            $transformers->set(\ArrayObject::class, static function (ConfigBuilder $config, \ArrayObject $source): void {
                 $config->set('count', \count($source));
             });
         };

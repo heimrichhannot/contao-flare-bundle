@@ -326,7 +326,7 @@ final class FactoryStubBoolControl extends AbstractFilterControl
 
     public function configureTransformers(TransformerMap $transformers): void
     {
-        $transformers->for(FilterModel::class, static function (ConfigBuilder $config, FilterModel $model): void {
+        $transformers->set(FilterModel::class, static function (ConfigBuilder $config, FilterModel $model): void {
             $config->set('label', 'from model');
         });
     }

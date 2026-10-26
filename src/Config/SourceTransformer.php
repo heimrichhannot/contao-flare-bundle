@@ -32,7 +32,7 @@ final class SourceTransformer
             $this->maps[$key] = $map;
         }
 
-        if (!$transformer = $this->maps[$key]->resolve($source)) {
+        if (!$transformer = $this->maps[$key]->find($source)) {
             return null;
         }
 

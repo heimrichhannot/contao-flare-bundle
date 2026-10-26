@@ -35,7 +35,7 @@ abstract class AbstractListDriver implements
 
     public function configureTransformers(TransformerMap $transformers): void
     {
-        $transformers->for(
+        $transformers->set(
             sourceClass: ListModel::class,
             transformer: new CallbackListModelTransformer($this->transformListModel(...)),
         );

@@ -146,6 +146,7 @@ final readonly class ElementDcaListener
         $event = match ($table) {
             FilterModel::getTable() => new FilterElementBuildDcaEvent($dcaBuilder, $context),
             ListModel::getTable() => new ListDriverBuildDcaEvent($dcaBuilder, $context),
+            default => throw new \LogicException("Unexpected table {$table}"),
         };
 
         $this->eventDispatcher->dispatch($event);

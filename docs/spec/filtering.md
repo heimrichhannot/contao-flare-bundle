@@ -32,7 +32,7 @@ tl_flare_filter rows ──(collector + transformers + value provider)──▶ 
                                                           │
           form building: control->buildForm(builder, scope) per filter ──▶ FormHarness (root form + mounts)
                                                           │
-         submit: control->decode(scope, data) ──▶ value object per filter alias
+         submit: control->decode(data, scope) ──▶ value object per filter alias
                                                           │
  query building (ListQueryDirector): element->buildContext(builder, scope, value) ──▶ Proposition[]
                                                           │
@@ -98,7 +98,7 @@ For each filter *with a control* whose alias is a valid Symfony form name, the `
 form under the filter's alias (`form[alias]=x`). **Multi-field controls** `add()` children under local names,
 which mount as a compound sub-form (`form[alias][from]=x`); `compound()` sets its form options, e.g. a label.
 Each mount is hydrated with
-`control->hydrate($scope, $filter->value)`.
+`control->hydrate($filter->value, $scope)`.
 
 The per-filter builder carries the `ControlScope` in its attribute bag under `ControlScope::ATTR_SELF`. After the
 control built its fields, a `FilterControlBuildFormEvent` is dispatched — listeners can add, remove, or replace

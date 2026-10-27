@@ -79,7 +79,7 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
   `buildForm()` / `decode()` / `hydrate()` on a [filter control](./dev/filter-controls.md)
 - Old hook signatures: `buildContext(FilterContextBuilder, ?ValueInterface)` is now
   `buildContext(FilterContextBuilderInterface, ElementScope, ?ValueInterface)`; controls take a `ControlScope`
-  first in `decode(ControlScope, mixed)` and `hydrate(ControlScope, ?ValueInterface)`; `buildForm()`,
+  in `decode(mixed, ControlScope)` and `hydrate(?ValueInterface, ControlScope)`; `buildForm()`,
   `ChoiceSourceContract::buildChoices()` and `DateBoundsContract::getDateBounds()` take the role-typed scope
 
 ## Events

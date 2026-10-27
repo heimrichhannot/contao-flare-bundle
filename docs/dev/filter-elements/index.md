@@ -58,8 +58,8 @@ intrinsic, and for every other element the editor leaves the *control* blank to 
 
 ## 2. The Interfaces
 
-Every element implements `FilterElementInterface`, which has a single method. Its parameters follow the order
-all hooks share — output channel (the builder), scope, input (the value):
+Every element implements `FilterElementInterface`, which has a single method — the builder (the output channel)
+comes first, then the scope, then the value:
 
 ```php
 public function buildContext(

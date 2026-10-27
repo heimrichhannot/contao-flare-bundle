@@ -57,12 +57,12 @@ The controls FLARE ships:
 ```php
 public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void;
 
-public function decode(ControlScope $scope, mixed $data): ?SomeValue;   // narrow the return type!
+public function decode(mixed $data, ControlScope $scope): ?SomeValue;   // narrow the return type!
 
-public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed;   // narrow it, too
+public function hydrate(?ValueInterface $value, ControlScope $scope): mixed;   // narrow it, too
 ```
 
-The parameters follow the order all hooks share: output channel (the builder), scope, input.
+The method's subject comes first — the builder, the submitted data, the value — and the scope is supplementary.
 
 - **`buildForm()`** declares the filter's fields on the collect-only builder. A **single-field** control calls
   `$builder->single(TextType::class, [...])`; the field is mounted flat on the root form under the filter's
@@ -140,12 +140,12 @@ class SearchBoxFilterControl extends AbstractFilterControl
     /**
      * @param string|null $data The submitted search phrase.
      */
-    public function decode(ControlScope $scope, mixed $data): ?KeywordsValue
+    public function decode(mixed $data, ControlScope $scope): ?KeywordsValue
     {
         return KeywordsValue::tryFrom($data);
     }
 
-    public function hydrate(ControlScope $scope, ?ValueInterface $value): ?string
+    public function hydrate(?ValueInterface $value, ControlScope $scope): ?string
     {
         return $this->expectValue($value, KeywordsValue::class)?->keywords;
     }

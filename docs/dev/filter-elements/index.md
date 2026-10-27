@@ -107,9 +107,10 @@ A filter is applied in two stages:
 
 :::warning A misspelled key is a programming error
 
-`UndefinedConfigKeyError` extends `\Error`, not `\Exception`: it escapes every failure handling unwrapped.
-The list does not degrade gracefully and the filter is not retried without its value — the request fails, so the
-typo surfaces during development instead of silently widening the list.
+`UndefinedConfigKeyError` extends `\Error`, not `\Exception`, so no filter failure handling catches it: the filter
+is not retried without its value, not skipped, and the list does not degrade to its "could not be created" state —
+the request fails (the engine loaders rethrow it wrapped in a `FlareException`), so the typo surfaces during
+development instead of silently widening the list.
 
 :::
 

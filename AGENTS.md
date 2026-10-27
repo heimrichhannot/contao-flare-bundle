@@ -77,7 +77,9 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   the Symfony level (`FormHarness`, `FilterFormBuilder`, mount). `src/Form/` — Symfony-level building blocks
   (`FormHarness`, `FilterMount`, `ChoicesBuilder`, `Form/Type/DateRangeFormType`)
 - `src/Contract/FilterElement/` — capability ports an element implements for controls/providers to pull from
-  (`ChoiceSourceContract`, `DateBoundsContract`); controls never reach into an element otherwise
+  (`ChoiceSourceContract`, `DateBoundsContract`); controls never reach into an element otherwise.
+  `IneffectiveFilterContract` lets an element explain why its filter restricts nothing as configured; the backend
+  marks such filters in the filter list and on the edit form (`DataContainer/IneffectiveFilterInspector`)
 - `src/Filter/ValueProvider/` — one `ValueProviderInterface` service per value class (`provide()` turns the
   stored `value` column into a value object; `buildDcaField()` renders the backend widget), registered via the
   `flare.value_provider` tag and `ValueProviderRegistry`

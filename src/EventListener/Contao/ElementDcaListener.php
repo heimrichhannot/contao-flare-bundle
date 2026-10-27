@@ -11,6 +11,7 @@ use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\DataContainer\IneffectiveFilterInspector;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent;
@@ -51,6 +52,7 @@ final readonly class ElementDcaListener
         private FilterControlRegistry       $filterControlRegistry,
         private FilterElementRegistry       $filterElementRegistry,
         private FilterFactory               $filterFactory,
+        private IneffectiveFilterInspector  $ineffectiveFilterInspector,
         private ListExecutionContextFactory $listExecutionContextFactory,
         private ListSpecBuilderFactory      $listFactory,
         private ListDriverRegistry          $listDriverRegistry,
@@ -154,6 +156,12 @@ final readonly class ElementDcaListener
         $isEditAction = $this->requestStack->getCurrentRequest()?->query->get('act') === 'edit';
 
         $dcaBuilder->apply($table, $type, applyPalette: $isEditAction);
+
+        if ($isEditAction && $filterModel !== null
+            && $reason = $this->ineffectiveFilterInspector->describe($filterModel))
+        {
+            Message::addInfo($reason);
+        }
     }
 
     /**

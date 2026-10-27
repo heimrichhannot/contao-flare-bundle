@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Filter\Element;
 
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
+use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\Element\ArchiveFilterElement;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Predicate\ArchivePredicate;
@@ -18,6 +21,8 @@ use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Symfony\Contracts\Translation\TranslatorTrait;
 
 final class ArchiveFilterElementTest extends TestCase
 {
@@ -182,6 +187,36 @@ final class ArchiveFilterElementTest extends TestCase
         $this->expectException(FilterException::class);
 
         $this->buildFilterContext($this->createElement(), ['whitelist_parents' => [3]], null, null, 'tl_orphan');
+    }
+
+    public function testWhitelistForOptionsOnlyWithoutAControlIsIneffective(): void
+    {
+        $element = $this->createElement();
+        $filter = fn (bool $optionsOnly) => $this->buildElementScope(
+            $element,
+            ['whitelist_parents' => [1], 'use_whitelist_for_options_only' => $optionsOnly],
+            dc: 'tl_news',
+        )->filter;
+
+        $reason = $element->getIneffectiveReason($filter(true));
+
+        self::assertNotNull($reason);
+        self::assertSame(
+            'filter.info.ineffective.whitelist_for_options_only',
+            $reason->trans(new class implements TranslatorInterface {
+                use TranslatorTrait;
+            }),
+        );
+
+        self::assertNull($element->getIneffectiveReason($filter(false)), 'the whitelist restricts the list');
+
+        $controlled = $filter(true)->withControl(new ControlBinding(
+            $this->createMock(FilterControlInterface::class),
+            'flare_choice',
+            new ComponentConfig(),
+        ));
+
+        self::assertNull($element->getIneffectiveReason($controlled), 'the control restricts the list');
     }
 
     public function testChoiceFromKeyParsesTableAndId(): void

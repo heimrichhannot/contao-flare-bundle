@@ -9,11 +9,13 @@ use Contao\Model\Collection;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\ArchivePredicate;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BelongsToRelationPredicate;
@@ -26,9 +28,11 @@ use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Translation\TranslatableMessage;
+use Symfony\Contracts\Translation\TranslatableInterface;
 
 #[AsFilterElement(type: self::TYPE, value: ChoiceValue::class)]
-class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSourceContract
+class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSourceContract, IneffectiveFilterContract
 {
     public const TYPE = 'flare_archive';
 
@@ -119,6 +123,18 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
         }
 
         return ContaoModelChoice::ref($matches[1], (int) $matches[2]);
+    }
+
+    /**
+     * Without a control there is never a value, and a whitelist for the options only restricts nothing.
+     */
+    public function getIneffectiveReason(Filter $filter): ?TranslatableInterface
+    {
+        if ($filter->control !== null || !$filter->element->config->get('use_whitelist_for_options_only')) {
+            return null;
+        }
+
+        return new TranslatableMessage('filter.info.ineffective.whitelist_for_options_only', domain: 'flare');
     }
 
     /**

@@ -39,6 +39,8 @@ filter:
             yes: "Dieser Filter ist intrinsisch"
             no: "Dieser Filter ist nicht intrinsisch"
         duplicate_alias: "Dieser Filter hat den Alias \"%alias%\", der bereits von einem anderen Filter verwendet wird."
+        ineffective:
+            whitelist_for_options_only: "Dieser Filter hat kein Bedienelement: Mit \"Whitelist nur auf Formularoptionen anwenden\" schränkt er nichts ein und ist wirkungslos. Wählen Sie ein Bedienelement oder deaktivieren Sie die Option."
 
 errors:
     missing_model: 'Listen- oder Filtermodell nicht gefunden'

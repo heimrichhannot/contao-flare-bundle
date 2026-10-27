@@ -8,6 +8,7 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
+use HeimrichHannot\FlareBundle\DataContainer\IneffectiveFilterInspector;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment as TwigEnvironment;
@@ -18,8 +19,9 @@ use Twig\Environment as TwigEnvironment;
 readonly class ListCallbacks
 {
     public function __construct(
-        private TranslatorInterface $translator,
-        private TwigEnvironment     $twig,
+        private IneffectiveFilterInspector $ineffectiveFilterInspector,
+        private TranslatorInterface        $translator,
+        private TwigEnvironment            $twig,
     ) {}
 
     #[AsCallback(FilterContainer::TABLE_NAME, 'list.label.group')]
@@ -58,6 +60,7 @@ readonly class ListCallbacks
             'cut_label' => $cutLabel,
             'filter_alias' => $filterAlias,
             'duplicate_filter_aliases' => $duplicateFilterAliases,
+            'ineffective_reason' => $this->ineffectiveFilterInspector->describe($row),
         ]);
     }
 }

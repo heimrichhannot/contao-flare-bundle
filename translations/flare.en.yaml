@@ -39,6 +39,8 @@ filter:
             yes: "This filter is intrinsic"
             no: "This filter ist not intrinsic"
         duplicate_alias: "This filter has the alias \"%alias%\", which is already used by another filter."
+        ineffective:
+            whitelist_for_options_only: "This filter has no control: with \"Apply whitelist to form options only\" it restricts nothing and has no effect. Select a control or clear the option."
 
 errors:
     missing_model: 'List model or filter model not found.'

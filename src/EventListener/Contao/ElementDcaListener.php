@@ -161,9 +161,18 @@ final readonly class ElementDcaListener
 
         $dcaBuilder->apply($table, $type, applyPalette: $isEditAction);
 
-        if ($isEditAction && $filterModel !== null) {
+        if ($isEditAction && $filterModel !== null && $this->reportsFilterStates()) {
             $this->reportFilterState($listModel, $filterModel);
         }
+    }
+
+    /**
+     * Whether to report filter states: on GET requests only. The DCA is loaded before Contao saves a submitted form,
+     * and a message added then would be flashed across the redirect, reporting the state from before the save.
+     */
+    private function reportsFilterStates(): bool
+    {
+        return $this->requestStack->getCurrentRequest()?->isMethod('GET') ?? false;
     }
 
     /**
@@ -264,7 +273,7 @@ final readonly class ElementDcaListener
     {
         $query = $this->requestStack->getCurrentRequest()?->query;
 
-        if ($query?->get('table') !== FilterModel::getTable() || $query->get('act')) {
+        if ($query?->get('table') !== FilterModel::getTable() || $query->get('act') || !$this->reportsFilterStates()) {
             return;
         }
 

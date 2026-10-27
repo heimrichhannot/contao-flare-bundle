@@ -84,13 +84,13 @@ final class ChoiceFilterControlTest extends TestCase
         $ctl = $this->control();
         $scope = $this->scope($ctl, [], $this->element(5, 7));
 
-        $data = $ctl->hydrate($scope, new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5)]));
+        $data = $ctl->hydrate(new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5)]), $scope);
         $form = $this->form([], $data);
 
         self::assertSame('5', $form->createView()->vars['value']);
 
         $form->submit('7');
-        self::assertSame('7', $ctl->decode($scope, $form->getData())->choices[0]->getChoiceLocalKey());
+        self::assertSame('7', $ctl->decode($form->getData(), $scope)->choices[0]->getChoiceLocalKey());
     }
 
     public function testMultipleHydratesAllChoices(): void
@@ -100,10 +100,10 @@ final class ChoiceFilterControlTest extends TestCase
 
         $value = new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5), ContaoModelChoice::ref('tl_news_archive', 7)]);
 
-        self::assertSame($value->choices, $ctl->hydrate($scope, $value));
-        self::assertSame([], $ctl->hydrate($scope, null));
+        self::assertSame($value->choices, $ctl->hydrate($value, $scope));
+        self::assertSame([], $ctl->hydrate(null, $scope));
 
-        $form = $this->form(['is_multiple' => true], $ctl->hydrate($scope, $value));
+        $form = $this->form(['is_multiple' => true], $ctl->hydrate($value, $scope));
         self::assertSame(['5', '7'], $form->createView()->vars['value']);
     }
 
@@ -113,8 +113,8 @@ final class ChoiceFilterControlTest extends TestCase
         $scope = $this->scope($ctl, [], $this->element(5, 7));
         $value = new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 7), ContaoModelChoice::ref('tl_news_archive', 5)]);
 
-        self::assertSame($value->choices[0], $ctl->hydrate($scope, $value));
-        self::assertNull($ctl->hydrate($scope, null));
+        self::assertSame($value->choices[0], $ctl->hydrate($value, $scope));
+        self::assertNull($ctl->hydrate(null, $scope));
     }
 
     public function testDecode(): void
@@ -123,11 +123,11 @@ final class ChoiceFilterControlTest extends TestCase
         $scope = $this->scope($ctl, [], $this->element(5));
         $choice = ContaoModelChoice::ref('tl_news_archive', 5);
 
-        self::assertEquals(new ChoiceValue([$choice]), $ctl->decode($scope, $choice));
-        self::assertEquals(new ChoiceValue([$choice]), $ctl->decode($scope, [$choice, ChoicesBuilder::EMPTY_CHOICE]));
-        self::assertNull($ctl->decode($scope, null));
-        self::assertNull($ctl->decode($scope, []));
-        self::assertNull($ctl->decode($scope, ChoicesBuilder::EMPTY_CHOICE));
+        self::assertEquals(new ChoiceValue([$choice]), $ctl->decode($choice, $scope));
+        self::assertEquals(new ChoiceValue([$choice]), $ctl->decode([$choice, ChoicesBuilder::EMPTY_CHOICE], $scope));
+        self::assertNull($ctl->decode(null, $scope));
+        self::assertNull($ctl->decode([], $scope));
+        self::assertNull($ctl->decode(ChoicesBuilder::EMPTY_CHOICE, $scope));
     }
 
     public function testElementWithoutChoiceSourceFails(): void

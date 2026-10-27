@@ -59,12 +59,12 @@ class KeywordsFilterControl extends AbstractFilterControl
     /**
      * @param string|null $data The submitted search phrase.
      */
-    public function decode(ControlScope $scope, mixed $data): ?KeywordsValue
+    public function decode(mixed $data, ControlScope $scope): ?KeywordsValue
     {
         return KeywordsValue::tryFrom($data);
     }
 
-    public function hydrate(ControlScope $scope, ?ValueInterface $value): ?string
+    public function hydrate(?ValueInterface $value, ControlScope $scope): ?string
     {
         return $this->expectValue($value, KeywordsValue::class)?->keywords;
     }

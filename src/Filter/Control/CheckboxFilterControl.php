@@ -60,7 +60,7 @@ class CheckboxFilterControl extends AbstractFilterControl
     /**
      * @param bool|null $data The checkbox state.
      */
-    public function decode(ControlScope $scope, mixed $data): ?BoolValue
+    public function decode(mixed $data, ControlScope $scope): ?BoolValue
     {
         if ($data === true) {
             return new BoolValue(true);
@@ -71,7 +71,7 @@ class CheckboxFilterControl extends AbstractFilterControl
         return $data === false && $choices === BoolBinaryChoices::TRUE_FALSE ? new BoolValue(false) : null;
     }
 
-    public function hydrate(ControlScope $scope, ?ValueInterface $value): ?bool
+    public function hydrate(?ValueInterface $value, ControlScope $scope): ?bool
     {
         return $this->expectValue($value, BoolValue::class)?->state;
     }

@@ -166,7 +166,7 @@ abstract class PassControlBase extends AbstractFilterControl
 
     public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void {}
 
-    public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed
+    public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
     {
         return null;
     }
@@ -174,7 +174,7 @@ abstract class PassControlBase extends AbstractFilterControl
 
 final class PassBoolControl extends PassControlBase
 {
-    public function decode(ControlScope $scope, mixed $data): ?BoolValue
+    public function decode(mixed $data, ControlScope $scope): ?BoolValue
     {
         return null;
     }
@@ -182,7 +182,7 @@ final class PassBoolControl extends PassControlBase
 
 final class PassDerivedFilterControl extends PassControlBase
 {
-    public function decode(ControlScope $scope, mixed $data): ?BoolValue
+    public function decode(mixed $data, ControlScope $scope): ?BoolValue
     {
         return null;
     }
@@ -191,7 +191,7 @@ final class PassDerivedFilterControl extends PassControlBase
 /** Reduces to the empty string, the intrinsic sentinel. */
 final class FilterControl extends PassControlBase
 {
-    public function decode(ControlScope $scope, mixed $data): ?BoolValue
+    public function decode(mixed $data, ControlScope $scope): ?BoolValue
     {
         return null;
     }
@@ -199,7 +199,7 @@ final class FilterControl extends PassControlBase
 
 final class PassUnnarrowedControl extends PassControlBase
 {
-    public function decode(ControlScope $scope, mixed $data): ?ValueInterface
+    public function decode(mixed $data, ControlScope $scope): ?ValueInterface
     {
         return null;
     }

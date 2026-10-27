@@ -51,7 +51,7 @@ abstract class AbstractFilterControl implements FilterControlInterface, OptionsC
 
     abstract public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void;
 
-    abstract public function decode(ControlScope $scope, mixed $data): ?ValueInterface;
+    abstract public function decode(mixed $data, ControlScope $scope): ?ValueInterface;
 
-    abstract public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed;
+    abstract public function hydrate(?ValueInterface $value, ControlScope $scope): mixed;
 }

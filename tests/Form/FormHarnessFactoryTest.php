@@ -148,12 +148,12 @@ final class FormHarnessFactoryTest extends TestCase
                 ($this->buildForm)($builder, $scope);
             }
 
-            public function decode(ControlScope $scope, mixed $data): ?ValueInterface
+            public function decode(mixed $data, ControlScope $scope): ?ValueInterface
             {
                 return KeywordsValue::tryFrom($data);
             }
 
-            public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed
+            public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
             {
                 return null;
             }
@@ -367,12 +367,12 @@ final class FormHarnessFactoryTest extends TestCase
                 $builder->single(TextType::class);
             }
 
-            public function decode(ControlScope $scope, mixed $data): ?ValueInterface
+            public function decode(mixed $data, ControlScope $scope): ?ValueInterface
             {
                 return null;
             }
 
-            public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed
+            public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
             {
                 throw new FilterException('unusable value');
             }
@@ -552,12 +552,12 @@ final class FormHarnessFactoryTest extends TestCase
                 $builder->add('to', TextType::class);
             }
 
-            public function decode(ControlScope $scope, mixed $data): ?ValueInterface
+            public function decode(mixed $data, ControlScope $scope): ?ValueInterface
             {
                 return KeywordsValue::tryFrom(($data['from'] ?? '') . ' ' . ($data['to'] ?? ''));
             }
 
-            public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed
+            public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
             {
                 return ['from' => 'a', 'to' => 'b'];
             }

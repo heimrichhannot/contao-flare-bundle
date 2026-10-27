@@ -85,7 +85,7 @@ class DateRangeFilterControl extends AbstractFilterControl
      * @param array{from?: ?\DateTimeInterface, to?: ?\DateTimeInterface}|null $data The data of the compound
      *   form, keyed by its children.
      */
-    public function decode(ControlScope $scope, mixed $data): ?DateRangeValue
+    public function decode(mixed $data, ControlScope $scope): ?DateRangeValue
     {
         if (!\is_array($data)) {
             return null;
@@ -97,7 +97,7 @@ class DateRangeFilterControl extends AbstractFilterControl
     /**
      * @return array{from: ?\DateTimeImmutable, to: ?\DateTimeImmutable}
      */
-    public function hydrate(ControlScope $scope, ?ValueInterface $value): array
+    public function hydrate(?ValueInterface $value, ControlScope $scope): array
     {
         $value = $this->expectValue($value, DateRangeValue::class);
 

@@ -126,7 +126,7 @@ class ChoiceFilterControl extends AbstractFilterControl
      * @param ChoiceObjectInterface|iterable<mixed>|null $data The selected choice, or the selected choices of a
      *   multiple widget; entries that are no choice objects (e.g. the empty option) are ignored.
      */
-    public function decode(ControlScope $scope, mixed $data): ?ChoiceValue
+    public function decode(mixed $data, ControlScope $scope): ?ChoiceValue
     {
         return ChoiceValue::tryFrom($data);
     }
@@ -134,7 +134,7 @@ class ChoiceFilterControl extends AbstractFilterControl
     /**
      * @return ChoiceObjectInterface|list<ChoiceObjectInterface>|null A list for a multiple widget.
      */
-    public function hydrate(ControlScope $scope, ?ValueInterface $value): ChoiceObjectInterface|array|null
+    public function hydrate(?ValueInterface $value, ControlScope $scope): ChoiceObjectInterface|array|null
     {
         $value = $this->expectValue($value, ChoiceValue::class);
 

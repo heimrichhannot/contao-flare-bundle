@@ -124,7 +124,7 @@ final readonly class FormHarnessFactory
 
             try
             {
-                $initial = $control->hydrate($scope, $filter->value);
+                $initial = $control->hydrate($filter->value, $scope);
             }
             catch (FilterException $e)
             {

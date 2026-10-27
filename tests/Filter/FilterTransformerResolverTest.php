@@ -194,12 +194,12 @@ final class TransformingControl extends AbstractFilterControl
     {
     }
 
-    public function decode(ControlScope $scope, mixed $data): ?BoolValue
+    public function decode(mixed $data, ControlScope $scope): ?BoolValue
     {
         return null;
     }
 
-    public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed
+    public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
     {
         return null;
     }

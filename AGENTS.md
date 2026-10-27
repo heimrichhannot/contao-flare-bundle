@@ -62,7 +62,9 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   calling component's own config, `ControlScope::forElement()` hands element contracts their scope) — handed to
   everything that happens before a value exists, and `FilterContext` (the element's product for one invocation,
   collected through the public `FilterContextBuilderInterface` and built by `FilterContextFactory` from scope +
-  value, only inside `ListQueryDirector`). Hook parameter order: output channel (builder), scope, input.
+  value, only inside `ListQueryDirector`). Hook parameter order: the subject first, the scope supplementary —
+  `buildContext($builder, $scope, $value)`, `buildForm($builder, $scope)`, `decode($data, $scope)`,
+  `hydrate($value, $scope)`.
   `FormHarnessFactory` builds a `FormHarness` (root form + mount↔filter map of `FilterMount`s) per list ×
   form context; the harness owns the `decode()` loop
 - `src/Filter/Control/` — `FilterControl` implementations (peers of `src/Filter/Element/`) behind

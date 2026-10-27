@@ -299,14 +299,16 @@ final readonly class FilterContext
 
 ## 3. Hook signatures
 
-**Parameter-order rule:** output channel (builder) first, then the scope, then the hook's input.
+**Parameter-order rule:** the method's subject comes first, the scope is supplementary. For builder hooks the
+subject is the output channel (builder, then scope, then the value); for `decode()`/`hydrate()` it is the data or
+value being converted, followed by the scope (revised 2026-10-27, see D5).
 
 | Hook                                   | Old                                                         | New                                                                                |
 |----------------------------------------|-------------------------------------------------------------|------------------------------------------------------------------------------------|
 | `FilterElementInterface::buildContext` | `(FilterContextBuilder $builder, ?ValueInterface $value)`   | `(FilterContextBuilderInterface $builder, ElementScope $scope, ?ValueInterface $value)` |
 | `FilterControlInterface::buildForm`    | `(FilterFormBuilderInterface $builder, FilterScope $scope)` | `(FilterFormBuilderInterface $builder, ControlScope $scope)`                        |
-| `FilterControlInterface::decode`       | `(mixed $data, FilterScope $scope)`                         | `(ControlScope $scope, mixed $data)`                                                |
-| `FilterControlInterface::hydrate`      | `(?ValueInterface $value, FilterScope $scope)`              | `(ControlScope $scope, ?ValueInterface $value)`                                     |
+| `FilterControlInterface::decode`       | `(mixed $data, FilterScope $scope)`                         | `(mixed $data, ControlScope $scope)`                                                |
+| `FilterControlInterface::hydrate`      | `(?ValueInterface $value, FilterScope $scope)`              | `(?ValueInterface $value, ControlScope $scope)`                                     |
 | `ChoiceSourceContract::buildChoices`   | `(ChoicesBuilder $choices, FilterScope $scope)`             | `(ChoicesBuilder $choices, ElementScope $scope)`                                    |
 | `DateBoundsContract::getDateBounds`    | `(FilterScope $scope)`                                      | `(ElementScope $scope)`                                                             |
 
@@ -382,7 +384,7 @@ Framework (scope construction and plumbing):
 - `FilterContextFactory`, `FilterContextBuilderFactory` (targeting reads `$filter->element->type`,
   `targetingForced`, `targetAlias`), `FilterContextBuilder`, `FilterContext`.
 - `FormHarnessFactory` → builds `ControlScope`, `$filter->control->component->buildForm(...)`.
-- `FormHarness::decode loop` → `$mount->filter->control->component->decode($mount->scope, $data)`;
+- `FormHarness::decode loop` → `$mount->filter->control->component->decode($data, $mount->scope)`;
   hydrate call site likewise.
 - `FilterMount::$scope` → `ControlScope`.
 - `FilterControlBuildFormEvent::$scope` → `ControlScope`; `FilterControlBuildFormListener` reads
@@ -454,7 +456,7 @@ Commits follow the repo's `refactor!:` convention.
 | D2 | Decompose `Filter` into element/control bindings with a config value object (option C) | user |
 | D3 | Two role-typed scopes (option B) on top of D2; no role pointer, no inheritance | user |
 | D4 | Element receives the scope as a parameter, not via the builder | user |
-| D5 | Parameter order: builder, scope, input — applies to `decode`/`hydrate` as well | user |
+| D5 | Parameter order: builder, scope, value for builder hooks; `decode`/`hydrate` keep data/value first, scope last — the converted data is the subject, the scope supplementary (revised 2026-10-27) | user |
 | D6 | `FilterContext` and `buildContext()` keep their names ("Formula" is not public vocabulary) | user |
 | D7 | Element ↔ control cross-reads of config are allowed | user |
 | D8 | Future context channels (§8) are out of scope; the builder interface is where they will go | user |

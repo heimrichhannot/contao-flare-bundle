@@ -43,11 +43,11 @@ interface FilterControlInterface extends FilterComponentInterface
      * Turns the mount's data into this control's value object, or null to contribute nothing.
      * Implementations MUST narrow the return type to one concrete value class.
      */
-    public function decode(ControlScope $scope, mixed $data): ?ValueInterface;
+    public function decode(mixed $data, ControlScope $scope): ?ValueInterface;
 
     /**
      * The inverse of {@see self::decode()}: the widget data for a value of this control's value class.
      * Used to hydrate an unsubmitted form from the filter's value.
      */
-    public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed;
+    public function hydrate(?ValueInterface $value, ControlScope $scope): mixed;
 }

@@ -18,11 +18,11 @@ final class ChoiceBoolFilterControlTest extends TestCase
         $ctl = new ChoiceBoolFilterControl();
         $scope = $this->scope($ctl);
 
-        self::assertTrue($ctl->decode($scope, '1')->state);
-        self::assertFalse($ctl->decode($scope, '0')->state);
-        self::assertNull($ctl->decode($scope, ''));
-        self::assertNull($ctl->decode($scope, null));
-        self::assertNull($ctl->decode($scope, 'x'));
+        self::assertTrue($ctl->decode('1', $scope)->state);
+        self::assertFalse($ctl->decode('0', $scope)->state);
+        self::assertNull($ctl->decode('', $scope));
+        self::assertNull($ctl->decode(null, $scope));
+        self::assertNull($ctl->decode('x', $scope));
     }
 
     public function testHydrateTable(): void
@@ -30,9 +30,9 @@ final class ChoiceBoolFilterControlTest extends TestCase
         $ctl = new ChoiceBoolFilterControl();
         $scope = $this->scope($ctl);
 
-        self::assertSame('1', $ctl->hydrate($scope, new BoolValue(true)));
-        self::assertSame('0', $ctl->hydrate($scope, new BoolValue(false)));
-        self::assertNull($ctl->hydrate($scope, null));
+        self::assertSame('1', $ctl->hydrate(new BoolValue(true), $scope));
+        self::assertSame('0', $ctl->hydrate(new BoolValue(false), $scope));
+        self::assertNull($ctl->hydrate(null, $scope));
     }
 
     public function testBuildsYesNoSelectWithAnyOption(): void

@@ -56,7 +56,7 @@ class ChoiceBoolFilterControl extends AbstractFilterControl
     /**
      * @param string|null $data The selected choice value: "1", "0", or null for the empty option.
      */
-    public function decode(ControlScope $scope, mixed $data): ?BoolValue
+    public function decode(mixed $data, ControlScope $scope): ?BoolValue
     {
         return match ($data) {
             '1' => new BoolValue(true),
@@ -65,7 +65,7 @@ class ChoiceBoolFilterControl extends AbstractFilterControl
         };
     }
 
-    public function hydrate(ControlScope $scope, ?ValueInterface $value): ?string
+    public function hydrate(?ValueInterface $value, ControlScope $scope): ?string
     {
         $value = $this->expectValue($value, BoolValue::class);
 

@@ -104,14 +104,14 @@ final class DateRangeFilterControlTest extends TestCase
         $scope = $this->scope($ctl);
 
         $value = $ctl->decode(
-            $scope,
-            ['from' => new \DateTimeImmutable('2024-03-01'), 'to' => null]);
+            ['from' => new \DateTimeImmutable('2024-03-01'), 'to' => null],
+            $scope);
 
         self::assertInstanceOf(DateRangeValue::class, $value);
         self::assertSame('2024-03-01', $value->from->format('Y-m-d'));
         self::assertNull($value->to);
 
-        $data = $ctl->hydrate($scope, $value);
+        $data = $ctl->hydrate($value, $scope);
         self::assertSame($value->from, $data['from']);
         self::assertNull($data['to']);
     }
@@ -121,9 +121,9 @@ final class DateRangeFilterControlTest extends TestCase
         $ctl = $this->control();
         $scope = $this->scope($ctl);
 
-        self::assertNull($ctl->decode($scope, ['from' => null, 'to' => null]));
-        self::assertNull($ctl->decode($scope, null));
-        self::assertSame(['from' => null, 'to' => null], $ctl->hydrate($scope, null));
+        self::assertNull($ctl->decode(['from' => null, 'to' => null], $scope));
+        self::assertNull($ctl->decode(null, $scope));
+        self::assertSame(['from' => null, 'to' => null], $ctl->hydrate(null, $scope));
     }
 
     public function testFromAfterToFailsValidation(): void

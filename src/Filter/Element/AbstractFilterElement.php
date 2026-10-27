@@ -20,7 +20,9 @@ use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Translation\IdentityTranslator;
 use Symfony\Contracts\Service\Attribute\Required;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 abstract class AbstractFilterElement implements
     FilterElementInterface, DcaContract, IsSupportedContract, OptionsContract, TransformerContract
@@ -28,6 +30,8 @@ abstract class AbstractFilterElement implements
     use ExpectsValueTrait;
 
     private Connection $connection;
+
+    private ?TranslatorInterface $translator = null;
 
     abstract public function configureOptions(OptionsResolver $resolver): void;
 
@@ -67,5 +71,22 @@ abstract class AbstractFilterElement implements
     protected function getConnection(): Connection
     {
         return $this->connection;
+    }
+
+    #[Required]
+    public function setTranslator(TranslatorInterface $translator): void
+    {
+        $this->translator = $translator;
+    }
+
+    /**
+     * Translates a message, by default of the `flare` domain, e.g. for an exception an editor may see in the backend.
+     * Without an injected translator (an element instantiated by hand), the key is returned.
+     *
+     * @param array<string, mixed> $parameters
+     */
+    protected function trans(string $key, array $parameters = [], ?string $domain = null): string
+    {
+        return ($this->translator ??= new IdentityTranslator())->trans($key, $parameters, $domain ?? 'flare');
     }
 }

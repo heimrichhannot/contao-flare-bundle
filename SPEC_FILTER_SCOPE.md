@@ -405,7 +405,7 @@ Framework (scope construction and plumbing):
 - `FilterControlBuildFormEvent::$scope` → `ControlScope`; `FilterControlBuildFormListener` reads
   `$event->scope->filter->control->type`.
 - `DcaContext::getFilterScope(): ?FilterScope` → `getElementScope(): ?ElementScope` (the backend scope is built
-  without control and value, `SPEC_FILTER_FORMS.md` §6.4); `ElementDcaListener::createFilterScope()` →
+  with its control but without its value, `SPEC_FILTER_FORMS.md` §6.4); `ElementDcaListener::createFilterScope()` →
   `createElementScope()`; consumer `ChoiceValueProvider`.
 - `FilterFactory` (§2.4), `FilterOptionsResolver`/`SchemaResolver` (§2.1).
 - `ListSpec::withoutFilter()` / `ListSpecBuilder` (`instanceof $class` on `$filter->element->component`).

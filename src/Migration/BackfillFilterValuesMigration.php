@@ -31,6 +31,9 @@ use Doctrine\DBAL\Schema\Column;
  * historical rows, and a later rename in live code must not change what already-migrated rows meant. The same holds
  * for the list types whose data container was fixed by their driver.
  *
+ * An intrinsic archive filter was always restricted to its parent whitelist, "whitelist for options only" included;
+ * without a control the archive filter is now restricted by its value, so the whitelist becomes the value.
+ *
  * Archive preselects also held bare parent ids, which the old element read as ids of the main ptable of the list's
  * data container. They are qualified to `{ptable}.{id}` here; the archive keys the old element could not read are
  * dropped, as it skipped them, and counted in the result message.
@@ -50,8 +53,9 @@ class BackfillFilterValuesMigration extends AbstractMigration
     ];
 
     /**
-     * The columns this migration requires: the source `intrinsic`, the renamed control columns it reads or fills, and
-     * the targets. The other sources (`boolMode`, `preselect`, `prefill`) read as empty when absent.
+     * The columns this migration requires: the source `intrinsic`, the renamed control and archive whitelist columns it
+     * reads or fills, and the targets. The other sources (`boolMode`, `preselect`, `prefill`) read as empty when
+     * absent.
      */
     private const REQUIRED_COLUMNS = [
         'intrinsic',
@@ -65,6 +69,8 @@ class BackfillFilterValuesMigration extends AbstractMigration
         'ctl_formatEmptyOption',
         'ctl_formatEmptyOptionCustom',
         'ctl_placeholder',
+        'elm_whitelistParents',
+        'elm_groupWhitelistParents',
     ];
 
     /** @var array<int, string|null> The main ptable of each list's data container, by list id. */
@@ -252,7 +258,7 @@ class BackfillFilterValuesMigration extends AbstractMigration
             'flare_fieldValueChoice', 'flare_dcaSelectField', 'cfg_tags_choice' => self::convertChoices(
                 $row['preselect'] ?? null,
             ),
-            'flare_archive' => $intrinsic ? '' : $this->convertArchiveChoices($row),
+            'flare_archive' => $intrinsic ? $this->convertIntrinsicArchive($row) : $this->convertArchiveChoices($row),
             'flare_search_keywords' => $intrinsic ? self::convertKeywords($row['prefill'] ?? null) : '',
             default => '',
         };
@@ -321,30 +327,85 @@ class BackfillFilterValuesMigration extends AbstractMigration
 
         foreach (\unserialize($stored, ['allowed_classes' => false]) as $key)
         {
-            $table = null;
-            $id = 0;
-
-            if (\is_numeric($key))
-            {
-                $table = $this->findPtable((int) ($row['pid'] ?? 0));
-                $id = (int) $key;
-            }
-            elseif (\str_contains($key, '.'))
-            {
-                [$table, $id] = \explode('.', $key, 2);
-                $id = (int) $id;
-            }
-
-            if (!$table || $id < 1)
+            if (null === $qualified = $this->qualifyArchiveKey($key, (int) ($row['pid'] ?? 0)))
             {
                 ++$this->droppedArchiveKeys;
                 continue;
             }
 
-            $list[] = "{$table}.{$id}";
+            $list[] = $qualified;
         }
 
         return $list === [] ? '' : \serialize(\array_values(\array_unique($list)));
+    }
+
+    /**
+     * The whitelist of an intrinsic archive filter as a serialized list of `{table}.{id}` keys, read as the old element
+     * read it: the ids of `elm_whitelistParents` for a list with a static ptable, otherwise the tables and ids of
+     * `elm_groupWhitelistParents`.
+     *
+     * @param array<string, mixed> $row
+     */
+    private function convertIntrinsicArchive(array $row): string
+    {
+        $groups = [];
+
+        if ($ptable = $this->findPtable((int) ($row['pid'] ?? 0))) {
+            $groups[] = ['tablePtable' => $ptable, 'whitelistParents' => $row['elm_whitelistParents'] ?? null];
+        }
+
+        // The old element read the groups only for a list without a static ptable.
+        $groups = $groups ?: StringUtil::deserialize($row['elm_groupWhitelistParents'] ?? null, true);
+        $keys = [];
+
+        foreach ($groups as $group)
+        {
+            if (!\is_array($group) || !$table = (string) ($group['tablePtable'] ?? '')) {
+                continue;
+            }
+
+            foreach (self::readIds($group['whitelistParents'] ?? null) as $id) {
+                $keys[] = "{$table}.{$id}";
+            }
+        }
+
+        return $keys === [] ? '' : \serialize(\array_values(\array_unique($keys)));
+    }
+
+    /**
+     * The positive ids of a serialized id list.
+     *
+     * @return list<int>
+     */
+    private static function readIds(mixed $stored): array
+    {
+        $ids = \array_map('intval', StringUtil::deserialize($stored, true));
+
+        return \array_values(\array_unique(\array_filter($ids, static fn (int $id): bool => $id > 0)));
+    }
+
+    /**
+     * A preselect key as `{table}.{id}`: a bare id is an id of the list's ptable, a `{table}.{id}` key names its table;
+     * null for any other key, and for a bare id without a ptable.
+     */
+    private function qualifyArchiveKey(string $key, int $listId): ?string
+    {
+        if (\is_numeric($key))
+        {
+            $table = $this->findPtable($listId);
+            $id = (int) $key;
+
+            return $table && $id > 0 ? "{$table}.{$id}" : null;
+        }
+
+        if (!\str_contains($key, '.')) {
+            return null;
+        }
+
+        [$table, $id] = \explode('.', $key, 2);
+        $id = (int) $id;
+
+        return $table !== '' && $id > 0 ? "{$table}.{$id}" : null;
     }
 
     /**

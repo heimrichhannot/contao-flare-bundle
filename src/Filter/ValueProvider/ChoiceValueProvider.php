@@ -14,6 +14,7 @@ use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Stores a serialized list of canonical choice keys; the element maps them to reference choices.
@@ -22,6 +23,7 @@ final readonly class ChoiceValueProvider implements ValueProviderInterface
 {
     public function __construct(
         private ChoicesBuilderFactory $choicesBuilderFactory,
+        private TranslatorInterface   $translator,
     ) {}
 
     public function provide(mixed $stored, FilterElementInterface $element): ?ChoiceValue
@@ -79,7 +81,7 @@ final readonly class ChoiceValueProvider implements ValueProviderInterface
 
                 if (!$element instanceof ChoiceSourceContract || $scope === null)
                 {
-                    Message::addError('The filter choices could not be loaded; check the list configuration.');
+                    Message::addError($this->translator->trans('errors.choices_not_loaded', [], 'flare'));
 
                     return [];
                 }

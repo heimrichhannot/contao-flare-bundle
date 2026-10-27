@@ -41,9 +41,14 @@ filter:
             no: "Dieser Filter ist nicht intrinsisch"
         duplicate_alias: "Dieser Filter hat den Alias \"%alias%\", der bereits von einem anderen Filter verwendet wird."
         ineffective:
-            whitelist_for_options_only: "Dieser Filter hat kein Bedienelement: Mit \"Whitelist nur auf Formularoptionen anwenden\" schränkt er nichts ein und ist wirkungslos. Wählen Sie ein Bedienelement oder deaktivieren Sie die Option."
+            archive_without_value: "Dieser Filter hat weder Bedienelement noch Wert und schränkt daher nichts ein. Wählen Sie die anzuzeigenden Archive als Wert oder wählen Sie ein Bedienelement."
 
 errors:
+    choices_not_loaded: "Die Filteroptionen konnten nicht geladen werden; prüfen Sie die Listenkonfiguration."
+    archive:
+        no_parents: "Es sind keine Eltern-Archive in der Whitelist eingetragen, oder die Elterntabelle hat keine Model-Klasse."
+        no_valid_parents: "Keines der Eltern-Archive in der Whitelist existiert."
+        no_ptable: "Der Data-Container der Liste hat keine Elterntabelle und kann daher nicht nach Archiven gefiltert werden."
     missing_model: 'Listen- oder Filtermodell nicht gefunden'
     missing_datacontainer: 'Bitte definieren Sie einen Data-Container für das Listenmodell [ID %id%]'
 

@@ -17,6 +17,7 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
@@ -32,10 +33,10 @@ use Symfony\Contracts\Translation\TranslatorTrait;
 
 final class IneffectiveFilterInspectorTest extends TestCase
 {
-    public function testDescribesAnArchiveWhitelistForOptionsOnlyWithoutAControl(): void
+    public function testDescribesAnArchiveWithoutControlAndValue(): void
     {
         self::assertSame(
-            'filter.info.ineffective.whitelist_for_options_only',
+            'filter.info.ineffective.archive_without_value',
             $this->inspector()->describe(self::model(['elm_useWhitelistForOptionsOnly' => '1'])),
         );
     }
@@ -44,11 +45,18 @@ final class IneffectiveFilterInspectorTest extends TestCase
     {
         $inspector = $this->inspector();
 
-        self::assertNull($inspector->describe(self::model(['elm_useWhitelistForOptionsOnly' => ''])));
+        self::assertNull(
+            $inspector->describe(self::model([
+                'elm_useWhitelistForOptionsOnly' => '1',
+                'value' => 'tl_news_archive.5',
+            ])),
+            'a fixed value restricts',
+        );
         self::assertNull($inspector->describe(self::model([
             'elm_useWhitelistForOptionsOnly' => '1',
             'control' => 'flare_choice',
         ])));
+        self::assertNull($inspector->describe(self::model(['control' => 'gone'])), 'a dropped control is no omission');
     }
 
     public function testFiltersThatCannotBeBuiltAreNotDescribed(): void
@@ -70,7 +78,7 @@ final class IneffectiveFilterInspectorTest extends TestCase
     {
         self::assertSame(2, $this->inspector()->countIneffective([
             self::model(['elm_useWhitelistForOptionsOnly' => '1']),
-            self::model(['elm_useWhitelistForOptionsOnly' => '']),
+            self::model(['elm_useWhitelistForOptionsOnly' => '1', 'value' => 'tl_news_archive.5']),
             self::model(['elm_useWhitelistForOptionsOnly' => '1', 'control' => 'flare_choice']),
             self::model(['elm_useWhitelistForOptionsOnly' => '1', 'id' => 8]),
             ['id' => 9, 'type' => 'flare_other'],
@@ -99,7 +107,11 @@ final class IneffectiveFilterInspectorTest extends TestCase
         $providers = (new ValueProviderRegistry())->add(new class implements ValueProviderInterface {
             public function provide(mixed $stored, FilterElementInterface $element): ?ValueInterface
             {
-                return $stored === 'unreadable' ? throw new FlareException('Unreadable value.') : null;
+                return match ($stored) {
+                    'unreadable' => throw new FlareException('Unreadable value.'),
+                    '', null => null,
+                    default => new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5)]),
+                };
             }
 
             public function buildDcaField(DcaFieldBuilderInterface $field, DcaContext $context): void {}

@@ -211,7 +211,8 @@ final readonly class ElementDcaListener
     }
 
     /**
-     * The backend scope (§6.4): options need neither a control nor a value, so none is resolved.
+     * The backend scope (§6.4): it knows the control, which decides the element's options, but resolves no value, so
+     * an unreadable value cannot block the form that repairs it.
      *
      * @mago-expect lint:no-empty-catch-clause Backend configuration must not fail on broken list configs.
      */
@@ -225,7 +226,7 @@ final readonly class ElementDcaListener
         {
             return new ElementScope(
                 list: $getSpec(),
-                filter: $this->filterFactory->createFromFilterModel($filterModel, withControlAndValue: false),
+                filter: $this->filterFactory->createFromFilterModel($filterModel, withValue: false),
                 engineContext: new ConfigurationContext(),
             );
         }

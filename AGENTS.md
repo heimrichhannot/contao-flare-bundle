@@ -40,7 +40,8 @@ failed list — it fails the request. The bundle catches `\Exception`, not `\Thr
 or swallowed; only the transformer resolvers still wrap any `\Throwable` (a transformer casting stale stored data
 may throw a `\ValueError`).
 Who throws what: `FilterException` (and its `UnreadableValueException`) is public API — filter components, bundled
-and userland, throw it to report a filter that cannot work with its config, data or value. `FlareException` and the
+and userland, throw it to report a filter that cannot work with its config, data or value; a component translates
+the message itself where an editor may see it (`AbstractFilterElement::trans()`, `flare` domain). `FlareException` and the
 other exceptions in `src/Exception/` are thrown by the framework only; userland may catch them. Every filter hook
 (element `buildContext()`, control `buildForm()`/`hydrate()`/`decode()`) catches any `\Exception` and normalizes it
 with `FilterException::wrap()`; a non-`FilterException` is unexpected: logged as an error, and the control hooks

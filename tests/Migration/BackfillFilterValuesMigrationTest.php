@@ -23,7 +23,7 @@ final class BackfillFilterValuesMigrationTest extends TestCase
     private const COLUMNS = [
         'id', 'type', 'intrinsic', 'boolMode', 'preselect', 'prefill', 'control', 'value', 'ctl_boolBinaryChoices',
         'ctl_isMandatory', 'ctl_isMultiple', 'ctl_isExpanded', 'ctl_hasEmptyOption', 'ctl_formatEmptyOption',
-        'ctl_formatEmptyOptionCustom', 'ctl_placeholder',
+        'ctl_formatEmptyOptionCustom', 'ctl_placeholder', 'elm_whitelistParents', 'elm_groupWhitelistParents',
     ];
 
     private const MARKER = 'legacyBackfilled';
@@ -188,13 +188,68 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         $this->addRow(1, 'flare_archive', [
             'intrinsic' => '1',
             'preselect' => \serialize(['tl_news_archive.5']),
+            'elm_whitelistParents' => \serialize(['3']),
         ]);
 
         $this->migration()->run();
 
-        self::assertSame([[[self::MARKER => '1'], ['id' => 1]]], $this->rowUpdates());
         self::assertSame('', $this->rows[1]['control']);
+        self::assertSame(
+            \serialize(['tl_news_archive.3']),
+            $this->rows[1]['value'],
+            'the whitelist, not the preselect',
+        );
+    }
+
+    public function testIntrinsicArchiveWhitelistBecomesItsValue(): void
+    {
+        $this->addRow(1, 'flare_archive', [
+            'intrinsic' => '1',
+            'elm_whitelistParents' => \serialize(['3', '5', '5', '0']),
+            'elm_useWhitelistForOptionsOnly' => '1',
+        ]);
+
+        $this->migration()->run();
+
+        self::assertSame(\serialize(['tl_news_archive.3', 'tl_news_archive.5']), $this->rows[1]['value']);
+        self::assertSame('', $this->rows[1]['control']);
+    }
+
+    public function testIntrinsicArchiveOfADynamicListUsesItsGroups(): void
+    {
+        $this->lists[2] = ['id' => '2', 'type' => 'flare_generic_dc', 'dc' => 'tl_content'];
+        $GLOBALS['TL_DCA']['tl_content'] = ['config' => ['dynamicPtable' => true]];
+        $this->addRow(1, 'flare_archive', [
+            'pid' => '2',
+            'intrinsic' => '1',
+            'elm_whitelistParents' => \serialize(['99']),
+            'elm_groupWhitelistParents' => \serialize([
+                ['tablePtable' => 'tl_news', 'whitelistParents' => \serialize(['1'])],
+                ['tablePtable' => 'tl_calendar', 'whitelistParents' => \serialize(['7'])],
+                ['tablePtable' => '', 'whitelistParents' => \serialize(['8'])],
+            ]),
+        ]);
+
+        $this->migration()->run();
+
+        self::assertSame(\serialize(['tl_news.1', 'tl_calendar.7']), $this->rows[1]['value']);
+    }
+
+    public function testIntrinsicArchiveWithoutWhitelistGetsNoValue(): void
+    {
+        $this->addRow(1, 'flare_archive', ['intrinsic' => '1', 'elm_whitelistParents' => \serialize([])]);
+
+        $this->migration()->run();
+
         self::assertNull($this->rows[1]['value']);
+    }
+
+    public function testShouldRunWaitsForTheRenamedElementColumns(): void
+    {
+        $this->addRow(1, 'flare_archive', ['intrinsic' => '1']);
+        $this->columns = \array_values(\array_diff($this->columns, ['elm_whitelistParents']));
+
+        self::assertFalse($this->migration()->shouldRun());
     }
 
     public function testControlledArchiveKeepsPreselectAsInitialValue(): void
@@ -276,10 +331,11 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         self::assertStringContainsString('4 archive preselect entries dropped', $result->getMessage());
     }
 
-    public function testNoDataContainerIsLoadedWithoutBareIds(): void
+    public function testNoDataContainerIsLoadedForQualifiedPreselects(): void
     {
+        // Controlled rows with qualified keys need no ptable; intrinsic archive rows always do (their whitelist).
         $this->addRow(1, 'flare_archive', ['intrinsic' => '0', 'preselect' => \serialize(['tl_news_archive.5'])]);
-        $this->addRow(2, 'flare_archive', ['intrinsic' => '1', 'preselect' => \serialize(['5'])]);
+        $this->addRow(2, 'flare_archive', ['intrinsic' => '0', 'preselect' => 'tl_news_archive.7']);
 
         $this->migration()->run();
 
@@ -624,6 +680,8 @@ final class BackfillFilterValuesMigrationTest extends TestCase
             'ctl_formatEmptyOption' => '',
             'ctl_formatEmptyOptionCustom' => '',
             'ctl_placeholder' => '',
+            'elm_whitelistParents' => null,
+            'elm_groupWhitelistParents' => null,
         ];
 
         if (\in_array(self::MARKER, $this->columns ?? [], true)) {

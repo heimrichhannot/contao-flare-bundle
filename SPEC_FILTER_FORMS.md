@@ -647,7 +647,9 @@ frontend, so the backend needs a `FilterScope` (§13.21):
 
 - `DcaContext` gains the element and a lazy `getFilterScope(): ?FilterScope`, built from the
   `ListSpec` that `ElementDcaListener::createExecutionContext()` already builds, the edited filter
-  (`FilterFactory::createFromFilterModel()` without control and value — options need neither), and a
+  (`FilterFactory::createFromFilterModel()` with its control but without its value — the control decides an
+  element's options, e.g. the archive whitelist only applies with one, while an unreadable value must not block
+  the form that repairs it), and a
   `ConfigurationContext`. It is `null` when the
   list cannot be built — the same "backend must not fail on broken list configs" rule as
   `getExecutionContext()`.

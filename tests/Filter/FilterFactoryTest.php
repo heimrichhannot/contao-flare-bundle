@@ -262,6 +262,7 @@ final class FilterFactoryTest extends TestCase
         $filter = $this->factory()->createFromFilterModel(self::model([]));
 
         self::assertNull($filter->value);
+        self::assertFalse($filter->controlDropped, 'configured without a control');
     }
 
     public function testUnknownControlDegradesToNoControlAndNoValue(): void
@@ -270,6 +271,7 @@ final class FilterFactoryTest extends TestCase
 
         self::assertSame($this->boolElement, $filter->element->component);
         self::assertNull($filter->control);
+        self::assertTrue($filter->controlDropped, 'the editor chose a control, it failed to resolve');
         self::assertNull($filter->value);
         $this->assertWarned();
     }
@@ -303,22 +305,39 @@ final class FilterFactoryTest extends TestCase
         $this->factory()->createFromFilterModel(self::model(['value' => 'garbage']));
     }
 
-    public function testWithoutControlAndValueSkipsBoth(): void
+    public function testWithoutValueStillResolvesTheControl(): void
     {
-        $factory = $this->factory();
-
-        $controlled = $factory->createFromFilterModel(
+        $filter = $this->factory()->createFromFilterModel(
             self::model(['control' => self::BOOL_CONTROL, 'value' => '1']),
-            withControlAndValue: false,
+            withValue: false,
         );
 
-        self::assertNull($controlled->control);
-        self::assertNull($controlled->value);
-
-        $unreadable = $factory->createFromFilterModel(self::model(['value' => 'garbage']), withControlAndValue: false);
-
-        self::assertNull($unreadable->value);
+        self::assertSame(self::BOOL_CONTROL, $filter->control?->type);
+        self::assertNull($filter->value);
         self::assertSame([], $this->logs);
+    }
+
+    public function testWithoutValueNeverReadsAnUnreadableValue(): void
+    {
+        $filter = $this->factory()->createFromFilterModel(self::model(['value' => 'garbage']), withValue: false);
+
+        self::assertNull($filter->value);
+
+        $controlled = $this->factory()->createFromFilterModel(
+            self::model(['control' => self::BOOL_CONTROL, 'value' => 'garbage']),
+            withValue: false,
+        );
+
+        self::assertNotNull($controlled->control, 'an unreadable initial value does not drop the control');
+        self::assertSame([], $this->logs);
+    }
+
+    public function testWithoutValueAnUnknownControlDegradesToNoControl(): void
+    {
+        $filter = $this->factory()->createFromFilterModel(self::model(['control' => 'gone']), withValue: false);
+
+        self::assertNull($filter->control);
+        $this->assertWarned();
     }
 }
 

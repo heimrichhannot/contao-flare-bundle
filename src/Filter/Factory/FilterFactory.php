@@ -81,7 +81,7 @@ final readonly class FilterFactory
 
         $alias = $alias ?: self::generateAlias($type);
 
-        $config = $this->filterOptionsResolver->resolve($element, $config, $source);
+        $resolvedConfig = $this->filterOptionsResolver->resolve($element, $config, $source);
 
         $controlBinding = null;
 
@@ -109,7 +109,7 @@ final readonly class FilterFactory
         }
 
         return new Filter(
-            element: new ElementBinding($element, $type, $config),
+            element: new ElementBinding($element, $type, $resolvedConfig),
             alias: $alias,
             control: $controlBinding,
             value: $value,
@@ -125,15 +125,16 @@ final readonly class FilterFactory
      * Failure handling follows SPEC_FILTER_FORMS.md §8.1: a broken element config throws. A control
      * that cannot be resolved for the element's value class, a broken control config, or an unreadable
      * initial value fails open — a warning is logged and the filter is kept without control and value,
-     * bounded only by the element's own config. An unreadable fixed value (no control) throws.
+     * bounded only by the element's own config ({@see Filter::$controlDropped} tells it from a filter
+     * configured without a control). An unreadable fixed value (no control) throws.
      *
-     * @param bool $withControlAndValue False to skip resolving the control and the value, e.g. for
-     *   backend option lists, which need neither.
+     * @param bool $withValue False to skip reading the stored value, e.g. for backend option lists, which must
+     *   load even when the value is unreadable. The control is always resolved.
      *
      * @throws FlareException If the element cannot be resolved, its config does not satisfy its schema,
      *   or — without a control — the stored value is unreadable ({@see UnreadableValueException}).
      */
-    public function createFromFilterModel(FilterModel $filterModel, bool $withControlAndValue = true): Filter
+    public function createFromFilterModel(FilterModel $filterModel, bool $withValue = true): Filter
     {
         $source = "{$filterModel::getTable()}.{$filterModel->id}";
         $type = $this->resolveType($filterModel->getFilterElementType(), $source);
@@ -152,15 +153,11 @@ final readonly class FilterFactory
             source: $source,
         );
 
-        if (!$withControlAndValue) {
-            return $filter;
-        }
-
         $valueClass = $this->getElementValueClass($type, $element);
         $controlType = (string) $filterModel->control;
 
         if ($controlType === '') {
-            return $filter->withValue($this->provideValue($valueClass, $filterModel, $element));
+            return $withValue ? $filter->withValue($this->provideValue($valueClass, $filterModel, $element)) : $filter;
         }
 
         try
@@ -171,7 +168,7 @@ final readonly class FilterFactory
                 ->transform($control, $controlType, $filterModel, $source) ?? [];
             $controlConfig = $this->filterOptionsResolver->resolve($control, $controlConfig, $source);
 
-            $value = $this->provideValue($valueClass, $filterModel, $element);
+            $value = $withValue ? $this->provideValue($valueClass, $filterModel, $element) : null;
         }
         catch (FlareException $e)
         {
@@ -183,7 +180,7 @@ final readonly class FilterFactory
                 $e->getMessage(),
             ));
 
-            return $filter;
+            return $filter->withDroppedControl();
         }
 
         return $filter->withControl(new ControlBinding($control, $controlType, $controlConfig))->withValue($value);

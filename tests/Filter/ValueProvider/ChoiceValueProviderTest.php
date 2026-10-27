@@ -121,6 +121,7 @@ final class ChoiceValueProviderTest extends TestCase
     {
         return new ChoiceValueProvider(
             new ChoicesBuilderFactory(new IdentityTranslator(), new ParameterBag()),
+            new IdentityTranslator(),
         );
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Migration;
 
+use Contao\Controller;
+use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\Migration\AbstractMigration;
 use Contao\CoreBundle\Migration\MigrationResult;
 use Contao\StringUtil;
@@ -26,13 +28,26 @@ use Doctrine\DBAL\Schema\Column;
  * with the other retired columns.
  *
  * Element and control types are frozen literals, not resolved through the registries: the migration describes
- * historical rows, and a later rename in live code must not change what already-migrated rows meant.
+ * historical rows, and a later rename in live code must not change what already-migrated rows meant. The same holds
+ * for the list types whose data container was fixed by their driver.
+ *
+ * Archive preselects also held bare parent ids, which the old element read as ids of the main ptable of the list's
+ * data container. They are qualified to `{ptable}.{id}` here; the archive keys the old element could not read are
+ * dropped, as it skipped them, and counted in the result message.
  */
 class BackfillFilterValuesMigration extends AbstractMigration
 {
     private const TABLE = 'tl_flare_filter';
 
     private const MARKER = 'legacyBackfilled';
+
+    private const LIST_TABLE = 'tl_flare_list';
+
+    /** The data containers of the list types whose driver fixed it, by list type. */
+    private const FIXED_LIST_DATA_CONTAINERS = [
+        'flare_news' => 'tl_news',
+        'flare_events' => 'tl_calendar_events',
+    ];
 
     /**
      * The columns this migration requires: the source `intrinsic`, the renamed control columns it reads or fills, and
@@ -52,8 +67,15 @@ class BackfillFilterValuesMigration extends AbstractMigration
         'ctl_placeholder',
     ];
 
+    /** @var array<int, string|null> The main ptable of each list's data container, by list id. */
+    private array $ptables = [];
+
+    /** The archive keys dropped in the current run. */
+    private int $droppedArchiveKeys = 0;
+
     public function __construct(
-        private readonly Connection $connection,
+        private readonly Connection      $connection,
+        private readonly ContaoFramework $framework,
     ) {}
 
     public function getName(): string
@@ -98,6 +120,7 @@ class BackfillFilterValuesMigration extends AbstractMigration
         ));
 
         $updated = 0;
+        $this->droppedArchiveKeys = 0;
 
         foreach ($this->fetchPendingRows() as $row)
         {
@@ -114,7 +137,11 @@ class BackfillFilterValuesMigration extends AbstractMigration
         // their type from turning them pending.
         $this->connection->update(self::TABLE, [self::MARKER => '1'], [self::MARKER => '0']);
 
-        return $this->createResult(true, \sprintf('%s (%d filters updated)', $this->getName(), $updated));
+        $dropped = $this->droppedArchiveKeys
+            ? \sprintf(', %d archive preselect entries dropped', $this->droppedArchiveKeys)
+            : '';
+
+        return $this->createResult(true, \sprintf('%s (%d filters updated%s)', $this->getName(), $updated, $dropped));
     }
 
     /**
@@ -179,7 +206,7 @@ class BackfillFilterValuesMigration extends AbstractMigration
             $changes['control'] = $control;
         }
 
-        if (($value = self::valueFor($type, $intrinsic, $row)) !== '' && (string) ($row['value'] ?? '') === '') {
+        if (($value = $this->valueFor($type, $intrinsic, $row)) !== '' && (string) ($row['value'] ?? '') === '') {
             $changes['value'] = $value;
         }
 
@@ -214,14 +241,14 @@ class BackfillFilterValuesMigration extends AbstractMigration
      *
      * @param array<string, mixed> $row
      */
-    private static function valueFor(string $type, bool $intrinsic, array $row): string
+    private function valueFor(string $type, bool $intrinsic, array $row): string
     {
         return match ($type) {
             'flare_bool' => self::convertBool($row['preselect'] ?? null),
             'flare_fieldValueChoice', 'flare_dcaSelectField', 'cfg_tags_choice' => self::convertChoices(
                 $row['preselect'] ?? null,
             ),
-            'flare_archive' => $intrinsic ? '' : self::convertChoices($row['preselect'] ?? null),
+            'flare_archive' => $intrinsic ? '' : $this->convertArchiveChoices($row),
             'flare_search_keywords' => $intrinsic ? self::convertKeywords($row['prefill'] ?? null) : '',
             default => '',
         };
@@ -271,6 +298,86 @@ class BackfillFilterValuesMigration extends AbstractMigration
         }
 
         return $list === [] ? '' : \serialize(\array_values(\array_unique($list)));
+    }
+
+    /**
+     * The archive preselect as a serialized list of `{table}.{id}` keys, read as the old element read it: a bare id
+     * is an id of the main ptable of the list's data container, a `{table}.{id}` key names its table; every other
+     * key, and a bare id without a ptable, is dropped.
+     *
+     * @param array<string, mixed> $row
+     */
+    private function convertArchiveChoices(array $row): string
+    {
+        if (!$stored = self::convertChoices($row['preselect'] ?? null)) {
+            return '';
+        }
+
+        $list = [];
+
+        foreach (\unserialize($stored, ['allowed_classes' => false]) as $key)
+        {
+            $table = null;
+            $id = 0;
+
+            if (\is_numeric($key))
+            {
+                $table = $this->findPtable((int) ($row['pid'] ?? 0));
+                $id = (int) $key;
+            }
+            elseif (\str_contains($key, '.'))
+            {
+                [$table, $id] = \explode('.', $key, 2);
+                $id = (int) $id;
+            }
+
+            if (!$table || $id < 1)
+            {
+                ++$this->droppedArchiveKeys;
+                continue;
+            }
+
+            $list[] = "{$table}.{$id}";
+        }
+
+        return $list === [] ? '' : \serialize(\array_values(\array_unique($list)));
+    }
+
+    /**
+     * The main ptable of the data container the list shows, as the old element inferred it from the loaded DCA, or
+     * null if the list, its data container or a static ptable is missing.
+     */
+    private function findPtable(int $listId): ?string
+    {
+        if (\array_key_exists($listId, $this->ptables)) {
+            return $this->ptables[$listId];
+        }
+
+        $list = $this->connection->fetchAssociative(
+            \sprintf('SELECT * FROM %s WHERE id = ?', self::LIST_TABLE),
+            [$listId],
+        ) ?: [];
+
+        $table = self::FIXED_LIST_DATA_CONTAINERS[$list['type'] ?? ''] ?? (string) ($list['dc'] ?? '');
+
+        return $this->ptables[$listId] = $table !== '' ? $this->loadPtable($table) : null;
+    }
+
+    private function loadPtable(string $table): ?string
+    {
+        try
+        {
+            $this->framework->initialize();
+            $this->framework->getAdapter(Controller::class)->loadDataContainer($table);
+        }
+        catch (\Exception)
+        {
+            return null;
+        }
+
+        $ptable = $GLOBALS['TL_DCA'][$table]['config']['ptable'] ?? null;
+
+        return \is_string($ptable) && $ptable !== '' ? $ptable : null;
     }
 
     /**

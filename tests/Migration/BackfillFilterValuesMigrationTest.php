@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Migration;
 
+use Contao\Controller;
+use Contao\CoreBundle\Framework\Adapter;
+use Contao\CoreBundle\Framework\ContaoFramework;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\AbstractSchemaManager;
 use Doctrine\DBAL\Schema\Column;
@@ -40,6 +43,12 @@ final class BackfillFilterValuesMigrationTest extends TestCase
     /** @var list<string> The recorded `executeStatement()` calls. */
     private array $statements = [];
 
+    /** @var array<int, array<string, mixed>> The `tl_flare_list` rows by id. */
+    private array $lists = [];
+
+    /** @var list<string> The data containers loaded through the framework. */
+    private array $loadedDcas = [];
+
     protected function setUp(): void
     {
         $this->columns = self::COLUMNS;
@@ -47,6 +56,14 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         $this->rows = [];
         $this->updates = [];
         $this->statements = [];
+        $this->lists = [1 => ['id' => '1', 'type' => 'flare_generic_dc', 'dc' => 'tl_news']];
+        $this->loadedDcas = [];
+        $GLOBALS['TL_DCA'] = ['tl_news' => ['config' => ['ptable' => 'tl_news_archive']]];
+    }
+
+    protected function tearDown(): void
+    {
+        unset($GLOBALS['TL_DCA']);
     }
 
     public function testRunAddsTheMarkerMarksEveryRowAndDefaultsItToDone(): void
@@ -200,6 +217,73 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         // Archive keeps its empty option and placeholder settings 1:1.
         self::assertSame('Pick one', $this->rows[1]['ctl_placeholder']);
         self::assertSame('0', $this->rows[1]['ctl_hasEmptyOption']);
+    }
+
+    public function testControlledArchiveQualifiesBareIdsWithThePtableOfTheListsDataContainer(): void
+    {
+        $this->addRow(1, 'flare_archive', [
+            'intrinsic' => '0',
+            'preselect' => \serialize(['5', 6, 'tl_news_archive.7', 'tl_news_archive.5']),
+        ]);
+
+        $result = $this->migration()->run();
+
+        self::assertSame(
+            \serialize(['tl_news_archive.5', 'tl_news_archive.6', 'tl_news_archive.7']),
+            $this->rows[1]['value'],
+        );
+        self::assertSame(['tl_news'], $this->loadedDcas);
+        self::assertStringNotContainsString('dropped', $result->getMessage());
+    }
+
+    public function testNewsAndEventListsUseTheirDriversDataContainer(): void
+    {
+        $this->lists = [
+            1 => ['id' => '1', 'type' => 'flare_news', 'dc' => ''],
+            2 => ['id' => '2', 'type' => 'flare_events', 'dc' => 'tl_ignored'],
+        ];
+        $GLOBALS['TL_DCA']['tl_calendar_events'] = ['config' => ['ptable' => 'tl_calendar']];
+        $this->addRow(1, 'flare_archive', ['pid' => '1', 'intrinsic' => '0', 'preselect' => \serialize(['5'])]);
+        $this->addRow(2, 'flare_archive', ['pid' => '2', 'intrinsic' => '0', 'preselect' => '3']);
+
+        $this->migration()->run();
+
+        self::assertSame(\serialize(['tl_news_archive.5']), $this->rows[1]['value']);
+        self::assertSame(\serialize(['tl_calendar.3']), $this->rows[2]['value']);
+        self::assertSame(['tl_news', 'tl_calendar_events'], $this->loadedDcas);
+    }
+
+    public function testArchiveKeysTheOldElementCouldNotReadAreDroppedAndCounted(): void
+    {
+        $this->lists[2] = ['id' => '2', 'type' => 'flare_generic_dc', 'dc' => 'tl_without_ptable'];
+        $GLOBALS['TL_DCA']['tl_without_ptable'] = ['config' => ['dynamicPtable' => true]];
+        $this->addRow(1, 'flare_archive', [
+            'pid' => '2',
+            'intrinsic' => '0',
+            'preselect' => \serialize(['5', 'tl_news_archive.7']),
+        ]);
+        $this->addRow(2, 'flare_archive', [
+            'intrinsic' => '0',
+            'preselect' => \serialize(['tl_news_archive.0', 'unreadable', 'tl_news_archive.08']),
+        ]);
+        $this->addRow(3, 'flare_archive', ['pid' => '99', 'intrinsic' => '0', 'preselect' => '5']);
+
+        $result = $this->migration()->run();
+
+        self::assertSame(\serialize(['tl_news_archive.7']), $this->rows[1]['value']);
+        self::assertSame(\serialize(['tl_news_archive.8']), $this->rows[2]['value']);
+        self::assertNull($this->rows[3]['value'], 'a filter of a missing list has no ptable');
+        self::assertStringContainsString('4 archive preselect entries dropped', $result->getMessage());
+    }
+
+    public function testNoDataContainerIsLoadedWithoutBareIds(): void
+    {
+        $this->addRow(1, 'flare_archive', ['intrinsic' => '0', 'preselect' => \serialize(['tl_news_archive.5'])]);
+        $this->addRow(2, 'flare_archive', ['intrinsic' => '1', 'preselect' => \serialize(['5'])]);
+
+        $this->migration()->run();
+
+        self::assertSame([], $this->loadedDcas);
     }
 
     public function testKeywordsPrefillOnlyWhenIntrinsic(): void
@@ -524,6 +608,7 @@ final class BackfillFilterValuesMigrationTest extends TestCase
     {
         $row = [
             'id' => (string) $id,
+            'pid' => '1',
             'type' => $type,
             'intrinsic' => '0',
             'boolMode' => '',
@@ -603,6 +688,11 @@ final class BackfillFilterValuesMigrationTest extends TestCase
 
             return $affected;
         });
+        $connection->method('fetchAssociative')->willReturnCallback(function (string $sql, array $params): array|false {
+            self::assertSame('SELECT * FROM tl_flare_list WHERE id = ?', $sql);
+
+            return $this->lists[$params[0]] ?? false;
+        });
         $connection->method('executeStatement')->willReturnCallback(function (string $sql): int {
             $this->statements[] = $sql;
 
@@ -623,6 +713,17 @@ final class BackfillFilterValuesMigrationTest extends TestCase
             return 0;
         });
 
-        return new BackfillFilterValuesMigration($connection);
+        $controller = $this->getMockBuilder(Adapter::class)
+            ->disableOriginalConstructor()
+            ->addMethods(['loadDataContainer'])
+            ->getMock();
+        $controller->method('loadDataContainer')->willReturnCallback(function (string $table): void {
+            $this->loadedDcas[] = $table;
+        });
+
+        $framework = $this->createMock(ContaoFramework::class);
+        $framework->method('getAdapter')->with(Controller::class)->willReturn($controller);
+
+        return new BackfillFilterValuesMigration($connection, $framework);
     }
 }

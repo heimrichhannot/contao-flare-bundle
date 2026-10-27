@@ -30,9 +30,10 @@ Filter execution inside the projector: the `FormHarness` decodes submitted form 
 objects; `ListQueryDirector` (`src/Query/Executor/`) picks each filter's value (with a control: the form's value;
 without: the fixed `Filter::$value`), creates the `FilterContext` via `FilterContextFactory::create(ElementScope, ?value)`
 (the element's `buildContext($builder, $scope, $value)` adds predicates) and runs each predicate into a `FilterConditionsBuilder`. A
-filter whose element cannot be built (with or without a control), a broken fixed value, or two published filters
-sharing an alias fail the whole list (`list.failed` in the view, HTTP 500 in the reader); a control that cannot be
-resolved only drops the control and initial value (warning). A controlled filter that fails with a non-null value is retried once with value null: success drops only the value
+filter whose element cannot be built (with or without a control), a stored control that cannot be resolved or whose
+config is broken, a broken fixed value, or two published filters sharing an alias fail the whole list (`list.failed`
+in the view, HTTP 500 in the reader); an unreadable initial value only drops the value (warning). Failures are
+recorded as `FilterFailure`s (`src/List/`) on the `ListSpec`. A controlled filter that fails with a non-null value is retried once with value null: success drops only the value
 (warning); if the retry fails too (or the value was already null) the element config is broken and the list fails
 closed. `\Error`s escape unwrapped. `UndefinedConfigKeyError` (an `\Error`, thrown when a component reads a config key
 its schema does not define) is a programming error: never retried, never degraded into a skipped filter or a
@@ -87,7 +88,10 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 - `src/Contract/FilterElement/` — capability ports an element implements for controls/providers to pull from
   (`ChoiceSourceContract`, `DateBoundsContract`); controls never reach into an element otherwise.
   `IneffectiveFilterContract` lets an element explain why its filter restricts nothing as configured; the backend
-  marks such filters in the filter list and on the edit form (`DataContainer/IneffectiveFilterInspector`)
+  marks such filters in the filter list and on the edit form (`DataContainer/IneffectiveFilterInspector`).
+  Filters guaranteed to break their list — collection failures, or conditions that cannot be built with the default
+  value (through the shared `Query/Executor/FilterInvoker`) — are marked there too, and counted on the list's filter
+  overview (`DataContainer/BrokenFilterInspector`)
 - `src/Filter/ValueProvider/` — one `ValueProviderInterface` service per value class (`provide()` turns the
   stored `value` column into a value object; `buildDcaField()` renders the backend widget), registered via the
   `flare.value_provider` tag and `ValueProviderRegistry`

@@ -838,7 +838,7 @@ final readonly class Filter
   control from the `control` column, the control config from the `ctl_` columns, and — if the element has a value
   class — the value via its provider's `provide($model->value, $element)`. An unknown `control`, or
   one not registered for the element's value class, is a data condition (a renamed or uninstalled
-  control), not a programming error; it fails open (§8.1). Each config has its
+  control), not a programming error; it fails the list (§8.1). Each config has its
   own resolver cache key, so the composite-key problem of the old plan does not arise.
 - `FilterFactory::create()` takes `?FilterControlInterface $control`, `array $controlConfig` and
   `?ValueInterface $value` for programmatic filters, e.g.
@@ -877,7 +877,13 @@ The rule follows the two scopes of §4.2 (§13.31):
 | what fails | bounds | behaviour |
 |---|---|---|
 | a filter's **element** cannot be built, **with or without a control** — its type is unknown or its config is broken (`createFromFilterModel()` throws); without a control also a non-empty stored (fixed) value that yields no readable key; two published filters of a list sharing an alias | the whole list | **fail closed**: the list fails as a whole; error logged |
-| a filter's **control** cannot be built — its `control` names no registered control for the element's value class, its control config is broken, or its initial value is unreadable | only the initial display | **fail open**: the filter is kept without control and initial value, bounded only by its element config, so it is not mounted; warning logged |
+| a filter's stored **control** cannot be built — its `control` names no registered control for the element's value class, or its control config is broken | the whole list | **fail closed**: the editor chose the control, and the filter must not apply without it (e.g. a "hide secret items" filter of an uninstalled bundle); error logged |
+| a controlled filter's **initial value** is unreadable (any `FilterException` from its value provider) | only the initial display | **fail open**: the control is kept, the value dropped; warning logged |
+
+The backend marks every filter that is guaranteed to break its list — a collection failure, or a filter whose
+conditions cannot be built with its default value (the fixed value without a control, none with one) — with a
+bone-fracture icon in the filter list and an error on its edit form, and counts the published ones on the list's
+filter overview (`BrokenFilterInspector`). Unpublished filters are marked but never fail the list.
 
 Stale keys of deleted records are not a failure: they resolve to references that match nothing
 (§3.6).
@@ -905,8 +911,9 @@ nothing" (e.g. an empty selection without `elm_useWhitelistForOptionsOnly`):
 
 > **Implementation note (R12/R13).** An element-level failure fails the list **regardless of `control`**: the
 > element config bounds the whole list (§4.2), so dropping a controlled filter whose element is broken would
-> widen it. Control-level failures are absorbed in `FilterFactory::createFromFilterModel()`, which keeps the
-> filter without control and value. Aliases are unique per list: `ListModelFilterCollector` records a list
+> widen it. A stored control that cannot be built fails the list too (it used to be absorbed, keeping the filter
+> without control); only an unreadable initial value is absorbed in `FilterFactory::createFromFilterModel()`, which
+> keeps the control and drops the value. Aliases are unique per list: `ListModelFilterCollector` records a list
 > failure for a second published row with an alias already taken instead of overwriting the first, and
 > `ListSpecBuilder::addFilter()` throws a `FlareException` on a taken key or alias, like `ListSpec::withFilter()`.
 
@@ -1178,7 +1185,8 @@ Recorded here because each one closes a branch the design could otherwise have t
     display. Bool filters with a control and a preselect therefore stop restricting reader pages —
     a correction by this definition, noted in the release notes.
 31. **Fail closed for what bounds the whole list, fail open for what only shapes the initial
-    display** (§8.1). A list that fails closed shows an explicit "could not be created" message —
+    display** (§8.1). A stored control the editor chose bounds the whole list: if it cannot be resolved, the list
+    fails. A list that fails closed shows an explicit "could not be created" message —
     never "no entries found" — and keeps HTTP status 200; a reader that cannot validate its entry
     answers 5xx, so broken config is never indexed.
 32. **Event names state whose type they carry** (review of PR #49): `flare.filter_element.{type}.*` always

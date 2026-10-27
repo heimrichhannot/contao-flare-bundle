@@ -26,6 +26,7 @@ use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\Query\Executor\FilterInvoker;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
@@ -291,8 +292,10 @@ final class ListQueryDirectorTest extends TestCase
 
         return new ListQueryDirector(
             eventDispatcher: $dispatcher,
-            filterContextFactory: $this->createFilterContextFactory(),
-            filterQueryBuilderFactory: new FilterQueryBuilderFactory($connection),
+            filterInvoker: new FilterInvoker(
+                $this->createFilterContextFactory(),
+                new FilterQueryBuilderFactory($connection),
+            ),
             listExecutionContextFactory: new ListExecutionContextFactory($dispatcher),
             queryBuilderFactory: new QueryBuilderFactory($this->createMock(ValidatorInterface::class), $connection),
             logger: $logger,

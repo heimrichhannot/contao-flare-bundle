@@ -33,6 +33,7 @@ use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
+use HeimrichHannot\FlareBundle\Query\Executor\FilterInvoker;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
@@ -202,8 +203,10 @@ final class InteractiveProjectorTest extends TestCase
         $connection = $this->createMock(Connection::class);
         $director = new ListQueryDirector(
             eventDispatcher: $dispatcher,
-            filterContextFactory: $this->createFilterContextFactory(),
-            filterQueryBuilderFactory: new FilterQueryBuilderFactory($connection),
+            filterInvoker: new FilterInvoker(
+                $this->createFilterContextFactory(),
+                new FilterQueryBuilderFactory($connection),
+            ),
             listExecutionContextFactory: new ListExecutionContextFactory($dispatcher),
             queryBuilderFactory: new QueryBuilderFactory($this->createMock(ValidatorInterface::class), $connection),
             logger: $logger,

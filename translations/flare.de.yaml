@@ -14,7 +14,7 @@ list:
 
     info:
         no_published_filter: "Einträge dieser Liste haben einen Veröffentlichungsstatus (%target%). Es ist kein Veröffentlicht-Filter konfiguriert, der dies berücksichtigt."
-        duplicate_filter_alias: "Duplizierte Filter-Aliasse: %alias%. Der letzte Filter überschreibt vorherige mit dem gleichen Alias."
+        duplicate_filter_alias: "Duplizierte Filter-Aliasse: %alias%. Die Liste kann nicht erstellt werden, bis jeder veröffentlichte Filter einen eindeutigen Alias hat."
         ineffective_filters: "{1} Ein Filter ist wirkungslos und muss überprüft werden; er ist in der Liste unten markiert.|]1,Inf[ %count% Filter sind wirkungslos und müssen überprüft werden; sie sind in der Liste unten markiert."
 
 filter:

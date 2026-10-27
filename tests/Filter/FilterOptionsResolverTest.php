@@ -68,6 +68,30 @@ final class FilterOptionsResolverTest extends TestCase
         self::assertFalse($config->has('x'));
     }
 
+    public function testErrorMessagesNameAnonymousComponentsReadably(): void
+    {
+        $element = new class implements FilterElementInterface {
+            public function buildContext(
+                FilterContextBuilderInterface $builder,
+                ElementScope                  $scope,
+                ?ValueInterface               $value,
+            ): void {}
+        };
+
+        $config = (new FilterOptionsResolver(new SchemaResolver()))->resolve($element, ['a' => 1]);
+
+        try
+        {
+            $config->get('b');
+            self::fail('Expected an UndefinedConfigKeyError.');
+        }
+        catch (UndefinedConfigKeyError $e)
+        {
+            self::assertStringNotContainsString("\0", $e->getMessage());
+            self::assertStringContainsString('FilterElementInterface@anonymous', $e->getMessage());
+        }
+    }
+
     public function testWrapsSchemaViolationsInFilterException(): void
     {
         $resolver = new FilterOptionsResolver(new SchemaResolver());

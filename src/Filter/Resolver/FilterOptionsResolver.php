@@ -29,7 +29,7 @@ final readonly class FilterOptionsResolver
     public function resolve(FilterComponentInterface $owner, array $config, ?string $origin = null): ComponentConfig
     {
         if (!$owner instanceof OptionsContract) {
-            return new ComponentConfig($config, null, $owner::class);
+            return new ComponentConfig($config, null, \get_debug_type($owner));
         }
 
         try
@@ -39,13 +39,13 @@ final readonly class FilterOptionsResolver
             return new ComponentConfig(
                 $this->schemaResolver->resolve($owner::class, $configure, $config),
                 $this->schemaResolver->getDefinedOptions($owner::class, $configure),
-                $owner::class,
+                \get_debug_type($owner),
             );
         }
         catch (\Throwable $e)
         {
             throw new FilterException(
-                \sprintf('[FLARE] Invalid config for "%s": %s', $owner::class, $e->getMessage()),
+                \sprintf('[FLARE] Invalid config for "%s": %s', \get_debug_type($owner), $e->getMessage()),
                 previous: $e,
                 method: $owner::class . '::configureOptions',
                 source: $origin,

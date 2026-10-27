@@ -273,8 +273,8 @@ the element. See [Capability Ports](../filter-controls.md#3-capability-ports).
 
 An element that can be configured into restricting nothing implements `IneffectiveFilterContract`
 (`getIneffectiveReason(Filter): ?TranslatableInterface`). It returns why the filter has no effect, or `null`; the
-backend then marks the filter with an engine icon in the filter list and shows the reason on its edit form. The
-runtime behavior is unchanged. `ArchiveFilterElement` uses it for a whitelist applied to the form options only on a
+backend then marks the filter with an engine icon in the filter list, counts such filters in a message above that
+list, and shows the reason on the filter's edit form. The runtime behavior is unchanged. `ArchiveFilterElement` uses it for a whitelist applied to the form options only on a
 filter without a control.
 
 ## 8. Intrinsic and Initial Values

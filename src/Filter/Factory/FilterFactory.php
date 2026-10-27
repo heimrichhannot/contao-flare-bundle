@@ -42,12 +42,14 @@ final readonly class FilterFactory
      * without one, it is the fixed value (SPEC_FILTER_FORMS.md §4.2).
      *
      * @param FilterElementInterface|string $element Filter element instance or registered type alias.
+     * @param string|null $alias Required with a control: the alias names the filter's form field, which must stay the
+     *   same across requests. Without a control, a missing alias is generated.
      * @param array<string, mixed> $config Element config, resolved through the element's schema.
      * @param FilterControlInterface|string|null $control Filter control instance or registered control type.
      * @param array<string, mixed> $controlConfig Control config, resolved through the control's schema.
      *
-     * @throws FlareException If the element or control cannot be resolved, a config does not satisfy its
-     *   schema, or the control or value does not match the element's value class.
+     * @throws FlareException If a control is given without an alias, the element or control cannot be resolved,
+     *   a config does not satisfy its schema, or the control or value does not match the element's value class.
      *
      * @see Filter::__construct for the remaining parameters.
      */
@@ -63,10 +65,21 @@ final readonly class FilterFactory
         ?string                            $source = null,
     ): Filter {
         $type = $this->resolveType($element, $source);
+
+        if ($control !== null && !$alias)
+        {
+            throw new FlareException(\sprintf(
+                'A filter of type "%s" with a control needs an alias: it names the form field, which must stay the'
+                . ' same across requests%s.',
+                $type,
+                $source ? " ({$source})" : '',
+            ), method: __METHOD__);
+        }
+
         $element = $this->resolveElement($element, $source);
         $valueClass = $this->getElementValueClass($type, $element);
 
-        $alias = $alias ?: self::generateAlias($type, mounted: $control !== null);
+        $alias = $alias ?: self::generateAlias($type);
 
         $config = $this->filterOptionsResolver->resolve($element, $config, $source);
 
@@ -177,19 +190,12 @@ final readonly class FilterFactory
     }
 
     /**
-     * A random alias. Without a control it is `_.{type}_{random}`, which deliberately never mounts a form field
-     * ({@see Str::isValidFormName()}); with one, it is a valid form name built from the type's last segment.
+     * A random alias for a filter without a control: `_.{type}_{random}`, which deliberately never mounts a form field
+     * ({@see Str::isValidFormName()}).
      */
-    private static function generateAlias(string $type, bool $mounted): string
+    private static function generateAlias(string $type): string
     {
-        if (!$mounted) {
-            return \sprintf('_.%s_%s', $type, Str::random(8));
-        }
-
-        $name = \substr((string) \strrchr('\\' . $type, '\\'), 1);
-        $name = \preg_replace('/\W+/', '_', $name);
-
-        return \sprintf('%s_%s', $name, Str::random(8));
+        return \sprintf('_.%s_%s', $type, Str::random(8));
     }
 
     /**

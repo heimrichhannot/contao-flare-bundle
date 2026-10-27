@@ -32,7 +32,6 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
-use HeimrichHannot\FlareBundle\Util\Str;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -155,7 +154,7 @@ final class FilterFactoryTest extends TestCase
     {
         $control = new FactoryStubBoolControl();
 
-        $filter = $this->factory()->create(element: self::BOOL_ELEMENT, control: $control);
+        $filter = $this->factory()->create(element: self::BOOL_ELEMENT, alias: 'foo', control: $control);
 
         self::assertSame(FactoryStubBoolControl::class, $filter->control?->type);
     }
@@ -172,6 +171,7 @@ final class FilterFactoryTest extends TestCase
     {
         $filter = $this->factory()->create(
             element: self::BOOL_ELEMENT,
+            alias: 'foo',
             control: self::BOOL_CONTROL,
             value: new BoolValue(true),
         );
@@ -182,30 +182,30 @@ final class FilterFactoryTest extends TestCase
         self::assertEquals(new BoolValue(true), $filter->value);
     }
 
-    public function testControlledFilterWithoutAliasGetsAFormValidAlias(): void
+    public function testControlledFilterWithoutAliasIsRejected(): void
     {
-        $filter = $this->factory()->create(element: self::BOOL_ELEMENT, control: self::BOOL_CONTROL);
+        $this->expectException(FlareException::class);
+        $this->expectExceptionMessage('needs an alias');
 
-        self::assertTrue(Str::isValidFormName($filter->alias), $filter->alias);
-        self::assertStringStartsWith(self::BOOL_ELEMENT . '_', $filter->alias);
-
-        $byInstance = $this->factory()->create(element: $this->boolElement, control: $this->boolControl);
-
-        self::assertTrue(Str::isValidFormName($byInstance->alias), $byInstance->alias);
+        $this->factory()->create(element: self::BOOL_ELEMENT, control: self::BOOL_CONTROL);
     }
 
     public function testUnknownControlNameIsRejected(): void
     {
         $this->expectException(FlareException::class);
 
-        $this->factory()->create(element: self::BOOL_ELEMENT, control: 'gone');
+        $this->factory()->create(element: self::BOOL_ELEMENT, alias: 'foo', control: 'gone');
     }
 
     public function testProgrammaticControlOfTheWrongClassIsRejected(): void
     {
         $this->expectException(FlareException::class);
 
-        $this->factory()->create(element: self::BOOL_ELEMENT, control: new FactoryStubKeywordsControl());
+        $this->factory()->create(
+            element: self::BOOL_ELEMENT,
+            alias: 'foo',
+            control: new FactoryStubKeywordsControl(),
+        );
     }
 
     public function testProgrammaticValueOfTheWrongClassIsRejected(): void

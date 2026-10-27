@@ -49,7 +49,7 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 
   | Removed | Replacement |
   |---|---|
-  | `$filter->element` (the element) | `$filter->element->component` |
+  | `$filter->element` (the element) | `$filter->element->component` — in a control hook: `$scope->element()`, or `$scope->element(SomeContract::class)` for a port |
   | `$filter->type` | `$filter->element->type` |
   | `$filter->config['key']` | `$filter->element->config->get('key')` — in a hook: `$scope->get('key')` |
   | `$filter->control` (the control) | `$filter->control?->component` |

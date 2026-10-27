@@ -81,7 +81,7 @@ The method's subject comes first — the builder, the submitted data, the value 
 All three receive the value-free `ControlScope` (`HeimrichHannot\FlareBundle\Filter\ControlScope`), the control's
 counterpart of the [`ElementScope`](./filter-elements/index.md#the-elementscope-and-the-filtercontext):
 `$scope->get('key')` reads the control's **own** resolved config (a key the schema does not define throws
-`UndefinedConfigKeyError`), `$scope->filter->element->component` is the element, and `$scope->forElement()`
+`UndefinedConfigKeyError`), `$scope->element()` is the element, and `$scope->forElement()`
 returns the `ElementScope` to hand to the element's [capability ports](#3-capability-ports). `$scope->list`,
 `$scope->filter` and `$scope->engineContext` are available as on the element side.
 
@@ -157,16 +157,21 @@ This control is immediately selectable for every element declaring `value: Keywo
 ## 3. Capability Ports
 
 A control that needs something from the element does not reach into it; the element implements an explicit
-**port** (`HeimrichHannot\FlareBundle\Contract\FilterElement\`), and the control checks `instanceof`. Ports take an
-`ElementScope`, so the element reads its own config with `get()`; the control passes `$scope->forElement()`:
+**port** (`HeimrichHannot\FlareBundle\Contract\FilterElement\`), and the control asks the scope for the element as
+that port. Ports take an `ElementScope`, so the element reads its own config with `get()`; the control passes
+`$scope->forElement()`:
 
 ```php
-$element = $scope->filter->element->component;
+// A port the control requires: throws a FilterException naming the control, the port and the element,
+// so the filter is skipped (fail open).
+$scope->element(ChoiceSourceContract::class)->buildChoices($choices, $scope->forElement());
 
-if ($element instanceof DateBoundsContract) {
-    $bounds = $element->getDateBounds($scope->forElement());
-}
+// A port the control can do without: null if the element does not implement it.
+$bounds = $scope->tryElement(DateBoundsContract::class)?->getDateBounds($scope->forElement());
 ```
+
+Without an argument, `$scope->element()` returns the element itself. Both methods are typed through
+`@template`, so static analysis knows the returned port.
 
 
 - **`ChoiceSourceContract`** — the element's value is picked from a server-provided option set.

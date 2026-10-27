@@ -186,7 +186,8 @@ final readonly class FilterFactory
             return \sprintf('_.%s_%s', $type, Str::random(8));
         }
 
-        $name = \preg_replace('/[^A-Za-z0-9_]/', '_', \substr((string) \strrchr('\\' . $type, '\\'), 1));
+        $name = \substr((string) \strrchr('\\' . $type, '\\'), 1);
+        $name = \preg_replace('/\W+/', '_', $name);
 
         return \sprintf('%s_%s', $name, Str::random(8));
     }

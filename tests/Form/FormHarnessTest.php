@@ -6,6 +6,8 @@ namespace HeimrichHannot\FlareBundle\Tests\Form;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
@@ -21,12 +23,23 @@ use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\AbstractLogger;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Forms;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Symfony\Contracts\Translation\TranslatorTrait;
 
 final class FormHarnessTest extends TestCase
 {
+    /** @var list<array{string, string}> */
+    private array $logs = [];
+
+    protected function setUp(): void
+    {
+        $this->logs = [];
+    }
+
     public function testDecodeSkipsMountsWhoseChildWasRemoved(): void
     {
         $harness = $this->harness(['q' => 'foo'], remove: ['q']);
@@ -56,12 +69,49 @@ final class FormHarnessTest extends TestCase
         self::assertSame(['a'], \array_keys($harness->decode()));
     }
 
+    public function testDecodeFailureOfASubmittedValueBecomesAFormErrorAndNoValue(): void
+    {
+        $harness = $this->harness(['a' => null, 'b' => null], control: new RejectingKeywordsControl());
+
+        $harness->getForm()->submit(['a' => 'rejected', 'b' => 'fine']);
+
+        $values = $harness->decode();
+
+        self::assertSame(['a', 'b'], \array_keys($values));
+        self::assertNull($values['a']);
+        self::assertSame('fine', $values['b']?->keywords);
+
+        $errors = $harness->getForm()->get('a')->getErrors();
+        self::assertCount(1, $errors);
+        self::assertSame('flare.form.invalid_value', $errors[0]->getMessage());
+        self::assertCount(0, $harness->getForm()->get('b')->getErrors());
+        self::assertFalse($harness->getForm()->isValid(), 'an invalid submission renders an empty list');
+
+        self::assertCount(1, $this->logs);
+        self::assertSame('warning', $this->logs[0][0]);
+        self::assertStringContainsString('"a"', $this->logs[0][1]);
+    }
+
+    public function testDecodeFailureOfAnInitialValueDropsTheValueWithoutAFormError(): void
+    {
+        $harness = $this->harness(['a' => 'rejected', 'b' => 'fine'], control: new RejectingKeywordsControl());
+
+        $values = $harness->decode();
+
+        self::assertSame(['b'], \array_keys($values), 'the visitor did not enter the initial value');
+        self::assertCount(0, $harness->getForm()->getErrors(true));
+        self::assertCount(1, $this->logs);
+    }
+
     /**
      * @param array<string, ?string> $initial Alias => initial keywords (null: no initial value).
      * @param list<string> $remove Aliases whose child is removed from the form after mounting.
      */
-    private function harness(array $initial, array $remove = []): FormHarness
-    {
+    private function harness(
+        array                   $initial,
+        array                   $remove = [],
+        ?FilterControlInterface $control = null,
+    ): FormHarness {
         $driver = new class implements ListDriverInterface {
             public function resolveDcTable(string $type, array $config, array $attributes): string
             {
@@ -77,7 +127,7 @@ final class FormHarnessTest extends TestCase
             ): void {}
         };
 
-        $control = new KeywordsFilterControl();
+        $control ??= new KeywordsFilterControl();
         $list = new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test');
         $builder = Forms::createFormFactory()->createNamedBuilder('flare_test', FormType::class);
         $mounts = [];
@@ -103,6 +153,35 @@ final class FormHarnessTest extends TestCase
             $builder->remove($alias);
         }
 
-        return new FormHarness($builder->getForm(), $mounts);
+        $logs = &$this->logs;
+        $logger = new class ($logs) extends AbstractLogger {
+            public function __construct(private array &$logs) {}
+
+            public function log($level, $message, array $context = []): void
+            {
+                $this->logs[] = [(string) $level, (string) $message];
+            }
+        };
+
+        $translator = new class implements TranslatorInterface {
+            use TranslatorTrait;
+        };
+
+        return new FormHarness($builder->getForm(), $mounts, $translator, $logger);
+    }
+}
+
+/**
+ * Rejects the keywords "rejected" in decode(), as a control does that cannot turn its data into a value.
+ */
+final class RejectingKeywordsControl extends KeywordsFilterControl
+{
+    public function decode(mixed $data, ControlScope $scope): ?KeywordsValue
+    {
+        if ($data === 'rejected') {
+            throw new FilterException('Rejected.', method: __METHOD__);
+        }
+
+        return parent::decode($data, $scope);
     }
 }

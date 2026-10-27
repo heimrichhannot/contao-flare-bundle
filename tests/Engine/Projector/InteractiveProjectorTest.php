@@ -56,6 +56,7 @@ use Symfony\Component\Form\Forms;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Component\Security\Csrf\CsrfTokenManager;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -237,7 +238,12 @@ final class InteractiveProjectorTest extends TestCase
 
         $projector = new RecordingInteractiveProjector(
             aggregationConfigFactory: new AggregationContextFactory(),
-            formHarnessFactory: new FormHarnessFactory($dispatcher, $formFactory, $logger),
+            formHarnessFactory: new FormHarnessFactory(
+                $dispatcher,
+                $formFactory,
+                $logger,
+                $this->createMock(TranslatorInterface::class),
+            ),
             paginatorFactory: new PaginatorFactory($requestStack, $this->createMock(UrlGeneratorInterface::class)),
         );
         $projector->setContainer($container);

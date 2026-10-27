@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Control;
 
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\FilterComponentInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
@@ -42,6 +43,9 @@ interface FilterControlInterface extends FilterComponentInterface
     /**
      * Turns the mount's data into this control's value object, or null to contribute nothing.
      * Implementations MUST narrow the return type to one concrete value class.
+     *
+     * @throws FilterException If the data cannot become a value: the filter contributes no value, and a submitted
+     *   field gets a form error ({@see \HeimrichHannot\FlareBundle\Form\FormHarness::decode()}).
      */
     public function decode(mixed $data, ControlScope $scope): ?ValueInterface;
 

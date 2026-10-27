@@ -41,6 +41,7 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\Forms;
 use Symfony\Component\Security\Csrf\CsrfTokenManager;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class FormHarnessFactoryTest extends TestCase
 {
@@ -83,6 +84,7 @@ final class FormHarnessFactoryTest extends TestCase
             eventDispatcher: $this->eventDispatcher,
             formFactory: $formFactory,
             logger: $this->logger,
+            translator: $this->createMock(TranslatorInterface::class),
         );
     }
 

@@ -22,6 +22,7 @@ use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\FormBuilder;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final readonly class FormHarnessFactory
 {
@@ -29,6 +30,7 @@ final readonly class FormHarnessFactory
         private EventDispatcherInterface $eventDispatcher,
         private FormFactoryInterface     $formFactory,
         private LoggerInterface          $logger,
+        private TranslatorInterface      $translator,
     ) {}
 
     /**
@@ -197,7 +199,7 @@ final readonly class FormHarnessFactory
         /** @var FormBuilder $root */
         $root = $formBuildEvent->formBuilder;
 
-        return new FormHarness($root->getForm(), $mounts);
+        return new FormHarness($root->getForm(), $mounts, $this->translator, $this->logger);
     }
 
     private function logSkipped(string $alias, FilterException $e): void

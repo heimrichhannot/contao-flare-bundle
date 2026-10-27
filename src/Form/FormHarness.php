@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Form;
 
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * The filters of one list within one form context: their root form and the mount <-> filter map.
@@ -21,12 +25,16 @@ final readonly class FormHarness
     /**
      * @param FormInterface $form Root filter form holding every mounted node.
      * @param array<string, FilterMount> $mounts Mounts keyed by alias.
+     * @param TranslatorInterface|null $translator Translates the form error of a rejected submission.
+     * @param LoggerInterface|null $logger Receives a warning for each value a control rejects.
      *
      * @internal Use {@see Factory\FormHarnessFactory} to create instances.
      */
     public function __construct(
-        private FormInterface $form,
-        private array         $mounts = [],
+        private FormInterface        $form,
+        private array                $mounts = [],
+        private ?TranslatorInterface $translator = null,
+        private ?LoggerInterface     $logger = null,
     ) {}
 
     public function getForm(): FormInterface
@@ -74,6 +82,11 @@ final readonly class FormHarness
      * is a submission, not an absence). On an unsubmitted form only non-null entries are returned,
      * i.e. the hydrated initial values.
      *
+     * A control that rejects its data ({@see FilterException} from decode()) contributes no value. A
+     * rejected submission also gets a form error on its mount, which makes the form invalid like any
+     * other invalid input: the list renders empty and the field shows the error. A rejected initial
+     * value is dropped with a warning only, since the visitor did not enter it.
+     *
      * @return array<string, ValueInterface|null> Decoded values keyed by alias.
      */
     public function decode(): array
@@ -89,7 +102,15 @@ final readonly class FormHarness
                 continue;
             }
 
-            $value = $mount->filter->control->component->decode($child->getData(), $mount->scope);
+            try
+            {
+                $value = $mount->filter->control->component->decode($child->getData(), $mount->scope);
+            }
+            catch (FilterException $e)
+            {
+                $this->reject($mount->alias, $child, $submitted, $e);
+                $value = null;
+            }
 
             if ($submitted || $value !== null) {
                 $values[$mount->alias] = $value;
@@ -97,5 +118,29 @@ final readonly class FormHarness
         }
 
         return $values;
+    }
+
+    private function reject(string $alias, FormInterface $child, bool $submitted, FilterException $e): void
+    {
+        $this->logger?->warning(
+            \sprintf(
+                '[FLARE] The control of filter "%s" rejected its data, which is dropped: %s',
+                $alias,
+                $e->getMessage(),
+            ),
+            ['alias' => $alias, 'exception' => $e],
+        );
+
+        if (!$submitted) {
+            return;
+        }
+
+        $message = 'flare.form.invalid_value';
+
+        $child->addError(new FormError(
+            $this->translator?->trans($message, [], 'validators') ?? $message,
+            $message,
+            cause: $e,
+        ));
     }
 }

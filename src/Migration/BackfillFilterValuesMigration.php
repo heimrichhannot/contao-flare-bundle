@@ -70,7 +70,7 @@ class BackfillFilterValuesMigration extends AbstractMigration
     /** @var array<int, string|null> The main ptable of each list's data container, by list id. */
     private array $ptables = [];
 
-    /** The archive keys dropped in the current run. */
+    /** The archive keys dropped in the current run; reset when the run reports them. */
     private int $droppedArchiveKeys = 0;
 
     public function __construct(
@@ -120,7 +120,6 @@ class BackfillFilterValuesMigration extends AbstractMigration
         ));
 
         $updated = 0;
-        $this->droppedArchiveKeys = 0;
 
         foreach ($this->fetchPendingRows() as $row)
         {
@@ -137,11 +136,16 @@ class BackfillFilterValuesMigration extends AbstractMigration
         // their type from turning them pending.
         $this->connection->update(self::TABLE, [self::MARKER => '1'], [self::MARKER => '0']);
 
-        $dropped = $this->droppedArchiveKeys
-            ? \sprintf(', %d archive preselect entries dropped', $this->droppedArchiveKeys)
-            : '';
+        $dropped = $this->droppedArchiveKeys;
+        $this->droppedArchiveKeys = 0;
 
-        return $this->createResult(true, \sprintf('%s (%d filters updated%s)', $this->getName(), $updated, $dropped));
+        return $this->createResult(true, \sprintf(
+            '%s (%d filters updated%s)',
+            $this->getName(),
+            $updated,
+            $dropped ? \sprintf(', %d archive preselect entries dropped', $dropped) : '',
+        ));
+
     }
 
     /**

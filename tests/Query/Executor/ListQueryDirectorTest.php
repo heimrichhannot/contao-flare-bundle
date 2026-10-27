@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Query\Executor;
 
-use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Engine\Context\AggregationContext;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
-use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
@@ -284,8 +285,11 @@ class DirectorSpyElement implements FilterElementInterface
     public ?ValueInterface $received = null;
     public int $calls = 0;
 
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
         $this->received = $value;
         ++$this->calls;
     }
@@ -293,8 +297,11 @@ class DirectorSpyElement implements FilterElementInterface
 
 class DirectorFailingElement implements FilterElementInterface
 {
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
         throw new FilterException('broken element');
     }
 }
@@ -307,8 +314,11 @@ class DirectorValueRejectingElement implements FilterElementInterface
     /** @var list<bool> Whether each call received a value. */
     public array $calledWithValue = [];
 
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
         $this->calledWithValue[] = $value !== null;
 
         if ($value !== null) {
@@ -321,24 +331,33 @@ class DirectorValueRejectingElement implements FilterElementInterface
 
 class DirectorErroringElement implements FilterElementInterface
 {
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
         throw new \TypeError('programming error');
     }
 }
 
 class DirectorThrowingElement implements FilterElementInterface
 {
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
         throw new \RuntimeException('unexpected');
     }
 }
 
 class DirectorAbortingElement implements FilterElementInterface
 {
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
         $builder->abort();
     }
 }

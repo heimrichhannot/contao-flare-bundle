@@ -13,8 +13,8 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\ArchivePredicate;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BelongsToRelationPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
@@ -53,7 +53,7 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
     /**
      * @throws FilterException
      */
-    public function buildChoices(ChoicesBuilder $choices, FilterScope $scope): void
+    public function buildChoices(ChoicesBuilder $choices, ElementScope $scope): void
     {
         $config = $scope->filter->element->config->all();
         $inferrer = $this->getPtableInferrer($scope->list);
@@ -127,11 +127,14 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
      *
      * @throws FilterException
      */
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
         $value = $this->expectValue($value, ChoiceValue::class);
-        $config = $builder->scope->filter->element->config->all();
-        $inferrer = $this->getPtableInferrer($builder->scope->list);
+        $config = $scope->filter->element->config->all();
+        $inferrer = $this->getPtableInferrer($scope->list);
         $allowed = $this->getAllowedParentIds($inferrer, $config);
 
         if (!$value && ($config['use_whitelist_for_options_only'] ?? false)) {

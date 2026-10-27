@@ -7,11 +7,11 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter\Control;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
-use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\ChoiceFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceObjectInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
@@ -19,11 +19,12 @@ use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Forms;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\Forms;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class ChoiceFilterControlTest extends TestCase
@@ -43,9 +44,13 @@ final class ChoiceFilterControlTest extends TestCase
         return new class($ids) implements FilterElementInterface, ChoiceSourceContract {
             public function __construct(private array $ids) {}
 
-            public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
+            public function buildContext(
+                FilterContextBuilderInterface $builder,
+                ElementScope                  $scope,
+                ?ValueInterface               $value,
+            ): void {}
 
-            public function buildChoices(ChoicesBuilder $choices, FilterScope $scope): void
+            public function buildChoices(ChoicesBuilder $choices, ElementScope $scope): void
             {
                 foreach ($this->ids as $id) {
                     $choices->add(ContaoModelChoice::ref('tl_news_archive', $id));

@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
@@ -117,7 +117,7 @@ readonly class ListQueryDirector
         foreach ($list->filters as $filter)
         {
             $value = $filter->control !== null ? ($values[$filter->alias] ?? null) : $filter->value;
-            $scope = new FilterScope($list, $filter, $options->context);
+            $scope = new ElementScope($list, $filter, $options->context);
 
             try
             {
@@ -153,7 +153,7 @@ readonly class ListQueryDirector
      * @throws FilterException Wrapped with the filter's source.
      * @throws FlareException
      */
-    private function buildFilterConditionsBuilders(FilterScope $scope, ?ValueInterface $value): array
+    private function buildFilterConditionsBuilders(ElementScope $scope, ?ValueInterface $value): array
     {
         $filter = $scope->filter;
 

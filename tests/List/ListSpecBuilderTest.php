@@ -14,7 +14,8 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
@@ -36,8 +37,9 @@ final class ListSpecBuilderTest extends TestCase
 
         $element ??= new class implements FilterElementInterface {
             public function buildContext(
-                FilterContextBuilder $builder,
-                ?ValueInterface      $value,
+                FilterContextBuilderInterface $builder,
+                ElementScope                  $scope,
+                ?ValueInterface               $value,
             ): void {}
         };
 

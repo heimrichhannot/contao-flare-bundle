@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\DataContainer\Builder;
 
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
@@ -17,11 +17,11 @@ use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
 final class DcaContext
 {
     private ListExecutionContext|false|null $executionContext = null;
-    private FilterScope|false|null $filterScope = null;
+    private ElementScope|false|null $elementScope = null;
 
     /**
      * @param \Closure(): ?ListExecutionContext $executionContextFactory
-     * @param \Closure(): ?FilterScope|null $filterScopeFactory
+     * @param \Closure(): ?ElementScope|null $elementScopeFactory
      */
     public function __construct(
         public readonly string                  $table,
@@ -30,7 +30,7 @@ final class DcaContext
         public readonly ?FilterModel            $filterModel,
         private readonly \Closure               $executionContextFactory,
         public readonly ?FilterElementInterface $element = null,
-        private readonly ?\Closure              $filterScopeFactory = null,
+        private readonly ?\Closure              $elementScopeFactory = null,
     ) {}
 
     public function getExecutionContext(): ?ListExecutionContext
@@ -44,11 +44,11 @@ final class DcaContext
      * The backend scope (SPEC_FILTER_FORMS.md §6.4): the edited filter in a configuration context,
      * or null when it cannot be built.
      */
-    public function getFilterScope(): ?FilterScope
+    public function getElementScope(): ?ElementScope
     {
-        $this->filterScope ??= $this->filterScopeFactory?->__invoke() ?? false;
+        $this->elementScope ??= $this->elementScopeFactory?->__invoke() ?? false;
 
-        return $this->filterScope ?: null;
+        return $this->elementScope ?: null;
     }
 
     /**

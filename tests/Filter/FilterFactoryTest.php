@@ -17,16 +17,17 @@ use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
-use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
@@ -324,12 +325,20 @@ final class FilterFactoryTest extends TestCase
 #[AsFilterElement(value: BoolValue::class)]
 final class FactoryStubBoolElement implements FilterElementInterface
 {
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {}
 }
 
 final class FactoryStubPlainElement implements FilterElementInterface
 {
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {}
 }
 
 final class FactoryStubOptionsElement implements FilterElementInterface, OptionsContract
@@ -339,7 +348,11 @@ final class FactoryStubOptionsElement implements FilterElementInterface, Options
         $resolver->define('columns')->default([])->allowedTypes('array');
     }
 
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {}
 }
 
 final class FactoryStubBoolControl extends AbstractFilterControl

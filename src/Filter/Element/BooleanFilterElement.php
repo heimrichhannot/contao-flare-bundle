@@ -10,7 +10,8 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -35,11 +36,14 @@ class BooleanFilterElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
         $value = $this->expectValue($value, BoolValue::class);
 
-        if (!$field = $builder->scope->filter->element->config->all()['field'] ?? null) {
+        if (!$field = $scope->filter->element->config->all()['field'] ?? null) {
             $builder->abort();
         }
 

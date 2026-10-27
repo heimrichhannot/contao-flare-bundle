@@ -10,8 +10,8 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\IntegerIdChoicePredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
@@ -42,8 +42,11 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement implements Ch
     /**
      * @throws FilterException
      */
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
         if (!$value = $this->expectValue($value, ChoiceValue::class)) {
             return;
         }
@@ -70,7 +73,7 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement implements Ch
     /**
      * @throws FilterException
      */
-    public function buildChoices(ChoicesBuilder $choices, FilterScope $scope): void
+    public function buildChoices(ChoicesBuilder $choices, ElementScope $scope): void
     {
         try
         {

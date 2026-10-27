@@ -11,8 +11,8 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\CalendarCurrentPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -46,15 +46,18 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
             ->set('has_extended_events', (bool) $model->elm_hasExtendedEvents);
     }
 
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
         $value = $this->expectValue($value, DateRangeValue::class);
-        $config = $builder->scope->filter->element->config->all();
+        $config = $scope->filter->element->config->all();
 
         $start = \strtotime((string) $config['start_at']) ?: 0;
         $stop = \strtotime((string) $config['stop_at']) ?: DateTimeHelper::maxTimestamp();
 
-        if (!$config['is_limited'] && $builder->scope->engineContext instanceof ValidationContext)
+        if (!$config['is_limited'] && $scope->engineContext instanceof ValidationContext)
         {
             // Unlimited defaults only shape the initial display; the whole list is bounded by a fixed
             // value alone (controlled filters have none here, SPEC_FILTER_FORMS.md §4.2).
@@ -87,7 +90,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
         ]);
     }
 
-    public function getDateBounds(FilterScope $scope): DateBounds
+    public function getDateBounds(ElementScope $scope): DateBounds
     {
         return $this->resolveFormLimits($scope->filter->element->config->all());
     }

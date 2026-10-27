@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Filter\Element\DcaSelectFieldFilterElement;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Predicate\DcaSelectPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
@@ -160,12 +160,12 @@ final class DcaSelectFieldFilterElementTest extends TestCase
         return $choices->build();
     }
 
-    private function createScope(string $field): FilterScope
+    private function createScope(string $field): ElementScope
     {
         $driver = $this->createMock(ListDriverInterface::class);
         $element = $this->createElement();
 
-        return new FilterScope(
+        return new ElementScope(
             list: new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test'),
             filter: new Filter(
                 element: new ElementBinding($element, 'test_element', new ComponentConfig(['field' => $field])),

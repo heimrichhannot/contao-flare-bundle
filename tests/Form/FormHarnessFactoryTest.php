@@ -13,11 +13,12 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
-use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
@@ -159,7 +160,11 @@ final class FormHarnessFactoryTest extends TestCase
     private function filter(string $alias, ?FilterControlInterface $control, ?ValueInterface $value = null): Filter
     {
         $element = new class implements FilterElementInterface {
-            public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
+            public function buildContext(
+                FilterContextBuilderInterface $builder,
+                ElementScope                  $scope,
+                ?ValueInterface               $value,
+            ): void {}
         };
 
         return new Filter(

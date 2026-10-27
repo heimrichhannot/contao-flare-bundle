@@ -8,7 +8,8 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBounds;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
 use HeimrichHannot\FlareBundle\Filter\Control\DateRangeFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -39,9 +40,13 @@ final class DateRangeFilterControlTest extends TestCase
         self::assertSame([], $plain->get('from')->getOption('attr'));
 
         $bounded = new class implements FilterElementInterface, DateBoundsContract {
-            public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
+            public function buildContext(
+                FilterContextBuilderInterface $builder,
+                ElementScope                  $scope,
+                ?ValueInterface               $value,
+            ): void {}
 
-            public function getDateBounds(FilterScope $scope): DateBounds
+            public function getDateBounds(ElementScope $scope): DateBounds
             {
                 return new DateBounds(new \DateTimeImmutable('2024-01-01'), new \DateTimeImmutable('2025-01-01 00:00:00'));
             }
@@ -75,9 +80,13 @@ final class DateRangeFilterControlTest extends TestCase
     {
         $ctl = $this->control();
         $element = new class implements FilterElementInterface, DateBoundsContract {
-            public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
+            public function buildContext(
+                FilterContextBuilderInterface $builder,
+                ElementScope                  $scope,
+                ?ValueInterface               $value,
+            ): void {}
 
-            public function getDateBounds(FilterScope $scope): DateBounds
+            public function getDateBounds(ElementScope $scope): DateBounds
             {
                 return new DateBounds(new \DateTimeImmutable('2024-01-01'));
             }

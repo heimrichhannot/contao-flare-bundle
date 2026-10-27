@@ -18,7 +18,7 @@ use HeimrichHannot\FlareBundle\Event\ListDriverBuildDcaEvent;
 use HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareFilter\ListCallbacks;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -130,7 +130,7 @@ final readonly class ElementDcaListener
             filterModel: $filterModel,
             executionContextFactory: fn (): ?ListExecutionContext => $this->createExecutionContext($getSpec),
             element: $service instanceof FilterElementInterface ? $service : null,
-            filterScopeFactory: fn (): ?FilterScope => $this->createFilterScope($getSpec, $filterModel),
+            elementScopeFactory: fn (): ?ElementScope => $this->createElementScope($getSpec, $filterModel),
         );
 
         $dcaBuilder = new DcaBuilder();
@@ -201,7 +201,7 @@ final readonly class ElementDcaListener
      *
      * @mago-expect lint:no-empty-catch-clause Backend configuration must not fail on broken list configs.
      */
-    private function createFilterScope(\Closure $getSpec, ?FilterModel $filterModel): ?FilterScope
+    private function createElementScope(\Closure $getSpec, ?FilterModel $filterModel): ?ElementScope
     {
         if ($filterModel === null) {
             return null;
@@ -209,7 +209,7 @@ final readonly class ElementDcaListener
 
         try
         {
-            return new FilterScope(
+            return new ElementScope(
                 list: $getSpec(),
                 filter: $this->filterFactory->createFromFilterModel($filterModel, withControlAndValue: false),
                 engineContext: new ConfigurationContext(),

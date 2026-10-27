@@ -24,4 +24,12 @@ final readonly class FilterScope
         public Filter           $filter,
         public ContextInterface $engineContext,
     ) {}
+
+    /**
+     * The element's scope, to hand to element contracts.
+     */
+    public function forElement(): ElementScope
+    {
+        return new ElementScope($this->list, $this->filter, $this->engineContext);
+    }
 }

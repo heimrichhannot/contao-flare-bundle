@@ -13,10 +13,10 @@ use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
 use HeimrichHannot\FlareBundle\Filter\Factory\FormulaBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Predicate\PredicateInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\SearchKeywordsPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -42,6 +42,21 @@ trait BuildsFilterContextsTrait
         ?ContextInterface      $engineContext = null,
         string                 $dc = 'tl_test',
     ): FilterContext {
+        return $this->createFilterContextFactory()->create(
+            $this->buildElementScope($element, $config, $engineContext, $dc),
+            $value,
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $config Resolved through the element's schema, if it has one.
+     */
+    protected function buildElementScope(
+        FilterElementInterface $element,
+        array                  $config = [],
+        ?ContextInterface      $engineContext = null,
+        string                 $dc = 'tl_test',
+    ): ElementScope {
         $driver = new class implements ListDriverInterface {
             public function resolveDcTable(string $type, array $config, array $attributes): string
             {
@@ -49,7 +64,7 @@ trait BuildsFilterContextsTrait
             }
         };
 
-        $scope = new FilterScope(
+        return new ElementScope(
             list: new ListSpec(driver: $driver, type: 'test_list', dc: $dc),
             filter: new Filter(
                 element: new ElementBinding(
@@ -61,8 +76,6 @@ trait BuildsFilterContextsTrait
             ),
             engineContext: $engineContext ?? new ConfigurationContext(),
         );
-
-        return $this->createFilterContextFactory()->create($scope, $value);
     }
 
     protected function createFilterContextFactory(?FilterElementRegistry $elementRegistry = null): FilterContextFactory

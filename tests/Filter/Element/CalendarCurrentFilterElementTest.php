@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Element\CalendarCurrentFilterElement;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Predicate\CalendarCurrentPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
@@ -112,7 +112,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
         $this->buildFilterContext(new CalendarCurrentFilterElement(), self::BASE, new BoolValue(true));
     }
 
-    private function createScope(CalendarCurrentFilterElement $element, array $config): FilterScope
+    private function createScope(CalendarCurrentFilterElement $element, array $config): ElementScope
     {
         $driver = new class implements ListDriverInterface {
             public function resolveDcTable(string $type, array $config, array $attributes): string
@@ -121,7 +121,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
             }
         };
 
-        return new FilterScope(
+        return new ElementScope(
             list: new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test'),
             filter: new Filter(
                 element: new ElementBinding($element, 'test_element', new ComponentConfig($config)),

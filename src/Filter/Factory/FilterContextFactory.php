@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Factory;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Util\Str;
 
@@ -24,7 +24,7 @@ final readonly class FilterContextFactory
      * @throws FilterException If the filter's config violates the element's schema
      * @throws FlareException
      */
-    public function create(FilterScope $scope, ?ValueInterface $value): FilterContext
+    public function create(ElementScope $scope, ?ValueInterface $value): FilterContext
     {
         if (!Str::isValidSqlName($table = $scope->list->dc))
         {
@@ -36,7 +36,7 @@ final readonly class FilterContextFactory
 
         $contextBuilder = $this->filterContextBuilderFactory->create($scope);
 
-        $scope->filter->element->component->buildContext($contextBuilder, $value);
+        $scope->filter->element->component->buildContext($contextBuilder, $scope, $value);
 
         return $contextBuilder->build();
     }

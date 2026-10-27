@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Engine\Projector;
 
-use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use Doctrine\DBAL\Connection;
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\AggregationContextFactory;
@@ -17,12 +17,13 @@ use HeimrichHannot\FlareBundle\Engine\Projector\AggregationProjector;
 use HeimrichHannot\FlareBundle\Engine\Projector\InteractiveProjector;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
-use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
@@ -265,8 +266,11 @@ final class ProjectorSpyElement implements FilterElementInterface
     public ?ValueInterface $received = null;
     public int $calls = 0;
 
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
         $this->received = $value;
         ++$this->calls;
 
@@ -276,8 +280,11 @@ final class ProjectorSpyElement implements FilterElementInterface
 
 final class ProjectorFailingElement implements FilterElementInterface
 {
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
         throw new FilterException('broken element');
     }
 }

@@ -5,16 +5,17 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Form;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
+use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
-use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Form\FilterMount;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
@@ -69,7 +70,11 @@ final class FormHarnessTest extends TestCase
         };
 
         $element = new class implements FilterElementInterface {
-            public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
+            public function buildContext(
+                FilterContextBuilderInterface $builder,
+                ElementScope                  $scope,
+                ?ValueInterface               $value,
+            ): void {}
         };
 
         $control = new KeywordsFilterControl();

@@ -13,8 +13,8 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\DcaSelectPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
@@ -41,17 +41,20 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
     /**
      * @throws FilterException
      */
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
         if (!$value = $this->expectValue($value, ChoiceValue::class)) {
             return;
         }
 
-        if (!$field = $builder->scope->filter->element->config->all()['field'] ?? null) {
+        if (!$field = $scope->filter->element->config->all()['field'] ?? null) {
             $builder->abort();
         }
 
-        $table = $builder->scope->list->dc;
+        $table = $scope->list->dc;
 
         if (!$options = $this->getOptions($table, $field)) {
             $builder->abort();
@@ -83,7 +86,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
     /**
      * @throws FilterException
      */
-    public function buildChoices(ChoicesBuilder $choices, FilterScope $scope): void
+    public function buildChoices(ChoicesBuilder $choices, ElementScope $scope): void
     {
         $field = $scope->filter->element->config->all()['field'] ?? null;
 

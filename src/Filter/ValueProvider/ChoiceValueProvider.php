@@ -75,7 +75,7 @@ final readonly class ChoiceValueProvider implements ValueProviderInterface
             ->eval(['multiple' => true, 'chosen' => true, 'tl_class' => 'clr'])
             ->options(function () use ($context): array {
                 $element = $context->element;
-                $scope = $context->getFilterScope();
+                $scope = $context->getElementScope();
 
                 if (!$element instanceof ChoiceSourceContract || $scope === null)
                 {

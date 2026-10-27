@@ -55,7 +55,7 @@ class DateRangeFilterControl extends AbstractFilterControl
 
         if ($element instanceof DateBoundsContract)
         {
-            $bounds = $element->getDateBounds($scope);
+            $bounds = $element->getDateBounds($scope->forElement());
 
             $attr = \array_filter([
                 'min' => $bounds->min?->format('Y-m-d'),

@@ -8,7 +8,8 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\PublishedPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -43,9 +44,12 @@ class PublishedFilterElement extends AbstractFilterElement
             ->set('invert', (bool) $model->elm_invertPublished);
     }
 
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
-        $config = $builder->scope->filter->element->config->all();
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
+        $config = $scope->filter->element->config->all();
 
         $builder->addPredicate(PublishedPredicate::class, [
             'published_field' => $config['published_field'],

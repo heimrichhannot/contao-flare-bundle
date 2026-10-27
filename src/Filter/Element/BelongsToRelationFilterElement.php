@@ -12,7 +12,8 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BelongsToRelationPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
@@ -53,17 +54,20 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
-        $config = $builder->scope->filter->element->config->all();
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
+        $config = $scope->filter->element->config->all();
 
         if (!$fieldPid = $config['field_pid'])
         {
             throw new FilterException('No parent field defined.');
         }
 
-        $inferrable = PtableInferrableFactory::createFromConfig($builder->scope->list->config);
-        $inferrer = new PtableInferrer($inferrable, $builder->scope->list->dc);
+        $inferrable = PtableInferrableFactory::createFromConfig($scope->list->config);
+        $inferrer = new PtableInferrer($inferrable, $scope->list->dc);
 
         try
         {

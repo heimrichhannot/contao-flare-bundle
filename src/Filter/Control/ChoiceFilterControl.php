@@ -89,7 +89,7 @@ class ChoiceFilterControl extends AbstractFilterControl
 
         $config = $scope->filter->control->config->all();
         $choices = $this->choicesBuilderFactory->createChoicesBuilder();
-        $element->buildChoices($choices, $scope);
+        $element->buildChoices($choices, $scope->forElement());
 
         if ($config['format_label']) {
             $choices->setLabel($config['format_label']);

@@ -154,8 +154,11 @@ control and its initial value only bound the **initial display**.
 | Two published filters of a list share an **alias** | **Fail closed:** the second one is recorded as a list failure instead of replacing the first; error logged |
 | A filter's **control** cannot be built — its `control` names no control registered for the element's value class, its control config is broken, or its initial value is unreadable | **Fail open:** the filter is kept without control and initial value, bounded only by its element config; warning logged |
 | A **controlled filter fails at query time with a non-null value** | Retried **once with value `null`**. Success: only the value is dropped (warning). Failure, or the value was already `null`: the element config is broken and bounds the whole list — fail closed |
+| A control's **`buildForm()` or `hydrate()`** throws a `FilterException` | **Fail open:** the filter is not mounted and contributes no form field; warning logged |
+| A control's **`decode()`** rejects its data with a `FilterException` | The filter contributes no value. A **submitted** field gets an "invalid value" form error, so the form is invalid like any other invalid input and the list renders empty; a rejected **initial** value is only dropped; warning logged |
 
-`\Error`s (programming errors) are never wrapped or retried. Stale references (a stored choice whose record was
+`\Error`s (programming errors) are never wrapped or retried. The transformer resolvers are the one deviation:
+they wrap a `\ValueError` from casting a stale stored record like any other broken element config. Stale references (a stored choice whose record was
 deleted) are not failures: they match nothing and, for whitelisted filters, drop out of the intersection.
 
 A **failed list is not an empty list:**
@@ -167,3 +170,10 @@ A **failed list is not an empty list:**
 - **Debug mode** rethrows the exception.
 
 `AbortFilteringException` keeps meaning "this filter legitimately matches nothing".
+
+**Which exception to throw.** `FilterException` (and its subclass `UnreadableValueException`) is public API: filter
+components — elements, controls, value providers and capability ports, bundled and userland alike — throw it to
+report a filter that cannot work with its config, data or value; FLARE adds the filter's source. The control hooks
+handle **only** `FilterException`. `FlareException` and the other exceptions in `HeimrichHannot\FlareBundle\Exception`
+are thrown by FLARE itself; catch them, but don't throw them. An element aborts with `$builder->abort()`, not by
+throwing `AbortFilteringException`.

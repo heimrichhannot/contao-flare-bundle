@@ -9,8 +9,8 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -48,7 +48,7 @@ class DateRangeFilterControl extends AbstractFilterControl
         $builder->palette('{control_legend},ctl_label');
     }
 
-    public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void
+    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
     {
         $attr = [];
         $element = $scope->filter->element->component;
@@ -85,7 +85,7 @@ class DateRangeFilterControl extends AbstractFilterControl
      * @param array{from?: ?\DateTimeInterface, to?: ?\DateTimeInterface}|null $data The data of the compound
      *   form, keyed by its children.
      */
-    public function decode(mixed $data, FilterScope $scope): ?DateRangeValue
+    public function decode(ControlScope $scope, mixed $data): ?DateRangeValue
     {
         if (!\is_array($data)) {
             return null;
@@ -97,7 +97,7 @@ class DateRangeFilterControl extends AbstractFilterControl
     /**
      * @return array{from: ?\DateTimeImmutable, to: ?\DateTimeImmutable}
      */
-    public function hydrate(?ValueInterface $value, FilterScope $scope): array
+    public function hydrate(ControlScope $scope, ?ValueInterface $value): array
     {
         $value = $this->expectValue($value, DateRangeValue::class);
 

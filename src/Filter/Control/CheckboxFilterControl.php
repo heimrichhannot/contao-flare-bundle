@@ -9,8 +9,8 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -49,7 +49,7 @@ class CheckboxFilterControl extends AbstractFilterControl
         $builder->palette('{control_legend},ctl_label,ctl_boolBinaryChoices');
     }
 
-    public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void
+    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
     {
         $builder->single(CheckboxType::class, [
             'label' => $scope->filter->control->config->all()['label'] ?: false,
@@ -60,7 +60,7 @@ class CheckboxFilterControl extends AbstractFilterControl
     /**
      * @param bool|null $data The checkbox state.
      */
-    public function decode(mixed $data, FilterScope $scope): ?BoolValue
+    public function decode(ControlScope $scope, mixed $data): ?BoolValue
     {
         if ($data === true) {
             return new BoolValue(true);
@@ -71,7 +71,7 @@ class CheckboxFilterControl extends AbstractFilterControl
         return $data === false && $choices === BoolBinaryChoices::TRUE_FALSE ? new BoolValue(false) : null;
     }
 
-    public function hydrate(?ValueInterface $value, FilterScope $scope): ?bool
+    public function hydrate(ControlScope $scope, ?ValueInterface $value): ?bool
     {
         return $this->expectValue($value, BoolValue::class)?->state;
     }

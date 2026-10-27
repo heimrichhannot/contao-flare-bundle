@@ -7,8 +7,8 @@ namespace HeimrichHannot\FlareBundle\Tests\Registry;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -61,14 +61,14 @@ final class FilterControlRegistryTest extends TestCase
 
             protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
 
-            public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void {}
+            public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void {}
 
-            public function decode(mixed $data, FilterScope $scope): ?BoolValue
+            public function decode(ControlScope $scope, mixed $data): ?BoolValue
             {
                 return null;
             }
 
-            public function hydrate(?ValueInterface $value, FilterScope $scope): mixed
+            public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed
             {
                 return null;
             }

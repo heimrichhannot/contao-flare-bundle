@@ -10,8 +10,8 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceObjectInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -74,7 +74,7 @@ class ChoiceFilterControl extends AbstractFilterControl
     /**
      * @throws FilterException
      */
-    public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void
+    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
     {
         $element = $scope->filter->element->component;
 
@@ -127,7 +127,7 @@ class ChoiceFilterControl extends AbstractFilterControl
      * @param ChoiceObjectInterface|iterable<mixed>|null $data The selected choice, or the selected choices of a
      *   multiple widget; entries that are no choice objects (e.g. the empty option) are ignored.
      */
-    public function decode(mixed $data, FilterScope $scope): ?ChoiceValue
+    public function decode(ControlScope $scope, mixed $data): ?ChoiceValue
     {
         return ChoiceValue::tryFrom($data);
     }
@@ -135,7 +135,7 @@ class ChoiceFilterControl extends AbstractFilterControl
     /**
      * @return ChoiceObjectInterface|list<ChoiceObjectInterface>|null A list for a multiple widget.
      */
-    public function hydrate(?ValueInterface $value, FilterScope $scope): ChoiceObjectInterface|array|null
+    public function hydrate(ControlScope $scope, ?ValueInterface $value): ChoiceObjectInterface|array|null
     {
         $value = $this->expectValue($value, ChoiceValue::class);
 

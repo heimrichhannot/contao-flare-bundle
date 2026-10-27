@@ -16,12 +16,12 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
@@ -371,14 +371,14 @@ final class FactoryStubBoolControl extends AbstractFilterControl
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
 
-    public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void {}
+    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void {}
 
-    public function decode(mixed $data, FilterScope $scope): ?BoolValue
+    public function decode(ControlScope $scope, mixed $data): ?BoolValue
     {
         return null;
     }
 
-    public function hydrate(?ValueInterface $value, FilterScope $scope): mixed
+    public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed
     {
         return null;
     }
@@ -390,14 +390,14 @@ final class FactoryStubKeywordsControl extends AbstractFilterControl
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
 
-    public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void {}
+    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void {}
 
-    public function decode(mixed $data, FilterScope $scope): ?KeywordsValue
+    public function decode(ControlScope $scope, mixed $data): ?KeywordsValue
     {
         return null;
     }
 
-    public function hydrate(?ValueInterface $value, FilterScope $scope): mixed
+    public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed
     {
         return null;
     }

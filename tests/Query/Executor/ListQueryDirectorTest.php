@@ -13,13 +13,13 @@ use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -364,14 +364,14 @@ class DirectorAbortingElement implements FilterElementInterface
 
 class DirectorStubControl implements FilterControlInterface
 {
-    public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void {}
+    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void {}
 
-    public function decode(mixed $data, FilterScope $scope): ?BoolValue
+    public function decode(ControlScope $scope, mixed $data): ?BoolValue
     {
         return BoolValue::tryFrom($data);
     }
 
-    public function hydrate(?ValueInterface $value, FilterScope $scope): mixed
+    public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed
     {
         return $value instanceof BoolValue ? $value->state : null;
     }

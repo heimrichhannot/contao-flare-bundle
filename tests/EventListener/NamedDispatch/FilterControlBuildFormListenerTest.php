@@ -10,10 +10,10 @@ use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterControlBuildFormListener;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Tests\List\StubFilterElement;
@@ -28,7 +28,7 @@ final class FilterControlBuildFormListenerTest extends TestCase
         self::assertSame(['flare.filter_control.a.build_form'], $this->dispatchedNames('a'));
     }
 
-    public function testFilterWithoutControlTypeTriggersNoNamedDispatch(): void
+    public function testEmptyControlTypeTriggersNoNamedDispatch(): void
     {
         self::assertSame([], $this->dispatchedNames(''));
     }
@@ -70,12 +70,10 @@ final class FilterControlBuildFormListenerTest extends TestCase
         $filter = new Filter(
             element: new ElementBinding(new StubFilterElement(), 'b', new ComponentConfig()),
             alias: 'suche',
-            control: $controlType
-                ? new ControlBinding(new KeywordsFilterControl(), $controlType, new ComponentConfig())
-                : null,
+            control: new ControlBinding(new KeywordsFilterControl(), $controlType, new ComponentConfig()),
         );
 
-        $scope = new FilterScope(list: $list, filter: $filter, engineContext: $engineContext);
+        $scope = new ControlScope(list: $list, filter: $filter, engineContext: $engineContext);
 
         $builder = new FilterFormBuilder('suche', null, new EventDispatcher(), Forms::createFormFactory());
 

@@ -18,9 +18,9 @@ final class KeywordsFilterControlTest extends TestCase
         $ctl = new KeywordsFilterControl();
         $scope = $this->scope($ctl);
 
-        self::assertSame('foo bar', $ctl->decode("  foo \n bar ", $scope)->keywords);
-        self::assertNull($ctl->decode('   ', $scope));
-        self::assertNull($ctl->decode(null, $scope));
+        self::assertSame('foo bar', $ctl->decode($scope, "  foo \n bar ")->keywords);
+        self::assertNull($ctl->decode($scope, '   '));
+        self::assertNull($ctl->decode($scope, null));
     }
 
     public function testHydrate(): void
@@ -28,8 +28,8 @@ final class KeywordsFilterControlTest extends TestCase
         $ctl = new KeywordsFilterControl();
         $scope = $this->scope($ctl);
 
-        self::assertSame('foo', $ctl->hydrate(new KeywordsValue('foo'), $scope));
-        self::assertNull($ctl->hydrate(null, $scope));
+        self::assertSame('foo', $ctl->hydrate($scope, new KeywordsValue('foo')));
+        self::assertNull($ctl->hydrate($scope, null));
     }
 
     public function testBuildFormWithPlaceholder(): void

@@ -10,13 +10,13 @@ use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
@@ -35,7 +35,7 @@ trait BuildsControlScopesTrait
         AbstractFilterControl   $control,
         array                   $controlConfig = [],
         ?FilterElementInterface $element = null,
-    ): FilterScope {
+    ): ControlScope {
         $resolver = new FilterOptionsResolver(new SchemaResolver());
 
         $driver = new class implements ListDriverInterface {
@@ -53,7 +53,7 @@ trait BuildsControlScopesTrait
             ): void {}
         };
 
-        return new FilterScope(
+        return new ControlScope(
             list: new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test'),
             filter: new Filter(
                 element: new ElementBinding($element, 'test_element', $resolver->resolve($element, [])),

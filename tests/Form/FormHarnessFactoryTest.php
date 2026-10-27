@@ -14,13 +14,13 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory;
@@ -127,7 +127,7 @@ final class FormHarnessFactoryTest extends TestCase
     /**
      * Creates a control building its form via the given callable; it decodes to a KeywordsValue.
      *
-     * @param callable(FilterFormBuilderInterface, FilterScope): void $buildForm
+     * @param callable(FilterFormBuilderInterface, ControlScope): void $buildForm
      */
     private function control(callable $buildForm): FilterControlInterface
     {
@@ -140,17 +140,17 @@ final class FormHarnessFactoryTest extends TestCase
                 $this->buildForm = $buildForm;
             }
 
-            public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void
+            public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
             {
                 ($this->buildForm)($builder, $scope);
             }
 
-            public function decode(mixed $data, FilterScope $scope): ?ValueInterface
+            public function decode(ControlScope $scope, mixed $data): ?ValueInterface
             {
                 return KeywordsValue::tryFrom($data);
             }
 
-            public function hydrate(?ValueInterface $value, FilterScope $scope): mixed
+            public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed
             {
                 return null;
             }
@@ -201,9 +201,9 @@ final class FormHarnessFactoryTest extends TestCase
         $config = $form->get('suche')->getConfig();
 
         $this->assertInstanceOf(TextType::class, $config->getType()->getInnerType());
-        $this->assertTrue($config->getAttribute(FilterScope::ATTR_SINGLE_FIELD));
+        $this->assertTrue($config->getAttribute(ControlScope::ATTR_SINGLE_FIELD));
         $this->assertSame('kept', $config->getAttribute('custom.attr'));
-        $this->assertInstanceOf(FilterScope::class, $config->getAttribute(FilterScope::ATTR_SELF));
+        $this->assertInstanceOf(ControlScope::class, $config->getAttribute(ControlScope::ATTR_SELF));
         $this->assertTrue(
             $config->getEventDispatcher()->hasListeners(FormEvents::POST_SUBMIT),
             'Deferred listeners must be replayed onto the mounted builder',
@@ -316,17 +316,17 @@ final class FormHarnessFactoryTest extends TestCase
     public function testControlFailingToHydrateIsSkipped(): void
     {
         $control = new class implements FilterControlInterface {
-            public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void
+            public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
             {
                 $builder->single(TextType::class);
             }
 
-            public function decode(mixed $data, FilterScope $scope): ?ValueInterface
+            public function decode(ControlScope $scope, mixed $data): ?ValueInterface
             {
                 return null;
             }
 
-            public function hydrate(?ValueInterface $value, FilterScope $scope): mixed
+            public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed
             {
                 throw new FilterException('unusable value');
             }
@@ -500,18 +500,18 @@ final class FormHarnessFactoryTest extends TestCase
     public function testCompoundMountIsHydratedWithTheControlsArray(): void
     {
         $control = new class implements FilterControlInterface {
-            public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void
+            public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
             {
                 $builder->add('from', TextType::class);
                 $builder->add('to', TextType::class);
             }
 
-            public function decode(mixed $data, FilterScope $scope): ?ValueInterface
+            public function decode(ControlScope $scope, mixed $data): ?ValueInterface
             {
                 return KeywordsValue::tryFrom(($data['from'] ?? '') . ' ' . ($data['to'] ?? ''));
             }
 
-            public function hydrate(?ValueInterface $value, FilterScope $scope): mixed
+            public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed
             {
                 return ['from' => 'a', 'to' => 'b'];
             }

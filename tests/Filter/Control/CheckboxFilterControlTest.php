@@ -18,23 +18,24 @@ final class CheckboxFilterControlTest extends TestCase
     {
         $ctl = new CheckboxFilterControl();
 
-        self::assertNull($ctl->decode(null, $this->scope($ctl, ['binary_choices' => BoolBinaryChoices::TRUE_FALSE])));
+        self::assertNull($ctl->decode($this->scope($ctl, ['binary_choices' => BoolBinaryChoices::TRUE_FALSE]), null));
     }
 
     public function testCheckedMeansTrue(): void
     {
         $ctl = new CheckboxFilterControl();
 
-        self::assertTrue($ctl->decode(true, $this->scope($ctl))->state);
+        self::assertTrue($ctl->decode($this->scope($ctl), true)->state);
     }
 
     public function testUncheckedMeansFalseOnlyUnderTrueFalse(): void
     {
         $ctl = new CheckboxFilterControl();
 
-        self::assertFalse($ctl->decode(false, $this->scope($ctl, ['binary_choices' => BoolBinaryChoices::TRUE_FALSE]))->state);
-        self::assertNull($ctl->decode(false, $this->scope($ctl, ['binary_choices' => BoolBinaryChoices::NULL_TRUE])));
-        self::assertNull($ctl->decode(false, $this->scope($ctl)));
+        $trueFalse = $this->scope($ctl, ['binary_choices' => BoolBinaryChoices::TRUE_FALSE]);
+        self::assertFalse($ctl->decode($trueFalse, false)->state);
+        self::assertNull($ctl->decode($this->scope($ctl, ['binary_choices' => BoolBinaryChoices::NULL_TRUE]), false));
+        self::assertNull($ctl->decode($this->scope($ctl), false));
     }
 
     public function testHydrate(): void
@@ -42,9 +43,9 @@ final class CheckboxFilterControlTest extends TestCase
         $ctl = new CheckboxFilterControl();
         $scope = $this->scope($ctl);
 
-        self::assertTrue($ctl->hydrate(new BoolValue(true), $scope));
-        self::assertFalse($ctl->hydrate(new BoolValue(false), $scope));
-        self::assertNull($ctl->hydrate(null, $scope));
+        self::assertTrue($ctl->hydrate($scope, new BoolValue(true)));
+        self::assertFalse($ctl->hydrate($scope, new BoolValue(false)));
+        self::assertNull($ctl->hydrate($scope, null));
     }
 
     public function testTransformerBinaryChoices(): void

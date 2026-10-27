@@ -7,10 +7,10 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter\Control;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBounds;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
 use HeimrichHannot\FlareBundle\Filter\Control\DateRangeFilterControl;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use PHPUnit\Framework\TestCase;
@@ -104,15 +104,14 @@ final class DateRangeFilterControlTest extends TestCase
         $scope = $this->scope($ctl);
 
         $value = $ctl->decode(
-            ['from' => new \DateTimeImmutable('2024-03-01'), 'to' => null],
             $scope,
-        );
+            ['from' => new \DateTimeImmutable('2024-03-01'), 'to' => null]);
 
         self::assertInstanceOf(DateRangeValue::class, $value);
         self::assertSame('2024-03-01', $value->from->format('Y-m-d'));
         self::assertNull($value->to);
 
-        $data = $ctl->hydrate($value, $scope);
+        $data = $ctl->hydrate($scope, $value);
         self::assertSame($value->from, $data['from']);
         self::assertNull($data['to']);
     }
@@ -122,9 +121,9 @@ final class DateRangeFilterControlTest extends TestCase
         $ctl = $this->control();
         $scope = $this->scope($ctl);
 
-        self::assertNull($ctl->decode(['from' => null, 'to' => null], $scope));
-        self::assertNull($ctl->decode(null, $scope));
-        self::assertSame(['from' => null, 'to' => null], $ctl->hydrate(null, $scope));
+        self::assertNull($ctl->decode($scope, ['from' => null, 'to' => null]));
+        self::assertNull($ctl->decode($scope, null));
+        self::assertSame(['from' => null, 'to' => null], $ctl->hydrate($scope, null));
     }
 
     public function testFromAfterToFailsValidation(): void

@@ -10,8 +10,8 @@ use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Form\FilterMount;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\List\ListSpec;
@@ -79,12 +79,12 @@ final readonly class FormHarnessFactory
                 continue;
             }
 
-            $scope = new FilterScope($list, $filter, $context);
+            $scope = new ControlScope($list, $filter, $context);
 
             // Collect-only builder: never mounted itself; its single-field spec, children,
             // attributes, and deferred listeners are transferred onto the mounted builder below.
             $builder = new FilterFormBuilder($alias, null, new EventDispatcher(), $this->formFactory);
-            $builder->setAttribute(FilterScope::ATTR_SELF, $scope);
+            $builder->setAttribute(ControlScope::ATTR_SELF, $scope);
 
             try
             {
@@ -124,7 +124,7 @@ final readonly class FormHarnessFactory
 
             try
             {
-                $initial = $control->hydrate($filter->value, $scope);
+                $initial = $control->hydrate($scope, $filter->value);
             }
             catch (FilterException $e)
             {
@@ -141,7 +141,7 @@ final readonly class FormHarnessFactory
                 }
 
                 $mount = $root->create($alias, $single['type'], $options);
-                $mount->setAttribute(FilterScope::ATTR_SINGLE_FIELD, true);
+                $mount->setAttribute(ControlScope::ATTR_SINGLE_FIELD, true);
             }
             /** @mago-expect lint:no-else-clause The mount decision is a genuine either-or. */
             else

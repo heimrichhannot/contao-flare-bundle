@@ -12,9 +12,9 @@ use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\Filter\CallbackFilterModelTransformer;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\ExpectsValueTrait;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -49,9 +49,9 @@ abstract class AbstractFilterControl implements FilterControlInterface, OptionsC
 
     public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void {}
 
-    abstract public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void;
+    abstract public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void;
 
-    abstract public function decode(mixed $data, FilterScope $scope): ?ValueInterface;
+    abstract public function decode(ControlScope $scope, mixed $data): ?ValueInterface;
 
-    abstract public function hydrate(?ValueInterface $value, FilterScope $scope): mixed;
+    abstract public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed;
 }

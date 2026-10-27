@@ -8,12 +8,12 @@ use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterMount;
@@ -95,7 +95,8 @@ final class FormHarnessTest extends TestCase
             );
 
             $builder->add($alias, TextType::class, ['required' => false, 'data' => $keywords]);
-            $mounts[$alias] = new FilterMount($filter, $alias, new FilterScope($list, $filter, new ConfigurationContext()));
+            $scope = new ControlScope($list, $filter, new ConfigurationContext());
+            $mounts[$alias] = new FilterMount($filter, $alias, $scope);
         }
 
         foreach ($remove as $alias) {

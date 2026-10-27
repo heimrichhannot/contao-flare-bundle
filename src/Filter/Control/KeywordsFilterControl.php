@@ -8,8 +8,8 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -42,7 +42,7 @@ class KeywordsFilterControl extends AbstractFilterControl
         $builder->palette('{control_legend},ctl_label,ctl_placeholder');
     }
 
-    public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void
+    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
     {
         $config = $scope->filter->control->config->all();
 
@@ -61,12 +61,12 @@ class KeywordsFilterControl extends AbstractFilterControl
     /**
      * @param string|null $data The submitted search phrase.
      */
-    public function decode(mixed $data, FilterScope $scope): ?KeywordsValue
+    public function decode(ControlScope $scope, mixed $data): ?KeywordsValue
     {
         return KeywordsValue::tryFrom($data);
     }
 
-    public function hydrate(?ValueInterface $value, FilterScope $scope): ?string
+    public function hydrate(ControlScope $scope, ?ValueInterface $value): ?string
     {
         return $this->expectValue($value, KeywordsValue::class)?->keywords;
     }

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Control;
 
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\FilterComponentInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 
 /**
@@ -37,17 +37,17 @@ interface FilterControlInterface extends FilterComponentInterface
      *   names, which mount as a compound sub-form.
      * - Declaring both `single()` and `add()` at once is not supported.
      */
-    public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void;
+    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void;
 
     /**
      * Turns the mount's data into this control's value object, or null to contribute nothing.
      * Implementations MUST narrow the return type to one concrete value class.
      */
-    public function decode(mixed $data, FilterScope $scope): ?ValueInterface;
+    public function decode(ControlScope $scope, mixed $data): ?ValueInterface;
 
     /**
      * The inverse of {@see self::decode()}: the widget data for a value of this control's value class.
      * Used to hydrate an unsubmitted form from the filter's value.
      */
-    public function hydrate(?ValueInterface $value, FilterScope $scope): mixed;
+    public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed;
 }

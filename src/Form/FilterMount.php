@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Form;
 
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 
 /**
  * One filter's node in the root filter form, as recorded by {@see Factory\FormHarnessFactory}.
@@ -27,11 +27,11 @@ final readonly class FilterMount
     /**
      * @param Filter $filter The filter this mount belongs to.
      * @param string $alias Form name of the mounted node on the root form.
-     * @param FilterScope $scope Scope the filter's control was built, hydrated and decoded with.
+     * @param ControlScope $scope Scope the filter's control was built, hydrated and decoded with.
      */
     public function __construct(
         public Filter      $filter,
         public string      $alias,
-        public FilterScope $scope,
+        public ControlScope $scope,
     ) {}
 }

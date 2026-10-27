@@ -8,8 +8,8 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
 use HeimrichHannot\FlareBundle\DependencyInjection\Compiler\RegisterFilterControlsPass;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -164,9 +164,9 @@ abstract class PassControlBase extends AbstractFilterControl
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
 
-    public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void {}
+    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void {}
 
-    public function hydrate(?ValueInterface $value, FilterScope $scope): mixed
+    public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed
     {
         return null;
     }
@@ -174,7 +174,7 @@ abstract class PassControlBase extends AbstractFilterControl
 
 final class PassBoolControl extends PassControlBase
 {
-    public function decode(mixed $data, FilterScope $scope): ?BoolValue
+    public function decode(ControlScope $scope, mixed $data): ?BoolValue
     {
         return null;
     }
@@ -182,7 +182,7 @@ final class PassBoolControl extends PassControlBase
 
 final class PassDerivedFilterControl extends PassControlBase
 {
-    public function decode(mixed $data, FilterScope $scope): ?BoolValue
+    public function decode(ControlScope $scope, mixed $data): ?BoolValue
     {
         return null;
     }
@@ -191,7 +191,7 @@ final class PassDerivedFilterControl extends PassControlBase
 /** Reduces to the empty string, the intrinsic sentinel. */
 final class FilterControl extends PassControlBase
 {
-    public function decode(mixed $data, FilterScope $scope): ?BoolValue
+    public function decode(ControlScope $scope, mixed $data): ?BoolValue
     {
         return null;
     }
@@ -199,7 +199,7 @@ final class FilterControl extends PassControlBase
 
 final class PassUnnarrowedControl extends PassControlBase
 {
-    public function decode(mixed $data, FilterScope $scope): ?ValueInterface
+    public function decode(ControlScope $scope, mixed $data): ?ValueInterface
     {
         return null;
     }

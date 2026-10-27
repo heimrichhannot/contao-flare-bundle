@@ -91,7 +91,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
 
     public function getDateBounds(ElementScope $scope): DateBounds
     {
-        return $this->resolveFormLimits($scope->filter->element->config->all());
+        return $this->resolveFormLimits($scope);
     }
 
     public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
@@ -106,28 +106,26 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
     /**
      * Resolves the form's lower and upper date limits from the canonical config, replicating
      * the former handleFormTypeOptions() logic (from_min/to_min and from_max/to_max).
-     *
-     * @param array<string, mixed> $config
      */
-    private function resolveFormLimits(array $config): DateBounds
+    private function resolveFormLimits(ElementScope $scope): DateBounds
     {
-        if (!$config['is_limited']) {
+        if (!$scope->get('is_limited')) {
             return new DateBounds();
         }
 
         $min = null;
         $max = null;
 
-        if ($config['configure_start']
-            && $config['start_at']
-            && ($startAt = \strtotime($config['start_at'])))
+        if ($scope->get('configure_start')
+            && $scope->get('start_at')
+            && ($startAt = \strtotime($scope->get('start_at'))))
         {
             $min = DateTimeHelper::timestampToDateTime($startAt);
         }
 
-        if ($config['configure_stop']
-            && $config['stop_at']
-            && ($stopAt = \strtotime($config['stop_at'])))
+        if ($scope->get('configure_stop')
+            && $scope->get('stop_at')
+            && ($stopAt = \strtotime($scope->get('stop_at'))))
         {
             $max = DateTimeHelper::timestampToDateTime($stopAt);
         }

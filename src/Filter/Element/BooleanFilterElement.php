@@ -39,7 +39,7 @@ class BooleanFilterElement extends AbstractFilterElement
     {
         $value = $this->expectValue($value, BoolValue::class);
 
-        if (!$field = $builder->scope->filter->config['field'] ?? null) {
+        if (!$field = $builder->scope->filter->element->config->all()['field'] ?? null) {
             $builder->abort();
         }
 

@@ -51,7 +51,7 @@ class DateRangeFilterControl extends AbstractFilterControl
     public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void
     {
         $attr = [];
-        $element = $scope->filter->element;
+        $element = $scope->filter->element->component;
 
         if ($element instanceof DateBoundsContract)
         {
@@ -74,7 +74,7 @@ class DateRangeFilterControl extends AbstractFilterControl
             ]);
         }
 
-        if ($label = $scope->filter->controlConfig['label'] ?? null) {
+        if ($label = $scope->filter->control->config->all()['label'] ?? null) {
             $builder->compound(['label' => $label]);
         }
 

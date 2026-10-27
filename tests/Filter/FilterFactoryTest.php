@@ -8,6 +8,7 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Config\TransformerMap;
+use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaFieldBuilderInterface;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -123,9 +124,9 @@ final class FilterFactoryTest extends TestCase
             config: ['a' => 1],
         );
 
-        self::assertSame($element, $filter->element);
-        self::assertSame('my_element', $filter->type);
-        self::assertSame(['a' => 1], $filter->config);
+        self::assertSame($element, $filter->element->component);
+        self::assertSame('my_element', $filter->element->type);
+        self::assertSame(['a' => 1], $filter->element->config->all());
         self::assertSame('foo', $filter->alias);
         self::assertNull($filter->control);
         self::assertNull($filter->value);
@@ -137,9 +138,25 @@ final class FilterFactoryTest extends TestCase
 
         $filter = $this->factory()->create(element: $element);
 
-        self::assertSame($element, $filter->element);
-        self::assertSame(FactoryStubPlainElement::class, $filter->type);
+        self::assertSame($element, $filter->element->component);
+        self::assertSame(FactoryStubPlainElement::class, $filter->element->type);
         self::assertStringStartsWith('_.' . FactoryStubPlainElement::class . '_', $filter->alias);
+    }
+
+    public function testCreateResolvesSchemaDefaultsIntoComponentConfig(): void
+    {
+        $filter = $this->factory()->create(element: new FactoryStubOptionsElement(), config: []);
+
+        self::assertSame([], $filter->element->config->get('columns'));
+    }
+
+    public function testCreateDefaultsControlTypeToClassNameForInlineControl(): void
+    {
+        $control = new FactoryStubBoolControl();
+
+        $filter = $this->factory()->create(element: self::BOOL_ELEMENT, control: $control);
+
+        self::assertSame(FactoryStubBoolControl::class, $filter->control?->type);
     }
 
     public function testThrowsForUnknownTypeAlias(): void
@@ -158,9 +175,9 @@ final class FilterFactoryTest extends TestCase
             value: new BoolValue(true),
         );
 
-        self::assertSame($this->boolControl, $filter->control);
-        self::assertSame(self::BOOL_CONTROL, $filter->controlType);
-        self::assertSame(['label' => 'default'], $filter->controlConfig);
+        self::assertSame($this->boolControl, $filter->control?->component);
+        self::assertSame(self::BOOL_CONTROL, $filter->control?->type);
+        self::assertSame(['label' => 'default'], $filter->control?->config->all());
         self::assertEquals(new BoolValue(true), $filter->value);
     }
 
@@ -221,8 +238,8 @@ final class FilterFactoryTest extends TestCase
     {
         $fixed = $this->factory()->createFromFilterModel(self::model(['value' => '1']));
 
-        self::assertSame($this->boolElement, $fixed->element);
-        self::assertSame(self::BOOL_ELEMENT, $fixed->type);
+        self::assertSame($this->boolElement, $fixed->element->component);
+        self::assertSame(self::BOOL_ELEMENT, $fixed->element->type);
         self::assertSame('7', $fixed->alias);
         self::assertSame('tl_flare_filter.7', $fixed->source);
         self::assertNull($fixed->control);
@@ -232,9 +249,9 @@ final class FilterFactoryTest extends TestCase
             self::model(['control' => self::BOOL_CONTROL, 'value' => '0']),
         );
 
-        self::assertSame($this->boolControl, $initial->control);
-        self::assertSame(self::BOOL_CONTROL, $initial->controlType);
-        self::assertSame(['label' => 'from model'], $initial->controlConfig);
+        self::assertSame($this->boolControl, $initial->control?->component);
+        self::assertSame(self::BOOL_CONTROL, $initial->control?->type);
+        self::assertSame(['label' => 'from model'], $initial->control?->config->all());
         self::assertEquals(new BoolValue(false), $initial->value);
         self::assertSame([], $this->logs);
     }
@@ -250,9 +267,8 @@ final class FilterFactoryTest extends TestCase
     {
         $filter = $this->factory()->createFromFilterModel(self::model(['control' => 'gone', 'value' => '1']));
 
-        self::assertSame($this->boolElement, $filter->element);
+        self::assertSame($this->boolElement, $filter->element->component);
         self::assertNull($filter->control);
-        self::assertSame([], $filter->controlConfig);
         self::assertNull($filter->value);
         $this->assertWarned();
     }
@@ -296,7 +312,6 @@ final class FilterFactoryTest extends TestCase
         );
 
         self::assertNull($controlled->control);
-        self::assertSame([], $controlled->controlConfig);
         self::assertNull($controlled->value);
 
         $unreadable = $factory->createFromFilterModel(self::model(['value' => 'garbage']), withControlAndValue: false);
@@ -314,6 +329,16 @@ final class FactoryStubBoolElement implements FilterElementInterface
 
 final class FactoryStubPlainElement implements FilterElementInterface
 {
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
+}
+
+final class FactoryStubOptionsElement implements FilterElementInterface, OptionsContract
+{
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        $resolver->define('columns')->default([])->allowedTypes('array');
+    }
+
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
 }
 

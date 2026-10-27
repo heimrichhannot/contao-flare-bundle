@@ -45,7 +45,7 @@ class PublishedFilterElement extends AbstractFilterElement
 
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
-        $config = $builder->scope->filter->config;
+        $config = $builder->scope->filter->element->config->all();
 
         $builder->addPredicate(PublishedPredicate::class, [
             'published_field' => $config['published_field'],

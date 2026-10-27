@@ -71,7 +71,7 @@ final readonly class FormHarnessFactory
         foreach ($list->filters as $filter)
         {
             $alias = $filter->alias;
-            $control = $filter->control;
+            $control = $filter->control?->component;
 
             if ($control === null || !Str::isValidFormName($alias))
                 // Filters without a control have no form representation.

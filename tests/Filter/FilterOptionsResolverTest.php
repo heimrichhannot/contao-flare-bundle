@@ -8,6 +8,7 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
@@ -28,15 +29,15 @@ final class FilterOptionsResolverTest extends TestCase
 
         $config = $resolver->resolve(new ElementConfigAwareElement(), ['field' => 'title']);
 
-        self::assertSame('title', $config['field']);
-        self::assertFalse($config['intrinsic']);
+        self::assertSame('title', $config->get('field'));
+        self::assertFalse($config->get('intrinsic'));
     }
 
     public function testResolvesOptionsThroughControlSchema(): void
     {
         $resolver = new FilterOptionsResolver(new SchemaResolver());
 
-        self::assertSame(['label' => 'default'], $resolver->resolve(new ConfigAwareControl(), []));
+        self::assertSame(['label' => 'default'], $resolver->resolve(new ConfigAwareControl(), [])->all());
     }
 
     public function testReturnsOptionsVerbatimWithoutOptionsContract(): void
@@ -45,7 +46,25 @@ final class FilterOptionsResolverTest extends TestCase
 
         $config = ['anything' => 'goes', 'unvalidated' => true];
 
-        self::assertSame($config, $resolver->resolve(new PlainElement(), $config));
+        self::assertSame($config, $resolver->resolve(new PlainElement(), $config)->all());
+    }
+
+    public function testComponentWithoutOptionsContractDefinesItsGivenKeys(): void
+    {
+        $config = (new FilterOptionsResolver(new SchemaResolver()))->resolve(new PlainElement(), ['a' => 1]);
+
+        self::assertSame(1, $config->get('a'));
+
+        $this->expectException(UndefinedConfigKeyError::class);
+        $config->get('b');
+    }
+
+    public function testDefinedOptionWithoutDefaultReadsAsNull(): void
+    {
+        $config = (new FilterOptionsResolver(new SchemaResolver()))->resolve(new UnsetOptionElement(), []);
+
+        self::assertNull($config->get('x'));
+        self::assertFalse($config->has('x'));
     }
 
     public function testWrapsSchemaViolationsInFilterException(): void
@@ -81,6 +100,18 @@ final class ElementConfigAwareElement implements FilterElementInterface, Options
     {
         $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('field')->default(null)->allowedTypes('string', 'null');
+    }
+
+    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
+    {
+    }
+}
+
+final class UnsetOptionElement implements FilterElementInterface, OptionsContract
+{
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        $resolver->define('x');
     }
 
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void

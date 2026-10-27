@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
-use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
-use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 
 /**
  * Immutable runtime representation of a single filter within a list.
  *
- * Pairs a filter element instance with its canonical, element-defined configuration and,
- * optionally, a filter control with its own configuration and the filter's value.
+ * Binds a filter element with its canonical, element-defined configuration and, optionally, a
+ * filter control with its own configuration, plus the filter's value.
  * Contains no DCA/storage specifics — translating a stored source into config is the
  * transformer responsibility of the element and the control
  * ({@see \HeimrichHannot\FlareBundle\Contract\TransformerContract}).
@@ -24,19 +22,12 @@ use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 final readonly class Filter
 {
     /**
-     * @param FilterElementInterface $element Filter element service (registered or inline).
-     * @param string $type Registered element type alias. Only used for named event dispatch
-     *   (`flare.filter_element.{type}.*`) and targeting lookups.
+     * @param ElementBinding $element The filter element with its type and config.
      * @param string $alias Form name of the filter and its key within the list. An alias that is not a
      *   valid Symfony form name (e.g. the "_.{type}_{random}" fallback generated for a filter without a
      *   control) never mounts form children.
-     * @param array<string, mixed> $config Canonical element config (element-defined schema);
-     *   scalars, arrays, and enums only.
-     * @param FilterControlInterface|null $control The control presenting the filter, or null for a filter
-     *   without user input (intrinsic).
-     * @param array<string, mixed> $controlConfig Canonical control config (control-defined schema).
-     * @param string|null $controlType Registered control type, or the class name of an inline control; null
-     *   without a control. Only used for named event dispatch (`flare.filter_control.{type}.*`).
+     * @param ControlBinding|null $control The control presenting the filter with its type and config, or null
+     *   for a filter without user input (intrinsic).
      * @param ValueInterface|null $value A value of the element's value class: the initial value with a
      *   control, the fixed value without one (SPEC_FILTER_FORMS.md §4.2).
      * @param string|null $targetAlias Table alias the filter's conditions apply to.
@@ -46,29 +37,21 @@ final readonly class Filter
      * @internal Use {@see Factory\FilterFactory} to create instances.
      */
     public function __construct(
-        public FilterElementInterface  $element,
-        public string                  $type,
-        public string                  $alias,
-        public array                   $config = [],
-        public ?FilterControlInterface $control = null,
-        public array                   $controlConfig = [],
-        public ?string                 $controlType = null,
-        public ?ValueInterface         $value = null,
-        public ?string                 $targetAlias = null,
-        public bool                    $targetingForced = false,
-        public ?string                 $source = null,
+        public ElementBinding  $element,
+        public string          $alias,
+        public ?ControlBinding $control = null,
+        public ?ValueInterface $value = null,
+        public ?string         $targetAlias = null,
+        public bool            $targetingForced = false,
+        public ?string         $source = null,
     ) {}
 
     public function withValue(?ValueInterface $value): self
     {
         return new self(
             element: $this->element,
-            type: $this->type,
             alias: $this->alias,
-            config: $this->config,
             control: $this->control,
-            controlConfig: $this->controlConfig,
-            controlType: $this->controlType,
             value: $value,
             targetAlias: $this->targetAlias,
             targetingForced: $this->targetingForced,
@@ -76,23 +59,12 @@ final readonly class Filter
         );
     }
 
-    /**
-     * @param array<string, mixed> $controlConfig Canonical, already resolved control config.
-     * @param string|null $controlType The registered control type; defaults to the control's class name.
-     */
-    public function withControl(
-        ?FilterControlInterface $control,
-        array                   $controlConfig = [],
-        ?string                 $controlType = null,
-    ): self {
+    public function withControl(?ControlBinding $control): self
+    {
         return new self(
             element: $this->element,
-            type: $this->type,
             alias: $this->alias,
-            config: $this->config,
             control: $control,
-            controlConfig: $controlConfig,
-            controlType: $control !== null ? ($controlType ?? $control::class) : null,
             value: $this->value,
             targetAlias: $this->targetAlias,
             targetingForced: $this->targetingForced,
@@ -104,12 +76,8 @@ final readonly class Filter
     {
         return new self(
             element: $this->element,
-            type: $this->type,
             alias: $this->alias,
-            config: $this->config,
             control: $this->control,
-            controlConfig: $this->controlConfig,
-            controlType: $this->controlType,
             value: $this->value,
             targetAlias: $targetAlias,
             targetingForced: $targetAlias !== null && $forced,
@@ -125,13 +93,13 @@ final readonly class Filter
     public function fingerprint(): array
     {
         return [
-            'element' => $this->element::class,
-            'type' => $this->type,
+            'element' => $this->element->component::class,
+            'type' => $this->element->type,
             'alias' => $this->alias,
-            'config' => $this->config,
-            'control' => $this->control !== null ? $this->control::class : null,
-            'controlConfig' => $this->controlConfig,
-            'controlType' => $this->controlType,
+            'config' => $this->element->config->all(),
+            'control' => $this->control !== null ? $this->control->component::class : null,
+            'controlConfig' => $this->control?->config->all() ?? [],
+            'controlType' => $this->control?->type,
             'value' => $this->value?->fingerprint(),
             'targetAlias' => $this->targetAlias,
             'targetingForced' => $this->targetingForced,

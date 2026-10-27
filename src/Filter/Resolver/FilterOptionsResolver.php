@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Resolver;
 
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
@@ -22,19 +23,24 @@ final readonly class FilterOptionsResolver
     /**
      * @param array<string, mixed> $config
      * @param string|null $origin Provenance for the exception, e.g. "tl_flare_filter.42".
-     * @return array<string, mixed>
      *
      * @throws FilterException If the config does not satisfy the component's schema.
      */
-    public function resolve(FilterComponentInterface $owner, array $config, ?string $origin = null): array
+    public function resolve(FilterComponentInterface $owner, array $config, ?string $origin = null): ComponentConfig
     {
         if (!$owner instanceof OptionsContract) {
-            return $config;
+            return new ComponentConfig($config, null, $owner::class);
         }
 
         try
         {
-            return $this->schemaResolver->resolve($owner::class, $owner->configureOptions(...), $config);
+            $configure = $owner->configureOptions(...);
+
+            return new ComponentConfig(
+                $this->schemaResolver->resolve($owner::class, $configure, $config),
+                $this->schemaResolver->getDefinedOptions($owner::class, $configure),
+                $owner::class,
+            );
         }
         catch (\Throwable $e)
         {

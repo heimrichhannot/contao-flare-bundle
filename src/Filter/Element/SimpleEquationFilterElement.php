@@ -44,7 +44,7 @@ class SimpleEquationFilterElement extends AbstractFilterElement
      */
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
-        $config = $builder->scope->filter->config;
+        $config = $builder->scope->filter->element->config->all();
 
         if (!($operand = $config['left']) || !($op = $config['operator'])) {
             throw new FilterException('Invalid filter configuration.');

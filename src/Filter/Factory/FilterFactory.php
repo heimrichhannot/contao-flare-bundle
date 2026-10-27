@@ -10,6 +10,8 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\ControlBinding;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
@@ -68,13 +70,18 @@ final readonly class FilterFactory
 
         $config = $this->filterOptionsResolver->resolve($element, $config, $source);
 
-        $controlType = \is_string($control) ? $control : null;
+        $controlBinding = null;
 
         if ($control !== null)
         {
+            $controlType = \is_string($control) ? $control : null;
             $control = $this->resolveControl($control, $valueClass, $source);
-            $controlType ??= $control::class;
-            $controlConfig = $this->filterOptionsResolver->resolve($control, $controlConfig, $source);
+
+            $controlBinding = new ControlBinding(
+                component: $control,
+                type: $controlType ?? $control::class,
+                config: $this->filterOptionsResolver->resolve($control, $controlConfig, $source),
+            );
         }
 
         if ($value !== null && ($valueClass === null || !$value instanceof $valueClass))
@@ -89,13 +96,9 @@ final readonly class FilterFactory
         }
 
         return new Filter(
-            element: $element,
-            type: $type,
+            element: new ElementBinding($element, $type, $config),
             alias: $alias,
-            config: $config,
-            control: $control,
-            controlConfig: $control !== null ? $controlConfig : [],
-            controlType: $controlType,
+            control: $controlBinding,
             value: $value,
             targetAlias: $targetAlias,
             targetingForced: $targetingForced,
@@ -126,10 +129,12 @@ final readonly class FilterFactory
         $config = $this->filterTransformerResolver->transform($element, $type, $filterModel, $source) ?? [];
 
         $filter = new Filter(
-            element: $element,
-            type: $type,
+            element: new ElementBinding(
+                component: $element,
+                type: $type,
+                config: $this->filterOptionsResolver->resolve($element, $config, $source),
+            ),
             alias: $filterModel->getFilterAlias(),
-            config: $this->filterOptionsResolver->resolve($element, $config, $source),
             targetAlias: $filterModel->getFilterTargetAlias() ?: null,
             source: $source,
         );
@@ -168,7 +173,7 @@ final readonly class FilterFactory
             return $filter;
         }
 
-        return $filter->withControl($control, $controlConfig, $controlType)->withValue($value);
+        return $filter->withControl(new ControlBinding($control, $controlType, $controlConfig))->withValue($value);
     }
 
     /**

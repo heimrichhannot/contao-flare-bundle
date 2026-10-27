@@ -54,7 +54,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement implements Cho
         }
 
         // A value that cannot be applied must not widen the list.
-        if (!$field = $builder->scope->filter->config['field'] ?? null) {
+        if (!$field = $builder->scope->filter->element->config->all()['field'] ?? null) {
             $builder->abort();
         }
 
@@ -94,7 +94,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement implements Cho
     {
         $table = $scope->list->dc;
 
-        if (!$field = (string) ($scope->filter->config['field'] ?? '')) {
+        if (!$field = (string) ($scope->filter->element->config->all()['field'] ?? '')) {
             throw new FilterException('No target field configured.', method: __METHOD__);
         }
 

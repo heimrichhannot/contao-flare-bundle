@@ -44,7 +44,7 @@ class KeywordsFilterControl extends AbstractFilterControl
 
     public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void
     {
-        $config = $scope->filter->controlConfig;
+        $config = $scope->filter->control->config->all();
 
         $options = [
             'label' => $config['label'] ?: false,

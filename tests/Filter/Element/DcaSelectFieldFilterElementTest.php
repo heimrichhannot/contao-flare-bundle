@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Filter\Element;
 
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Filter\Element\DcaSelectFieldFilterElement;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Predicate\DcaSelectPredicate;
@@ -165,7 +167,10 @@ final class DcaSelectFieldFilterElementTest extends TestCase
 
         return new FilterScope(
             list: new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test'),
-            filter: new Filter(element: $element, type: 'test_element', alias: 'test', config: ['field' => $field]),
+            filter: new Filter(
+                element: new ElementBinding($element, 'test_element', new ComponentConfig(['field' => $field])),
+                alias: 'test',
+            ),
             engineContext: new ConfigurationContext(),
         );
     }

@@ -49,7 +49,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
         $value = $this->expectValue($value, DateRangeValue::class);
-        $config = $builder->scope->filter->config;
+        $config = $builder->scope->filter->element->config->all();
 
         $start = \strtotime((string) $config['start_at']) ?: 0;
         $stop = \strtotime((string) $config['stop_at']) ?: DateTimeHelper::maxTimestamp();
@@ -89,7 +89,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
 
     public function getDateBounds(FilterScope $scope): DateBounds
     {
-        return $this->resolveFormLimits($scope->filter->config);
+        return $this->resolveFormLimits($scope->filter->element->config->all());
     }
 
     public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void

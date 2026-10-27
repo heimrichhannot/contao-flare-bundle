@@ -42,7 +42,7 @@ class ChoiceBoolFilterControl extends AbstractFilterControl
     public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void
     {
         $builder->single(ChoiceType::class, [
-            'label' => $scope->filter->controlConfig['label'] ?: false,
+            'label' => $scope->filter->control->config->all()['label'] ?: false,
             'required' => false,
             'choices' => [
                 'empty_option.yes' => '1',

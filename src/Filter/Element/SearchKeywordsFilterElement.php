@@ -42,7 +42,7 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
         }
 
         // A phrase that cannot be searched must not widen the list.
-        if (!$columns = $builder->scope->filter->config['columns'] ?? []) {
+        if (!$columns = $builder->scope->filter->element->config->all()['columns'] ?? []) {
             $builder->abort();
         }
 

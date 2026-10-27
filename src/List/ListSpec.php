@@ -124,7 +124,7 @@ final readonly class ListSpec
     {
         foreach ($this->filters as $filter)
         {
-            if ($filter->element instanceof $class) {
+            if ($filter->element->component instanceof $class) {
                 return true;
             }
         }

@@ -30,7 +30,7 @@ final readonly class FilterContextBuilderFactory
     private function resolveTargetAlias(FilterScope $scope): string
     {
         $filter = $scope->filter;
-        $isTargeted = $this->filterElementRegistry->getAttribute($filter->type)?->isTargeted;
+        $isTargeted = $this->filterElementRegistry->getAttribute($filter->element->type)?->isTargeted;
 
         if ($isTargeted || $filter->targetingForced) {
             return $filter->targetAlias ?: TableAliasRegistry::ALIAS_MAIN;

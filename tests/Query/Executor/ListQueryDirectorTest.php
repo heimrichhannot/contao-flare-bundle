@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Query\Executor;
 
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
 use HeimrichHannot\FlareBundle\Engine\Context\AggregationContext;
@@ -12,6 +13,8 @@ use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\ControlBinding;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
@@ -217,10 +220,9 @@ final class ListQueryDirectorTest extends TestCase
         ?string                 $source = null,
     ): Filter {
         return new Filter(
-            element: $element,
-            type: 'test_element',
+            element: new ElementBinding($element, 'test_element', new ComponentConfig([])),
             alias: $alias,
-            control: $control,
+            control: $control !== null ? new ControlBinding($control, $control::class, new ComponentConfig([])) : null,
             value: $value,
             source: $source,
         );

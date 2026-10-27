@@ -36,7 +36,7 @@ final readonly class FilterContextFactory
 
         $contextBuilder = $this->filterContextBuilderFactory->create($scope);
 
-        $scope->filter->element->buildContext($contextBuilder, $value);
+        $scope->filter->element->component->buildContext($contextBuilder, $value);
 
         return $contextBuilder->build();
     }

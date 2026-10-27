@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Form;
 
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\FormContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
@@ -13,6 +14,8 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\ControlBinding;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
@@ -160,11 +163,13 @@ final class FormHarnessFactoryTest extends TestCase
         };
 
         return new Filter(
-            element: $element,
-            type: 'test_element',
+            element: new ElementBinding($element, 'test_element', new ComponentConfig([])),
             alias: $alias,
-            control: $control,
-            controlConfig: ['label' => null, 'placeholder' => null],
+            control: $control !== null ? new ControlBinding(
+                $control,
+                $control::class,
+                new ComponentConfig(['label' => null, 'placeholder' => null]),
+            ) : null,
             value: $value,
         );
     }

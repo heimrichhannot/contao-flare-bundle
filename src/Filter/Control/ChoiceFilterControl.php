@@ -76,7 +76,7 @@ class ChoiceFilterControl extends AbstractFilterControl
      */
     public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void
     {
-        $element = $scope->filter->element;
+        $element = $scope->filter->element->component;
 
         if (!$element instanceof ChoiceSourceContract) {
             throw new FilterException(\sprintf(
@@ -87,7 +87,7 @@ class ChoiceFilterControl extends AbstractFilterControl
             ));
         }
 
-        $config = $scope->filter->controlConfig;
+        $config = $scope->filter->control->config->all();
         $choices = $this->choicesBuilderFactory->createChoicesBuilder();
         $element->buildChoices($choices, $scope);
 
@@ -139,7 +139,7 @@ class ChoiceFilterControl extends AbstractFilterControl
     {
         $value = $this->expectValue($value, ChoiceValue::class);
 
-        if ($scope->filter->controlConfig['is_multiple'] ?? false) {
+        if ($scope->filter->control->config->all()['is_multiple'] ?? false) {
             return $value->choices ?? [];
         }
 

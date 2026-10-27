@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Form;
 
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
+use HeimrichHannot\FlareBundle\Filter\ControlBinding;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
@@ -76,11 +79,13 @@ final class FormHarnessTest extends TestCase
 
         foreach ($initial as $alias => $keywords) {
             $filter = new Filter(
-                element: $element,
-                type: 'test_element',
+                element: new ElementBinding($element, 'test_element', new ComponentConfig([])),
                 alias: $alias,
-                control: $control,
-                controlConfig: ['label' => null, 'placeholder' => null],
+                control: $control !== null ? new ControlBinding(
+                    $control,
+                    $control::class,
+                    new ComponentConfig(['label' => null, 'placeholder' => null]),
+                ) : null,
                 value: $keywords === null ? null : new KeywordsValue($keywords),
             );
 

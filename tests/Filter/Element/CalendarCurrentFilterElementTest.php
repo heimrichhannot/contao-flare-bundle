@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Filter\Element;
 
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Element\CalendarCurrentFilterElement;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Predicate\CalendarCurrentPredicate;
@@ -121,7 +123,10 @@ final class CalendarCurrentFilterElementTest extends TestCase
 
         return new FilterScope(
             list: new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test'),
-            filter: new Filter(element: $element, type: 'test_element', alias: 'test', config: $config),
+            filter: new Filter(
+                element: new ElementBinding($element, 'test_element', new ComponentConfig($config)),
+                alias: 'test',
+            ),
             engineContext: new ConfigurationContext(),
         );
     }

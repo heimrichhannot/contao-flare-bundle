@@ -163,7 +163,7 @@ readonly class ListQueryDirector
         }
         catch (\Exception $e)
         {
-            throw $this->wrapFilterFailure($e, $filter, $filter->element::class . '::buildContext');
+            throw $this->wrapFilterFailure($e, $filter, $filter->element->component::class . '::buildContext');
         }
 
         $filterQueryBuilders = [];

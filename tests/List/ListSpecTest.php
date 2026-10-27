@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\List;
 
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
@@ -30,7 +32,10 @@ final class ListSpecTest extends TestCase
     {
         static $element = null;
 
-        return new Filter(element: $element ??= new StubFilterElement(), type: $type, alias: $alias);
+        return new Filter(
+            element: new ElementBinding($element ??= new StubFilterElement(), $type, new ComponentConfig([])),
+            alias: $alias,
+        );
     }
 
     /**
@@ -95,7 +100,7 @@ final class ListSpecTest extends TestCase
             ->withoutFilter('foo')
             ->withFilter(self::filter('c', 'foo'));
 
-        self::assertSame('c', $spec->filters['foo']->type);
+        self::assertSame('c', $spec->filters['foo']->element->type);
     }
 
     public function testFailuresSurviveWithers(): void
@@ -126,7 +131,10 @@ final class ListSpecTest extends TestCase
     public function testHasFilterInstance(): void
     {
         $spec = self::spec()
-            ->withFilter(new Filter(element: new StubFilterElement(), type: 'stub', alias: 'p'));
+            ->withFilter(new Filter(
+                element: new ElementBinding(new StubFilterElement(), 'stub', new ComponentConfig([])),
+                alias: 'p',
+            ));
 
         self::assertTrue($spec->hasFilterInstance(StubFilterElement::class));
         self::assertTrue($spec->hasFilterInstance(FilterElementInterface::class));

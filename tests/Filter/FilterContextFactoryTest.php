@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
@@ -53,7 +55,7 @@ final class FilterContextFactoryTest extends TestCase
         $context = $this->buildFilterContext(new SpyFilterElement(), ['a' => 1], engineContext: $engineContext);
 
         self::assertSame($engineContext, $context->scope->engineContext);
-        self::assertSame(['a' => 1], $context->scope->filter->config);
+        self::assertSame(['a' => 1], $context->scope->filter->element->config->all());
         self::assertSame('tl_test', $context->scope->list->dc);
         self::assertCount(1, $context->formula->propositions);
         self::assertSame(BooleanPredicate::class, $context->formula->propositions[0]->predicateClass);
@@ -75,8 +77,7 @@ final class FilterContextFactoryTest extends TestCase
         $scope = new FilterScope(
             list: new ListSpec(driver: $this->createStub(ListDriverInterface::class), type: 'test_list', dc: 'tl_test'),
             filter: new Filter(
-                element: $element,
-                type: 'test_element',
+                element: new ElementBinding($element, 'test_element', new ComponentConfig([])),
                 alias: 'test',
                 targetAlias: $alias,
                 targetingForced: $forced,

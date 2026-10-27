@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Engine\Projector;
 
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
@@ -18,6 +19,8 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Filter\ControlBinding;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
@@ -70,11 +73,13 @@ final class InteractiveProjectorTest extends TestCase
     {
         $spy = new ProjectorSpyElement();
         $list = $this->list(new Filter(
-            element: $spy,
-            type: 'test_element',
+            element: new ElementBinding($spy, 'test_element', new ComponentConfig([])),
             alias: 'q',
-            control: new KeywordsFilterControl(),
-            controlConfig: ['label' => null, 'placeholder' => null],
+            control: new ControlBinding(
+                new KeywordsFilterControl(),
+                KeywordsFilterControl::class,
+                new ComponentConfig(['label' => null, 'placeholder' => null]),
+            ),
             value: new KeywordsValue('initial'),
         ));
 
@@ -92,11 +97,13 @@ final class InteractiveProjectorTest extends TestCase
     {
         $spy = new ProjectorSpyElement();
         $list = $this->list(new Filter(
-            element: $spy,
-            type: 'test_element',
+            element: new ElementBinding($spy, 'test_element', new ComponentConfig([])),
             alias: 'q',
-            control: new KeywordsFilterControl(),
-            controlConfig: ['label' => null, 'placeholder' => null],
+            control: new ControlBinding(
+                new KeywordsFilterControl(),
+                KeywordsFilterControl::class,
+                new ComponentConfig(['label' => null, 'placeholder' => null]),
+            ),
             value: new KeywordsValue('initial'),
         ));
 
@@ -107,7 +114,10 @@ final class InteractiveProjectorTest extends TestCase
 
     public function testProjectorReturnsFailedViewWhenAFixedFilterFails(): void
     {
-        $list = $this->list(new Filter(element: new ProjectorFailingElement(), type: 'test_element', alias: 'fixed'));
+        $list = $this->list(new Filter(
+            element: new ElementBinding(new ProjectorFailingElement(), 'test_element', new ComponentConfig([])),
+            alias: 'fixed',
+        ));
 
         $view = $this->createProjector()->project($list, $this->context());
 
@@ -122,7 +132,10 @@ final class InteractiveProjectorTest extends TestCase
     public function testListFailuresRecordedAtBuildTimeYieldTheFailedView(): void
     {
         $spy = new ProjectorSpyElement();
-        $list = $this->list(new Filter(element: $spy, type: 'test_element', alias: 'fixed'))
+        $list = $this->list(new Filter(
+            element: new ElementBinding($spy, 'test_element', new ComponentConfig([])),
+            alias: 'fixed',
+        ))
             ->withFailure('tl_flare_filter.3: broken config');
 
         $view = $this->createProjector()->project($list, $this->context());
@@ -135,7 +148,10 @@ final class InteractiveProjectorTest extends TestCase
 
     public function testFailuresAreRethrownInDebugMode(): void
     {
-        $list = $this->list(new Filter(element: new ProjectorFailingElement(), type: 'test_element', alias: 'fixed'));
+        $list = $this->list(new Filter(
+            element: new ElementBinding(new ProjectorFailingElement(), 'test_element', new ComponentConfig([])),
+            alias: 'fixed',
+        ));
 
         $this->expectException(FilterException::class);
 

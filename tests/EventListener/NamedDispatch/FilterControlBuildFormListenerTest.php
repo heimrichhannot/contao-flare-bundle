@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\EventListener\NamedDispatch;
 
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterControlBuildFormListener;
+use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
+use HeimrichHannot\FlareBundle\Filter\ControlBinding;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
@@ -64,10 +68,11 @@ final class FilterControlBuildFormListenerTest extends TestCase
 
         $list = new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test');
         $filter = new Filter(
-            element: new StubFilterElement(),
-            type: 'b',
+            element: new ElementBinding(new StubFilterElement(), 'b', new ComponentConfig()),
             alias: 'suche',
-            controlType: $controlType ?: null,
+            control: $controlType
+                ? new ControlBinding(new KeywordsFilterControl(), $controlType, new ComponentConfig())
+                : null,
         );
 
         $scope = new FilterScope(list: $list, filter: $filter, engineContext: $engineContext);

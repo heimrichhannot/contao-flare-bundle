@@ -55,7 +55,7 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
      */
     public function buildChoices(ChoicesBuilder $choices, FilterScope $scope): void
     {
-        $config = $scope->filter->config;
+        $config = $scope->filter->element->config->all();
         $inferrer = $this->getPtableInferrer($scope->list);
 
         if ($ptable = $inferrer->getDcaMainPtable())
@@ -130,7 +130,7 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
     public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
     {
         $value = $this->expectValue($value, ChoiceValue::class);
-        $config = $builder->scope->filter->config;
+        $config = $builder->scope->filter->element->config->all();
         $inferrer = $this->getPtableInferrer($builder->scope->list);
         $allowed = $this->getAllowedParentIds($inferrer, $config);
 

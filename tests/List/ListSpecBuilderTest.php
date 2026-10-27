@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\List;
 
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
@@ -11,6 +12,7 @@ use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildListContract;
 use HeimrichHannot\FlareBundle\Event\ListDriverBuildListEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -39,7 +41,7 @@ final class ListSpecBuilderTest extends TestCase
             ): void {}
         };
 
-        return new Filter(element: $element, type: $type, alias: $alias);
+        return new Filter(element: new ElementBinding($element, $type, new ComponentConfig([])), alias: $alias);
     }
 
     public function testBuildInvokesDriverHookAndDispatchesEvent(): void
@@ -78,7 +80,10 @@ final class ListSpecBuilderTest extends TestCase
     {
         $builder = $this->createBuilder(new EventDispatcher());
 
-        $builder->addFilter(new Filter(element: new StubFilterElement(), type: 'stub', alias: 'x'));
+        $builder->addFilter(new Filter(
+            element: new ElementBinding(new StubFilterElement(), 'stub', new ComponentConfig([])),
+            alias: 'x',
+        ));
         $builder->addFilter(self::filter('b', 'y'));
         $builder->addFilter(self::filter('c', 'z'), 'custom');
         $builder->removeFilter('x');
@@ -131,7 +136,7 @@ final class ListSpecBuilderTest extends TestCase
         $builder->removeFilter('x');
         $builder->addFilter(self::filter('b', 'x'));
 
-        self::assertSame('b', $builder->getFilter('x')?->type);
+        self::assertSame('b', $builder->getFilter('x')?->element->type);
     }
 
     public function testModelTransformationAndOverridePrecedence(): void

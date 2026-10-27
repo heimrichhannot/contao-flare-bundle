@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
+use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\ConfigProvider;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
@@ -11,7 +12,9 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
 use HeimrichHannot\FlareBundle\Filter\Factory\FormulaBuilderFactory;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\FilterScope;
 use HeimrichHannot\FlareBundle\Filter\Predicate\PredicateInterface;
@@ -48,7 +51,14 @@ trait BuildsFilterContextsTrait
 
         $scope = new FilterScope(
             list: new ListSpec(driver: $driver, type: 'test_list', dc: $dc),
-            filter: new Filter(element: $element, type: 'test_element', alias: 'test', config: $config),
+            filter: new Filter(
+                element: new ElementBinding(
+                    component: $element,
+                    type: 'test_element',
+                    config: (new FilterOptionsResolver(new SchemaResolver()))->resolve($element, $config),
+                ),
+                alias: 'test',
+            ),
             engineContext: $engineContext ?? new ConfigurationContext(),
         );
 

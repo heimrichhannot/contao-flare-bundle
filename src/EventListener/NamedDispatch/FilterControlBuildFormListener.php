@@ -17,7 +17,7 @@ readonly class FilterControlBuildFormListener
     #[AsEventListener(priority: -200)]
     public function onFilterControlBuildForm(FilterControlBuildFormEvent $event): void
     {
-        if (!$type = $event->scope->filter->controlType) {
+        if (!$type = $event->scope->filter->control?->type) {
             return;
         }
 

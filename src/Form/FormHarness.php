@@ -89,7 +89,7 @@ final readonly class FormHarness
                 continue;
             }
 
-            $value = $mount->filter->control->decode($child->getData(), $mount->scope);
+            $value = $mount->filter->control->component->decode($child->getData(), $mount->scope);
 
             if ($submitted || $value !== null) {
                 $values[$mount->alias] = $value;

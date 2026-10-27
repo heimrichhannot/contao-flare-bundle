@@ -116,7 +116,7 @@ final class ListModelFilterCollectorTest extends TestCase
         );
 
         self::assertSame([1, 2], \array_keys($collected->filters));
-        self::assertSame('stub', $collected->filters[1]->type);
+        self::assertSame('stub', $collected->filters[1]->element->type);
         self::assertSame([], $collected->failures);
         self::assertSame([1, 2], $collectedModels);
         self::assertSame([], $this->logs);

@@ -71,7 +71,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
         {
             throw $e;
         }
-        catch (\Throwable $e)
+        catch (\Exception $e)
         {
             throw new FlareException($e->getMessage(), $e->getCode(), $e, method: __METHOD__);
         }
@@ -118,7 +118,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
         {
             throw $e;
         }
-        catch (\Throwable $e)
+        catch (\Exception $e)
         {
             throw new FlareException($e->getMessage(), $e->getCode(), $e, method: __METHOD__);
         }

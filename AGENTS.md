@@ -36,7 +36,9 @@ resolved only drops the control and initial value (warning). A controlled filter
 (warning); if the retry fails too (or the value was already null) the element config is broken and the list fails
 closed. `\Error`s escape unwrapped. `UndefinedConfigKeyError` (an `\Error`, thrown when a component reads a config key
 its schema does not define) is a programming error: never retried, never degraded into a skipped filter or a
-failed list — it fails the request (the engine loaders rethrow it wrapped in a `FlareException`).
+failed list — it fails the request. The bundle catches `\Exception`, not `\Throwable`, so no `\Error` is wrapped
+or swallowed; only the transformer resolvers still wrap any `\Throwable` (a transformer casting stale stored data
+may throw a `\ValueError`).
 
 Note: Contexts and Projectors/Views are separate axes — (Export Context/Projector/View are currently not implemented).
 

@@ -137,7 +137,7 @@ readonly class FieldsOptionsCallbacks
         {
             $listModel = $filterModel->getRelated('pid');
         }
-        catch (\Throwable)
+        catch (\Exception)
         {
             return [];
         }
@@ -254,7 +254,7 @@ readonly class FieldsOptionsCallbacks
         {
             $listModel = $filterModel->getRelated('pid');
         }
-        catch (\Throwable)
+        catch (\Exception)
         {
             return [];
         }

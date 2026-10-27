@@ -195,7 +195,7 @@ final readonly class ElementDcaListener
         {
             return $this->listExecutionContextFactory->create($getSpec());
         }
-        catch (\Throwable) {}
+        catch (\Exception) {}
 
         return null;
     }
@@ -219,7 +219,7 @@ final readonly class ElementDcaListener
                 engineContext: new ConfigurationContext(),
             );
         }
-        catch (\Throwable) {}
+        catch (\Exception) {}
 
         return null;
     }

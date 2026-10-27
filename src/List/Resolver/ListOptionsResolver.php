@@ -46,7 +46,7 @@ final readonly class ListOptionsResolver
         {
             return $this->schemaResolver->resolve((string) $driverClass, $configure, $config);
         }
-        catch (\Throwable $e)
+        catch (\Exception $e)
         {
             throw new FlareException(
                 \sprintf(

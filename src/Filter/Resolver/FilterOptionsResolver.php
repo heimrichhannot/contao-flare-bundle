@@ -42,7 +42,7 @@ final readonly class FilterOptionsResolver
                 \get_debug_type($owner),
             );
         }
-        catch (\Throwable $e)
+        catch (\Exception $e)
         {
             throw new FilterException(
                 \sprintf('[FLARE] Invalid config for "%s": %s', \get_debug_type($owner), $e->getMessage()),

@@ -153,18 +153,16 @@ final class ListModelFilterCollectorTest extends TestCase
         self::assertStringContainsString('tl_flare_filter.1', $this->logs[0][1]);
     }
 
-    public function testFailingControlIsAbsorbedAndTheFilterKeptWithoutIt(): void
+    public function testUnresolvableControlFailsTheList(): void
     {
         $collected = $this->collector()->collectFromModels(
             [self::filterModel(1, 'stub', 'unknown_control')],
             self::listModel(),
         );
 
-        self::assertSame([1], \array_keys($collected->filters));
-        self::assertNull($collected->filters[1]->control);
-        self::assertSame([], $collected->failures);
-        self::assertCount(1, $this->logs);
-        self::assertSame('warning', $this->logs[0][0]);
+        self::assertSame([], $collected->filters);
+        self::assertCount(1, $collected->failures);
+        self::assertSame('error', $this->logs[0][0]);
     }
 
     public function testDuplicateAliasFailsTheListInsteadOfOverwriting(): void

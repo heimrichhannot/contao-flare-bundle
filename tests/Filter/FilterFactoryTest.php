@@ -12,6 +12,7 @@ use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaFieldBuilderInterface;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
@@ -262,38 +263,40 @@ final class FilterFactoryTest extends TestCase
         $filter = $this->factory()->createFromFilterModel(self::model([]));
 
         self::assertNull($filter->value);
-        self::assertFalse($filter->controlDropped, 'configured without a control');
     }
 
-    public function testUnknownControlDegradesToNoControlAndNoValue(): void
+    public function testUnknownControlThrows(): void
     {
-        $filter = $this->factory()->createFromFilterModel(self::model(['control' => 'gone', 'value' => '1']));
+        $this->expectException(FlareException::class);
 
-        self::assertSame($this->boolElement, $filter->element->component);
-        self::assertNull($filter->control);
-        self::assertTrue($filter->controlDropped, 'the editor chose a control, it failed to resolve');
-        self::assertNull($filter->value);
-        $this->assertWarned();
+        $this->factory()->createFromFilterModel(self::model(['control' => 'gone', 'value' => '1']));
     }
 
-    public function testControlForAnotherValueClassDegradesLikeAnUnknownOne(): void
+    public function testControlForAnotherValueClassThrows(): void
     {
-        $filter = $this->factory()->createFromFilterModel(
-            self::model(['control' => self::KEYWORDS_CONTROL, 'value' => '1']),
-        );
+        $this->expectException(FlareException::class);
 
-        self::assertNull($filter->control);
-        self::assertNull($filter->value);
-        $this->assertWarned();
+        $this->factory()->createFromFilterModel(self::model(['control' => self::KEYWORDS_CONTROL, 'value' => '1']));
     }
 
-    public function testUnreadableInitialValueDegradesToNoControlAndNoValue(): void
+    public function testUnreadableInitialValueKeepsTheControl(): void
     {
         $filter = $this->factory()->createFromFilterModel(
             self::model(['control' => self::BOOL_CONTROL, 'value' => 'garbage']),
         );
 
-        self::assertNull($filter->control);
+        self::assertSame(self::BOOL_CONTROL, $filter->control?->type);
+        self::assertNull($filter->value);
+        $this->assertWarned();
+    }
+
+    public function testInitialValueFailingWithAPlainFilterExceptionKeepsTheControl(): void
+    {
+        $filter = $this->factory()->createFromFilterModel(
+            self::model(['control' => self::BOOL_CONTROL, 'value' => 'plain']),
+        );
+
+        self::assertSame(self::BOOL_CONTROL, $filter->control?->type);
         self::assertNull($filter->value);
         $this->assertWarned();
     }
@@ -332,12 +335,11 @@ final class FilterFactoryTest extends TestCase
         self::assertSame([], $this->logs);
     }
 
-    public function testWithoutValueAnUnknownControlDegradesToNoControl(): void
+    public function testWithoutValueAnUnknownControlThrows(): void
     {
-        $filter = $this->factory()->createFromFilterModel(self::model(['control' => 'gone']), withValue: false);
+        $this->expectException(FlareException::class);
 
-        self::assertNull($filter->control);
-        $this->assertWarned();
+        $this->factory()->createFromFilterModel(self::model(['control' => 'gone']), withValue: false);
     }
 }
 
@@ -430,6 +432,7 @@ final class FactoryStubBoolProvider implements ValueProviderInterface
             null, '' => null,
             '1' => new BoolValue(true),
             '0' => new BoolValue(false),
+            'plain' => throw new FilterException('plain'),
             default => throw new UnreadableValueException('unreadable'),
         };
     }

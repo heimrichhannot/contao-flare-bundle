@@ -113,19 +113,6 @@ final class FilterTest extends TestCase
         self::assertSame($value, $withoutControl->value);
     }
 
-    public function testADroppedControlIsRecordedUntilAControlIsBound(): void
-    {
-        $dropped = self::filter()->withControl(self::binding())->withDroppedControl();
-
-        self::assertNull($dropped->control);
-        self::assertTrue($dropped->controlDropped);
-        self::assertTrue($dropped->withValue(null)->controlDropped);
-        self::assertTrue($dropped->withTargetAlias('translation')->controlDropped);
-        self::assertFalse($dropped->withControl(self::binding())->controlDropped);
-        self::assertFalse(self::filter()->controlDropped);
-        self::assertNotSame(self::filter()->fingerprint(), self::filter()->withDroppedControl()->fingerprint());
-    }
-
     public function testControlBindingCarriesTypeAndConfig(): void
     {
         $filter = self::filter()->withControl(self::binding(config: ['b' => 2]));
@@ -151,7 +138,6 @@ final class FilterTest extends TestCase
             'value',
             'targetAlias',
             'targetingForced',
-            'controlDropped',
         ], \array_keys($fingerprint));
         self::assertSame(['a' => 1], $fingerprint['config']);
     }
@@ -173,7 +159,6 @@ final class FilterTest extends TestCase
             'value' => null,
             'targetAlias' => null,
             'targetingForced' => false,
-            'controlDropped' => false,
         ], $fingerprint);
 
         $changedConfig = new Filter(

@@ -44,7 +44,6 @@ final class ElementDcaListenerTest extends TestCase
 
         self::assertNotNull($scope);
         self::assertSame('flare_choice', $scope->filter->control?->type, 'the control decides the options');
-        self::assertFalse($scope->filter->controlDropped, 'the unreadable value was never read');
         self::assertNull($scope->filter->value);
     }
 

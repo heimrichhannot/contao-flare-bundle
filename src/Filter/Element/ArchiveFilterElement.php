@@ -116,12 +116,11 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
     }
 
     /**
-     * Whether the filter is a controlled one: it has a control, or was configured with one that failed to resolve. A
-     * dropped control fails open, bounded by the whitelist like a control without a selection, never unrestricted.
+     * Whether the filter has a control: then the whitelist bounds it, without one its value is the restriction.
      */
     private static function isControlled(Filter $filter): bool
     {
-        return $filter->control !== null || $filter->controlDropped;
+        return $filter->control !== null;
     }
 
     /**

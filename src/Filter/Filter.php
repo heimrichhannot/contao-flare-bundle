@@ -33,9 +33,6 @@ final readonly class Filter
      * @param string|null $targetAlias Table alias the filter's conditions apply to.
      * @param bool $targetingForced Whether the target alias applies even if the element is not marked as targeted.
      * @param string|null $source Provenance for error messages, e.g. "tl_flare_filter.42".
-     * @param bool $controlDropped Whether the filter was configured with a control that failed to resolve and was
-     *   dropped (fail-open). Elements then apply the filter as a controlled one without a value, not as one
-     *   configured without a control.
      *
      * @internal Use {@see Factory\FilterFactory} to create instances.
      */
@@ -47,7 +44,6 @@ final readonly class Filter
         public ?string         $targetAlias = null,
         public bool            $targetingForced = false,
         public ?string         $source = null,
-        public bool            $controlDropped = false,
     ) {}
 
     public function withValue(?ValueInterface $value): self
@@ -60,7 +56,6 @@ final readonly class Filter
             targetAlias: $this->targetAlias,
             targetingForced: $this->targetingForced,
             source: $this->source,
-            controlDropped: $this->controlDropped,
         );
     }
 
@@ -74,23 +69,6 @@ final readonly class Filter
             targetAlias: $this->targetAlias,
             targetingForced: $this->targetingForced,
             source: $this->source,
-            controlDropped: $control === null && $this->controlDropped,
-        );
-    }
-
-    /**
-     * Without the control, recording that it was dropped because it failed to resolve.
-     */
-    public function withDroppedControl(): self
-    {
-        return new self(
-            element: $this->element,
-            alias: $this->alias,
-            value: $this->value,
-            targetAlias: $this->targetAlias,
-            targetingForced: $this->targetingForced,
-            source: $this->source,
-            controlDropped: true,
         );
     }
 
@@ -104,7 +82,6 @@ final readonly class Filter
             targetAlias: $targetAlias,
             targetingForced: $targetAlias !== null && $forced,
             source: $this->source,
-            controlDropped: $this->controlDropped,
         );
     }
 
@@ -126,7 +103,6 @@ final readonly class Filter
             'value' => $this->value?->fingerprint(),
             'targetAlias' => $this->targetAlias,
             'targetingForced' => $this->targetingForced,
-            'controlDropped' => $this->controlDropped,
         ];
     }
 }

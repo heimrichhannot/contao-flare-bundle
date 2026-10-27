@@ -251,31 +251,6 @@ final class ArchiveFilterElementTest extends TestCase
         self::assertNull($p[0]->options['submitted_data']);
     }
 
-    public function testADroppedControlKeepsTheControlledWhitelistBound(): void
-    {
-        $dropped = function (bool $optionsOnly): FilterContext {
-            $scope = $this->buildElementScope(
-                $this->createElement(),
-                ['whitelist_parents' => [3, 5], 'use_whitelist_for_options_only' => $optionsOnly],
-                null,
-                'tl_news',
-            );
-
-            return $this->createFilterContextFactory()->create(
-                new ElementScope($scope->list, $scope->filter->withDroppedControl(), $scope->engineContext),
-                null,
-            );
-        };
-
-        // A control that failed to resolve is fail-open: bounded by the element config, never unrestricted.
-        self::assertSame([3, 5], $dropped(false)->formula->propositions[0]->options['parent_ids']);
-        self::assertSame(
-            [],
-            $dropped(true)->formula->propositions,
-            'as with the control: no selection, no restriction',
-        );
-    }
-
     public function testOnlyAFilterWithoutControlAndValueIsIneffective(): void
     {
         $element = $this->createElement();
@@ -304,7 +279,6 @@ final class ArchiveFilterElementTest extends TestCase
             new ComponentConfig(),
         ));
         self::assertNull($element->getIneffectiveReason($controlled), 'the control restricts the list');
-        self::assertNull($element->getIneffectiveReason($filter->withDroppedControl()), 'the editor chose a control');
     }
 
     public function testWithoutControlChoicesAreAllRecordsOfThePtable(): void

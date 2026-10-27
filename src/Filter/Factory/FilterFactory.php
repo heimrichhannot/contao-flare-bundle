@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Filter\Factory;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\DependencyInjection\Compiler\ValueClassReflector;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
@@ -122,17 +123,16 @@ final readonly class FilterFactory
     /**
      * Creates a filter from a stored tl_flare_filter row.
      *
-     * Failure handling follows SPEC_FILTER_FORMS.md §8.1: a broken element config throws. A control
-     * that cannot be resolved for the element's value class, a broken control config, or an unreadable
-     * initial value fails open — a warning is logged and the filter is kept without control and value,
-     * bounded only by the element's own config ({@see Filter::$controlDropped} tells it from a filter
-     * configured without a control). An unreadable fixed value (no control) throws.
+     * Failure handling follows SPEC_FILTER_FORMS.md §8.1: a broken element config throws, and so does a stored
+     * control that cannot be resolved for the element's value class or whose config is broken — the editor chose
+     * it, and the filter must not apply without it. An unreadable initial value only drops the value (warning);
+     * an unreadable fixed value (no control) throws.
      *
      * @param bool $withValue False to skip reading the stored value, e.g. for backend option lists, which must
      *   load even when the value is unreadable. The control is always resolved.
      *
-     * @throws FlareException If the element cannot be resolved, its config does not satisfy its schema,
-     *   or — without a control — the stored value is unreadable ({@see UnreadableValueException}).
+     * @throws FlareException If the element or the stored control cannot be resolved, either config does not satisfy
+     *   its schema, or — without a control — the stored value is unreadable ({@see UnreadableValueException}).
      */
     public function createFromFilterModel(FilterModel $filterModel, bool $withValue = true): Filter
     {
@@ -160,30 +160,44 @@ final readonly class FilterFactory
             return $withValue ? $filter->withValue($this->provideValue($valueClass, $filterModel, $element)) : $filter;
         }
 
+        $control = $this->resolveControl($controlType, $valueClass, $source);
+
+        $controlConfig = $this->filterTransformerResolver->transform($control, $controlType, $filterModel, $source) ?? [];
+        $controlConfig = $this->filterOptionsResolver->resolve($control, $controlConfig, $source);
+
+        $filter = $filter->withControl(new ControlBinding($control, $controlType, $controlConfig));
+
+        return $withValue ? $filter->withValue($this->provideInitialValue($valueClass, $filterModel, $element)) : $filter;
+    }
+
+    /**
+     * The initial value of a filter with a control: unreadable — any {@see FilterException} from the value provider,
+     * as its contract promises — it is dropped with a warning, keeping the control (SPEC_FILTER_FORMS.md §8.1).
+     *
+     * @param class-string<ValueInterface>|null $valueClass
+     *
+     * @throws FlareException If no provider exists for the value class.
+     */
+    private function provideInitialValue(
+        ?string                $valueClass,
+        FilterModel            $filterModel,
+        FilterElementInterface $element,
+    ): ?ValueInterface {
         try
         {
-            $control = $this->resolveControl($controlType, $valueClass, $source);
-
-            $controlConfig = $this->filterTransformerResolver
-                ->transform($control, $controlType, $filterModel, $source) ?? [];
-            $controlConfig = $this->filterOptionsResolver->resolve($control, $controlConfig, $source);
-
-            $value = $withValue ? $this->provideValue($valueClass, $filterModel, $element) : null;
+            return $this->provideValue($valueClass, $filterModel, $element);
         }
-        catch (FlareException $e)
+        catch (FilterException $e)
         {
             $this->logger->warning(\sprintf(
-                '[FLARE] Filter control "%s" of filter %s is ignored, the filter applies without control and'
-                . ' initial value -- [Message] %s',
-                $controlType,
-                $source,
+                '[FLARE] Initial value of filter %s.%s is ignored -- [Message] %s',
+                $filterModel::getTable(),
+                $filterModel->id,
                 $e->getMessage(),
             ));
-
-            return $filter->withDroppedControl();
         }
 
-        return $filter->withControl(new ControlBinding($control, $controlType, $controlConfig))->withValue($value);
+        return null;
     }
 
     /**

@@ -145,14 +145,15 @@ programmatic filter can force one with `Filter::withTargetAlias('my_alias')`. In
 
 ## 6. Failure Handling
 
-Failures follow the two scopes of a filter: the element config and a fixed value bound the **whole list**, a
-control and its initial value only bound the **initial display**.
+Failures follow the two scopes of a filter: the element config, a stored control and a fixed value bound the
+**whole list**; an initial value and a control's form field only bound the **initial display**.
 
 | What fails | Behaviour |
 |---|---|
 | A filter's **element** cannot be built, **with or without a control** — unknown element type, broken element config (including a transformer that throws on the stored record) — or a filter **without a control** has an unreadable stored (fixed) value or fails at query time | **Fail closed:** the list as a whole fails; error logged |
 | Two published filters of a list share an **alias** | **Fail closed:** the second one is recorded as a list failure instead of replacing the first; error logged |
-| A filter's **control** cannot be built — its `control` names no control registered for the element's value class, its control config is broken, or its initial value is unreadable | **Fail open:** the filter is kept without control and initial value, bounded only by its element config; warning logged |
+| A filter's stored **control** cannot be built — its `control` names no control registered for the element's value class (e.g. one of an uninstalled bundle), or its control config is broken | **Fail closed:** the editor chose the control, so the filter must not apply without it; error logged |
+| A controlled filter's **initial value** is unreadable (any `FilterException` from the value provider) | **Fail open:** the control is kept, the value dropped; warning logged |
 | A **controlled filter fails at query time with a non-null value** | Retried **once with value `null`**. Success: only the value is dropped (warning). Failure, or the value was already `null`: the element config is broken and bounds the whole list — fail closed |
 | A control's **`buildForm()` or `hydrate()`** throws | **Fail open:** the filter is not mounted and contributes no form field |
 | A control's **`decode()`** throws | The filter contributes no value. A **submitted** field gets an "invalid value" form error, so the form is invalid like any other invalid input and the list renders empty; a failed **initial** value is only dropped |
@@ -170,6 +171,12 @@ A **failed list is not an empty list:**
 - **Debug mode** rethrows the exception.
 
 `AbortFilteringException` keeps meaning "this filter legitimately matches nothing".
+
+**Backend.** Every filter that is guaranteed to break its list — a failure while the list is collected, or a filter
+whose conditions cannot be built with its default value (the fixed value without a control, `null` with one) — is
+marked with a bone-fracture icon in the list's filter overview, and its edit form shows the cause as an error. The
+published ones are counted in an error above the overview; unpublished filters are marked but never fail the list.
+Failures are recorded on the `ListSpec` as `FilterFailure` objects (source, message, exception).
 
 **Which exception to throw.** `FilterException` (and its subclass `UnreadableValueException`) is public API: filter
 components — elements, controls, value providers and capability ports, bundled and userland alike — throw it to

@@ -148,10 +148,13 @@ Backend changes in the filter form:
 - **Reader pages.** Only fixed values and the elements' own config bound the *whole list*. A bool (or any)
   filter *with* a control no longer restricts reader pages — before, a bool `preselect` also acted as a
   fallback in validation.
-- **Failed lists.** A broken filter element (with or without a control), a broken fixed value, or two
+- **Failed lists.** A broken filter element (with or without a control), a stored control that no longer exists
+  (e.g. of an uninstalled bundle) or whose config is broken, a broken fixed value, or two
   published filters sharing an alias make the list *fail* instead of silently dropping or replacing the filter: the list view renders the `list.failed` message (HTTP 200), and a reader of such a list
   answers 500. A controlled filter that fails with a value is retried once without it: if that works only the value is dropped (warning logged); if it fails too, the element config is broken and the list fails closed like a fixed filter. Custom
-  list templates that replace `flare_listview` should check `flare_list.failed`.
+  list templates that replace `flare_listview` should check `flare_list.failed`. An unreadable initial value
+  only drops the value; the control stays. The backend marks each filter that breaks its list (bone-fracture icon,
+  an error above the filter list and on the filter's edit form).
 
 ## ListSpecification → ListSpec
 

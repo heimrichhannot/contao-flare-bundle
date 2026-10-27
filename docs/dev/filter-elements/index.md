@@ -277,6 +277,12 @@ backend then marks the filter with an engine icon in the filter list, counts suc
 list, and shows the reason on the filter's edit form. The runtime behavior is unchanged. `ArchiveFilterElement` uses it
 for a filter with neither a control nor a value.
 
+A filter that is guaranteed to break its list — it cannot be created, or its `buildContext()` or a predicate throws
+with its default value (the fixed value without a control, `null` with one) — is marked with a bone-fracture icon in
+the filter list and an error on its edit form, and the published ones are counted above the list. The message an
+editor sees is the exception's: translate the message of a `FilterException` your element throws
+(`$this->trans()`); an `abort()` is no failure.
+
 ## 8. Intrinsic and Initial Values
 
 There is no `intrinsic` checkbox any more. The **`control`** field of a filter record decides:

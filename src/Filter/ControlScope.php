@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 
 /**
@@ -51,6 +53,48 @@ final readonly class ControlScope
     public function has(string $key): bool
     {
         return $this->controlBinding()->config->has($key);
+    }
+
+    /**
+     * The filter's element. With a contract, the element as that contract — use it to reach a capability port
+     * ({@see \HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract},
+     * {@see \HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract}) the control requires.
+     *
+     * @template T of object
+     * @param class-string<T>|null $contract
+     * @return ($contract is null ? FilterElementInterface : T)
+     *
+     * @throws FilterException If the element does not implement the contract.
+     */
+    public function element(?string $contract = null): object
+    {
+        $element = $this->filter->element->component;
+
+        if ($contract === null || $element instanceof $contract) {
+            return $element;
+        }
+
+        throw new FilterException(\sprintf(
+            'The control "%s" requires an element implementing %s, got %s.',
+            $this->controlBinding()->type,
+            $contract,
+            \get_debug_type($element),
+        ));
+    }
+
+    /**
+     * The element as the given contract, or null if it does not implement it — for a capability port the
+     * control can do without.
+     *
+     * @template T of object
+     * @param class-string<T> $contract
+     * @return T|null
+     */
+    public function tryElement(string $contract): ?object
+    {
+        $element = $this->filter->element->component;
+
+        return $element instanceof $contract ? $element : null;
     }
 
     /**

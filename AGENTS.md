@@ -59,7 +59,8 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   resolvers (`FilterOptionsResolver`, `FilterTransformerResolver`).
   A filter is applied in two stages: a value-free, role-typed scope — `ElementScope` for element hooks and
   contracts, `ControlScope` for control hooks (list × filter × engine context; `$scope->get('key')` reads the
-  calling component's own config, `ControlScope::forElement()` hands element contracts their scope) — handed to
+  calling component's own config; `ControlScope::element(Contract::class)` / `tryElement()` return the element as a
+  capability port, `forElement()` hands element contracts their scope) — handed to
   everything that happens before a value exists, and `FilterContext` (the element's product for one invocation,
   collected through the public `FilterContextBuilderInterface` and built by `FilterContextFactory` from scope +
   value, only inside `ListQueryDirector`). Hook parameter order: the subject first, the scope supplementary —

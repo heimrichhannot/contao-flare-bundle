@@ -242,8 +242,24 @@ final readonly class ControlScope
 
     /** The element's scope, to hand to element contracts (ChoiceSourceContract, DateBoundsContract). */
     public function forElement(): ElementScope;
+
+    /**
+     * The element; with a contract, the element as that contract (added 2026-10-27).
+     * @template T of object
+     * @param class-string<T>|null $contract
+     * @return ($contract is null ? FilterElementInterface : T)
+     * @throws FilterException If the element does not implement the contract.
+     */
+    public function element(?string $contract = null): object;
+
+    /** The element as the contract, or null (added 2026-10-27). @template T … @return T|null */
+    public function tryElement(string $contract): ?object;
 }
 ```
+
+- `element()` / `tryElement()` follow the `from()` / `tryFrom()` idiom: the plain form throws a `FilterException`
+  (`The control "<type>" requires an element implementing <contract>, got <element>.`), so a missing required
+  port fails open like any control failure; the `try` form returns null for an optional port.
 
 - `ControlScope`'s constructor throws `\InvalidArgumentException` if `$filter->control` is null, so `get()` needs
   no null handling.
@@ -361,8 +377,7 @@ $element->buildChoices($choices, $scope);
 if ($config['format_label']) { … }
 
 // after
-$element = $scope->filter->element->component;
-$element->buildChoices($choices, $scope->forElement());
+$scope->element(ChoiceSourceContract::class)->buildChoices($choices, $scope->forElement());
 if ($scope->get('format_label')) { … }
 ```
 

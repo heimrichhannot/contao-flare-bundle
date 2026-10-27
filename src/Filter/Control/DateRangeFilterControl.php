@@ -51,12 +51,9 @@ class DateRangeFilterControl extends AbstractFilterControl
     public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
     {
         $attr = [];
-        $element = $scope->filter->element->component;
 
-        if ($element instanceof DateBoundsContract)
+        if ($bounds = $scope->tryElement(DateBoundsContract::class)?->getDateBounds($scope->forElement()))
         {
-            $bounds = $element->getDateBounds($scope->forElement());
-
             $attr = \array_filter([
                 'min' => $bounds->min?->format('Y-m-d'),
                 'max' => $bounds->max?->modify('-1 second')->format('Y-m-d'),

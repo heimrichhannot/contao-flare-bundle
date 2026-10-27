@@ -76,19 +76,8 @@ class ChoiceFilterControl extends AbstractFilterControl
      */
     public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
     {
-        $element = $scope->filter->element->component;
-
-        if (!$element instanceof ChoiceSourceContract) {
-            throw new FilterException(\sprintf(
-                'The control "%s" requires an element implementing %s, got %s.',
-                self::TYPE,
-                ChoiceSourceContract::class,
-                $element::class,
-            ));
-        }
-
         $choices = $this->choicesBuilderFactory->createChoicesBuilder();
-        $element->buildChoices($choices, $scope->forElement());
+        $scope->element(ChoiceSourceContract::class)->buildChoices($choices, $scope->forElement());
 
         if ($scope->get('format_label')) {
             $choices->setLabel($scope->get('format_label'));

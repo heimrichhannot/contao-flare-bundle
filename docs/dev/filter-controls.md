@@ -75,6 +75,8 @@ The method's subject comes first — the builder, the submitted data, the value 
   value class. A control that cannot turn the data into a value throws a `FilterException`: the filter then
   contributes no value, and a submitted field gets an "invalid value" form error, which makes the form invalid
   like any other invalid input (the list renders empty). A rejected initial value is only dropped with a warning.
+  Any other exception is handled the same way but logged as an error, and rethrown in debug mode (see
+  [failure handling](../spec/filtering.md#6-failure-handling)).
 - **`hydrate()`** is the inverse: the widget data for a value of the control's class. It pre-fills an
   unsubmitted form from the filter's [initial value](./filter-elements/index.md#8-intrinsic-and-initial-values).
   Narrow its return type to the widget data (e.g. `?string`) and document the `$data` shape `decode()` receives
@@ -238,7 +240,8 @@ The former element events `FilterElementBuildingEvent` / `FilterElementBuiltEven
 - **Build time, control side.** A stored `control` that is unknown or not registered for the element's value
   class, a broken control config, or an unreadable initial value: the filter is kept **without control and
   value** (warning logged), bounded only by the element's own config. A control whose `buildForm()` or
-  `hydrate()` throws a `FilterException` is skipped: it is not mounted and contributes no form field (warning).
+  `hydrate()` throws is skipped: it is not mounted and contributes no form field. A `FilterException` is logged
+  as a warning; any other exception as an error, and in debug mode it is rethrown instead.
 - **Build time, element side.** An unknown element type or a broken element config fails the list
   (**fail closed**) — also for a filter *with* a control, because the element config bounds the whole list. So
   does an unreadable fixed value of a filter without a control.

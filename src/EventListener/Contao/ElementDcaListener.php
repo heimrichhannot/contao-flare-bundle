@@ -9,6 +9,7 @@ use Contao\Input;
 use Contao\Message;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DataContainer\IneffectiveFilterInspector;
@@ -110,6 +111,7 @@ final readonly class ElementDcaListener
                 $service = $this->listDriverRegistry->getService($type);
 
                 $this->checkDuplicateFilterAliases($listModel);
+                $this->reportIneffectiveFilters($listModel);
             }
         }
 
@@ -230,6 +232,32 @@ final readonly class ElementDcaListener
         catch (\Exception) {}
 
         return null;
+    }
+
+    /**
+     * On the list's filter overview (its child view, which loads this DCA as the parent table), counts the filters
+     * that restrict nothing ({@see IneffectiveFilterContract}); each of them is marked in the overview as well.
+     */
+    private function reportIneffectiveFilters(ListModel $listModel): void
+    {
+        $query = $this->requestStack->getCurrentRequest()?->query;
+
+        if ($query?->get('table') !== FilterModel::getTable() || $query->get('act')) {
+            return;
+        }
+
+        $qTable = $this->connection->quoteIdentifier(FilterModel::getTable());
+
+        $rows = $this->connection->fetchAllAssociative(
+            "SELECT `id`, `type` FROM {$qTable} WHERE `pid` = :pid AND `tstamp` > 0",
+            ['pid' => (int) $listModel->id],
+        );
+
+        if (!$count = $this->ineffectiveFilterInspector->countIneffective($rows)) {
+            return;
+        }
+
+        Message::addInfo($this->translator->trans('list.info.ineffective_filters', ['%count%' => $count], 'flare'));
     }
 
     private function checkDuplicateFilterAliases(ListModel $listModel): void

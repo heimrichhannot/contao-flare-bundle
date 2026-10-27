@@ -62,4 +62,23 @@ final readonly class IneffectiveFilterInspector
 
         return $element->getIneffectiveReason($built)?->trans($this->translator);
     }
+
+    /**
+     * How many of the given filters restrict nothing ({@see describe()}).
+     *
+     * @param iterable<FilterModel|array<string, mixed>> $filters Filter models, or their rows.
+     */
+    public function countIneffective(iterable $filters): int
+    {
+        $count = 0;
+
+        foreach ($filters as $filter)
+        {
+            if ($this->describe($filter) !== null) {
+                ++$count;
+            }
+        }
+
+        return $count;
+    }
 }

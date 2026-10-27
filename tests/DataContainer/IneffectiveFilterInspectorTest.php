@@ -66,6 +66,19 @@ final class IneffectiveFilterInspectorTest extends TestCase
         self::assertNull($this->inspector()->describe(['id' => 7, 'type' => 'flare_unknown']));
     }
 
+    public function testCountsTheIneffectiveFilters(): void
+    {
+        self::assertSame(2, $this->inspector()->countIneffective([
+            self::model(['elm_useWhitelistForOptionsOnly' => '1']),
+            self::model(['elm_useWhitelistForOptionsOnly' => '']),
+            self::model(['elm_useWhitelistForOptionsOnly' => '1', 'control' => 'flare_choice']),
+            self::model(['elm_useWhitelistForOptionsOnly' => '1', 'id' => 8]),
+            ['id' => 9, 'type' => 'flare_other'],
+        ]));
+
+        self::assertSame(0, $this->inspector()->countIneffective([]));
+    }
+
     private function inspector(): IneffectiveFilterInspector
     {
         $elements = (new FilterElementRegistry())

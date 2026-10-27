@@ -15,6 +15,7 @@ list:
     info:
         no_published_filter: "Entries in this list have a publication status (%target%). No publication filter is configured to account for this."
         duplicate_filter_alias: "Duplicate filter aliases: %alias%. The last filter overwrites the previous ones with the same alias."
+        ineffective_filters: "{1} One filter has no effect and needs attention; it is marked in the list below.|]1,Inf[ %count% filters have no effect and need attention; they are marked in the list below."
 
 filter:
     value:

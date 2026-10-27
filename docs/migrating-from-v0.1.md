@@ -38,7 +38,7 @@ For the exhaustive list of deleted APIs, see [Removed in v0.2](./removed-in-v0.2
 | `#[AsFilterElement(type:, formType:, palette:, method:, isTargeted:)]` | `#[AsFilterElement(type:, isTargeted:, value:)]` — palette moves into `buildDca()`, the form type into a [filter control](./dev/filter-controls.md), the invoked method is always `buildContext()`; `value:` names the value class the element consumes (none = always intrinsic) |
 | — | `#[AsFilterControl(type:)]` — registers a [filter control](./dev/filter-controls.md); new in v0.2 |
 | `#[AsListType(type:, dataContainer:, palette:)]` | `#[AsListDriver(type:, dataContainer:)]` — renamed; palette moves into `buildDca()`; `dataContainer` is only a backend default for new records |
-| `#[AsFilterInvoker]` | Removed — branch on `$builder->scope->engineContext` inside `buildContext()` (or `$scope->engineContext` in a control) |
+| `#[AsFilterInvoker]` | Removed — branch on `$scope->engineContext` inside `buildContext()` or a control hook |
 | `#[AsFilterCallback]`, `#[AsListCallback]`, `#[AsFlareCallback]` | Removed — use [`buildDca()` / the DCA events](./dev/dca-builder.md) |
 
 ## Filter Element API
@@ -50,11 +50,11 @@ lifecycle method on the element, plus a separate control (see the
 
 | v0.1 | v0.2 |
 |---|---|
-| `formType:` attribute parameter | A [`FilterControlInterface`](./dev/filter-controls.md): `buildForm(FilterFormBuilderInterface $builder, FilterScope $scope)`, `decode()`, `hydrate()` — registered with `#[AsFilterControl]` and chosen per filter record in the `control` field |
-| `__invoke(FilterInvocation, FilterQueryBuilder)` | `buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void` — emit predicate calls instead of writing SQL |
+| `formType:` attribute parameter | A [`FilterControlInterface`](./dev/filter-controls.md): `buildForm(FilterFormBuilderInterface $builder, ControlScope $scope)`, `decode()`, `hydrate()` — registered with `#[AsFilterControl]` and chosen per filter record in the `control` field |
+| `__invoke(FilterInvocation, FilterQueryBuilder)` | `buildContext(FilterContextBuilderInterface $builder, ElementScope $scope, ?ValueInterface $value): void` — emit predicate calls instead of writing SQL |
 | SQL written directly in the element | A [`PredicateInterface`](./dev/predicates.md) service; the element calls `$builder->addPredicate(MyPredicate::class, [...])` |
-| `FilterInvocation->getValue()` | `$value` — a typed value object (`BoolValue`, `ChoiceValue`, `DateRangeValue`, `KeywordsValue`) — and `$builder->scope->filter->config` (resolved config) |
-| `FilterQueryBuilder::abort()` in the element | `$builder->abort()` on the `FilterContextBuilder` (predicates may still use `FilterConditionsBuilder::abort()`) |
+| `FilterInvocation->getValue()` | `$value` — a typed value object (`BoolValue`, `ChoiceValue`, `DateRangeValue`, `KeywordsValue`) — and `$scope->get('key')` (resolved config) |
+| `FilterQueryBuilder::abort()` in the element | `$builder->abort()` on the `FilterContextBuilderInterface` (predicates may still use `FilterConditionsBuilder::abort()`) |
 | `$filter->data` / `FilterData` | Removed. Programmatic runtime data is `Filter::$value` — a fixed value without a control, an initial value with one |
 | `IntrinsicContract` / `intrinsic` config option | Removed. An element without a value class is intrinsic; otherwise the editor leaves `control` blank (the `value` is then a fixed value) |
 | `ChoicesBuilder::add(string\|int $key, Model\|... $value)` | `ChoicesBuilder::add(ChoiceObjectInterface $choice)` — pass a `ContaoModelChoice` or `ValueChoice`; `setLabelForModel()`, `getChoice()`, `addGroup()` and `removeGroup()` are gone |
@@ -215,14 +215,17 @@ class CityFilterElement extends AbstractFilterElement
         $builder->palette('{filter_legend},elm_fieldGeneric');
     }
 
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
         if (!$value = $this->expectValue($value, KeywordsValue::class)) {
             return;
         }
 
         $builder->addPredicate(SimpleEquationPredicate::class, [
-            'operand_left' => $builder->scope->filter->config['field'],
+            'operand_left' => $scope->get('field'),
             'operator' => SqlEquationOperator::EQUALS,
             'operand_right' => $value->keywords,
         ]);

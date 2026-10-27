@@ -55,12 +55,14 @@ The controls FLARE ships:
 ## 2. The Interface
 
 ```php
-public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void;
+public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void;
 
-public function decode(mixed $data, FilterScope $scope): ?SomeValue;   // narrow the return type!
+public function decode(ControlScope $scope, mixed $data): ?SomeValue;   // narrow the return type!
 
-public function hydrate(?ValueInterface $value, FilterScope $scope): mixed;   // narrow it, too
+public function hydrate(ControlScope $scope, ?ValueInterface $value): mixed;   // narrow it, too
 ```
+
+The parameters follow the order all hooks share: output channel (the builder), scope, input.
 
 - **`buildForm()`** declares the filter's fields on the collect-only builder. A **single-field** control calls
   `$builder->single(TextType::class, [...])`; the field is mounted flat on the root form under the filter's
@@ -76,8 +78,12 @@ public function hydrate(?ValueInterface $value, FilterScope $scope): mixed;   //
   Narrow its return type to the widget data (e.g. `?string`) and document the `$data` shape `decode()` receives
   with a `@param`, as the bundled controls do.
 
-All three receive the value-free [`FilterScope`](./filter-elements/index.md#the-filterscope-and-the-filtercontext):
-`$scope->filter->controlConfig` is the resolved control config, `$scope->filter->element` the element.
+All three receive the value-free `ControlScope` (`HeimrichHannot\FlareBundle\Filter\ControlScope`), the control's
+counterpart of the [`ElementScope`](./filter-elements/index.md#the-elementscope-and-the-filtercontext):
+`$scope->get('key')` reads the control's **own** resolved config (a key the schema does not define throws
+`UndefinedConfigKeyError`), `$scope->filter->element->component` is the element, and `$scope->forElement()`
+returns the `ElementScope` to hand to the element's [capability ports](#3-capability-ports). `$scope->list`,
+`$scope->filter` and `$scope->engineContext` are available as on the element side.
 
 A control owns its own config and its own slice of the backend palette, through the same optional contracts as
 elements — `OptionsContract` (`configureOptions()`), `TransformerContract` (`configureTransformers()`) and
@@ -98,7 +104,7 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterScope;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -123,10 +129,10 @@ class SearchBoxFilterControl extends AbstractFilterControl
         $builder->palette('{control_legend},ctl_label');
     }
 
-    public function buildForm(FilterFormBuilderInterface $builder, FilterScope $scope): void
+    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
     {
         $builder->single(SearchType::class, [
-            'label' => $scope->filter->controlConfig['label'] ?: false,
+            'label' => $scope->get('label') ?: false,
             'required' => false,
         ]);
     }
@@ -134,12 +140,12 @@ class SearchBoxFilterControl extends AbstractFilterControl
     /**
      * @param string|null $data The submitted search phrase.
      */
-    public function decode(mixed $data, FilterScope $scope): ?KeywordsValue
+    public function decode(ControlScope $scope, mixed $data): ?KeywordsValue
     {
         return KeywordsValue::tryFrom($data);
     }
 
-    public function hydrate(?ValueInterface $value, FilterScope $scope): ?string
+    public function hydrate(ControlScope $scope, ?ValueInterface $value): ?string
     {
         return $this->expectValue($value, KeywordsValue::class)?->keywords;
     }
@@ -151,15 +157,25 @@ This control is immediately selectable for every element declaring `value: Keywo
 ## 3. Capability Ports
 
 A control that needs something from the element does not reach into it; the element implements an explicit
-**port** (`HeimrichHannot\FlareBundle\Contract\FilterElement\`), and the control checks `instanceof`:
+**port** (`HeimrichHannot\FlareBundle\Contract\FilterElement\`), and the control checks `instanceof`. Ports take an
+`ElementScope`, so the element reads its own config with `get()`; the control passes `$scope->forElement()`:
+
+```php
+$element = $scope->filter->element->component;
+
+if ($element instanceof DateBoundsContract) {
+    $bounds = $element->getDateBounds($scope->forElement());
+}
+```
+
 
 - **`ChoiceSourceContract`** — the element's value is picked from a server-provided option set.
-  `buildChoices(ChoicesBuilder $choices, FilterScope $scope): void` adds the choices to a builder the caller
+  `buildChoices(ChoicesBuilder $choices, ElementScope $scope): void` adds the choices to a builder the caller
   created through `ChoicesBuilderFactory` (for the frontend widget *and* the backend `value` field), `choiceFromKey(string): ?ChoiceObjectInterface` turns a canonical key back into a reference
   choice without database access. `ChoicesBuilder::add()` takes **choice objects**
   (`ContaoModelChoice`, `ValueChoice`) which carry their canonical key. Used by `flare_choice` and the
   choice value provider.
-- **`DateBoundsContract`** — `getDateBounds(FilterScope): DateBounds` supplies min/max for date inputs:
+- **`DateBoundsContract`** — `getDateBounds(ElementScope): DateBounds` supplies min/max for date inputs:
   `DateBounds` carries `?DateTimeImmutable $min` and `$max` (exclusive); a null bound is open. Without it the date range control renders unbounded.
 
 A control used with an element that lacks its port throws a `FilterException`. Elements that declare a choice

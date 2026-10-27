@@ -2,7 +2,7 @@
 
 Predicates (formerly called "filter types") are reusable query-fragment builders in the namespace
 `HeimrichHannot\FlareBundle\Filter\Predicate\`. They are consumed by filter elements (via
-`FilterContextBuilder::addPredicate()`) — including
+`FilterContextBuilderInterface::addPredicate()`) — including
 [inline filters](../dev/filter-elements/index.md#9-programmatic-filters-without-a-backend-record) added
 programmatically — see the [predicates guide](../dev/predicates.md).
 

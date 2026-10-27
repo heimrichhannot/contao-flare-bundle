@@ -58,10 +58,15 @@ intrinsic, and for every other element the editor leaves the *control* blank to 
 
 ## 2. The Interfaces
 
-Every element implements `FilterElementInterface`, which has a single method:
+Every element implements `FilterElementInterface`, which has a single method. Its parameters follow the order
+all hooks share — output channel (the builder), scope, input (the value):
 
 ```php
-public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void;
+public function buildContext(
+    FilterContextBuilderInterface $builder,
+    ElementScope                  $scope,
+    ?ValueInterface               $value,
+): void;
 ```
 
 Elements with configuration additionally implement [`OptionsContract`](../contracts/index.mdx) and
@@ -79,23 +84,34 @@ public function configureTransformers(TransformerMap $transformers): void;
 `transformFilterModel()` hook are abstract; `buildDca()` and `buildContext()` default to no-ops. It also
 provides `expectValue()` (see [below](#5-query-translation-buildcontext)).
 
-### The `FilterScope` and the `FilterContext`
+### The `ElementScope` and the `FilterContext`
 
 A filter is applied in two stages:
 
-1. **`FilterScope`** (`HeimrichHannot\FlareBundle\Filter\FilterScope`, final readonly) is *value-free*: the
-   triple a filter is evaluated in. Everything that happens before a value exists receives it — controls,
-   [capability ports](../filter-controls.md#3-capability-ports) and value providers.
+1. **`ElementScope`** (`HeimrichHannot\FlareBundle\Filter\ElementScope`, final readonly) is *value-free*: the
+   situation an element hook runs in. Everything that happens before a value exists receives a scope —
+   [capability ports](../filter-controls.md#3-capability-ports) get an `ElementScope`, controls a
+   [`ControlScope`](../filter-controls.md#2-the-interface) — and so does `buildContext()`.
 
    | Member | Description |
    |---|---|
-   | `$scope->list` | The [`ListSpec`](../../spec/specifications.md) the filter belongs to |
-   | `$scope->filter` | The [`Filter` value object](../../spec/filtering.md#1-the-filter-value-object); `$scope->filter->config` is the **resolved** element config (validated against `configureOptions()`) and `controlConfig` the control's |
+   | `$scope->get('key')` | The element's **own** resolved config value (validated against `configureOptions()`). A key the schema does not define throws `UndefinedConfigKeyError`; an option defined without default and not set reads as `null` |
+   | `$scope->has('key')` | Whether the element's own config holds a value for the key |
+   | `$scope->list` | The [`ListSpec`](../../spec/specifications.md) the filter belongs to, e.g. `$scope->list->dc` |
+   | `$scope->filter` | The [`Filter` value object](../../spec/filtering.md#1-the-filter-value-object), e.g. `$scope->filter->control?->config->get('label')` to read the control's config |
    | `$scope->engineContext` | The engine context (`ContextInterface`) — interactive, validation, aggregation, or configuration (the backend) |
 
-2. **`FilterContext`** is the element's *product* for one invocation: the scope plus the formula of
-   predicates the element produced for a given value. It is created by the query director only, via
-   `buildContext()`; elements never construct one.
+2. **`FilterContext`** is the element's *product* for one invocation: the formula of predicates the element
+   produced for a given value. Elements contribute to it through the `FilterContextBuilderInterface` in
+   `buildContext()`; only the query director builds one.
+
+:::warning A misspelled key is a programming error
+
+`UndefinedConfigKeyError` extends `\Error`, not `\Exception`: it escapes every failure handling unwrapped.
+The list does not degrade gracefully and the filter is not retried without its value — the request fails, so the
+typo surfaces during development instead of silently widening the list.
+
+:::
 
 ## 3. Config Schema (`configureOptions` + `configureTransformers`)
 
@@ -157,7 +173,7 @@ callbacks and reacting to the record's state.
 `buildContext()` turns config and the filter's value into one or more **predicate calls** — it does not
 write SQL:
 
-- `$builder->scope->filter->config` is the resolved element config.
+- `$scope->get('key')` reads the resolved element config.
 - `$value` is a value object of the element's declared value class — or `null` if the filter has no value
   (nothing submitted, empty selection, no fixed value). Narrowing the parameter type is not possible in PHP;
   check it with `$this->expectValue($value, KeywordsValue::class)`, which passes `null` through and throws a
@@ -168,14 +184,17 @@ write SQL:
   must not widen the list).
 
 ```php
-public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-{
+public function buildContext(
+    FilterContextBuilderInterface $builder,
+    ElementScope                  $scope,
+    ?ValueInterface               $value,
+): void {
     if (!$value = $this->expectValue($value, KeywordsValue::class)) {
         return; // no value — this filter adds no conditions
     }
 
     $builder->addPredicate(SimpleEquationPredicate::class, [
-        'operand_left' => $builder->scope->filter->config['field'],
+        'operand_left' => $scope->get('field'),
         'operator' => SqlEquationOperator::EQUALS,
         'operand_right' => $value->keywords,
     ]);
@@ -195,7 +214,8 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\SimpleEquationPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -220,14 +240,17 @@ class CityFilterElement extends AbstractFilterElement
         $builder->palette('{filter_legend},elm_fieldGeneric');
     }
 
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
         if (!$value = $this->expectValue($value, KeywordsValue::class)) {
             return;
         }
 
         $builder->addPredicate(SimpleEquationPredicate::class, [
-            'operand_left' => $builder->scope->filter->config['field'],
+            'operand_left' => $scope->get('field'),
             'operator' => SqlEquationOperator::EQUALS,
             'operand_right' => $value->keywords,
         ]);
@@ -242,8 +265,8 @@ schema change is needed; a new column needs an `elm_`-prefixed `sql` entry in `t
 ## 7. Choice and Date Elements: Capability Ports
 
 Elements whose value is picked from a server-side option set implement `ChoiceSourceContract`
-(`buildChoices(ChoicesBuilder, FilterScope)`, which fills a builder the caller provides, and
-`choiceFromKey(string)`); date-range elements may implement `DateBoundsContract` (`getDateBounds()` returns a
+(`buildChoices(ChoicesBuilder, ElementScope)`, which fills a builder the caller provides, and
+`choiceFromKey(string)`); date-range elements may implement `DateBoundsContract` (`getDateBounds(ElementScope)` returns a
 `DateBounds`). The generic controls and the value providers use these ports instead of reaching into
 the element. See [Capability Ports](../filter-controls.md#3-capability-ports).
 

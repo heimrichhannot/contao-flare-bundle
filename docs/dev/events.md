@@ -100,7 +100,7 @@ nested compound otherwise).
   filter from being mounted at all. Adding a child alongside a `single()` declaration switches the filter
   to the nested compound layout.
 - **Class:** `HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent`
-- **Properties:** `builder` (readonly `FilterFormBuilderInterface`), `scope` (readonly `FilterScope`)
+- **Properties:** `builder` (readonly `FilterFormBuilderInterface`), `scope` (readonly `ControlScope`)
 - **API:** `cancel()` / `isCancelled()`
 
 :::info[No per-element events]
@@ -171,10 +171,10 @@ How `{type}` is derived:
   `ListDriverRegistry` and fire once per type alias it is registered under (a driver registered under
   several aliases dispatches once per alias). An inline driver instance that is not registered fires no
   named events — the base event still fires.
-- **`flare.filter_element.{type}.transformers`** uses the filter's `type` — the registered *element* type
+- **`flare.filter_element.{type}.transformers`** uses the element's type (`Filter::$element->type`) — the registered *element* type
   captured when the filter was created from one (e.g. via `FilterFactory`).
 - **`flare.filter_control.{type}.transformers` and `.build_form`** use the registered *control* type the control
-  was resolved from (`Filter::$controlType`). For a control passed to `FilterFactory` as an instance, the type
+  was resolved from (`Filter::$control->type`). For a control passed to `FilterFactory` as an instance, the type
   is its class name.
 - **`.dca`** events run in the backend and use the type stored on the record being edited — the element type
   (`type`), the control type (`control`) or the list driver type.

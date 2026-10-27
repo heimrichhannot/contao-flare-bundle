@@ -20,20 +20,21 @@ As of v0.2, FLARE's filtering is built from four decoupled concepts:
   stateless query-fragment builders — the only components that write SQL conditions.
   See [Predicates](../dev/predicates.md).
 
-A filter is applied in **two stages**: a value-free `FilterScope` (list × filter × engine context) is what
-controls, ports and providers receive; the `FilterContext` is the element's product for one invocation, built
-once a value is known.
+A filter is applied in **two stages**: a value-free, role-typed scope (list × filter × engine context) is what
+hooks receive before a value exists — an `ElementScope` for the element's `buildContext()` and its ports, a
+`ControlScope` for the control; `$scope->get('key')` reads the calling component's own config. The
+`FilterContext` is the element's product for one invocation, built once a value is known.
 
 The pipeline, end to end:
 
 ```
 tl_flare_filter rows ──(collector + transformers + value provider)──▶ Filter[] on the ListSpec
                                                           │
-          form building: control->buildForm(scope) per filter ──▶ FormHarness (root form + mounts)
+          form building: control->buildForm(builder, scope) per filter ──▶ FormHarness (root form + mounts)
                                                           │
-         submit: control->decode(data, scope) ──▶ value object per filter alias
+         submit: control->decode(scope, data) ──▶ value object per filter alias
                                                           │
- query building (ListQueryDirector): element->buildContext(builder, value) ──▶ Proposition[]
+ query building (ListQueryDirector): element->buildContext(builder, scope, value) ──▶ Proposition[]
                                                           │
                       predicate->buildConditions() ──▶ FilterConditionsBuilder[] ──▶ SQL conditions
 ```
@@ -41,27 +42,28 @@ tl_flare_filter rows ──(collector + transformers + value provider)──▶ 
 ## 1. The `Filter` Value Object
 
 `HeimrichHannot\FlareBundle\Filter\Filter` is the immutable runtime representation of a single filter within
-a list. It pairs a filter element instance with its canonical configuration, an optional control and an optional
-value — no DCA or storage specifics.
+a list. It binds a filter element with its canonical configuration, an optional control with its own, and an
+optional value — no DCA or storage specifics.
 
 Constructor properties:
 
 | Property | Description |
 |---|---|
-| `element` | The `FilterElementInterface` instance — a registered element service or an inline instance |
-| `type` | The registered element type alias (e.g. `flare_bool`), used for the `flare.filter_element.{type}.*` named events and targeting lookups |
+| `element` | An `ElementBinding`: `component` (the `FilterElementInterface` — a registered element service or an inline instance), `type` (the registered element type alias, e.g. `flare_bool`, used for the `flare.filter_element.{type}.*` named events and targeting lookups) and `config` (the canonical **element** config following the element's schema, `elm_*` columns) |
 | `alias` | The filter's key within the list **and** its form name / query-parameter name. An alias that is not a valid Symfony form name never mounts form children |
-| `config` | Canonical **element** config following the element's schema (`elm_*` columns); scalars, arrays, and enums only |
-| `control` | The `FilterControlInterface` instance, or `null` for a filter without user input (intrinsic) |
-| `controlConfig` | Canonical **control** config following the control's schema (`ctl_*` columns) |
-| `controlType` | The registered control type (the class name of an inline control), used for the `flare.filter_control.{type}.*` named events; `null` without a control |
+| `control` | A `ControlBinding` — `component` (the `FilterControlInterface`), `type` (the registered control type, or the class name of an inline control, used for the `flare.filter_control.{type}.*` named events) and `config` (the canonical **control** config, `ctl_*` columns) — or `null` for a filter without user input (intrinsic) |
 | `value` | The filter's `ValueInterface` — the **fixed value** without a control, the **initial value** with one |
 | `targetAlias` | Table alias the filter's conditions apply to |
 | `targetingForced` | Whether the target alias applies even if the element is not marked as targeted |
 | `source` | Provenance for error messages, e.g. `tl_flare_filter.42` |
 
+Both configs are a `ComponentConfig` (`HeimrichHannot\FlareBundle\Config\ComponentConfig`): immutable, holding
+scalars, arrays and enums only. `get('key')` returns a value — `null` for an option defined without default and
+not set — and throws `UndefinedConfigKeyError` (an `\Error`) for a key the component's schema does not define;
+`has('key')` and `all()` complete it. Inside a hook, `$scope->get('key')` is the short way to the own config.
+
 Because `Filter` is immutable, all modification happens through withers that return a new instance:
-`withValue()`, `withControl()`, `withTargetAlias(?string, bool $forced = true)`.
+`withValue()`, `withControl(?ControlBinding)`, `withTargetAlias(?string, bool $forced = true)`.
 
 Filters are created without a database row through the `FilterFactory` service — which resolves registered
 element aliases and control names to their services — or by constructing a `Filter` directly around an inline
@@ -91,14 +93,14 @@ listeners may replace the (mutable) `$event->filter`, e.g. to change its config 
 ## 3. Form Building
 
 For each filter *with a control* whose alias is a valid Symfony form name, the `FormHarnessFactory` creates a
-`FilterScope` and hands a collect-only per-filter builder (`FilterFormBuilderInterface`) to the control's
+`ControlScope` and hands a collect-only per-filter builder (`FilterFormBuilderInterface`) to the control's
 `buildForm()`. **Single-field controls** declare their one field via `single()` — it is mounted flat on the root
 form under the filter's alias (`form[alias]=x`). **Multi-field controls** `add()` children under local names,
 which mount as a compound sub-form (`form[alias][from]=x`); `compound()` sets its form options, e.g. a label.
 Each mount is hydrated with
-`control->hydrate($filter->value, $scope)`.
+`control->hydrate($scope, $filter->value)`.
 
-The per-filter builder carries the `FilterScope` in its attribute bag under `FilterScope::ATTR_SELF`. After the
+The per-filter builder carries the `ControlScope` in its attribute bag under `ControlScope::ATTR_SELF`. After the
 control built its fields, a `FilterControlBuildFormEvent` is dispatched — listeners can add, remove, or replace
 children, adjust the `single()` declaration, or `cancel()` the filter's form entirely. Filters that declare no
 fields are not mounted onto the root form.
@@ -116,9 +118,9 @@ When a projector executes the list query, the `ListQueryDirector` processes each
    (`$values[$alias] ?? null`) — in the interactive list and its aggregation the submission or, unsubmitted,
    the decoded initial value; in a validation context (readers) there is no map, so the initial value does not
    apply. **Without a control**, the fixed `Filter::$value`, in every context.
-2. The `FilterContextFactory` creates the `FilterContext` from the `FilterScope` and the value: the
+2. The `FilterContextFactory` creates the `FilterContext` from an `ElementScope` and the value: the
    element's `buildContext()` runs and translates config + value into one or more **predicate calls** on the
-   `FilterContextBuilder`:
+   `FilterContextBuilderInterface`:
 
    ```php
    $builder->addPredicate(BooleanPredicate::class, ['field' => 'featured', 'value' => true]);

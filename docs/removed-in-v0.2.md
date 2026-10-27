@@ -35,8 +35,29 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - `Contract\Config\PaletteConfig`, `Contract\Config\ListItemProviderConfig`
 - `Util\MethodInjector`
 - `Filter\FilterData` and `Filter::$data` / `Filter::withData()` — programmatic runtime values are `Filter::$value`
-- `Filter\FilterExecutor` and `Filter\FilterBuilder` — replaced by the `ListQueryDirector`, `FilterContextBuilder` and
-  `FormulaBuilder`
+- `Filter\FilterExecutor` and `Filter\FilterBuilder` — replaced by the `ListQueryDirector`,
+  `FilterContextBuilderInterface` and `FormulaBuilder`
+- `Filter\FilterScope` — replaced by the role-typed `Filter\ElementScope` (element hooks and ports) and
+  `Filter\ControlScope` (control hooks); `$scope->get('key')` reads the calling component's own config, and
+  `ControlScope::forElement()` hands element ports their scope. `FilterScope::ATTR_SELF` / `ATTR_SINGLE_FIELD`
+  moved to `ControlScope`
+- `FilterContextBuilder::$scope` and `FilterContext::$scope` — the element receives the scope as a
+  `buildContext()` parameter; `FilterContextBuilder::build()` is internal, elements see only
+  `FilterContextBuilderInterface`
+- `Filter::$type`, `Filter::$config`, `Filter::$controlConfig`, `Filter::$controlType` — a filter now holds an
+  `ElementBinding` and an optional `ControlBinding`, each with `component`, `type` and a `ComponentConfig`:
+
+  | Removed | Replacement |
+  |---|---|
+  | `$filter->element` (the element) | `$filter->element->component` |
+  | `$filter->type` | `$filter->element->type` |
+  | `$filter->config['key']` | `$filter->element->config->get('key')` — in a hook: `$scope->get('key')` |
+  | `$filter->control` (the control) | `$filter->control?->component` |
+  | `$filter->controlConfig['key']` | `$filter->control?->config->get('key')` — in a control hook: `$scope->get('key')` |
+  | `$filter->controlType` | `$filter->control?->type` |
+  | `Filter::withControl($control, $config, $type)` | `Filter::withControl(?ControlBinding)` |
+
+- `DcaContext::getFilterScope()` — replaced by `DcaContext::getElementScope()`
 - `Util\Fingerprint` — value objects express their identity through `ValueInterface::fingerprint()`
 - `Filter\Value\ParentRefValue` (use `ChoiceValue` of `ContaoModelChoice` references)
 - `ChoicesBuilder::setLabelForModel()`, `::getChoice()`, `::addGroup()`, `::removeGroup()` and the `@api`
@@ -56,6 +77,10 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
   filter record's `control` field is left blank
 - `FilterElementInterface::buildForm()` and `::buildFilter()` — replaced by `buildContext()` on the element and
   `buildForm()` / `decode()` / `hydrate()` on a [filter control](./dev/filter-controls.md)
+- Old hook signatures: `buildContext(FilterContextBuilder, ?ValueInterface)` is now
+  `buildContext(FilterContextBuilderInterface, ElementScope, ?ValueInterface)`; controls take a `ControlScope`
+  first in `decode(ControlScope, mixed)` and `hydrate(ControlScope, ?ValueInterface)`; `buildForm()`,
+  `ChoiceSourceContract::buildChoices()` and `DateBoundsContract::getDateBounds()` take the role-typed scope
 
 ## Events
 

@@ -109,14 +109,17 @@ That's it — no attribute, no manual registration.
 **From a filter element**, inside `buildContext()`:
 
 ```php
-public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-{
+public function buildContext(
+    FilterContextBuilderInterface $builder,
+    ElementScope                  $scope,
+    ?ValueInterface               $value,
+): void {
     if (!$value = $this->expectValue($value, MyPriceValue::class)) {
         return; // no value, no condition
     }
 
     $builder->addPredicate(MinPricePredicate::class, [
-        'field' => $builder->scope->filter->config['field'],
+        'field' => $scope->get('field'),
         'min' => $value->min,
     ]);
 }
@@ -132,17 +135,25 @@ emits the call — added to a list through `ListSpecBuilder::addFilter()` or `Li
 ```php
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 
+$element = new class implements FilterElementInterface {
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
+        $builder->addPredicate(MinPricePredicate::class, ['field' => 'price', 'min' => 10]);
+    }
+};
+
 $filter = new Filter(
-    element: new class implements FilterElementInterface {
-        public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-        {
-            $builder->addPredicate(MinPricePredicate::class, ['field' => 'price', 'min' => 10]);
-        }
-    },
-    type: 'app_min_price',  // only used for named events; free for an unregistered element
+    // the type is only used for named events; free for an unregistered element
+    element: new ElementBinding($element, 'app_min_price', new ComponentConfig()),
     alias: 'min_price',     // the filter's key within the list
 );
 ```

@@ -72,7 +72,7 @@ final class FormHarnessFactoryTest extends TestCase
         $this->logged[] = [$level, $message];
     }
 
-    private function createFactory(): FormHarnessFactory
+    private function createFactory(bool $debug = false): FormHarnessFactory
     {
         // The CSRF extension only needs to define the "csrf_protection" option; the factory
         // always disables it, so the token manager is never used.
@@ -85,6 +85,7 @@ final class FormHarnessFactoryTest extends TestCase
             formFactory: $formFactory,
             logger: $this->logger,
             translator: $this->createMock(TranslatorInterface::class),
+            debug: $debug,
         );
     }
 
@@ -93,7 +94,7 @@ final class FormHarnessFactoryTest extends TestCase
         return $this->createFilterSet($filters)->getForm();
     }
 
-    private function createFilterSet(array $filters): FormHarness
+    private function createFilterSet(array $filters, bool $debug = false): FormHarness
     {
         $driver = new class implements ListDriverInterface {
             public function resolveDcTable(string $type, array $config, array $attributes): string
@@ -126,7 +127,7 @@ final class FormHarnessFactoryTest extends TestCase
             }
         };
 
-        return $this->createFactory()->create($list, $context);
+        return $this->createFactory($debug)->create($list, $context);
     }
 
     /**
@@ -322,6 +323,54 @@ final class FormHarnessFactoryTest extends TestCase
         $this->assertStringContainsString('broken', $this->logged[0][1]);
     }
 
+    public function testUnexpectedExceptionInBuildFormIsSkippedAndLoggedAsError(): void
+    {
+        $failing = $this->control(static function (): void {
+            throw new \RuntimeException('connection lost');
+        });
+
+        $harness = $this->createFilterSet([
+            $this->filter('broken', $failing),
+            $this->filter('suche', $this->single()),
+        ]);
+
+        $this->assertSame(['suche'], \array_keys($harness->getMounts()));
+        $this->assertCount(1, $this->logged);
+        $this->assertSame('error', $this->logged[0][0]);
+        $this->assertStringContainsString('broken', $this->logged[0][1]);
+        $this->assertStringContainsString('connection lost', $this->logged[0][1]);
+    }
+
+    public function testUnexpectedExceptionIsRethrownWrappedInDebugMode(): void
+    {
+        $failing = $this->control(static function (): void {
+            throw new \RuntimeException('connection lost');
+        });
+
+        try
+        {
+            $this->createFilterSet([$this->filter('broken', $failing)], debug: true);
+            $this->fail('The failure was not rethrown.');
+        }
+        catch (FilterException $e)
+        {
+            $this->assertInstanceOf(\RuntimeException::class, $e->getPrevious());
+            $this->assertStringEndsWith('::buildForm', (string) $e->getMethod());
+        }
+    }
+
+    public function testFilterExceptionIsSkippedInDebugModeToo(): void
+    {
+        $failing = $this->control(static function (): void {
+            throw new FilterException('no choices');
+        });
+
+        $harness = $this->createFilterSet([$this->filter('broken', $failing)], debug: true);
+
+        $this->assertSame([], $harness->getMounts());
+        $this->assertSame('warning', $this->logged[0][0]);
+    }
+
     public function testUndefinedConfigKeyInBuildFormIsNotSwallowed(): void
     {
         $control = $this->control(static function (FilterFormBuilderInterface $builder, ControlScope $scope): void {
@@ -385,6 +434,31 @@ final class FormHarnessFactoryTest extends TestCase
         $this->assertSame([], $harness->getMounts());
         $this->assertFalse($harness->getForm()->has('suche'));
         $this->assertCount(1, $this->logged);
+    }
+
+    public function testUnexpectedExceptionInHydrateIsSkippedAndLoggedAsError(): void
+    {
+        $control = new class implements FilterControlInterface {
+            public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
+            {
+                $builder->single(TextType::class);
+            }
+
+            public function decode(mixed $data, ControlScope $scope): ?ValueInterface
+            {
+                return null;
+            }
+
+            public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
+            {
+                throw new \UnexpectedValueException('unusable value');
+            }
+        };
+
+        $harness = $this->createFilterSet([$this->filter('suche', $control)]);
+
+        $this->assertSame([], $harness->getMounts());
+        $this->assertSame('error', $this->logged[0][0]);
     }
 
     public function testGetFormReturnsTheRootForm(): void

@@ -26,7 +26,9 @@ final readonly class FormHarness
      * @param FormInterface $form Root filter form holding every mounted node.
      * @param array<string, FilterMount> $mounts Mounts keyed by alias.
      * @param TranslatorInterface|null $translator Translates the form error of a rejected submission.
-     * @param LoggerInterface|null $logger Receives a warning for each value a control rejects.
+     * @param LoggerInterface|null $logger Receives a warning for each value a control rejects, an error for each
+     *   unexpected failure.
+     * @param bool $debug Whether an unexpected failure is rethrown instead.
      *
      * @internal Use {@see Factory\FormHarnessFactory} to create instances.
      */
@@ -35,6 +37,7 @@ final readonly class FormHarness
         private array                $mounts = [],
         private ?TranslatorInterface $translator = null,
         private ?LoggerInterface     $logger = null,
+        private bool                 $debug = false,
     ) {}
 
     public function getForm(): FormInterface
@@ -85,9 +88,13 @@ final readonly class FormHarness
      * A control that rejects its data ({@see FilterException} from decode()) contributes no value. A
      * rejected submission also gets a form error on its mount, which makes the form invalid like any
      * other invalid input: the list renders empty and the field shows the error. A rejected initial
-     * value is dropped with a warning only, since the visitor did not enter it.
+     * value is dropped with a warning only, since the visitor did not enter it. Any other exception
+     * is treated the same, since the list must not widen silently, but logged as an error; in debug
+     * mode it is rethrown wrapped instead.
      *
      * @return array<string, ValueInterface|null> Decoded values keyed by alias.
+     *
+     * @throws FilterException In debug mode, if a control fails unexpectedly.
      */
     public function decode(): array
     {
@@ -106,9 +113,10 @@ final readonly class FormHarness
             {
                 $value = $mount->filter->control->component->decode($child->getData(), $mount->scope);
             }
-            catch (FilterException $e)
+            catch (\Exception $e)
             {
-                $this->reject($mount->alias, $child, $submitted, $e);
+                $method = $mount->filter->control->component::class . '::decode';
+                $this->reject($mount, $child, $submitted, $e, $method);
                 $value = null;
             }
 
@@ -120,15 +128,31 @@ final readonly class FormHarness
         return $values;
     }
 
-    private function reject(string $alias, FormInterface $child, bool $submitted, FilterException $e): void
-    {
-        $this->logger?->warning(
+    /**
+     * @throws FilterException In debug mode, for an unexpected exception.
+     */
+    private function reject(
+        FilterMount   $mount,
+        FormInterface $child,
+        bool          $submitted,
+        \Exception    $e,
+        string        $method,
+    ): void {
+        $expected = $e instanceof FilterException;
+        $e = FilterException::wrap($e, $mount->filter, $method);
+
+        if (!$expected && $this->debug) {
+            throw $e;
+        }
+
+        $this->logger?->log(
+            $expected ? 'warning' : 'error',
             \sprintf(
-                '[FLARE] The control of filter "%s" rejected its data, which is dropped: %s',
-                $alias,
+                '[FLARE] The control of filter "%s" could not decode its data, which is dropped: %s',
+                $mount->alias,
                 $e->getMessage(),
             ),
-            ['alias' => $alias, 'exception' => $e],
+            ['alias' => $mount->alias, 'exception' => $e],
         );
 
         if (!$submitted) {

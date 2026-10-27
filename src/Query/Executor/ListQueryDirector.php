@@ -200,8 +200,7 @@ readonly class ListQueryDirector
         return match (true) {
             $e instanceof FilterException => $this->createFilterException($e, $filter, $method),
             $e instanceof FlareException => $e,
-            default => new FilterException($e->getMessage(), code: $e->getCode(), previous: $e,
-                method: $method, source: $filter->source ?: 'filter inlined'),
+            default => FilterException::wrap($e, $filter, $method),
         };
     }
 

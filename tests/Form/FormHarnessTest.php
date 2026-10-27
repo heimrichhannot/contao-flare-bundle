@@ -103,6 +103,38 @@ final class FormHarnessTest extends TestCase
         self::assertCount(1, $this->logs);
     }
 
+    public function testUnexpectedExceptionInDecodeIsARejectionLoggedAsError(): void
+    {
+        $harness = $this->harness(['a' => null], control: new RejectingKeywordsControl());
+
+        $harness->getForm()->submit(['a' => 'crashing']);
+
+        self::assertSame(['a' => null], $harness->decode());
+        self::assertCount(1, $harness->getForm()->get('a')->getErrors());
+        self::assertSame('error', $this->logs[0][0]);
+    }
+
+    public function testUnexpectedExceptionInDecodeIsRethrownWrappedInDebugMode(): void
+    {
+        $harness = $this->harness(['a' => null], control: new RejectingKeywordsControl(), debug: true);
+
+        $harness->getForm()->submit(['a' => 'crashing']);
+
+        $this->expectException(FilterException::class);
+
+        $harness->decode();
+    }
+
+    public function testRejectionIsAFormErrorInDebugModeToo(): void
+    {
+        $harness = $this->harness(['a' => null], control: new RejectingKeywordsControl(), debug: true);
+
+        $harness->getForm()->submit(['a' => 'rejected']);
+
+        self::assertSame(['a' => null], $harness->decode());
+        self::assertSame('warning', $this->logs[0][0]);
+    }
+
     /**
      * @param array<string, ?string> $initial Alias => initial keywords (null: no initial value).
      * @param list<string> $remove Aliases whose child is removed from the form after mounting.
@@ -111,6 +143,7 @@ final class FormHarnessTest extends TestCase
         array                   $initial,
         array                   $remove = [],
         ?FilterControlInterface $control = null,
+        bool                    $debug = false,
     ): FormHarness {
         $driver = new class implements ListDriverInterface {
             public function resolveDcTable(string $type, array $config, array $attributes): string
@@ -167,12 +200,13 @@ final class FormHarnessTest extends TestCase
             use TranslatorTrait;
         };
 
-        return new FormHarness($builder->getForm(), $mounts, $translator, $logger);
+        return new FormHarness($builder->getForm(), $mounts, $translator, $logger, $debug);
     }
 }
 
 /**
- * Rejects the keywords "rejected" in decode(), as a control does that cannot turn its data into a value.
+ * Rejects the keywords "rejected" in decode(), as a control does that cannot turn its data into a value, and fails
+ * unexpectedly on "crashing".
  */
 final class RejectingKeywordsControl extends KeywordsFilterControl
 {
@@ -180,6 +214,10 @@ final class RejectingKeywordsControl extends KeywordsFilterControl
     {
         if ($data === 'rejected') {
             throw new FilterException('Rejected.', method: __METHOD__);
+        }
+
+        if ($data === 'crashing') {
+            throw new \RuntimeException('Connection lost.');
         }
 
         return parent::decode($data, $scope);

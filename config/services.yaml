@@ -23,6 +23,10 @@ services:
             - ../src/Engine/Loader
             - ../src/Engine/View
 
+    HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory:
+        arguments:
+            $debug: '%kernel.debug%'
+
     # Util classes registered as twig globals must be defined as services
     HeimrichHannot\FlareBundle\Util\Env: ~
     HeimrichHannot\FlareBundle\Util\Str: ~

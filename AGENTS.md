@@ -41,7 +41,11 @@ or swallowed; only the transformer resolvers still wrap any `\Throwable` (a tran
 may throw a `\ValueError`).
 Who throws what: `FilterException` (and its `UnreadableValueException`) is public API — filter components, bundled
 and userland, throw it to report a filter that cannot work with its config, data or value. `FlareException` and the
-other exceptions in `src/Exception/` are thrown by the framework only; userland may catch them.
+other exceptions in `src/Exception/` are thrown by the framework only; userland may catch them. Every filter hook
+(element `buildContext()`, control `buildForm()`/`hydrate()`/`decode()`) catches any `\Exception` and normalizes it
+with `FilterException::wrap()`; a non-`FilterException` is unexpected: logged as an error, and the control hooks
+rethrow it in debug mode. A control's `buildForm()`/`hydrate()` failure drops its mount (warning); a `decode()`
+failure drops the value and puts a form error on a submitted field.
 
 Note: Contexts and Projectors/Views are separate axes — (Export Context/Projector/View are currently not implemented).
 

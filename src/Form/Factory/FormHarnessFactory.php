@@ -11,6 +11,7 @@ use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\Form\FilterMount;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
@@ -31,6 +32,7 @@ final readonly class FormHarnessFactory
         private FormFactoryInterface     $formFactory,
         private LoggerInterface          $logger,
         private TranslatorInterface      $translator,
+        private bool                     $debug = false,
     ) {}
 
     /**
@@ -92,10 +94,10 @@ final readonly class FormHarnessFactory
             {
                 $control->buildForm($builder, $scope);
             }
-            catch (FilterException $e)
+            catch (\Exception $e)
                 // Fail open: a control that cannot build drops its filter, not the list (§8.1).
             {
-                $this->logSkipped($alias, $e);
+                $this->skip($filter, $e, $control::class . '::buildForm');
                 continue;
             }
 
@@ -128,9 +130,9 @@ final readonly class FormHarnessFactory
             {
                 $initial = $control->hydrate($filter->value, $scope);
             }
-            catch (FilterException $e)
+            catch (\Exception $e)
             {
-                $this->logSkipped($alias, $e);
+                $this->skip($filter, $e, $control::class . '::hydrate');
                 continue;
             }
 
@@ -199,14 +201,28 @@ final readonly class FormHarnessFactory
         /** @var FormBuilder $root */
         $root = $formBuildEvent->formBuilder;
 
-        return new FormHarness($root->getForm(), $mounts, $this->translator, $this->logger);
+        return new FormHarness($root->getForm(), $mounts, $this->translator, $this->logger, $this->debug);
     }
 
-    private function logSkipped(string $alias, FilterException $e): void
+    /**
+     * Drops a filter whose control failed. A FilterException is the control's own report and only logged; any other
+     * exception is unexpected: logged as an error, and rethrown wrapped in debug mode so it is not overlooked.
+     *
+     * @throws FilterException In debug mode, for an unexpected exception.
+     */
+    private function skip(Filter $filter, \Exception $e, string $method): void
     {
-        $this->logger->warning(
-            \sprintf('Filter "%s" is not mounted, its control failed: %s', $alias, $e->getMessage()),
-            ['alias' => $alias, 'exception' => $e],
+        $expected = $e instanceof FilterException;
+        $e = FilterException::wrap($e, $filter, $method);
+
+        if (!$expected && $this->debug) {
+            throw $e;
+        }
+
+        $this->logger->log(
+            $expected ? 'warning' : 'error',
+            \sprintf('Filter "%s" is not mounted, its control failed: %s', $filter->alias, $e->getMessage()),
+            ['alias' => $filter->alias, 'exception' => $e],
         );
     }
 }

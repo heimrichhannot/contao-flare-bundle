@@ -228,21 +228,18 @@ final readonly class ElementDcaListener
     {
         $qTable = $this->connection->quoteIdentifier(FilterModel::getTable());
 
+        // The same filters the list collects; compared as their runtime aliases, which are normalized form names.
         $sql = <<<SQL
-            SELECT `alias`
+            SELECT `id`, `alias`
             FROM {$qTable}
             WHERE `pid` = :pid
               AND `published` = 1
               AND `tstamp` > 0
-              AND `alias` IS NOT NULL
-              AND `alias` <> ''
-            GROUP BY `alias`
-            HAVING COUNT(*) > 1
         SQL;
 
-        $duplicateAliases = $this->connection->fetchFirstColumn($sql, [
+        $duplicateAliases = FilterModel::findDuplicateFormNames($this->connection->fetchAllAssociative($sql, [
             'pid' => (int) $listModel->id,
-        ]);
+        ]));
 
         if (!$duplicateAliases) {
             return;

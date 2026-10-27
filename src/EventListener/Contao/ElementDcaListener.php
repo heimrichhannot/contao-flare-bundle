@@ -143,9 +143,12 @@ final readonly class ElementDcaListener
             $this->buildFrameworkDca($dcaBuilder, $context, $filterModel);
         }
 
-        $this->eventDispatcher->dispatch($table === FilterModel::getTable()
-            ? new FilterElementBuildDcaEvent($dcaBuilder, $context)
-            : new ListDriverBuildDcaEvent($dcaBuilder, $context));
+        $event = match ($table) {
+            FilterModel::getTable() => new FilterElementBuildDcaEvent($dcaBuilder, $context),
+            ListModel::getTable() => new ListDriverBuildDcaEvent($dcaBuilder, $context),
+        };
+
+        $this->eventDispatcher->dispatch($event);
 
         $isEditAction = $this->requestStack->getCurrentRequest()?->query->get('act') === 'edit';
 

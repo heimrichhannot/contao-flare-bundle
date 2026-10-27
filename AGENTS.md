@@ -39,6 +39,9 @@ its schema does not define) is a programming error: never retried, never degrade
 failed list — it fails the request. The bundle catches `\Exception`, not `\Throwable`, so no `\Error` is wrapped
 or swallowed; only the transformer resolvers still wrap any `\Throwable` (a transformer casting stale stored data
 may throw a `\ValueError`).
+Who throws what: `FilterException` (and its `UnreadableValueException`) is public API — filter components, bundled
+and userland, throw it to report a filter that cannot work with its config, data or value. `FlareException` and the
+other exceptions in `src/Exception/` are thrown by the framework only; userland may catch them.
 
 Note: Contexts and Projectors/Views are separate axes — (Export Context/Projector/View are currently not implemented).
 

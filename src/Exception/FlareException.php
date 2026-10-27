@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Exception;
 
 /**
+ * A failure of the framework itself, e.g. an unresolvable type or a broken list configuration.
+ *
  * @internal This exception is thrown internally and should not be
- *           thrown by userland code. You may catch it, however.
+ *           thrown by userland code. You may catch it, however. Filter components report their failures
+ *           with {@see FilterException}.
  */
 class FlareException extends \Exception
 {

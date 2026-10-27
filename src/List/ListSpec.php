@@ -82,7 +82,7 @@ final readonly class ListSpec
             static fn (Filter $existingFilter): bool =>
                 $existingFilter !== $filter_or_class_or_alias
                 && $existingFilter->alias !== $filter_or_class_or_alias
-                && \get_class($existingFilter->element) !== $filter_or_class_or_alias,
+                && $existingFilter->element->component::class !== $filter_or_class_or_alias,
         );
 
         return $this->withFilters($filters);

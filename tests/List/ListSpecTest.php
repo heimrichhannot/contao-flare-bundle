@@ -103,6 +103,21 @@ final class ListSpecTest extends TestCase
         self::assertSame('c', $spec->filters['foo']->element->type);
     }
 
+    public function testWithoutFilterRemovesByElementClass(): void
+    {
+        $published = new Filter(
+            element: new ElementBinding(new PublishedFilterElement(), 'published', new ComponentConfig([])),
+            alias: 'p',
+        );
+
+        $spec = self::spec()
+            ->withFilter($published)
+            ->withFilter(self::filter('stub', 'foo'))
+            ->withoutFilter(PublishedFilterElement::class);
+
+        self::assertSame(['foo'], \array_keys($spec->filters));
+    }
+
     public function testFailuresSurviveWithers(): void
     {
         $spec = self::spec(failures: ['tl_flare_filter.1: broken'])->withFailure('tl_flare_filter.2: broken');

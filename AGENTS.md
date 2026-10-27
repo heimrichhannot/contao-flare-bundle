@@ -34,8 +34,9 @@ filter whose element cannot be built (with or without a control), a broken fixed
 sharing an alias fail the whole list (`list.failed` in the view, HTTP 500 in the reader); a control that cannot be
 resolved only drops the control and initial value (warning). A controlled filter that fails with a non-null value is retried once with value null: success drops only the value
 (warning); if the retry fails too (or the value was already null) the element config is broken and the list fails
-closed. `\Error`s escape unwrapped — including `UndefinedConfigKeyError`, thrown when a component reads a config key
-its schema does not define (a programming error: never retried, never degraded into a skipped filter).
+closed. `\Error`s escape unwrapped. `UndefinedConfigKeyError` (an `\Error`, thrown when a component reads a config key
+its schema does not define) is a programming error: never retried, never degraded into a skipped filter or a
+failed list — it fails the request (the engine loaders rethrow it wrapped in a `FlareException`).
 
 Note: Contexts and Projectors/Views are separate axes — (Export Context/Projector/View are currently not implemented).
 

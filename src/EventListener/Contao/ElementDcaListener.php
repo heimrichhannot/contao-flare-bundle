@@ -12,6 +12,7 @@ use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\DataContainer\BrokenFilterInspector;
 use HeimrichHannot\FlareBundle\DataContainer\IneffectiveFilterInspector;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildDcaEvent;
@@ -48,6 +49,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final readonly class ElementDcaListener
 {
     public function __construct(
+        private BrokenFilterInspector       $brokenFilterInspector,
         private Connection                  $connection,
         private EventDispatcherInterface    $eventDispatcher,
         private FilterControlRegistry       $filterControlRegistry,
@@ -111,7 +113,7 @@ final readonly class ElementDcaListener
                 $service = $this->listDriverRegistry->getService($type);
 
                 $this->checkDuplicateFilterAliases($listModel);
-                $this->reportIneffectiveFilters($listModel);
+                $this->reportFilterStates($listModel);
             }
         }
 
@@ -159,9 +161,27 @@ final readonly class ElementDcaListener
 
         $dcaBuilder->apply($table, $type, applyPalette: $isEditAction);
 
-        if ($isEditAction && $filterModel !== null
-            && $reason = $this->ineffectiveFilterInspector->describe($filterModel))
+        if ($isEditAction && $filterModel !== null) {
+            $this->reportFilterState($listModel, $filterModel);
+        }
+    }
+
+    /**
+     * On the filter's edit form: why it breaks its list ({@see BrokenFilterInspector}), and why it restricts nothing
+     * ({@see IneffectiveFilterContract}).
+     */
+    private function reportFilterState(ListModel $listModel, FilterModel $filterModel): void
+    {
+        if ($failure = $this->brokenFilterInspector->inspect($listModel)->forRow((int) $filterModel->id))
         {
+            Message::addError($this->translator->trans(
+                'filter.info.broken.' . ($filterModel->published ? 'published' : 'unpublished'),
+                ['%reason%' => $failure->getReason()],
+                'flare',
+            ));
+        }
+
+        if ($reason = $this->ineffectiveFilterInspector->describe($filterModel)) {
             Message::addNew($reason);
         }
     }
@@ -237,14 +257,19 @@ final readonly class ElementDcaListener
 
     /**
      * On the list's filter overview (its child view, which loads this DCA as the parent table), counts the filters
-     * that restrict nothing ({@see IneffectiveFilterContract}); each of them is marked in the overview as well.
+     * that break the list ({@see BrokenFilterInspector}) and those that restrict nothing
+     * ({@see IneffectiveFilterContract}); each of them is marked in the overview as well.
      */
-    private function reportIneffectiveFilters(ListModel $listModel): void
+    private function reportFilterStates(ListModel $listModel): void
     {
         $query = $this->requestStack->getCurrentRequest()?->query;
 
         if ($query?->get('table') !== FilterModel::getTable() || $query->get('act')) {
             return;
+        }
+
+        if ($broken = \count($this->brokenFilterInspector->inspect($listModel)->listFailures)) {
+            Message::addError($this->translator->trans('list.info.broken_filters', ['%count%' => $broken], 'flare'));
         }
 
         $qTable = $this->connection->quoteIdentifier(FilterModel::getTable());

@@ -15,6 +15,7 @@ list:
     info:
         no_published_filter: "Entries in this list have a publication status (%target%). No publication filter is configured to account for this."
         duplicate_filter_alias: "Duplicate filter aliases: %alias%. The list cannot be created until each published filter has a unique alias."
+        broken_filters: "{1} One filter breaks the list; it cannot be created until the filter is fixed. It is marked in the list below.|]1,Inf[ %count% filters break the list; it cannot be created until they are fixed. They are marked in the list below."
         ineffective_filters: "{1} One filter has no effect and needs attention; it is marked in the list below.|]1,Inf[ %count% filters have no effect and need attention; they are marked in the list below."
 
 filter:
@@ -40,6 +41,9 @@ filter:
             yes: "This filter is intrinsic"
             no: "This filter ist not intrinsic"
         duplicate_alias: "This filter has the alias \"%alias%\", which is already used by another filter."
+        broken:
+            published: "This filter breaks the list: %reason%"
+            unpublished: "Once published, this filter would break the list: %reason%"
         ineffective:
             archive_without_value: "This filter has no control and no value, so it restricts nothing. Select the archives to show as its value, or select a control."
 

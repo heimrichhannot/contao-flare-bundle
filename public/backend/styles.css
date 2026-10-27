@@ -5,6 +5,15 @@
     opacity: .5;
 }
 
+/* Filter notices (duplicate alias, ineffective, broken) are muted on an unpublished filter, which the list skips. */
+.cte_type.published ~ .flare-filter-info {
+    --flare-filter-notice-opacity: 1;
+}
+
+.cte_type.unpublished ~ .flare-filter-info {
+    --flare-filter-notice-opacity: .5;
+}
+
 .tl_formbody_edit #sub_formatEmptyOption,
 .tl_formbody_edit #sub_formatLabel {
     display: inline;

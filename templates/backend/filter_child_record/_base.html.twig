@@ -4,8 +4,9 @@
 {% set is_alias_duplicated = filter_alias ? ((duplicate_filter_aliases|default([]))[filter_alias] ?? false) : false %}
 
 <div class="cte_type {{ is_published ? 'published' : 'unpublished' }}" style="margin-bottom: .5rem">[{{ type_label }}]</div>
-<div style="display: flex; align-items: center; gap: .5rem; --flare-filter-info-opacity: {{ is_intrinsic|default(false) ? '0.5' : '1' }};">
-    <div style="opacity: var(--flare-filter-info-opacity)">
+{# Muted: the control icon and alias of a filter without control; the notices of an unpublished filter (styles.css). #}
+<div class="flare-filter-info" style="display: flex; align-items: center; gap: .5rem; --flare-filter-control-opacity: {{ is_intrinsic|default(false) ? '0.5' : '1' }};">
+    <div style="opacity: var(--flare-filter-control-opacity)">
         {% if is_intrinsic|default %}
             <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -31,7 +32,7 @@
         {% endif %}
     </div>
     {% if is_alias_duplicated %}
-        <span style="color: #dc3545; opacity: var(--flare-filter-info-opacity)">
+        <span style="color: #dc3545; opacity: var(--flare-filter-notice-opacity)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                      class="lucide-skull-icon">
@@ -44,7 +45,7 @@
             </span>
     {% endif %}
     {% if ineffective_reason|default %}
-        <span style="color: #e0a800; opacity: var(--flare-filter-info-opacity)">
+        <span style="color: #e0a800; opacity: var(--flare-filter-notice-opacity)">
             <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                  class="lucide-engine-icon">
@@ -57,9 +58,24 @@
             </svg>
         </span>
     {% endif %}
+    {% if broken_reason|default %}
+        <span style="color: #dc3545; opacity: var(--flare-filter-notice-opacity)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 class="lucide-bone-fracture-icon">
+                <title>{{ broken_reason }}</title>
+                <path d="M14 4.5a1 1 0 0 1 5 0 .5.5 0 0 0 .5.5 1 1 0 0 1 0 5c-.81 0-1.8-.7-2.5 0l-1.958 1.957a.15.15 0 0 1-.252-.072l-.493-2.07a.15.15 0 0 0-.111-.112l-2.072-.494a.15.15 0 0 1-.072-.252L14 7c.7-.7 0-1.69 0-2.5"/>
+                <path d="m16 20-1-2"/>
+                <path d="m20 16-2-1"/>
+                <path d="m4 8 2 1"/>
+                <path d="m8 4 1 2"/>
+                <path d="M9.698 14.19a.15.15 0 0 0 .112.112l2.074.489a.15.15 0 0 1 .072.252L10 17c-.7.7 0 1.69 0 2.5a1 1 0 0 1-5 0 .495.495 0 0 0-.5-.5 1 1 0 0 1 0-5c.81 0 1.8.7 2.5 0l1.956-1.957a.15.15 0 0 1 .252.072z"/>
+            </svg>
+        </span>
+    {% endif %}
     <div style="display: flex; align-items: baseline; gap: 1rem">
         {% if filter_alias|default %}
-            <code style="opacity: var(--flare-filter-info-opacity)">{{ filter_alias }}</code>
+            <code style="opacity: var(--flare-filter-control-opacity)">{{ filter_alias }}</code>
         {% endif %}
         {% if title|default %}
             <strong>{{ title }}</strong>

@@ -7,9 +7,11 @@ namespace HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareFilter;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\DataContainer\BrokenFilterInspector;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\DataContainer\IneffectiveFilterInspector;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment as TwigEnvironment;
 
@@ -19,6 +21,7 @@ use Twig\Environment as TwigEnvironment;
 readonly class ListCallbacks
 {
     public function __construct(
+        private BrokenFilterInspector      $brokenFilterInspector,
         private IneffectiveFilterInspector $ineffectiveFilterInspector,
         private TranslatorInterface        $translator,
         private TwigEnvironment            $twig,
@@ -61,6 +64,29 @@ readonly class ListCallbacks
             'filter_alias' => $filterAlias,
             'duplicate_filter_aliases' => $duplicateFilterAliases,
             'ineffective_reason' => $this->ineffectiveFilterInspector->describe($row),
+            'broken_reason' => $this->describeBreakage($row, (bool) $isPublished),
         ]);
+    }
+
+    /**
+     * Why the filter breaks its list ({@see BrokenFilterInspector}), or null if it does not.
+     *
+     * @param array<string, mixed> $row
+     */
+    private function describeBreakage(array $row, bool $isPublished): ?string
+    {
+        if (!$listModel = ListModel::findByPk((int) ($row['pid'] ?? 0))) {
+            return null;
+        }
+
+        if (!$failure = $this->brokenFilterInspector->inspect($listModel)->forRow((int) ($row['id'] ?? 0))) {
+            return null;
+        }
+
+        return $this->translator->trans(
+            'filter.info.broken.' . ($isPublished ? 'published' : 'unpublished'),
+            ['%reason%' => $failure->getReason()],
+            'flare',
+        );
     }
 }

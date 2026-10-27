@@ -15,6 +15,7 @@ list:
     info:
         no_published_filter: "Einträge dieser Liste haben einen Veröffentlichungsstatus (%target%). Es ist kein Veröffentlicht-Filter konfiguriert, der dies berücksichtigt."
         duplicate_filter_alias: "Duplizierte Filter-Aliasse: %alias%. Die Liste kann nicht erstellt werden, bis jeder veröffentlichte Filter einen eindeutigen Alias hat."
+        broken_filters: "{1} Ein Filter verhindert, dass die Liste erstellt werden kann, bis er korrigiert ist; er ist in der Liste unten markiert.|]1,Inf[ %count% Filter verhindern, dass die Liste erstellt werden kann, bis sie korrigiert sind; sie sind in der Liste unten markiert."
         ineffective_filters: "{1} Ein Filter ist wirkungslos und muss überprüft werden; er ist in der Liste unten markiert.|]1,Inf[ %count% Filter sind wirkungslos und müssen überprüft werden; sie sind in der Liste unten markiert."
 
 filter:
@@ -40,6 +41,9 @@ filter:
             yes: "Dieser Filter ist intrinsisch"
             no: "Dieser Filter ist nicht intrinsisch"
         duplicate_alias: "Dieser Filter hat den Alias \"%alias%\", der bereits von einem anderen Filter verwendet wird."
+        broken:
+            published: "Dieser Filter verhindert, dass die Liste erstellt werden kann: %reason%"
+            unpublished: "Veröffentlicht würde dieser Filter verhindern, dass die Liste erstellt werden kann: %reason%"
         ineffective:
             archive_without_value: "Dieser Filter hat weder Bedienelement noch Wert und schränkt daher nichts ein. Wählen Sie die anzuzeigenden Archive als Wert oder wählen Sie ein Bedienelement."
 

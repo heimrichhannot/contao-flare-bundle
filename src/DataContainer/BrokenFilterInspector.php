@@ -15,6 +15,7 @@ use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\Executor\FilterInvoker;
+use Symfony\Contracts\Service\ResetInterface;
 
 /**
  * Finds the filters of a list that are guaranteed to break it — that fail under every user input — for the backend's
@@ -24,7 +25,7 @@ use HeimrichHannot\FlareBundle\Query\Executor\FilterInvoker;
  *
  * @internal
  */
-final class BrokenFilterInspector
+final class BrokenFilterInspector implements ResetInterface
 {
     /** @var array<int, FilterDiagnosis> By list id, for the request. */
     private array $diagnoses = [];
@@ -43,6 +44,11 @@ final class BrokenFilterInspector
             fn (): ListSpec => $this->listSpecBuilderFactory->createFromListModel($listModel)->build(),
             FilterModel::findByPid($id, published: false),
         );
+    }
+
+    public function reset(): void
+    {
+        $this->diagnoses = [];
     }
 
     /**

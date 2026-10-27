@@ -50,7 +50,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
             return;
         }
 
-        if (!$field = $scope->filter->element->config->all()['field'] ?? null) {
+        if (!$field = $scope->get('field')) {
             $builder->abort();
         }
 
@@ -88,7 +88,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
      */
     public function buildChoices(ChoicesBuilder $choices, ElementScope $scope): void
     {
-        $field = $scope->filter->element->config->all()['field'] ?? null;
+        $field = $scope->get('field');
 
         if (\is_null($options = $this->getOptions($scope->list->dc, $field))) {
             throw new FilterException(

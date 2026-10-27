@@ -49,13 +49,11 @@ class PublishedFilterElement extends AbstractFilterElement
         ElementScope                  $scope,
         ?ValueInterface               $value,
     ): void {
-        $config = $scope->filter->element->config->all();
-
         $builder->addPredicate(PublishedPredicate::class, [
-            'published_field' => $config['published_field'],
-            'start_field' => $config['start_field'],
-            'stop_field' => $config['stop_field'],
-            'invert_published' => $config['invert'],
+            'published_field' => $scope->get('published_field'),
+            'start_field' => $scope->get('start_field'),
+            'stop_field' => $scope->get('stop_field'),
+            'invert_published' => $scope->get('invert'),
             'now' => \time(),
         ]);
     }

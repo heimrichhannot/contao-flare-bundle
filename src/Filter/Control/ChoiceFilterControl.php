@@ -87,35 +87,34 @@ class ChoiceFilterControl extends AbstractFilterControl
             ));
         }
 
-        $config = $scope->filter->control->config->all();
         $choices = $this->choicesBuilderFactory->createChoicesBuilder();
         $element->buildChoices($choices, $scope->forElement());
 
-        if ($config['format_label']) {
-            $choices->setLabel($config['format_label']);
+        if ($scope->get('format_label')) {
+            $choices->setLabel($scope->get('format_label'));
         }
 
-        if ($config['has_empty_option'])
+        if ($scope->get('has_empty_option'))
         {
-            $emptyOptionValue = ($config['is_expanded'] && $config['is_multiple'])
+            $emptyOptionValue = ($scope->get('is_expanded') && $scope->get('is_multiple'))
                 ? ChoicesBuilder::EMPTY_CHOICE_VALUE_ALTERNATIVE
                 : null;
 
-            $choices->setEmptyOption($config['format_empty_option'] ?: true, $emptyOptionValue);
+            $choices->setEmptyOption($scope->get('format_empty_option') ?: true, $emptyOptionValue);
         }
 
         $options = [
-            'label' => $config['label'] ?: false,
-            'required' => $config['is_mandatory'],
-            'multiple' => $config['is_multiple'],
-            'expanded' => $config['is_expanded'],
+            'label' => $scope->get('label') ?: false,
+            'required' => $scope->get('is_mandatory'),
+            'multiple' => $scope->get('is_multiple'),
+            'expanded' => $scope->get('is_expanded'),
             // The empty option is a real choice (§7.3); Symfony's implicit placeholder would add a second,
             // blank option or an untranslated "None" radio.
             'placeholder' => false,
         ];
 
-        if ($config['placeholder'] && !$choices->hasEmptyOption()) {
-            $options['attr'] = ['placeholder' => $config['placeholder']];
+        if ($scope->get('placeholder') && !$choices->hasEmptyOption()) {
+            $options['attr'] = ['placeholder' => $scope->get('placeholder')];
         }
 
         $choices->applyFormOptions($options);
@@ -139,7 +138,7 @@ class ChoiceFilterControl extends AbstractFilterControl
     {
         $value = $this->expectValue($value, ChoiceValue::class);
 
-        if ($scope->filter->control->config->all()['is_multiple'] ?? false) {
+        if ($scope->get('is_multiple')) {
             return $value->choices ?? [];
         }
 

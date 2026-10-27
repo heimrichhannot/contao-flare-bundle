@@ -74,7 +74,7 @@ class DateRangeFilterControl extends AbstractFilterControl
             ]);
         }
 
-        if ($label = $scope->filter->control->config->all()['label'] ?? null) {
+        if ($label = $scope->get('label')) {
             $builder->compound(['label' => $label]);
         }
 

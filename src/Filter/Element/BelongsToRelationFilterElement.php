@@ -59,9 +59,7 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
         ElementScope                  $scope,
         ?ValueInterface               $value,
     ): void {
-        $config = $scope->filter->element->config->all();
-
-        if (!$fieldPid = $config['field_pid'])
+        if (!$fieldPid = $scope->get('field_pid'))
         {
             throw new FilterException('No parent field defined.');
         }
@@ -84,13 +82,13 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
             $builder->addPredicate(BelongsToRelationPredicate::class, [
                 'field_pid' => $fieldPid,
                 'field_dynamic_ptable' => $fieldDynamicPtable,
-                'parent_groups' => $this->getDynamicParentGroups($config['group_whitelist_parents']),
+                'parent_groups' => $this->getDynamicParentGroups($scope->get('group_whitelist_parents')),
             ]);
 
             return;
         }
 
-        if (!$ptable || !$whitelistParents = $config['whitelist_parents']) {
+        if (!$ptable || !$whitelistParents = $scope->get('whitelist_parents')) {
             throw new FilterException('No whitelisted parents.');
         }
 

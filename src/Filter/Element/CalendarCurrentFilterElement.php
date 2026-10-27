@@ -52,12 +52,11 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
         ?ValueInterface               $value,
     ): void {
         $value = $this->expectValue($value, DateRangeValue::class);
-        $config = $scope->filter->element->config->all();
 
-        $start = \strtotime((string) $config['start_at']) ?: 0;
-        $stop = \strtotime((string) $config['stop_at']) ?: DateTimeHelper::maxTimestamp();
+        $start = \strtotime((string) $scope->get('start_at')) ?: 0;
+        $stop = \strtotime((string) $scope->get('stop_at')) ?: DateTimeHelper::maxTimestamp();
 
-        if (!$config['is_limited'] && $scope->engineContext instanceof ValidationContext)
+        if (!$scope->get('is_limited') && $scope->engineContext instanceof ValidationContext)
         {
             // Unlimited defaults only shape the initial display; the whole list is bounded by a fixed
             // value alone (controlled filters have none here, SPEC_FILTER_FORMS.md §4.2).
@@ -71,14 +70,14 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
 
         if (($from = $value?->from?->getTimestamp()) !== null)
         {
-            if (!$config['is_limited'] || $from >= $start) {
+            if (!$scope->get('is_limited') || $from >= $start) {
                 $start = $from;
             }
         }
 
         if (($to = $value?->to?->getTimestamp()) !== null)
         {
-            if (!$config['is_limited'] || $to <= $stop) {
+            if (!$scope->get('is_limited') || $to <= $stop) {
                 $stop = $to;
             }
         }
@@ -86,7 +85,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
         $builder->addPredicate(CalendarCurrentPredicate::class, [
             'start' => $start,
             'stop' => $stop,
-            'has_extended_events' => $config['has_extended_events'],
+            'has_extended_events' => $scope->get('has_extended_events'),
         ]);
     }
 

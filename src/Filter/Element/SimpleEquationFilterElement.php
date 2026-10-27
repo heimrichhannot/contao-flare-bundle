@@ -48,16 +48,14 @@ class SimpleEquationFilterElement extends AbstractFilterElement
         ElementScope                  $scope,
         ?ValueInterface               $value,
     ): void {
-        $config = $scope->filter->element->config->all();
-
-        if (!($operand = $config['left']) || !($op = $config['operator'])) {
+        if (!($operand = $scope->get('left')) || !($op = $scope->get('operator'))) {
             throw new FilterException('Invalid filter configuration.');
         }
 
         $builder->addPredicate(SimpleEquationPredicate::class, [
             'operand_left' => $operand,
             'operator' => $op,
-            'operand_right' => $config['right'],
+            'operand_right' => $scope->get('right'),
         ]);
     }
 

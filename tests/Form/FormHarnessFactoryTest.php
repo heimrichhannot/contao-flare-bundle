@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Form;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBounds;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\FormContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
@@ -157,9 +160,13 @@ final class FormHarnessFactoryTest extends TestCase
         };
     }
 
-    private function filter(string $alias, ?FilterControlInterface $control, ?ValueInterface $value = null): Filter
-    {
-        $element = new class implements FilterElementInterface {
+    private function filter(
+        string                  $alias,
+        ?FilterControlInterface $control,
+        ?ValueInterface         $value = null,
+        ?FilterElementInterface $element = null,
+    ): Filter {
+        $element ??= new class implements FilterElementInterface {
             public function buildContext(
                 FilterContextBuilderInterface $builder,
                 ElementScope                  $scope,
@@ -311,6 +318,45 @@ final class FormHarnessFactoryTest extends TestCase
         $this->assertCount(1, $this->logged);
         $this->assertSame('warning', $this->logged[0][0]);
         $this->assertStringContainsString('broken', $this->logged[0][1]);
+    }
+
+    public function testUndefinedConfigKeyInBuildFormIsNotSwallowed(): void
+    {
+        $control = $this->control(static function (FilterFormBuilderInterface $builder, ControlScope $scope): void {
+            $scope->get('typo');
+        });
+
+        $this->expectException(UndefinedConfigKeyError::class);
+
+        $this->createFilterSet([$this->filter('suche', $control)]);
+    }
+
+    public function testUndefinedConfigKeyInElementContractIsNotSwallowed(): void
+    {
+        $element = new class implements FilterElementInterface, DateBoundsContract {
+            public function buildContext(
+                FilterContextBuilderInterface $builder,
+                ElementScope                  $scope,
+                ?ValueInterface               $value,
+            ): void {}
+
+            public function getDateBounds(ElementScope $scope): DateBounds
+            {
+                $scope->get('typo');
+
+                return new DateBounds();
+            }
+        };
+
+        $control = $this->control(static function (FilterFormBuilderInterface $builder, ControlScope $scope): void {
+            $element = $scope->filter->element->component;
+            \assert($element instanceof DateBoundsContract);
+            $element->getDateBounds($scope->forElement());
+        });
+
+        $this->expectException(UndefinedConfigKeyError::class);
+
+        $this->createFilterSet([$this->filter('suche', $control, element: $element)]);
     }
 
     public function testControlFailingToHydrateIsSkipped(): void

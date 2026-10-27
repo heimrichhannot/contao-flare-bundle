@@ -11,6 +11,7 @@ use HeimrichHannot\FlareBundle\Engine\Context\AggregationContext;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
@@ -120,6 +121,25 @@ final class ListQueryDirectorTest extends TestCase
         $this->expectException(FilterException::class);
 
         $this->invoke([$filter], new AggregationContext());
+    }
+
+    public function testUndefinedConfigKeyEscapesWithoutRetry(): void
+    {
+        $element = new DirectorTypoElement();
+        $filter = $this->filter($element, control: new DirectorStubControl());
+
+        try
+        {
+            $this->invoke([$filter], new ValidationContext(), ['f' => new BoolValue(true)]);
+            self::fail('Expected an UndefinedConfigKeyError.');
+        }
+        catch (UndefinedConfigKeyError $e)
+        {
+            self::assertSame('typo', $e->key);
+        }
+
+        self::assertSame(1, $element->calls, 'Not retried without the value.');
+        self::assertSame([], $this->logs);
     }
 
     public function testErrorsEscapeUnwrapped(): void
@@ -326,6 +346,23 @@ class DirectorValueRejectingElement implements FilterElementInterface
         }
 
         $builder->addPredicate(BooleanPredicate::class, ['field' => 'published', 'value' => true]);
+    }
+}
+
+class DirectorTypoElement implements FilterElementInterface
+{
+    public int $calls = 0;
+
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
+        ++$this->calls;
+
+        if ($value !== null) {
+            $scope->get('typo');
+        }
     }
 }
 

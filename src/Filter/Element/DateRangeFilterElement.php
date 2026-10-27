@@ -42,7 +42,7 @@ class DateRangeFilterElement extends AbstractFilterElement
     ): void {
         $value = $this->expectValue($value, DateRangeValue::class);
 
-        if (!$field = $scope->filter->element->config->all()['field'] ?? null) {
+        if (!$field = $scope->get('field')) {
             throw new FilterException('Set elm_fieldGeneric in filter model.', method: __METHOD__);
         }
 

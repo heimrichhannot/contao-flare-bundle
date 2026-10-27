@@ -44,15 +44,13 @@ class KeywordsFilterControl extends AbstractFilterControl
 
     public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
     {
-        $config = $scope->filter->control->config->all();
-
         $options = [
-            'label' => $config['label'] ?: false,
+            'label' => $scope->get('label') ?: false,
             'required' => false,
         ];
 
-        if ($config['placeholder']) {
-            $options['attr'] = ['placeholder' => $config['placeholder']];
+        if ($scope->get('placeholder')) {
+            $options['attr'] = ['placeholder' => $scope->get('placeholder')];
         }
 
         $builder->single(TextType::class, $options);

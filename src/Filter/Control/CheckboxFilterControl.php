@@ -52,7 +52,7 @@ class CheckboxFilterControl extends AbstractFilterControl
     public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
     {
         $builder->single(CheckboxType::class, [
-            'label' => $scope->filter->control->config->all()['label'] ?: false,
+            'label' => $scope->get('label') ?: false,
             'required' => false,
         ]);
     }
@@ -66,7 +66,7 @@ class CheckboxFilterControl extends AbstractFilterControl
             return new BoolValue(true);
         }
 
-        $choices = $scope->filter->control->config->all()['binary_choices'] ?? BoolBinaryChoices::NULL_TRUE;
+        $choices = $scope->get('binary_choices');
 
         return $data === false && $choices === BoolBinaryChoices::TRUE_FALSE ? new BoolValue(false) : null;
     }

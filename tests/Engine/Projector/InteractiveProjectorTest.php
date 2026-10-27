@@ -43,6 +43,7 @@ use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
 use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\List\FilterFailure;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
@@ -138,7 +139,7 @@ final class InteractiveProjectorTest extends TestCase
             element: new ElementBinding($spy, 'test_element', new ComponentConfig([])),
             alias: 'fixed',
         ))
-            ->withFailure('tl_flare_filter.3: broken config');
+            ->withFailure(new FilterFailure('tl_flare_filter.3', 'tl_flare_filter.3: broken config'));
 
         $view = $this->createProjector()->project($list, $this->context());
 

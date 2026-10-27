@@ -33,6 +33,7 @@ use HeimrichHannot\FlareBundle\Query\Factory\QueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
 use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\List\FilterFailure;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -187,7 +188,9 @@ final class ListQueryDirectorTest extends TestCase
     public function testListFailuresFailTheQueryBeforeAnyFilterRuns(): void
     {
         $spy = new DirectorSpyElement();
-        $list = $this->list([$this->filter($spy)])->withFailure('tl_flare_filter.3: broken config');
+        $list = $this->list([$this->filter($spy)])->withFailure(
+            new FilterFailure('tl_flare_filter.3', 'tl_flare_filter.3: broken config'),
+        );
 
         try
         {

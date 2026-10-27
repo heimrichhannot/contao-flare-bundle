@@ -12,6 +12,7 @@ use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
+use HeimrichHannot\FlareBundle\List\FilterFailure;
 use PHPUnit\Framework\TestCase;
 
 final class ListSpecTest extends TestCase
@@ -39,7 +40,7 @@ final class ListSpecTest extends TestCase
     }
 
     /**
-     * @param list<string> $failures
+     * @param list<FilterFailure> $failures
      */
     private static function spec(array $config = [], ?string $source = null, array $failures = []): ListSpec
     {
@@ -120,15 +121,17 @@ final class ListSpecTest extends TestCase
 
     public function testFailuresSurviveWithers(): void
     {
-        $spec = self::spec(failures: ['tl_flare_filter.1: broken'])->withFailure('tl_flare_filter.2: broken');
+        $first = new FilterFailure('tl_flare_filter.1', 'broken');
+        $second = new FilterFailure('tl_flare_filter.2', 'broken');
+        $spec = self::spec(failures: [$first])->withFailure($second);
 
-        $expected = ['tl_flare_filter.1: broken', 'tl_flare_filter.2: broken'];
+        $expected = [$first, $second];
 
         self::assertSame($expected, $spec->failures);
         self::assertSame($expected, $spec->withFilter(self::filter('a', 'x'))->failures);
         self::assertSame($expected, $spec->withoutFilter('x')->failures);
         self::assertSame($expected, $spec->withFilters([])->failures);
-        self::assertNotSame(self::spec()->hash(), self::spec(failures: ['broken'])->hash());
+        self::assertNotSame(self::spec()->hash(), self::spec(failures: [new FilterFailure(null, 'broken')])->hash());
     }
 
     public function testModifiersAreImmutable(): void

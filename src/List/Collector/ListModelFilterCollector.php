@@ -8,6 +8,7 @@ use Contao\Controller;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\List\FilterFailure;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
@@ -77,7 +78,7 @@ readonly class ListModelFilterCollector
             }
             catch (FlareException $e)
             {
-                $failures[] = $this->fail($model, $listModel, $e->getMessage());
+                $failures[] = $this->fail($model, $listModel, $e->getMessage(), $e);
 
                 continue;
             }
@@ -102,10 +103,14 @@ readonly class ListModelFilterCollector
     }
 
     /**
-     * Logs a filter failure that fails the list and returns its message.
+     * Logs a filter failure that fails the list and returns it.
      */
-    private function fail(FilterModel $model, ListModel $listModel, string $reason): string
-    {
+    private function fail(
+        FilterModel $model,
+        ListModel   $listModel,
+        string      $reason,
+        ?\Exception $exception = null,
+    ): FilterFailure {
         $message = \sprintf(
             'Filter %s.%s of type "%s" on %s.%s could not be created: %s',
             $model::getTable(),
@@ -118,6 +123,6 @@ readonly class ListModelFilterCollector
 
         $this->logger->error('[FLARE] ' . $message . ' -- The list fails.');
 
-        return $message;
+        return new FilterFailure("{$model::getTable()}.{$model->id}", $message, $exception);
     }
 }

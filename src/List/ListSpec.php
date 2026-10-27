@@ -32,7 +32,7 @@ final readonly class ListSpec
      *   ({@see ListSpecBuilder::addFilter()}).
      * @param array<string, mixed> $config Canonical config, resolved through the base and driver schemas.
      * @param string|null $source Provenance for error messages, e.g. "tl_flare_list.5".
-     * @param list<string> $failures Failures of filters whose element could not be built, or whose fixed
+     * @param list<FilterFailure> $failures Failures of filters whose element could not be built, or whose fixed
      *   value or alias is broken; a list with failures has failed as a whole (SPEC_FILTER_FORMS.md §8.1).
      *
      * @internal Use {@see Factory\ListSpecFactory} to create instances.
@@ -104,7 +104,7 @@ final readonly class ListSpec
         );
     }
 
-    public function withFailure(string $failure): self
+    public function withFailure(FilterFailure $failure): self
     {
         return new self(
             driver: $this->driver,
@@ -152,7 +152,7 @@ final readonly class ListSpec
             $this->source,
             $this->config,
             \array_map(static fn (Filter $filter): array => $filter->fingerprint(), $this->filters),
-            $this->failures,
+            \array_map(static fn (FilterFailure $f): array => [$f->source, $f->message], $this->failures),
         ]));
     }
 }

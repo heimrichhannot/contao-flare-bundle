@@ -26,6 +26,7 @@ use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
+use HeimrichHannot\FlareBundle\List\FilterFailure;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
@@ -89,7 +90,7 @@ final class ListSpecBuilderTest extends TestCase
         $builder->addFilter(self::filter('b', 'y'));
         $builder->addFilter(self::filter('c', 'z'), 'custom');
         $builder->removeFilter('x');
-        $builder->addFailure('tl_flare_filter.3: broken');
+        $builder->addFailure($failure = new FilterFailure('tl_flare_filter.3', 'broken'));
 
         self::assertTrue($builder->hasFilterInstance(FilterElementInterface::class));
         self::assertFalse($builder->hasFilterInstance(StubFilterElement::class));
@@ -101,7 +102,7 @@ final class ListSpecBuilderTest extends TestCase
         self::assertSame('tl_test', $spec->config['dc']);
         self::assertSame('tl_flare_list.9', $spec->source);
         self::assertSame(['y', 'custom'], \array_keys($spec->filters));
-        self::assertSame(['tl_flare_filter.3: broken'], $spec->failures);
+        self::assertSame([$failure], $spec->failures);
     }
 
     public function testAddFilterRejectsAnExistingKey(): void

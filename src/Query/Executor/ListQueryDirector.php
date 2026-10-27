@@ -12,6 +12,7 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\List\FilterFailure;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
@@ -53,7 +54,10 @@ readonly class ListQueryDirector
         if ($failures = $config->list->failures)
         {
             throw new FilterException(
-                \sprintf('[FLARE] The list has failed: %s', \implode('; ', $failures)),
+                \sprintf('[FLARE] The list has failed: %s', \implode('; ', \array_map(
+                    static fn (FilterFailure $failure): string => $failure->message,
+                    $failures,
+                ))),
                 method: __METHOD__,
                 source: $config->list->source ?? 'list inlined',
             );

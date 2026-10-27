@@ -31,7 +31,7 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
     private array $filters = [];
 
     /**
-     * @var list<string>
+     * @var list<FilterFailure>
      */
     private array $failures = [];
 
@@ -112,7 +112,7 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
     /**
      * Records the failure of a filter that fails the list as a whole (SPEC_FILTER_FORMS.md §8.1).
      */
-    public function addFailure(string $failure): self
+    public function addFailure(FilterFailure $failure): self
     {
         $this->failures[] = $failure;
 

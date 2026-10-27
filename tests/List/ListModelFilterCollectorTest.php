@@ -18,6 +18,7 @@ use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -131,8 +132,9 @@ final class ListModelFilterCollectorTest extends TestCase
 
         self::assertSame([2], \array_keys($collected->filters));
         self::assertCount(1, $collected->failures);
-        self::assertStringContainsString('tl_flare_filter.1', $collected->failures[0]);
-        self::assertStringContainsString('Filter element type "missing" not found', $collected->failures[0]);
+        self::assertSame('tl_flare_filter.1', $collected->failures[0]->source);
+        self::assertStringContainsString('Filter element type "missing" not found', $collected->failures[0]->message);
+        self::assertInstanceOf(FlareException::class, $collected->failures[0]->exception);
         self::assertCount(1, $this->logs);
         self::assertSame('error', $this->logs[0][0]);
         self::assertStringContainsString('tl_flare_list.5', $this->logs[0][1]);
@@ -147,7 +149,7 @@ final class ListModelFilterCollectorTest extends TestCase
 
         self::assertSame([2], \array_keys($collected->filters));
         self::assertCount(1, $collected->failures);
-        self::assertStringContainsString('tl_flare_filter.1', $collected->failures[0]);
+        self::assertSame('tl_flare_filter.1', $collected->failures[0]->source);
         self::assertCount(1, $this->logs);
         self::assertSame('error', $this->logs[0][0]);
         self::assertStringContainsString('tl_flare_filter.1', $this->logs[0][1]);
@@ -179,8 +181,9 @@ final class ListModelFilterCollectorTest extends TestCase
         self::assertSame(['dup'], \array_keys($collected->filters));
         self::assertSame('tl_flare_filter.1', $collected->filters['dup']->source);
         self::assertCount(1, $collected->failures);
-        self::assertStringContainsString('tl_flare_filter.2', $collected->failures[0]);
-        self::assertStringContainsString('"dup"', $collected->failures[0]);
+        self::assertSame('tl_flare_filter.2', $collected->failures[0]->source);
+        self::assertStringContainsString('"dup"', $collected->failures[0]->message);
+        self::assertNull($collected->failures[0]->exception);
         self::assertCount(1, $this->logs);
         self::assertSame('error', $this->logs[0][0]);
     }

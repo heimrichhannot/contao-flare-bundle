@@ -28,13 +28,14 @@ ContentElement Controller
 
 Filter execution inside the projector: the `FormHarness` decodes submitted form data per filter control into value
 objects; `ListQueryDirector` (`src/Query/Executor/`) picks each filter's value (with a control: the form's value;
-without: the fixed `Filter::$value`), creates the `FilterContext` via `FilterContextFactory::create(FilterScope, ?value)`
-(the element's `buildContext()` adds predicates) and runs each predicate into a `FilterConditionsBuilder`. A
+without: the fixed `Filter::$value`), creates the `FilterContext` via `FilterContextFactory::create(ElementScope, ?value)`
+(the element's `buildContext($builder, $scope, $value)` adds predicates) and runs each predicate into a `FilterConditionsBuilder`. A
 filter whose element cannot be built (with or without a control), a broken fixed value, or two published filters
 sharing an alias fail the whole list (`list.failed` in the view, HTTP 500 in the reader); a control that cannot be
 resolved only drops the control and initial value (warning). A controlled filter that fails with a non-null value is retried once with value null: success drops only the value
 (warning); if the retry fails too (or the value was already null) the element config is broken and the list fails
-closed. `\Error`s escape unwrapped.
+closed. `\Error`s escape unwrapped — including `UndefinedConfigKeyError`, thrown when a component reads a config key
+its schema does not define (a programming error: never retried, never degraded into a skipped filter).
 
 Note: Contexts and Projectors/Views are separate axes — (Export Context/Projector/View are currently not implemented).
 
@@ -50,12 +51,17 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   because `List` is reserved in PHP — conceptually it is the list, as `Filter` is the filter), `ListSpecBuilder`
   (build lifecycle: driver's `buildList()` hook → `ListDriverBuildListEvent` → config assembly → schema resolution),
   `BaseListOptions` (framework-owned base schema for tl_flare_list columns)
-- `src/Filter/` — `Filter` DTO (element + element config `elm_*`, optional control + control config `ctl_*`,
-  `?ValueInterface $value`), elements (`Element/`), predicates (`Predicate/`, the public SQL-fragment
-  layer, formerly "filter types"), collector, resolvers (`FilterOptionsResolver`, `FilterTransformerResolver`).
-  A filter is applied in two stages: `FilterScope` (value-free triple list × filter × engine context; handed to
-  everything that happens before a value exists) and `FilterContext` (the element's product for one
-  invocation, built by `FilterContextFactory` from scope + value, only inside `ListQueryDirector`).
+- `src/Filter/` — `Filter` DTO (`ElementBinding` = element + type + element config `elm_*`, optional
+  `ControlBinding` = control + type + control config `ctl_*`, `?ValueInterface $value`); each config is an immutable
+  `ComponentConfig` (`src/Config/`, `get()` throws `UndefinedConfigKeyError` for an undefined key), elements
+  (`Element/`), predicates (`Predicate/`, the public SQL-fragment layer, formerly "filter types"), collector,
+  resolvers (`FilterOptionsResolver`, `FilterTransformerResolver`).
+  A filter is applied in two stages: a value-free, role-typed scope — `ElementScope` for element hooks and
+  contracts, `ControlScope` for control hooks (list × filter × engine context; `$scope->get('key')` reads the
+  calling component's own config, `ControlScope::forElement()` hands element contracts their scope) — handed to
+  everything that happens before a value exists, and `FilterContext` (the element's product for one invocation,
+  collected through the public `FilterContextBuilderInterface` and built by `FilterContextFactory` from scope +
+  value, only inside `ListQueryDirector`). Hook parameter order: output channel (builder), scope, input.
   `FormHarnessFactory` builds a `FormHarness` (root form + mount↔filter map of `FilterMount`s) per list ×
   form context; the harness owns the `decode()` loop
 - `src/Filter/Control/` — `FilterControl` implementations (peers of `src/Filter/Element/`) behind

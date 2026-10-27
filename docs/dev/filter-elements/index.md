@@ -271,6 +271,12 @@ Elements whose value is picked from a server-side option set implement `ChoiceSo
 `DateBounds`). The generic controls and the value providers use these ports instead of reaching into
 the element. See [Capability Ports](../filter-controls.md#3-capability-ports).
 
+An element that can be configured into restricting nothing implements `IneffectiveFilterContract`
+(`getIneffectiveReason(Filter): ?TranslatableInterface`). It returns why the filter has no effect, or `null`; the
+backend then marks the filter with an engine icon in the filter list and shows the reason on its edit form. The
+runtime behavior is unchanged. `ArchiveFilterElement` uses it for a whitelist applied to the form options only on a
+filter without a control.
+
 ## 8. Intrinsic and Initial Values
 
 There is no `intrinsic` checkbox any more. The **`control`** field of a filter record decides:
@@ -311,15 +317,17 @@ $filter = $this->filterFactory->create(
 // With a control the value is only the initial value of the user-changeable input.
 $filter = $this->filterFactory->create(
     element: ArchiveFilterElement::TYPE,
+    alias: 'archive',
     config: [/* ... */],
     control: 'flare_choice',
     value: new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5)]),
 );
 ```
 
-Without an `alias`, `create()` generates one: `_.{type}_{random}` for a filter without a control (never mounted
-as a form field), a form-valid `{type}_{random}` for one with a control. `create()` throws a `FlareException` if
-the control is not registered for the element's value class, or the value is not of its class. It also accepts a `FilterElementInterface` instance — as does `new Filter(element: ..., type:
+A filter with a control **needs an `alias`**: it names the form field, which must stay the same across requests,
+so `create()` throws a `FlareException` without one. A filter without a control may omit it; `create()` then
+generates `_.{type}_{random}`, which is never mounted as a form field. `create()` also throws a `FlareException`
+if the control is not registered for the element's value class, or the value is not of its class. It also accepts a `FilterElementInterface` instance — as does `new Filter(element: ..., type:
 ..., alias: ...)` directly — for elements that are not registered as a service at all (see the anonymous-class
 example under [Consuming Predicates](../predicates.md#4-consuming-predicates)). Such filters fire no named
 events.

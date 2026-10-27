@@ -72,7 +72,9 @@ The method's subject comes first — the builder, the submitted data, the value 
   control that declares nothing is not mounted.
 - **`decode()`** turns the mount's submitted data into the control's value object, or `null` to contribute
   nothing (an empty submission clears the filter). Implementations MUST narrow the return type to one concrete
-  value class.
+  value class. A control that cannot turn the data into a value throws a `FilterException`: the filter then
+  contributes no value, and a submitted field gets an "invalid value" form error, which makes the form invalid
+  like any other invalid input (the list renders empty). A rejected initial value is only dropped with a warning.
 - **`hydrate()`** is the inverse: the widget data for a value of the control's class. It pre-fills an
   unsubmitted form from the filter's [initial value](./filter-elements/index.md#8-intrinsic-and-initial-values).
   Narrow its return type to the widget data (e.g. `?string`) and document the `$data` shape `decode()` receives

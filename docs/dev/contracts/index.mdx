@@ -24,6 +24,8 @@ depth by the [custom filter elements guide](../filter-elements/index.md):
 - **Capability ports** (`Contract\FilterElement\`): `ChoiceSourceContract` (the element offers a set of
   choices) and `DateBoundsContract` (the element bounds a date range) — what controls and value providers pull
   from an element. Both take an `ElementScope`, so the element reads its own config with `$scope->get()`. See [filter controls](../filter-controls.md#3-capability-ports).
+  `IneffectiveFilterContract` lets an element tell the backend why its filter restricts nothing as configured;
+  see [filter elements](../filter-elements/index.md).
 
 ## 2. List Driver Contracts
 

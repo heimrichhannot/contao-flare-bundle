@@ -162,7 +162,7 @@ final readonly class ElementDcaListener
         if ($isEditAction && $filterModel !== null
             && $reason = $this->ineffectiveFilterInspector->describe($filterModel))
         {
-            Message::addInfo($reason);
+            Message::addNew($reason);
         }
     }
 
@@ -257,7 +257,7 @@ final readonly class ElementDcaListener
             return;
         }
 
-        Message::addInfo($this->translator->trans('list.info.ineffective_filters', ['%count%' => $count], 'flare'));
+        Message::addNew($this->translator->trans('list.info.ineffective_filters', ['%count%' => $count], 'flare'));
     }
 
     private function checkDuplicateFilterAliases(ListModel $listModel): void

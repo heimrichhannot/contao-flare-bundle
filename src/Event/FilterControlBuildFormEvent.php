@@ -25,7 +25,7 @@ class FilterControlBuildFormEvent extends Event
 {
     public function __construct(
         public readonly FilterFormBuilderInterface $builder,
-        public readonly ControlScope                $scope,
+        public readonly ControlScope               $scope,
         private bool                               $cancelled = false,
     ) {}
 

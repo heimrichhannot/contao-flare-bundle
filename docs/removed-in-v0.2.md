@@ -125,6 +125,10 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
   reader answers 500.
 - `ListSpec::withFilter()` and `ListSpecBuilder::addFilter()` throw a `FlareException` on a duplicate alias
   (`addFilter()` also on a taken key) instead of replacing the filter.
+- An archive filter (`flare_archive`) **without a control** is restricted by its `value` only. The element ignores
+  `whitelist_parents`, `group_whitelist_parents` and `use_whitelist_for_options_only` then — also when they are
+  passed to `FilterFactory::create()` — and without a value the filter restricts nothing. Code that built an
+  intrinsic archive filter from a whitelist must pass the archives as its `value` (a `ChoiceValue`) instead.
 
 - Filter element classes moved from `FilterElement\` to `Filter\Element\` and gained a `FilterElement`
   class-name suffix — a rename rather than a removal, but any `use` statement referencing the old FQCNs

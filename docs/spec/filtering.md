@@ -173,7 +173,9 @@ A **failed list is not an empty list:**
 
 **Which exception to throw.** `FilterException` (and its subclass `UnreadableValueException`) is public API: filter
 components — elements, controls, value providers and capability ports, bundled and userland alike — throw it to
-report a filter that cannot work with its config, data or value; FLARE adds the filter's source. Every filter hook
+report a filter that cannot work with its config, data or value; FLARE adds the filter's source. Where an editor
+may see the message — e.g. while the backend loads the options of a choice element's `value` field — the component
+translates it itself; elements extending `AbstractFilterElement` use `$this->trans()` (`flare` domain). Every filter hook
 catches any `\Exception` and handles it as the table above describes, but only a `FilterException` counts as
 expected (warning logged). Any other exception is unexpected: it is logged as an error, and the control hooks rethrow
 it, wrapped in a `FilterException`, in **debug mode**, so a broken control is not silently dropped during

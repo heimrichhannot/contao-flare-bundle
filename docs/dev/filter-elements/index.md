@@ -274,8 +274,8 @@ the element. See [Capability Ports](../filter-controls.md#3-capability-ports).
 An element that can be configured into restricting nothing implements `IneffectiveFilterContract`
 (`getIneffectiveReason(Filter): ?TranslatableInterface`). It returns why the filter has no effect, or `null`; the
 backend then marks the filter with an engine icon in the filter list, counts such filters in a message above that
-list, and shows the reason on the filter's edit form. The runtime behavior is unchanged. `ArchiveFilterElement` uses it for a whitelist applied to the form options only on a
-filter without a control.
+list, and shows the reason on the filter's edit form. The runtime behavior is unchanged. `ArchiveFilterElement` uses it
+for a filter with neither a control nor a value.
 
 ## 8. Intrinsic and Initial Values
 
@@ -291,6 +291,14 @@ Elements without a value class (`value: null`), e.g. `flare_published`, `flare_b
 
 Only fixed values and the elements' own config (e.g. a whitelist) bound the **whole list** — everything the
 user can reach through controls. A bool filter with a control therefore no longer restricts reader pages.
+
+`flare_archive` shows the difference most clearly. **Without a control** its `value` is the restriction: the
+editor picks it from **all** parent records (every record of the static ptable, or of every table the dynamic
+`ptable` column holds), and the filter applies `pid IN (value)`; without a value it restricts nothing. The parent
+whitelist and "whitelist for options only" belong to the control: **with a control** the whitelist provides the
+options and bounds the value (`value ∩ whitelist`), and "options only" decides whether no selection means the whole
+whitelist or no restriction. Without a control the element ignores the whitelist settings, whatever their source —
+a transformer, `FilterFactory::create()` or a listener.
 
 ## 9. Programmatic Filters Without a Backend Record
 

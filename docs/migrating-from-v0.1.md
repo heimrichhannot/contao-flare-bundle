@@ -120,7 +120,9 @@ The migrations:
     (date range, calendar current), `flare_keywords`, and for bools `flare_checkbox` (`boolMode` = binary) or
     `flare_choice_bool` (ternary).
   - `value`: from `preselect` / `prefill`, only where the old code actually read it, so no leftover becomes a
-    restriction.
+    restriction. An **intrinsic archive filter** gets its parent whitelist as its value instead (`{table}.{id}`
+    keys), since without a control the value is now its restriction; bare preselect ids of controlled archive
+    filters are qualified with the list's parent table.
   - `ctl_boolBinaryChoices`: `null_false` → `true_false` (the `NULL_FALSE` enum case is removed).
   - `ctl_hasEmptyOption` / `ctl_formatEmptyOption(Custom)` / `ctl_placeholder`: derived so choice widgets look
     the same as before (single-selects get an empty option unless expanded and mandatory; an old placeholder

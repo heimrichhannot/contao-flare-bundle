@@ -6,7 +6,7 @@ their type with a `FilterElement` suffix (e.g. `flare_bool` → `BooleanFilterEl
 
 | Type | Backend label | Form controls | Purpose |
 |---|---|---|---|
-| `flare_archive` | Archive | `ChoiceType` | Filter by parent archive (e.g. news archives). |
+| `flare_archive` | Archive | `ChoiceType` | Filter by parent archive (e.g. news archives). Without a control the value (any parent archive) is the restriction; with one, the parent whitelist provides the options. |
 | `flare_bool` | Boolean property value | `CheckboxType` | Filter on a boolean column. |
 | `flare_calendar_current` | Calendar time window | 2× `DateType` (from/to) | Time-window filter for calendar events, recurring-aware. |
 | `flare_dateRange` | Date range | 2× `DateType` (from/to) | Filter a date column by from/to values; either field can be disabled via the `from_enabled`/`to_enabled` config options. |

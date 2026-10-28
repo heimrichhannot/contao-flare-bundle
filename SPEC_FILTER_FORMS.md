@@ -880,10 +880,14 @@ The rule follows the two scopes of §4.2 (§13.31):
 | a filter's stored **control** cannot be built — its `control` names no registered control for the element's value class, or its control config is broken | the whole list | **fail closed**: the editor chose the control, and the filter must not apply without it (e.g. a "hide secret items" filter of an uninstalled bundle); error logged |
 | a controlled filter's **initial value** is unreadable (any `FilterException` from its value provider) | only the initial display | **fail open**: the control is kept, the value dropped; warning logged |
 
-The backend marks every filter that is guaranteed to break its list — a collection failure, or a filter whose
-conditions cannot be built with its default value (the fixed value without a control, none with one) — with a
-bone-fracture icon in the filter list and an error on its edit form, and counts the published ones on the list's
-filter overview (`BrokenFilterInspector`). Unpublished filters are marked but never fail the list.
+The backend reports every filter issue through one inspector (`FilterInspector`), on the filter row (icon), the edit
+form and the list's filter overview: a **programming error** (an `\Error` while building or checking the filter,
+caught outside debug mode only, logged as critical; bug icon), a **duplicate alias** (copy-x icon; two or more
+published rows sharing an alias block the list and are all marked, with one published row only the unpublished ones
+are, with none no row is), a **broken** filter — one that cannot be created, or whose conditions cannot be built with
+its default value (the fixed value without a control, none with one) — (bone-fracture icon) and an **ineffective**
+one (engine icon). Every saved row is inspected; unpublished rows are marked muted and never count toward the
+overview messages, which count published filters and filters added by the list driver.
 
 Stale keys of deleted records are not a failure: they resolve to references that match nothing
 (§3.6).

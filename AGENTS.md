@@ -87,11 +87,12 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   (`FormHarness`, `FilterMount`, `ChoicesBuilder`, `Form/Type/DateRangeFormType`)
 - `src/Contract/FilterElement/` — capability ports an element implements for controls/providers to pull from
   (`ChoiceSourceContract`, `DateBoundsContract`); controls never reach into an element otherwise.
-  `IneffectiveFilterContract` lets an element explain why its filter restricts nothing as configured; the backend
-  marks such filters in the filter list and on the edit form (`DataContainer/IneffectiveFilterInspector`).
-  Filters guaranteed to break their list — collection failures, or conditions that cannot be built with the default
-  value (through the shared `Query/Executor/FilterInvoker`) — are marked there too, and counted on the list's filter
-  overview (`DataContainer/BrokenFilterInspector`)
+  `IneffectiveFilterContract` lets an element explain why its filter restricts nothing as configured. One backend
+  inspector (`DataContainer/Inspection/FilterInspector`) reports every filter issue of a list once, as one of four
+  kinds — programming error, duplicate alias, broken (cannot be created, or conditions that cannot be built with
+  the default value, through the shared `Query/Executor/FilterInvoker`), ineffective — on the filter row (icon), the
+  edit form and the list's filter overview (counts of published filters only). It inspects every saved row, builds
+  the list scope the way the runtime does, and catches `\Error` outside debug mode only (logged as critical)
 - `src/Filter/ValueProvider/` — one `ValueProviderInterface` service per value class (`provide()` turns the
   stored `value` column into a value object; `buildDcaField()` renders the backend widget), registered via the
   `flare.value_provider` tag and `ValueProviderRegistry`

@@ -30,7 +30,9 @@ edit form.
 
 - A row may carry several kinds at once (e.g. duplicate and ineffective); each shows its own icon, side by side, no
   precedence logic (as today).
-- A duplicate is **only** a duplicate: it is never also reported as broken, and never counted in the broken message.
+- Sharing an alias never produces a broken issue by itself: a duplicate is reported as a duplicate only, not as
+  broken, and is not counted in the broken message. A row that is also broken for its own reason (e.g. an unknown
+  type) carries both issues.
 - The overview messages appear in the table's order, each only when its count is non-zero; each states its count
   (pluralized like today's messages). The duplicate message also names the clashing aliases, like today's.
 

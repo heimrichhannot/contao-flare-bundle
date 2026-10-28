@@ -110,7 +110,8 @@ A filter is applied in two stages:
 `UndefinedConfigKeyError` extends `\Error`, not `\Exception`, so no filter failure handling catches it: the filter
 is not retried without its value, not skipped, and the list does not degrade to its "could not be created" state —
 the request fails (FLARE catches `\Exception`, never `\Throwable`, so the error reaches you unwrapped), and the typo
-surfaces during development instead of silently widening the list.
+surfaces during development instead of silently widening the list. Only the backend's filter inspection catches it,
+outside debug mode, to mark the filter with a bug icon instead of failing the filter overview.
 
 :::
 

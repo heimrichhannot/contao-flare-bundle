@@ -6,8 +6,12 @@ namespace HeimrichHannot\FlareBundle\Tests\DataContainer\Inspection;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaFieldBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterInspector;
 use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssue;
 use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssueKind;
@@ -15,6 +19,9 @@ use HeimrichHannot\FlareBundle\DataContainer\Inspection\ListInspection;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
@@ -23,7 +30,9 @@ use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
+use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\List\ListSpec;
@@ -38,6 +47,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Translation\TranslatableMessage;
+use Symfony\Contracts\Translation\TranslatableInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Contracts\Translation\TranslatorTrait;
 
@@ -167,6 +178,179 @@ final class FilterInspectorTest extends TestCase
         $this->inspect([self::model(4, 'ok', 'a')], debug: true);
     }
 
+    public function testAFilterFailingWithItsDefaultValueIsBroken(): void
+    {
+        $inspection = $this->inspect([self::model(1, 'throws', 'a')]);
+
+        self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
+        self::assertSame('broken', $inspection->forRow(1)[0]->reason);
+        self::assertSame(1, $inspection->count(FilterIssueKind::Broken));
+    }
+
+    public function testUnpublishedFiltersAreCheckedButDoNotCount(): void
+    {
+        $inspection = $this->inspect([self::model(1, 'throws', 'a', published: false)]);
+
+        self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
+        self::assertSame(0, $inspection->count(FilterIssueKind::Broken));
+    }
+
+    public function testControlledFilterIsCheckedWithoutItsInitialValue(): void
+    {
+        $inspection = $this->inspect([
+            self::model(1, 'sensitive', 'a', row: ['control' => 'flare_checkbox', 'value' => '1']),
+        ]);
+
+        self::assertSame([], $inspection->forRow(1));
+    }
+
+    public function testAFixedValueIsCheckedAsTheFixedValue(): void
+    {
+        $inspection = $this->inspect([self::model(1, 'sensitive', 'a', row: ['value' => '1'])]);
+
+        self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
+        self::assertSame('value rejected', $inspection->forRow(1)[0]->reason);
+    }
+
+    public function testAnAbortingFilterIsNotBroken(): void
+    {
+        self::assertEquals(new ListInspection(), $this->inspect([self::model(1, 'aborts', 'a')]));
+    }
+
+    public function testAnUnexpectedExceptionIsBroken(): void
+    {
+        $inspection = $this->inspect([self::model(1, 'raw', 'a')]);
+
+        self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
+        self::assertSame('raw', $inspection->forRow(1)[0]->reason);
+    }
+
+    public function testAConditionErrorIsAProgrammingError(): void
+    {
+        $inspection = $this->inspect([self::model(1, 'errors', 'a')]);
+
+        self::assertSame([FilterIssueKind::ProgrammingError], self::kinds($inspection, 1));
+        self::assertSame('bug', $inspection->forRow(1)[0]->reason);
+        self::assertSame(1, $inspection->count(FilterIssueKind::ProgrammingError));
+    }
+
+    public function testAConditionErrorEscapesInDebugMode(): void
+    {
+        $this->expectException(\Error::class);
+
+        $this->inspect([self::model(1, 'errors', 'a')], debug: true);
+    }
+
+    public function testDescribesAFilterWithoutControlAndValue(): void
+    {
+        $inspection = $this->inspect([self::model(1, 'ineffective', 'a')]);
+
+        self::assertSame([FilterIssueKind::Ineffective], self::kinds($inspection, 1));
+        self::assertSame('stub.ineffective', $inspection->forRow(1)[0]->reason);
+        self::assertSame(1, $inspection->count(FilterIssueKind::Ineffective));
+    }
+
+    public function testEffectiveFiltersAreNotIneffective(): void
+    {
+        $inspection = $this->inspect([
+            self::model(1, 'ineffective', 'a', row: ['value' => '1']),
+            self::model(2, 'ineffective', 'b', row: ['control' => 'flare_checkbox']),
+        ]);
+
+        self::assertEquals(new ListInspection(), $inspection);
+    }
+
+    public function testUnpublishedIneffectiveFiltersDoNotCount(): void
+    {
+        $inspection = $this->inspect([self::model(1, 'ineffective', 'a', published: false)]);
+
+        self::assertSame([FilterIssueKind::Ineffective], self::kinds($inspection, 1));
+        self::assertSame(0, $inspection->count(FilterIssueKind::Ineffective));
+    }
+
+    public function testFiltersOfTheDriverCountWithoutARow(): void
+    {
+        $inline = new Filter(
+            element: new ElementBinding(new InspectorStubThrowingElement(), 'throws', new ComponentConfig()),
+            alias: 'inline',
+        );
+
+        $inspection = $this->inspect(
+            [self::model(1, 'ok', 'a')],
+            static fn (array $filters): ListSpec => self::spec($filters + ['inline' => $inline]),
+        );
+
+        self::assertSame([], $inspection->rows);
+        self::assertSame(1, $inspection->count(FilterIssueKind::Broken));
+    }
+
+    public function testOnlyTheFirstOfADuplicateGroupEntersTheScope(): void
+    {
+        $received = null;
+
+        $inspection = $this->inspect(
+            [
+                self::model(1, 'ok', 'dup'),
+                self::model(2, 'throws', 'dup'),
+                self::model(3, 'ok', 'b', published: false),
+            ],
+            static function (array $filters) use (&$received): ListSpec {
+                $received = $filters;
+
+                return self::spec($filters);
+            },
+        );
+
+        self::assertIsArray($received);
+        self::assertSame(['dup'], \array_keys($received));
+        self::assertSame('tl_flare_filter.1', $received['dup']->source);
+        // The later duplicate is still checked, with the scope as its list.
+        self::assertSame([FilterIssueKind::DuplicateAlias, FilterIssueKind::Broken], self::kinds($inspection, 2));
+    }
+
+    public function testWithoutAListScopeRowIssuesAreStillReported(): void
+    {
+        $inspection = $this->inspect(
+            [
+                self::model(1, 'gone', 'a'),
+                self::model(2, 'ok', 'dup'),
+                self::model(3, 'ok', 'dup'),
+                self::model(4, 'ineffective', 'c'),
+                self::model(5, 'throws', 'd'),
+            ],
+            static fn (): ListSpec => throw new FlareException('No list driver found for type "gone"'),
+        );
+
+        self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
+        self::assertSame([FilterIssueKind::DuplicateAlias], self::kinds($inspection, 2));
+        self::assertSame([FilterIssueKind::DuplicateAlias], self::kinds($inspection, 3));
+        self::assertSame([FilterIssueKind::Ineffective], self::kinds($inspection, 4));
+        self::assertSame([], $inspection->forRow(5), 'no conditions are built without a list');
+        self::assertSame(0, $inspection->count(FilterIssueKind::ProgrammingError));
+    }
+
+    public function testAScopeErrorIsAListLevelProgrammingError(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('critical');
+
+        $inspection = $this->inspect(
+            [self::model(1, 'ok', 'a')],
+            static fn (): ListSpec => throw new \Error('driver bug'),
+            logger: $logger,
+        );
+
+        self::assertSame([], $inspection->rows);
+        self::assertSame(1, $inspection->count(FilterIssueKind::ProgrammingError));
+    }
+
+    public function testScopeErrorsEscapeInDebugMode(): void
+    {
+        $this->expectException(\Error::class);
+
+        $this->inspect([self::model(1, 'ok', 'a')], static fn (): ListSpec => throw new \Error('driver bug'), debug: true);
+    }
+
     private function throwErrorFor(int $id): void
     {
         $this->dispatcher->addListener(FilterCollectedEvent::class, static function (FilterCollectedEvent $event) use ($id): void {
@@ -196,12 +380,37 @@ final class FilterInspectorTest extends TestCase
     {
         $elements = (new FilterElementRegistry())
             ->add(new InspectorStubOkElement(), new AsFilterElement(type: 'ok'), 'ok')
-            ->add(new InspectorStubThrowingElement(), new AsFilterElement(type: 'throws'), 'throws');
+            ->add(new InspectorStubThrowingElement(), new AsFilterElement(type: 'throws'), 'throws')
+            ->add(new InspectorStubAbortingElement(), new AsFilterElement(type: 'aborts'), 'aborts')
+            ->add(new InspectorStubRawElement(), new AsFilterElement(type: 'raw'), 'raw')
+            ->add(new InspectorStubErroringElement(), new AsFilterElement(type: 'errors'), 'errors')
+            ->add(
+                new InspectorStubValueSensitiveElement(),
+                new AsFilterElement(type: 'sensitive', value: BoolValue::class),
+                'sensitive',
+            )
+            ->add(
+                new InspectorStubIneffectiveElement(),
+                new AsFilterElement(type: 'ineffective', value: BoolValue::class),
+                'ineffective',
+            );
+
+        $controls = (new FilterControlRegistry())
+            ->add($this->createMock(FilterControlInterface::class), 'flare_checkbox', BoolValue::class);
+
+        $providers = (new ValueProviderRegistry())->add(new class implements ValueProviderInterface {
+            public function provide(mixed $stored, FilterElementInterface $element): ?ValueInterface
+            {
+                return $stored ? new BoolValue(true) : null;
+            }
+
+            public function buildDcaField(DcaFieldBuilderInterface $field, DcaContext $context): void {}
+        }, BoolValue::class);
 
         $factory = new FilterFactory(
             filterElementRegistry: $elements,
-            filterControlRegistry: new FilterControlRegistry(),
-            valueProviderRegistry: new ValueProviderRegistry(),
+            filterControlRegistry: $controls,
+            valueProviderRegistry: $providers,
             filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
             filterTransformerResolver: new FilterTransformerResolver(new SourceTransformer(), new EventDispatcher()),
             logger: new NullLogger(),
@@ -294,4 +503,68 @@ class InspectorStubThrowingElement implements FilterElementInterface
     ): void {
         throw new FilterException('broken');
     }
+}
+
+class InspectorStubValueSensitiveElement implements FilterElementInterface
+{
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
+        if ($value !== null) {
+            throw new FilterException('value rejected');
+        }
+    }
+}
+
+class InspectorStubAbortingElement implements FilterElementInterface
+{
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
+        $builder->abort();
+    }
+}
+
+class InspectorStubRawElement implements FilterElementInterface
+{
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
+        throw new \RuntimeException('raw');
+    }
+}
+
+class InspectorStubErroringElement implements FilterElementInterface
+{
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
+        throw new \Error('bug');
+    }
+}
+
+class InspectorStubIneffectiveElement implements FilterElementInterface, IneffectiveFilterContract
+{
+    public function getIneffectiveReason(Filter $filter): ?TranslatableInterface
+    {
+        if ($filter->control !== null || $filter->value !== null) {
+            return null;
+        }
+
+        return new TranslatableMessage('stub.ineffective', domain: 'flare');
+    }
+
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {}
 }

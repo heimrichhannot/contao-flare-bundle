@@ -58,14 +58,36 @@ final class InspectedRows
         return (bool) ($this->models[$id]->published ?? false);
     }
 
-    public function addIssue(int $id, FilterIssueKind $kind, string $reason): void
+    /**
+     * @param int|null $id The row id; null for a filter without a row of this list, whose issue only counts.
+     */
+    public function addIssue(?int $id, FilterIssueKind $kind, string $reason): void
     {
+        if ($id === null)
+        {
+            $this->withoutRow[$kind->value] = ($this->withoutRow[$kind->value] ?? 0) + 1;
+
+            return;
+        }
+
         $this->issues[$id][$kind->value] ??= new FilterIssue($kind, $reason, $this->isPublished($id));
     }
 
-    public function addIssueWithoutRow(FilterIssueKind $kind): void
+    /**
+     * The id of the row of this list a filter source names, e.g. 42 of "tl_flare_filter.42"; null for any other
+     * source.
+     */
+    public function idOf(?string $source): ?int
     {
-        $this->withoutRow[$kind->value] = ($this->withoutRow[$kind->value] ?? 0) + 1;
+        $prefix = FilterModel::getTable() . '.';
+
+        if ($source === null || !\str_starts_with($source, $prefix)) {
+            return null;
+        }
+
+        $id = \substr($source, \strlen($prefix));
+
+        return \ctype_digit($id) && $this->has((int) $id) ? (int) $id : null;
     }
 
     public function block(string $alias): void

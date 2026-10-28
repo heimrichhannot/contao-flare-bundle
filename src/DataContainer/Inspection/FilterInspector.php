@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\DataContainer\Inspection;
 
+use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
+use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
+use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
@@ -90,6 +94,7 @@ final class FilterInspector implements ResetInterface
         }
 
         $this->markDuplicates($rows);
+        $this->checkFilters($this->buildScope($buildScope, $rows), $rows);
 
         return $rows->toInspection();
     }
@@ -111,7 +116,11 @@ final class FilterInspector implements ResetInterface
         }
         catch (\Error $e)
         {
-            $rows->addIssue((int) $model->id, FilterIssueKind::ProgrammingError, $this->caught($e, $model->id));
+            $rows->addIssue(
+                (int) $model->id,
+                FilterIssueKind::ProgrammingError,
+                $this->caught($e, "filter {$model::getTable()}.{$model->id}"),
+            );
         }
 
         return null;
@@ -145,21 +154,160 @@ final class FilterInspector implements ResetInterface
     }
 
     /**
+     * Builds the list the way the runtime does: with the published rows that could be built, the first per alias
+     * only (the collector fails the list for any later one), so the driver's buildList() and its listeners see the
+     * same filters. Null if the list cannot be built: an \Exception there is the list's problem, not a filter's (the
+     * list driver reports its configuration); an \Error counts as a programming error without a row.
+     *
+     * @param \Closure(array<string, Filter>): ListSpec $buildScope
+     */
+    private function buildScope(\Closure $buildScope, InspectedRows $rows): ?ListSpec
+    {
+        $filters = [];
+
+        foreach ($rows->getFilters() as $id => $filter)
+        {
+            if ($rows->isPublished($id)) {
+                $filters[$filter->alias] ??= $filter;
+            }
+        }
+
+        try
+        {
+            return $buildScope($filters);
+        }
+        catch (\Exception)
+        {
+            return null;
+        }
+        catch (\Error $e)
+        {
+            $this->caught($e, 'the list');
+            $rows->addIssue(null, FilterIssueKind::ProgrammingError, $e->getMessage());
+
+            return null;
+        }
+    }
+
+    /**
+     * Checks every filter of the list — its rows and the filters the driver or a listener added — and the rows that
+     * are not part of it (unpublished rows, later duplicates), with the list as theirs. Without a list, only whether
+     * each built row is effective.
+     */
+    private function checkFilters(?ListSpec $spec, InspectedRows $rows): void
+    {
+        $filters = \array_values($spec->filters ?? []);
+        $sources = \array_map(static fn (Filter $filter): ?string => $filter->source, $filters);
+
+        foreach ($rows->getFilters() as $filter)
+        {
+            if ($spec === null || !\in_array($filter->source, $sources, true)) {
+                $filters[] = $filter;
+            }
+        }
+
+        foreach ($spec->failures ?? [] as $failure) {
+            $rows->addIssue($rows->idOf($failure->source), FilterIssueKind::Broken, $failure->getReason());
+        }
+
+        foreach ($filters as $filter)
+        {
+            $found = [];
+
+            foreach ([$spec ? $this->checkConditions($spec, $filter) : null, $this->checkEffect($filter)] as $issue)
+            {
+                if ($issue !== null) {
+                    $found[$issue[0]->value] ??= $issue;
+                }
+            }
+
+            foreach ($found as [$kind, $reason]) {
+                $rows->addIssue($rows->idOf($filter->source), $kind, $reason);
+            }
+        }
+    }
+
+    /**
+     * Builds the filter's conditions with its default value: the fixed value without a control, none with one (with
+     * a control, the list retries without the value, SPEC_FILTER_FORMS.md §8.1). An abort ("matches nothing") is no
+     * issue.
+     *
+     * @return array{FilterIssueKind, string}|null
+     */
+    private function checkConditions(ListSpec $spec, Filter $filter): ?array
+    {
+        $value = $filter->control !== null ? null : $filter->value;
+
+        try
+        {
+            $this->filterInvoker->invoke(new ElementScope($spec, $filter, new ConfigurationContext()), $value);
+        }
+        catch (AbortFilteringException)
+        {
+            return null;
+        }
+        catch (\Exception $e)
+        {
+            return [FilterIssueKind::Broken, self::reason($e)];
+        }
+        catch (\Error $e)
+        {
+            return [FilterIssueKind::ProgrammingError, $this->caught($e, self::describe($filter))];
+        }
+
+        return null;
+    }
+
+    /**
+     * Asks the filter's element why it restricts nothing ({@see IneffectiveFilterContract}); an \Exception there
+     * is no answer.
+     *
+     * @return array{FilterIssueKind, string}|null
+     */
+    private function checkEffect(Filter $filter): ?array
+    {
+        $element = $filter->element->component;
+
+        if (!$element instanceof IneffectiveFilterContract) {
+            return null;
+        }
+
+        try
+        {
+            $reason = $element->getIneffectiveReason($filter)?->trans($this->translator);
+        }
+        catch (\Exception)
+        {
+            return null;
+        }
+        catch (\Error $e)
+        {
+            return [FilterIssueKind::ProgrammingError, $this->caught($e, self::describe($filter))];
+        }
+
+        return $reason === null ? null : [FilterIssueKind::Ineffective, $reason];
+    }
+
+    /**
      * Logs an \Error caught outside debug mode and returns its message; rethrows it in debug mode.
      */
-    private function caught(\Error $error, mixed $rowId): string
+    private function caught(\Error $error, string $subject): string
     {
         if ($this->debug) {
             throw $error;
         }
 
-        $this->logger->critical(\sprintf(
-            '[FLARE] Programming error in filter %s: %s',
-            $rowId === null ? 'without a row' : FilterModel::getTable() . '.' . $rowId,
-            $error->getMessage(),
-        ), ['exception' => $error]);
+        $this->logger->critical(
+            \sprintf('[FLARE] Programming error in %s: %s', $subject, $error->getMessage()),
+            ['exception' => $error],
+        );
 
         return $error->getMessage();
+    }
+
+    private static function describe(Filter $filter): string
+    {
+        return $filter->source !== null ? "filter {$filter->source}" : "filter \"{$filter->alias}\"";
     }
 
     private static function reason(\Exception $exception): string

@@ -39,7 +39,8 @@ closed. `\Error`s escape unwrapped. `UndefinedConfigKeyError` (an `\Error`, thro
 its schema does not define) is a programming error: never retried, never degraded into a skipped filter or a
 failed list — it fails the request. The bundle catches `\Exception`, not `\Throwable`, so no `\Error` is wrapped
 or swallowed; only the transformer resolvers still wrap any `\Throwable` (a transformer casting stale stored data
-may throw a `\ValueError`).
+may throw a `\ValueError`), and the backend `FilterInspector` catches `\Error` outside debug mode to mark the filter
+as a programming error (the frontend request still fails).
 Who throws what: `FilterException` (and its `UnreadableValueException`) is public API — filter components, bundled
 and userland, throw it to report a filter that cannot work with its config, data or value; a component translates
 the message itself where an editor may see it (`AbstractFilterElement::trans()`, `flare` domain). `FlareException` and the

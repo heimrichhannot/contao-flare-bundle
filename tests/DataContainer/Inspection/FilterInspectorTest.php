@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\DataContainer\Inspection;
 
+use Contao\CoreBundle\Framework\ContaoFramework;
+use Contao\TestCase\ContaoTestCase;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
@@ -33,17 +35,24 @@ use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
+use HeimrichHannot\FlareBundle\List\Collector\ListModelFilterCollector;
+use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
+use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
 use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
+use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
+use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\Executor\FilterInvoker;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
 use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
-use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -52,7 +61,7 @@ use Symfony\Contracts\Translation\TranslatableInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Contracts\Translation\TranslatorTrait;
 
-final class FilterInspectorTest extends TestCase
+final class FilterInspectorTest extends ContaoTestCase
 {
     use BuildsFilterContextsTrait;
 
@@ -383,6 +392,52 @@ final class FilterInspectorTest extends TestCase
         self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
     }
 
+    public function testInspectLoadsEverySavedRowAndBuildsTheListLikeTheRuntime(): void
+    {
+        $filters = $this->mockAdapter(['findBy']);
+        $filters
+            ->expects(self::once())
+            ->method('findBy')
+            ->with(['pid=?', 'tstamp>0'], [5], ['order' => 'sorting'])
+            ->willReturn([
+                self::model(1, 'throws', 'a'),
+                self::model(2, 'ok', 'dup'),
+                self::model(3, 'ok', 'dup'),
+            ]);
+
+        $inspection = $this->inspector(framework: $this->mockContaoFramework([FilterModel::class => $filters]))
+            ->inspect(self::listModel(5));
+
+        // Only a built list scope lets the conditions of row 1 be checked.
+        self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
+        self::assertSame([FilterIssueKind::DuplicateAlias], self::kinds($inspection, 2));
+        self::assertSame(['dup'], $inspection->blockingAliases);
+    }
+
+    public function testAListWithoutRowsHasNoIssues(): void
+    {
+        $filters = $this->mockConfiguredAdapter(['findBy' => null]);
+
+        $inspection = $this->inspector(framework: $this->mockContaoFramework([FilterModel::class => $filters]))
+            ->inspect(self::listModel(5));
+
+        self::assertEquals(new ListInspection(), $inspection);
+    }
+
+    public function testInspectionsAreMemoizedPerListUntilReset(): void
+    {
+        $filters = $this->mockAdapter(['findBy']);
+        $filters->expects(self::exactly(3))->method('findBy')->willReturn([self::model(1, 'ok', 'a')]);
+
+        $inspector = $this->inspector(framework: $this->mockContaoFramework([FilterModel::class => $filters]));
+
+        $inspector->inspect(self::listModel(5));
+        $inspector->inspect(self::listModel(5));
+        $inspector->inspect(self::listModel(6));
+        $inspector->reset();
+        $inspector->inspect(self::listModel(5));
+    }
+
     private function dropSources(): void
     {
         $this->dispatcher->addListener(FilterCollectedEvent::class, static function (FilterCollectedEvent $event): void {
@@ -415,8 +470,11 @@ final class FilterInspectorTest extends TestCase
         );
     }
 
-    private function inspector(bool $debug = false, ?LoggerInterface $logger = null): FilterInspector
-    {
+    private function inspector(
+        bool             $debug = false,
+        ?LoggerInterface $logger = null,
+        ?ContaoFramework $framework = null,
+    ): FilterInspector {
         $elements = (new FilterElementRegistry())
             ->add(new InspectorStubOkElement(), new AsFilterElement(type: 'ok'), 'ok')
             ->add(new InspectorStubThrowingElement(), new AsFilterElement(type: 'throws'), 'throws')
@@ -466,15 +524,51 @@ final class FilterInspectorTest extends TestCase
                 $this->createFilterContextFactory(),
                 new FilterQueryBuilderFactory($connection),
             ),
-            // Only inspect() builds the list scope; inspectModels() is handed a closure.
-            listSpecBuilderFactory: (new \ReflectionClass(ListSpecBuilderFactory::class))
-                ->newInstanceWithoutConstructor(),
+            listSpecBuilderFactory: $this->createListSpecBuilderFactory($factory),
             translator: new class implements TranslatorInterface {
                 use TranslatorTrait;
             },
             logger: $logger ?? new NullLogger(),
             debug: $debug,
+            framework: $framework ?? $this->mockContaoFramework(),
         );
+    }
+
+    private function createListSpecBuilderFactory(FilterFactory $filterFactory): ListSpecBuilderFactory
+    {
+        $driver = new class extends AbstractListDriver {
+            public function resolveDcTable(string $type, array $config, array $attributes): string
+            {
+                return 'tl_test';
+            }
+        };
+
+        $registry = new ListDriverRegistry();
+        $registry->add($driver, null, 'test_list');
+        $driverResolver = new ListDriverResolver($registry);
+
+        return new ListSpecBuilderFactory(
+            eventDispatcher: $this->dispatcher,
+            listDriverResolver: $driverResolver,
+            filterCollector: new ListModelFilterCollector($this->dispatcher, $filterFactory, $registry, new NullLogger()),
+            specFactory: new ListSpecFactory(
+                $registry,
+                new ListOptionsResolver(new SchemaResolver()),
+                new ListTransformerResolver(new SourceTransformer(), $this->dispatcher),
+                $driverResolver,
+            ),
+        );
+    }
+
+    private static function listModel(int $id): ListModel
+    {
+        $model = (new \ReflectionClass(ListModel::class))->newInstanceWithoutConstructor();
+
+        (function () use ($id): void {
+            $this->arrData = ['id' => $id, 'type' => 'test_list'];
+        })->call($model);
+
+        return $model;
     }
 
     /**

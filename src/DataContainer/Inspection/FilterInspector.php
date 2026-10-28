@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\DataContainer\Inspection;
 
+use Contao\CoreBundle\Framework\ContaoFramework;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
@@ -45,6 +46,7 @@ final class FilterInspector implements ResetInterface
         private readonly ListSpecBuilderFactory   $listSpecBuilderFactory,
         private readonly TranslatorInterface      $translator,
         private readonly LoggerInterface          $logger,
+        private readonly ContaoFramework          $framework,
         private readonly bool                     $debug,
     ) {}
 
@@ -53,7 +55,8 @@ final class FilterInspector implements ResetInterface
         $id = (int) $listModel->id;
 
         return $this->inspections[$id] ??= $this->inspectModels(
-            FilterModel::findBy(['pid=?', 'tstamp>0'], [$id], ['order' => 'sorting']) ?? [],
+            $this->framework->getAdapter(FilterModel::class)->findBy(['pid=?', 'tstamp>0'], [$id], ['order' => 'sorting'])
+                ?? [],
             function (array $filters) use ($listModel): ListSpec {
                 $builder = $this->listSpecBuilderFactory->create(
                     driver: (string) $listModel->type,

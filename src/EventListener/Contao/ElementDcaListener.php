@@ -9,16 +9,15 @@ use Contao\Input;
 use Contao\Message;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
+use HeimrichHannot\FlareBundle\DataContainer\BackendElementScopeFactory;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterInspector;
 use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssueKind;
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\ListDriverBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\List\ListSpec;
@@ -47,10 +46,10 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final readonly class ElementDcaListener
 {
     public function __construct(
+        private BackendElementScopeFactory  $elementScopeFactory,
         private EventDispatcherInterface    $eventDispatcher,
         private FilterControlRegistry       $filterControlRegistry,
         private FilterElementRegistry       $filterElementRegistry,
-        private FilterFactory               $filterFactory,
         private FilterInspector             $filterInspector,
         private ListExecutionContextFactory $listExecutionContextFactory,
         private ListSpecBuilderFactory      $listFactory,
@@ -131,7 +130,9 @@ final readonly class ElementDcaListener
             filterModel: $filterModel,
             executionContextFactory: fn (): ?ListExecutionContext => $this->createExecutionContext($getSpec),
             element: $service instanceof FilterElementInterface ? $service : null,
-            elementScopeFactory: fn (): ?ElementScope => $this->createElementScope($getSpec, $filterModel),
+            elementScopeFactory: fn (): ?ElementScope => $filterModel
+                ? $this->elementScopeFactory->create($getSpec, $filterModel)
+                : null,
         );
 
         $dcaBuilder = new DcaBuilder();
@@ -233,31 +234,6 @@ final readonly class ElementDcaListener
         try
         {
             return $this->listExecutionContextFactory->create($getSpec());
-        }
-        catch (\Exception) {}
-
-        return null;
-    }
-
-    /**
-     * The backend scope (§6.4): it knows the control, which decides the element's options, but resolves no value, so
-     * an unreadable value cannot block the form that repairs it.
-     *
-     * @mago-expect lint:no-empty-catch-clause Backend configuration must not fail on broken list configs.
-     */
-    private function createElementScope(\Closure $getSpec, ?FilterModel $filterModel): ?ElementScope
-    {
-        if ($filterModel === null) {
-            return null;
-        }
-
-        try
-        {
-            return new ElementScope(
-                list: $getSpec(),
-                filter: $this->filterFactory->createFromFilterModel($filterModel, withValue: false),
-                engineContext: new ConfigurationContext(),
-            );
         }
         catch (\Exception) {}
 

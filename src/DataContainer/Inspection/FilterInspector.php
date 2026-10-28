@@ -193,16 +193,36 @@ final class FilterInspector implements ResetInterface
      * Checks every filter of the list — its rows and the filters the driver or a listener added — and the rows that
      * are not part of it (unpublished rows, later duplicates), with the list as theirs. Without a list, only whether
      * each built row is effective.
+     *
+     * A filter of the list belongs to a row if it is the row's built filter (a FilterCollectedEvent listener may
+     * have replaced it without a source), else if its source names the row.
      */
     private function checkFilters(?ListSpec $spec, InspectedRows $rows): void
     {
-        $filters = \array_values($spec->filters ?? []);
-        $sources = \array_map(static fn (Filter $filter): ?string => $filter->source, $filters);
+        $rowOf = [];
 
-        foreach ($rows->getFilters() as $filter)
+        foreach ($rows->getFilters() as $id => $filter) {
+            $rowOf[\spl_object_id($filter)] = $id;
+        }
+
+        /** @var list<array{Filter, int|null}> $filters Each filter to check with its row id. */
+        $filters = [];
+        $inList = [];
+
+        foreach ($spec->filters ?? [] as $filter)
         {
-            if ($spec === null || !\in_array($filter->source, $sources, true)) {
-                $filters[] = $filter;
+            $id = $rowOf[\spl_object_id($filter)] ?? $rows->idOf($filter->source);
+            $filters[] = [$filter, $id];
+
+            if ($id !== null) {
+                $inList[$id] = true;
+            }
+        }
+
+        foreach ($rows->getFilters() as $id => $filter)
+        {
+            if (!isset($inList[$id])) {
+                $filters[] = [$filter, $id];
             }
         }
 
@@ -210,7 +230,7 @@ final class FilterInspector implements ResetInterface
             $rows->addIssue($rows->idOf($failure->source), FilterIssueKind::Broken, $failure->getReason());
         }
 
-        foreach ($filters as $filter)
+        foreach ($filters as [$filter, $id])
         {
             $found = [];
 
@@ -222,7 +242,7 @@ final class FilterInspector implements ResetInterface
             }
 
             foreach ($found as [$kind, $reason]) {
-                $rows->addIssue($rows->idOf($filter->source), $kind, $reason);
+                $rows->addIssue($id, $kind, $reason);
             }
         }
     }

@@ -351,6 +351,45 @@ final class FilterInspectorTest extends TestCase
         $this->inspect([self::model(1, 'ok', 'a')], static fn (): ListSpec => throw new \Error('driver bug'), debug: true);
     }
 
+    public function testAReplacedFilterWithoutASourceKeepsItsRow(): void
+    {
+        $this->dropSources();
+
+        $inspection = $this->inspect([
+            self::model(1, 'ineffective', 'a', published: false),
+            self::model(2, 'throws', 'b'),
+        ]);
+
+        self::assertSame([FilterIssueKind::Ineffective], self::kinds($inspection, 1));
+        self::assertSame(0, $inspection->count(FilterIssueKind::Ineffective), 'an unpublished filter never counts');
+        self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 2));
+        self::assertSame(1, $inspection->count(FilterIssueKind::Broken));
+    }
+
+    public function testARowWithoutASourceIsCheckedBesideAFilterOfTheDriver(): void
+    {
+        $this->dropSources();
+
+        $inline = new Filter(
+            element: new ElementBinding(new InspectorStubOkElement(), 'ok', new ComponentConfig()),
+            alias: 'inline',
+        );
+
+        $inspection = $this->inspect(
+            [self::model(1, 'throws', 'a', published: false)],
+            static fn (array $filters): ListSpec => self::spec($filters + ['inline' => $inline]),
+        );
+
+        self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
+    }
+
+    private function dropSources(): void
+    {
+        $this->dispatcher->addListener(FilterCollectedEvent::class, static function (FilterCollectedEvent $event): void {
+            $event->filter = new Filter(element: $event->filter->element, alias: $event->filter->alias);
+        });
+    }
+
     private function throwErrorFor(int $id): void
     {
         $this->dispatcher->addListener(FilterCollectedEvent::class, static function (FilterCollectedEvent $event) use ($id): void {

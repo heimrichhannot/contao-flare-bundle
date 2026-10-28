@@ -48,7 +48,7 @@ final class ElementDcaListenerTest extends ContaoTestCase
         $listener = $this->listener(
             Request::create('/contao?do=flare&table=tl_flare_filter&id=5'),
             $this->mockFilterModelAdapter([self::filterModel(1, 'gone', 'a')]),
-            $this->mockConfiguredAdapter(['findByPk' => self::listModel(5)]),
+            $this->listAdapter(self::listModel(5)),
         );
 
         $listener('tl_flare_list');
@@ -63,7 +63,7 @@ final class ElementDcaListenerTest extends ContaoTestCase
         $listener = $this->listener(
             Request::create('/contao?do=flare&table=tl_flare_filter&act=edit&id=1'),
             $this->mockFilterModelAdapter([$row], [1 => $row]),
-            $this->mockConfiguredAdapter(['findByPk' => self::listModel(5)]),
+            $this->listAdapter(self::listModel(5)),
         );
 
         $listener('tl_flare_filter');
@@ -78,7 +78,7 @@ final class ElementDcaListenerTest extends ContaoTestCase
         $listener = $this->listener(
             Request::create('/contao?do=flare&table=tl_flare_filter&act=edit&id=1'),
             $this->mockFilterModelAdapter([$row], [1 => $row]),
-            $this->mockConfiguredAdapter(['findByPk' => null]),
+            $this->listAdapter(null),
         );
 
         $listener('tl_flare_filter');
@@ -88,7 +88,7 @@ final class ElementDcaListenerTest extends ContaoTestCase
 
     public function testAnInvalidRecordIdLoadsNothing(): void
     {
-        foreach (['', '&id=abc', '&id=0', '&id=-3'] as $query)
+        foreach (['', '&id=abc', '&id=0', '&id=-3', '&id[]=1'] as $query)
         {
             $filters = $this->mockAdapter(['findBy', 'findByPk']);
             $filters->expects(self::never())->method('findByPk');
@@ -107,6 +107,17 @@ final class ElementDcaListenerTest extends ContaoTestCase
         }
 
         self::assertSame([], $this->recorded);
+    }
+
+    /**
+     * A ListModel adapter expecting the list to be loaded once, by its id 5 (the filter's pid, not the filter's id).
+     */
+    private function listAdapter(?ListModel $list): Adapter
+    {
+        $adapter = $this->mockAdapter(['findByPk']);
+        $adapter->expects(self::once())->method('findByPk')->with(5)->willReturn($list);
+
+        return $adapter;
     }
 
     private function listener(Request $request, Adapter $filters, Adapter $lists): ElementDcaListener

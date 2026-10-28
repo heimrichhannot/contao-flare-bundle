@@ -77,9 +77,10 @@ final readonly class ElementDcaListener
      */
     private function recordId(): ?int
     {
-        $rawId = $this->requestStack->getCurrentRequest()?->query->get('id');
+        // Read raw: InputBag::get() answers a non-scalar value (e.g. "id[]=1") with a 400 since Symfony 6.
+        $rawId = $this->requestStack->getCurrentRequest()?->query->all()['id'] ?? null;
 
-        if ($rawId === null || $rawId === '') {
+        if (!\is_scalar($rawId) || $rawId === '') {
             return null;
         }
 

@@ -107,27 +107,6 @@ class FilterModel extends Model implements PtableInferrableInterface
     }
 
     /**
-     * The form names used by more than one of the given rows, compared as {@see generateFormName()} normalizes them,
-     * since that is the alias the filters get at runtime.
-     *
-     * @param iterable<array{id?: int|string, alias?: string|null}> $rows
-     *
-     * @return list<string> Each duplicated form name once, in order of first occurrence.
-     */
-    public static function findDuplicateFormNames(iterable $rows): array
-    {
-        $counts = [];
-
-        foreach ($rows as $row)
-        {
-            $name = self::generateFormName($row);
-            $counts[$name] = ($counts[$name] ?? 0) + 1;
-        }
-
-        return \array_map('strval', \array_keys(\array_filter($counts, static fn (int $count): bool => $count > 1)));
-    }
-
-    /**
      * The parent-table inference columns are element-owned and therefore `elm_`-prefixed (§4.1).
      */
     protected static function getPtableInferColumn(string $name): string

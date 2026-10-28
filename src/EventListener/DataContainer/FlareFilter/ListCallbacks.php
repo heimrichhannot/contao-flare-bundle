@@ -7,9 +7,8 @@ namespace HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareFilter;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\DataContainer\BrokenFilterInspector;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
-use HeimrichHannot\FlareBundle\DataContainer\IneffectiveFilterInspector;
+use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterInspector;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -21,10 +20,9 @@ use Twig\Environment as TwigEnvironment;
 readonly class ListCallbacks
 {
     public function __construct(
-        private BrokenFilterInspector      $brokenFilterInspector,
-        private IneffectiveFilterInspector $ineffectiveFilterInspector,
-        private TranslatorInterface        $translator,
-        private TwigEnvironment            $twig,
+        private FilterInspector     $filterInspector,
+        private TranslatorInterface $translator,
+        private TwigEnvironment     $twig,
     ) {}
 
     #[AsCallback(FilterContainer::TABLE_NAME, 'list.label.group')]
@@ -51,9 +49,6 @@ readonly class ListCallbacks
 
         $filterAlias = FilterModel::generateFormName($row);
 
-        $duplicateFilterAliases = $GLOBALS['FLARE']['duplicate_filter_aliases'] ?? [];
-        $duplicateFilterAliases = \array_fill_keys($duplicateFilterAliases, true);
-
         return $this->twig->render('@HeimrichHannotFlare/backend/filter_child_record.html.twig', [
             'row' => $row,
             'is_intrinsic' => $isIntrinsic,
@@ -62,31 +57,29 @@ readonly class ListCallbacks
             'type_label' => $typeLabel,
             'cut_label' => $cutLabel,
             'filter_alias' => $filterAlias,
-            'duplicate_filter_aliases' => $duplicateFilterAliases,
-            'ineffective_reason' => $this->ineffectiveFilterInspector->describe($row),
-            'broken_reason' => $this->describeBreakage($row, (bool) $isPublished),
+            'notices' => $this->describeIssues($row),
         ]);
     }
 
     /**
-     * Why the filter breaks its list ({@see BrokenFilterInspector}), or null if it does not.
+     * The text of each of the filter's issues ({@see FilterInspector}), by issue kind value.
      *
      * @param array<string, mixed> $row
+     *
+     * @return array<string, string>
      */
-    private function describeBreakage(array $row, bool $isPublished): ?string
+    private function describeIssues(array $row): array
     {
         if (!$listModel = ListModel::findByPk((int) ($row['pid'] ?? 0))) {
-            return null;
+            return [];
         }
 
-        if (!$failure = $this->brokenFilterInspector->inspect($listModel)->forRow((int) ($row['id'] ?? 0))) {
-            return null;
+        $notices = [];
+
+        foreach ($this->filterInspector->inspect($listModel)->forRow((int) ($row['id'] ?? 0)) as $issue) {
+            $notices[$issue->kind->value] = $issue->describe($this->translator);
         }
 
-        return $this->translator->trans(
-            'filter.info.broken.' . ($isPublished ? 'published' : 'unpublished'),
-            ['%reason%' => $failure->getReason()],
-            'flare',
-        );
+        return $notices;
     }
 }

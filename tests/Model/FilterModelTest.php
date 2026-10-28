@@ -22,20 +22,6 @@ final class FilterModelTest extends TestCase
         self::assertSame('3', FilterModel::generateFormName(['id' => 3, 'formAlias' => 'legacy']));
     }
 
-    public function testDuplicateFormNamesAreFoundAfterNormalization(): void
-    {
-        self::assertSame(['newsarchive', '7'], FilterModel::findDuplicateFormNames([
-            ['id' => 1, 'alias' => 'news archive'],
-            ['id' => 2, 'alias' => 'newsarchive'],
-            ['id' => 3, 'alias' => '7'],
-            ['id' => 7, 'alias' => ''],
-            ['id' => 8, 'alias' => 'unique'],
-            ['id' => 9, 'alias' => 'newsarchive!'],
-        ]));
-
-        self::assertSame([], FilterModel::findDuplicateFormNames([['id' => 1, 'alias' => 'a'], ['id' => 2]]));
-    }
-
     public function testFilterPtableInferenceReadsTheElementColumns(): void
     {
         $filter = self::model(FilterModel::class, [

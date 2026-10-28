@@ -7,18 +7,16 @@ namespace HeimrichHannot\FlareBundle\EventListener\Contao;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use Contao\Input;
 use Contao\Message;
-use Doctrine\DBAL\Connection;
+use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
-use HeimrichHannot\FlareBundle\DataContainer\BrokenFilterInspector;
-use HeimrichHannot\FlareBundle\DataContainer\IneffectiveFilterInspector;
+use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterInspector;
+use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssueKind;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\ListDriverBuildDcaEvent;
-use HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareFilter\ListCallbacks;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
@@ -49,13 +47,11 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final readonly class ElementDcaListener
 {
     public function __construct(
-        private BrokenFilterInspector       $brokenFilterInspector,
-        private Connection                  $connection,
         private EventDispatcherInterface    $eventDispatcher,
         private FilterControlRegistry       $filterControlRegistry,
         private FilterElementRegistry       $filterElementRegistry,
         private FilterFactory               $filterFactory,
-        private IneffectiveFilterInspector  $ineffectiveFilterInspector,
+        private FilterInspector             $filterInspector,
         private ListExecutionContextFactory $listExecutionContextFactory,
         private ListSpecBuilderFactory      $listFactory,
         private ListDriverRegistry          $listDriverRegistry,
@@ -112,7 +108,6 @@ final readonly class ElementDcaListener
                 $type = (string) ($listModel->type ?? '');
                 $service = $this->listDriverRegistry->getService($type);
 
-                $this->checkDuplicateFilterAliases($listModel);
                 $this->reportFilterStates($listModel);
             }
         }
@@ -176,23 +171,28 @@ final readonly class ElementDcaListener
     }
 
     /**
-     * On the filter's edit form: why it breaks its list ({@see BrokenFilterInspector}), and why it restricts nothing
-     * ({@see IneffectiveFilterContract}).
+     * On the filter's edit form: each of its issues ({@see FilterInspector}), in its kind's severity.
      */
     private function reportFilterState(ListModel $listModel, FilterModel $filterModel): void
     {
-        if ($failure = $this->brokenFilterInspector->inspect($listModel)->forRow((int) $filterModel->id))
+        foreach ($this->filterInspector->inspect($listModel)->forRow((int) $filterModel->id) as $issue) {
+            self::addMessage($issue->kind, StringUtil::specialchars($issue->describe($this->translator)));
+        }
+    }
+
+    /**
+     * Contao renders messages raw; the caller escapes what it passes.
+     */
+    private static function addMessage(FilterIssueKind $kind, string $message): void
+    {
+        if ($kind === FilterIssueKind::Ineffective)
         {
-            Message::addError($this->translator->trans(
-                'filter.info.broken.' . ($filterModel->published ? 'published' : 'unpublished'),
-                ['%reason%' => $failure->getReason()],
-                'flare',
-            ));
+            Message::addNew($message);
+
+            return;
         }
 
-        if ($reason = $this->ineffectiveFilterInspector->describe($filterModel)) {
-            Message::addNew($reason);
-        }
+        Message::addError($message);
     }
 
     /**
@@ -265,9 +265,9 @@ final readonly class ElementDcaListener
     }
 
     /**
-     * On the list's filter overview (its child view, which loads this DCA as the parent table), counts the filters
-     * that break the list ({@see BrokenFilterInspector}) and those that restrict nothing
-     * ({@see IneffectiveFilterContract}); each of them is marked in the overview as well.
+     * On the list's filter overview (its child view, which loads this DCA as the parent table): how many published
+     * filters have an issue of each kind ({@see FilterInspector}), in the kinds' order; each filter row is marked in
+     * the overview as well.
      */
     private function reportFilterStates(ListModel $listModel): void
     {
@@ -277,53 +277,30 @@ final readonly class ElementDcaListener
             return;
         }
 
-        if ($broken = \count($this->brokenFilterInspector->inspect($listModel)->listFailures)) {
-            Message::addError($this->translator->trans('list.info.broken_filters', ['%count%' => $broken], 'flare'));
+        $inspection = $this->filterInspector->inspect($listModel);
+
+        foreach (FilterIssueKind::cases() as $kind)
+        {
+            if (!$count = $inspection->count($kind)) {
+                continue;
+            }
+
+            $parameters = match ($kind) {
+                FilterIssueKind::DuplicateAlias => ['%alias%' => \implode(', ', \array_map(
+                    static fn (string $alias): string => '"' . StringUtil::specialchars($alias) . '"',
+                    $inspection->blockingAliases,
+                ))],
+                default => ['%count%' => $count],
+            };
+
+            $id = match ($kind) {
+                FilterIssueKind::ProgrammingError => 'list.info.programming_errors',
+                FilterIssueKind::DuplicateAlias => 'list.info.duplicate_filter_alias',
+                FilterIssueKind::Broken => 'list.info.broken_filters',
+                FilterIssueKind::Ineffective => 'list.info.ineffective_filters',
+            };
+
+            self::addMessage($kind, $this->translator->trans($id, $parameters, 'flare'));
         }
-
-        $qTable = $this->connection->quoteIdentifier(FilterModel::getTable());
-
-        $rows = $this->connection->fetchAllAssociative(
-            "SELECT `id`, `type` FROM {$qTable} WHERE `pid` = :pid AND `tstamp` > 0",
-            ['pid' => (int) $listModel->id],
-        );
-
-        if (!$count = $this->ineffectiveFilterInspector->countIneffective($rows)) {
-            return;
-        }
-
-        Message::addNew($this->translator->trans('list.info.ineffective_filters', ['%count%' => $count], 'flare'));
-    }
-
-    private function checkDuplicateFilterAliases(ListModel $listModel): void
-    {
-        $qTable = $this->connection->quoteIdentifier(FilterModel::getTable());
-
-        // The same filters the list collects; compared as their runtime aliases, which are normalized form names.
-        $sql = <<<SQL
-            SELECT `id`, `alias`
-            FROM {$qTable}
-            WHERE `pid` = :pid
-              AND `published` = 1
-              AND `tstamp` > 0
-        SQL;
-
-        $duplicateAliases = FilterModel::findDuplicateFormNames($this->connection->fetchAllAssociative($sql, [
-            'pid' => (int) $listModel->id,
-        ]));
-
-        if (!$duplicateAliases) {
-            return;
-        }
-
-        /** Used in {@see ListCallbacks} to notify user of duplicate filter aliases in the Contao backend. */
-        $GLOBALS['FLARE']['duplicate_filter_aliases'] = $duplicateAliases;
-
-        Message::addError($this->translator->trans('list.info.duplicate_filter_alias', [
-            '%alias%' => implode(', ', \array_map(
-                static fn (string $alias): string => "\"{$alias}\"",
-                $duplicateAliases
-            )),
-        ], 'flare'));
     }
 }

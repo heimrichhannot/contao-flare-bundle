@@ -8,9 +8,8 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
-use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterInspector;
+use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssueReporter;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
-use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment as TwigEnvironment;
 
@@ -20,7 +19,7 @@ use Twig\Environment as TwigEnvironment;
 readonly class ListCallbacks
 {
     public function __construct(
-        private FilterInspector     $filterInspector,
+        private FilterIssueReporter $filterIssueReporter,
         private TranslatorInterface $translator,
         private TwigEnvironment     $twig,
     ) {}
@@ -57,29 +56,7 @@ readonly class ListCallbacks
             'type_label' => $typeLabel,
             'cut_label' => $cutLabel,
             'filter_alias' => $filterAlias,
-            'notices' => $this->describeIssues($row),
+            'notices' => $this->filterIssueReporter->getRowNotices($row),
         ]);
-    }
-
-    /**
-     * The text of each of the filter's issues ({@see FilterInspector}), by issue kind value.
-     *
-     * @param array<string, mixed> $row
-     *
-     * @return array<string, string>
-     */
-    private function describeIssues(array $row): array
-    {
-        if (!$listModel = ListModel::findByPk((int) ($row['pid'] ?? 0))) {
-            return [];
-        }
-
-        $notices = [];
-
-        foreach ($this->filterInspector->inspect($listModel)->forRow((int) ($row['id'] ?? 0)) as $issue) {
-            $notices[$issue->kind->value] = $issue->describe($this->translator);
-        }
-
-        return $notices;
     }
 }

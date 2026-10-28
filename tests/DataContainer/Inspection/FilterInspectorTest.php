@@ -4,66 +4,26 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\DataContainer\Inspection;
 
-use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\TestCase\ContaoTestCase;
-use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
-use HeimrichHannot\FlareBundle\Config\SchemaResolver;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
-use HeimrichHannot\FlareBundle\Config\SourceTransformer;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaFieldBuilderInterface;
-use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterInspector;
 use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssue;
 use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssueKind;
 use HeimrichHannot\FlareBundle\DataContainer\Inspection\ListInspection;
-use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
-use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
-use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
-use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
-use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
-use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
-use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
-use HeimrichHannot\FlareBundle\List\Collector\ListModelFilterCollector;
-use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
 use HeimrichHannot\FlareBundle\List\ListSpec;
-use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
-use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
-use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
-use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Query\Executor\FilterInvoker;
-use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
-use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
-use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
-use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\Tests\DataContainer\Inspection\Stub\OkElement;
+use HeimrichHannot\FlareBundle\Tests\DataContainer\Inspection\Stub\ThrowingElement;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
-use Symfony\Component\Translation\TranslatableMessage;
-use Symfony\Contracts\Translation\TranslatableInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
-use Symfony\Contracts\Translation\TranslatorTrait;
 
 final class FilterInspectorTest extends ContaoTestCase
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterInspectorTrait;
 
     private EventDispatcher $dispatcher;
 
@@ -74,14 +34,14 @@ final class FilterInspectorTest extends ContaoTestCase
 
     public function testHealthyRowsHaveNoIssues(): void
     {
-        $inspection = $this->inspect([self::model(1, 'ok', 'a'), self::model(2, 'ok', 'b', published: false)]);
+        $inspection = $this->inspect([self::filterModel(1, 'ok', 'a'), self::filterModel(2, 'ok', 'b', published: false)]);
 
         self::assertEquals(new ListInspection(), $inspection);
     }
 
     public function testAnUnknownTypeIsBroken(): void
     {
-        $inspection = $this->inspect([self::model(1, 'gone', 'a')]);
+        $inspection = $this->inspect([self::filterModel(1, 'gone', 'a')]);
 
         self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
         self::assertTrue($inspection->forRow(1)[0]->published);
@@ -90,7 +50,7 @@ final class FilterInspectorTest extends ContaoTestCase
 
     public function testUnpublishedIssuesDoNotCount(): void
     {
-        $inspection = $this->inspect([self::model(1, 'gone', 'a', published: false)]);
+        $inspection = $this->inspect([self::filterModel(1, 'gone', 'a', published: false)]);
 
         self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
         self::assertFalse($inspection->forRow(1)[0]->published);
@@ -100,9 +60,9 @@ final class FilterInspectorTest extends ContaoTestCase
     public function testTwoPublishedDuplicatesBlockTheList(): void
     {
         $inspection = $this->inspect([
-            self::model(1, 'ok', 'dup'),
-            self::model(2, 'ok', 'dup'),
-            self::model(3, 'ok', 'dup', published: false),
+            self::filterModel(1, 'ok', 'dup'),
+            self::filterModel(2, 'ok', 'dup'),
+            self::filterModel(3, 'ok', 'dup', published: false),
         ]);
 
         foreach ([1, 2, 3] as $id) {
@@ -118,9 +78,9 @@ final class FilterInspectorTest extends ContaoTestCase
     public function testOnePublishedDuplicateFlagsOnlyTheUnpublished(): void
     {
         $inspection = $this->inspect([
-            self::model(1, 'ok', 'dup'),
-            self::model(2, 'ok', 'dup', published: false),
-            self::model(3, 'ok', 'dup', published: false),
+            self::filterModel(1, 'ok', 'dup'),
+            self::filterModel(2, 'ok', 'dup', published: false),
+            self::filterModel(3, 'ok', 'dup', published: false),
         ]);
 
         self::assertSame([], $inspection->forRow(1));
@@ -134,8 +94,8 @@ final class FilterInspectorTest extends ContaoTestCase
     public function testUnpublishedDuplicatesAloneAreNotFlagged(): void
     {
         $inspection = $this->inspect([
-            self::model(2, 'ok', 'dup', published: false),
-            self::model(3, 'ok', 'dup', published: false),
+            self::filterModel(2, 'ok', 'dup', published: false),
+            self::filterModel(3, 'ok', 'dup', published: false),
         ]);
 
         self::assertEquals(new ListInspection(), $inspection);
@@ -143,7 +103,7 @@ final class FilterInspectorTest extends ContaoTestCase
 
     public function testARowThatCannotBeBuiltStillGroupsByItsFormName(): void
     {
-        $inspection = $this->inspect([self::model(1, 'gone', 'dup'), self::model(2, 'ok', 'dup')]);
+        $inspection = $this->inspect([self::filterModel(1, 'gone', 'dup'), self::filterModel(2, 'ok', 'dup')]);
 
         self::assertSame([FilterIssueKind::DuplicateAlias, FilterIssueKind::Broken], self::kinds($inspection, 1));
         self::assertSame([FilterIssueKind::DuplicateAlias], self::kinds($inspection, 2));
@@ -158,7 +118,7 @@ final class FilterInspectorTest extends ContaoTestCase
             }
         });
 
-        $inspection = $this->inspect([self::model(1, 'ok', 'dup'), self::model(2, 'ok', 'other')]);
+        $inspection = $this->inspect([self::filterModel(1, 'ok', 'dup'), self::filterModel(2, 'ok', 'other')]);
 
         self::assertSame([FilterIssueKind::DuplicateAlias], self::kinds($inspection, 1));
         self::assertSame([FilterIssueKind::DuplicateAlias], self::kinds($inspection, 2));
@@ -171,7 +131,7 @@ final class FilterInspectorTest extends ContaoTestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('critical');
 
-        $inspection = $this->inspect([self::model(4, 'ok', 'a')], logger: $logger);
+        $inspection = $this->inspect([self::filterModel(4, 'ok', 'a')], logger: $logger);
 
         self::assertSame([FilterIssueKind::ProgrammingError], self::kinds($inspection, 4));
         self::assertSame('bug', $inspection->forRow(4)[0]->reason);
@@ -184,12 +144,12 @@ final class FilterInspectorTest extends ContaoTestCase
 
         $this->expectException(\Error::class);
 
-        $this->inspect([self::model(4, 'ok', 'a')], debug: true);
+        $this->inspect([self::filterModel(4, 'ok', 'a')], debug: true);
     }
 
     public function testAFilterFailingWithItsDefaultValueIsBroken(): void
     {
-        $inspection = $this->inspect([self::model(1, 'throws', 'a')]);
+        $inspection = $this->inspect([self::filterModel(1, 'throws', 'a')]);
 
         self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
         self::assertSame('broken', $inspection->forRow(1)[0]->reason);
@@ -198,7 +158,7 @@ final class FilterInspectorTest extends ContaoTestCase
 
     public function testUnpublishedFiltersAreCheckedButDoNotCount(): void
     {
-        $inspection = $this->inspect([self::model(1, 'throws', 'a', published: false)]);
+        $inspection = $this->inspect([self::filterModel(1, 'throws', 'a', published: false)]);
 
         self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
         self::assertSame(0, $inspection->count(FilterIssueKind::Broken));
@@ -207,7 +167,7 @@ final class FilterInspectorTest extends ContaoTestCase
     public function testControlledFilterIsCheckedWithoutItsInitialValue(): void
     {
         $inspection = $this->inspect([
-            self::model(1, 'sensitive', 'a', row: ['control' => 'flare_checkbox', 'value' => '1']),
+            self::filterModel(1, 'sensitive', 'a', row: ['control' => 'flare_checkbox', 'value' => '1']),
         ]);
 
         self::assertSame([], $inspection->forRow(1));
@@ -215,7 +175,7 @@ final class FilterInspectorTest extends ContaoTestCase
 
     public function testAFixedValueIsCheckedAsTheFixedValue(): void
     {
-        $inspection = $this->inspect([self::model(1, 'sensitive', 'a', row: ['value' => '1'])]);
+        $inspection = $this->inspect([self::filterModel(1, 'sensitive', 'a', row: ['value' => '1'])]);
 
         self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
         self::assertSame('value rejected', $inspection->forRow(1)[0]->reason);
@@ -223,12 +183,12 @@ final class FilterInspectorTest extends ContaoTestCase
 
     public function testAnAbortingFilterIsNotBroken(): void
     {
-        self::assertEquals(new ListInspection(), $this->inspect([self::model(1, 'aborts', 'a')]));
+        self::assertEquals(new ListInspection(), $this->inspect([self::filterModel(1, 'aborts', 'a')]));
     }
 
     public function testAnUnexpectedExceptionIsBroken(): void
     {
-        $inspection = $this->inspect([self::model(1, 'raw', 'a')]);
+        $inspection = $this->inspect([self::filterModel(1, 'raw', 'a')]);
 
         self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
         self::assertSame('raw', $inspection->forRow(1)[0]->reason);
@@ -236,7 +196,7 @@ final class FilterInspectorTest extends ContaoTestCase
 
     public function testAConditionErrorIsAProgrammingError(): void
     {
-        $inspection = $this->inspect([self::model(1, 'errors', 'a')]);
+        $inspection = $this->inspect([self::filterModel(1, 'errors', 'a')]);
 
         self::assertSame([FilterIssueKind::ProgrammingError], self::kinds($inspection, 1));
         self::assertSame('bug', $inspection->forRow(1)[0]->reason);
@@ -247,12 +207,12 @@ final class FilterInspectorTest extends ContaoTestCase
     {
         $this->expectException(\Error::class);
 
-        $this->inspect([self::model(1, 'errors', 'a')], debug: true);
+        $this->inspect([self::filterModel(1, 'errors', 'a')], debug: true);
     }
 
     public function testDescribesAFilterWithoutControlAndValue(): void
     {
-        $inspection = $this->inspect([self::model(1, 'ineffective', 'a')]);
+        $inspection = $this->inspect([self::filterModel(1, 'ineffective', 'a')]);
 
         self::assertSame([FilterIssueKind::Ineffective], self::kinds($inspection, 1));
         self::assertSame('stub.ineffective', $inspection->forRow(1)[0]->reason);
@@ -262,8 +222,8 @@ final class FilterInspectorTest extends ContaoTestCase
     public function testEffectiveFiltersAreNotIneffective(): void
     {
         $inspection = $this->inspect([
-            self::model(1, 'ineffective', 'a', row: ['value' => '1']),
-            self::model(2, 'ineffective', 'b', row: ['control' => 'flare_checkbox']),
+            self::filterModel(1, 'ineffective', 'a', row: ['value' => '1']),
+            self::filterModel(2, 'ineffective', 'b', row: ['control' => 'flare_checkbox']),
         ]);
 
         self::assertEquals(new ListInspection(), $inspection);
@@ -271,7 +231,7 @@ final class FilterInspectorTest extends ContaoTestCase
 
     public function testUnpublishedIneffectiveFiltersDoNotCount(): void
     {
-        $inspection = $this->inspect([self::model(1, 'ineffective', 'a', published: false)]);
+        $inspection = $this->inspect([self::filterModel(1, 'ineffective', 'a', published: false)]);
 
         self::assertSame([FilterIssueKind::Ineffective], self::kinds($inspection, 1));
         self::assertSame(0, $inspection->count(FilterIssueKind::Ineffective));
@@ -280,12 +240,12 @@ final class FilterInspectorTest extends ContaoTestCase
     public function testFiltersOfTheDriverCountWithoutARow(): void
     {
         $inline = new Filter(
-            element: new ElementBinding(new InspectorStubThrowingElement(), 'throws', new ComponentConfig()),
+            element: new ElementBinding(new ThrowingElement(), 'throws', new ComponentConfig()),
             alias: 'inline',
         );
 
         $inspection = $this->inspect(
-            [self::model(1, 'ok', 'a')],
+            [self::filterModel(1, 'ok', 'a')],
             static fn (array $filters): ListSpec => self::spec($filters + ['inline' => $inline]),
         );
 
@@ -299,9 +259,9 @@ final class FilterInspectorTest extends ContaoTestCase
 
         $inspection = $this->inspect(
             [
-                self::model(1, 'ok', 'dup'),
-                self::model(2, 'throws', 'dup'),
-                self::model(3, 'ok', 'b', published: false),
+                self::filterModel(1, 'ok', 'dup'),
+                self::filterModel(2, 'throws', 'dup'),
+                self::filterModel(3, 'ok', 'b', published: false),
             ],
             static function (array $filters) use (&$received): ListSpec {
                 $received = $filters;
@@ -321,11 +281,11 @@ final class FilterInspectorTest extends ContaoTestCase
     {
         $inspection = $this->inspect(
             [
-                self::model(1, 'gone', 'a'),
-                self::model(2, 'ok', 'dup'),
-                self::model(3, 'ok', 'dup'),
-                self::model(4, 'ineffective', 'c'),
-                self::model(5, 'throws', 'd'),
+                self::filterModel(1, 'gone', 'a'),
+                self::filterModel(2, 'ok', 'dup'),
+                self::filterModel(3, 'ok', 'dup'),
+                self::filterModel(4, 'ineffective', 'c'),
+                self::filterModel(5, 'throws', 'd'),
             ],
             static fn (): ListSpec => throw new FlareException('No list driver found for type "gone"'),
         );
@@ -344,7 +304,7 @@ final class FilterInspectorTest extends ContaoTestCase
         $logger->expects(self::once())->method('critical');
 
         $inspection = $this->inspect(
-            [self::model(1, 'ok', 'a')],
+            [self::filterModel(1, 'ok', 'a')],
             static fn (): ListSpec => throw new \Error('driver bug'),
             logger: $logger,
         );
@@ -357,7 +317,7 @@ final class FilterInspectorTest extends ContaoTestCase
     {
         $this->expectException(\Error::class);
 
-        $this->inspect([self::model(1, 'ok', 'a')], static fn (): ListSpec => throw new \Error('driver bug'), debug: true);
+        $this->inspect([self::filterModel(1, 'ok', 'a')], static fn (): ListSpec => throw new \Error('driver bug'), debug: true);
     }
 
     public function testAReplacedFilterWithoutASourceKeepsItsRow(): void
@@ -365,8 +325,8 @@ final class FilterInspectorTest extends ContaoTestCase
         $this->dropSources();
 
         $inspection = $this->inspect([
-            self::model(1, 'ineffective', 'a', published: false),
-            self::model(2, 'throws', 'b'),
+            self::filterModel(1, 'ineffective', 'a', published: false),
+            self::filterModel(2, 'throws', 'b'),
         ]);
 
         self::assertSame([FilterIssueKind::Ineffective], self::kinds($inspection, 1));
@@ -380,12 +340,12 @@ final class FilterInspectorTest extends ContaoTestCase
         $this->dropSources();
 
         $inline = new Filter(
-            element: new ElementBinding(new InspectorStubOkElement(), 'ok', new ComponentConfig()),
+            element: new ElementBinding(new OkElement(), 'ok', new ComponentConfig()),
             alias: 'inline',
         );
 
         $inspection = $this->inspect(
-            [self::model(1, 'throws', 'a', published: false)],
+            [self::filterModel(1, 'throws', 'a', published: false)],
             static fn (array $filters): ListSpec => self::spec($filters + ['inline' => $inline]),
         );
 
@@ -400,12 +360,12 @@ final class FilterInspectorTest extends ContaoTestCase
             ->method('findBy')
             ->with(['pid=?', 'tstamp>0'], [5], ['order' => 'sorting'])
             ->willReturn([
-                self::model(1, 'throws', 'a'),
-                self::model(2, 'ok', 'dup'),
-                self::model(3, 'ok', 'dup'),
+                self::filterModel(1, 'throws', 'a'),
+                self::filterModel(2, 'ok', 'dup'),
+                self::filterModel(3, 'ok', 'dup'),
             ]);
 
-        $inspection = $this->inspector(framework: $this->mockContaoFramework([FilterModel::class => $filters]))
+        $inspection = $this->createFilterInspector($this->mockContaoFramework([FilterModel::class => $filters]), $this->dispatcher)
             ->inspect(self::listModel(5));
 
         // Only a built list scope lets the conditions of row 1 be checked.
@@ -418,7 +378,7 @@ final class FilterInspectorTest extends ContaoTestCase
     {
         $filters = $this->mockConfiguredAdapter(['findBy' => null]);
 
-        $inspection = $this->inspector(framework: $this->mockContaoFramework([FilterModel::class => $filters]))
+        $inspection = $this->createFilterInspector($this->mockContaoFramework([FilterModel::class => $filters]), $this->dispatcher)
             ->inspect(self::listModel(5));
 
         self::assertEquals(new ListInspection(), $inspection);
@@ -427,9 +387,9 @@ final class FilterInspectorTest extends ContaoTestCase
     public function testInspectionsAreMemoizedPerListUntilReset(): void
     {
         $filters = $this->mockAdapter(['findBy']);
-        $filters->expects(self::exactly(3))->method('findBy')->willReturn([self::model(1, 'ok', 'a')]);
+        $filters->expects(self::exactly(3))->method('findBy')->willReturn([self::filterModel(1, 'ok', 'a')]);
 
-        $inspector = $this->inspector(framework: $this->mockContaoFramework([FilterModel::class => $filters]));
+        $inspector = $this->createFilterInspector($this->mockContaoFramework([FilterModel::class => $filters]), $this->dispatcher);
 
         $inspector->inspect(self::listModel(5));
         $inspector->inspect(self::listModel(5));
@@ -464,111 +424,12 @@ final class FilterInspectorTest extends ContaoTestCase
         bool             $debug = false,
         ?LoggerInterface $logger = null,
     ): ListInspection {
-        return $this->inspector($debug, $logger)->inspectModels(
+        $framework = $this->mockContaoFramework([FilterModel::class => $this->mockFilterModelAdapter([])]);
+
+        return $this->createFilterInspector($framework, $this->dispatcher, $debug, $logger)->inspectModels(
             $models,
             $buildScope ?? static fn (array $filters): ListSpec => self::spec($filters),
         );
-    }
-
-    private function inspector(
-        bool             $debug = false,
-        ?LoggerInterface $logger = null,
-        ?ContaoFramework $framework = null,
-    ): FilterInspector {
-        $elements = (new FilterElementRegistry())
-            ->add(new InspectorStubOkElement(), new AsFilterElement(type: 'ok'), 'ok')
-            ->add(new InspectorStubThrowingElement(), new AsFilterElement(type: 'throws'), 'throws')
-            ->add(new InspectorStubAbortingElement(), new AsFilterElement(type: 'aborts'), 'aborts')
-            ->add(new InspectorStubRawElement(), new AsFilterElement(type: 'raw'), 'raw')
-            ->add(new InspectorStubErroringElement(), new AsFilterElement(type: 'errors'), 'errors')
-            ->add(
-                new InspectorStubValueSensitiveElement(),
-                new AsFilterElement(type: 'sensitive', value: BoolValue::class),
-                'sensitive',
-            )
-            ->add(
-                new InspectorStubIneffectiveElement(),
-                new AsFilterElement(type: 'ineffective', value: BoolValue::class),
-                'ineffective',
-            );
-
-        $controls = (new FilterControlRegistry())
-            ->add($this->createMock(FilterControlInterface::class), 'flare_checkbox', BoolValue::class);
-
-        $providers = (new ValueProviderRegistry())->add(new class implements ValueProviderInterface {
-            public function provide(mixed $stored, FilterElementInterface $element): ?ValueInterface
-            {
-                return $stored ? new BoolValue(true) : null;
-            }
-
-            public function buildDcaField(DcaFieldBuilderInterface $field, DcaContext $context): void {}
-        }, BoolValue::class);
-
-        $factory = new FilterFactory(
-            filterElementRegistry: $elements,
-            filterControlRegistry: $controls,
-            valueProviderRegistry: $providers,
-            filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
-            filterTransformerResolver: new FilterTransformerResolver(new SourceTransformer(), new EventDispatcher()),
-            logger: new NullLogger(),
-        );
-
-        $connection = $this->createMock(Connection::class);
-        $connection->method('quoteIdentifier')->willReturnArgument(0);
-        $connection->method('createExpressionBuilder')->willReturn(new ExpressionBuilder($connection));
-
-        return new FilterInspector(
-            eventDispatcher: $this->dispatcher,
-            filterFactory: $factory,
-            filterInvoker: new FilterInvoker(
-                $this->createFilterContextFactory(),
-                new FilterQueryBuilderFactory($connection),
-            ),
-            listSpecBuilderFactory: $this->createListSpecBuilderFactory($factory),
-            translator: new class implements TranslatorInterface {
-                use TranslatorTrait;
-            },
-            logger: $logger ?? new NullLogger(),
-            debug: $debug,
-            framework: $framework ?? $this->mockContaoFramework(),
-        );
-    }
-
-    private function createListSpecBuilderFactory(FilterFactory $filterFactory): ListSpecBuilderFactory
-    {
-        $driver = new class extends AbstractListDriver {
-            public function resolveDcTable(string $type, array $config, array $attributes): string
-            {
-                return 'tl_test';
-            }
-        };
-
-        $registry = new ListDriverRegistry();
-        $registry->add($driver, null, 'test_list');
-        $driverResolver = new ListDriverResolver($registry);
-
-        return new ListSpecBuilderFactory(
-            eventDispatcher: $this->dispatcher,
-            listDriverResolver: $driverResolver,
-            filterCollector: new ListModelFilterCollector($this->dispatcher, $filterFactory, $registry, new NullLogger()),
-            specFactory: new ListSpecFactory(
-                $registry,
-                new ListOptionsResolver(new SchemaResolver()),
-                new ListTransformerResolver(new SourceTransformer(), $this->dispatcher),
-                $driverResolver,
-            ),
-        );
-    }
-
-    private static function listModel(int $id): ListModel
-    {
-        $model = (new \ReflectionClass(ListModel::class))->newInstanceWithoutConstructor();
-
-        (function () use ($id): void {
-            $this->arrData = ['id' => $id, 'type' => 'test_list'];
-        })->call($model);
-
-        return $model;
     }
 
     /**
@@ -593,111 +454,4 @@ final class FilterInspectorTest extends ContaoTestCase
     {
         return \array_map(static fn (FilterIssue $issue): FilterIssueKind => $issue->kind, $inspection->forRow($id));
     }
-
-    /**
-     * @param array<string, mixed> $row
-     */
-    private static function model(int $id, string $type, string $alias, bool $published = true, array $row = []): FilterModel
-    {
-        $model = (new \ReflectionClass(FilterModel::class))->newInstanceWithoutConstructor();
-
-        (function (array $row): void {
-            $this->arrData = $row;
-        })->call($model, $row + [
-            'id' => $id,
-            'type' => $type,
-            'alias' => $alias,
-            'published' => $published ? '1' : '',
-            'control' => '',
-            'value' => '',
-        ]);
-
-        return $model;
-    }
-}
-
-class InspectorStubOkElement implements FilterElementInterface
-{
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
-    ): void {
-        $builder->addPredicate(BooleanPredicate::class, ['field' => 'published', 'value' => true]);
-    }
-}
-
-class InspectorStubThrowingElement implements FilterElementInterface
-{
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
-    ): void {
-        throw new FilterException('broken');
-    }
-}
-
-class InspectorStubValueSensitiveElement implements FilterElementInterface
-{
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
-    ): void {
-        if ($value !== null) {
-            throw new FilterException('value rejected');
-        }
-    }
-}
-
-class InspectorStubAbortingElement implements FilterElementInterface
-{
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
-    ): void {
-        $builder->abort();
-    }
-}
-
-class InspectorStubRawElement implements FilterElementInterface
-{
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
-    ): void {
-        throw new \RuntimeException('raw');
-    }
-}
-
-class InspectorStubErroringElement implements FilterElementInterface
-{
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
-    ): void {
-        throw new \Error('bug');
-    }
-}
-
-class InspectorStubIneffectiveElement implements FilterElementInterface, IneffectiveFilterContract
-{
-    public function getIneffectiveReason(Filter $filter): ?TranslatableInterface
-    {
-        if ($filter->control !== null || $filter->value !== null) {
-            return null;
-        }
-
-        return new TranslatableMessage('stub.ineffective', domain: 'flare');
-    }
-
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
-    ): void {}
 }

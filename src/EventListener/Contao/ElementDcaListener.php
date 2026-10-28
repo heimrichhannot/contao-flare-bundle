@@ -5,15 +5,12 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\EventListener\Contao;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
-use Contao\Input;
-use Contao\Message;
-use Contao\StringUtil;
+use Contao\CoreBundle\Framework\ContaoFramework;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\DataContainer\BackendElementScopeFactory;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
-use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterInspector;
-use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssueKind;
+use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssueReporter;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\ListDriverBuildDcaEvent;
@@ -31,7 +28,6 @@ use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Applies each element's backend configuration ({@see DcaContract::buildDca()}) and the extension points
@@ -50,12 +46,12 @@ final readonly class ElementDcaListener
         private EventDispatcherInterface    $eventDispatcher,
         private FilterControlRegistry       $filterControlRegistry,
         private FilterElementRegistry       $filterElementRegistry,
-        private FilterInspector             $filterInspector,
+        private FilterIssueReporter         $filterIssueReporter,
+        private ContaoFramework             $framework,
         private ListExecutionContextFactory $listExecutionContextFactory,
         private ListSpecBuilderFactory      $listFactory,
         private ListDriverRegistry          $listDriverRegistry,
         private RequestStack                $requestStack,
-        private TranslatorInterface         $translator,
         private ValueProviderRegistry       $valueProviderRegistry,
     ) {}
 
@@ -69,20 +65,28 @@ final readonly class ElementDcaListener
             return;
         }
 
-        if (!$rawId = Input::get('id')) {
+        if (!$id = $this->recordId()) {
             return;
         }
 
-        $filterOptions = [
+        $this->configure($table, $id);
+    }
+
+    /**
+     * The id of the edited record from the request; null if it is missing or no positive integer.
+     */
+    private function recordId(): ?int
+    {
+        $rawId = $this->requestStack->getCurrentRequest()?->query->get('id');
+
+        if ($rawId === null || $rawId === '') {
+            return null;
+        }
+
+        return \filter_var($rawId, \FILTER_VALIDATE_INT, [
             'options' => ['min_range' => 1],
             'flags' => \FILTER_NULL_ON_FAILURE,
-        ];
-
-        if (!$id = \filter_var($rawId, \FILTER_VALIDATE_INT, $filterOptions)) {
-            return;
-        }
-
-        $this->configure($table, (int) $id);
+        ]);
     }
 
     private function configure(string $table, int $id): void
@@ -92,8 +96,10 @@ final readonly class ElementDcaListener
 
         if ($table === FilterModel::getTable())
         {
-            $filterModel = FilterModel::findByPk($id);
-            $listModel = $filterModel?->getRelated('pid');
+            $filterModel = $this->framework->getAdapter(FilterModel::class)->findByPk($id);
+            $listModel = $filterModel
+                ? $this->framework->getAdapter(ListModel::class)->findByPk((int) $filterModel->pid)
+                : null;
             $type = (string) ($filterModel->type ?? '');
             $service = $this->filterElementRegistry->getService($type);
         }
@@ -102,12 +108,12 @@ final readonly class ElementDcaListener
         {
             $filterModel = null;
 
-            if ($listModel = ListModel::findByPk($id))
+            if ($listModel = $this->framework->getAdapter(ListModel::class)->findByPk($id))
             {
                 $type = (string) ($listModel->type ?? '');
                 $service = $this->listDriverRegistry->getService($type);
 
-                $this->reportFilterStates($listModel);
+                $this->filterIssueReporter->reportOverview($listModel);
             }
         }
 
@@ -157,43 +163,9 @@ final readonly class ElementDcaListener
 
         $dcaBuilder->apply($table, $type, applyPalette: $isEditAction);
 
-        if ($isEditAction && $filterModel !== null && $this->reportsFilterStates()) {
-            $this->reportFilterState($listModel, $filterModel);
+        if ($filterModel !== null) {
+            $this->filterIssueReporter->reportFilter($listModel, $filterModel);
         }
-    }
-
-    /**
-     * Whether to report filter states: on GET requests only. The DCA is loaded before Contao saves a submitted form,
-     * and a message added then would be flashed across the redirect, reporting the state from before the save.
-     */
-    private function reportsFilterStates(): bool
-    {
-        return $this->requestStack->getCurrentRequest()?->isMethod('GET') ?? false;
-    }
-
-    /**
-     * On the filter's edit form: each of its issues ({@see FilterInspector}), in its kind's severity.
-     */
-    private function reportFilterState(ListModel $listModel, FilterModel $filterModel): void
-    {
-        foreach ($this->filterInspector->inspect($listModel)->forRow((int) $filterModel->id) as $issue) {
-            self::addMessage($issue->kind, StringUtil::specialchars($issue->describe($this->translator)));
-        }
-    }
-
-    /**
-     * Contao renders messages raw; the caller escapes what it passes.
-     */
-    private static function addMessage(FilterIssueKind $kind, string $message): void
-    {
-        if ($kind === FilterIssueKind::Ineffective)
-        {
-            Message::addNew($message);
-
-            return;
-        }
-
-        Message::addError($message);
     }
 
     /**
@@ -238,45 +210,5 @@ final readonly class ElementDcaListener
         catch (\Exception) {}
 
         return null;
-    }
-
-    /**
-     * On the list's filter overview (its child view, which loads this DCA as the parent table): how many published
-     * filters have an issue of each kind ({@see FilterInspector}), in the kinds' order; each filter row is marked in
-     * the overview as well.
-     */
-    private function reportFilterStates(ListModel $listModel): void
-    {
-        $query = $this->requestStack->getCurrentRequest()?->query;
-
-        if ($query?->get('table') !== FilterModel::getTable() || $query->get('act') || !$this->reportsFilterStates()) {
-            return;
-        }
-
-        $inspection = $this->filterInspector->inspect($listModel);
-
-        foreach (FilterIssueKind::cases() as $kind)
-        {
-            if (!$count = $inspection->count($kind)) {
-                continue;
-            }
-
-            $parameters = match ($kind) {
-                FilterIssueKind::DuplicateAlias => ['%alias%' => \implode(', ', \array_map(
-                    static fn (string $alias): string => '"' . StringUtil::specialchars($alias) . '"',
-                    $inspection->blockingAliases,
-                ))],
-                default => ['%count%' => $count],
-            };
-
-            $id = match ($kind) {
-                FilterIssueKind::ProgrammingError => 'list.info.programming_errors',
-                FilterIssueKind::DuplicateAlias => 'list.info.duplicate_filter_alias',
-                FilterIssueKind::Broken => 'list.info.broken_filters',
-                FilterIssueKind::Ineffective => 'list.info.ineffective_filters',
-            };
-
-            self::addMessage($kind, $this->translator->trans($id, $parameters, 'flare'));
-        }
     }
 }

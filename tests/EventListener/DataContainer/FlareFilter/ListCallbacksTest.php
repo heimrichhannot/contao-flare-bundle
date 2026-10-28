@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\EventListener\DataContainer\FlareFilter;
 
+use Contao\CoreBundle\Framework\Adapter;
 use Contao\Message;
 use Contao\TestCase\ContaoTestCase;
 use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssueReporter;
@@ -25,7 +26,7 @@ final class ListCallbacksTest extends ContaoTestCase
 
         $framework = $this->mockContaoFramework([
             FilterModel::class => $this->mockFilterModelAdapter([self::filterModel(1, 'throws', 'a')]),
-            ListModel::class => $this->mockConfiguredAdapter(['findByPk' => self::listModel(5)]),
+            ListModel::class => $this->listAdapter(),
             Message::class => $this->recordMessages($recorded),
         ]);
 
@@ -62,5 +63,13 @@ final class ListCallbacksTest extends ContaoTestCase
 
         self::assertIsArray($context);
         self::assertSame(['broken' => 'filter.info.broken.published %reason%=broken'], $context['notices']);
+    }
+
+    private function listAdapter(): Adapter
+    {
+        $adapter = $this->mockAdapter(['findByPk']);
+        $adapter->expects(self::once())->method('findByPk')->with(5)->willReturn(self::listModel(5));
+
+        return $adapter;
     }
 }

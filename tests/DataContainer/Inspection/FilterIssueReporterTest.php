@@ -118,8 +118,12 @@ final class FilterIssueReporterTest extends ContaoTestCase
     {
         $row = self::filterModel(1, 'throws', 'a');
 
-        foreach ([Request::create(self::EDIT, 'POST'), Request::create(self::OVERVIEW)] as $request) {
-            $this->reporter([$row], $request)->reportFilter(self::listModel(5), $row);
+        foreach ([Request::create(self::EDIT, 'POST'), Request::create(self::OVERVIEW)] as $request)
+        {
+            $filters = $this->mockAdapter(['findBy']);
+            $filters->expects(self::never())->method('findBy');
+
+            $this->reporter([$row], $request, filters: $filters)->reportFilter(self::listModel(5), $row);
         }
 
         self::assertSame([], $this->recorded);
@@ -130,7 +134,7 @@ final class FilterIssueReporterTest extends ContaoTestCase
         $notices = $this->reporter(
             [self::filterModel(1, 'throws', 'a')],
             Request::create(self::OVERVIEW),
-            lists: $this->mockConfiguredAdapter(['findByPk' => self::listModel(5)]),
+            lists: $this->listAdapter(),
         )->getRowNotices(['id' => 1, 'pid' => 5]);
 
         self::assertSame(['broken' => 'filter.info.broken.published %reason%=broken'], $notices);
@@ -181,5 +185,13 @@ final class FilterIssueReporterTest extends ContaoTestCase
                 );
             }
         });
+    }
+
+    private function listAdapter(): Adapter
+    {
+        $adapter = $this->mockAdapter(['findByPk']);
+        $adapter->expects(self::once())->method('findByPk')->with(5)->willReturn(self::listModel(5));
+
+        return $adapter;
     }
 }

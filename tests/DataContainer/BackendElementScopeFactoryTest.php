@@ -11,13 +11,13 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaFieldBuilderInterface;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\ArchiveFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
@@ -65,7 +65,7 @@ final class BackendElementScopeFactoryTest extends TestCase
             'id' => 7,
             'type' => ArchiveFilterElement::TYPE,
             'control' => 'flare_choice',
-            'value' => 'unreadable',
+            'value' => 'tl_news_archive.5',
         ]);
     }
 
@@ -83,7 +83,8 @@ final class BackendElementScopeFactoryTest extends TestCase
         $providers = (new ValueProviderRegistry())->add(new class implements ValueProviderInterface {
             public function provide(mixed $stored, FilterElementInterface $element): ?ValueInterface
             {
-                throw new UnreadableValueException('Unreadable value.');
+                // Readable: the backend scope must not read it even then.
+                return new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5)]);
             }
 
             public function buildDcaField(DcaFieldBuilderInterface $field, DcaContext $context): void {}

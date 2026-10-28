@@ -172,10 +172,20 @@ A **failed list is not an empty list:**
 
 `AbortFilteringException` keeps meaning "this filter legitimately matches nothing".
 
-**Backend.** Every filter that is guaranteed to break its list — a failure while the list is collected, or a filter
-whose conditions cannot be built with its default value (the fixed value without a control, `null` with one) — is
-marked with a bone-fracture icon in the list's filter overview, and its edit form shows the cause as an error. The
-published ones are counted in an error above the overview; unpublished filters are marked but never fail the list.
+**Backend.** One inspector reports every issue of a list's filters once — with an icon on the filter's row in the
+list's filter overview, a message on its edit form, and a count above the overview:
+
+| Issue | Icon | Raised when |
+|---|---|---|
+| Programming error | bug (red) | building or checking the filter throws an `\Error`; caught (and logged as critical) outside debug mode only, in debug mode it escapes |
+| Duplicate alias | copy-x (red) | the filter shares its alias with other filters, see below |
+| Broken | bone-fracture (red) | the filter cannot be created, or its conditions cannot be built with its default value (the fixed value without a control, `null` with one) |
+| Ineffective | engine (yellow) | the element explains why the filter restricts nothing (`IneffectiveFilterContract`) |
+
+Every saved filter is inspected, published or not; an unpublished filter's icon is muted and its issues never count
+above the overview, which counts published filters and those added by the list driver. Duplicate aliases: two or
+more published filters sharing an alias block the list, and all filters of that alias are marked; with one published
+filter only the unpublished ones are marked (they would block the list once published); with none, none is.
 Failures are recorded on the `ListSpec` as `FilterFailure` objects (source, message, exception).
 
 **Which exception to throw.** `FilterException` (and its subclass `UnreadableValueException`) is public API: filter

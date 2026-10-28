@@ -153,8 +153,9 @@ Backend changes in the filter form:
   published filters sharing an alias make the list *fail* instead of silently dropping or replacing the filter: the list view renders the `list.failed` message (HTTP 200), and a reader of such a list
   answers 500. A controlled filter that fails with a value is retried once without it: if that works only the value is dropped (warning logged); if it fails too, the element config is broken and the list fails closed like a fixed filter. Custom
   list templates that replace `flare_listview` should check `flare_list.failed`. An unreadable initial value
-  only drops the value; the control stays. The backend marks each filter that breaks its list (bone-fracture icon,
-  an error above the filter list and on the filter's edit form).
+  only drops the value; the control stays. The backend marks each filter issue on the filter's row, edit form
+  and above the filter list: programming error (bug), duplicate alias (copy-x), broken (bone-fracture) and
+  ineffective (engine).
 
 ## ListSpecification → ListSpec
 

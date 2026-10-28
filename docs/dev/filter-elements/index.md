@@ -273,15 +273,17 @@ the element. See [Capability Ports](../filter-controls.md#3-capability-ports).
 
 An element that can be configured into restricting nothing implements `IneffectiveFilterContract`
 (`getIneffectiveReason(Filter): ?TranslatableInterface`). It returns why the filter has no effect, or `null`; the
-backend then marks the filter with an engine icon in the filter list, counts such filters in a message above that
-list, and shows the reason on the filter's edit form. The runtime behavior is unchanged. `ArchiveFilterElement` uses it
+backend then marks the filter with an engine icon in the filter list, counts the published ones in a message above
+that list, and shows the reason on the filter's edit form. The runtime behavior is unchanged. `ArchiveFilterElement` uses it
 for a filter with neither a control nor a value.
 
 A filter that is guaranteed to break its list — it cannot be created, or its `buildContext()` or a predicate throws
 with its default value (the fixed value without a control, `null` with one) — is marked with a bone-fracture icon in
 the filter list and an error on its edit form, and the published ones are counted above the list. The message an
 editor sees is the exception's: translate the message of a `FilterException` your element throws
-(`$this->trans()`); an `abort()` is no failure.
+(`$this->trans()`); an `abort()` is no failure. An `\Error` thrown by your element is a programming error: in the
+backend, outside debug mode, the filter is marked with a bug icon and the error is logged as critical, so editors can
+still reach the filter; the frontend request fails as before.
 
 ## 8. Intrinsic and Initial Values
 

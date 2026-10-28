@@ -14,7 +14,8 @@ list:
 
     info:
         no_published_filter: "Entries in this list have a publication status (%target%). No publication filter is configured to account for this."
-        duplicate_filter_alias: "Duplicate filter aliases: %alias%. The list cannot be created until each published filter has a unique alias."
+        programming_errors: "{1} A programming error was detected in a filter. An administrator may need to be contacted.|]1,Inf[ Programming errors were detected in %count% filters. An administrator may need to be contacted."
+        duplicate_filter_alias: "A duplicated filter alias is blocking the list: %alias%. Give each published filter a unique alias."
         broken_filters: "{1} One filter breaks the list; it cannot be created until the filter is fixed. It is marked in the list below.|]1,Inf[ %count% filters break the list; it cannot be created until they are fixed. They are marked in the list below."
         ineffective_filters: "{1} One filter has no effect and needs attention; it is marked in the list below.|]1,Inf[ %count% filters have no effect and need attention; they are marked in the list below."
 
@@ -40,7 +41,12 @@ filter:
         intrinsic:
             yes: "This filter is intrinsic"
             no: "This filter ist not intrinsic"
-        duplicate_alias: "This filter has the alias \"%alias%\", which is already used by another filter."
+        programming_error:
+            published: "A programming error occurred in this filter; an administrator may need to be contacted: %reason%"
+            unpublished: "A programming error occurred in this unpublished filter; an administrator may need to be contacted: %reason%"
+        duplicate_alias:
+            published: "The alias \"%alias%\" is also used by another published filter, which blocks the list."
+            unpublished: "Once published, this filter's alias \"%alias%\" would clash with another filter and block the list."
         broken:
             published: "This filter breaks the list: %reason%"
             unpublished: "Once published, this filter would break the list: %reason%"

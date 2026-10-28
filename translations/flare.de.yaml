@@ -14,7 +14,8 @@ list:
 
     info:
         no_published_filter: "Einträge dieser Liste haben einen Veröffentlichungsstatus (%target%). Es ist kein Veröffentlicht-Filter konfiguriert, der dies berücksichtigt."
-        duplicate_filter_alias: "Duplizierte Filter-Aliasse: %alias%. Die Liste kann nicht erstellt werden, bis jeder veröffentlichte Filter einen eindeutigen Alias hat."
+        programming_errors: "{1} In einem Filter wurde ein Programmierfehler festgestellt. Wenden Sie sich gegebenenfalls an einen Administrator.|]1,Inf[ In %count% Filtern wurden Programmierfehler festgestellt. Wenden Sie sich gegebenenfalls an einen Administrator."
+        duplicate_filter_alias: "Ein doppelter Filter-Alias blockiert die Liste: %alias%. Vergeben Sie jedem veröffentlichten Filter einen eindeutigen Alias."
         broken_filters: "{1} Ein Filter verhindert, dass die Liste erstellt werden kann, bis er korrigiert ist; er ist in der Liste unten markiert.|]1,Inf[ %count% Filter verhindern, dass die Liste erstellt werden kann, bis sie korrigiert sind; sie sind in der Liste unten markiert."
         ineffective_filters: "{1} Ein Filter ist wirkungslos und muss überprüft werden; er ist in der Liste unten markiert.|]1,Inf[ %count% Filter sind wirkungslos und müssen überprüft werden; sie sind in der Liste unten markiert."
 
@@ -40,7 +41,12 @@ filter:
         intrinsic:
             yes: "Dieser Filter ist intrinsisch"
             no: "Dieser Filter ist nicht intrinsisch"
-        duplicate_alias: "Dieser Filter hat den Alias \"%alias%\", der bereits von einem anderen Filter verwendet wird."
+        programming_error:
+            published: "In diesem Filter ist ein Programmierfehler aufgetreten; wenden Sie sich gegebenenfalls an einen Administrator: %reason%"
+            unpublished: "In diesem unveröffentlichten Filter ist ein Programmierfehler aufgetreten; wenden Sie sich gegebenenfalls an einen Administrator: %reason%"
+        duplicate_alias:
+            published: "Der Alias \"%alias%\" wird auch von einem anderen veröffentlichten Filter verwendet; das blockiert die Liste."
+            unpublished: "Veröffentlicht würde der Alias \"%alias%\" dieses Filters mit einem anderen Filter kollidieren und die Liste blockieren."
         broken:
             published: "Dieser Filter verhindert, dass die Liste erstellt werden kann: %reason%"
             unpublished: "Veröffentlicht würde dieser Filter verhindern, dass die Liste erstellt werden kann: %reason%"

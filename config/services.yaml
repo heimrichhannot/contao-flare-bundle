@@ -13,6 +13,7 @@ services:
             - ../src/{Config,Contao,ContaoManager,Contract,DependencyInjection,Dto,Engine,Event,Integration,Model,Trait,Util}
             - ../src/{Filter,Form,InferPtable,List,Paginator,Query,Sort}/*.php
             - ../src/DataContainer/Builder
+            - ../src/DataContainer/Inspection/{FilterIssue,FilterIssueKind,ListInspection}.php
             - ../src/Filter/Value
 
     HeimrichHannot\FlareBundle\Engine\:

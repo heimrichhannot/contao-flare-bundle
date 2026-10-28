@@ -3,7 +3,7 @@
 **Status:** Design settled (2026-10-20/21, §13.6-13.31) and **implemented** on `v0.2-refactor-filter-api`
 (all of §12 steps 0-6, documentation included). Where the implementation deliberately differs from the
 text below, a *Implementation note* marks the place (R3, R5, R7-R10). Manual verification on a real Contao
-install and real MySQL/MariaDB is still pending. The plan and its checklist live in `PLAN_FILTER_FORMS.md`.
+install and real MySQL/MariaDB is still pending. The plan and its checklist live in `dev/superpowers/plans/2026-10-14-filter-forms.md`.
 **Scope:** `src/Filter/` (incl. the new `src/Filter/Control/`), `src/Form/`, `src/Query/`, `src/Event/`, `src/EventListener/NamedDispatch/`,
 `src/Registry/`, `src/DependencyInjection/`, `src/DataContainer/Builder/`, `src/Util/`,
 `contao/dca/tl_flare_filter.php`, `src/EventListener/Contao/ElementDcaListener.php`,
@@ -1057,7 +1057,7 @@ by Doctrine DBAL's platform from the introspected column, never hand-built from 
 ## 12. Sequencing
 
 Phase 0 clears the vocabulary so the rest can be written in the target words. After that the
-contract set is the entire risk; the remaining elements are mechanical. `PLAN_FILTER_FORMS.md`
+contract set is the entire risk; the remaining elements are mechanical. `dev/superpowers/plans/2026-10-14-filter-forms.md`
 merges steps 1 and 3 into one atomic cut (no pilot, no legacy adapter) and tracks the open items.
 
 0. **Nomenclature refactor.** ✅ **Done** (#47), then revised by #48 (§2.2). Pure rename plus one new

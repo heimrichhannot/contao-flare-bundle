@@ -13,7 +13,7 @@ listener's element scope, public), the listener rewired to both, and `ListCallba
 **Tech Stack:** PHP 8.2, Contao 4.13/5.x (`ContaoFramework`, `contao/test-case`), Symfony 5.4–7, PHPUnit 9,
 PHPStan level 5, Mago.
 
-**Spec:** `DESIGN_BACKEND_TESTABILITY.md` (repo root, approved 2026-10-28).
+**Spec:** `dev/superpowers/specs/2026-10-28-backend-testability-design.md` (approved 2026-10-28).
 
 ## Global Constraints
 

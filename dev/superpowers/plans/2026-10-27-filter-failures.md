@@ -12,7 +12,7 @@ building moves out of `ListQueryDirector` into a `FilterInvoker` service that a 
 
 **Tech Stack:** PHP 8.2, Symfony 5.4–7, Contao 4.13/5.x, PHPUnit 9, PHPStan level 5, Mago.
 
-**Spec:** `DESIGN_FILTER_FAILURES.md` (repo root, approved by the user 2026-10-27).
+**Spec:** `dev/superpowers/specs/2026-10-27-filter-failures-design.md` (approved by the user 2026-10-27).
 
 ## Global Constraints
 
@@ -157,7 +157,7 @@ Run: `make test` → Expected: all pass. `grep -rn controlDropped src tests` →
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src tests DESIGN_FILTER_FAILURES.md PLAN_FILTER_FAILURES.md
+git add src tests dev/superpowers/specs/2026-10-27-filter-failures-design.md dev/superpowers/plans/2026-10-27-filter-failures.md
 git commit -m "feat!: fail the list when a filter's stored control cannot be resolved"
 ```
 
@@ -454,7 +454,7 @@ git commit -m "feat: mark filters that break their list in the backend"
 - Modify: `AGENTS.md` (architecture paragraph: "a control that cannot be resolved only drops the control and
   initial value (warning)" → fails the list; an unreadable initial value only drops the value; mention
   `BrokenFilterInspector` next to `IneffectiveFilterInspector` in `src/Contract/FilterElement/`'s bullet)
-- Modify: `SPEC_FILTER_FORMS.md` §8.1 (same rule change)
+- Modify: `dev/superpowers/specs/2026-10-14-filter-forms-design.md` §8.1 (same rule change)
 - Modify (docs worktree `docs/`): `docs/spec/filtering.md` §6 table — the control row becomes fail closed for an
   unresolvable stored control / broken control config; new row "initial value unreadable → control kept, value
   dropped (warning)"; a paragraph that the backend marks such filters (bone-fracture icon, overview error,
@@ -467,6 +467,6 @@ git commit -m "feat: mark filters that break their list in the backend"
 - [ ] **Step 3: Commit both**
 
 ```bash
-git add AGENTS.md SPEC_FILTER_FORMS.md && git commit -m "docs: unresolvable controls fail the list; broken filter marks"
+git add AGENTS.md dev/superpowers/specs/2026-10-14-filter-forms-design.md && git commit -m "docs: unresolvable controls fail the list; broken filter marks"
 git -C docs add -A && git -C docs commit -m "docs: unresolvable controls fail the list; broken filter marks"
 ```

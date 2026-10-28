@@ -147,7 +147,7 @@ redundant next to the row it marks. No new translation keys for framework failur
   missing now fails instead of degrading), a short note on the backend marks where the ineffective marks are
   documented (`dev/filter-elements/index.md`).
 - `AGENTS.md` architecture paragraph ("a control that cannot be resolved only drops the control …"),
-  `SPEC_FILTER_FORMS.md` §8.1, PHPDoc of `createFromFilterModel()`, `ListModelFilterCollector`, `ListSpec`.
+  `dev/superpowers/specs/2026-10-14-filter-forms-design.md` §8.1, PHPDoc of `createFromFilterModel()`, `ListModelFilterCollector`, `ListSpec`.
 
 ## Calls made on the user's behalf (check while reading)
 

@@ -14,7 +14,7 @@ components switch to `$scope->get()`, and (6) the docs follow.
 **Tech Stack:** PHP ^8.2, Symfony 5.4–7 (OptionsResolver, Form, DI), Contao 4.13/5, PHPUnit 9, PHPStan level 5,
 Docker via `make`.
 
-**Spec:** `SPEC_FILTER_SCOPE.md` (approved 2026-10-27). Section references (§n) point at it. Read all of it
+**Spec:** `dev/superpowers/specs/2026-10-27-filter-scope-design.md` (approved 2026-10-27). Section references (§n) point at it. Read all of it
 before starting any task; §7 lists every decision.
 
 ## Global Constraints
@@ -27,7 +27,7 @@ before starting any task; §7 lists every decision.
 - Breaking changes are allowed (v0.2 unreleased); no deprecation layers, no legacy adapters, no BC aliases.
 - Commits on branch `v0.2-refactor-filter-api`, message prefix `refactor!:` for API breaks, `feat:`/`test:`/`docs:`
   otherwise. **No `Co-Authored-By` trailer. Never push.**
-- Code comments do not reference `SPEC_FILTER_SCOPE.md` (no new `§` refs). Existing `SPEC_FILTER_FORMS.md` refs stay;
+- Code comments do not reference `dev/superpowers/specs/2026-10-27-filter-scope-design.md` (no new `§` refs). Existing `dev/superpowers/specs/2026-10-14-filter-forms-design.md` refs stay;
   only adjust their surrounding text where it names a removed type.
 - `\Error`s escape unwrapped everywhere. `UndefinedConfigKeyError` extends `\Error`; no catch block may be widened to
   catch it.

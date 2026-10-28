@@ -13,7 +13,7 @@ the `$GLOBALS` duplicate handoff are removed.
 
 **Tech Stack:** PHP 8.2, Symfony 5.4–7, Contao 4.13/5.x, PHPUnit 9, PHPStan level 5, Mago.
 
-**Spec:** `DESIGN_FILTER_INSPECTION.md` (repo root, approved by the user 2026-10-28).
+**Spec:** `dev/superpowers/specs/2026-10-28-filter-inspection-design.md` (approved by the user 2026-10-28).
 
 ## Global Constraints
 
@@ -115,7 +115,7 @@ commit (Task 4 replaces it).
 
 - [ ] **Step 4: Run** — `make test` → all pass; `make phpstan`, `mago lint` clean.
 
-- [ ] **Step 5: Commit** — `git add src tests translations config DESIGN_FILTER_INSPECTION.md PLAN_FILTER_INSPECTION.md`;
+- [ ] **Step 5: Commit** — `git add src tests translations config dev/superpowers/specs/2026-10-28-filter-inspection-design.md dev/superpowers/plans/2026-10-28-filter-inspection.md`;
   `git commit -m "feat: add the filter issue types of the backend inspection"`
 
 ---
@@ -295,7 +295,7 @@ testScopeErrorsEscapeInDebugMode
 
 **Files:**
 - Modify: `AGENTS.md` (the `src/Contract/FilterElement/` bullet: one `DataContainer/Inspection/FilterInspector`,
-  four issue kinds, `\Error` caught outside debug mode in the backend only), `SPEC_FILTER_FORMS.md` §8.1 backend
+  four issue kinds, `\Error` caught outside debug mode in the backend only), `dev/superpowers/specs/2026-10-14-filter-forms-design.md` §8.1 backend
   paragraph
 - Modify (`docs/` worktree): `docs/spec/filtering.md` ("Backend" paragraph: four kinds and icons, duplicate rules,
   published-only messages), `docs/dev/filter-elements/index.md` (marks paragraph), `docs/migrating-from-v0.1.md`

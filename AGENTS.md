@@ -206,3 +206,6 @@ serves the control election (the `control` options).
     *   `config/`: `config.php` for Contao hooks/constants.
 *   **`config/`**: Symfony configuration (services, routes).
 *   **`translations/`**: YAML/PHP translation files for Flare messages.
+*   **`dev/superpowers/`**: Design documents kept in the repo (not shipped): `specs/YYYY-MM-DD-<topic>-design.md`,
+    `plans/YYYY-MM-DD-<topic>.md` and `ideas/YYYY-MM-DD-<topic>.md`. Skills that default to `docs/superpowers/`
+    write here instead — `docs/` is the Docusaurus worktree (branch `docs/main`) and ignored by this repo.

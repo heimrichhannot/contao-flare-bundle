@@ -2,7 +2,7 @@
 
 Status: written 2026-10-28, reworked after the user's review (the reporter is expanded, not dropped; production code
 must be testable without reaching into private methods), builder-checked, awaiting the user's final review. Branch `v0.2-refactor-filter-api`. Builds on
-`DESIGN_FILTER_INSPECTION.md` (implemented).
+`dev/superpowers/specs/2026-10-28-filter-inspection-design.md` (implemented).
 
 ## Intent
 

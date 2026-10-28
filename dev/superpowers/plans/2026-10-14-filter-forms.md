@@ -8,7 +8,7 @@
 
 **Tech Stack:** PHP ^8.2, Symfony 5.4–7 (DI, Form, OptionsResolver), Contao 4.13/5, PHPUnit 9, PHPStan level 5, Docker via `make`.
 
-**Spec:** `SPEC_FILTER_FORMS.md` (approved 2026-10-21). Section references (§n) point at it. Read §2–§11 and §13 before starting any task.
+**Spec:** `dev/superpowers/specs/2026-10-14-filter-forms-design.md` (approved 2026-10-21). Section references (§n) point at it. Read §2–§11 and §13 before starting any task.
 
 ## Global Constraints
 

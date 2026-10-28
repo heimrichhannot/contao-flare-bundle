@@ -8,7 +8,7 @@
 `src/Filter/ValueProvider/ChoiceValueProvider.php`, `src/Integration/` (CodefogTags, Terminal42Languages),
 `src/List/ListSpec.php`, `src/List/ListSpecBuilder.php`, `tests/`, `AGENTS.md`, the docs worktree.
 **Breaking:** yes, deliberately. v0.2 is unreleased; no BC layer, no deprecations (atomic cut, as in
-`SPEC_FILTER_FORMS.md`).
+`dev/superpowers/specs/2026-10-14-filter-forms-design.md`).
 
 ---
 
@@ -49,7 +49,7 @@ throws.
 
 - Implementing derivations, sort hints or any other new `FilterContext` channel (§8 is an outlook only).
 - Changing the query pipeline, `FilterConditionsBuilder`, predicates, or the targeting stopgap (§15 of
-  `SPEC_FILTER_FORMS.md`); targeting logic moves along unchanged.
+  `dev/superpowers/specs/2026-10-14-filter-forms-design.md`); targeting logic moves along unchanged.
 - Changing `ListSpec::$config` (stays an array) or list-driver hooks.
 - Shortcut accessors for anything other than the own config. `$scope->list->dc`, `$scope->engineContext`,
   `$scope->filter->alias` etc. stay as they are.
@@ -405,7 +405,7 @@ Framework (scope construction and plumbing):
 - `FilterControlBuildFormEvent::$scope` → `ControlScope`; `FilterControlBuildFormListener` reads
   `$event->scope->filter->control->type`.
 - `DcaContext::getFilterScope(): ?FilterScope` → `getElementScope(): ?ElementScope` (the backend scope is built
-  with its control but without its value, `SPEC_FILTER_FORMS.md` §6.4); `ElementDcaListener::createFilterScope()` →
+  with its control but without its value, `dev/superpowers/specs/2026-10-14-filter-forms-design.md` §6.4); `ElementDcaListener::createFilterScope()` →
   `createElementScope()`; consumer `ChoiceValueProvider`.
 - `FilterFactory` (§2.4), `FilterOptionsResolver`/`SchemaResolver` (§2.1).
 - `ListSpec::withoutFilter()` / `ListSpecBuilder` (`instanceof $class` on `$filter->element->component`).
@@ -443,8 +443,8 @@ when thrown from an element contract via `forElement()`), `ChoiceValueProvider::
 - Docs worktree (`docs/`, branch `docs/main`, separate commit): `docs/docs/dev/filter-elements/index.md`,
   `dev/filter-controls.md`, `dev/contracts/index.mdx`, `dev/events.md`, `spec/filtering.md`,
   `migrating-from-v0.1.md`, `removed-in-v0.2.md` (FilterScope removed; old→new mapping table from §2.3 and §3).
-- Code comments do not reference this spec (no `§`-refs to `SPEC_FILTER_SCOPE.md`). Existing
-  `SPEC_FILTER_FORMS.md` refs stay untouched until the final PR #49 review loop; adjust their surrounding text
+- Code comments do not reference this spec (no `§`-refs to `dev/superpowers/specs/2026-10-27-filter-scope-design.md`). Existing
+  `dev/superpowers/specs/2026-10-14-filter-forms-design.md` refs stay untouched until the final PR #49 review loop; adjust their surrounding text
   only where it names removed types.
 
 ---

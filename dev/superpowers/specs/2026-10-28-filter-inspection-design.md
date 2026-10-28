@@ -1,7 +1,7 @@
 # Design: one inspector for every filter issue in the backend
 
 Status: agreed in conversation 2026-10-28, builder-checked, awaiting the user's review. Branch `v0.2-refactor-filter-api` (unreleased;
-breaking changes are fine). Builds on `DESIGN_FILTER_FAILURES.md` (implemented, commits c3b9b17..9da2d4b).
+breaking changes are fine). Builds on `dev/superpowers/specs/2026-10-27-filter-failures-design.md` (implemented, commits c3b9b17..9da2d4b).
 
 ## Intent
 
@@ -174,7 +174,7 @@ Row tooltip and edit form (`filter.info.*`, `%reason%` / `%alias%`):
 
 ## Docs
 
-- `AGENTS.md` (the inspector paragraph under `src/Contract/FilterElement/`), `SPEC_FILTER_FORMS.md` §8.1 backend
+- `AGENTS.md` (the inspector paragraph under `src/Contract/FilterElement/`), `dev/superpowers/specs/2026-10-14-filter-forms-design.md` §8.1 backend
   paragraph.
 - `docs/` worktree (separate commit on `docs/main`): `spec/filtering.md` "Backend" paragraph, `dev/filter-elements/
   index.md` (the marks paragraph: four kinds, `\Error` caught outside debug mode in the backend only),

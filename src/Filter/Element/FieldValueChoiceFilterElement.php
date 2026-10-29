@@ -36,7 +36,8 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement implements Cho
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('field')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('field')->required()->allowedTypes('string')
+            ->allowedValues(static fn (string $value): bool => $value !== '');
     }
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
@@ -56,10 +57,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement implements Cho
             return;
         }
 
-        // A value that cannot be applied must not widen the list.
-        if (!$field = $scope->get('field')) {
-            $builder->abort();
-        }
+        $field = $scope->get('field');
 
         // The predicate compares LOWER(TRIM(field)), so the values are normalized alike;
         // a blank value would match every empty row.
@@ -96,10 +94,7 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement implements Cho
     public function buildChoices(ChoicesBuilder $choices, ElementScope $scope): void
     {
         $table = $scope->list->dc;
-
-        if (!$field = (string) $scope->get('field')) {
-            throw new FilterException('No target field configured.', method: __METHOD__);
-        }
+        $field = $scope->get('field');
 
         if (!\is_null($foreignValues = $this->getForeignValues($table, $field)))
         {

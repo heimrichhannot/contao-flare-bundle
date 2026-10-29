@@ -101,13 +101,6 @@ final class DcaSelectFieldFilterElementTest extends TestCase
         self::assertSame([], $context->formula->propositions);
     }
 
-    public function testValueWithoutFieldAborts(): void
-    {
-        $this->expectException(AbortFilteringException::class);
-
-        $this->buildFilterContext($this->createElement(), ['field' => null], new ChoiceValue([new ValueChoice('a')]));
-    }
-
     public function testValueForAFieldWithoutOptionsAborts(): void
     {
         $this->expectException(AbortFilteringException::class);

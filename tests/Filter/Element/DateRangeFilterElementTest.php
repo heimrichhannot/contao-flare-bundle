@@ -47,13 +47,6 @@ final class DateRangeFilterElementTest extends TestCase
         self::assertSame([], $context->formula->propositions);
     }
 
-    public function testDateRangeRequiresAField(): void
-    {
-        $this->expectException(FilterException::class);
-
-        $this->buildFilterContext(new DateRangeFilterElement(), ['field' => null], DateRangeValue::tryFrom(1, 2));
-    }
-
     public function testWrongValueClassIsRejected(): void
     {
         $this->expectException(FilterException::class);

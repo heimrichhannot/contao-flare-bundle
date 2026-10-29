@@ -33,13 +33,6 @@ final class BooleanFilterElementTest extends TestCase
         self::assertTrue($p->options['value']);
     }
 
-    public function testWithoutFieldAborts(): void
-    {
-        $this->expectException(AbortFilteringException::class);
-
-        $this->buildFilterContext(new BooleanFilterElement(), ['field' => null]);
-    }
-
     public function testWrongValueClassIsRejected(): void
     {
         $this->expectException(FilterException::class);

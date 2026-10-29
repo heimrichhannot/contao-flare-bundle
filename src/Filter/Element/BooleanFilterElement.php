@@ -25,7 +25,8 @@ class BooleanFilterElement extends AbstractFilterElement
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('field')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('field')->required()->allowedTypes('string')
+            ->allowedValues(static fn (string $value): bool => $value !== '');
     }
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
@@ -41,18 +42,12 @@ class BooleanFilterElement extends AbstractFilterElement
         ElementScope                  $scope,
         ?ValueInterface               $value,
     ): void {
-        $value = $this->expectValue($value, BoolValue::class);
-
-        if (!$field = $scope->get('field')) {
-            $builder->abort();
-        }
-
-        if (!$value) {
+        if (!$value = $this->expectValue($value, BoolValue::class)) {
             return;
         }
 
         $builder->addPredicate(BooleanPredicate::class, [
-            'field' => $field,
+            'field' => $scope->get('field'),
             'value' => $value->state,
         ]);
     }

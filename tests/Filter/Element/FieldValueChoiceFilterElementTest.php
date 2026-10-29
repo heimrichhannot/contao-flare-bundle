@@ -77,20 +77,6 @@ final class FieldValueChoiceFilterElementTest extends TestCase
         self::assertSame([], $context->formula->propositions);
     }
 
-    public function testNoValueAndNoFieldAddsNothing(): void
-    {
-        $context = $this->buildFilterContext($this->createElement(), ['field' => null]);
-
-        self::assertSame([], $context->formula->propositions);
-    }
-
-    public function testValueWithoutFieldAborts(): void
-    {
-        $this->expectException(AbortFilteringException::class);
-
-        $this->buildFilterContext($this->createElement(), ['field' => null], new ChoiceValue([new ValueChoice('a')]));
-    }
-
     public function testBlankValuesAreDropped(): void
     {
         $context = $this->buildFilterContext(

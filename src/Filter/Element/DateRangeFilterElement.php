@@ -24,7 +24,8 @@ class DateRangeFilterElement extends AbstractFilterElement
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('field')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('field')->required()->allowedTypes('string')
+            ->allowedValues(static fn (string $value): bool => $value !== '');
     }
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
@@ -40,18 +41,12 @@ class DateRangeFilterElement extends AbstractFilterElement
         ElementScope                  $scope,
         ?ValueInterface               $value,
     ): void {
-        $value = $this->expectValue($value, DateRangeValue::class);
-
-        if (!$field = $scope->get('field')) {
-            throw new FilterException('Set elm_fieldGeneric in filter model.', method: __METHOD__);
-        }
-
-        if (!$value) {
+        if (!$value = $this->expectValue($value, DateRangeValue::class)) {
             return;
         }
 
         $builder->addPredicate(DateRangePredicate::class, [
-            'field' => $field,
+            'field' => $scope->get('field'),
             'from' => $value->from,
             'to' => $value->to,
         ]);

@@ -9,7 +9,6 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
-use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\SimpleEquationPredicate;
@@ -25,8 +24,9 @@ class SimpleEquationFilterElement extends AbstractFilterElement
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('left')->default(null)->allowedTypes('string', 'null');
-        $resolver->define('operator')->default(null)->allowedTypes(SqlEquationOperator::class, 'null');
+        $resolver->define('left')->required()->allowedTypes('string')
+            ->allowedValues(static fn (string $value): bool => $value !== '');
+        $resolver->define('operator')->required()->allowedTypes(SqlEquationOperator::class);
         $resolver->define('right')->default(null);
     }
 
@@ -40,21 +40,14 @@ class SimpleEquationFilterElement extends AbstractFilterElement
             ->set('right', $model->elm_equationRight);
     }
 
-    /**
-     * @throws FilterException
-     */
     public function buildContext(
         FilterContextBuilderInterface $builder,
         ElementScope                  $scope,
         ?ValueInterface               $value,
     ): void {
-        if (!($operand = $scope->get('left')) || !($op = $scope->get('operator'))) {
-            throw new FilterException('Invalid filter configuration.');
-        }
-
         $builder->addPredicate(SimpleEquationPredicate::class, [
-            'operand_left' => $operand,
-            'operator' => $op,
+            'operand_left' => $scope->get('left'),
+            'operator' => $scope->get('operator'),
             'operand_right' => $scope->get('right'),
         ]);
     }

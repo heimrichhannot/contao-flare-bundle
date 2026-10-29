@@ -37,15 +37,6 @@ final class SearchKeywordsFilterElementTest extends TestCase
         $element = new SearchKeywordsFilterElement();
 
         self::assertSame([], $this->buildFilterContext($element, ['columns' => ['title']])->formula->propositions);
-        self::assertSame([], $this->buildFilterContext($element, ['columns' => []])->formula->propositions);
-    }
-
-    public function testKeywordsNeedColumns(): void
-    {
-        // A phrase that cannot be searched must not silently widen the list.
-        $this->expectException(AbortFilteringException::class);
-
-        $this->buildFilterContext(new SearchKeywordsFilterElement(), ['columns' => []], new KeywordsValue('foo'));
     }
 
     public function testWrongValueClassIsRejected(): void

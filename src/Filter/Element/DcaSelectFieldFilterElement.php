@@ -30,7 +30,8 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('field')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('field')->required()->allowedTypes('string')
+            ->allowedValues(static fn (string $value): bool => $value !== '');
     }
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
@@ -50,10 +51,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
             return;
         }
 
-        if (!$field = $scope->get('field')) {
-            $builder->abort();
-        }
-
+        $field = $scope->get('field');
         $table = $scope->list->dc;
 
         if (!$options = $this->getOptions($table, $field)) {

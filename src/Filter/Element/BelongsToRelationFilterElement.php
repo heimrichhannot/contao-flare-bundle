@@ -33,7 +33,8 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('field_pid')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('field_pid')->required()->allowedTypes('string')
+            ->allowedValues(static fn (string $value): bool => $value !== '');
         $resolver->define('which_ptable')->default(null)->allowedTypes('string', 'null');
         $resolver->define('whitelist_parents')->default([])->allowedTypes('array');
         $resolver->define('group_whitelist_parents')->default([])->allowedTypes('array');
@@ -59,10 +60,7 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
         ElementScope                  $scope,
         ?ValueInterface               $value,
     ): void {
-        if (!$fieldPid = $scope->get('field_pid'))
-        {
-            throw new FilterException('No parent field defined.');
-        }
+        $fieldPid = $scope->get('field_pid');
 
         $inferrable = PtableInferrableFactory::createFromConfig($scope->list->config);
         $inferrer = new PtableInferrer($inferrable, $scope->list->dc);

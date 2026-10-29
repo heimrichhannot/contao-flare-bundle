@@ -25,7 +25,8 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('columns')->default([])->allowedTypes('array');
+        $resolver->define('columns')->required()->allowedTypes('array')
+            ->allowedValues(static fn (array $value): bool => $value !== []);
     }
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
@@ -45,14 +46,9 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
             return;
         }
 
-        // A phrase that cannot be searched must not widen the list.
-        if (!$columns = $scope->get('columns')) {
-            $builder->abort();
-        }
-
         $builder->addPredicate(SearchKeywordsPredicate::class, [
             'value' => $value->keywords,
-            'columns' => $columns,
+            'columns' => $scope->get('columns'),
         ]);
     }
 

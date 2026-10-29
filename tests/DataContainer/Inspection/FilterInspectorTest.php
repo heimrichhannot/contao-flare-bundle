@@ -10,6 +10,7 @@ use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssue;
 use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssueKind;
 use HeimrichHannot\FlareBundle\DataContainer\Inspection\ListInspection;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
+use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
@@ -194,6 +195,39 @@ final class FilterInspectorTest extends ContaoTestCase
         ]);
 
         self::assertSame([], $inspection->forRow(1));
+    }
+
+    public function testControlFailingToBuildIsBroken(): void
+    {
+        $inspection = $this->inspect([
+            self::filterModel(1, 'sensitive', 'a', row: ['control' => 'unbuildable']),
+        ]);
+
+        self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
+        self::assertSame('cannot build', $inspection->forRow(1)[0]->reason);
+    }
+
+    public function testBuildFormListenerOtherExceptionIsAProgrammingError(): void
+    {
+        $this->dispatcher->addListener(FilterControlBuildFormEvent::class, static function (): void {
+            throw new \RuntimeException('A bug in the listener.');
+        });
+
+        $inspection = $this->inspect([
+            self::filterModel(1, 'sensitive', 'a', row: ['control' => 'flare_checkbox']),
+        ]);
+
+        self::assertSame([FilterIssueKind::ProgrammingError], self::kinds($inspection, 1));
+        self::assertSame('A bug in the listener.', $inspection->forRow(1)[0]->reason);
+    }
+
+    public function testFormIsNotCheckedForFiltersWithoutAControl(): void
+    {
+        $this->dispatcher->addListener(FilterControlBuildFormEvent::class, static function (): void {
+            throw new \RuntimeException('Never reached.');
+        });
+
+        self::assertSame([], $this->inspect([self::filterModel(1, 'ok', 'a')])->forRow(1));
     }
 
     public function testAFixedValueIsCheckedAsTheFixedValue(): void

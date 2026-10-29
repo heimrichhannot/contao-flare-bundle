@@ -8,11 +8,15 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
+use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Form\FilterFormInvoker;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
 use HeimrichHannot\FlareBundle\List\ListSpec;
@@ -44,6 +48,7 @@ final class FilterInspector implements ResetInterface
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly FilterFactory            $filterFactory,
         private readonly FilterInvoker            $filterInvoker,
+        private readonly FilterFormInvoker        $filterFormInvoker,
         private readonly ListSpecBuilderFactory   $listSpecBuilderFactory,
         private readonly TranslatorInterface      $translator,
         private readonly LoggerInterface          $logger,
@@ -244,7 +249,13 @@ final class FilterInspector implements ResetInterface
         {
             $found = [];
 
-            foreach ([$spec ? $this->checkConditions($spec, $filter) : null, $this->checkEffect($filter)] as $issue)
+            $checks = [
+                $spec ? $this->checkConditions($spec, $filter) : null,
+                $spec && $filter->control !== null ? $this->checkForm($spec, $filter) : null,
+                $this->checkEffect($filter),
+            ];
+
+            foreach ($checks as $issue)
             {
                 if ($issue !== null) {
                     $found[$issue[0]->value] ??= $issue;
@@ -279,6 +290,35 @@ final class FilterInspector implements ResetInterface
         catch (\Exception $e)
         {
             return [FilterIssueKind::Broken, self::reason($e)];
+        }
+        catch (\Error $e)
+        {
+            return [FilterIssueKind::ProgrammingError, $this->caught($e, self::describe($filter))];
+        }
+
+        return null;
+    }
+
+    /**
+     * Builds the control's form the way the filter form does, the {@see FilterControlBuildFormEvent} included. A
+     * control that cannot build its form fails the list (broken); any other exception of a listener fails the request
+     * (programming error).
+     *
+     * @return array{FilterIssueKind, string}|null
+     */
+    private function checkForm(ListSpec $spec, Filter $filter): ?array
+    {
+        try
+        {
+            $this->filterFormInvoker->build(new ControlScope($spec, $filter, new ConfigurationContext()));
+        }
+        catch (FilterException $e)
+        {
+            return [FilterIssueKind::Broken, self::reason($e)];
+        }
+        catch (\Exception $e)
+        {
+            return [FilterIssueKind::ProgrammingError, self::reason($e)];
         }
         catch (\Error $e)
         {

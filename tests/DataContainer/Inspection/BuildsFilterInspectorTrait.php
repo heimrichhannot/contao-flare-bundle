@@ -14,13 +14,13 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaFieldBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterInspector;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\Form\FilterFormInvoker;
 use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
 use HeimrichHannot\FlareBundle\List\Collector\ListModelFilterCollector;
 use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
@@ -37,11 +37,13 @@ use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
 use HeimrichHannot\FlareBundle\Tests\DataContainer\Inspection\Stub\AbortingElement;
+use HeimrichHannot\FlareBundle\Tests\DataContainer\Inspection\Stub\CheckboxStubControl;
 use HeimrichHannot\FlareBundle\Tests\DataContainer\Inspection\Stub\ErroringElement;
 use HeimrichHannot\FlareBundle\Tests\DataContainer\Inspection\Stub\IneffectiveElement;
 use HeimrichHannot\FlareBundle\Tests\DataContainer\Inspection\Stub\OkElement;
 use HeimrichHannot\FlareBundle\Tests\DataContainer\Inspection\Stub\RawElement;
 use HeimrichHannot\FlareBundle\Tests\DataContainer\Inspection\Stub\ThrowingElement;
+use HeimrichHannot\FlareBundle\Tests\DataContainer\Inspection\Stub\UnbuildableControl;
 use HeimrichHannot\FlareBundle\Tests\DataContainer\Inspection\Stub\ValueSensitiveElement;
 use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
 use HeimrichHannot\FlareBundle\Tests\Fixture\FilterModelFixture;
@@ -49,6 +51,7 @@ use HeimrichHannot\FlareBundle\Tests\Fixture\ListModelFixture;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Form\Forms;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -58,8 +61,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  *
  * Element types: 'ok', 'throws' (FilterException "broken" in buildContext()), 'aborts', 'raw' (RuntimeException
  * "raw"), 'errors' (\Error "bug"), 'sensitive' (rejects any value) and 'ineffective' (reason "stub.ineffective"
- * without control and value), the last two consuming BoolValue; control 'flare_checkbox' for BoolValue; list driver
- * 'test_list' on tl_test.
+ * without control and value), the last two consuming BoolValue; controls 'flare_checkbox' (a checkbox) and
+ * 'unbuildable' (FilterException "cannot build" in buildForm()) for BoolValue; list driver 'test_list' on tl_test.
  */
 trait BuildsFilterInspectorTrait
 {
@@ -84,6 +87,7 @@ trait BuildsFilterInspectorTrait
                 $this->createFilterContextFactory(),
                 new FilterQueryBuilderFactory($connection),
             ),
+            filterFormInvoker: new FilterFormInvoker($dispatcher, Forms::createFormFactory()),
             listSpecBuilderFactory: $this->createListSpecBuilderFactory($dispatcher),
             translator: self::echoTranslator(),
             logger: $logger ?? new NullLogger(),
@@ -115,7 +119,8 @@ trait BuildsFilterInspectorTrait
     private function createFilterFactory(): FilterFactory
     {
         $controls = (new FilterControlRegistry())
-            ->add($this->createMock(FilterControlInterface::class), 'flare_checkbox', BoolValue::class);
+            ->add(new CheckboxStubControl(), 'flare_checkbox', BoolValue::class)
+            ->add(new UnbuildableControl(), 'unbuildable', BoolValue::class);
 
         $providers = (new ValueProviderRegistry())->add(new class implements ValueProviderInterface {
             public function provide(mixed $stored, FilterElementInterface $element): ?ValueInterface

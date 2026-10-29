@@ -24,6 +24,7 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         'id', 'type', 'intrinsic', 'boolMode', 'preselect', 'prefill', 'control', 'value', 'ctl_boolBinaryChoices',
         'ctl_isMandatory', 'ctl_isMultiple', 'ctl_isExpanded', 'ctl_hasEmptyOption', 'ctl_formatEmptyOption',
         'ctl_formatEmptyOptionCustom', 'ctl_placeholder', 'elm_whitelistParents', 'elm_groupWhitelistParents',
+        'title', 'ctl_label',
     ];
 
     private const MARKER = 'legacyBackfilled';
@@ -385,6 +386,66 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         self::assertSame('1', $this->rows[4]['value']);
     }
 
+    /**
+     * @dataProvider boolModes
+     */
+    public function testBoolGetsItsTitleAsLabel(string $boolMode, string $control): void
+    {
+        $this->addRow(1, 'flare_bool', ['intrinsic' => '0', 'boolMode' => $boolMode, 'title' => 'Only open']);
+
+        $this->migration()->run();
+
+        self::assertSame($control, $this->rows[1]['control']);
+        self::assertSame('Only open', $this->rows[1]['ctl_label']);
+    }
+
+    public static function boolModes(): iterable
+    {
+        yield 'binary' => ['', 'flare_checkbox'];
+        yield 'ternary' => ['ternary', 'flare_choice_bool'];
+    }
+
+    public function testKeywordsGetTheTranslatedDefaultLabel(): void
+    {
+        $this->addRow(1, 'flare_search_keywords', ['intrinsic' => '0']);
+
+        $this->migration()->run();
+
+        self::assertSame('label.text', $this->rows[1]['ctl_label']);
+    }
+
+    public function testExistingLabelIsKept(): void
+    {
+        $this->addRow(1, 'flare_bool', ['intrinsic' => '0', 'title' => 'Only open', 'ctl_label' => 'Mine']);
+        $this->addRow(2, 'flare_search_keywords', ['intrinsic' => '0', 'ctl_label' => 'Search']);
+
+        $this->migration()->run();
+
+        foreach ($this->rowUpdates() as [$data]) {
+            self::assertArrayNotHasKey('ctl_label', $data);
+        }
+    }
+
+    public function testRowsWithoutAControlGetNoLabel(): void
+    {
+        $this->addRow(1, 'flare_bool', ['intrinsic' => '1', 'title' => 'Only open']);
+        $this->addRow(2, 'flare_search_keywords', ['intrinsic' => '1']);
+
+        $this->migration()->run();
+
+        foreach ($this->rowUpdates() as [$data]) {
+            self::assertArrayNotHasKey('ctl_label', $data);
+        }
+    }
+
+    public function testShouldRunWaitsForTheLabelColumn(): void
+    {
+        $this->addRow(1, 'flare_bool', ['intrinsic' => '0']);
+        $this->columns = \array_values(\array_diff(self::COLUMNS, ['ctl_label']));
+
+        self::assertFalse($this->migration()->shouldRun());
+    }
+
     public function testNullFalseIsConvertedOnAnOtherwiseMigratedRow(): void
     {
         $this->addRow(1, 'flare_bool', [
@@ -682,6 +743,8 @@ final class BackfillFilterValuesMigrationTest extends TestCase
             'ctl_placeholder' => '',
             'elm_whitelistParents' => null,
             'elm_groupWhitelistParents' => null,
+            'title' => '',
+            'ctl_label' => '',
         ];
 
         if (\in_array(self::MARKER, $this->columns ?? [], true)) {

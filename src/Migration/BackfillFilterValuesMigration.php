@@ -31,6 +31,9 @@ use Doctrine\DBAL\Schema\Column;
  * historical rows, and a later rename in live code must not change what already-migrated rows meant. The same holds
  * for the list types whose data container was fixed by their driver.
  *
+ * A control renders no label without `ctl_label`. The old bool element fell back to the filter's title and the old
+ * keywords element to the translated `label.text`, so the rows that get one of their controls get that label.
+ *
  * An intrinsic archive filter was always restricted to its parent whitelist, "whitelist for options only" included;
  * without a control the archive filter is now restricted by its value, so the whitelist becomes the value.
  *
@@ -54,8 +57,8 @@ class BackfillFilterValuesMigration extends AbstractMigration
 
     /**
      * The columns this migration requires: the source `intrinsic`, the renamed control and archive whitelist columns it
-     * reads or fills, and the targets. The other sources (`boolMode`, `preselect`, `prefill`) read as empty when
-     * absent.
+     * reads or fills, and the targets. The other sources (`boolMode`, `preselect`, `prefill`, `title`) read as empty
+     * when absent.
      */
     private const REQUIRED_COLUMNS = [
         'intrinsic',
@@ -69,6 +72,7 @@ class BackfillFilterValuesMigration extends AbstractMigration
         'ctl_formatEmptyOption',
         'ctl_formatEmptyOptionCustom',
         'ctl_placeholder',
+        'ctl_label',
         'elm_whitelistParents',
         'elm_groupWhitelistParents',
     ];
@@ -226,9 +230,33 @@ class BackfillFilterValuesMigration extends AbstractMigration
 
         if ($assignsControl) {
             $changes += self::emptyOptionChanges($type, $row);
+            $changes += self::labelChanges($type, $row);
         }
 
         return $changes;
+    }
+
+    /**
+     * The label the old element fell back to without one: the bool element its title, the keywords element the
+     * translation key `label.text`, which the filter form translates like before.
+     *
+     * @param array<string, mixed> $row
+     *
+     * @return array<string, string>
+     */
+    private static function labelChanges(string $type, array $row): array
+    {
+        if ((string) ($row['ctl_label'] ?? '') !== '') {
+            return [];
+        }
+
+        $label = match ($type) {
+            'flare_bool' => (string) ($row['title'] ?? ''),
+            'flare_search_keywords' => 'label.text',
+            default => '',
+        };
+
+        return $label !== '' ? ['ctl_label' => $label] : [];
     }
 
     /**

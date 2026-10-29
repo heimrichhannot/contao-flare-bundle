@@ -61,6 +61,16 @@ final class ListSpecTest extends TestCase
         self::assertArrayHasKey('foo', $spec->filters);
     }
 
+    public function testWithFilterKeepsNumericAliasKeys(): void
+    {
+        // Filters without an explicit alias are keyed by their row id, which PHP stores as an integer key.
+        $spec = self::spec()
+            ->withFilters(['12' => self::filter('a', '12'), '15' => self::filter('b', '15')])
+            ->withFilter(self::filter('c', '0'));
+
+        self::assertSame([12, 15, 0], \array_keys($spec->filters));
+    }
+
     public function testWithFilterRejectsADuplicateAlias(): void
     {
         $spec = self::spec()

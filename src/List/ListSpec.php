@@ -72,7 +72,11 @@ final readonly class ListSpec
             );
         }
 
-        return $this->withFilters([...$this->filters, $filter->alias => $filter]);
+        // No spread: it would renumber the integer keys of numeric aliases (row ids).
+        $filters = $this->filters;
+        $filters[$filter->alias] = $filter;
+
+        return $this->withFilters($filters);
     }
 
     public function withoutFilter(Filter|string $filter_or_class_or_alias): self

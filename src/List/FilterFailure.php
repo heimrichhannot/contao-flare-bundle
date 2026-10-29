@@ -28,6 +28,23 @@ final readonly class FilterFailure
      * The cause for an editor, without the log's framing: the message of a filter exception wrapped for the query
      * ("[FLARE] Query denied: …"), else the exception's message, else the failure's message.
      */
+    /**
+     * The exception a list fails with as a whole because of the given failures (SPEC_FILTER_FORMS.md §8.1).
+     *
+     * @param list<self> $failures
+     */
+    public static function toListException(array $failures, string $source, string $method): FilterException
+    {
+        return new FilterException(
+            \sprintf('[FLARE] The list has failed: %s', \implode('; ', \array_map(
+                static fn (self $failure): string => $failure->message,
+                $failures,
+            ))),
+            method: $method,
+            source: $source,
+        );
+    }
+
     public function getReason(): string
     {
         $exception = $this->exception;

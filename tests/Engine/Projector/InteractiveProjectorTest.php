@@ -46,6 +46,10 @@ use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
 use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
+use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
@@ -161,6 +165,89 @@ final class InteractiveProjectorTest extends TestCase
         $this->expectException(FilterException::class);
 
         $this->createProjector(debug: true)->project($list, $this->context());
+    }
+
+    public function testInvalidSubmissionIsNotCounted(): void
+    {
+        $spy = new ProjectorSpyElement();
+        $list = $this->list(self::controlled($spy, 'q', new ProjectorRejectingControl()));
+
+        $view = $this->createProjector(query: ['f' => ['q' => 'bad']])->project($list, $this->context());
+
+        self::assertFalse($view->isFailed());
+        self::assertSame(0, $view->getCount());
+        self::assertSame([], $view->getEntries());
+        self::assertSame(0, $view->getPaginator()->getTotalItems());
+        self::assertSame(0, $spy->calls, 'Neither counted nor loaded.');
+        self::assertFalse($view->getForm()->isValid());
+    }
+
+    public function testHarnessFailureYieldsTheFailedView(): void
+    {
+        $spy = new ProjectorSpyElement();
+        $list = $this->list(self::controlled(new ProjectorSpyElement(), 'broken', new ProjectorUnbuildableControl()))
+            ->withFilter(self::controlled($spy, 'q', self::keywords()));
+
+        $view = $this->createProjector()->project($list, $this->context());
+
+        self::assertTrue($view->isFailed());
+        self::assertSame(0, $spy->calls);
+        self::assertTrue($view->getForm()->has('q'), 'The other filters still render.');
+        self::assertFalse($view->getForm()->has('broken'));
+    }
+
+    /**
+     * @dataProvider provideFailures
+     */
+    public function testFailureWinsOverAnInvalidSubmission(bool $atBuildTime): void
+    {
+        $list = $this->list(self::controlled(new ProjectorSpyElement(), 'q', new ProjectorRejectingControl()));
+        $list = $atBuildTime
+            ? $list->withFailure(new FilterFailure('tl_flare_filter.3', 'broken config'))
+            : $list->withFilter(
+                self::controlled(new ProjectorSpyElement(), 'broken', new ProjectorUnbuildableControl()),
+            );
+
+        $view = $this->createProjector(query: ['f' => ['q' => 'bad']])->project($list, $this->context());
+
+        self::assertTrue($view->isFailed());
+    }
+
+    public static function provideFailures(): iterable
+    {
+        yield 'recorded at build time' => [true];
+        yield 'control cannot build its form' => [false];
+    }
+
+    public function testHarnessFailureIsRethrownInDebugMode(): void
+    {
+        $list = $this->list(self::controlled(new ProjectorSpyElement(), 'broken', new ProjectorUnbuildableControl()));
+
+        $this->expectException(FilterException::class);
+        $this->expectExceptionMessage('cannot build');
+
+        $this->createProjector(debug: true)->project($list, $this->context());
+    }
+
+    private static function keywords(): KeywordsFilterControl
+    {
+        return new KeywordsFilterControl();
+    }
+
+    private static function controlled(
+        FilterElementInterface $element,
+        string                 $alias,
+        FilterControlInterface $control,
+    ): Filter {
+        return new Filter(
+            element: new ElementBinding($element, 'test_element', new ComponentConfig([])),
+            alias: $alias,
+            control: new ControlBinding(
+                $control,
+                $control::class,
+                new ComponentConfig(['label' => null, 'placeholder' => null]),
+            ),
+        );
     }
 
     private function context(): InteractiveContext
@@ -298,5 +385,48 @@ final class ProjectorFailingElement implements FilterElementInterface
         ?ValueInterface               $value,
     ): void {
         throw new FilterException('broken element');
+    }
+}
+
+/**
+ * A text field whose every submission is rejected.
+ */
+final class ProjectorRejectingControl implements FilterControlInterface
+{
+    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
+    {
+        $builder->single(TextType::class, ['required' => false]);
+    }
+
+    public function decode(mixed $data, ControlScope $scope): ?KeywordsValue
+    {
+        if ($data !== null && $data !== '') {
+            throw new FilterException('rejected');
+        }
+
+        return null;
+    }
+
+    public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
+    {
+        return null;
+    }
+}
+
+final class ProjectorUnbuildableControl implements FilterControlInterface
+{
+    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
+    {
+        throw new FilterException('This control cannot build its form.');
+    }
+
+    public function decode(mixed $data, ControlScope $scope): ?KeywordsValue
+    {
+        return null;
+    }
+
+    public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
+    {
+        return null;
     }
 }

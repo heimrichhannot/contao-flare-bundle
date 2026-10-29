@@ -18,6 +18,7 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
+use HeimrichHannot\FlareBundle\List\FilterFailure;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
@@ -56,6 +57,27 @@ class InteractiveProjector extends AbstractProjector
         $readerUrlConfig = $context->createReaderUrlConfig();
         $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($readerUrlConfig);
 
+        // The failures known without building conditions win over an invalid submission (SPEC_FILTER_FORMS.md §8.1).
+        if ($failures = [...$list->failures, ...$harness->getFailures()])
+        {
+            $e = FilterFailure::toListException($failures, $list->source ?? 'list inlined', __METHOD__);
+
+            return $this->createFailedView($e, $list, $context, $form, $readerUrlGenerator);
+        }
+
+        // An invalid submission shows no entries and is not counted.
+        if ($form->isSubmitted() && !$form->isValid())
+        {
+            return $this->createView(
+                loader: new InteractiveEmptyLoader(),
+                form: $form,
+                paginator: $this->paginatorFactory->createEmpty(pageParam: $this->getPageParam($form, $context)),
+                readerUrlGenerator: $readerUrlGenerator,
+                table: $list->dc,
+                totalItems: 0,
+            );
+        }
+
         // pagination setup
         try
         {
@@ -70,21 +92,11 @@ class InteractiveProjector extends AbstractProjector
         // override list context to include the proper paginator config
         $context = $context->with(paginatorConfig: $paginator);
 
-        // if form is submitted but invalid, create empty loader
-        if ($form->isSubmitted() && !$form->isValid()) {
-            $loader = new InteractiveEmptyLoader();
-        }
-
-        // if form is valid or not submitted, create proper loader
-        if (!isset($loader)) {
-            $config = new InteractiveLoaderConfig(
-                list: $list,
-                context: $context,
-                filterValues: $filterValues,
-            );
-
-            $loader = $this->createLoader($config);
-        }
+        $loader = $this->createLoader(new InteractiveLoaderConfig(
+            list: $list,
+            context: $context,
+            filterValues: $filterValues,
+        ));
 
         return $this->createView(
             loader: $loader,

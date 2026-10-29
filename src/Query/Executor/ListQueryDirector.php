@@ -43,16 +43,8 @@ readonly class ListQueryDirector
      */
     public function createQueryBuilder(ListQueryConfig $config): ?QueryBuilder
     {
-        if ($failures = $config->list->failures)
-        {
-            throw new FilterException(
-                \sprintf('[FLARE] The list has failed: %s', \implode('; ', \array_map(
-                    static fn (FilterFailure $failure): string => $failure->message,
-                    $failures,
-                ))),
-                method: __METHOD__,
-                source: $config->list->source ?? 'list inlined',
-            );
+        if ($failures = $config->list->failures) {
+            throw FilterFailure::toListException($failures, $config->list->source ?? 'list inlined', __METHOD__);
         }
 
         try

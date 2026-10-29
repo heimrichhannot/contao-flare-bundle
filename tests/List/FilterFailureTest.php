@@ -33,4 +33,17 @@ final class FilterFailureTest extends TestCase
     {
         self::assertSame('The alias "dup" is taken.', (new FilterFailure('s', 'The alias "dup" is taken.'))->getReason());
     }
+
+    public function testToListExceptionJoinsTheMessages(): void
+    {
+        $e = FilterFailure::toListException(
+            [new FilterFailure('tl_flare_filter.3', 'first'), new FilterFailure(null, 'second')],
+            'tl_flare_list.1',
+            'Some::method',
+        );
+
+        self::assertSame('[FLARE] The list has failed: first; second', $e->getMessage());
+        self::assertSame('tl_flare_list.1', $e->getSource());
+        self::assertSame('Some::method', $e->getMethod());
+    }
 }

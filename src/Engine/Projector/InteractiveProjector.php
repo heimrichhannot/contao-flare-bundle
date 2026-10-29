@@ -58,7 +58,9 @@ class InteractiveProjector extends AbstractProjector
         $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($readerUrlConfig);
 
         // The failures known without building conditions win over an invalid submission (SPEC_FILTER_FORMS.md §8.1).
-        if ($failures = [...$list->failures, ...$harness->getFailures()])
+        $failures = \array_merge($list->failures, $harness->getFailures());
+
+        if ($failures !== [])
         {
             $e = FilterFailure::toListException($failures, $list->source ?? 'list inlined', __METHOD__);
 

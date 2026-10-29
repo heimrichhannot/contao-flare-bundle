@@ -283,6 +283,7 @@ final readonly class FilterFactory
         {
             throw $e;
         }
+        // @phpstan-ignore catch.neverThrown (userland providers may break their contract)
         catch (\Exception $e)
         {
             $source = "{$filterModel::getTable()}.{$filterModel->id}";

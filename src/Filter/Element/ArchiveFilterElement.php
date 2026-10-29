@@ -127,6 +127,9 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
      * Without a control the value is the restriction, so it may be any parent: every record of the static ptable, or
      * of every table the dynamic ptable column holds. The whitelist config is ignored, whatever its source.
      *
+     * Known limitation: for a dynamic ptable (e.g. tl_content), every model of every parent table is loaded for the
+     * backend value field; accepted for now (see the design of 2026-10-29, #9).
+     *
      * @throws FilterException
      */
     private function buildAllChoices(ChoicesBuilder $choices, PtableInferrer $inferrer, string $dc): void

@@ -879,6 +879,8 @@ The rule follows the two scopes of §4.2 (§13.31):
 | a filter's **element** cannot be built, **with or without a control** — its type is unknown or its config is broken (`createFromFilterModel()` throws); without a control also a non-empty stored (fixed) value that yields no readable key; two published filters of a list sharing an alias | the whole list | **fail closed**: the list fails as a whole; error logged |
 | a filter's stored **control** cannot be built — its `control` names no registered control for the element's value class, or its control config is broken | the whole list | **fail closed**: the editor chose the control, and the filter must not apply without it (e.g. a "hide secret items" filter of an uninstalled bundle); error logged |
 | a controlled filter's **initial value** is unreadable (any `FilterException` from its value provider) | only the initial display | **fail open**: the control is kept, the value dropped; warning logged |
+| a controlled filter's **control cannot build its form** — `buildForm()` fails, a `FilterControlBuildFormEvent` listener throws a `FlareException`, or the alias is no valid form name (2026-10-29) | the whole list | **fail closed**: the list fails as a whole, the form renders the other filters; error logged |
+| a control cannot **hydrate** the initial value (2026-10-29) | only the initial display | **fail open**: the filter is mounted without initial data; warning logged |
 
 The backend reports every filter issue through one inspector (`FilterInspector`), on the filter row (icon), the edit
 form and the list's filter overview: a **programming error** (an `\Error` while building or checking the filter,
@@ -888,6 +890,11 @@ are, with none no row is), a **broken** filter — one that cannot be created, o
 its default value (the fixed value without a control, none with one) — (bone-fracture icon) and an **ineffective**
 one (engine icon). Every saved row is inspected; unpublished rows are marked muted and never count toward the
 overview messages, which count published filters and filters added by the list driver.
+
+The failures known without building conditions — those recorded while the list was built and those of controls
+that cannot build their form — win over an invalid submission; an invalid submission otherwise shows no entries and
+runs no COUNT (2026-10-29). A list broken only in a filter's conditions therefore renders empty for an invalid
+submission; closing that gap is recorded in `dev/superpowers/ideas/2026-10-29-failed-list-wins-over-invalid-submission.md`.
 
 Stale keys of deleted records are not a failure: they resolve to references that match nothing
 (§3.6).

@@ -30,9 +30,13 @@ Filter execution inside the projector: the `FormHarness` decodes submitted form 
 objects; `ListQueryDirector` (`src/Query/Executor/`) picks each filter's value (with a control: the form's value;
 without: the fixed `Filter::$value`), creates the `FilterContext` via `FilterContextFactory::create(ElementScope, ?value)`
 (the element's `buildContext($builder, $scope, $value)` adds predicates) and runs each predicate into a `FilterConditionsBuilder`. A
-filter whose element cannot be built (with or without a control), a stored control that cannot be resolved or whose
-config is broken, a broken fixed value, or two published filters sharing an alias fail the whole list (`list.failed`
-in the view, HTTP 500 in the reader); an unreadable initial value only drops the value (warning). Failures are
+filter whose element cannot be built (with or without a control) — required element config is required by the
+element's schema —, a stored control that cannot be resolved or whose config is broken, a control that cannot build
+its form (`Form/FilterFormInvoker`: a `buildForm()` failure, a `FlareException` from a `FilterControlBuildFormEvent`
+listener, an alias that is no valid form name), a broken fixed value, a `FlareException` from a `FilterCollectedEvent`
+listener, or two published filters sharing an alias fail the whole list (`list.failed` in the view, HTTP 500 in the
+reader); an unreadable initial value only drops the value (warning). These failures win over an invalid submission,
+which shows no entries and runs no COUNT. `abort()` means only "legitimately matches nothing". Failures are
 recorded as `FilterFailure`s (`src/List/`) on the `ListSpec`. A controlled filter that fails with a non-null value is retried once with value null: success drops only the value
 (warning); if the retry fails too (or the value was already null) the element config is broken and the list fails
 closed. `\Error`s escape unwrapped. `UndefinedConfigKeyError` (an `\Error`, thrown when a component reads a config key
@@ -46,9 +50,11 @@ and userland, throw it to report a filter that cannot work with its config, data
 the message itself where an editor may see it (`AbstractFilterElement::trans()`, `flare` domain). `FlareException` and the
 other exceptions in `src/Exception/` are thrown by the framework only; userland may catch them. Every filter hook
 (element `buildContext()`, control `buildForm()`/`hydrate()`/`decode()`) catches any `\Exception` and normalizes it
-with `FilterException::wrap()`; a non-`FilterException` is unexpected: logged as an error, and the control hooks
-rethrow it in debug mode. A control's `buildForm()`/`hydrate()` failure drops its mount (warning); a `decode()`
-failure drops the value and puts a form error on a submitted field.
+with `FilterException::wrap()`; a non-`FilterException` is unexpected: logged as an error. Value providers are
+treated alike (`FilterFactory` wraps their exceptions; a non-`FilterException` `FlareException`, a wiring error,
+passes unwrapped). A control's `buildForm()` failure fails the list (error, rethrown by the failed view in debug
+mode); a `hydrate()` failure mounts the filter without its initial value (warning; an unexpected exception is
+rethrown in debug mode); a `decode()` failure drops the value and puts a form error on a submitted field.
 
 Note: Contexts and Projectors/Views are separate axes — (Export Context/Projector/View are currently not implemented).
 
@@ -91,7 +97,8 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `IneffectiveFilterContract` lets an element explain why its filter restricts nothing as configured. One backend
   inspector (`DataContainer/Inspection/FilterInspector`) finds every filter issue of a list once, as one of four
   kinds — programming error, duplicate alias, broken (cannot be created, or conditions that cannot be built with
-  the default value, through the shared `Query/Executor/FilterInvoker`), ineffective; `FilterIssueReporter` shows
+  the default value, through the shared `Query/Executor/FilterInvoker`, or a control that cannot build its form,
+  through the shared `Form/FilterFormInvoker`), ineffective; `FilterIssueReporter` shows
   them on the filter row (icon), the edit form and the list's filter overview (counts of published filters only). It inspects every saved row, builds
   the list scope the way the runtime does, and catches `\Error` outside debug mode only (logged as critical)
 - `src/Filter/ValueProvider/` — one `ValueProviderInterface` service per value class (`provide()` turns the
@@ -164,7 +171,7 @@ serves the control election (the `control` options).
 
 ## Coding Conventions
 
-- `declare(strict_types=1);` at the top of every PHP file
+- `declare(strict_types=1);` at the top of every PHP file under `src/` and `tests/`
 - PSR-12 / PER coding style, 4-space indent, 120-char line width (enforced by Mago)
 - Use PHP 8 attributes over docblock annotations for registrations
 - `src/Model/` is excluded from Mago linting rules

@@ -132,7 +132,8 @@ The migrations:
 The legacy columns **`intrinsic`**, **`boolMode`**, **`preselect`** and **`prefill`**, and the
 **`legacyBackfilled`** marker, remain in the table until you run the proposed DROPs manually
 (`contao:migrate --with-deletes`) — do that only after you tested the migrated site, never before the backfill
-has run, because the deletes destroy its source data. On **MariaDB** the old index names may remain as
+has run, because the deletes destroy its source data. Drop `legacyBackfilled` together with the other legacy
+columns, never on its own: the backfill uses it to remember that it has run. On **MariaDB** the old index names may remain as
 duplicates of the renamed ones until the deletes have been run; this is harmless.
 
 Backend changes in the filter form:

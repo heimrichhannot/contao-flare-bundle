@@ -150,13 +150,21 @@ Failures follow the two scopes of a filter: the element config, a stored control
 
 | What fails | Behaviour |
 |---|---|
-| A filter's **element** cannot be built, **with or without a control** — unknown element type, broken element config (including a transformer that throws on the stored record) — or a filter **without a control** has an unreadable stored (fixed) value or fails at query time | **Fail closed:** the list as a whole fails; error logged |
+| A filter's **element** cannot be built, **with or without a control** — unknown element type, broken element config (including a missing required config key and a transformer that throws on the stored record) — or a filter **without a control** has an unreadable stored (fixed) value or fails at query time | **Fail closed:** the list as a whole fails; error logged |
+| A **value provider** throws anything other than a `FilterException` | Treated like a `FilterException` (logged as an error): fail closed without a control, the value dropped with one. A framework `FlareException` (a wiring error, e.g. an element lacking the port its provider needs) fails the list |
+| A **`FilterCollectedEvent` listener** throws a `FlareException` | **Fail closed:** the list fails; any other exception of a listener fails the request |
 | Two published filters of a list share an **alias** | **Fail closed:** the second one is recorded as a list failure instead of replacing the first; error logged |
 | A filter's stored **control** cannot be built — its `control` names no control registered for the element's value class (e.g. one of an uninstalled bundle), or its control config is broken | **Fail closed:** the editor chose the control, so the filter must not apply without it; error logged |
 | A controlled filter's **initial value** is unreadable (any `FilterException` from the value provider) | **Fail open:** the control is kept, the value dropped; warning logged |
 | A **controlled filter fails at query time with a non-null value** | Retried **once with value `null`**. Success: only the value is dropped (warning). Failure, or the value was already `null`: the element config is broken and bounds the whole list — fail closed |
-| A control's **`buildForm()` or `hydrate()`** throws | **Fail open:** the filter is not mounted and contributes no form field |
+| A control **cannot build its form** — `buildForm()` throws, a `FilterControlBuildFormEvent` listener throws a `FlareException`, or the filter's alias is no valid form name | **Fail closed:** the list fails; the form still renders the other filters; error logged |
+| A control's **`hydrate()`** throws | **Fail open:** the filter is mounted without its initial value; warning logged |
 | A control's **`decode()`** throws | The filter contributes no value. A **submitted** field gets an "invalid value" form error, so the form is invalid like any other invalid input and the list renders empty; a failed **initial** value is only dropped |
+
+The failures known before any conditions are built — those recorded while the list was built and those of controls
+that cannot build their form — win over an invalid submission. An invalid submission otherwise shows no entries and
+runs no count query. `abort()` in an element means only "this filter legitimately matches nothing", never a broken
+configuration.
 
 `\Error`s (programming errors) are never wrapped or retried. The transformer resolvers are the one deviation:
 they wrap a `\ValueError` from casting a stale stored record like any other broken element config. Stale references (a stored choice whose record was

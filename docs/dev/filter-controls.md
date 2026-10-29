@@ -167,7 +167,7 @@ that port. Ports take an `ElementScope`, so the element reads its own config wit
 
 ```php
 // A port the control requires: throws a FilterException naming the control, the port and the element,
-// so the filter is skipped (fail open).
+// so the control cannot build its form and the list fails (fail closed).
 $scope->element(ChoiceSourceContract::class)->buildChoices($choices, $scope->forElement());
 
 // A port the control can do without: null if the element does not implement it.
@@ -238,10 +238,14 @@ The former element events `FilterElementBuildingEvent` / `FilterElementBuiltEven
 ## 6. Failure Behaviour
 
 - **Build time, control side.** A stored `control` that is unknown or not registered for the element's value
-  class, a broken control config, or an unreadable initial value: the filter is kept **without control and
-  value** (warning logged), bounded only by the element's own config. A control whose `buildForm()` or
-  `hydrate()` throws is skipped: it is not mounted and contributes no form field. A `FilterException` is logged
-  as a warning; any other exception as an error, and in debug mode it is rethrown instead.
+  class, or a broken control config, fails the list (**fail closed**): the editor chose the control, so the filter
+  must not apply without it. An unreadable initial value only drops the value (warning logged).
+- **Form time.** A control that cannot build its form fails the list (**fail closed**, error logged; the form still
+  renders the other filters): its `buildForm()` throws, a `FilterControlBuildFormEvent` listener throws a
+  `FlareException`, or the filter's alias is no valid form name (letters a–z, digits, `_`, `-` and `:`, not starting
+  with `-` or `:`). A listener that cancels the event is no failure: the filter is simply not mounted. If
+  `hydrate()` throws, the filter is mounted without its initial value: a `FilterException` is logged as a warning,
+  any other exception as an error, and in debug mode it is rethrown instead.
 - **Build time, element side.** An unknown element type or a broken element config fails the list
   (**fail closed**) — also for a filter *with* a control, because the element config bounds the whole list. So
   does an unreadable fixed value of a filter without a control.

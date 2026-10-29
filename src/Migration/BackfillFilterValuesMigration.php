@@ -27,6 +27,11 @@ use Doctrine\DBAL\Schema\Column;
  * default becomes '1', so rows created later are never pending. The schema diff proposes dropping the marker together
  * with the other retired columns.
  *
+ * Should the marker be dropped on its own while `intrinsic` stays, the migration does not start over once `control`
+ * or `value` is in use anywhere: on a first upgrade, the schema diff has just added both columns, empty in every row.
+ * The guard misses only a table in which every filter ended up with neither a control nor a value; a rerun then
+ * recomputes from the retired columns and differs only where an editor changed a filter since.
+ *
  * Element and control types are frozen literals, not resolved through the registries: the migration describes
  * historical rows, and a later rename in live code must not change what already-migrated rows meant. The same holds
  * for the list types whose data container was fixed by their driver.
@@ -106,7 +111,15 @@ class BackfillFilterValuesMigration extends AbstractMigration
             }
         }
 
-        return !isset($columns[\strtolower(self::MARKER)]) || $this->fetchPendingRows() !== [];
+        if (isset($columns[\strtolower(self::MARKER)])) {
+            return $this->fetchPendingRows() !== [];
+        }
+
+        // Without the marker, the migration has run unless the new columns are still unused everywhere.
+        return $this->connection->fetchOne(\sprintf(
+            "SELECT 1 FROM %s WHERE control <> '' OR value <> ''",
+            self::TABLE,
+        )) === false;
     }
 
     public function run(): MigrationResult

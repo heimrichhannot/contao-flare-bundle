@@ -123,6 +123,22 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         self::assertTrue($this->migration()->shouldRun());
     }
 
+    public function testShouldRunStaysOffWhenTheMarkerIsGoneButControlsAreInUse(): void
+    {
+        $this->addRow(1, 'flare_archive', ['intrinsic' => '0', 'control' => 'flare_choice']);
+        $this->addRow(2, 'flare_archive', ['intrinsic' => '0']);
+
+        self::assertFalse($this->migration()->shouldRun());
+    }
+
+    public function testShouldRunStaysOffWhenTheMarkerIsGoneButValuesAreInUse(): void
+    {
+        $this->addRow(1, 'flare_archive', ['intrinsic' => '1', 'value' => 'a:1:{i:0;s:20:"tl_news_archive.1";}']);
+        $this->addRow(2, 'flare_archive', ['intrinsic' => '0']);
+
+        self::assertFalse($this->migration()->shouldRun());
+    }
+
     public function testRowsCreatedLaterAreNotPending(): void
     {
         $this->addRow(1, 'flare_archive', ['intrinsic' => '0']);
@@ -448,6 +464,8 @@ final class BackfillFilterValuesMigrationTest extends TestCase
 
     public function testNullFalseIsConvertedOnAnOtherwiseMigratedRow(): void
     {
+        // A pending row: without the marker, a control in use would stop the migration.
+        $this->columns[] = self::MARKER;
         $this->addRow(1, 'flare_bool', [
             'intrinsic' => '0',
             'control' => 'flare_checkbox',
@@ -808,6 +826,18 @@ final class BackfillFilterValuesMigrationTest extends TestCase
             }
 
             return $affected;
+        });
+        $connection->method('fetchOne')->willReturnCallback(function (string $sql): int|false {
+            self::assertSame("SELECT 1 FROM tl_flare_filter WHERE control <> '' OR value <> ''", $sql);
+
+            foreach ($this->rows as $row)
+            {
+                if ($row['control'] !== '' || ($row['value'] !== null && $row['value'] !== '')) {
+                    return 1;
+                }
+            }
+
+            return false;
         });
         $connection->method('fetchAssociative')->willReturnCallback(function (string $sql, array $params): array|false {
             self::assertSame('SELECT * FROM tl_flare_list WHERE id = ?', $sql);

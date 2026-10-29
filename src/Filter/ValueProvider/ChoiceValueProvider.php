@@ -10,6 +10,7 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaFieldBuilderInterface;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
@@ -29,7 +30,8 @@ final readonly class ChoiceValueProvider implements ValueProviderInterface
     public function provide(mixed $stored, FilterElementInterface $element): ?ChoiceValue
     {
         if (!$element instanceof ChoiceSourceContract) {
-            throw new FilterException(\sprintf(
+            // A wiring error, not an unreadable value: never swallowed as one.
+            throw new FlareException(\sprintf(
                 'The filter element "%s" must implement %s to provide a choice value.',
                 $element::class,
                 ChoiceSourceContract::class,

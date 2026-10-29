@@ -10,6 +10,7 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaFieldBuilder;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
@@ -68,11 +69,23 @@ final class ChoiceValueProviderTest extends TestCase
         (self::provider())->provide('k1', new ProviderStubChoiceElement());
     }
 
-    public function testElementWithoutChoiceSourceIsRejected(): void
+    /**
+     * @dataProvider storedValues
+     */
+    public function testElementWithoutChoiceSourceIsAWiringError(mixed $stored): void
     {
-        $this->expectException(FilterException::class);
+        try {
+            (self::provider())->provide($stored, new ProviderStubElement());
+            self::fail('No exception thrown.');
+        } catch (FlareException $e) {
+            self::assertNotInstanceOf(FilterException::class, $e, 'A wiring error is no unreadable value.');
+        }
+    }
 
-        (self::provider())->provide(\serialize(['k1']), new ProviderStubElement());
+    public static function storedValues(): iterable
+    {
+        yield 'stored keys' => [\serialize(['k1'])];
+        yield 'empty' => [''];
     }
 
     public function testUndefinedConfigKeyEscapesTheOptionsCallback(): void

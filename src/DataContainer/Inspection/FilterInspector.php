@@ -9,6 +9,7 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
@@ -103,7 +104,9 @@ final class FilterInspector implements ResetInterface
     }
 
     /**
-     * Builds the row's filter like the collector does; an issue is recorded on the row instead.
+     * Builds the row's filter like the collector does, the FilterCollectedEvent included; an issue is recorded on the
+     * row instead. A FlareException fails the list at runtime (broken); any other exception, which only a listener
+     * can throw, fails the request (programming error).
      */
     private function build(FilterModel $model, InspectedRows $rows): ?Filter
     {
@@ -113,9 +116,13 @@ final class FilterInspector implements ResetInterface
 
             return $this->eventDispatcher->dispatch(new FilterCollectedEvent($filter, $model))->filter;
         }
-        catch (\Exception $e)
+        catch (FlareException $e)
         {
             $rows->addIssue((int) $model->id, FilterIssueKind::Broken, self::reason($e));
+        }
+        catch (\Exception $e)
+        {
+            $rows->addIssue((int) $model->id, FilterIssueKind::ProgrammingError, self::reason($e));
         }
         catch (\Error $e)
         {

@@ -56,6 +56,9 @@ readonly class ListModelFilterCollector
      * as an error and recorded. An unreadable initial value never reaches this point;
      * {@see FilterFactory::createFromFilterModel()} keeps such a filter without the value.
      *
+     * So does a FlareException from a {@see FilterCollectedEvent} listener; any other exception of a listener is a
+     * bug and fails the request.
+     *
      * Two filters sharing an alias fail the list too: the later one is recorded, never silently replacing
      * the earlier one.
      *
@@ -75,6 +78,8 @@ readonly class ListModelFilterCollector
             try
             {
                 $filter = $this->filterFactory->createFromFilterModel($model);
+                // A listener's FlareException fails the list like any filter failure; anything else is a bug.
+                $filter = $this->eventDispatcher->dispatch(new FilterCollectedEvent($filter, $model))->filter;
             }
             catch (FlareException $e)
             {
@@ -82,8 +87,6 @@ readonly class ListModelFilterCollector
 
                 continue;
             }
-
-            $filter = $this->eventDispatcher->dispatch(new FilterCollectedEvent($filter, $model))->filter;
 
             if (isset($filters[$filter->alias]))
             {

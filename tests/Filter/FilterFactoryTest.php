@@ -324,6 +324,51 @@ final class FilterFactoryTest extends TestCase
         $this->assertWarned();
     }
 
+    public function testProviderExceptionIsWrappedForAFixedValue(): void
+    {
+        try {
+            $this->factory()->createFromFilterModel(self::model(['value' => 'bug']));
+            self::fail('No exception thrown.');
+        } catch (FilterException $e) {
+            self::assertInstanceOf(\InvalidArgumentException::class, $e->getPrevious());
+            self::assertSame('tl_flare_filter.7', $e->getSource());
+        }
+
+        self::assertSame('error', $this->logs[0][0] ?? null);
+    }
+
+    public function testProviderExceptionDropsTheInitialValue(): void
+    {
+        $filter = $this->factory()->createFromFilterModel(
+            self::model(['control' => self::BOOL_CONTROL, 'value' => 'bug']),
+        );
+
+        self::assertSame(self::BOOL_CONTROL, $filter->control?->type);
+        self::assertNull($filter->value);
+        self::assertSame(['error', 'warning'], \array_column($this->logs, 0));
+    }
+
+    /**
+     * @dataProvider controls
+     */
+    public function testProviderFlareExceptionPassesThrough(string $control): void
+    {
+        $this->expectException(FlareException::class);
+        $this->expectExceptionMessage('a wiring error');
+
+        try {
+            $this->factory()->createFromFilterModel(self::model(['control' => $control, 'value' => 'wiring']));
+        } catch (FilterException $e) {
+            self::fail('The wiring error was wrapped: ' . $e->getMessage());
+        }
+    }
+
+    public static function controls(): iterable
+    {
+        yield 'without control' => [''];
+        yield 'with control' => [self::BOOL_CONTROL];
+    }
+
     public function testUnreadableFixedValueThrows(): void
     {
         $this->expectException(UnreadableValueException::class);
@@ -456,6 +501,8 @@ final class FactoryStubBoolProvider implements ValueProviderInterface
             '1' => new BoolValue(true),
             '0' => new BoolValue(false),
             'plain' => throw new FilterException('plain'),
+            'bug' => throw new \InvalidArgumentException('a bug in the provider'),
+            'wiring' => throw new FlareException('a wiring error'),
             default => throw new UnreadableValueException('unreadable'),
         };
     }

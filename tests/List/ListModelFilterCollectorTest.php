@@ -123,6 +123,36 @@ final class ListModelFilterCollectorTest extends TestCase
         self::assertSame([], $this->logs);
     }
 
+    public function testListenerFlareExceptionFailsTheList(): void
+    {
+        $this->dispatcher->addListener(FilterCollectedEvent::class, static function (FilterCollectedEvent $event): void {
+            if ($event->model->id === 1) {
+                throw new FlareException('The listener cannot replace this filter.');
+            }
+        });
+
+        $collected = $this->collector()->collectFromModels(
+            [self::filterModel(1, 'stub'), self::filterModel(2, 'stub')],
+            self::listModel(),
+        );
+
+        self::assertSame([2], \array_keys($collected->filters));
+        self::assertCount(1, $collected->failures);
+        self::assertSame('tl_flare_filter.1', $collected->failures[0]->source);
+        self::assertStringContainsString('cannot replace', $collected->failures[0]->getReason());
+    }
+
+    public function testListenerOtherExceptionEscapes(): void
+    {
+        $this->dispatcher->addListener(FilterCollectedEvent::class, static function (): void {
+            throw new \RuntimeException('A bug in the listener.');
+        });
+
+        $this->expectException(\RuntimeException::class);
+
+        $this->collector()->collectFromModels([self::filterModel(1, 'stub')], self::listModel());
+    }
+
     public function testFailingFixedFilterIsRecordedAsListFailure(): void
     {
         $collected = $this->collector()->collectFromModels(

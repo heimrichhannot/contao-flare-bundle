@@ -124,6 +124,29 @@ final class FilterInspectorTest extends ContaoTestCase
         self::assertSame([FilterIssueKind::DuplicateAlias], self::kinds($inspection, 2));
     }
 
+    public function testListenerFlareExceptionIsBroken(): void
+    {
+        $this->dispatcher->addListener(FilterCollectedEvent::class, static function (): void {
+            throw new FlareException('The listener cannot replace this filter.');
+        });
+
+        $inspection = $this->inspect([self::filterModel(1, 'ok', 'a')]);
+
+        self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
+    }
+
+    public function testListenerOtherExceptionIsAProgrammingError(): void
+    {
+        $this->dispatcher->addListener(FilterCollectedEvent::class, static function (): void {
+            throw new \RuntimeException('A bug in the listener.');
+        });
+
+        $inspection = $this->inspect([self::filterModel(1, 'ok', 'a')]);
+
+        self::assertSame([FilterIssueKind::ProgrammingError], self::kinds($inspection, 1));
+        self::assertSame('A bug in the listener.', $inspection->forRow(1)[0]->reason);
+    }
+
     public function testAProgrammingErrorMarksTheRow(): void
     {
         $this->throwErrorFor(4);

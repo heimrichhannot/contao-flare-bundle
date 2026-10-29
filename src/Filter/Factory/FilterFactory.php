@@ -250,9 +250,15 @@ final readonly class FilterFactory
     }
 
     /**
+     * Value providers are handled like filter hooks: a FilterException is the provider's report, any other exception
+     * is unexpected, logged as an error and wrapped. A FlareException that is no FilterException (a wiring error, e.g.
+     * an element lacking the contract its provider needs) passes unwrapped, so it is never mistaken for an unreadable
+     * value.
+     *
      * @param class-string<ValueInterface>|null $valueClass
      *
-     * @throws FlareException If the stored value is unreadable or no provider exists for the value class.
+     * @throws FilterException If the stored value is unreadable or the provider fails.
+     * @throws FlareException If no provider exists for the value class, or the provider reports a wiring error.
      */
     private function provideValue(
         ?string                $valueClass,
@@ -269,7 +275,33 @@ final readonly class FilterFactory
                 method: __METHOD__,
             );
 
-        return $provider->provide($filterModel->value, $element);
+        try
+        {
+            return $provider->provide($filterModel->value, $element);
+        }
+        catch (FlareException $e)
+        {
+            throw $e;
+        }
+        catch (\Exception $e)
+        {
+            $source = "{$filterModel::getTable()}.{$filterModel->id}";
+
+            $this->logger->error(\sprintf(
+                '[FLARE] The value provider %s failed unexpectedly for filter %s: %s',
+                $provider::class,
+                $source,
+                $e->getMessage(),
+            ), ['exception' => $e]);
+
+            throw new FilterException(
+                $e->getMessage(),
+                $e->getCode(),
+                $e,
+                method: $provider::class . '::provide',
+                source: $source,
+            );
+        }
     }
 
     /**

@@ -93,7 +93,7 @@ final readonly class FormHarnessFactory
             catch (FilterException $e)
                 // Fail closed: a control the editor chose must not be lost silently (§8.1).
             {
-                $failures[] = $this->fail($filter, $e);
+                $failures[] = $this->fail($list, $filter, $e);
                 continue;
             }
 
@@ -192,17 +192,22 @@ final readonly class FormHarnessFactory
     }
 
     /**
-     * Records a filter whose control could not build its form; it fails the list.
+     * Records a filter whose control could not build its form; it fails the list. The message names the filter and
+     * its list, like the collector's.
      */
-    private function fail(Filter $filter, FilterException $e): FilterFailure
+    private function fail(ListSpec $list, Filter $filter, FilterException $e): FilterFailure
     {
-        $this->logger->error(\sprintf(
-            '[FLARE] Filter "%s" fails the list, its control cannot build its form: %s',
-            $filter->alias,
+        $message = \sprintf(
+            'Filter %s with control "%s" on %s cannot build its form: %s',
+            $filter->source !== null ? "{$filter->source} (\"{$filter->alias}\")" : "\"{$filter->alias}\"",
+            $filter->control?->type,
+            $list->source ?? 'an inlined list',
             $e->getMessage(),
-        ), ['alias' => $filter->alias, 'exception' => $e]);
+        );
 
-        return new FilterFailure($filter->source, $e->getMessage(), $e);
+        $this->logger->error('[FLARE] ' . $message . ' -- The list fails.', ['exception' => $e]);
+
+        return new FilterFailure($filter->source, $message, $e);
     }
 
     /**

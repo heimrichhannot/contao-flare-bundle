@@ -92,9 +92,9 @@ final class FormHarnessFactoryTest extends TestCase
         return $this->createFilterSet($filters)->getForm();
     }
 
-    private function createFilterSet(array $filters, bool $debug = false): FormHarness
+    private function createFilterSet(array $filters, bool $debug = false, ?string $listSource = null): FormHarness
     {
-        $list = $this->listSpec($filters);
+        $list = $this->listSpec($filters, $listSource);
 
         $context = new class implements ContextInterface, FormContextInterface {
             public static function getContextType(): string
@@ -238,10 +238,43 @@ final class FormHarnessFactoryTest extends TestCase
         $this->assertFalse($harness->getForm()->has('broken'));
         $this->assertSame(['suche'], \array_keys($harness->getMounts()));
         $this->assertCount(1, $failures = $harness->getFailures());
-        $this->assertSame('boom', $failures[0]->message);
+        $this->assertStringEndsWith('cannot build its form: boom', $failures[0]->message);
         $this->assertInstanceOf(FilterException::class, $failures[0]->exception);
         $this->assertSame([['error']], \array_map(static fn (array $log): array => [$log[0]], $this->logged));
         $this->assertStringContainsString('broken', $this->logged[0][1]);
+    }
+
+    public function testFailureMessageNamesTheFilterAndItsList(): void
+    {
+        $failing = $this->control(static function (): void {
+            throw new FilterException('boom');
+        });
+
+        $harness = $this->createFilterSet(
+            [$this->filter('price', $failing, source: 'tl_flare_filter.3')],
+            listSource: 'tl_flare_list.1',
+        );
+
+        $message = \sprintf(
+            'Filter tl_flare_filter.3 ("price") with control "%s" on tl_flare_list.1 cannot build its form: boom',
+            $failing::class,
+        );
+        $this->assertSame($message, $harness->getFailures()[0]->message);
+        $this->assertSame([['error', '[FLARE] ' . $message . ' -- The list fails.']], $this->logged);
+    }
+
+    public function testFailureMessageOfAnInlinedFilter(): void
+    {
+        $failing = $this->control(static function (): void {
+            throw new FilterException('boom');
+        });
+
+        $harness = $this->createFilterSet([$this->filter('price', $failing)]);
+
+        $this->assertSame(
+            \sprintf('Filter "price" with control "%s" on an inlined list cannot build its form: boom', $failing::class),
+            $harness->getFailures()[0]->message,
+        );
     }
 
     /**

@@ -28,7 +28,7 @@ trait BuildsFormFixturesTrait
     /**
      * @param list<Filter> $filters
      */
-    private function listSpec(array $filters = []): ListSpec
+    private function listSpec(array $filters = [], ?string $source = null): ListSpec
     {
         $driver = new class implements ListDriverInterface {
             public function resolveDcTable(string $type, array $config, array $attributes): string
@@ -42,6 +42,7 @@ trait BuildsFormFixturesTrait
             type: 'test_list',
             dc: 'tl_test',
             filters: $filters,
+            source: $source,
         );
     }
 
@@ -83,6 +84,7 @@ trait BuildsFormFixturesTrait
         ?FilterControlInterface $control,
         ?ValueInterface         $value = null,
         ?FilterElementInterface $element = null,
+        ?string                 $source = null,
     ): Filter {
         $element ??= new class implements FilterElementInterface {
             public function buildContext(
@@ -101,6 +103,7 @@ trait BuildsFormFixturesTrait
                 new ComponentConfig(['label' => null, 'placeholder' => null]),
             ) : null,
             value: $value,
+            source: $source,
         );
     }
 

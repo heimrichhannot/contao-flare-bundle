@@ -201,7 +201,8 @@ final class InteractiveProjectorTest extends TestCase
      */
     public function testFailureWinsOverAnInvalidSubmission(bool $atBuildTime): void
     {
-        $list = $this->list(self::controlled(new ProjectorSpyElement(), 'q', new ProjectorRejectingControl()));
+        $spy = new ProjectorSpyElement();
+        $list = $this->list(self::controlled($spy, 'q', new ProjectorRejectingControl()));
         $list = $atBuildTime
             ? $list->withFailure(new FilterFailure('tl_flare_filter.3', 'broken config'))
             : $list->withFilter(
@@ -211,6 +212,7 @@ final class InteractiveProjectorTest extends TestCase
         $view = $this->createProjector(query: ['f' => ['q' => 'bad']])->project($list, $this->context());
 
         self::assertTrue($view->isFailed());
+        self::assertSame(0, $spy->calls, 'No count query ran.');
     }
 
     public static function provideFailures(): iterable

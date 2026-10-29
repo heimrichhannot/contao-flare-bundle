@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Filter\Element;
 
-use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Element\BooleanFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;

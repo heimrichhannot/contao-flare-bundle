@@ -24,7 +24,6 @@ use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\Forms;
-use Symfony\Component\OptionsResolver\OptionsResolver;
 
 trait BuildsControlScopesTrait
 {

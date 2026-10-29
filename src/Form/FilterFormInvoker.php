@@ -7,6 +7,7 @@ namespace HeimrichHannot\FlareBundle\Form;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\Util\Str;
@@ -33,9 +34,10 @@ final readonly class FilterFormInvoker
      *
      * A control that cannot build its form fails the list (SPEC_FILTER_FORMS.md §8.1): any exception of the control,
      * a FlareException of a listener, an alias that is no valid form name, and a single field declared together with
-     * children. Any other exception of a listener is a bug and escapes.
+     * children. Any other exception of a listener is a bug and escapes, as do \Errors.
      *
      * @throws FilterException
+     * @throws UndefinedConfigKeyError If the control reads a config key its schema does not define.
      */
     public function build(ControlScope $scope): ?FilterFormBuilder
     {

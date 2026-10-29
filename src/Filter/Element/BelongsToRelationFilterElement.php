@@ -70,9 +70,10 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
             $ptable = $inferrer->getInferredPtable();
             $fieldDynamicPtable = $inferrer->tryGetDynamicPtableField();
         }
-        catch (InferenceException)
+        catch (InferenceException $e)
+            // A data container FLARE cannot read is config it cannot honour, not data matching nothing.
         {
-            $builder->abort();
+            throw new FilterException($e->getMessage(), previous: $e, method: __METHOD__);
         }
 
         if (\is_string($fieldDynamicPtable))

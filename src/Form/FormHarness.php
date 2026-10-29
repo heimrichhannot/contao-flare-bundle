@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Form;
 
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\List\FilterFailure;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormInterface;
@@ -29,6 +30,7 @@ final readonly class FormHarness
      * @param LoggerInterface|null $logger Receives a warning for each value a control rejects, an error for each
      *   unexpected failure.
      * @param bool $debug Whether an unexpected failure is rethrown instead.
+     * @param list<FilterFailure> $failures The filters whose control could not build its form; they fail the list.
      *
      * @internal Use {@see Factory\FormHarnessFactory} to create instances.
      */
@@ -38,7 +40,19 @@ final readonly class FormHarness
         private ?TranslatorInterface $translator = null,
         private ?LoggerInterface     $logger = null,
         private bool                 $debug = false,
+        private array                $failures = [],
     ) {}
+
+    /**
+     * The filters whose control could not build its form. Each fails the list as a whole (SPEC_FILTER_FORMS.md
+     * §8.1); the form holds the other filters' mounts.
+     *
+     * @return list<FilterFailure>
+     */
+    public function getFailures(): array
+    {
+        return $this->failures;
+    }
 
     public function getForm(): FormInterface
     {
@@ -61,7 +75,7 @@ final readonly class FormHarness
     /**
      * The mounted form child of the given filter, or null when the root form has no such child.
      *
-     * Null covers three cases, none of them an error: the filter never mounted (invalid alias, no
+     * Null covers three cases: the filter never mounted (its control failed, see {@see getFailures()}; no
      * declared fields, cancelled build), a listener removed the child, or a listener replaced the
      * root builder wholesale ({@see \HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent::$formBuilder}).
      *

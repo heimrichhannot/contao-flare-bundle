@@ -29,6 +29,7 @@ use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory;
+use HeimrichHannot\FlareBundle\Form\FilterFormInvoker;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
@@ -244,6 +245,7 @@ final class InteractiveProjectorTest extends TestCase
             aggregationConfigFactory: new AggregationContextFactory(),
             formHarnessFactory: new FormHarnessFactory(
                 $dispatcher,
+                new FilterFormInvoker($dispatcher, $formFactory),
                 $formFactory,
                 $logger,
                 $this->createMock(TranslatorInterface::class),

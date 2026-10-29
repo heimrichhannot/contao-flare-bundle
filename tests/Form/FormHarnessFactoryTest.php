@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Form;
 
-use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBounds;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
 use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
@@ -12,14 +11,11 @@ use HeimrichHannot\FlareBundle\Engine\Context\FormContextInterface;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
-use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
@@ -27,10 +23,9 @@ use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory;
+use HeimrichHannot\FlareBundle\Form\FilterFormInvoker;
 use HeimrichHannot\FlareBundle\Form\FilterMount;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
-use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -45,6 +40,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class FormHarnessFactoryTest extends TestCase
 {
+    use BuildsFormFixturesTrait;
+
     private EventDispatcher $eventDispatcher;
 
     private AbstractLogger $logger;
@@ -82,6 +79,7 @@ final class FormHarnessFactoryTest extends TestCase
 
         return new FormHarnessFactory(
             eventDispatcher: $this->eventDispatcher,
+            filterFormInvoker: new FilterFormInvoker($this->eventDispatcher, $formFactory),
             formFactory: $formFactory,
             logger: $this->logger,
             translator: $this->createMock(TranslatorInterface::class),
@@ -96,19 +94,7 @@ final class FormHarnessFactoryTest extends TestCase
 
     private function createFilterSet(array $filters, bool $debug = false): FormHarness
     {
-        $driver = new class implements ListDriverInterface {
-            public function resolveDcTable(string $type, array $config, array $attributes): string
-            {
-                return (string) ($config['dc'] ?? '');
-            }
-        };
-
-        $list = new ListSpec(
-            driver: $driver,
-            type: 'test_list',
-            dc: 'tl_test',
-            filters: $filters,
-        );
+        $list = $this->listSpec($filters);
 
         $context = new class implements ContextInterface, FormContextInterface {
             public static function getContextType(): string
@@ -128,72 +114,6 @@ final class FormHarnessFactoryTest extends TestCase
         };
 
         return $this->createFactory($debug)->create($list, $context);
-    }
-
-    /**
-     * Creates a control building its form via the given callable; it decodes to a KeywordsValue.
-     *
-     * @param callable(FilterFormBuilderInterface, ControlScope): void $buildForm
-     */
-    private function control(callable $buildForm): FilterControlInterface
-    {
-        return new class($buildForm) implements FilterControlInterface {
-            /** @var callable */
-            private $buildForm;
-
-            public function __construct(callable $buildForm)
-            {
-                $this->buildForm = $buildForm;
-            }
-
-            public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
-            {
-                ($this->buildForm)($builder, $scope);
-            }
-
-            public function decode(mixed $data, ControlScope $scope): ?ValueInterface
-            {
-                return KeywordsValue::tryFrom($data);
-            }
-
-            public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
-            {
-                return null;
-            }
-        };
-    }
-
-    private function filter(
-        string                  $alias,
-        ?FilterControlInterface $control,
-        ?ValueInterface         $value = null,
-        ?FilterElementInterface $element = null,
-    ): Filter {
-        $element ??= new class implements FilterElementInterface {
-            public function buildContext(
-                FilterContextBuilderInterface $builder,
-                ElementScope                  $scope,
-                ?ValueInterface               $value,
-            ): void {}
-        };
-
-        return new Filter(
-            element: new ElementBinding($element, 'test_element', new ComponentConfig([])),
-            alias: $alias,
-            control: $control !== null ? new ControlBinding(
-                $control,
-                $control::class,
-                new ComponentConfig(['label' => null, 'placeholder' => null]),
-            ) : null,
-            value: $value,
-        );
-    }
-
-    private function single(): FilterControlInterface
-    {
-        return $this->control(static function (FilterFormBuilderInterface $builder): void {
-            $builder->single(TextType::class, ['required' => false]);
-        });
     }
 
     public function testSingleFieldMountsFlatUnderTheAlias(): void
@@ -220,19 +140,18 @@ final class FormHarnessFactoryTest extends TestCase
         );
     }
 
-    public function testSingleWithCompanionFieldIsRejected(): void
+    public function testSingleWithCompanionFieldIsAFailure(): void
     {
         $control = $this->control(static function (FilterFormBuilderInterface $builder): void {
             $builder->single(TextType::class, ['required' => false]);
             $builder->add('extra', TextType::class, ['required' => false]);
         });
 
-        $this->expectException(FlareException::class);
-        $this->expectExceptionMessage(
-            'Filter control cannot declare a single field and add children at the same time.',
-        );
+        $harness = $this->createFilterSet([$this->filter('suche', $control)]);
 
-        $this->createForm([$this->filter('suche', $control)]);
+        $this->assertSame([], $harness->getMounts());
+        $this->assertCount(1, $harness->getFailures());
+        $this->assertStringContainsString('single field and add children', $harness->getFailures()[0]->message);
     }
 
     public function testMultiFieldControlMountsNestedCompound(): void
@@ -287,11 +206,12 @@ final class FormHarnessFactoryTest extends TestCase
         $this->assertSame([], $harness->decode());
     }
 
-    public function testInvalidAliasIsSkipped(): void
+    public function testInvalidAliasOfAControlledFilterIsAFailure(): void
     {
-        $form = $this->createForm([$this->filter('_.tl_flare_filter.1', $this->single())]);
+        $harness = $this->createFilterSet([$this->filter('price.min', $this->single())]);
 
-        $this->assertSame(0, \count($form));
+        $this->assertSame(0, \count($harness->getForm()));
+        $this->assertCount(1, $harness->getFailures());
     }
 
     public function testCancelledEventPreventsMounting(): void
@@ -304,7 +224,7 @@ final class FormHarnessFactoryTest extends TestCase
         $this->assertFalse($this->createForm([$this->filter('suche', $this->single())])->has('suche'));
     }
 
-    public function testControlFailingToBuildIsSkipped(): void
+    public function testFailingControlIsRecordedAndTheOthersMount(): void
     {
         $failing = $this->control(static function (): void {
             throw new FilterException('boom');
@@ -316,59 +236,60 @@ final class FormHarnessFactoryTest extends TestCase
         ]);
 
         $this->assertFalse($harness->getForm()->has('broken'));
-        $this->assertTrue($harness->getForm()->has('suche'));
         $this->assertSame(['suche'], \array_keys($harness->getMounts()));
-        $this->assertCount(1, $this->logged);
-        $this->assertSame('warning', $this->logged[0][0]);
+        $this->assertCount(1, $failures = $harness->getFailures());
+        $this->assertSame('boom', $failures[0]->message);
+        $this->assertInstanceOf(FilterException::class, $failures[0]->exception);
+        $this->assertSame([['error']], \array_map(static fn (array $log): array => [$log[0]], $this->logged));
         $this->assertStringContainsString('broken', $this->logged[0][1]);
     }
 
-    public function testUnexpectedExceptionInBuildFormIsSkippedAndLoggedAsError(): void
+    /**
+     * @dataProvider provideDebugModes
+     */
+    public function testUnexpectedExceptionInBuildFormIsRecordedAndLogged(bool $debug): void
     {
         $failing = $this->control(static function (): void {
             throw new \RuntimeException('connection lost');
         });
 
-        $harness = $this->createFilterSet([
-            $this->filter('broken', $failing),
-            $this->filter('suche', $this->single()),
-        ]);
+        $harness = $this->createFilterSet([$this->filter('broken', $failing)], debug: $debug);
 
-        $this->assertSame(['suche'], \array_keys($harness->getMounts()));
-        $this->assertCount(1, $this->logged);
+        $this->assertCount(1, $harness->getFailures());
+        $this->assertInstanceOf(\RuntimeException::class, $harness->getFailures()[0]->exception?->getPrevious());
         $this->assertSame('error', $this->logged[0][0]);
-        $this->assertStringContainsString('broken', $this->logged[0][1]);
         $this->assertStringContainsString('connection lost', $this->logged[0][1]);
     }
 
-    public function testUnexpectedExceptionIsRethrownWrappedInDebugMode(): void
+    public static function provideDebugModes(): iterable
     {
-        $failing = $this->control(static function (): void {
-            throw new \RuntimeException('connection lost');
-        });
-
-        try
-        {
-            $this->createFilterSet([$this->filter('broken', $failing)], debug: true);
-            $this->fail('The failure was not rethrown.');
-        }
-        catch (FilterException $e)
-        {
-            $this->assertInstanceOf(\RuntimeException::class, $e->getPrevious());
-            $this->assertStringEndsWith('::buildForm', (string) $e->getMethod());
-        }
+        yield 'production' => [false];
+        yield 'debug' => [true];
     }
 
-    public function testFilterExceptionIsSkippedInDebugModeToo(): void
+    public function testCancelledFilterIsNoFailure(): void
     {
+        $this->eventDispatcher->addListener(
+            FilterControlBuildFormEvent::class,
+            static function (FilterControlBuildFormEvent $event): void {
+                if ($event->scope->filter->alias === 'cancelled') {
+                    $event->cancel();
+                }
+            },
+        );
+
         $failing = $this->control(static function (): void {
-            throw new FilterException('no choices');
+            throw new FilterException('boom');
         });
 
-        $harness = $this->createFilterSet([$this->filter('broken', $failing)], debug: true);
+        $harness = $this->createFilterSet([
+            $this->filter('cancelled', $this->single()),
+            $this->filter('broken', $failing),
+        ]);
 
-        $this->assertSame([], $harness->getMounts());
-        $this->assertSame('warning', $this->logged[0][0]);
+        $this->assertCount(1, $harness->getFailures());
+        $this->assertStringContainsString('boom', $harness->getFailures()[0]->message);
+        $this->assertSame([], $this->createFilterSet([$this->filter('cancelled', $this->single())])->getFailures());
     }
 
     public function testUndefinedConfigKeyInBuildFormIsNotSwallowed(): void
@@ -410,12 +331,21 @@ final class FormHarnessFactoryTest extends TestCase
         $this->createFilterSet([$this->filter('suche', $control, element: $element)]);
     }
 
-    public function testControlFailingToHydrateIsSkipped(): void
+    /**
+     * @dataProvider provideHydrateFailures
+     */
+    public function testHydrateFailureKeepsTheMountWithoutData(bool $compound, \Exception $failure, string $level): void
     {
-        $control = new class implements FilterControlInterface {
+        $control = new class ($compound, $failure) implements FilterControlInterface {
+            public function __construct(private readonly bool $compound, private readonly \Exception $failure) {}
+
             public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
             {
-                $builder->single(TextType::class);
+                if ($this->compound) {
+                    $builder->add('from', TextType::class);
+                } else {
+                    $builder->single(TextType::class);
+                }
             }
 
             public function decode(mixed $data, ControlScope $scope): ?ValueInterface
@@ -425,40 +355,23 @@ final class FormHarnessFactoryTest extends TestCase
 
             public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
             {
-                throw new FilterException('unusable value');
+                throw $this->failure;
             }
         };
 
-        $harness = $this->createFilterSet([$this->filter('suche', $control)]);
+        $harness = $this->createFilterSet([$this->filter('suche', $control, new KeywordsValue('foo'))]);
 
-        $this->assertSame([], $harness->getMounts());
-        $this->assertFalse($harness->getForm()->has('suche'));
-        $this->assertCount(1, $this->logged);
+        $this->assertSame(['suche'], \array_keys($harness->getMounts()));
+        $this->assertNull($harness->getForm()->get('suche')->getData());
+        $this->assertSame([], $harness->getFailures());
+        $this->assertSame($level, $this->logged[0][0]);
     }
 
-    public function testUnexpectedExceptionInHydrateIsSkippedAndLoggedAsError(): void
+    public static function provideHydrateFailures(): iterable
     {
-        $control = new class implements FilterControlInterface {
-            public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
-            {
-                $builder->single(TextType::class);
-            }
-
-            public function decode(mixed $data, ControlScope $scope): ?ValueInterface
-            {
-                return null;
-            }
-
-            public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
-            {
-                throw new \UnexpectedValueException('unusable value');
-            }
-        };
-
-        $harness = $this->createFilterSet([$this->filter('suche', $control)]);
-
-        $this->assertSame([], $harness->getMounts());
-        $this->assertSame('error', $this->logged[0][0]);
+        yield 'single, reported' => [false, new FilterException('unusable value'), 'warning'];
+        yield 'single, unexpected' => [false, new \UnexpectedValueException('unusable value'), 'error'];
+        yield 'compound, reported' => [true, new FilterException('unusable value'), 'warning'];
     }
 
     public function testGetFormReturnsTheRootForm(): void
@@ -545,7 +458,7 @@ final class FormHarnessFactoryTest extends TestCase
      */
     public static function provideUnmountedFilters(): iterable
     {
-        yield 'invalid alias' => ['_.tl_flare_filter.1', false, true];
+        yield 'invalid alias' => ['price.min', false, true];
         yield 'no declared fields' => ['suche', false, false];
         yield 'cancelled build' => ['suche', true, true];
     }

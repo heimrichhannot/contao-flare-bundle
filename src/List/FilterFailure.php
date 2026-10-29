@@ -28,6 +28,21 @@ final readonly class FilterFailure
      * The cause for an editor, without the log's framing: the message of a filter exception wrapped for the query
      * ("[FLARE] Query denied: …"), else the exception's message, else the failure's message.
      */
+    public function getReason(): string
+    {
+        $exception = $this->exception;
+
+        if ($exception === null) {
+            return $this->message;
+        }
+
+        if ($exception instanceof FilterException && $exception->getPrevious() instanceof FilterException) {
+            return $exception->getPrevious()->getMessage();
+        }
+
+        return $exception->getMessage();
+    }
+
     /**
      * The exception a list fails with as a whole because of the given failures (SPEC_FILTER_FORMS.md §8.1).
      *
@@ -43,20 +58,5 @@ final readonly class FilterFailure
             method: $method,
             source: $source,
         );
-    }
-
-    public function getReason(): string
-    {
-        $exception = $this->exception;
-
-        if ($exception === null) {
-            return $this->message;
-        }
-
-        if ($exception instanceof FilterException && $exception->getPrevious() instanceof FilterException) {
-            return $exception->getPrevious()->getMessage();
-        }
-
-        return $exception->getMessage();
     }
 }

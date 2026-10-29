@@ -46,4 +46,27 @@ final class FilterFailureTest extends TestCase
         self::assertSame('tl_flare_list.1', $e->getSource());
         self::assertSame('Some::method', $e->getMethod());
     }
+
+    public function testToListExceptionChainsTheFirstCause(): void
+    {
+        $first = new FilterException('first cause');
+        $e = FilterFailure::toListException(
+            [
+                new FilterFailure('a', 'duplicate alias'),
+                new FilterFailure('b', 'first', $first),
+                new FilterFailure('c', 'second', new FilterException('second cause')),
+            ],
+            'tl_flare_list.1',
+            'Some::method',
+        );
+
+        self::assertSame($first, $e->getPrevious());
+    }
+
+    public function testToListExceptionWithoutCausesHasNoPrevious(): void
+    {
+        $e = FilterFailure::toListException([new FilterFailure('a', 'duplicate alias')], 'tl_flare_list.1', 'M::m');
+
+        self::assertNull($e->getPrevious());
+    }
 }

@@ -44,17 +44,21 @@ final readonly class FilterFailure
     }
 
     /**
-     * The exception a list fails with as a whole because of the given failures (SPEC_FILTER_FORMS.md §8.1).
+     * The exception a list fails with as a whole because of the given failures (SPEC_FILTER_FORMS.md §8.1). Its
+     * message names every failure; the first failure's exception, if any, is its previous one, so its trace survives.
      *
      * @param list<self> $failures
      */
     public static function toListException(array $failures, string $source, string $method): FilterException
     {
+        $causes = \array_filter(\array_map(static fn (self $failure): ?\Exception => $failure->exception, $failures));
+
         return new FilterException(
             \sprintf('[FLARE] The list has failed: %s', \implode('; ', \array_map(
                 static fn (self $failure): string => $failure->message,
                 $failures,
             ))),
+            previous: \reset($causes) ?: null,
             method: $method,
             source: $source,
         );

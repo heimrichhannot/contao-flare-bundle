@@ -95,9 +95,10 @@ class FilterModel extends Model implements PtableInferrableInterface
             $filterId = $model_or_row->id;
         }
 
-        $alias = \preg_replace('/[^A-Za-z0-9\-._]/', '', \trim((string) $alias));
+        // Keeps what a form name may hold (Str::isValidFormName()) plus dots, which legacy aliases may contain.
+        $alias = (string) \preg_replace('/[^A-Za-z0-9\-._:]/', '', \trim((string) $alias));
 
-        $name = (string) ($alias ?: $filterId);
+        $name = $alias !== '' ? $alias : (string) $filterId;
 
         if ($name !== '') {
             return $name;

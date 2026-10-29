@@ -22,6 +22,12 @@ final class FilterModelTest extends TestCase
         self::assertSame('3', FilterModel::generateFormName(['id' => 3, 'formAlias' => 'legacy']));
     }
 
+    public function testFormNameKeepsWhatTheAliasRuleAllows(): void
+    {
+        self::assertSame('a:b', FilterModel::generateFormName(['id' => 3, 'alias' => 'a:b']));
+        self::assertSame('0', FilterModel::generateFormName(['id' => 3, 'alias' => '0']));
+    }
+
     public function testFilterPtableInferenceReadsTheElementColumns(): void
     {
         $filter = self::model(FilterModel::class, [

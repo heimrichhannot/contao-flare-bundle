@@ -376,6 +376,26 @@ final class FilterFactoryTest extends TestCase
         $this->factory()->createFromFilterModel(self::model(['value' => 'garbage']));
     }
 
+    public function testWithoutValueAControlledFilterWithAnInvalidAliasStillResolves(): void
+    {
+        // The backend form that repairs a legacy alias needs the filter.
+        $filter = $this->factory()->createFromFilterModel(
+            self::model(['alias' => 'price.min', 'control' => self::BOOL_CONTROL]),
+            withValue: false,
+        );
+
+        self::assertSame(self::BOOL_CONTROL, $filter->control?->type);
+    }
+
+    public function testZeroIsAValidAlias(): void
+    {
+        self::assertSame('0', $this->factory()->create(element: self::BOOL_ELEMENT, alias: '0')->alias);
+        self::assertSame(
+            '0',
+            $this->factory()->create(element: self::BOOL_ELEMENT, alias: '0', control: self::BOOL_CONTROL)->alias,
+        );
+    }
+
     public function testWithoutValueStillResolvesTheControl(): void
     {
         $filter = $this->factory()->createFromFilterModel(

@@ -68,7 +68,7 @@ final readonly class FilterFactory
     ): Filter {
         $type = $this->resolveType($element, $source);
 
-        if ($control !== null && !$alias)
+        if ($control !== null && ($alias === null || $alias === ''))
         {
             throw new FlareException(\sprintf(
                 'A filter of type "%s" with a control needs an alias: it names the form field, which must stay the'
@@ -85,7 +85,7 @@ final readonly class FilterFactory
         $element = $this->resolveElement($element, $source);
         $valueClass = $this->getElementValueClass($type, $element);
 
-        $alias = $alias ?: self::generateAlias($type);
+        $alias = $alias !== null && $alias !== '' ? $alias : self::generateAlias($type);
 
         $resolvedConfig = $this->filterOptionsResolver->resolve($element, $config, $source);
 
@@ -165,7 +165,10 @@ final readonly class FilterFactory
             return $withValue ? $filter->withValue($this->provideValue($valueClass, $filterModel, $element)) : $filter;
         }
 
-        self::assertFormName($filter->alias, $source);
+        // Without the value, the filter serves the backend form, which must load to repair a legacy alias.
+        if ($withValue) {
+            self::assertFormName($filter->alias, $source);
+        }
 
         $control = $this->resolveControl($controlType, $valueClass, $source);
 

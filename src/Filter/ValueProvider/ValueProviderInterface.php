@@ -29,7 +29,11 @@ interface ValueProviderInterface
      * The value object for the stored column content, or null for "no value".
      * Implementations MUST narrow the return type to one concrete value class.
      *
-     * @throws FilterException If a non-empty stored value is unreadable (fail closed, §8.1).
+     * An unreadable non-empty stored value is reported with a FilterException (e.g. UnreadableValueException): a
+     * filter without a control then fails its list, one with a control loses only its initial value (warning logged).
+     * Any other exception is handled alike but logged as an error, as unexpected.
+     *
+     * @throws FilterException If a non-empty stored value is unreadable.
      */
     public function provide(mixed $stored, FilterElementInterface $element): ?ValueInterface;
 

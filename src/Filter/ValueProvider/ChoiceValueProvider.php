@@ -27,6 +27,11 @@ final readonly class ChoiceValueProvider implements ValueProviderInterface
         private TranslatorInterface   $translator,
     ) {}
 
+    /**
+     * @throws FilterException If a non-empty stored value is unreadable.
+     * @throws FlareException If the element does not implement ChoiceSourceContract: a wiring error of the framework,
+     *   which fails the list instead of being taken for an unreadable value.
+     */
     public function provide(mixed $stored, FilterElementInterface $element): ?ChoiceValue
     {
         if (!$element instanceof ChoiceSourceContract) {

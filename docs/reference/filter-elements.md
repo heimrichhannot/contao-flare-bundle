@@ -17,6 +17,13 @@ their type with a `FilterElement` suffix (e.g. `flare_bool` → `BooleanFilterEl
 | `flare_relation_belongsTo` | Relation: Belongs to | — | Filter by a belongs-to (pid) relation, dynamic-ptable-aware. |
 | `flare_search_keywords` | Keyword search | `TextType` | Keyword search across configured columns. |
 
+:::note Known limitation of `flare_archive`
+
+Without a control, on a list whose data container has a dynamic parent table (e.g. `tl_content`), the backend value
+field lists every record of every parent table.
+
+:::
+
 Each element translates its configuration into calls to reusable
 [predicates](./predicates.md), which build the actual query fragments.
 

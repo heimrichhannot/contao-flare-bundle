@@ -49,8 +49,9 @@ final readonly class FilterFactory
      * @param FilterControlInterface|string|null $control Filter control instance or registered control type.
      * @param array<string, mixed> $controlConfig Control config, resolved through the control's schema.
      *
-     * @throws FlareException If a control is given without an alias, the element or control cannot be resolved,
-     *   a config does not satisfy its schema, or the control or value does not match the element's value class.
+     * @throws FlareException If a control is given without an alias or with one that is no valid form name, the
+     *   element or control cannot be resolved, a config does not satisfy its schema, or the control or value does not
+     *   match the element's value class.
      *
      * @see Filter::__construct for the remaining parameters.
      */
@@ -75,6 +76,10 @@ final readonly class FilterFactory
                 $type,
                 $source ? " ({$source})" : '',
             ), method: __METHOD__);
+        }
+
+        if ($control !== null) {
+            self::assertFormName($alias, $source);
         }
 
         $element = $this->resolveElement($element, $source);
@@ -160,6 +165,8 @@ final readonly class FilterFactory
             return $withValue ? $filter->withValue($this->provideValue($valueClass, $filterModel, $element)) : $filter;
         }
 
+        self::assertFormName($filter->alias, $source);
+
         $control = $this->resolveControl($controlType, $valueClass, $source);
 
         $controlConfig = $this->filterTransformerResolver->transform($control, $controlType, $filterModel, $source) ?? [];
@@ -198,6 +205,22 @@ final readonly class FilterFactory
         }
 
         return null;
+    }
+
+    /**
+     * The alias of a filter with a control names its form field, so it must be a valid form name.
+     *
+     * @throws FlareException
+     */
+    private static function assertFormName(string $alias, ?string $source): void
+    {
+        if (!Str::isValidFormName($alias)) {
+            throw new FlareException(\sprintf(
+                'The alias "%s" of a filter with a control is not a valid form name%s.',
+                $alias,
+                $source ? " ({$source})" : '',
+            ), method: __METHOD__, source: $source);
+        }
     }
 
     /**

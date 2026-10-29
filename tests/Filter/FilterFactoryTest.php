@@ -191,6 +191,29 @@ final class FilterFactoryTest extends TestCase
         $this->factory()->create(element: self::BOOL_ELEMENT, control: self::BOOL_CONTROL);
     }
 
+    public function testControlledFilterWithAnInvalidFormNameIsRejected(): void
+    {
+        $this->expectException(FlareException::class);
+        $this->expectExceptionMessage('"price.min"');
+
+        $this->factory()->create(element: self::BOOL_ELEMENT, alias: 'price.min', control: self::BOOL_CONTROL);
+    }
+
+    public function testControlledFilterModelWithAnInvalidFormNameIsRejected(): void
+    {
+        $this->expectException(FlareException::class);
+        $this->expectExceptionMessage('"price.min"');
+
+        $this->factory()->createFromFilterModel(self::model(['alias' => 'price.min', 'control' => self::BOOL_CONTROL]));
+    }
+
+    public function testFilterWithoutControlKeepsAnInvalidAlias(): void
+    {
+        $filter = $this->factory()->create(element: self::BOOL_ELEMENT, alias: 'price.min');
+
+        self::assertSame('price.min', $filter->alias);
+    }
+
     public function testUnknownControlNameIsRejected(): void
     {
         $this->expectException(FlareException::class);

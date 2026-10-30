@@ -12,7 +12,7 @@ use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaFieldBuilderInterface;
-use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterInspector;
+use HeimrichHannot\FlareBundle\DataContainer\Inspection\Inspector\FilterInspector;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;

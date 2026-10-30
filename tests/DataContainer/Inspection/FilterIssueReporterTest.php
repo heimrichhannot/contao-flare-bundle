@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Tests\DataContainer\Inspection;
 use Contao\CoreBundle\Framework\Adapter;
 use Contao\Message;
 use Contao\TestCase\ContaoTestCase;
-use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssueReporter;
+use HeimrichHannot\FlareBundle\DataContainer\Inspection\Reporter\FilterIssueReporter;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Model\FilterModel;

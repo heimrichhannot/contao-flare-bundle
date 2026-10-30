@@ -13,7 +13,7 @@ services:
             - ../src/{Config,Contao,ContaoManager,Contract,DependencyInjection,Dto,Engine,Event,Integration,Model,Trait,Util}
             - ../src/{Filter,Form,InferPtable,List,Paginator,Query,Sort}/*.php
             - ../src/DataContainer/Builder
-            - ../src/DataContainer/Inspection/{FilterIssue,FilterIssueKind,InspectedRows,ListInspection}.php
+            - ../src/DataContainer/Inspection/*.php
             - ../src/Filter/Value
 
     HeimrichHannot\FlareBundle\Engine\:
@@ -28,7 +28,7 @@ services:
         arguments:
             $debug: '%kernel.debug%'
 
-    HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterInspector:
+    HeimrichHannot\FlareBundle\DataContainer\Inspection\Inspector\FilterInspector:
         arguments:
             $debug: '%kernel.debug%'
 

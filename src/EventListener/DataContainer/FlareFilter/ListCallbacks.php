@@ -8,7 +8,7 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
-use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssueReporter;
+use HeimrichHannot\FlareBundle\DataContainer\Inspection\Reporter\FilterIssueReporter;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment as TwigEnvironment;

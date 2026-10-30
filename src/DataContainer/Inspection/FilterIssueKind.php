@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\DataContainer\Inspection;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
 
 /**
- * The kind of a filter issue the backend reports ({@see FilterInspector}). The case order is the order of the
+ * The kind of a filter issue the backend reports ({@see Inspector\FilterInspector}). The case order is the order of the
  * overview messages and the row icons.
  *
  * @internal

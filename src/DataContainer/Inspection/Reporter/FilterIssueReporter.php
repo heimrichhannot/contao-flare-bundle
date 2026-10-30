@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\DataContainer\Inspection;
+namespace HeimrichHannot\FlareBundle\DataContainer\Inspection\Reporter;
 
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Message;
 use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssueKind;
+use HeimrichHannot\FlareBundle\DataContainer\Inspection\Inspector\FilterInspector;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\HttpFoundation\RequestStack;

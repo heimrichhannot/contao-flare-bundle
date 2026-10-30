@@ -8,8 +8,8 @@ use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 
 /**
- * The state of one inspection run of {@see FilterInspector}: the list's filter rows, their built filters and the
- * issues found so far.
+ * The state of one inspection run of {@see Inspector\FilterInspector}: the list's filter rows, their built filters
+ * and the issues found so far.
  *
  * @internal
  */

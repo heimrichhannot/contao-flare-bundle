@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\DataContainer\BackendElementScopeFactory;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
-use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssueReporter;
+use HeimrichHannot\FlareBundle\DataContainer\Inspection\Reporter\FilterIssueReporter;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\ListDriverBuildDcaEvent;

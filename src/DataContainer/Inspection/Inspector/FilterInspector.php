@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\DataContainer\Inspection;
+namespace HeimrichHannot\FlareBundle\DataContainer\Inspection\Inspector;
 
 use Contao\CoreBundle\Framework\ContaoFramework;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
+use HeimrichHannot\FlareBundle\DataContainer\Inspection\FilterIssueKind;
+use HeimrichHannot\FlareBundle\DataContainer\Inspection\InspectedRows;
+use HeimrichHannot\FlareBundle\DataContainer\Inspection\ListInspection;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;

@@ -97,10 +97,10 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 - `src/Contract/FilterElement/` — capability ports an element implements for controls/providers to pull from
   (`ChoiceSourceContract`, `DateBoundsContract`); controls never reach into an element otherwise.
   `IneffectiveFilterContract` lets an element explain why its filter restricts nothing as configured. One backend
-  inspector (`DataContainer/Inspection/FilterInspector`) finds every filter issue of a list once, as one of four
+  inspector (`DataContainer/Inspection/Inspector/FilterInspector`) finds every filter issue of a list once, as one of four
   kinds — programming error, duplicate alias, broken (cannot be created, or conditions that cannot be built with
   the default value, through the shared `Query/Executor/FilterInvoker`, or a control that cannot build its form,
-  through the shared `Form/Factory/FilterFormBuilderFactory`), ineffective; `FilterIssueReporter` shows
+  through the shared `Form/Factory/FilterFormBuilderFactory`), ineffective; `Inspection/Reporter/FilterIssueReporter` shows
   them on the filter row (icon), the edit form and the list's filter overview (counts of published filters only). It inspects every saved row, builds
   the list scope the way the runtime does, and catches `\Error` outside debug mode only (logged as critical)
 - `src/Filter/ValueProvider/` — one `ValueProviderInterface` service per value class (`provide()` turns the

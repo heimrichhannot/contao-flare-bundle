@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\DataContainer\Inspection;
 
 /**
- * The issues of a list's filters ({@see FilterInspector}).
+ * The issues of a list's filters ({@see Inspector\FilterInspector}).
  *
  * @internal
  */

@@ -24,6 +24,9 @@ use HeimrichHannot\FlareBundle\Filter\Filter;
  */
 final readonly class FilterMount
 {
+    /** Attribute-bag key marking a root form child as a flat-mounted single field. */
+    public const ATTR_SINGLE_FIELD = 'flare.single_field';
+
     /**
      * @param Filter $filter The filter this mount belongs to.
      * @param string $alias Form name of the mounted node on the root form.

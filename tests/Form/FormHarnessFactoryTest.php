@@ -130,9 +130,9 @@ final class FormHarnessFactoryTest extends TestCase
         $config = $form->get('suche')->getConfig();
 
         $this->assertInstanceOf(TextType::class, $config->getType()->getInnerType());
-        $this->assertTrue($config->getAttribute(ControlScope::ATTR_SINGLE_FIELD));
+        $this->assertTrue($config->getAttribute(FilterMount::ATTR_SINGLE_FIELD));
         $this->assertSame('kept', $config->getAttribute('custom.attr'));
-        $this->assertInstanceOf(ControlScope::class, $config->getAttribute(ControlScope::ATTR_SELF));
+        $this->assertInstanceOf(ControlScope::class, $config->getAttribute(FilterFormBuilderInterface::ATTR_SCOPE));
         $this->assertTrue(
             $config->getEventDispatcher()->hasListeners(FormEvents::POST_SUBMIT),
             'Deferred listeners must be replayed onto the mounted builder',

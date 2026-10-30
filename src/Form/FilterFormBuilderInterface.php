@@ -18,6 +18,12 @@ use Symfony\Component\Form\FormBuilderInterface;
 interface FilterFormBuilderInterface extends FormBuilderInterface
 {
     /**
+     * Attribute-bag key under which the filter's {@see \HeimrichHannot\FlareBundle\Filter\ControlScope} is stored on
+     * the builder; the harness carries it over onto the mounted node.
+     */
+    public const ATTR_SCOPE = 'flare.filter_scope';
+
+    /**
      * Declares this filter as a single-field filter of the given form type.
      *
      * The field is not added as a child; the form factory mounts it under the filter's alias.

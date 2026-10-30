@@ -124,7 +124,7 @@ final readonly class FormHarnessFactory
                 }
 
                 $mount = $root->create($alias, $single['type'], $options);
-                $mount->setAttribute(ControlScope::ATTR_SINGLE_FIELD, true);
+                $mount->setAttribute(FilterMount::ATTR_SINGLE_FIELD, true);
             }
             /** @mago-expect lint:no-else-clause The mount decision is a genuine either-or. */
             else

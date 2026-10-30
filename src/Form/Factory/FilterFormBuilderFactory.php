@@ -10,6 +10,7 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilder;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -59,7 +60,7 @@ final readonly class FilterFormBuilderFactory
         // Collect-only builder: never mounted itself; its single-field spec, children, attributes, and deferred
         // listeners are transferred onto the mounted builder by the harness.
         $builder = new FilterFormBuilder($filter->alias, null, new EventDispatcher(), $this->formFactory);
-        $builder->setAttribute(ControlScope::ATTR_SELF, $scope);
+        $builder->setAttribute(FilterFormBuilderInterface::ATTR_SCOPE, $scope);
 
         try
         {

@@ -50,7 +50,7 @@ final class FilterFormBuilderFactoryTest extends TestCase
 
         self::assertSame('suche', $builder?->getName());
         self::assertSame(TextType::class, $builder->getSingle()['type'] ?? null);
-        self::assertInstanceOf(ControlScope::class, $builder->getAttribute(ControlScope::ATTR_SELF));
+        self::assertInstanceOf(ControlScope::class, $builder->getAttribute(FilterFormBuilderInterface::ATTR_SCOPE));
     }
 
     public function testReturnsNullWithoutFields(): void

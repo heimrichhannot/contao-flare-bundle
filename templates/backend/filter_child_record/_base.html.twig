@@ -1,11 +1,12 @@
 {% trans_default_domain 'flare' %}
 
-{% set form_alias = form_alias ?? null %}
-{% set is_alias_duplicated = form_alias ? ((duplicate_filter_aliases|default([]))[form_alias] ?? false) : false %}
+{% set filter_alias = filter_alias ?? null %}
+{% set notices = notices|default([]) %}
 
 <div class="cte_type {{ is_published ? 'published' : 'unpublished' }}" style="margin-bottom: .5rem">[{{ type_label }}]</div>
-<div style="display: flex; align-items: center; gap: .5rem; --flare-filter-info-opacity: {{ is_intrinsic|default(false) ? '0.5' : '1' }};">
-    <div style="opacity: var(--flare-filter-info-opacity)">
+{# Muted: the control icon and alias of a filter without control; the notices of an unpublished filter (styles.css). #}
+<div class="flare-filter-info" style="display: flex; align-items: center; gap: .5rem; --flare-filter-control-opacity: {{ is_intrinsic|default(false) ? '0.5' : '1' }};">
+    <div style="opacity: var(--flare-filter-control-opacity)">
         {% if is_intrinsic|default %}
             <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -30,22 +31,71 @@
             </svg>
         {% endif %}
     </div>
-    {% if is_alias_duplicated %}
-        <span style="color: #dc3545; opacity: var(--flare-filter-info-opacity)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                     class="lucide-skull-icon">
-                    <title>{{ 'filter.info.duplicate_alias'|trans({'%alias%': form_alias}) }}</title>
-                    <path d="m12.5 17-.5-1-.5 1h1z"/>
-                    <path d="M15 22a1 1 0 0 0 1-1v-1a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20v1a1 1 0 0 0 1 1z"/>
-                    <circle cx="15" cy="12" r="1"/>
-                    <circle cx="9" cy="12" r="1"/>
-                </svg>
-            </span>
+    {% if notices.programming_error is defined %}
+        <span style="color: #dc3545; opacity: var(--flare-filter-notice-opacity)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 class="lucide-bug-icon">
+                <title>{{ notices.programming_error }}</title>
+                <path d="M12 20v-9"/>
+                <path d="M14 7a4 4 0 0 1 4 4v3a6 6 0 0 1-12 0v-3a4 4 0 0 1 4-4z"/>
+                <path d="M14.12 3.88 16 2"/>
+                <path d="M21 21a4 4 0 0 0-3.81-4"/>
+                <path d="M21 5a4 4 0 0 1-3.55 3.97"/>
+                <path d="M22 13h-4"/>
+                <path d="M3 21a4 4 0 0 1 3.81-4"/>
+                <path d="M3 5a4 4 0 0 0 3.55 3.97"/>
+                <path d="M6 13H2"/>
+                <path d="m8 2 1.88 1.88"/>
+                <path d="M9 7.13V6a3 3 0 1 1 6 0v1.13"/>
+            </svg>
+        </span>
+    {% endif %}
+    {% if notices.duplicate_alias is defined %}
+        <span style="color: #dc3545; opacity: var(--flare-filter-notice-opacity)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 class="lucide-copy-x-icon">
+                <title>{{ notices.duplicate_alias }}</title>
+                <path d="M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2"/>
+                <rect x="8" y="8" width="14" height="14" rx="2"/>
+                <path d="m12.5 12.5 5 5"/>
+                <path d="m12.5 17.5 5-5"/>
+            </svg>
+        </span>
+    {% endif %}
+    {% if notices.broken is defined %}
+        <span style="color: #dc3545; opacity: var(--flare-filter-notice-opacity)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 class="lucide-bone-fracture-icon">
+                <title>{{ notices.broken }}</title>
+                <path d="M14 4.5a1 1 0 0 1 5 0 .5.5 0 0 0 .5.5 1 1 0 0 1 0 5c-.81 0-1.8-.7-2.5 0l-1.958 1.957a.15.15 0 0 1-.252-.072l-.493-2.07a.15.15 0 0 0-.111-.112l-2.072-.494a.15.15 0 0 1-.072-.252L14 7c.7-.7 0-1.69 0-2.5"/>
+                <path d="m16 20-1-2"/>
+                <path d="m20 16-2-1"/>
+                <path d="m4 8 2 1"/>
+                <path d="m8 4 1 2"/>
+                <path d="M9.698 14.19a.15.15 0 0 0 .112.112l2.074.489a.15.15 0 0 1 .072.252L10 17c-.7.7 0 1.69 0 2.5a1 1 0 0 1-5 0 .495.495 0 0 0-.5-.5 1 1 0 0 1 0-5c.81 0 1.8.7 2.5 0l1.956-1.957a.15.15 0 0 1 .252.072z"/>
+            </svg>
+        </span>
+    {% endif %}
+    {% if notices.ineffective is defined %}
+        <span style="color: #e0a800; opacity: var(--flare-filter-notice-opacity)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 class="lucide-engine-icon">
+                <title>{{ notices.ineffective }}</title>
+                <path d="M10 3h6"/>
+                <path d="M13 3v4"/>
+                <path d="M2 10v6"/>
+                <path d="M2 13h4"/>
+                <path d="M6 16a2 2 0 002 2h1a2 2 0 011.6.8l.3.4a2 2 0 001.6.8h2.264a2 2 0 001.789-1.106l1.67-3.341a1 1 0 01.895-.553H21a1 1 0 001-1v-4a1 1 0 00-1-1h-3.5a1 1 0 01-.8-.4l-.9-1.2A1 1 0 0015 7h-4a1 1 0 00-.8.4l-.9 1.2a1 1 0 01-.8.4H7a1 1 0 00-1 1z"/>
+            </svg>
+        </span>
     {% endif %}
     <div style="display: flex; align-items: baseline; gap: 1rem">
-        {% if form_alias|default %}
-            <code style="opacity: var(--flare-filter-info-opacity)">{{ form_alias }}</code>
+        {% if filter_alias|default %}
+            <code style="opacity: var(--flare-filter-control-opacity)">{{ filter_alias }}</code>
         {% endif %}
         {% if title|default %}
             <strong>{{ title }}</strong>

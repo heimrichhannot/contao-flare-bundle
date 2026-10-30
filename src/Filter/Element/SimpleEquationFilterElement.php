@@ -9,11 +9,8 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
-use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\SimpleEquationPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -25,57 +22,46 @@ class SimpleEquationFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_equation_simple';
 
-    public function isOnlyIntrinsic(): bool
-    {
-        return true;
-    }
-
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
-        $resolver->define('left')->default(null)->allowedTypes('string', 'null');
-        $resolver->define('operator')->default(null)->allowedTypes(SqlEquationOperator::class, 'null');
+        $resolver->define('left')->required()->allowedTypes('string')
+            ->allowedValues(static fn (string $value): bool => $value !== '');
+        $resolver->define('operator')->required()->allowedTypes(SqlEquationOperator::class);
         $resolver->define('right')->default(null);
     }
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
+        $operator = $model->elm_equationOperator;
+
         $config
-            ->set('intrinsic', (bool) $model->intrinsic)
-            ->set('left', $model->equationLeft ?: null)
-            ->set('operator', $model->equationOperator ? SqlEquationOperator::match($model->equationOperator) : null)
-            ->set('right', $model->equationRight);
+            ->set('left', $model->elm_equationLeft ?: null)
+            ->set('operator', $operator ? SqlEquationOperator::match($operator) : null)
+            ->set('right', $model->elm_equationRight);
     }
 
-    /**
-     * @throws FilterException
-     */
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
-        $config = $context->config;
-
-        if (!($operand = $config['left']) || !($op = $config['operator'])) {
-            throw new FilterException('Invalid filter configuration.');
-        }
-
-        $builder->add(SimpleEquationPredicate::class, [
-            'operand_left' => $operand,
-            'operator' => $op,
-            'operand_right' => $config['right'],
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
+        $builder->addPredicate(SimpleEquationPredicate::class, [
+            'operand_left' => $scope->get('left'),
+            'operator' => $scope->get('operator'),
+            'operand_right' => $scope->get('right'),
         ]);
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $operatorValue = $context->filterModel?->equationOperator;
+        $operatorValue = $context->filterModel?->elm_equationOperator;
         $operator = $operatorValue ? SqlEquationOperator::match($operatorValue) : null;
 
-        $dca->palette($operator?->isUnary()
-            ? '{flare_simple_equation_legend},equationLeft,equationOperator'
-            : '{flare_simple_equation_legend},equationLeft,equationOperator,equationRight');
+        $builder->palette($operator?->isUnary()
+            ? '{flare_simple_equation_legend},elm_equationLeft,elm_equationOperator'
+            : '{flare_simple_equation_legend},elm_equationLeft,elm_equationOperator,elm_equationRight');
 
-        $dca->field('equationLeft')
+        $builder->field('elm_equationLeft')
             ->options(static fn (): array => DcaHelper::getFieldOptions($context->getTargetTable()));
     }
-
 }

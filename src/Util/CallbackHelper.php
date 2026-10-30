@@ -32,7 +32,7 @@ class CallbackHelper
             {
                 // Skip to direct property access if the getter method expects arguments.
             }
-            catch (\Throwable)
+            catch (\Exception)
             {
                 return $default;
             }

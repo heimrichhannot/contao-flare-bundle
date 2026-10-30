@@ -6,38 +6,38 @@ namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
-use HeimrichHannot\FlareBundle\Contract\FilterElement\IntrinsicContract;
 use HeimrichHannot\FlareBundle\Contract\IsSupportedContract;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\Filter\CallbackFilterModelTransformer;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ExpectsValueTrait;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
-use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
-use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Translation\IdentityTranslator;
 use Symfony\Contracts\Service\Attribute\Required;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 abstract class AbstractFilterElement implements
-    FilterElementInterface, IntrinsicContract, DcaContract, IsSupportedContract, OptionsContract, TransformerContract
+    FilterElementInterface, DcaContract, IsSupportedContract, OptionsContract, TransformerContract
 {
-    private ChoicesBuilderFactory $choicesBuilderFactory;
+    use ExpectsValueTrait;
+
     private Connection $connection;
+
+    private ?TranslatorInterface $translator = null;
 
     abstract public function configureOptions(OptionsResolver $resolver): void;
 
-    public function configureTransformers(TransformerResolver $resolver): void
+    public function configureTransformers(TransformerMap $transformers): void
     {
-        $resolver->for(
+        $transformers->set(
             sourceClass: FilterModel::class,
             transformer: new CallbackFilterModelTransformer($this->transformFilterModel(...)),
         );
@@ -49,31 +49,17 @@ abstract class AbstractFilterElement implements
      */
     abstract protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void;
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void {}
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void {}
 
-    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
-
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void {}
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {}
 
     public function isSupported(): bool
     {
         return true;
-    }
-
-    public function isOnlyIntrinsic(): bool
-    {
-        return false;
-    }
-
-    #[Required]
-    public function setChoicesBuilderFactory(ChoicesBuilderFactory $choicesBuilderFactory): void
-    {
-        $this->choicesBuilderFactory = $choicesBuilderFactory;
-    }
-
-    protected function createChoicesBuilder(): ChoicesBuilder
-    {
-        return $this->choicesBuilderFactory->createChoicesBuilder();
     }
 
     #[Required]
@@ -85,5 +71,22 @@ abstract class AbstractFilterElement implements
     protected function getConnection(): Connection
     {
         return $this->connection;
+    }
+
+    #[Required]
+    public function setTranslator(TranslatorInterface $translator): void
+    {
+        $this->translator = $translator;
+    }
+
+    /**
+     * Translates a message, by default of the `flare` domain, e.g. for an exception an editor may see in the backend.
+     * Without an injected translator (an element instantiated by hand), the key is returned.
+     *
+     * @param array<string, mixed> $parameters
+     */
+    protected function trans(string $key, array $parameters = [], ?string $domain = null): string
+    {
+        return ($this->translator ??= new IdentityTranslator())->trans($key, $parameters, $domain ?? 'flare');
     }
 }

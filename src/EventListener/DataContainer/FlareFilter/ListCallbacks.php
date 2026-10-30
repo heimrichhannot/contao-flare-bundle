@@ -8,6 +8,7 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
+use HeimrichHannot\FlareBundle\DataContainer\Inspection\Reporter\FilterIssueReporter;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment as TwigEnvironment;
@@ -18,6 +19,7 @@ use Twig\Environment as TwigEnvironment;
 readonly class ListCallbacks
 {
     public function __construct(
+        private FilterIssueReporter $filterIssueReporter,
         private TranslatorInterface $translator,
         private TwigEnvironment     $twig,
     ) {}
@@ -31,7 +33,8 @@ readonly class ListCallbacks
     #[AsCallback(FilterContainer::TABLE_NAME, 'list.sorting.child_record')]
     public function listLabelLabel(array $row): string
     {
-        $isIntrinsic = $row['intrinsic'] ?? false;
+        // A filter without a control is intrinsic.
+        $isIntrinsic = ($row['control'] ?? '') === '';
         $isPublished = $row['published'] ?? false;
 
         $title = StringUtil::specialchars($row['title'] ?? '');
@@ -43,10 +46,7 @@ readonly class ListCallbacks
 
         $cutLabel = $this->translator->trans('DCA.cut.0', [$row['id']], 'contao_default');
 
-        $formFieldName = FilterModel::generateFormName($row);
-
-        $duplicateFilterAliases = $GLOBALS['FLARE']['duplicate_filter_aliases'] ?? [];
-        $duplicateFilterAliases = \array_fill_keys($duplicateFilterAliases, true);
+        $filterAlias = FilterModel::generateFormName($row);
 
         return $this->twig->render('@HeimrichHannotFlare/backend/filter_child_record.html.twig', [
             'row' => $row,
@@ -55,8 +55,8 @@ readonly class ListCallbacks
             'title' => $title,
             'type_label' => $typeLabel,
             'cut_label' => $cutLabel,
-            'form_alias' => $formFieldName,
-            'duplicate_filter_aliases' => $duplicateFilterAliases,
+            'filter_alias' => $filterAlias,
+            'notices' => $this->filterIssueReporter->getRowNotices($row),
         ]);
     }
 }

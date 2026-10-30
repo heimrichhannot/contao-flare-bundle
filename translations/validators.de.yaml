@@ -1,5 +1,6 @@
 flare:
     form:
+        invalid_value: "Dieser Wert ist ungültig."
         date_range:
             to_greater_than_from: "Das Enddatum muss nach dem Startdatum liegen."
             to_invalid: "Das Enddatum ist ungültig."

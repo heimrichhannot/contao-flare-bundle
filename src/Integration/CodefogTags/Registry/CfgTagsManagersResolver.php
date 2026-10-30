@@ -12,7 +12,7 @@ class CfgTagsManagersResolver
 
     public function __construct(
         private CfgTagsManagersRegistry $registry,
-        private ContainerInterface $managerLocator,
+        private ContainerInterface      $managerLocator,
     ) {}
 
     public function get(string $table, string $field): ?ManagerInterface

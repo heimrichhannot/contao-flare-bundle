@@ -9,27 +9,21 @@ use HeimrichHannot\FlareBundle\Event\ModifyListQueryStructEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
-use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\List\FilterFailure;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\QueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\FilterConditions;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
-use HeimrichHannot\FlareBundle\Util\CreatesFilterExceptionTrait;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class ListQueryDirector
 {
-    use CreatesFilterExceptionTrait;
-
     public function __construct(
         private EventDispatcherInterface    $eventDispatcher,
-        private FilterContextFactory        $filterContextFactory,
-        private FilterQueryBuilderFactory   $filterQueryBuilderFactory,
+        private FilterInvoker               $filterInvoker,
         private ListExecutionContextFactory $listExecutionContextFactory,
         private QueryBuilderFactory         $queryBuilderFactory,
         private LoggerInterface             $logger,
@@ -38,14 +32,20 @@ readonly class ListQueryDirector
     /**
      * Creates a query builder based on the provided list query configuration.
      *
+     * A list that recorded failures while it was built has failed as a whole: it is never queried, in any context.
+     *
      * @param ListQueryConfig $config Configuration for creating the query.
      * @return QueryBuilder|null Returns the constructed query builder, or null if filtering is aborted.
      *
      * @throws FlareException When an error occurs while creating the ListExecutionContext.
-     * @throws FilterException When an error occurs while filtering the list.
+     * @throws FilterException When the list has failed, or a filter without a control fails.
      */
     public function createQueryBuilder(ListQueryConfig $config): ?QueryBuilder
     {
+        if ($failures = $config->list->failures) {
+            throw FilterFailure::toListException($failures, $config->list->source ?? 'list inlined', __METHOD__);
+        }
+
         try
         {
             $executionContext = $this->listExecutionContextFactory->create($config->list);
@@ -77,7 +77,18 @@ readonly class ListQueryDirector
             return null;
         }
     }
+
     /**
+     * Invokes every filter of the list with its value and collects the condition builders.
+     *
+     * The value is taken by the filter's role: with a control, only the form's value map applies;
+     * without one, the filter's fixed value applies in every context.
+     *
+     * A failing filter fails by what it bounds. A filter with a control that fails with
+     * a value is retried without it: the element's own config (e.g. a whitelist) still bounds the
+     * whole list, only the user's or initial value is dropped with a warning (fail open). A filter
+     * that fails without a value, or a filter without a control, fails the list (fail closed).
+     *
      * @return FilterConditionsBuilder[]
      *
      * @throws AbortFilteringException
@@ -88,60 +99,35 @@ readonly class ListQueryDirector
     {
         $filterQueryBuilders = [];
         $list = $options->list;
+        $values = $options->filterValues;
 
         foreach ($list->filters as $filter)
         {
-            $context = $this->filterContextFactory->create(
-                list: $list,
-                filter: $filter,
-                engineContext: $options->context
-            );
-
-            if (!$builders = $this->buildFilterConditionsBuilders($context)) {
-                continue;
-            }
-
-            \array_push($filterQueryBuilders, ...$builders);
-        }
-
-        return $filterQueryBuilders;
-    }
-
-    /**
-     * @return FilterConditionsBuilder[]
-     * @throws AbortFilteringException
-     * @throws FilterException
-     */
-    private function buildFilterConditionsBuilders(FilterContext $context): array
-    {
-        $filterQueryBuilders = [];
-
-        foreach ($context->formula->propositions as $proposition)
-        // todo: this should be simplified, either FilterConditionsBuilderFactory like FilterContextFactory
-        //   or skip collecting the builders and build right away
-        //   in any case: we need to handle the AbortFilteringException and FilterException properly
-        {
-            $filterQueryBuilder = $this->filterQueryBuilderFactory->create($proposition->targetAlias);
+            $value = $filter->control !== null ? ($values[$filter->alias] ?? null) : $filter->value;
+            $scope = new ElementScope($list, $filter, $options->context);
 
             try
             {
-                $proposition->predicate->buildConditions($filterQueryBuilder, $proposition->options);
-            }
-            catch (AbortFilteringException $e)
-            {
-                throw $e;
+                $builders = $this->filterInvoker->invoke($scope, $value);
             }
             catch (FilterException $e)
             {
-                throw $this->createFilterException($e, $context->filter, $proposition->predicateClass . '::buildConditions');
-            }
-            catch (\Throwable $e)
-            {
-                throw new FilterException($e->getMessage(), code: $e->getCode(), previous: $e,
-                    method: $proposition->predicateClass, source: $context->filter->source ?: 'filter inlined');
+                if ($filter->control === null || $value === null) {
+                    throw $e;
+                }
+
+                // Throws if the element's config is broken regardless of the value: fail closed.
+                $builders = $this->filterInvoker->invoke($scope, null);
+
+                $this->logger->warning(\sprintf(
+                    '[FLARE] Filter "%s" (%s) failed with its value, which is dropped: %s',
+                    $filter->alias,
+                    $filter->source ?: 'filter inlined',
+                    $e->getMessage(),
+                ), ['method' => __METHOD__, 'exception' => $e]);
             }
 
-            $filterQueryBuilders[] = $filterQueryBuilder;
+            \array_push($filterQueryBuilders, ...$builders);
         }
 
         return $filterQueryBuilders;

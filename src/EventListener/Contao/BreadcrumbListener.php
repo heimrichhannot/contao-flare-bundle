@@ -128,7 +128,7 @@ readonly class BreadcrumbListener
             }
         }
         // @mago-expect lint:no-empty-catch-clause Intentionally ignored to not break the breadcrumb
-        catch (\Throwable)
+        catch (\Exception)
         {
             // ignore
         }

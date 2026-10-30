@@ -4,17 +4,15 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\List;
 
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
+use HeimrichHannot\FlareBundle\List\FilterFailure;
 use PHPUnit\Framework\TestCase;
 
 final class ListSpecTest extends TestCase
@@ -31,23 +29,20 @@ final class ListSpecTest extends TestCase
         };
     }
 
-    private static function filter(string $type, ?string $alias = null): Filter
+    private static function filter(string $type, string $alias): Filter
     {
         static $element = null;
 
-        $element ??= new class implements FilterElementInterface {
-            public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
-
-            public function buildContext(
-                FilterContextBuilder $builder,
-                ?ValueInterface      $value,
-            ): void {}
-        };
-
-        return new Filter(element: $element, type: $type, alias: $alias);
+        return new Filter(
+            element: new ElementBinding($element ??= new StubFilterElement(), $type, new ComponentConfig([])),
+            alias: $alias,
+        );
     }
 
-    private static function spec(array $config = [], ?string $source = null): ListSpec
+    /**
+     * @param list<FilterFailure> $failures
+     */
+    private static function spec(array $config = [], ?string $source = null, array $failures = []): ListSpec
     {
         return new ListSpec(
             driver: self::driver(),
@@ -55,6 +50,7 @@ final class ListSpecTest extends TestCase
             dc: 'tl_test',
             config: $config,
             source: $source,
+            failures: $failures,
         );
     }
 
@@ -65,27 +61,87 @@ final class ListSpecTest extends TestCase
         self::assertArrayHasKey('foo', $spec->filters);
     }
 
-    public function testWithFilterAcceptsExplicitKey(): void
+    public function testWithFilterKeepsNumericAliasKeys(): void
     {
-        $spec = self::spec()->withFilter(self::filter('flare_bool', 'foo'), 'custom');
+        // Filters without an explicit alias are keyed by their row id, which PHP stores as an integer key.
+        $spec = self::spec()
+            ->withFilters(['12' => self::filter('a', '12'), '15' => self::filter('b', '15')])
+            ->withFilter(self::filter('c', '0'));
 
-        self::assertArrayHasKey('custom', $spec->filters);
-        self::assertArrayNotHasKey('foo', $spec->filters);
+        self::assertSame([12, 15, 0], \array_keys($spec->filters));
     }
 
-    public function testWithFilterGeneratesCollisionFreeKeysForAliasLessFilters(): void
+    public function testWithFilterRejectsADuplicateAlias(): void
     {
         $spec = self::spec()
-            ->withFilter(self::filter('a'))
-            ->withFilter(self::filter('b'));
+            ->withFilter(self::filter('a', 'foo'))
+            ->withFilter(self::filter('b', 'bar'));
 
-        self::assertArrayHasKey('_generated_0', $spec->filters);
-        self::assertArrayHasKey('_generated_1', $spec->filters);
+        self::assertSame(['foo', 'bar'], \array_keys($spec->filters));
+        self::assertSame(['bar'], \array_keys($spec->withoutFilter('foo')->filters));
 
-        $spec = $spec->withoutFilter('_generated_0')->withFilter(self::filter('c'));
+        $this->expectException(FlareException::class);
+        $this->expectExceptionMessage('"foo"');
 
-        self::assertSame('c', $spec->filters['_generated_0']->type);
-        self::assertSame('b', $spec->filters['_generated_1']->type);
+        $spec->withFilter(self::filter('c', 'foo'));
+    }
+
+    /**
+     * @dataProvider customKeyCases
+     */
+    public function testWithFilterRejectsAnAliasTakenUnderACustomKey(string $key, string $alias): void
+    {
+        $spec = self::spec()->withFilters([$key => self::filter('a', $alias)]);
+
+        $this->expectException(FlareException::class);
+
+        $spec->withFilter(self::filter('b', 'foo'));
+    }
+
+    public static function customKeyCases(): iterable
+    {
+        yield 'existing alias under another key' => ['custom', 'foo'];
+        yield 'another alias under the alias as key' => ['foo', 'bar'];
+    }
+
+    public function testAFilterIsReplacedByRemovingItFirst(): void
+    {
+        $spec = self::spec()
+            ->withFilter(self::filter('a', 'foo'))
+            ->withoutFilter('foo')
+            ->withFilter(self::filter('c', 'foo'));
+
+        self::assertSame('c', $spec->filters['foo']->element->type);
+    }
+
+    public function testWithoutFilterRemovesByElementClass(): void
+    {
+        $published = new Filter(
+            element: new ElementBinding(new PublishedFilterElement(), 'published', new ComponentConfig([])),
+            alias: 'p',
+        );
+
+        $spec = self::spec()
+            ->withFilter($published)
+            ->withFilter(self::filter('stub', 'foo'))
+            ->withoutFilter(PublishedFilterElement::class);
+
+        self::assertSame(['foo'], \array_keys($spec->filters));
+    }
+
+    public function testFailuresSurviveWithers(): void
+    {
+        $first = new FilterFailure('tl_flare_filter.1', 'broken');
+        $second = new FilterFailure('tl_flare_filter.2', 'broken');
+        $spec = self::spec(failures: [$first])->withFailure($second);
+
+        $expected = [$first, $second];
+
+        self::assertSame($expected, $spec->failures);
+        self::assertSame($expected, $spec->withFilter(self::filter('a', 'x'))->failures);
+        self::assertSame($expected, $spec->withoutFilter('x')->failures);
+        self::assertSame($expected, $spec->withFilters([])->failures);
+        self::assertNotSame(self::spec()->hash(), self::spec(failures: [new FilterFailure(null, 'broken')])->hash());
     }
 
     public function testModifiersAreImmutable(): void
@@ -103,7 +159,10 @@ final class ListSpecTest extends TestCase
     public function testHasFilterInstance(): void
     {
         $spec = self::spec()
-            ->withFilter(new Filter(element: new StubFilterElement(), type: 'stub', alias: 'p'));
+            ->withFilter(new Filter(
+                element: new ElementBinding(new StubFilterElement(), 'stub', new ComponentConfig([])),
+                alias: 'p',
+            ));
 
         self::assertTrue($spec->hasFilterInstance(StubFilterElement::class));
         self::assertTrue($spec->hasFilterInstance(FilterElementInterface::class));

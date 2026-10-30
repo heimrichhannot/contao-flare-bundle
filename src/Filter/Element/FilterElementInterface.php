@@ -4,34 +4,26 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterComponentInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 
-interface FilterElementInterface
+/**
+ * A filter element describes the conditions of one filter. How the user supplies its value is
+ * the concern of a {@see \HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface}.
+ */
+interface FilterElementInterface extends FilterComponentInterface
 {
     /**
-     * Declares the filter's form fields on the collect-only per-filter builder.
+     * Translates canonical config and the filter's value into filter type calls.
      *
-     * Single-field elements declare their field via {@see FilterFormBuilderInterface::single()};
-     * it is mounted flat on the root form under the filter's alias, and its value reaches
-     * buildFilter() as {@see FilterData::getSingleValue()}. Multi-field elements add()
-     * children with local names, which mount as a compound sub-form. Declaring both at once is
-     * not supported and fails when the form is built. Pre-submission defaults
-     * belong in the fields' native `data` option. Event listeners registered on the builder are
-     * replayed onto the mounted form; event subscribers are not supported. Declaring no fields
-     * means the filter has no form representation.
+     * @param ValueInterface|null $value A value of the element's value class
+     *   ({@see \HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement::$value}), or null.
      */
-    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void;
-
-    /**
-     * Translates canonical config and runtime data into filter type calls.
-     *
-     * @param FilterContextBuilder $builder
-     * @param ValueInterface|null $value
-     */
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void;
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void;
 }

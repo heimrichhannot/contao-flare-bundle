@@ -8,128 +8,75 @@ use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
+use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\ArchivePredicate;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BelongsToRelationPredicate;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
+use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
-use HeimrichHannot\FlareBundle\Util\Str;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Translation\TranslatableMessage;
+use Symfony\Contracts\Translation\TranslatableInterface;
 
-#[AsFilterElement(type: self::TYPE)]
-class ArchiveFilterElement extends AbstractFilterElement
+#[AsFilterElement(type: self::TYPE, value: ChoiceValue::class)]
+class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSourceContract, IneffectiveFilterContract
 {
     public const TYPE = 'flare_archive';
 
+    /** @var array<string, PtableInferrer> */
     private array $_inferrer = [];
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('whitelist_parents')->default([])->allowedTypes('int[]');
         $resolver->define('group_whitelist_parents')->default([])->allowedTypes('array');
         $resolver->define('use_whitelist_for_options_only')->default(false)->allowedTypes('bool');
-        $resolver->define('format_label')->default(null)->allowedTypes('string', 'null');
-        $resolver->define('has_empty_option')->default(false)->allowedTypes('bool');
-        $resolver->define('format_empty_option')->default(null)->allowedTypes('string', 'null');
-        $resolver->define('is_mandatory')->default(false)->allowedTypes('bool');
-        $resolver->define('is_multiple')->default(false)->allowedTypes('bool');
-        $resolver->define('is_expanded')->default(false)->allowedTypes('bool');
-        $resolver->define('preselect')->default([])->allowedTypes('array');
     }
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $formatLabel = $model->formatLabel === 'custom'
-            ? $model->formatLabelCustom
-            : $model->formatLabel;
-
-        $formatEmptyOption = $model->formatEmptyOption === 'custom'
-            ? $model->formatEmptyOptionCustom
-            : $model->formatEmptyOption;
-
         $config
-            ->set('intrinsic', (bool) $model->intrinsic)
-            ->set('whitelist_parents', $this->normalizeIds($model->whitelistParents))
-            ->set('group_whitelist_parents', $this->normalizeGroups($model->groupWhitelistParents))
-            ->set('use_whitelist_for_options_only', (bool) $model->useWhitelistForOptionsOnly)
-            ->set('format_label', $formatLabel ?: null)
-            ->set('has_empty_option', (bool) $model->hasEmptyOption)
-            ->set('format_empty_option', $formatEmptyOption ?: null)
-            ->set('is_mandatory', (bool) $model->isMandatory)
-            ->set('is_multiple', (bool) $model->isMultiple)
-            ->set('is_expanded', (bool) $model->isExpanded)
-            ->set('preselect', StringUtil::deserialize($model->preselect ?: null, true));
+            ->set('whitelist_parents', $this->normalizeIds($model->elm_whitelistParents))
+            ->set('group_whitelist_parents', $this->normalizeGroups($model->elm_groupWhitelistParents))
+            ->set('use_whitelist_for_options_only', (bool) $model->elm_useWhitelistForOptionsOnly);
     }
 
     /**
      * @throws FilterException
      */
-    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
+    public function buildChoices(ChoicesBuilder $choices, ElementScope $scope): void
     {
-        $config = $context->config;
+        $inferrer = $this->getPtableInferrer($scope->list);
 
-        if ($config['intrinsic']) {
+        if (!self::isControlled($scope->filter)) {
+            $this->buildAllChoices($choices, $inferrer, $scope->list->dc);
             return;
-        }
-
-        $inferrer = $this->getPtableInferrer($context->list);
-
-        $formOptions = [
-            'label' => false,
-            'required' => $config['is_mandatory'],
-            'multiple' => $config['is_multiple'],
-            'expanded' => $config['is_expanded'],
-        ];
-
-        $data = $this->buildPreselectData($context->list, $config['preselect']);
-        if (!\is_null($data) && \count($data)) {
-            $formOptions['data'] = $data;
-        }
-
-        $choices = $this->createChoicesBuilder()->applyFormOptions($formOptions);
-        $builder->setAttribute('flare.choices_builder', $choices);
-
-        $builder->single(ChoiceType::class, $formOptions);
-
-        if ($config['has_empty_option'])
-        {
-            $emptyOptionValue = ($config['is_expanded'] && $config['is_multiple'])
-                ? ChoicesBuilder::EMPTY_CHOICE_VALUE_ALTERNATIVE
-                : null;
-
-            $choices->setEmptyOption($config['format_empty_option'] ?: true, $emptyOptionValue);
         }
 
         if ($ptable = $inferrer->getDcaMainPtable())
         {
-            $choices->setLabel($config['format_label'] ?: null);
-
-            $parents = $this->fetchParents($ptable, $config['whitelist_parents']);
+            $parents = $this->fetchParents($ptable, $scope->get('whitelist_parents'));
 
             if (!$parents) {
-                throw new FilterException(
-                    'No whitelisted parents defined or parent table class invalid.',
-                    method: __METHOD__,
-                );
+                throw new FilterException($this->trans('errors.archive.no_parents'), method: __METHOD__);
             }
 
             foreach ($parents as $parent)
             {
-                $choices->add((string) $parent->id, $parent);
+                $choices->add(ContaoModelChoice::from($parent));
             }
 
             return;
@@ -138,111 +85,260 @@ class ArchiveFilterElement extends AbstractFilterElement
         if (!$inferrer->isDcaDynamicPtable())
             // no valid ptable available
         {
-            throw new FilterException('No valid ptable found.', method: __METHOD__);
+            throw new FilterException($this->trans('errors.archive.no_ptable'), method: __METHOD__);
         }
 
         /**
          * ## We are dealing with a _dynamic ptable_ henceforth.
          */
 
-        if (!$groups = $config['group_whitelist_parents'])
+        if (!$groups = $scope->get('group_whitelist_parents'))
         {
-            throw new FilterException('No whitelisted parents defined.', method: __METHOD__);
+            throw new FilterException($this->trans('errors.archive.no_parents'), method: __METHOD__);
         }
 
         foreach ($groups as $group)
         {
             $table = $group['table'];
 
-            $parents = $this->fetchParents($table, $group['ids'])?->getModels() ?? [];
-
-            foreach ($parents as $parent) {
-                $choices->add(\sprintf('%s.%s', $table, $parent->id), $parent);
+            foreach ($this->fetchParents($table, $group['ids'])?->getModels() ?? [] as $parent) {
+                $choices->add(ContaoModelChoice::from($parent));
             }
 
             $choices->setLabelForTable($group['label'], $table);
         }
 
         if (!$choices->count()) {
-            throw new FilterException('No valid whitelisted parents defined.', method: __METHOD__);
+            throw new FilterException($this->trans('errors.archive.no_valid_parents'), method: __METHOD__);
         }
 
         $choices->setModelSuffix('(%@name%)');
     }
 
     /**
+     * Whether the filter has a control: then the whitelist bounds it, without one its value is the restriction.
+     */
+    private static function isControlled(Filter $filter): bool
+    {
+        return $filter->control !== null;
+    }
+
+    /**
+     * Without a control the value is the restriction, so it may be any parent: every record of the static ptable, or
+     * of every table the dynamic ptable column holds. The whitelist config is ignored, whatever its source.
+     *
+     * Known limitation: for a dynamic ptable (e.g. tl_content), every model of every parent table is loaded for the
+     * backend value field; accepted for now.
+     *
      * @throws FilterException
      */
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
+    private function buildAllChoices(ChoicesBuilder $choices, PtableInferrer $inferrer, string $dc): void
     {
-        $config = $context->config;
-
-        /** @var Model[] $selectedModels */
-        $selectedModels = $config['intrinsic']
-            ? $this->getWhitelistedParents($context->list, $config)
-            : $this->processRuntimeValue($value->getSingleValue(), $context->list, $config);
-
-        $inferrer = $this->getPtableInferrer($context->list);
-
-        if (!$selectedModels)
+        if ($ptable = $inferrer->getDcaMainPtable())
         {
-            if ($config['use_whitelist_for_options_only']) {
-                return;
+            foreach ($this->fetchAllParentChoices($ptable) as $choice) {
+                $choices->add($choice);
             }
 
+            return;
+        }
+
+        if (!$inferrer->isDcaDynamicPtable()) {
+            throw new FilterException($this->trans('errors.archive.no_ptable'), method: __METHOD__);
+        }
+
+        foreach ($this->fetchDynamicParentTables($dc) as $table)
+        {
+            foreach ($this->fetchAllParentChoices($table) as $choice) {
+                $choices->add($choice);
+            }
+        }
+
+        $choices->setModelSuffix('(%@name%)');
+    }
+
+    /**
+     * Reads a canonical key "<table>.<id>" with a positive integer id.
+     */
+    public function choiceFromKey(string $key): ?ContaoModelChoice
+    {
+        if (!\preg_match('/^([^.]+)\.([1-9]\d*)\z/', $key, $matches)) {
+            return null;
+        }
+
+        return ContaoModelChoice::ref($matches[1], (int) $matches[2]);
+    }
+
+    /**
+     * Without a control the fixed value alone restricts, so a filter with neither restricts nothing.
+     */
+    public function getIneffectiveReason(Filter $filter): ?TranslatableInterface
+    {
+        if (self::isControlled($filter) || $filter->value !== null) {
+            return null;
+        }
+
+        return new TranslatableMessage('filter.info.ineffective.archive_without_value', domain: 'flare');
+    }
+
+    /**
+     * Works on parent ids grouped by table; no model is loaded on the query path.
+     *
+     * @throws FilterException
+     */
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
+        $value = $this->expectValue($value, ChoiceValue::class);
+        $inferrer = $this->getPtableInferrer($scope->list);
+
+        if (!self::isControlled($scope->filter)) {
+            $this->buildFixedContext($builder, $inferrer, $value);
+            return;
+        }
+
+        $allowed = $this->getAllowedParentIds($inferrer, $scope);
+
+        if (!$value && $scope->get('use_whitelist_for_options_only')) {
+            return;
+        }
+
+        // Without a value, the whole whitelist applies; a value is narrowed to it, so stale or
+        // foreign keys never widen the list.
+        $parentIds = $value ? $this->selectParentIds($value, $allowed) : \array_filter($allowed);
+
+        if (!$parentIds) {
             $builder->abort();
         }
 
-        if ($inferrer->getDcaMainPtable())
+        if ($ptable = $inferrer->getDcaMainPtable())
         {
-            if (!$pids = \array_column($selectedModels, 'id')) {
-                throw new FilterException('No valid parent archive ids extracted.', method: __METHOD__);
-            }
-
             $builder->addPredicate(ArchivePredicate::class, [
                 'field' => 'pid',
-                'parent_ids' => $pids,
+                'parent_ids' => $parentIds[$ptable] ?? $builder->abort(),
             ]);
 
             return;
         }
 
-        if (!$inferrer->isDcaDynamicPtable())
-            // no valid ptable available
-        {
-            throw new FilterException('No valid ptable found.', method: __METHOD__);
+        $builder->addPredicate(BelongsToRelationPredicate::class, [
+            'field_pid' => 'pid',
+            'field_dynamic_ptable' => 'ptable',
+            'parent_groups' => $this->getDynamicParentGroups($scope->get('group_whitelist_parents')),
+            'submitted_data' => $parentIds,
+        ]);
+    }
+
+    /**
+     * Without a control the fixed value alone restricts: the whitelist config is ignored, whatever its source, and
+     * without a value nothing is restricted.
+     *
+     * @throws FilterException
+     */
+    private function buildFixedContext(
+        FilterContextBuilderInterface $builder,
+        PtableInferrer                $inferrer,
+        ?ChoiceValue                  $value,
+    ): void {
+        $ptable = $inferrer->getDcaMainPtable();
+
+        if (!$ptable && !$inferrer->isDcaDynamicPtable()) {
+            throw new FilterException($this->trans('errors.archive.no_ptable'), method: __METHOD__);
         }
 
-        /**
-         * ## = We are dealing with a _dynamic ptable_. ⇒
-         */
+        if (!$value) {
+            return;
+        }
 
-        $grouped = [];
-        $selectedModels = \array_filter((array) $selectedModels);
+        $selected = $this->selectParentIds($value);
 
-        foreach ($selectedModels as $item)
+        if ($ptable)
         {
-            if ($item instanceof Model) {
-                $grouped[$item::getTable()][] = $item->id;
+            $builder->addPredicate(ArchivePredicate::class, [
+                'field' => 'pid',
+                'parent_ids' => $selected[$ptable] ?? $builder->abort(),
+            ]);
+
+            return;
+        }
+
+        $groups = [];
+
+        foreach ($selected as $table => $ids) {
+            $groups[] = ['table' => $table, 'ids' => $ids];
+        }
+
+        $builder->addPredicate(BelongsToRelationPredicate::class, [
+            'field_pid' => 'pid',
+            'field_dynamic_ptable' => 'ptable',
+            'parent_groups' => $groups,
+        ]);
+    }
+
+    /**
+     * The selected parent ids, grouped by table in the value's order (a {@see ChoiceValue} is deduplicated and sorted
+     * by canonical key); bounded by the allowed ids when given, so stale or foreign keys never widen the list.
+     *
+     * @param array<string, list<int>>|null $allowed The allowed ids by table, or null for no bound.
+     * @return array<string, list<int>>
+     */
+    private function selectParentIds(ChoiceValue $value, ?array $allowed = null): array
+    {
+        $selected = [];
+
+        foreach ($value->choices as $choice)
+        {
+            if (!$choice instanceof ContaoModelChoice) {
+                continue;
+            }
+
+            if ($allowed === null || \in_array($choice->id, $allowed[$choice->table] ?? [], true)) {
+                $selected[$choice->table][] = $choice->id;
             }
         }
 
-        $builder->add(BelongsToRelationPredicate::class, [
-            'field_pid' => 'pid',
-            'field_dynamic_ptable' => 'ptable',
-            'parent_groups' => $this->getDynamicParentGroups($config),
-            'submitted_data' => $grouped,
-        ]);
+        return $selected;
+    }
+
+    /**
+     * The whitelist, grouped by table: the main ptable's whitelist (static ptable), or the group
+     * whitelists (dynamic ptable).
+     *
+     * @return array<string, list<int>>
+     * @throws FilterException
+     */
+    private function getAllowedParentIds(PtableInferrer $inferrer, ElementScope $scope): array
+    {
+        if ($ptable = $inferrer->getDcaMainPtable()) {
+            return [$ptable => $scope->get('whitelist_parents')];
+        }
+
+        if (!$inferrer->isDcaDynamicPtable()) {
+            throw new FilterException($this->trans('errors.archive.no_ptable'), method: __METHOD__);
+        }
+
+        $grouped = [];
+
+        foreach ($scope->get('group_whitelist_parents') as $group)
+        {
+            $grouped[$group['table']] = \array_values(\array_unique(
+                \array_merge($grouped[$group['table']] ?? [], $group['ids']),
+            ));
+        }
+
+        return $grouped;
     }
 
     /**
      * @return array<int, array{table: string, ids: int[]}>
      */
-    protected function getDynamicParentGroups(array $config): array
+    protected function getDynamicParentGroups(array $parentGroups): array
     {
         $groups = [];
 
-        foreach ($config['group_whitelist_parents'] as $group)
+        foreach ($parentGroups as $group)
         {
             $groups[] = [
                 'table' => $group['table'],
@@ -254,334 +350,36 @@ class ArchiveFilterElement extends AbstractFilterElement
     }
 
     /**
-     * @return array<string, int[]>|int[] Parent IDs, either flat (main ptable) or mapped by table (dynamic ptable).
+     * Depends only on the list's data container and config, so it is cached on exactly those.
      */
-    protected function getWhitelistedParentIds(ListSpec $list, array $config): array
-    {
-        $inferrer = $this->getPtableInferrer($list);
-
-        if ($inferrer->getDcaMainPtable())
-        {
-            return $config['whitelist_parents'];
-        }
-
-        if (!$inferrer->isDcaDynamicPtable())
-            // no valid ptable available
-        {
-            return [];
-        }
-
-        $tableToParentIds = [];
-
-        foreach ($config['group_whitelist_parents'] as $group)
-        {
-            $tableToParentIds[$group['table']] ??= [];
-            \array_push($tableToParentIds[$group['table']], ...$group['ids']);
-        }
-
-        return $tableToParentIds;
-    }
-
-    /**
-     * @return Model[]
-     */
-    protected function getWhitelistedParents(ListSpec $list, array $config): array
-    {
-        $inferrer = $this->getPtableInferrer($list);
-
-        if ($ptable = $inferrer->getDcaMainPtable())
-        {
-            $parents = $this->fetchParents($ptable, $config['whitelist_parents']);
-            return $parents?->getModels() ?? [];
-        }
-
-        if (!$inferrer->isDcaDynamicPtable())
-            // no valid ptable available
-        {
-            return [];
-        }
-
-        $allParents = [];
-
-        foreach ($this->getWhitelistedParentIds($list, $config) as $table => $parentIds)
-        {
-            if (!$parentIds = \array_unique($parentIds)) {
-                continue;
-            }
-
-            if (!$coll = $this->fetchParents((string) $table, $parentIds)) {
-                continue;
-            }
-
-            \array_push($allParents, ...$coll->getModels());
-        }
-
-        return $allParents;
-    }
-
-    /**
-     * @return Model[]
-     */
-    public function processRuntimeValue(mixed $value, ListSpec $list, array $config): array
-    {
-        $values = $this->normalizeFilterValue($value);
-
-        // If no value is selected, or the empty option is selected, and the filter
-        // applies not only to form options, we must filter by all whitelisted archives.
-        $useFullWhitelist = (!$values || $values === true) && !$config['use_whitelist_for_options_only'];
-
-        if ($useFullWhitelist) {
-            return $this->getWhitelistedParents($list, $config);
-        }
-
-        if (!$values || $values === true) {
-            return [];
-        }
-
-        if (!$allowedParentIds = $this->getWhitelistedParentIds($list, $config)) {
-            return [];
-        }
-
-        if (\array_is_list($allowedParentIds))
-        {
-            $allowedLookup = \array_flip($allowedParentIds);
-
-            return \array_values(\array_filter(
-                $values,
-                static fn (Model $model): bool => isset($allowedLookup[$model->id]),
-            ));
-        }
-
-        \array_walk($allowedParentIds, static fn (array &$ids): array => $ids = \array_flip($ids));
-        /**
-         * @var array<string, array<int, int>> $allowedParentIds 2D array mapping table names to parent IDs as keys.
-         *   I.e., flips the nested arrays to be lookup tables for efficient filtering.
-         * @example $allowedParentIds = array{
-         *    'tl_news_archive': [
-         *      5:  0,  // where 5 is the ID of the news archive
-         *      8:  1,  // ID 8
-         *      12: 2,  // ID 12
-         *    ]
-         *  }
-         */
-        return \array_values(\array_filter(
-            $values,
-            static fn (Model $model): bool => isset($allowedParentIds[$model::getTable()][$model->id]),
-        ));
-    }
-
-    /**
-     * @return Model[]|true|null Returns true if the empty option is selected, null if no value is selected.
-     */
-    protected function normalizeFilterValue(mixed $value): array|true|null
-    {
-        if (!$value) {
-            return null;
-        }
-
-        if (!\is_iterable($value)) {
-            $value = [$value];
-        }
-
-        $arr = [];
-
-        foreach ($value as $v) {
-            if ($v === ChoicesBuilder::EMPTY_CHOICE) {
-                return true;
-            }
-
-            if ($v instanceof Model) {
-                $arr[] = $v;
-            }
-        }
-
-        return $arr;
-    }
-
     private function getPtableInferrer(ListSpec $list): PtableInferrer
     {
-        $cacheKey = $list->hash();
+        $cacheKey = \sha1(\serialize([$list->dc, $list->config]));
 
-        if (isset($this->_inferrer[$cacheKey])) {
-            return $this->_inferrer[$cacheKey];
-        }
-
-        $inferrable = PtableInferrableFactory::createFromConfig($list->config);
-        return $this->_inferrer[$cacheKey] = new PtableInferrer($inferrable, $list->dc);
+        return $this->_inferrer[$cacheKey] ??= new PtableInferrer(
+            PtableInferrableFactory::createFromConfig($list->config),
+            $list->dc,
+        );
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        if (!$filterModel = $context->filterModel) {
+        // Without a control the value is the restriction; the whitelist only serves a control.
+        if (!($filterModel = $context->filterModel) || (string) $filterModel->control === '') {
             return;
         }
 
         $inferrer = new PtableInferrer($filterModel, $context->listModel->dc);
 
-        $palettes = [];
-
         if ($inferrer->getDcaMainPtable())
         {
-            $palettes[] = '{archive_legend},whitelistParents,formatLabel,useWhitelistForOptionsOnly';
+            $builder->palette('{archive_legend},elm_whitelistParents,elm_useWhitelistForOptionsOnly');
         }
         /** @mago-expect lint:no-else-clause This else clause is fine. */
         elseif ($inferrer->isDcaDynamicPtable())
         {
-            $palettes[] = '{archive_legend},groupWhitelistParents,useWhitelistForOptionsOnly';
+            $builder->palette('{archive_legend},elm_groupWhitelistParents,elm_useWhitelistForOptionsOnly');
         }
-
-        if (!$filterModel->intrinsic)
-        {
-            $palette = '{form_legend},isMandatory,isMultiple,isExpanded,hasEmptyOption,';
-
-            if ($filterModel->hasEmptyOption) {
-                $palette .= 'formatEmptyOption,';
-            }
-
-            $palette .= 'preselect,';
-
-            $palettes[] = $palette;
-        }
-
-        $dca->palette($palettes ? Str::mergePalettes(...$palettes) : null);
-
-        $dca->field('preselect')
-            ->inputType('select')
-            ->eval([
-                'multiple' => (bool) $filterModel->isMultiple,
-                'chosen' => true,
-                'includeBlankOption' => true,
-            ])
-            ->options(fn (): array => $this->getPreselectOptions($inferrer, $filterModel->row()));
-    }
-
-    /**
-     * Builds the backend options for the preselect field from the whitelisted parents.
-     *
-     * @param array<string, mixed> $row
-     */
-    private function getPreselectOptions(PtableInferrer $inferrer, array $row): array
-    {
-        $choices = $this->createChoicesBuilder()->setModelSuffix('[%id%]');
-
-        if ($ptable = $inferrer->getDcaMainPtable())
-        {
-            if (!$parents = $this->fetchParents($ptable, $this->normalizeIds($row['whitelistParents'] ?? null))) {
-                return $choices->buildContaoOptions();
-            }
-
-            foreach ($parents as $parent)
-            {
-                $choices->add(\sprintf('%s.%s', $ptable, $parent->id), $parent);
-            }
-
-            return $choices->buildContaoOptions();
-        }
-
-        if ($inferrer->isDcaDynamicPtable())
-        {
-            $choices->setModelSuffix('[%@table%.id=%id%]');
-
-            foreach ($this->normalizeGroups($row['groupWhitelistParents'] ?? null) as $group)
-            {
-                if (!$parents = $this->fetchParents($group['table'], $group['ids'])) {
-                    continue;
-                }
-
-                foreach ($parents as $parent)
-                {
-                    $choices->add(\sprintf('%s.%s', $group['table'], $parent->id), $parent);
-                }
-            }
-        }
-
-        return $choices->buildContaoOptions();
-    }
-
-    /**
-     * Resolves the configured preselection (numeric IDs or "table.id" references) into models,
-     * to be used as the choice field's initial data.
-     *
-     * @return Model[]|null
-     */
-    private function buildPreselectData(ListSpec $list, array $preselect): ?array
-    {
-        if (!$preselect) {
-            return null;
-        }
-
-        $ptableInferrer = function () use (&$ptableInferrer, $list): PtableInferrer {
-            $inferrer = $this->getPtableInferrer($list);
-            $ptableInferrer = static fn (): PtableInferrer => $inferrer;
-            return $inferrer;
-        };
-
-        $ptable = static function () use (&$ptable, $ptableInferrer): string {
-            $pt = (string) $ptableInferrer()->getDcaMainPtable();
-            $ptable = static fn (): string => $pt;
-            return $pt;
-        };
-
-        $data = [];
-        $fetch = [];
-
-        foreach ($preselect as $entity)
-        {
-            if ($entity instanceof Model) {
-                $data[] = $entity;
-                continue;
-            }
-
-            if (\is_numeric($entity))
-            {
-                if (!$ptable() || !$modelClass = Model::getClassFromTable($ptable())) {
-                    continue;
-                }
-
-                if (!\class_exists($modelClass)) {
-                    continue;
-                }
-
-                if (!$model = $modelClass::findByPk($entity)) {
-                    continue;
-                }
-
-                $data[] = $model;
-                continue;
-            }
-
-            if (!\is_string($entity) || !\str_contains($entity, '.')) {
-                continue;
-            }
-
-            [$table, $id] = \explode('.', $entity, 2);
-
-            $fetch[$table] ??= [];
-            $fetch[$table][] = (int) $id;
-        }
-
-        foreach ($fetch as $table => $ids)
-        {
-            if (!$ids = \array_unique($ids)) {
-                continue;
-            }
-
-            if (!$modelClass = Model::getClassFromTable($table)) {
-                continue;
-            }
-
-            if (!\class_exists($modelClass)) {
-                continue;
-            }
-
-            if (!$models = $modelClass::findMultipleByIds($ids)?->getModels()) {
-                continue;
-            }
-
-            \array_push($data, ...$models);
-        }
-
-        return $data;
     }
 
     /**
@@ -593,15 +391,65 @@ class ArchiveFilterElement extends AbstractFilterElement
             return null;
         }
 
-        if (!$parentModelClass = Model::getClassFromTable($table)) {
-            return null;
-        }
-
-        if (!\class_exists($parentModelClass)) {
+        if (!$parentModelClass = self::findModelClass($table)) {
             return null;
         }
 
         return $parentModelClass::findMultipleByIds(\array_values($ids));
+    }
+
+    /**
+     * Every record of the table as a choice; none for a table without a model class.
+     *
+     * @return list<ContaoModelChoice>
+     */
+    protected function fetchAllParentChoices(string $table): array
+    {
+        if (!$modelClass = self::findModelClass($table)) {
+            return [];
+        }
+
+        return \array_map(
+            ContaoModelChoice::from(...),
+            $modelClass::findAll()?->getModels() ?? [],
+        );
+    }
+
+    /**
+     * The model class of the table, or null without one: Contao 5 throws for an unregistered table, Contao 4.13
+     * guesses a class name that may not exist.
+     *
+     * @return class-string<Model>|null
+     */
+    private static function findModelClass(string $table): ?string
+    {
+        try
+        {
+            $modelClass = Model::getClassFromTable($table);
+        }
+        catch (\RuntimeException)
+        {
+            return null;
+        }
+
+        return $modelClass && \class_exists($modelClass) ? $modelClass : null;
+    }
+
+    /**
+     * The parent tables the dynamic ptable column of the data container holds.
+     *
+     * @return list<string>
+     */
+    protected function fetchDynamicParentTables(string $table): array
+    {
+        $connection = $this->getConnection();
+
+        return \array_values(\array_map('strval', $connection->fetchFirstColumn(\sprintf(
+            "SELECT DISTINCT %s FROM %s WHERE %s <> ''",
+            $connection->quoteIdentifier('ptable'),
+            $connection->quoteIdentifier($table),
+            $connection->quoteIdentifier('ptable'),
+        ))));
     }
 
     /**

@@ -11,7 +11,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Event\AbstractFetchEvent;
-use HeimrichHannot\FlareBundle\Event\DetailsPageUrlGeneratedEvent;
+use HeimrichHannot\FlareBundle\Event\ReaderUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Event\FetchAutoItemEvent;
 use HeimrichHannot\FlareBundle\Event\FetchCountEvent;
 use HeimrichHannot\FlareBundle\Event\FetchListEntriesEvent;
@@ -137,7 +137,6 @@ class ChangelanguageListener
             $configuredFilter = $this->filterFactory->create(
                 element: SimpleEquationFilterElement::TYPE,
                 config: [
-                    'intrinsic' => true,
                     'left' => DcMultilingualHelper::getPidColumn($table),
                     'operator' => SqlEquationOperator::GREATER_THAN,
                     'right' => '0',
@@ -149,7 +148,6 @@ class ChangelanguageListener
         $configuredFilter ??= $this->filterFactory->create(
             element: SimpleEquationFilterElement::TYPE,
             config: [
-                'intrinsic' => true,
                 'left' => DcMultilingualHelper::getPidColumn($table),
                 'operator' => SqlEquationOperator::EQUALS,
                 'right' => '0',
@@ -165,8 +163,8 @@ class ChangelanguageListener
 
     private function applyMlQueriesIfNecessary(
         ListQueryBuilder $listQueryBuilder,
-        string $table,
-        string $language,
+        string           $table,
+        string           $language,
     ): void
     {
         if (in_array('translation', $listQueryBuilder->getMandatoryTableAliases(), true)) {
@@ -208,7 +206,7 @@ class ChangelanguageListener
     }
 
     #[AsEventListener(priority: 220)]
-    public function onListViewDetailsPageUrlGenerated(DetailsPageUrlGeneratedEvent $event): void
+    public function onListViewDetailsPageUrlGenerated(ReaderUrlGeneratedEvent $event): void
     {
         if (!$langPage = $this->findPageForLanguage($event->page)) {
             return;

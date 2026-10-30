@@ -6,15 +6,25 @@ reader:
     invalid_list: "Keine gültige Liste ausgewählt"
 
 list:
+    failed: "Die Liste konnte nicht erstellt werden."
+
     default_template:
         warning: "Standard-Template ausgewählt"
         description: "Bitte erstellen/wählen Sie ein benutzerdefiniertes Template für diese FLARE-Liste."
 
     info:
         no_published_filter: "Einträge dieser Liste haben einen Veröffentlichungsstatus (%target%). Es ist kein Veröffentlicht-Filter konfiguriert, der dies berücksichtigt."
-        duplicate_filter_alias: "Duplizierte Filter-Aliasse: %alias%. Der letzte Filter überschreibt vorherige mit dem gleichen Alias."
+        programming_errors: "{1} In einem Filter wurde ein Programmierfehler festgestellt. Wenden Sie sich gegebenenfalls an einen Administrator.|]1,Inf[ In %count% Filtern wurden Programmierfehler festgestellt. Wenden Sie sich gegebenenfalls an einen Administrator."
+        duplicate_filter_alias: "Ein doppelter Filter-Alias blockiert die Liste: %alias%. Vergeben Sie jedem veröffentlichten Filter einen eindeutigen Alias."
+        broken_filters: "{1} Ein Filter verhindert, dass die Liste erstellt werden kann, bis er korrigiert ist; er ist in der Liste unten markiert.|]1,Inf[ %count% Filter verhindern, dass die Liste erstellt werden kann, bis sie korrigiert sind; sie sind in der Liste unten markiert."
+        ineffective_filters: "{1} Ein Filter ist wirkungslos und muss überprüft werden; er ist in der Liste unten markiert.|]1,Inf[ %count% Filter sind wirkungslos und müssen überprüft werden; sie sind in der Liste unten markiert."
 
 filter:
+    value:
+        date_range:
+            label: "Zeitraum"
+            description: "Beginn und Ende als Datum (z. B. 2026-10-26) oder relative Zeitangabe nach PHP strtotime() (z. B. today, +1 week, first day of next month). Leer lassen für eine offene Grenze. Relative Angaben werden bei jedem Aufruf neu berechnet."
+            invalid: '„%expression%“ ist weder ein Datum noch eine gültige relative Zeitangabe (z. B. today, +1 week, 2026-10-26).'
     limited_scope:
         single: "Dieser Filter ist ausschließlich anwendbar auf: %scopes%"
         multiple: "Dieser Filter ist anwendbar auf: %scopes%"
@@ -31,9 +41,24 @@ filter:
         intrinsic:
             yes: "Dieser Filter ist intrinsisch"
             no: "Dieser Filter ist nicht intrinsisch"
-        duplicate_alias: "Dieser Filter hat den Alias \"%alias%\", der bereits von einem anderen Filter verwendet wird."
+        programming_error:
+            published: "In diesem Filter ist ein Programmierfehler aufgetreten; wenden Sie sich gegebenenfalls an einen Administrator: %reason%"
+            unpublished: "In diesem unveröffentlichten Filter ist ein Programmierfehler aufgetreten; wenden Sie sich gegebenenfalls an einen Administrator: %reason%"
+        duplicate_alias:
+            published: "Der Alias \"%alias%\" wird auch von einem anderen veröffentlichten Filter verwendet; das blockiert die Liste."
+            unpublished: "Veröffentlicht würde der Alias \"%alias%\" dieses Filters mit einem anderen Filter kollidieren und die Liste blockieren."
+        broken:
+            published: "Dieser Filter verhindert, dass die Liste erstellt werden kann: %reason%"
+            unpublished: "Veröffentlicht würde dieser Filter verhindern, dass die Liste erstellt werden kann: %reason%"
+        ineffective:
+            archive_without_value: "Dieser Filter hat weder Bedienelement noch Wert und schränkt daher nichts ein. Wählen Sie die anzuzeigenden Archive als Wert oder wählen Sie ein Bedienelement."
 
 errors:
+    choices_not_loaded: "Die Filteroptionen konnten nicht geladen werden; prüfen Sie die Listenkonfiguration."
+    archive:
+        no_parents: "Es sind keine Eltern-Archive in der Whitelist eingetragen, oder die Elterntabelle hat keine Model-Klasse."
+        no_valid_parents: "Keines der Eltern-Archive in der Whitelist existiert."
+        no_ptable: "Der Data-Container der Liste hat keine Elterntabelle und kann daher nicht nach Archiven gefiltert werden."
     missing_model: 'Listen- oder Filtermodell nicht gefunden'
     missing_datacontainer: 'Bitte definieren Sie einen Data-Container für das Listenmodell [ID %id%]'
 

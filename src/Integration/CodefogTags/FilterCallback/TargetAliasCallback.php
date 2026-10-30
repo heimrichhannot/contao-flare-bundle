@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterCallback;
 
-use HeimrichHannot\FlareBundle\Event\ElementDcaEvent;
+use HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement\CodefogTagsChoiceFilterElement;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement\CodefogTagsSearchElement;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegistry;
@@ -22,25 +22,27 @@ readonly class TargetAliasCallback
         private CfgTagsJoinsRegistry $joinsRegistry,
     ) {}
 
-    public function __invoke(ElementDcaEvent $event): void
+    public function __invoke(FilterElementBuildDcaEvent $event): void
     {
         if (!$context = $event->context->getExecutionContext()) {
             return;
         }
 
-        $event->dca->field('targetAlias')->options(function () use ($context): array {
-            $activeTagsAliases = \array_intersect_key(
-                $this->joinsRegistry->all(),
-                \array_flip($context->tableAliasRegistry->getAliases()),
-            );
+        $event->builder
+            ->field('targetAlias')
+            ->options(function () use ($context): array {
+                $activeTagsAliases = \array_intersect_key(
+                    $this->joinsRegistry->all(),
+                    \array_flip($context->tableAliasRegistry->getAliases()),
+                );
 
-            $options = [];
+                $options = [];
 
-            foreach ($activeTagsAliases as $alias => $config) {
-                $options[$alias] = "{$alias} [tl_cfg_tag]";
-            }
+                foreach ($activeTagsAliases as $alias => $config) {
+                    $options[$alias] = "{$alias} [tl_cfg_tag]";
+                }
 
-            return $options;
-        });
+                return $options;
+            });
     }
 }

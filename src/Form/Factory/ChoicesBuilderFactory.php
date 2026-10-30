@@ -11,7 +11,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 readonly class ChoicesBuilderFactory
 {
     public function __construct(
-        private TranslatorInterface $translator,
+        private TranslatorInterface   $translator,
         private ParameterBagInterface $parameterBag,
     ) {}
 

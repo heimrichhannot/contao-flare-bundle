@@ -1,0 +1,78 @@
+<?php
+
+declare(strict_types=1);
+
+namespace HeimrichHannot\FlareBundle\Filter\Control;
+
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
+use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
+use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\OptionsResolver\OptionsResolver;
+
+/**
+ * A single checkbox. Checked means true; unchecked means false only under the `true_false` binary
+ * choices, otherwise the filter contributes nothing.
+ */
+#[AsFilterControl(type: self::TYPE)]
+class CheckboxFilterControl extends AbstractFilterControl
+{
+    public const TYPE = 'flare_checkbox';
+
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        $resolver->define('label')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('binary_choices')
+            ->default(BoolBinaryChoices::NULL_TRUE)
+            ->allowedTypes(BoolBinaryChoices::class);
+    }
+
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
+    {
+        $config
+            ->set('label', $model->ctl_label ?: null)
+            ->set(
+                'binary_choices',
+                BoolBinaryChoices::tryFrom((string) $model->ctl_boolBinaryChoices) ?? BoolBinaryChoices::NULL_TRUE,
+            );
+    }
+
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
+    {
+        $builder->palette('{control_legend},ctl_label,ctl_boolBinaryChoices');
+    }
+
+    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
+    {
+        $builder->single(CheckboxType::class, [
+            'label' => $scope->get('label') ?: false,
+            'required' => false,
+        ]);
+    }
+
+    /**
+     * @param bool|null $data The checkbox state.
+     */
+    public function decode(mixed $data, ControlScope $scope): ?BoolValue
+    {
+        if ($data === true) {
+            return new BoolValue(true);
+        }
+
+        $choices = $scope->get('binary_choices');
+
+        return $data === false && $choices === BoolBinaryChoices::TRUE_FALSE ? new BoolValue(false) : null;
+    }
+
+    public function hydrate(?ValueInterface $value, ControlScope $scope): ?bool
+    {
+        return $this->expectValue($value, BoolValue::class)?->state;
+    }
+}

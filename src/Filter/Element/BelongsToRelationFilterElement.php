@@ -12,10 +12,8 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BelongsToRelationPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\InferPtable\Factory\PtableInferrableFactory;
@@ -33,15 +31,10 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
         private readonly TranslatorInterface $trans,
     ) {}
 
-    public function isOnlyIntrinsic(): bool
-    {
-        return true;
-    }
-
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
-        $resolver->define('field_pid')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('field_pid')->required()->allowedTypes('string')
+            ->allowedValues(static fn (string $value): bool => $value !== '');
         $resolver->define('which_ptable')->default(null)->allowedTypes('string', 'null');
         $resolver->define('whitelist_parents')->default([])->allowedTypes('array');
         $resolver->define('group_whitelist_parents')->default([])->allowedTypes('array');
@@ -49,13 +42,12 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $whitelistParents = StringUtil::deserialize($model->whitelistParents);
-        $groupWhitelistParents = StringUtil::deserialize($model->groupWhitelistParents);
+        $whitelistParents = StringUtil::deserialize($model->elm_whitelistParents);
+        $groupWhitelistParents = StringUtil::deserialize($model->elm_groupWhitelistParents);
 
         $config
-            ->set('intrinsic', (bool) $model->intrinsic)
-            ->set('field_pid', $model->fieldPid ?: null)
-            ->set('which_ptable', $model->whichPtable ?: null)
+            ->set('field_pid', $model->elm_fieldPid ?: null)
+            ->set('which_ptable', $model->elm_whichPtable ?: null)
             ->set('whitelist_parents', $whitelistParents ? (array) $whitelistParents : [])
             ->set('group_whitelist_parents', \is_array($groupWhitelistParents) ? $groupWhitelistParents : []);
     }
@@ -63,73 +55,45 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
-        $config = $context->config;
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
+        $fieldPid = $scope->get('field_pid');
 
-        if (!$fieldPid = $config['field_pid'])
-        {
-            throw new FilterException('No parent field defined.');
-        }
-
-        $inferrable = PtableInferrableFactory::createFromConfig($context->list->config);
-        $inferrer = new PtableInferrer($inferrable, $context->list->dc);
+        $inferrable = PtableInferrableFactory::createFromConfig($scope->list->config);
+        $inferrer = new PtableInferrer($inferrable, $scope->list->dc);
 
         try
         {
             $ptable = $inferrer->getInferredPtable();
             $fieldDynamicPtable = $inferrer->tryGetDynamicPtableField();
         }
-        catch (InferenceException)
+        catch (InferenceException $e)
+            // A data container FLARE cannot read is config it cannot honour, not data matching nothing.
         {
-            $builder->abort();
+            throw new FilterException($e->getMessage(), previous: $e, method: __METHOD__);
         }
 
         if (\is_string($fieldDynamicPtable))
         {
-            $builder->add(BelongsToRelationPredicate::class, [
+            $builder->addPredicate(BelongsToRelationPredicate::class, [
                 'field_pid' => $fieldPid,
                 'field_dynamic_ptable' => $fieldDynamicPtable,
-                'parent_groups' => $this->getDynamicParentGroups($config['group_whitelist_parents']),
+                'parent_groups' => $this->getDynamicParentGroups($scope->get('group_whitelist_parents')),
             ]);
 
             return;
         }
 
-        if (!$ptable || !$whitelistParents = $config['whitelist_parents']) {
+        if (!$ptable || !$whitelistParents = $scope->get('whitelist_parents')) {
             throw new FilterException('No whitelisted parents.');
         }
 
-        $builder->add(BelongsToRelationPredicate::class, [
+        $builder->addPredicate(BelongsToRelationPredicate::class, [
             'field_pid' => $fieldPid,
             'whitelist' => $whitelistParents,
-        ]);
-    }
-
-    /**
-     * Expected format:
-     * ```php
-     *   $submittedData = [
-     *       'tl_article' => [1, 5, 35, ...],
-     *       'tl_news' => [2, 3, 4, ...],
-     *   ];
-     * ```
-     *
-     * @param array $groupWhitelistParents Deserialized group whitelist, as stored in the
-     *   `group_whitelist_parents` config key.
-     */
-    public function addDynamicPtableFilter(
-        FormulaBuilderInterface $builder,
-        array                   $groupWhitelistParents,
-        string                  $fieldDynamicPtable,
-        string                  $fieldPid,
-        ?array                  $submittedData = null,
-    ): void {
-        $builder->add(BelongsToRelationPredicate::class, [
-            'field_pid' => $fieldPid,
-            'field_dynamic_ptable' => $fieldDynamicPtable,
-            'parent_groups' => $this->getDynamicParentGroups($groupWhitelistParents),
-            'submitted_data' => $submittedData,
         ]);
     }
 
@@ -165,7 +129,7 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
         return $groups;
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
         $listModel = $context->listModel;
         $filterModel = $context->filterModel;
@@ -173,18 +137,18 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
         if (!$filterModel)
         {
             Message::addError($this->trans->trans('errors.missing_model', [], 'flare'));
-            $dca->palette('');
+            $builder->palette('');
             return;
         }
 
         if (!$listModel->dc)
         {
             Message::addError($this->trans->trans('errors.missing_datacontainer', ['%id%' => $listModel->id], 'flare'));
-            $dca->palette('');
+            $builder->palette('');
             return;
         }
 
-        $palette = '{filter_legend},fieldPid,whichPtable';
+        $palette = '{filter_legend},elm_fieldPid,elm_whichPtable';
 
         $inferrer = new PtableInferrer($filterModel, $listModel->dc);
         $table = $inferrer->getEntityTable();
@@ -219,16 +183,16 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
             $filterModel->whichPtable_disableAutoOption();
         }
 
-        if ($filterModel->whichPtable === 'dynamic')
+        if ($filterModel->elm_whichPtable === 'dynamic')
         {
-            $palette .= ';{archive_legend},groupWhitelistParents';
+            $palette .= ';{archive_legend},elm_groupWhitelistParents';
         }
         /** @mago-expect lint:no-else-clause This else clause is fine. */
         elseif ($ptable ?? null)
         {
-            $palette .= ',whitelistParents';
+            $palette .= ',elm_whitelistParents';
         }
 
-        $dca->palette($palette);
+        $builder->palette($palette);
     }
 }

@@ -72,3 +72,4 @@ $flare['date_time'] = [
 
 $err['listview']['malconfigured'] = 'Diese Listenansicht ist fehlerhaft konfiguriert.';
 $err['tl_content'][ContentContainer::FIELD_FORM_NAME] = 'Muss mit einem Buchstaben beginnen und darf nur a-z, 0-9, _ beinhalten. Darf nicht mit _page enden.';
+$err['form_name'] = 'Darf nur a-z, A-Z, 0-9, _, - und : beinhalten. Muss mit einem Buchstaben, einer Ziffer oder _ beginnen.';

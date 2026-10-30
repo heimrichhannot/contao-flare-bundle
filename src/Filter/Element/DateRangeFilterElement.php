@@ -9,107 +9,51 @@ use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\DateRangePredicate;
+use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
-use Symfony\Component\Form\FormError;
-use Symfony\Component\Form\FormEvent;
-use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
-#[AsFilterElement(type: self::TYPE)]
+#[AsFilterElement(type: self::TYPE, value: DateRangeValue::class)]
 class DateRangeFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_dateRange';
 
-    public function __construct(
-        private readonly TranslatorInterface $translator,
-    ) {}
-
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
-        $resolver->define('field')->default(null)->allowedTypes('string', 'null');
-        $resolver->define('from_enabled')->default(true)->allowedTypes('bool');
-        $resolver->define('to_enabled')->default(true)->allowedTypes('bool');
+        $resolver->define('field')->required()->allowedTypes('string')
+            ->allowedValues(static fn (string $value): bool => $value !== '');
     }
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $config
-            ->set('intrinsic', (bool) $model->intrinsic)
-            ->set('field', $model->fieldGeneric ?: null);
-    }
-
-    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
-    {
-        if ($context->config['intrinsic']) {
-            return;
-        }
-
-        if ($context->config['from_enabled']) {
-            $builder->add('from', DateType::class, [
-                'widget' => 'single_text',
-                'label' => 'label.date_range.from',
-                'html5' => true,
-                'required' => false,
-            ]);
-        }
-
-        if ($context->config['to_enabled']) {
-            $builder->add('to', DateType::class, [
-                'widget' => 'single_text',
-                'label' => 'label.date_range.to',
-                'html5' => true,
-                'required' => false,
-            ]);
-        }
-
-        $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validateRange(...));
+        $config->set('field', $model->elm_fieldGeneric ?: null);
     }
 
     /**
      * @throws FilterException
      */
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
-        if (!$field = $context->config['field']) {
-            throw new FilterException('Set fieldGeneric in filter model.');
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
+        if (!$value = $this->expectValue($value, DateRangeValue::class)) {
+            return;
         }
 
-        $builder->add(DateRangePredicate::class, [
-            'field' => $field,
-            'from' => $value->get('from'),
-            'to' => $value->get('to'),
+        $builder->addPredicate(DateRangePredicate::class, [
+            'field' => $scope->get('field'),
+            'from' => $value->from,
+            'to' => $value->to,
         ]);
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->palette('fieldGeneric');
-    }
-
-    /**
-     * Ensures `from` <= `to`, replicating the former compound form type's callback constraint.
-     */
-    private function validateRange(FormEvent $event): void
-    {
-        $form = $event->getForm();
-
-        $from = $form->has('from') ? $form->get('from')->getData() : null;
-        $to = $form->has('to') ? $form->get('to')->getData() : null;
-
-        if ($from instanceof \DateTimeInterface && $to instanceof \DateTimeInterface && $from > $to) {
-            $form->get('from')->addError(new FormError(
-                $this->translator->trans('flare.form.date_range.to_greater_than_from', [], 'validators'),
-            ));
-        }
+        $builder->palette('{filter_legend},elm_fieldGeneric');
     }
 }

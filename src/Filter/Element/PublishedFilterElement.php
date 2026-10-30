@@ -8,10 +8,8 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\PublishedPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -22,14 +20,8 @@ class PublishedFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_published';
 
-    public function isOnlyIntrinsic(): bool
-    {
-        return true;
-    }
-
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
         $resolver->define('published_field')->default(null)->allowedTypes('string', 'null');
         $resolver->define('start_field')->default(null)->allowedTypes('string', 'null');
         $resolver->define('stop_field')->default(null)->allowedTypes('string', 'null');
@@ -38,36 +30,36 @@ class PublishedFilterElement extends AbstractFilterElement
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $usePublished = (bool) ($model->usePublished ?? true);
-        $useStart = (bool) ($model->useStart ?? true);
-        $useStop = (bool) ($model->useStop ?? true);
-        $fieldPublished = $model->fieldPublished ?: 'published';
-        $fieldStart = $model->fieldStart ?: 'start';
-        $fieldStop = $model->fieldStop ?: 'stop';
+        $usePublished = (bool) ($model->elm_usePublished ?? true);
+        $useStart = (bool) ($model->elm_useStart ?? true);
+        $useStop = (bool) ($model->elm_useStop ?? true);
+        $fieldPublished = $model->elm_fieldPublished ?: 'published';
+        $fieldStart = $model->elm_fieldStart ?: 'start';
+        $fieldStop = $model->elm_fieldStop ?: 'stop';
 
         $config
-            ->set('intrinsic', (bool) $model->intrinsic)
             ->set('published_field', $usePublished ? $fieldPublished : null)
             ->set('start_field', $useStart ? $fieldStart : null)
             ->set('stop_field', $useStop ? $fieldStop : null)
-            ->set('invert', (bool) $model->invertPublished);
+            ->set('invert', (bool) $model->elm_invertPublished);
     }
 
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
-        $config = $context->config;
-
-        $builder->add(PublishedPredicate::class, [
-            'published_field' => $config['published_field'],
-            'start_field' => $config['start_field'],
-            'stop_field' => $config['stop_field'],
-            'invert_published' => $config['invert'],
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
+        $builder->addPredicate(PublishedPredicate::class, [
+            'published_field' => $scope->get('published_field'),
+            'start_field' => $scope->get('start_field'),
+            'stop_field' => $scope->get('stop_field'),
+            'invert_published' => $scope->get('invert'),
             'now' => \time(),
         ]);
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},usePublished,useStart,useStop');
+        $builder->palette('{filter_legend},elm_usePublished,elm_useStart,elm_useStop');
     }
 }

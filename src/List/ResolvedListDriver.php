@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 final readonly class ResolvedListDriver
 {
     public function __construct(
-        public string $type,
+        public string              $type,
         public ListDriverInterface $driver,
     ) {}
 }

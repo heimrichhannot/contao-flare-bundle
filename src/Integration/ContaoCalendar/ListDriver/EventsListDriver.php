@@ -31,9 +31,9 @@ class EventsListDriver extends AbstractListDriver
         return self::DATA_CONTAINER;
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->suffix(static function (string $suffix): string {
+        $builder->suffix(static function (string $suffix): string {
             if (!$suffix) {
                 return $suffix;
             }
@@ -68,7 +68,6 @@ class EventsListDriver extends AbstractListDriver
         $builder->addFilter($this->filterFactory->create(
             element: PublishedFilterElement::TYPE,
             config: [
-                'intrinsic' => true,
                 'published_field' => 'published',
                 'start_field' => 'start',
                 'stop_field' => 'stop',

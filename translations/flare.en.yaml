@@ -6,15 +6,25 @@ reader:
     invalid_list: "No valid list selected"
 
 list:
+    failed: "The list could not be created."
+
     default_template:
         warning: "Default template selected"
         description: "Please create/select a custom template for this FLARE list."
 
     info:
         no_published_filter: "Entries in this list have a publication status (%target%). No publication filter is configured to account for this."
-        duplicate_filter_alias: "Duplicate filter aliases: %alias%. The last filter overwrites the previous ones with the same alias."
+        programming_errors: "{1} A programming error was detected in a filter. An administrator may need to be contacted.|]1,Inf[ Programming errors were detected in %count% filters. An administrator may need to be contacted."
+        duplicate_filter_alias: "A duplicated filter alias is blocking the list: %alias%. Give each published filter a unique alias."
+        broken_filters: "{1} One filter breaks the list; it cannot be created until the filter is fixed. It is marked in the list below.|]1,Inf[ %count% filters break the list; it cannot be created until they are fixed. They are marked in the list below."
+        ineffective_filters: "{1} One filter has no effect and needs attention; it is marked in the list below.|]1,Inf[ %count% filters have no effect and need attention; they are marked in the list below."
 
 filter:
+    value:
+        date_range:
+            label: "Date range"
+            description: "Start and end as a date (e.g. 2026-10-26) or a relative time expression in PHP strtotime() syntax (e.g. today, +1 week, first day of next month). Leave empty for an open bound. Relative expressions are recalculated on every request."
+            invalid: '"%expression%" is neither a date nor a valid relative time expression (e.g. today, +1 week, 2026-10-26).'
     limited_scope:
         single: "This filter is limited to the following scope: %scopes%"
         multiple: "This filter is limited to the following scopes: %scopes%"
@@ -31,9 +41,24 @@ filter:
         intrinsic:
             yes: "This filter is intrinsic"
             no: "This filter ist not intrinsic"
-        duplicate_alias: "This filter has the alias \"%alias%\", which is already used by another filter."
+        programming_error:
+            published: "A programming error occurred in this filter; an administrator may need to be contacted: %reason%"
+            unpublished: "A programming error occurred in this unpublished filter; an administrator may need to be contacted: %reason%"
+        duplicate_alias:
+            published: "The alias \"%alias%\" is also used by another published filter, which blocks the list."
+            unpublished: "Once published, this filter's alias \"%alias%\" would clash with another filter and block the list."
+        broken:
+            published: "This filter breaks the list: %reason%"
+            unpublished: "Once published, this filter would break the list: %reason%"
+        ineffective:
+            archive_without_value: "This filter has no control and no value, so it restricts nothing. Select the archives to show as its value, or select a control."
 
 errors:
+    choices_not_loaded: "The filter choices could not be loaded; check the list configuration."
+    archive:
+        no_parents: "No parent archives are whitelisted, or the parent table has no model class."
+        no_valid_parents: "None of the whitelisted parent archives exists."
+        no_ptable: "The data container of the list has no parent table, so it cannot be filtered by archive."
     missing_model: 'List model or filter model not found.'
     missing_datacontainer: 'Please define a data container on the list model [ID %id%]'
 

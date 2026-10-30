@@ -88,16 +88,14 @@ final readonly class Str
     }
 
     /**
-     * Merges multiple palettes into one.
-     *
-     * @param string ...$palettes
+     * Merges multiple palettes into one. Null and empty segments are dropped.
      */
     public static function mergePalettes(?string ...$palettes): string
     {
         $palettes = \array_filter(\array_map(
-            static fn (string $palette): string => \trim($palette, ";, \n\r\t\v\0"),
+            static fn (?string $palette): string => \trim((string) $palette, ";, \n\r\t\v\0"),
             $palettes,
-        ));
+        ), static fn (string $palette): bool => $palette !== '');
 
         return \implode(';', $palettes);
     }

@@ -4,71 +4,193 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
-use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
+use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
+use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
+use HeimrichHannot\FlareBundle\Filter\ControlBinding;
+use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Tests\List\StubFilterElement;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 final class FilterTest extends TestCase
 {
-    private static function element(): FilterElementInterface
+    private static function filter(): Filter
     {
         static $element = null;
 
-        return $element ??= new class implements FilterElementInterface {
-            public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void {}
+        return new Filter(
+            element: new ElementBinding(
+                component: $element ??= new StubFilterElement(),
+                type: 'test',
+                config: new ComponentConfig(['a' => 1]),
+            ),
+            alias: 'foo',
+            source: 'tl_flare_filter.1',
+        );
+    }
 
-            public function buildContext(
-                FilterContextBuilder $builder,
-                ?ValueInterface      $value,
-            ): void {}
+    /**
+     * @param array<string, mixed> $config
+     */
+    private static function binding(
+        ?FilterControlInterface $control = null,
+        array                   $config = [],
+        string                  $type = 'app_control',
+    ): ControlBinding {
+        return new ControlBinding($control ?? self::control(), $type, new ComponentConfig($config));
+    }
+
+    private static function control(): FilterControlInterface
+    {
+        return new class extends AbstractFilterControl {
+            public function configureOptions(OptionsResolver $resolver): void {}
+
+            protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
+
+            public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void {}
+
+            public function decode(mixed $data, ControlScope $scope): ?BoolValue
+            {
+                return null;
+            }
+
+            public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
+            {
+                return null;
+            }
         };
     }
 
     public function testWithersPreserveOtherFields(): void
     {
-        $filter = new Filter(
-            element: self::element(),
-            type: 'test',
-            config: ['a' => 1],
-            alias: 'foo',
-            source: 'tl_flare_filter.1',
-        );
-
-        $withData = $filter->withData(FilterData::of(['value' => 42]));
-
-        self::assertNull($filter->data);
-        self::assertSame(['value' => 42], $withData->data?->all());
-        self::assertSame(self::element(), $withData->element);
-        self::assertSame('test', $withData->type);
-        self::assertSame('foo', $withData->alias);
-        self::assertSame(['a' => 1], $withData->config);
-        self::assertSame('tl_flare_filter.1', $withData->source);
+        $filter = self::filter();
 
         $targeted = $filter->withTargetAlias('translation');
 
         self::assertSame('translation', $targeted->targetAlias);
         self::assertTrue($targeted->targetingForced);
         self::assertFalse($filter->targetingForced);
+        self::assertSame($filter->element, $targeted->element);
+        self::assertSame('foo', $targeted->alias);
+        self::assertSame('tl_flare_filter.1', $targeted->source);
+
+        self::assertFalse($filter->withTargetAlias(null)->targetingForced);
+    }
+
+    public function testWithersPreserveControlAndValue(): void
+    {
+        $control = self::binding(config: ['b' => 2]);
+        $value = new BoolValue(true);
+
+        $filter = self::filter()
+            ->withControl($control)
+            ->withValue($value)
+            ->withTargetAlias('translation');
+
+        self::assertSame($control, $filter->control);
+        self::assertSame($value, $filter->value);
+        self::assertSame(['a' => 1], $filter->element->config->all());
+        self::assertSame('tl_flare_filter.1', $filter->source);
+
+        $withoutValue = $filter->withValue(null);
+
+        self::assertNull($withoutValue->value);
+        self::assertSame($control, $withoutValue->control);
+        self::assertSame('translation', $withoutValue->targetAlias);
+        self::assertTrue($withoutValue->targetingForced);
+
+        $withoutControl = $filter->withControl(null);
+
+        self::assertNull($withoutControl->control);
+        self::assertSame($value, $withoutControl->value);
+    }
+
+    public function testControlBindingCarriesTypeAndConfig(): void
+    {
+        $filter = self::filter()->withControl(self::binding(config: ['b' => 2]));
+
+        self::assertSame('app_control', $filter->control?->type);
+        self::assertSame(2, $filter->control?->config->get('b'));
+        self::assertSame('app_control', $filter->withValue(new BoolValue(true))->control?->type);
+        self::assertSame('app_control', $filter->withTargetAlias('translation')->control?->type);
+    }
+
+    public function testFingerprintKeysAreUnchanged(): void
+    {
+        $fingerprint = self::filter()->fingerprint();
+
+        self::assertSame([
+            'element',
+            'type',
+            'alias',
+            'config',
+            'control',
+            'controlConfig',
+            'controlType',
+            'value',
+            'targetAlias',
+            'targetingForced',
+        ], \array_keys($fingerprint));
+        self::assertSame(['a' => 1], $fingerprint['config']);
     }
 
     public function testFingerprintReflectsIdentityAndContent(): void
     {
-        $filter = new Filter(element: self::element(), type: 'test', config: ['a' => 1], alias: 'foo');
+        $filter = self::filter();
 
         $fingerprint = $filter->fingerprint();
 
-        self::assertSame(\get_class(self::element()), $fingerprint['element']);
-        self::assertSame('test', $fingerprint['type']);
-        self::assertSame(['a' => 1], $fingerprint['config']);
-        self::assertSame('foo', $fingerprint['alias']);
-        $changedConfig = new Filter(element: self::element(), type: 'test', config: ['a' => 2], alias: 'foo');
+        self::assertSame([
+            'element' => StubFilterElement::class,
+            'type' => 'test',
+            'alias' => 'foo',
+            'config' => ['a' => 1],
+            'control' => null,
+            'controlConfig' => [],
+            'controlType' => null,
+            'value' => null,
+            'targetAlias' => null,
+            'targetingForced' => false,
+        ], $fingerprint);
+
+        $changedConfig = new Filter(
+            element: new ElementBinding($filter->element->component, 'test', new ComponentConfig(['a' => 2])),
+            alias: 'foo',
+        );
 
         self::assertNotSame($fingerprint, $changedConfig->fingerprint());
+    }
+
+    public function testFingerprintChangesWithControlAndValue(): void
+    {
+        $base = self::filter();
+        $control = self::control();
+
+        self::assertNotSame($base->fingerprint(), $base->withControl(self::binding($control))->fingerprint());
+        self::assertNotSame(
+            $base->withControl(self::binding($control))->fingerprint(),
+            $base->withControl(self::binding($control, ['b' => 2]))->fingerprint(),
+        );
+        self::assertNotSame(
+            $base->withControl(self::binding($control))->fingerprint(),
+            $base->withControl(self::binding($control, type: 'other'))->fingerprint(),
+        );
+        self::assertNotSame($base->fingerprint(), $base->withValue(new BoolValue(true))->fingerprint());
+        self::assertNotSame(
+            $base->withValue(new BoolValue(true))->fingerprint(),
+            $base->withValue(new BoolValue(false))->fingerprint(),
+        );
+        self::assertSame(
+            $base->withValue(new BoolValue(true))->fingerprint(),
+            $base->withValue(new BoolValue(true))->fingerprint(),
+        );
     }
 }

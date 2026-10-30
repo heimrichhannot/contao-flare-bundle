@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Reader;
 
 use Contao\Model;
-use HeimrichHannot\FlareBundle\Event\DetailsPageUrlGeneratedEvent;
+use HeimrichHannot\FlareBundle\Event\ReaderUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\Util\CallbackHelper;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -14,7 +14,7 @@ readonly class ReaderUrlGenerator implements ReaderUrlGeneratorInterface
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
-        private ReaderUrlConfig $config,
+        private ReaderUrlConfig          $config,
     ) {}
 
     public function generate(Model $model): ?string
@@ -26,7 +26,7 @@ readonly class ReaderUrlGenerator implements ReaderUrlGeneratorInterface
         $url = $this->config->readerPage->getAbsoluteUrl('/' . Str::urlEncodePath($autoItem));
 
         $event = $this->eventDispatcher->dispatch(
-            new DetailsPageUrlGeneratedEvent(
+            new ReaderUrlGeneratedEvent(
                 model: $model,
                 autoItem: $autoItem,
                 page: $this->config->readerPage,

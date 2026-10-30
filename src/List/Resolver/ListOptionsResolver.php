@@ -24,12 +24,13 @@ final readonly class ListOptionsResolver
 
     /**
      * @param array<string, mixed> $config
+     * @param string|null $origin Provenance for the exception, e.g. "tl_flare_list.3".
      *
      * @return array<string, mixed>
      *
      * @throws FlareException If the config does not satisfy the schema.
      */
-    public function resolve(?ListDriverInterface $driverService, array $config, ?string $source = null): array
+    public function resolve(?ListDriverInterface $driverService, array $config, ?string $origin = null): array
     {
         $configure = static function (OptionsResolver $resolver) use ($driverService): void {
             BaseListOptions::configureOptions($resolver);
@@ -45,17 +46,17 @@ final readonly class ListOptionsResolver
         {
             return $this->schemaResolver->resolve((string) $driverClass, $configure, $config);
         }
-        catch (\Throwable $e)
+        catch (\Exception $e)
         {
             throw new FlareException(
                 \sprintf(
-                    '[FLARE] Invalid list config%s: %s',
-                    $driverService ? ' for list type "' . $driverService::class . '"' : '',
+                    '[FLARE] Invalid config for "%s": %s',
+                    $driverClass ?? BaseListOptions::class,
                     $e->getMessage(),
                 ),
                 previous: $e,
                 method: ($driverClass ?? BaseListOptions::class) . '::configureOptions',
-                source: $source,
+                source: $origin,
             );
         }
     }

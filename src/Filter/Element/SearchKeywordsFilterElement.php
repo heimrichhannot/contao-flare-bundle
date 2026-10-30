@@ -9,89 +9,51 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\SearchKeywordsPredicate;
+use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-#[AsFilterElement(type: self::TYPE, isTargeted: true)]
+#[AsFilterElement(type: self::TYPE, isTargeted: true, value: KeywordsValue::class)]
 class SearchKeywordsFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_search_keywords';
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
-        $resolver->define('columns')->default([])->allowedTypes('array');
-        $resolver->define('prefill')->default(null)->allowedTypes('string', 'null');
-        $resolver->define('label')->default(null)->allowedTypes('string', 'null');
-        $resolver->define('placeholder')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('columns')->required()->allowedTypes('array')
+            ->allowedValues(static fn (array $value): bool => $value !== []);
     }
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $config
-            ->set('intrinsic', (bool) $model->intrinsic)
-            ->set('columns', StringUtil::deserialize($model->columnsGeneric, true))
-            ->set('prefill', $model->prefill ?: null)
-            ->set('label', $model->label ?: null)
-            ->set('placeholder', $model->placeholder ?: null);
+        $config->set('columns', StringUtil::deserialize($model->elm_columnsGeneric, true));
     }
 
-    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
-    {
-        $config = $context->config;
-
-        if ($config['intrinsic']) {
+    /**
+     * @throws FilterException
+     */
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
+        if (!$value = $this->expectValue($value, KeywordsValue::class)) {
             return;
         }
 
-        $options = [
-            'label' => $config['label'] ?? 'label.text',
-            'required' => false,
-        ];
-
-        if ($config['placeholder']) {
-            $options['attr']['placeholder'] = $config['placeholder'];
-        }
-
-        $builder->single(TextType::class, $options);
-    }
-
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
-    {
-        $config = $context->config;
-
-        $value = $config['intrinsic']
-            ? $config['prefill']
-            : $value->getSingleValue();
-
-        if (!$value || !\is_string($value)) {
-            return;
-        }
-
-        if (!$columns = $config['columns']) {
-            return;
-        }
-
-        $builder->add(SearchKeywordsPredicate::class, [
-            'value' => $value,
-            'columns' => $columns,
+        $builder->addPredicate(SearchKeywordsPredicate::class, [
+            'value' => $value->keywords,
+            'columns' => $scope->get('columns'),
         ]);
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $palette = '{filter_legend},columnsGeneric';
-
-        $dca->palette($context->filterModel?->intrinsic
-            ? $palette . ',prefill'
-            : $palette . ';{form_legend},label,placeholder');
+        $builder->palette('{filter_legend},elm_columnsGeneric');
     }
 }

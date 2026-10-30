@@ -37,6 +37,12 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * as a programming error, so the editor can still reach the filter; in debug mode it escapes. This is the only place
  * the bundle catches \Error; the frontend still fails the request.
  *
+ * Cost: a list is inspected as a whole, once per request (see {@see inspect()}), on every backend view that shows its
+ * filter issues — the filter overview, the filter rows and a filter's edit form. Each filter's conditions are built,
+ * and each controlled filter's form, which loads its choices: about the work of one frontend view of the list. A
+ * field value choice reads the distinct values of its column, a full scan on large tables. Accepted, so the backend
+ * reports exactly what fails in the frontend.
+ *
  * @internal
  */
 final class FilterInspector implements ResetInterface

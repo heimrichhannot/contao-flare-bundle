@@ -100,9 +100,9 @@ which mount as a compound sub-form (`form[alias][from]=x`); `compound()` sets it
 Each mount is hydrated with
 `control->hydrate($filter->value, $scope)`.
 
-The per-filter builder carries the `ControlScope` in its attribute bag under `ControlScope::ATTR_SELF`. After the
-control built its fields, a `FilterControlBuildFormEvent` is dispatched — listeners can add, remove, or replace
-children, adjust the `single()` declaration, or `cancel()` the filter's form entirely. Filters that declare no
+The per-filter builder carries the `ControlScope` in its attribute bag under `FilterFormBuilderInterface::ATTR_SCOPE`.
+After the control built its fields, a `FilterControlBuildFormEvent` is dispatched — listeners can add, remove, or
+replace children, adjust the `single()` declaration, or `cancel()` the filter's form entirely. Filters that declare no
 fields are not mounted onto the root form.
 
 The factory returns a `FormHarness`: the root form plus a mount↔filter map (`FilterMount` per mounted

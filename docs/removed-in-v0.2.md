@@ -39,8 +39,9 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
   `FilterContextBuilderInterface` and `FormulaBuilder`
 - `Filter\FilterScope` — replaced by the role-typed `Filter\ElementScope` (element hooks and ports) and
   `Filter\ControlScope` (control hooks); `$scope->get('key')` reads the calling component's own config, and
-  `ControlScope::forElement()` hands element ports their scope. `FilterScope::ATTR_SELF` / `ATTR_SINGLE_FIELD`
-  moved to `ControlScope`
+  `ControlScope::forElement()` hands element ports their scope. `FilterScope::ATTR_SELF` became
+  `Form\FilterFormBuilderInterface::ATTR_SCOPE`, `FilterScope::ATTR_SINGLE_FIELD` became
+  `Form\FilterMount::ATTR_SINGLE_FIELD`
 - `FilterContextBuilder::$scope` and `FilterContext::$scope` — the element receives the scope as a
   `buildContext()` parameter; `FilterContextBuilder::build()` is internal, elements see only
   `FilterContextBuilderInterface`

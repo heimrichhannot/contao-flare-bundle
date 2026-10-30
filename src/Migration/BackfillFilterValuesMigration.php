@@ -117,7 +117,7 @@ class BackfillFilterValuesMigration extends AbstractMigration
 
         // Without the marker, the migration has run unless the new columns are still unused everywhere.
         return $this->connection->fetchOne(\sprintf(
-            "SELECT 1 FROM %s WHERE control <> '' OR value <> ''",
+            "SELECT 1 FROM %s WHERE control <> '' OR value <> '' LIMIT 1",
             self::TABLE,
         )) === false;
     }

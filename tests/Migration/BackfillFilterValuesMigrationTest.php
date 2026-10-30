@@ -828,7 +828,7 @@ final class BackfillFilterValuesMigrationTest extends TestCase
             return $affected;
         });
         $connection->method('fetchOne')->willReturnCallback(function (string $sql): int|false {
-            self::assertSame("SELECT 1 FROM tl_flare_filter WHERE control <> '' OR value <> ''", $sql);
+            self::assertSame("SELECT 1 FROM tl_flare_filter WHERE control <> '' OR value <> '' LIMIT 1", $sql);
 
             foreach ($this->rows as $row)
             {

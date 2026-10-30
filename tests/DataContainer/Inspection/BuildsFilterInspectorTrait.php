@@ -21,7 +21,7 @@ use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
-use HeimrichHannot\FlareBundle\Form\FilterFormInvoker;
+use HeimrichHannot\FlareBundle\Form\Factory\FilterFormBuilderFactory;
 use HeimrichHannot\FlareBundle\List\Collector\ListModelFilterCollector;
 use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
@@ -87,7 +87,7 @@ trait BuildsFilterInspectorTrait
                 $this->createFilterContextFactory(),
                 new FilterQueryBuilderFactory($connection),
             ),
-            filterFormInvoker: new FilterFormInvoker($dispatcher, Forms::createFormFactory()),
+            filterFormBuilderFactory: new FilterFormBuilderFactory($dispatcher, Forms::createFormFactory()),
             listSpecBuilderFactory: $this->createListSpecBuilderFactory($dispatcher),
             translator: self::echoTranslator(),
             logger: $logger ?? new NullLogger(),

@@ -16,7 +16,7 @@ use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Form\FilterFormInvoker;
+use HeimrichHannot\FlareBundle\Form\Factory\FilterFormBuilderFactory;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
 use HeimrichHannot\FlareBundle\List\ListSpec;
@@ -54,7 +54,7 @@ final class FilterInspector implements ResetInterface
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly FilterFactory            $filterFactory,
         private readonly FilterInvoker            $filterInvoker,
-        private readonly FilterFormInvoker        $filterFormInvoker,
+        private readonly FilterFormBuilderFactory $filterFormBuilderFactory,
         private readonly ListSpecBuilderFactory   $listSpecBuilderFactory,
         private readonly TranslatorInterface      $translator,
         private readonly LoggerInterface          $logger,
@@ -315,7 +315,7 @@ final class FilterInspector implements ResetInterface
     {
         try
         {
-            $this->filterFormInvoker->build(new ControlScope($spec, $filter, new ConfigurationContext()));
+            $this->filterFormBuilderFactory->create(new ControlScope($spec, $filter, new ConfigurationContext()));
         }
         catch (FilterException $e)
         {

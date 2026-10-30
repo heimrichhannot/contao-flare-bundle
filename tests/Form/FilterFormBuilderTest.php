@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Tests\Filter;
+namespace HeimrichHannot\FlareBundle\Tests\Form;
 
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilder;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;

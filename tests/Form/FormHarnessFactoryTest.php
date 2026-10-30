@@ -18,11 +18,11 @@ use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\Form\Factory\FilterFormBuilderFactory;
 use HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory;
-use HeimrichHannot\FlareBundle\Form\FilterFormInvoker;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Form\FilterMount;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
 use PHPUnit\Framework\TestCase;
@@ -78,7 +78,7 @@ final class FormHarnessFactoryTest extends TestCase
 
         return new FormHarnessFactory(
             eventDispatcher: $this->eventDispatcher,
-            filterFormInvoker: new FilterFormInvoker($this->eventDispatcher, $formFactory),
+            filterFormBuilderFactory: new FilterFormBuilderFactory($this->eventDispatcher, $formFactory),
             formFactory: $formFactory,
             logger: $this->logger,
             translator: $this->createMock(TranslatorInterface::class),

@@ -11,7 +11,6 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Form\FilterFormInvoker;
 use HeimrichHannot\FlareBundle\Form\FilterMount;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
@@ -27,7 +26,7 @@ final readonly class FormHarnessFactory
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
-        private FilterFormInvoker        $filterFormInvoker,
+        private FilterFormBuilderFactory $filterFormBuilderFactory,
         private FormFactoryInterface     $formFactory,
         private LoggerInterface          $logger,
         private TranslatorInterface      $translator,
@@ -88,7 +87,7 @@ final readonly class FormHarnessFactory
 
             try
             {
-                $builder = $this->filterFormInvoker->build($scope);
+                $builder = $this->filterFormBuilderFactory->create($scope);
             }
             catch (FilterException $e)
                 // Fail closed: a control the editor chose must not be lost silently.

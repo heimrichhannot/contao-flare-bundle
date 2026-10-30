@@ -2,26 +2,27 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Form;
+namespace HeimrichHannot\FlareBundle\Form\Factory;
 
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
- * Builds one controlled filter's form: the control's buildForm() and the {@see FilterControlBuildFormEvent}. Shared by
- * the {@see Factory\FormHarnessFactory} and the backend's check for broken filters, so both judge a control alike.
+ * Creates the {@see FilterFormBuilder} of one controlled filter, filled by the control's buildForm() and the
+ * {@see FilterControlBuildFormEvent}. Shared by the {@see FormHarnessFactory} and the backend's check for broken
+ * filters, so both judge a control alike.
  *
  * @internal
  */
-final readonly class FilterFormInvoker
+final readonly class FilterFormBuilderFactory
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
@@ -39,7 +40,7 @@ final readonly class FilterFormInvoker
      * @throws FilterException
      * @throws UndefinedConfigKeyError If the control reads a config key its schema does not define.
      */
-    public function build(ControlScope $scope): ?FilterFormBuilder
+    public function create(ControlScope $scope): ?FilterFormBuilder
     {
         $filter = $scope->filter;
         $control = $scope->filter->control?->component;

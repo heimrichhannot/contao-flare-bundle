@@ -24,8 +24,6 @@ services:
             - ../src/Engine/Loader
             - ../src/Engine/View
 
-    HeimrichHannot\FlareBundle\Form\FilterFormInvoker: ~
-
     HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory:
         arguments:
             $debug: '%kernel.debug%'

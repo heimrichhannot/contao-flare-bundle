@@ -16,10 +16,12 @@ use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\Projector\AggregationProjector;
 use HeimrichHannot\FlareBundle\Engine\Projector\InteractiveProjector;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
-use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
+use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
+use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
@@ -28,9 +30,11 @@ use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\Form\Factory\FilterFormBuilderFactory;
 use HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory;
-use HeimrichHannot\FlareBundle\Form\FilterFormInvoker;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
+use HeimrichHannot\FlareBundle\List\FilterFailure;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
@@ -45,11 +49,6 @@ use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
 use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
-use HeimrichHannot\FlareBundle\List\FilterFailure;
-use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
@@ -57,15 +56,16 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\DependencyInjection\ServiceLocator;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Csrf\CsrfExtension;
 use Symfony\Component\Form\Extension\HttpFoundation\HttpFoundationExtension;
 use Symfony\Component\Form\Forms;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Component\Security\Csrf\CsrfTokenManager;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Runs the interactive projector over the real aggregation projector, loaders and query director.
@@ -334,7 +334,7 @@ final class InteractiveProjectorTest extends TestCase
             aggregationConfigFactory: new AggregationContextFactory(),
             formHarnessFactory: new FormHarnessFactory(
                 $dispatcher,
-                new FilterFormInvoker($dispatcher, $formFactory),
+                new FilterFormBuilderFactory($dispatcher, $formFactory),
                 $formFactory,
                 $logger,
                 $this->createMock(TranslatorInterface::class),

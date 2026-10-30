@@ -10,15 +10,15 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilder;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
-use HeimrichHannot\FlareBundle\Form\FilterFormInvoker;
+use HeimrichHannot\FlareBundle\Form\Factory\FilterFormBuilderFactory;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilder;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Forms;
 
-final class FilterFormInvokerTest extends TestCase
+final class FilterFormBuilderFactoryTest extends TestCase
 {
     use BuildsFormFixturesTrait;
 
@@ -29,12 +29,12 @@ final class FilterFormInvokerTest extends TestCase
         $this->eventDispatcher = new EventDispatcher();
     }
 
-    private function build(FilterControlInterface $control, string $alias = 'suche'): ?FilterFormBuilder
+    private function create(FilterControlInterface $control, string $alias = 'suche'): ?FilterFormBuilder
     {
         $filter = $this->filter($alias, $control);
-        $invoker = new FilterFormInvoker($this->eventDispatcher, Forms::createFormFactory());
+        $factory = new FilterFormBuilderFactory($this->eventDispatcher, Forms::createFormFactory());
 
-        return $invoker->build(new ControlScope($this->listSpec([$filter]), $filter, new ConfigurationContext()));
+        return $factory->create(new ControlScope($this->listSpec([$filter]), $filter, new ConfigurationContext()));
     }
 
     private function failing(\Exception $e): FilterControlInterface
@@ -46,7 +46,7 @@ final class FilterFormInvokerTest extends TestCase
 
     public function testReturnsTheBuilderOfASingleField(): void
     {
-        $builder = $this->build($this->single());
+        $builder = $this->create($this->single());
 
         self::assertSame('suche', $builder?->getName());
         self::assertSame(TextType::class, $builder->getSingle()['type'] ?? null);
@@ -55,7 +55,7 @@ final class FilterFormInvokerTest extends TestCase
 
     public function testReturnsNullWithoutFields(): void
     {
-        self::assertNull($this->build($this->control(static function (): void {})));
+        self::assertNull($this->create($this->control(static function (): void {})));
     }
 
     public function testReturnsNullWhenCancelled(): void
@@ -65,13 +65,13 @@ final class FilterFormInvokerTest extends TestCase
             static fn (FilterControlBuildFormEvent $event) => $event->cancel(),
         );
 
-        self::assertNull($this->build($this->single()));
+        self::assertNull($this->create($this->single()));
     }
 
     public function testFilterExceptionFromBuildFormIsRethrownWithItsMethod(): void
     {
         try {
-            $this->build($this->failing(new FilterException('no choices')));
+            $this->create($this->failing(new FilterException('no choices')));
             self::fail('No exception thrown.');
         } catch (FilterException $e) {
             self::assertSame('no choices', $e->getMessage());
@@ -82,7 +82,7 @@ final class FilterFormInvokerTest extends TestCase
     public function testUnexpectedExceptionFromBuildFormIsWrapped(): void
     {
         try {
-            $this->build($this->failing(new \RuntimeException('connection lost')));
+            $this->create($this->failing(new \RuntimeException('connection lost')));
             self::fail('No exception thrown.');
         } catch (FilterException $e) {
             self::assertInstanceOf(\RuntimeException::class, $e->getPrevious());
@@ -98,7 +98,7 @@ final class FilterFormInvokerTest extends TestCase
         $this->expectException(FilterException::class);
         $this->expectExceptionMessage('The listener cannot build this form.');
 
-        $this->build($this->single());
+        $this->create($this->single());
     }
 
     public function testListenerOtherExceptionEscapes(): void
@@ -109,7 +109,7 @@ final class FilterFormInvokerTest extends TestCase
 
         $this->expectException(\RuntimeException::class);
 
-        $this->build($this->single());
+        $this->create($this->single());
     }
 
     public function testSingleFieldWithChildrenIsAFilterException(): void
@@ -122,7 +122,7 @@ final class FilterFormInvokerTest extends TestCase
         $this->expectException(FilterException::class);
         $this->expectExceptionMessage('cannot declare a single field and add children at the same time');
 
-        $this->build($control);
+        $this->create($control);
     }
 
     public function testInvalidAliasIsAFilterException(): void
@@ -130,6 +130,6 @@ final class FilterFormInvokerTest extends TestCase
         $this->expectException(FilterException::class);
         $this->expectExceptionMessage('"price.min"');
 
-        $this->build($this->single(), 'price.min');
+        $this->create($this->single(), 'price.min');
     }
 }

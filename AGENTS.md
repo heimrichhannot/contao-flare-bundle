@@ -32,7 +32,7 @@ without: the fixed `Filter::$value`), creates the `FilterContext` via `FilterCon
 (the element's `buildContext($builder, $scope, $value)` adds predicates) and runs each predicate into a `FilterConditionsBuilder`. A
 filter whose element cannot be built (with or without a control) — required element config is required by the
 element's schema —, a stored control that cannot be resolved or whose config is broken, a control that cannot build
-its form (`Form/FilterFormInvoker`: a `buildForm()` failure, a `FlareException` from a `FilterControlBuildFormEvent`
+its form (`Form/Factory/FilterFormBuilderFactory`: a `buildForm()` failure, a `FlareException` from a `FilterControlBuildFormEvent`
 listener, an alias that is no valid form name), a broken fixed value, a `FlareException` from a `FilterCollectedEvent`
 listener, or two published filters sharing an alias fail the whole list (`list.failed` in the view, HTTP 500 in the
 reader); an unreadable initial value only drops the value (warning). These failures win over an invalid submission,
@@ -91,14 +91,16 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   Controls bind to a value *class* (the narrowed return type of `decode()`), never to an element type:
   `flare_choice`, `flare_checkbox`, `flare_choice_bool`, `flare_date_range`, `flare_keywords`. "Form" names only
   the Symfony level (`FormHarness`, `FilterFormBuilder`, mount). `src/Form/` — Symfony-level building blocks
-  (`FormHarness`, `FilterMount`, `ChoicesBuilder`, `Form/Type/DateRangeFormType`)
+  (`FormHarness`, `FilterMount`, `FilterFormBuilder` — the collect-only builder behind the public
+  `FilterFormBuilderInterface` a control's `buildForm()` receives, created by `Form/Factory/FilterFormBuilderFactory` —,
+  `ChoicesBuilder`, `Form/Type/DateRangeFormType`)
 - `src/Contract/FilterElement/` — capability ports an element implements for controls/providers to pull from
   (`ChoiceSourceContract`, `DateBoundsContract`); controls never reach into an element otherwise.
   `IneffectiveFilterContract` lets an element explain why its filter restricts nothing as configured. One backend
   inspector (`DataContainer/Inspection/FilterInspector`) finds every filter issue of a list once, as one of four
   kinds — programming error, duplicate alias, broken (cannot be created, or conditions that cannot be built with
   the default value, through the shared `Query/Executor/FilterInvoker`, or a control that cannot build its form,
-  through the shared `Form/FilterFormInvoker`), ineffective; `FilterIssueReporter` shows
+  through the shared `Form/Factory/FilterFormBuilderFactory`), ineffective; `FilterIssueReporter` shows
   them on the filter row (icon), the edit form and the list's filter overview (counts of published filters only). It inspects every saved row, builds
   the list scope the way the runtime does, and catches `\Error` outside debug mode only (logged as critical)
 - `src/Filter/ValueProvider/` — one `ValueProviderInterface` service per value class (`provide()` turns the

@@ -6,9 +6,9 @@ namespace HeimrichHannot\FlareBundle\Tests\DataContainer\Inspection\Stub;
 
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 
 final class CheckboxStubControl implements FilterControlInterface

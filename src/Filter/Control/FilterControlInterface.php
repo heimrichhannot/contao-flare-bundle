@@ -7,8 +7,8 @@ namespace HeimrichHannot\FlareBundle\Filter\Control;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\FilterComponentInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 
 /**
  * A registrable presentation strategy for one filter: how the user supplies the filter's value

@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Filter;
+namespace HeimrichHannot\FlareBundle\Form;
 
 use Symfony\Component\Form\FormBuilder;
 
 /**
  * Collect-only builder for a single filter's form fields.
  *
- * Constructed manually by {@see Factory\FormHarnessFactory} outside Symfony's form-type system,
+ * Constructed manually by {@see Factory\FilterFormBuilderFactory} outside Symfony's form-type system,
  * so it carries no resolved type, options, or data mapper and must never be mounted into a form
- * tree — the factory transfers its children, attributes, single-field spec, and deferred event
- * listeners onto a real builder. Children created through add()/create() are real, factory-built
+ * tree — the {@see Factory\FormHarnessFactory} transfers its children, attributes, single-field spec,
+ * and deferred event listeners onto a real builder. Children created through add()/create() are real, factory-built
  * builders because they route through the injected form factory.
  */
 final class FilterFormBuilder extends FormBuilder implements FilterFormBuilderInterface

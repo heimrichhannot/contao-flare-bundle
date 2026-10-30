@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Event;
 
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use Symfony\Contracts\EventDispatcher\Event;
 
 /**

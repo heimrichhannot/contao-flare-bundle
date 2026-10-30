@@ -12,9 +12,8 @@ use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 /**
  * Implemented by filter elements whose value is picked from a server-provided option set.
  *
- * The capability port a generic choice control and the `ChoiceValueProvider` depend on
- * (SPEC_FILTER_FORMS.md §3.5). It is the one source of options for the frontend widget and the
- * backend value field (§6.4).
+ * The capability port a generic choice control and the `ChoiceValueProvider` depend on. It is
+ * the one source of options for the frontend widget and the backend value field.
  *
  * @api
  */

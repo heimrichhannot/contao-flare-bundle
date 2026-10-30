@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 
 /**
- * Creates the element scope of the filter edited in the backend (§6.4).
+ * Creates the element scope of the filter edited in the backend.
  *
  * @internal
  */

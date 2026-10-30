@@ -13,8 +13,8 @@ final class DateRangeValueTest extends TestCase
      * The reason the value object normalises timezones: the probe measured
      * that the same instant hashes differently as `+01:00` (timezone_type 1) and `Europe/Berlin`
      * (timezone_type 3). Reducing to a timestamp at construction makes the two indistinguishable,
-     * which is exactly §9's "anything with multiple equal representations is normalized in the
-     * constructor".
+     * which is exactly the value-object rule: anything with multiple equal representations is normalized in the
+     * constructor.
      */
     public function testEquivalentTimezoneRepresentationsNormaliseToOneValue(): void
     {

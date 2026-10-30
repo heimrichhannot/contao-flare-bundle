@@ -32,8 +32,7 @@ readonly class ListQueryDirector
     /**
      * Creates a query builder based on the provided list query configuration.
      *
-     * A list that recorded failures while it was built has failed as a whole (SPEC_FILTER_FORMS.md
-     * §8.1): it is never queried, in any context.
+     * A list that recorded failures while it was built has failed as a whole: it is never queried, in any context.
      *
      * @param ListQueryConfig $config Configuration for creating the query.
      * @return QueryBuilder|null Returns the constructed query builder, or null if filtering is aborted.
@@ -82,10 +81,10 @@ readonly class ListQueryDirector
     /**
      * Invokes every filter of the list with its value and collects the condition builders.
      *
-     * The value is taken by the filter's role (SPEC_FILTER_FORMS.md §4.2, §8): with a control, only
-     * the form's value map applies; without one, the filter's fixed value applies in every context.
+     * The value is taken by the filter's role: with a control, only the form's value map applies;
+     * without one, the filter's fixed value applies in every context.
      *
-     * A failing filter fails by what it bounds (§4.2, §8.1). A filter with a control that fails with
+     * A failing filter fails by what it bounds. A filter with a control that fails with
      * a value is retried without it: the element's own config (e.g. a whitelist) still bounds the
      * whole list, only the user's or initial value is dropped with a warning (fail open). A filter
      * that fails without a value, or a filter without a control, fails the list (fail closed).

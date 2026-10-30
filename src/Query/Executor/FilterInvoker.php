@@ -32,7 +32,7 @@ final readonly class FilterInvoker
 
     /**
      * Builds the filter's context with the given value and runs each of its predicate calls into a conditions
-     * builder (SPEC_FILTER_FORMS.md §8 step 4).
+     * builder.
      *
      * @return list<FilterConditionsBuilder>
      *

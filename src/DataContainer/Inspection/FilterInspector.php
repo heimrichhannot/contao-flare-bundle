@@ -276,8 +276,7 @@ final class FilterInspector implements ResetInterface
 
     /**
      * Builds the filter's conditions with its default value: the fixed value without a control, none with one (with
-     * a control, the list retries without the value, SPEC_FILTER_FORMS.md §8.1). An abort ("matches nothing") is no
-     * issue.
+     * a control, the list retries without the value). An abort ("matches nothing") is no issue.
      *
      * @return array{FilterIssueKind, string}|null
      */

@@ -8,8 +8,7 @@ use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
 
 /**
- * The filters collected for a list, and the failures of filters that fail the list as a whole
- * (SPEC_FILTER_FORMS.md §8.1).
+ * The filters collected for a list, and the failures of filters that fail the list as a whole.
  */
 final readonly class CollectedFilters
 {

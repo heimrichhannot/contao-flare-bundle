@@ -91,7 +91,7 @@ final readonly class FormHarnessFactory
                 $builder = $this->filterFormInvoker->build($scope);
             }
             catch (FilterException $e)
-                // Fail closed: a control the editor chose must not be lost silently (§8.1).
+                // Fail closed: a control the editor chose must not be lost silently.
             {
                 $failures[] = $this->fail($list, $filter, $e);
                 continue;
@@ -110,7 +110,7 @@ final readonly class FormHarnessFactory
                 $initial = $control->hydrate($filter->value, $scope);
             }
             catch (\Exception $e)
-                // Fail open: an initial value that cannot be shown only drops the value (§8.1).
+                // Fail open: an initial value that cannot be shown only drops the value.
             {
                 $initial = null;
                 $this->dropInitialValue($filter, $e, $control::class . '::hydrate');

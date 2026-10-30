@@ -218,7 +218,7 @@ readonly class FieldsOptionsCallbacks
     }
 
     /**
-     * The per-group label format of the parent whitelist groups (element-owned, §4.1).
+     * The per-group label format of the parent whitelist groups (element-owned).
      */
     #[AsCallback(self::TABLE_NAME, 'fields.elm_groupWhitelistParents.fields.formatLabel.options')]
     public function getOptions_groupFormatLabel(DataContainer $dc): array

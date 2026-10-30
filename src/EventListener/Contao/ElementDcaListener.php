@@ -170,7 +170,7 @@ final readonly class ElementDcaListener
     }
 
     /**
-     * The framework's part of the palette (§5.2, §6.1): the selected control fills the control segment,
+     * The framework's part of the palette: the selected control fills the control segment,
      * and an element with a value class shows the `value` field after the framework prefix.
      */
     private function buildFrameworkDca(DcaBuilder $builder, DcaContext $context, FilterModel $filterModel): void

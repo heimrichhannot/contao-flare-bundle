@@ -41,8 +41,7 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
- * Covers which value a filter is invoked with (SPEC_FILTER_FORMS.md §4.2, §8 step 4) and how a
- * failing filter fails by its role (§8.1).
+ * Covers which value a filter is invoked with and how a failing filter fails by its role.
  */
 final class ListQueryDirectorTest extends TestCase
 {

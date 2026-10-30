@@ -33,7 +33,7 @@ final readonly class ListSpec
      * @param array<string, mixed> $config Canonical config, resolved through the base and driver schemas.
      * @param string|null $source Provenance for error messages, e.g. "tl_flare_list.5".
      * @param list<FilterFailure> $failures Failures of filters whose element could not be built, or whose fixed
-     *   value or alias is broken; a list with failures has failed as a whole (SPEC_FILTER_FORMS.md §8.1).
+     *   value or alias is broken; a list with failures has failed as a whole.
      *
      * @internal Use {@see Factory\ListSpecFactory} to create instances.
      */
@@ -51,8 +51,8 @@ final readonly class ListSpec
      * Adds a filter under its alias.
      *
      * A filter of the same alias, or one stored under that alias as its key, is never replaced
-     * silently: replacing a filter without a control would widen the list (SPEC_FILTER_FORMS.md
-     * §8.1). Remove it first with {@see withoutFilter()}.
+     * silently: replacing a filter without a control would widen the list. Remove it first with
+     * {@see withoutFilter()}.
      *
      * @throws FlareException If the alias is already taken by a filter or a filter's key.
      */

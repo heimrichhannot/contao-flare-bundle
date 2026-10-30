@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Enum;
 
 /**
- * Which logical values a checkbox's two states mean (SPEC_FILTER_FORMS §7.5): unchecked is "no filter" or false,
- * checked is always true.
+ * Which logical values a checkbox's two states mean: unchecked is "no filter" or false, checked is always true.
  */
 enum BoolBinaryChoices: string
 {

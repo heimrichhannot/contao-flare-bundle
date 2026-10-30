@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\Value\Choice;
 
 /**
- * A choice that names its own key (SPEC §7.2).
+ * A choice that names its own key.
  */
 interface ChoiceObjectInterface
 {

@@ -9,8 +9,8 @@ use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
- * SPEC_FILTER_FORMS.md §9: every concrete class in `src/Filter/Value/` and every value class named in an
- * `#[AsFilterElement(value: …)]` is `final`, `readonly` and implements `ValueInterface`.
+ * Every concrete class in `src/Filter/Value/` and every value class named in an `#[AsFilterElement(value: …)]` is
+ * `final`, `readonly` and implements `ValueInterface`.
  */
 final class ValueObjectContainmentTest extends TestCase
 {
@@ -43,11 +43,11 @@ final class ValueObjectContainmentTest extends TestCase
 
             $reflection = new \ReflectionClass($class);
 
-            self::assertTrue($reflection->isFinal(), $class . ' must be final (SPEC §9).');
-            self::assertTrue($reflection->isReadOnly(), $class . ' must be readonly (SPEC §9).');
+            self::assertTrue($reflection->isFinal(), $class . ' must be final.');
+            self::assertTrue($reflection->isReadOnly(), $class . ' must be readonly.');
             self::assertTrue(
                 $reflection->implementsInterface(ValueInterface::class),
-                $class . ' must implement ValueInterface (SPEC §9).',
+                $class . ' must implement ValueInterface.',
             );
         }
     }

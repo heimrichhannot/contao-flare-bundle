@@ -29,7 +29,7 @@ final readonly class Filter
      * @param ControlBinding|null $control The control presenting the filter with its type and config, or null
      *   for a filter without user input (intrinsic).
      * @param ValueInterface|null $value A value of the element's value class: the initial value with a
-     *   control, the fixed value without one (SPEC_FILTER_FORMS.md §4.2).
+     *   control, the fixed value without one.
      * @param string|null $targetAlias Table alias the filter's conditions apply to.
      * @param bool $targetingForced Whether the target alias applies even if the element is not marked as targeted.
      * @param string|null $source Provenance for error messages, e.g. "tl_flare_filter.42".
@@ -86,7 +86,7 @@ final readonly class Filter
     }
 
     /**
-     * Representation for in-request hashing/caching (SPEC_FILTER_FORMS.md §9).
+     * Representation for in-request hashing/caching.
      *
      * @return array<string, mixed>
      */

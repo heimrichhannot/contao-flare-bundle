@@ -26,8 +26,8 @@ class InteractiveView implements ViewInterface
      * @param ReaderUrlGeneratorInterface $readerUrlGenerator Generator for the URL to the reader.
      * @param string $table Table name.
      * @param int $totalItems Total number of items.
-     * @param bool $failed Whether the list could not be created (SPEC_FILTER_FORMS.md §8.1); a failed list
-     *   is not an empty list, templates render a failure message instead of the entries.
+     * @param bool $failed Whether the list could not be created; a failed list is not an empty list, templates
+     *   render a failure message instead of the entries.
      */
     public function __construct(
         private readonly InteractiveLoaderInterface  $loader,

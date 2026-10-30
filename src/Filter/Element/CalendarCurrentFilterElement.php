@@ -59,7 +59,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
         if (!$scope->get('is_limited') && $scope->engineContext instanceof ValidationContext)
         {
             // Unlimited defaults only shape the initial display; the whole list is bounded by a fixed
-            // value alone (controlled filters have none here, SPEC_FILTER_FORMS.md §4.2).
+            // value alone (controlled filters have none here).
             if ($value === null) {
                 return;
             }

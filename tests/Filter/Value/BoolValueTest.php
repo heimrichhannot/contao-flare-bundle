@@ -10,8 +10,8 @@ use PHPUnit\Framework\TestCase;
 final class BoolValueTest extends TestCase
 {
     /**
-     * The §9 consequence: "no opinion" is the absence of a value, never an instance carrying null,
-     * because two representations of one state cannot be normalised away by a constructor.
+     * "No opinion" is the absence of a value, never an instance carrying null: a value object normalises equal
+     * representations in its constructor, and two representations of one state cannot be normalised away there.
      */
     public function testNoOpinionIsTheAbsenceOfAValue(): void
     {

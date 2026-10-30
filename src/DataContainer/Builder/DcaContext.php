@@ -41,8 +41,7 @@ final class DcaContext
     }
 
     /**
-     * The backend scope (SPEC_FILTER_FORMS.md §6.4): the edited filter in a configuration context,
-     * or null when it cannot be built.
+     * The backend scope: the edited filter in a configuration context, or null when it cannot be built.
      */
     public function getElementScope(): ?ElementScope
     {

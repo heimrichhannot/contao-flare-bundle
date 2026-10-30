@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\List;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 
 /**
- * The failure of a filter that fails its list as a whole (SPEC_FILTER_FORMS.md §8.1).
+ * The failure of a filter that fails its list as a whole.
  *
  * @api
  */
@@ -44,8 +44,8 @@ final readonly class FilterFailure
     }
 
     /**
-     * The exception a list fails with as a whole because of the given failures (SPEC_FILTER_FORMS.md §8.1). Its
-     * message names every failure; the first failure's exception, if any, is its previous one, so its trace survives.
+     * The exception a list fails with as a whole because of the given failures. Its message names
+     * every failure; the first failure's exception, if any, is its previous one, so its trace survives.
      *
      * @param list<self> $failures
      */

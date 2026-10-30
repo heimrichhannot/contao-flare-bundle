@@ -50,10 +50,10 @@ readonly class ListModelFilterCollector
 
     /**
      * Creates the filters of the given models. A filter whose element cannot be created — unknown type,
-     * element config failing its schema, or an unreadable fixed value — fails the list as a whole
-     * (SPEC_FILTER_FORMS.md §8.1), with or without a control: the element config bounds the whole list
-     * (§4.2). So does a stored control that cannot be resolved, or whose config is broken. The failure is logged
-     * as an error and recorded. An unreadable initial value never reaches this point;
+     * element config failing its schema, or an unreadable fixed value — fails the list as a whole, with or without
+     * a control: the element config bounds the whole list. So does a stored control that cannot be resolved, or
+     * whose config is broken. The failure is logged as an error and recorded. An unreadable initial value never
+     * reaches this point;
      * {@see FilterFactory::createFromFilterModel()} keeps such a filter without the value.
      *
      * So does a FlareException from a {@see FilterCollectedEvent} listener; any other exception of a listener is a

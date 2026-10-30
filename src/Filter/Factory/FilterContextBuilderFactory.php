@@ -24,7 +24,7 @@ final readonly class FilterContextBuilderFactory
     }
 
     /**
-     * v0.1 targeting stopgap, to be redesigned before the v0.2 release (spec §15): do not extend.
+     * v0.1 targeting stopgap, to be redesigned before the v0.2 release: do not extend.
      */
     private function resolveTargetAlias(ElementScope $scope): string
     {

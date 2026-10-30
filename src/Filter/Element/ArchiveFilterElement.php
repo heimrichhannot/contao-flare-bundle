@@ -128,7 +128,7 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
      * of every table the dynamic ptable column holds. The whitelist config is ignored, whatever its source.
      *
      * Known limitation: for a dynamic ptable (e.g. tl_content), every model of every parent table is loaded for the
-     * backend value field; accepted for now (see the design of 2026-10-29, #9).
+     * backend value field; accepted for now.
      *
      * @throws FilterException
      */
@@ -182,7 +182,7 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
     }
 
     /**
-     * Works on parent ids grouped by table; no model is loaded on the query path (§7.4).
+     * Works on parent ids grouped by table; no model is loaded on the query path.
      *
      * @throws FilterException
      */
@@ -350,7 +350,7 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
     }
 
     /**
-     * Depends only on the list's data container and config, so it is cached on exactly those (§9).
+     * Depends only on the list's data container and config, so it is cached on exactly those.
      */
     private function getPtableInferrer(ListSpec $list): PtableInferrer
     {

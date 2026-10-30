@@ -14,7 +14,7 @@ use Doctrine\DBAL\Schema\Column;
 
 /**
  * Fills the framework columns `control` and `value` and the control columns of `tl_flare_filter` from the retired
- * columns `intrinsic`, `boolMode`, `preselect` and `prefill` (SPEC_FILTER_FORMS §11 B).
+ * columns `intrinsic`, `boolMode`, `preselect` and `prefill`.
  *
  * The migration never drops or deletes. It reads the retired columns, so it requires `intrinsic` and fails closed once
  * that column is gone, and it waits for the renamed `ctl_` columns and for the schema diff that adds `control` and
@@ -495,7 +495,7 @@ class BackfillFilterValuesMigration extends AbstractMigration
     }
 
     /**
-     * Keeps the look of existing choice widgets (SPEC_FILTER_FORMS §7.3); Archive maps 1:1.
+     * Keeps the look of existing choice widgets; Archive maps 1:1.
      *
      * - Single-select field value choices always showed an empty option with the default label.
      * - Single-select DCA select and Codefog tags choices always passed Symfony's `placeholder`, which renders as an

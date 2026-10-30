@@ -13,7 +13,7 @@ use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
 /**
  * The authoritative service for one value class: turns the stored `value` column into a value
- * object and renders that column in the backend (SPEC_FILTER_FORMS.md §3.6).
+ * object and renders that column in the backend.
  *
  * The value class is the narrowed return type of {@see self::provide()}, read by reflection at
  * compile time. There is exactly one provider per value class.

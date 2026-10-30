@@ -97,7 +97,7 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
 
         foreach ($options as $key => $label)
         {
-            // A blank option (e.g. a DCA's "-" entry) would collide with the control's empty option (§7.3).
+            // A blank option (e.g. a DCA's "-" entry) would collide with the control's empty option.
             if (($key = (string) $key) === '') {
                 continue;
             }

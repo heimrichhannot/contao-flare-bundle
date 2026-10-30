@@ -40,7 +40,7 @@ final readonly class FilterFactory
 
     /**
      * Creates a filter programmatically. With a control, the value is the filter's initial value;
-     * without one, it is the fixed value (SPEC_FILTER_FORMS.md §4.2).
+     * without one, it is the fixed value.
      *
      * @param FilterElementInterface|string $element Filter element instance or registered type alias.
      * @param string|null $alias Required with a control: the alias names the filter's form field, which must stay the
@@ -128,9 +128,9 @@ final readonly class FilterFactory
     /**
      * Creates a filter from a stored tl_flare_filter row.
      *
-     * Failure handling follows SPEC_FILTER_FORMS.md §8.1: a broken element config throws, and so does a stored
-     * control that cannot be resolved for the element's value class or whose config is broken — the editor chose
-     * it, and the filter must not apply without it. An unreadable initial value only drops the value (warning);
+     * Failure handling: a broken element config throws, and so does a stored control that cannot be resolved for
+     * the element's value class or whose config is broken — the editor chose it, and the filter must not apply
+     * without it. An unreadable initial value only drops the value (warning);
      * an unreadable fixed value (no control) throws.
      *
      * @param bool $withValue False to skip reading the stored value, e.g. for backend option lists, which must
@@ -182,7 +182,7 @@ final readonly class FilterFactory
 
     /**
      * The initial value of a filter with a control: unreadable — any {@see FilterException} from the value provider,
-     * as its contract promises — it is dropped with a warning, keeping the control (SPEC_FILTER_FORMS.md §8.1).
+     * as its contract promises — it is dropped with a warning, keeping the control.
      *
      * @param class-string<ValueInterface>|null $valueClass
      *

@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use PHPUnit\Framework\TestCase;
 
 /**
- * SPEC_FILTER_FORMS.md §3.5: every bundle element consuming a {@see ChoiceValue} offers the choice port.
+ * Every bundle element consuming a {@see ChoiceValue} offers the choice port.
  */
 final class ChoicePortCoverageTest extends TestCase
 {

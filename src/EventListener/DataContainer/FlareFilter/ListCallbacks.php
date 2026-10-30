@@ -33,7 +33,7 @@ readonly class ListCallbacks
     #[AsCallback(FilterContainer::TABLE_NAME, 'list.sorting.child_record')]
     public function listLabelLabel(array $row): string
     {
-        // A filter without a control is intrinsic (§5.1).
+        // A filter without a control is intrinsic.
         $isIntrinsic = ($row['control'] ?? '') === '';
         $isPublished = $row['published'] ?? false;
 

@@ -77,8 +77,8 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
     /**
      * Adds a filter. The key defaults to the filter's alias.
      *
-     * A filter is never replaced silently: replacing a filter without a control would widen the list
-     * (SPEC_FILTER_FORMS.md §8.1). Remove it first with {@see removeFilter()}.
+     * A filter is never replaced silently: replacing a filter without a control would widen the list.
+     * Remove it first with {@see removeFilter()}.
      *
      * @throws FlareException If the key is already taken, or another filter already has the alias.
      */
@@ -110,7 +110,7 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
     }
 
     /**
-     * Records the failure of a filter that fails the list as a whole (SPEC_FILTER_FORMS.md §8.1).
+     * Records the failure of a filter that fails the list as a whole.
      */
     public function addFailure(FilterFailure $failure): self
     {

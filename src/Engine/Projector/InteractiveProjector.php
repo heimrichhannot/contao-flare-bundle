@@ -57,7 +57,7 @@ class InteractiveProjector extends AbstractProjector
         $readerUrlConfig = $context->createReaderUrlConfig();
         $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($readerUrlConfig);
 
-        // The failures known without building conditions win over an invalid submission (SPEC_FILTER_FORMS.md §8.1).
+        // The failures known without building conditions win over an invalid submission.
         $failures = \array_merge($list->failures, $harness->getFailures());
 
         if ($failures !== [])
@@ -111,9 +111,8 @@ class InteractiveProjector extends AbstractProjector
     }
 
     /**
-     * A list that cannot be created is not an empty list (SPEC_FILTER_FORMS.md §8.1): the view is
-     * marked as failed and holds no entries. The filter form still renders. In debug mode, the
-     * failure is rethrown instead.
+     * A list that cannot be created is not an empty list: the view is marked as failed and holds no
+     * entries. The filter form still renders. In debug mode, the failure is rethrown instead.
      *
      * @throws FilterException In debug mode.
      */

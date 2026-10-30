@@ -8,7 +8,7 @@ interface ValueInterface
 {
     /**
      * A string expressing the value's identity; equal values yield equal fingerprints.
-     * Used for in-request caching only (SPEC §9).
+     * Used for in-request caching only.
      */
     public function fingerprint(): string;
 }

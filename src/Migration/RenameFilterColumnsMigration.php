@@ -12,7 +12,7 @@ use Doctrine\DBAL\Schema\Table;
 
 /**
  * Renames the `tl_flare_filter` columns to their owner-prefixed names: element columns carry `elm_`, control
- * columns `ctl_`, and `formAlias` becomes the framework column `alias` (SPEC_FILTER_FORMS §4.1, §11 A).
+ * columns `ctl_`, and `formAlias` becomes the framework column `alias`.
  *
  * Contao runs migrations before applying the schema diff, so renaming here preserves every filter's configuration.
  * Without this migration the diff would add the new columns empty and drop the old ones.

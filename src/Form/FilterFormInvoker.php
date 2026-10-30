@@ -32,9 +32,9 @@ final readonly class FilterFormInvoker
      * The collect-only builder holding the control's fields, or null if the filter has no form representation: the
      * event was cancelled, or the control declared no field.
      *
-     * A control that cannot build its form fails the list (SPEC_FILTER_FORMS.md §8.1): any exception of the control,
-     * a FlareException of a listener, an alias that is no valid form name, and a single field declared together with
-     * children. Any other exception of a listener is a bug and escapes, as do \Errors.
+     * A control that cannot build its form fails the list: any exception of the control, a FlareException of a
+     * listener, an alias that is no valid form name, and a single field declared together with children. Any other
+     * exception of a listener is a bug and escapes, as do \Errors.
      *
      * @throws FilterException
      * @throws UndefinedConfigKeyError If the control reads a config key its schema does not define.

@@ -108,7 +108,7 @@ class FilterModel extends Model implements PtableInferrableInterface
     }
 
     /**
-     * The parent-table inference columns are element-owned and therefore `elm_`-prefixed (§4.1).
+     * The parent-table inference columns are element-owned and therefore `elm_`-prefixed.
      */
     protected static function getPtableInferColumn(string $name): string
     {

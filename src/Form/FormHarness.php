@@ -44,8 +44,8 @@ final readonly class FormHarness
     ) {}
 
     /**
-     * The filters whose control could not build its form. Each fails the list as a whole (SPEC_FILTER_FORMS.md
-     * §8.1); the form holds the other filters' mounts.
+     * The filters whose control could not build its form. Each fails the list as a whole; the form holds the other
+     * filters' mounts.
      *
      * @return list<FilterFailure>
      */

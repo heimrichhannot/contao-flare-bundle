@@ -12,6 +12,7 @@ use HeimrichHannot\FlareBundle\Event\FilterControlConfigureTransformersEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementConfigureTransformersEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
+use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
@@ -27,6 +28,48 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 final class FilterTransformerResolverTest extends TestCase
 {
+    /**
+     * @param array<string, mixed> $row
+     */
+    private static function filterModel(array $row): FilterModel
+    {
+        $model = (new \ReflectionClass(FilterModel::class))->newInstanceWithoutConstructor();
+
+        (function (array $row): void {
+            $this->arrData = $row;
+        })->call($model, $row);
+
+        return $model;
+    }
+
+    private static function modelTransformingElement(): AbstractFilterElement
+    {
+        return new class extends AbstractFilterElement {
+            public function configureOptions(OptionsResolver $resolver): void {}
+
+            protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
+            {
+                $config->set('label', $model->title);
+            }
+        };
+    }
+
+    public function testAbstractElementTransformsAFilterModel(): void
+    {
+        $resolver = new FilterTransformerResolver(new SourceTransformer(), new EventDispatcher());
+
+        $config = $resolver->transform(self::modelTransformingElement(), 'abstract', self::filterModel(['title' => 'T']));
+
+        self::assertSame(['label' => 'T'], $config);
+    }
+
+    public function testAbstractElementIgnoresOtherSources(): void
+    {
+        $resolver = new FilterTransformerResolver(new SourceTransformer(), new EventDispatcher());
+
+        self::assertNull($resolver->transform(self::modelTransformingElement(), 'abstract', new \stdClass()));
+    }
+
     public function testTransformsSourceThroughElementTransformer(): void
     {
         $resolver = new FilterTransformerResolver(new SourceTransformer(), new EventDispatcher());

@@ -13,7 +13,6 @@ use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaContext;
-use HeimrichHannot\FlareBundle\Filter\CallbackFilterModelTransformer;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\ExpectsValueTrait;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
@@ -39,7 +38,7 @@ abstract class AbstractFilterElement implements
     {
         $transformers->set(
             sourceClass: FilterModel::class,
-            transformer: new CallbackFilterModelTransformer($this->transformFilterModel(...)),
+            transformer: $this->transformFilterModel(...),
         );
     }
 

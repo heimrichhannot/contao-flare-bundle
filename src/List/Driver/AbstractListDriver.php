@@ -13,7 +13,6 @@ use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaContext;
-use HeimrichHannot\FlareBundle\List\CallbackListModelTransformer;
 use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\SqlQueryStruct;
@@ -37,7 +36,7 @@ abstract class AbstractListDriver implements
     {
         $transformers->set(
             sourceClass: ListModel::class,
-            transformer: new CallbackListModelTransformer($this->transformListModel(...)),
+            transformer: $this->transformListModel(...),
         );
     }
 

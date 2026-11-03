@@ -227,7 +227,7 @@ final class ListViewController extends AbstractContentElementController
             '<div>%s</div><span>%s</span> <span class="tl_gray">[%s, %s]</span>',
             (string) Str::formatHeadline($model->headline),
             \strip_tags((string) $listModel->title),
-            \strip_tags($this->translator->trans($listModel->type, [], 'flare_list')),
+            \strip_tags($this->translator->trans($listModel->type, [], 'flare_list_driver')),
             \strip_tags((string) $listModel->dc)
         ));
     }

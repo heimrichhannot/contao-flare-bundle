@@ -240,7 +240,7 @@ final class ReaderController extends AbstractContentElementController
             '%s%s <span class="tl_gray">[%s, %s]</span>',
             Str::formatHeadline($model->headline, withTags: true),
             $listModel->title,
-            $this->translator->trans($listModel->type, [], 'flare_list'),
+            $this->translator->trans($listModel->type, [], 'flare_list_driver'),
             $listModel->dc,
         ));
     }

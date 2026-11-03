@@ -8,7 +8,6 @@ use Contao\DataContainer;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 
 class ListContainer
@@ -36,17 +35,6 @@ class ListContainer
             ->executeQuery();
 
         return (bool) $result->rowCount();
-    }
-
-    /**
-     * @internal For internal use only. Do not call this method directly.
-     *
-     * @see contao/dca/tl_flare_list.php -> `$dca['fields']['sortSettings']['fields']['column']['options_callback']`
-     */
-    public function getFieldOptions_sortSettings(DataContainer $dc): array
-    {
-        $row = DcaHelper::rowOf($dc);
-        return DcaHelper::getFieldOptions($row['dc'] ?? null, alias: TableAliasRegistry::ALIAS_MAIN);
     }
 
     public function getListedTableName(DataContainer $dc): ?string

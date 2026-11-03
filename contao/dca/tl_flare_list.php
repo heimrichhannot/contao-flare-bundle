@@ -2,7 +2,6 @@
 
 use Contao\DataContainer;
 use Contao\DC_Table;
-use HeimrichHannot\FlareBundle\Contao\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Sort\SortOrder;
@@ -237,7 +236,6 @@ $dca['fields'] = [
                 'inputType' => 'select',
                 'exclude' => true,
                 'filter' => false,
-                'options_callback' => [ListContainer::class, 'getFieldOptions_sortSettings'],
                 'eval' => [
                     'mandatory' => true,
                     'chosen' => true,

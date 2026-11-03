@@ -9,6 +9,7 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use HeimrichHannot\FlareBundle\Contao\BackendModule;
 use HeimrichHannot\FlareBundle\Contao\Callback\FlareFilter\FieldsOptionsCallbacks;
 use HeimrichHannot\FlareBundle\Contao\Callback\FlareList\ConfigOnSubmitCallback;
+use HeimrichHannot\FlareBundle\Contao\Callback\FlareList\FieldsOptionsCallbacks as ListFieldsOptionsCallbacks;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementScopeFactory;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\ControlDcaBuilder;
@@ -147,10 +148,8 @@ final class ServicesConfigTest extends TestCase
     /**
      * Contao resolves a string callback (`[Foo::class, 'method']` in a DCA file) through the container only if the
      * service is public; otherwise it instantiates the class without its dependencies.
-     *
-     * @return iterable<string, array{class-string}>
      */
-    public static function provideStringCallbackClasses(): iterable
+    public function testStringCallbackServicesArePublic(): void
     {
         foreach (\glob(__DIR__ . '/../../contao/dca/*.php') as $file)
         {
@@ -164,18 +163,34 @@ final class ServicesConfigTest extends TestCase
 
             \preg_match_all("/_callback' => \\[(\\w+)::class, '/", $code, $callbacks);
 
-            foreach ($callbacks[1] as $short) {
-                yield \basename($file) . ': ' . $short => [$imports[$short] ?? $short];
+            foreach ($callbacks[1] as $short)
+            {
+                $class = $imports[$short] ?? $short;
+
+                self::assertTrue(self::isService($class), \basename($file) . ": {$class} must be a service.");
+                self::assertTrue(
+                    self::container()->getDefinition($class)->isPublic(),
+                    \basename($file) . ": {$class} must be public.",
+                );
             }
         }
+
+        $this->addToAssertionCount(1);
     }
 
-    /**
-     * @dataProvider provideStringCallbackClasses
-     */
-    public function testStringCallbackServicesArePublic(string $class): void
+    public function testSortSettingsColumnOptionsComeFromAnAttributeCallback(): void
     {
-        self::assertTrue(self::isService($class), "{$class} must be a service.");
-        self::assertTrue(self::container()->getDefinition($class)->isPublic(), "{$class} must be public.");
+        $callback = (new \ReflectionMethod(ListFieldsOptionsCallbacks::class, 'getFieldOptions_sortSettings'))
+            ->getAttributes(AsCallback::class);
+
+        self::assertCount(1, $callback);
+        self::assertSame(
+            [ListContainer::TABLE_NAME, 'fields.sortSettings.fields.column.options'],
+            $callback[0]->getArguments(),
+        );
+        self::assertStringNotContainsString(
+            'getFieldOptions_sortSettings',
+            (string) \file_get_contents(__DIR__ . '/../../contao/dca/tl_flare_list.php'),
+        );
     }
 }

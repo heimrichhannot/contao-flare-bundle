@@ -11,6 +11,7 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Database;
 use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\ListContainer;
+use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Util\DcaFieldFilter;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
@@ -91,14 +92,16 @@ readonly class FieldsOptionsCallbacks
     }
 
     /**
-     * @internal For internal use only. Do not call this method directly.
+     * The column select of a `sortSettings` group row (mvo/contao-group-widget copies the callback onto each row's
+     * virtual field).
      *
-     * @see contao/dca/tl_flare_list.php -> `$dca['fields']['sortSettings']['fields']['column']['options_callback']`
+     * @internal For internal use only. Do not call this method directly.
      */
-    public function getFieldOptions_columns(DataContainer $dc): array
+    #[AsCallback(self::TABLE_NAME, 'fields.sortSettings.fields.column.options')]
+    public function getFieldOptions_sortSettings(DataContainer $dc): array
     {
         $row = DcaHelper::rowOf($dc);
-        return DcaHelper::getFieldOptions($row['dc'] ?? null);
+        return DcaHelper::getFieldOptions($row['dc'] ?? null, alias: TableAliasRegistry::ALIAS_MAIN);
     }
 
     #[AsCallback(self::TABLE_NAME, 'fields.fieldPid.options')]

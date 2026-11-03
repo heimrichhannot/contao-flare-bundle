@@ -6,9 +6,9 @@ namespace HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareFilter;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
-use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
-use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
+use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrer;
 
 #[AsCallback(FilterContainer::TABLE_NAME, 'config.onload')]
 #[AsCallback(FilterContainer::TABLE_NAME, 'config.onsubmit')]

@@ -6,8 +6,8 @@ namespace HeimrichHannot\FlareBundle\Model;
 
 use Contao\Model;
 use Contao\Model\Collection;
-use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
-use HeimrichHannot\FlareBundle\InferPtable\PtableInferrableInterface;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterContainer;
+use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrableInterface;
 
 /**
  * Class FilterModel

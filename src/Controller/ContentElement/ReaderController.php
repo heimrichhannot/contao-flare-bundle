@@ -16,7 +16,7 @@ use Contao\CoreBundle\Routing\ResponseContext\ResponseContextAccessor;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Input;
 use Contao\Template;
-use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\ValidationContextFactory;
 use HeimrichHannot\FlareBundle\Engine\Factory\EngineFactory;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;

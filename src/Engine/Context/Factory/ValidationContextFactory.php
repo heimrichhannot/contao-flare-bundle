@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Engine\Context\Factory;
 
 use Contao\ContentModel;
-use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use Symfony\Component\Validator\Exception\ValidationFailedException;

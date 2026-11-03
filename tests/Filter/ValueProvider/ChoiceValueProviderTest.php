@@ -6,8 +6,8 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter\ValueProvider;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaFieldBuilder;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaFieldBuilder;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;

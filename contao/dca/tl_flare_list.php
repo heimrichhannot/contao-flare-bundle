@@ -2,7 +2,7 @@
 
 use Contao\DataContainer;
 use Contao\DC_Table;
-use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Sort\SortOrder;

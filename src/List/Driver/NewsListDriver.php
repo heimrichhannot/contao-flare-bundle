@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\List\Driver;
 
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;

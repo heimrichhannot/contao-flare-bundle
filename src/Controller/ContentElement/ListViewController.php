@@ -12,7 +12,7 @@ use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Template;
 use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
-use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\InteractiveContextFactory;
 use HeimrichHannot\FlareBundle\Engine\Factory\EngineFactory;
 use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;

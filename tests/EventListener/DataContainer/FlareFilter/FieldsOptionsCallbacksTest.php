@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\EventListener\DataContainer\FlareFilt
 
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\DataContainer;
-use HeimrichHannot\FlareBundle\DataContainer\FilterContainer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareFilter\FieldsOptionsCallbacks;

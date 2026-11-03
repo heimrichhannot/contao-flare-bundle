@@ -11,7 +11,7 @@ use Contao\Input;
 use Contao\Module;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ReaderController;
-use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\ValidationContextFactory;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;

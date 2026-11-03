@@ -10,7 +10,7 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Database;
 use Contao\DataContainer;
-use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Util\DcaFieldFilter;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;

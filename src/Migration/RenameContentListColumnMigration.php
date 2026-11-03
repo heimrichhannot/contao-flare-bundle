@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Migration;
 use Contao\CoreBundle\Migration\AbstractMigration;
 use Contao\CoreBundle\Migration\MigrationResult;
 use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
 
 /**
  * Renames the `tl_content.flare_list` column to `tl_content.flare_listId`.

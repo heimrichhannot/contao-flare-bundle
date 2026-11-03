@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\EventListener\NamedDispatch;
 
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\ListDriverBuildDcaEvent;

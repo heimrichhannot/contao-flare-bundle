@@ -6,8 +6,8 @@ namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Contao\Controller;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;

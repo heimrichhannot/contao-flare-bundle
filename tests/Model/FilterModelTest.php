@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Model;
 
 use Contao\Model;
-use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
+use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrer;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use PHPUnit\Framework\TestCase;

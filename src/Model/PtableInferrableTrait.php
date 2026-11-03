@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Model;
 
-use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
+use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrer;
 
 trait PtableInferrableTrait
 {

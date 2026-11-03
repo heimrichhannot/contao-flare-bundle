@@ -12,7 +12,7 @@ use Contao\FrontendTemplate;
 use Contao\NewsArchiveModel;
 use Contao\NewsModel;
 use Contao\UserModel;
-use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Event\ListDriverBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\Model\ContentModel;

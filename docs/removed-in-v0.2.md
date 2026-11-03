@@ -121,6 +121,7 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 
 - The `flare_filter` domain (filter element labels) — renamed to `flare_filter_element`, next to the new
   `flare_filter_control` domain of the control labels
+- The `flare_list` domain (list type labels) — renamed to `flare_list_driver`
 
 ## Behavioral notes
 

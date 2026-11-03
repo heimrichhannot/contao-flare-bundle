@@ -43,9 +43,14 @@ For the exhaustive list of deleted APIs, see [Removed in v0.2](./removed-in-v0.2
 
 ## Translations
 
-Filter element labels move from the `flare_filter` translation domain to **`flare_filter_element`**. If your
-extension labels its own elements, rename its `translations/flare_filter.{locale}.*` files to
-`flare_filter_element.{locale}.*`. Controls are labelled in the new `flare_filter_control` domain.
+The translation domains of the type labels are renamed after the components they label:
+
+- filter elements: `flare_filter` → **`flare_filter_element`**
+- list types: `flare_list` → **`flare_list_driver`**
+- filter controls: the new **`flare_filter_control`**
+
+If your extension labels its own elements or list types, rename its translation files accordingly (e.g.
+`translations/flare_filter.de.php` → `flare_filter_element.de.php`).
 
 ## Filter Element API
 

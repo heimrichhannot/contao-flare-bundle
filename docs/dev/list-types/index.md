@@ -24,6 +24,9 @@ class MyCustomListDriver extends AbstractListDriver
 
 ### Attribute Parameters:
 - **`type`**: Unique identifier for the list type.
+  The backend labels a list type with the translation of its type in the `flare_list_driver` domain (e.g.
+  `translations/flare_list_driver.en.php` returning `['app_jobs' => 'Jobs']`); without one, it shows the type
+  itself.
 - **`dataContainer`**: (Optional) Backend default for the record's `dc` field — the main database table
   (e.g., `tl_news`). See [Data Container Resolution](#3-data-container-resolution-getdatacontainername).
 

@@ -1,6 +1,5 @@
 <?php
 
-use HeimrichHannot\FlareBundle\Filter\Control;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 
 $lang = &$GLOBALS['TL_LANG'][FilterModel::getTable()];
@@ -10,13 +9,6 @@ $lang['title_legend'] = 'Allgemein';
 $lang['title'] = ['Titel', 'Bitte geben Sie einen Titel für diesen Listenfilter ein.'];
 $lang['type'] = ['Typ', 'Bitte wählen Sie den Typ der Liste aus.'];
 $lang['control'] = ['Bedienelement', 'Legt fest, wie dieser Filter dargestellt wird. Leer lassen, um ihn unsichtbar anzuwenden (intrinsisch).'];
-$lang['control_options'] = [
-    Control\ChoiceFilterControl::TYPE => 'Auswahl',
-    Control\CheckboxFilterControl::TYPE => 'Checkbox',
-    Control\ChoiceBoolFilterControl::TYPE => 'Ja/Nein-Auswahl',
-    Control\DateRangeFilterControl::TYPE => 'Datumsbereich',
-    Control\KeywordsFilterControl::TYPE => 'Stichwortsuche',
-];
 $lang['value'] = ['Wert', 'Der feste Wert des Filters bzw. der Startwert seines Bedienelements.'];
 $lang['targetAlias'] = ['Anwenden auf', 'Wählen Sie, auf welche Relation dieser Filter angewendet werden soll.'];
 ###< title_legend ###

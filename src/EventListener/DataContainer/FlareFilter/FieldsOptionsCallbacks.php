@@ -81,10 +81,8 @@ readonly class FieldsOptionsCallbacks
 
         $options = [];
 
-        $labels = $GLOBALS['TL_LANG'][self::TABLE_NAME]['control_options'] ?? [];
-
         foreach ($this->filterControlRegistry->findTypes($valueClass) as $controlType) {
-            $options[$controlType] = $labels[$controlType] ?? $controlType;
+            $options[$controlType] = $this->translator->trans($controlType, [], 'flare_filter_control');
         }
 
         return $options;

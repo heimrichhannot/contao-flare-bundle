@@ -27,7 +27,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *
  * @api
  */
-abstract class AbstractFilterControl implements FilterControlInterface, OptionsContract, TransformerContract, DcaContract
+abstract class AbstractFilterControl implements
+    FilterControlInterface, OptionsContract, TransformerContract, DcaContract
 {
     use ExpectsValueTrait;
 

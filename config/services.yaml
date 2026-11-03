@@ -34,6 +34,11 @@ services:
         arguments:
             $debug: '%kernel.debug%'
 
+    # Public: contao/dca/tl_flare_list.php references it as a string callback, which Contao resolves through the
+    # container only for public services
+    HeimrichHannot\FlareBundle\Contao\DataContainer\ListContainer:
+        public: true
+
     HeimrichHannot\FlareBundle\Contao\Inspection\Inspector\FilterInspector:
         arguments:
             $debug: '%kernel.debug%'

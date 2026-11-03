@@ -143,4 +143,39 @@ final class ServicesConfigTest extends TestCase
         self::assertCount(1, $callback);
         self::assertSame([ListContainer::TABLE_NAME, 'config.onsubmit'], $callback[0]->getArguments());
     }
+
+    /**
+     * Contao resolves a string callback (`[Foo::class, 'method']` in a DCA file) through the container only if the
+     * service is public; otherwise it instantiates the class without its dependencies.
+     *
+     * @return iterable<string, array{class-string}>
+     */
+    public static function provideStringCallbackClasses(): iterable
+    {
+        foreach (\glob(__DIR__ . '/../../contao/dca/*.php') as $file)
+        {
+            $code = (string) \file_get_contents($file);
+            \preg_match_all('/^use ([\\\\\w]+);/m', $code, $uses);
+            $imports = [];
+
+            foreach ($uses[1] as $use) {
+                $imports[\substr($use, (int) \strrpos($use, '\\') + 1)] = $use;
+            }
+
+            \preg_match_all("/_callback' => \\[(\\w+)::class, '/", $code, $callbacks);
+
+            foreach ($callbacks[1] as $short) {
+                yield \basename($file) . ': ' . $short => [$imports[$short] ?? $short];
+            }
+        }
+    }
+
+    /**
+     * @dataProvider provideStringCallbackClasses
+     */
+    public function testStringCallbackServicesArePublic(string $class): void
+    {
+        self::assertTrue(self::isService($class), "{$class} must be a service.");
+        self::assertTrue(self::container()->getDefinition($class)->isPublic(), "{$class} must be public.");
+    }
 }

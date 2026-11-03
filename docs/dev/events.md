@@ -121,12 +121,12 @@ backend palette or fields of a type from outside its class — see
 ### `ListDriverBuildDcaEvent`
 Dispatched after a list driver's `buildDca()` ran.
 - **Class:** `HeimrichHannot\FlareBundle\Event\ListDriverBuildDcaEvent`
-- **Properties:** `builder` (readonly `DcaBuilder`), `context` (readonly `DcaContext`)
+- **Properties:** `builder` (readonly `DcaBuilderInterface`), `context` (readonly `DcaContext`)
 
 ### `FilterElementBuildDcaEvent`
 Dispatched after a filter element's `buildDca()` and the framework fields (the control segment, `value`) ran.
 - **Class:** `HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent`
-- **Properties:** `builder` (readonly `DcaBuilder`), `context` (readonly `DcaContext`)
+- **Properties:** `builder` (readonly `DcaBuilderInterface`), `context` (readonly `DcaContext`)
 
 ### `FilterControlBuildDcaEvent`
 Dispatched after the selected filter control's `buildDca()` ran, before `FilterElementBuildDcaEvent`.

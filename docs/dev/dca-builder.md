@@ -9,8 +9,8 @@ List drivers and filter elements assemble their backend palettes and field tweak
 `Contract\DcaContract`:
 
 ```php
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
+use HeimrichHannot\FlareBundle\Contao\DcaContext;
 
 public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
 {

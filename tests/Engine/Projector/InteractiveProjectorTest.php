@@ -47,7 +47,6 @@ use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
-use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
 use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
@@ -305,10 +304,8 @@ final class InteractiveProjectorTest extends TestCase
         $filterFactory = new FilterFactory(
             filterElementRegistry: new FilterElementRegistry(),
             filterControlRegistry: new FilterControlRegistry(),
-            valueProviderRegistry: new ValueProviderRegistry(),
             filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
             filterTransformerResolver: new FilterTransformerResolver(new SourceTransformer(), $dispatcher),
-            logger: $logger,
         );
 
         $aggregationProjector = new AggregationProjector();

@@ -15,7 +15,8 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaFieldBuilderInter
 use HeimrichHannot\FlareBundle\Contao\Inspection\Inspector\FilterInspector;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory as CoreFilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
@@ -132,11 +133,16 @@ trait BuildsFilterInspectorTrait
         }, BoolValue::class);
 
         return new FilterFactory(
-            filterElementRegistry: $this->createFilterElementRegistry(),
-            filterControlRegistry: $controls,
+            filterFactory: new CoreFilterFactory(
+                filterElementRegistry: $this->createFilterElementRegistry(),
+                filterControlRegistry: $controls,
+                filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
+                filterTransformerResolver: new FilterTransformerResolver(
+                    new SourceTransformer(),
+                    new EventDispatcher(),
+                ),
+            ),
             valueProviderRegistry: $providers,
-            filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
-            filterTransformerResolver: new FilterTransformerResolver(new SourceTransformer(), new EventDispatcher()),
             logger: new NullLogger(),
         );
     }

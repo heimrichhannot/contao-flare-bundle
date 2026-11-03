@@ -17,7 +17,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Form\Factory\FilterFormBuilderFactory;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
@@ -126,7 +126,7 @@ final class FilterInspector implements ResetInterface
     {
         try
         {
-            $filter = $this->filterFactory->createFromFilterModel($model);
+            $filter = $this->filterFactory->create($model);
 
             return $this->eventDispatcher->dispatch(new FilterCollectedEvent($filter, $model))->filter;
         }

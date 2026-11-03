@@ -8,13 +8,14 @@ use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementScopeFactory;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaFieldBuilderInterface;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\ArchiveFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory as CoreFilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
@@ -47,6 +48,18 @@ final class BackendElementScopeFactoryTest extends TestCase
         $getSpec = static fn (): ListSpec => throw new FlareException('No list driver found for type "gone"');
 
         self::assertNull($this->createFactory()->create($getSpec, self::archiveFilter()));
+    }
+
+    public function testLegacyAliasYieldsNoScope(): void
+    {
+        $legacy = new FilterModelFixture([
+            'id' => 7,
+            'type' => ArchiveFilterElement::TYPE,
+            'alias' => 'price.min',
+            'control' => 'flare_choice',
+        ]);
+
+        self::assertNull($this->createFactory()->create($this->getSpec(), $legacy));
     }
 
     /**
@@ -91,11 +104,16 @@ final class BackendElementScopeFactoryTest extends TestCase
         }, ChoiceValue::class);
 
         return new BackendElementScopeFactory(new FilterFactory(
-            filterElementRegistry: $elements,
-            filterControlRegistry: $controls,
+            filterFactory: new CoreFilterFactory(
+                filterElementRegistry: $elements,
+                filterControlRegistry: $controls,
+                filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
+                filterTransformerResolver: new FilterTransformerResolver(
+                    new SourceTransformer(),
+                    new EventDispatcher(),
+                ),
+            ),
             valueProviderRegistry: $providers,
-            filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
-            filterTransformerResolver: new FilterTransformerResolver(new SourceTransformer(), new EventDispatcher()),
             logger: new NullLogger(),
         ));
     }

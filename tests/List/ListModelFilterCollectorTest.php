@@ -8,7 +8,8 @@ use Contao\Model;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory as CoreFilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\List\Collector\ListModelFilterCollector;
@@ -51,11 +52,13 @@ final class ListModelFilterCollectorTest extends TestCase
         };
 
         $filterFactory = new FilterFactory(
-            filterElementRegistry: $elements,
-            filterControlRegistry: new FilterControlRegistry(),
+            filterFactory: new CoreFilterFactory(
+                filterElementRegistry: $elements,
+                filterControlRegistry: new FilterControlRegistry(),
+                filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
+                filterTransformerResolver: new FilterTransformerResolver(new SourceTransformer(), $this->dispatcher),
+            ),
             valueProviderRegistry: new ValueProviderRegistry(),
-            filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
-            filterTransformerResolver: new FilterTransformerResolver(new SourceTransformer(), $this->dispatcher),
             logger: $logger,
         );
 

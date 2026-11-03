@@ -34,9 +34,10 @@ use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
+use HeimrichHannot\FlareBundle\Tests\Fixture\Filter\FactoryStubBoolControl;
+use HeimrichHannot\FlareBundle\Tests\Fixture\Filter\FactoryStubBoolElement;
+use HeimrichHannot\FlareBundle\Tests\Fixture\Filter\FactoryStubKeywordsControl;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\AbstractLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -48,15 +49,11 @@ final class FilterFactoryTest extends TestCase
     private const SOURCED_ELEMENT = 'sourced_element';
     private const SOURCED_CONTROL = 'sourced_control';
 
-    /** @var list<array{string, string}> */
-    private array $logs = [];
-
     private FilterElementInterface $boolElement;
     private FilterControlInterface $boolControl;
 
     protected function setUp(): void
     {
-        $this->logs = [];
         $this->boolElement = new FactoryStubBoolElement();
         $this->boolControl = new FactoryStubBoolControl();
     }
@@ -80,47 +77,13 @@ final class FilterFactoryTest extends TestCase
             ->add(new FactoryStubKeywordsControl(), self::KEYWORDS_CONTROL, KeywordsValue::class)
             ->add(new FactoryStubSourcedControl(), self::SOURCED_CONTROL, BoolValue::class);
 
-        $providers = (new ValueProviderRegistry())->add(new FactoryStubBoolProvider(), BoolValue::class);
-
-        $logs = &$this->logs;
-        $logger = new class ($logs) extends AbstractLogger {
-            public function __construct(private array &$logs) {}
-
-            public function log($level, $message, array $context = []): void
-            {
-                $this->logs[] = [(string) $level, (string) $message];
-            }
-        };
 
         return new FilterFactory(
             filterElementRegistry: $elements,
             filterControlRegistry: $controls,
-            valueProviderRegistry: $providers,
             filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
             filterTransformerResolver: new FilterTransformerResolver(new SourceTransformer(), new EventDispatcher()),
-            logger: $logger,
         );
-    }
-
-    /**
-     * @param array<string, mixed> $row
-     */
-    private static function model(array $row): FilterModel
-    {
-        $model = (new \ReflectionClass(FilterModel::class))->newInstanceWithoutConstructor();
-
-        (function (array $row): void {
-            $this->arrData = $row;
-        })->call($model, $row + ['id' => 7, 'type' => self::BOOL_ELEMENT, 'control' => '']);
-
-        return $model;
-    }
-
-    private function assertWarned(): void
-    {
-        self::assertCount(1, $this->logs);
-        self::assertSame('warning', $this->logs[0][0]);
-        self::assertStringContainsString('tl_flare_filter.7', $this->logs[0][1]);
     }
 
     public function testCreatesFromRegisteredTypeAlias(): void
@@ -208,14 +171,6 @@ final class FilterFactoryTest extends TestCase
         $this->expectExceptionMessage('"price.min"');
 
         $this->factory()->create(element: self::BOOL_ELEMENT, alias: 'price.min', control: self::BOOL_CONTROL);
-    }
-
-    public function testControlledFilterModelWithAnInvalidFormNameIsRejected(): void
-    {
-        $this->expectException(FlareException::class);
-        $this->expectExceptionMessage('"price.min"');
-
-        $this->factory()->createFromFilterModel(self::model(['alias' => 'price.min', 'control' => self::BOOL_CONTROL]));
     }
 
     public function testFilterWithoutControlKeepsAnInvalidAlias(): void
@@ -315,134 +270,6 @@ final class FilterFactoryTest extends TestCase
         self::assertNull($this->factory()->create(element: new FactoryStubPlainElement())->element->valueClass);
     }
 
-    public function testValueComesFromTheProviderOfTheElementsValueClass(): void
-    {
-        $fixed = $this->factory()->createFromFilterModel(self::model(['value' => '1']));
-
-        self::assertSame($this->boolElement, $fixed->element->component);
-        self::assertSame(self::BOOL_ELEMENT, $fixed->element->type);
-        self::assertSame('7', $fixed->alias);
-        self::assertSame('tl_flare_filter.7', $fixed->source);
-        self::assertNull($fixed->control);
-        self::assertEquals(new BoolValue(true), $fixed->value);
-
-        $initial = $this->factory()->createFromFilterModel(
-            self::model(['control' => self::BOOL_CONTROL, 'value' => '0']),
-        );
-
-        self::assertSame($this->boolControl, $initial->control?->component);
-        self::assertSame(self::BOOL_CONTROL, $initial->control?->type);
-        self::assertSame(['label' => 'from model'], $initial->control?->config->all());
-        self::assertEquals(new BoolValue(false), $initial->value);
-        self::assertSame([], $this->logs);
-    }
-
-    public function testMissingValueColumnYieldsNoValue(): void
-    {
-        $filter = $this->factory()->createFromFilterModel(self::model([]));
-
-        self::assertNull($filter->value);
-    }
-
-    public function testUnknownControlThrows(): void
-    {
-        $this->expectException(FlareException::class);
-
-        $this->factory()->createFromFilterModel(self::model(['control' => 'gone', 'value' => '1']));
-    }
-
-    public function testControlForAnotherValueClassThrows(): void
-    {
-        $this->expectException(FlareException::class);
-
-        $this->factory()->createFromFilterModel(self::model(['control' => self::KEYWORDS_CONTROL, 'value' => '1']));
-    }
-
-    public function testUnreadableInitialValueKeepsTheControl(): void
-    {
-        $filter = $this->factory()->createFromFilterModel(
-            self::model(['control' => self::BOOL_CONTROL, 'value' => 'garbage']),
-        );
-
-        self::assertSame(self::BOOL_CONTROL, $filter->control?->type);
-        self::assertNull($filter->value);
-        $this->assertWarned();
-    }
-
-    public function testInitialValueFailingWithAPlainFilterExceptionKeepsTheControl(): void
-    {
-        $filter = $this->factory()->createFromFilterModel(
-            self::model(['control' => self::BOOL_CONTROL, 'value' => 'plain']),
-        );
-
-        self::assertSame(self::BOOL_CONTROL, $filter->control?->type);
-        self::assertNull($filter->value);
-        $this->assertWarned();
-    }
-
-    public function testProviderExceptionIsWrappedForAFixedValue(): void
-    {
-        try {
-            $this->factory()->createFromFilterModel(self::model(['value' => 'bug']));
-            self::fail('No exception thrown.');
-        } catch (FilterException $e) {
-            self::assertInstanceOf(\InvalidArgumentException::class, $e->getPrevious());
-            self::assertSame('tl_flare_filter.7', $e->getSource());
-        }
-
-        self::assertSame('error', $this->logs[0][0] ?? null);
-    }
-
-    public function testProviderExceptionDropsTheInitialValue(): void
-    {
-        $filter = $this->factory()->createFromFilterModel(
-            self::model(['control' => self::BOOL_CONTROL, 'value' => 'bug']),
-        );
-
-        self::assertSame(self::BOOL_CONTROL, $filter->control?->type);
-        self::assertNull($filter->value);
-        self::assertSame(['error', 'warning'], \array_column($this->logs, 0));
-    }
-
-    /**
-     * @dataProvider controls
-     */
-    public function testProviderFlareExceptionPassesThrough(string $control): void
-    {
-        $this->expectException(FlareException::class);
-        $this->expectExceptionMessage('a wiring error');
-
-        try {
-            $this->factory()->createFromFilterModel(self::model(['control' => $control, 'value' => 'wiring']));
-        } catch (FilterException $e) {
-            self::fail('The wiring error was wrapped: ' . $e->getMessage());
-        }
-    }
-
-    public static function controls(): iterable
-    {
-        yield 'without control' => [''];
-        yield 'with control' => [self::BOOL_CONTROL];
-    }
-
-    public function testUnreadableFixedValueThrows(): void
-    {
-        $this->expectException(UnreadableValueException::class);
-
-        $this->factory()->createFromFilterModel(self::model(['value' => 'garbage']));
-    }
-
-    public function testWithoutValueAControlledFilterWithAnInvalidAliasStillResolves(): void
-    {
-        // The backend form that repairs a legacy alias needs the filter.
-        $filter = $this->factory()->createFromFilterModel(
-            self::model(['alias' => 'price.min', 'control' => self::BOOL_CONTROL]),
-            withValue: false,
-        );
-
-        self::assertSame(self::BOOL_CONTROL, $filter->control?->type);
-    }
-
     public function testZeroIsAValidAlias(): void
     {
         self::assertSame('0', $this->factory()->create(element: self::BOOL_ELEMENT, alias: '0')->alias);
@@ -451,51 +278,8 @@ final class FilterFactoryTest extends TestCase
             $this->factory()->create(element: self::BOOL_ELEMENT, alias: '0', control: self::BOOL_CONTROL)->alias,
         );
     }
-
-    public function testWithoutValueStillResolvesTheControl(): void
-    {
-        $filter = $this->factory()->createFromFilterModel(
-            self::model(['control' => self::BOOL_CONTROL, 'value' => '1']),
-            withValue: false,
-        );
-
-        self::assertSame(self::BOOL_CONTROL, $filter->control?->type);
-        self::assertNull($filter->value);
-        self::assertSame([], $this->logs);
-    }
-
-    public function testWithoutValueNeverReadsAnUnreadableValue(): void
-    {
-        $filter = $this->factory()->createFromFilterModel(self::model(['value' => 'garbage']), withValue: false);
-
-        self::assertNull($filter->value);
-
-        $controlled = $this->factory()->createFromFilterModel(
-            self::model(['control' => self::BOOL_CONTROL, 'value' => 'garbage']),
-            withValue: false,
-        );
-
-        self::assertNotNull($controlled->control, 'an unreadable initial value does not drop the control');
-        self::assertSame([], $this->logs);
-    }
-
-    public function testWithoutValueAnUnknownControlThrows(): void
-    {
-        $this->expectException(FlareException::class);
-
-        $this->factory()->createFromFilterModel(self::model(['control' => 'gone']), withValue: false);
-    }
 }
 
-#[AsFilterElement(value: BoolValue::class)]
-final class FactoryStubBoolElement implements FilterElementInterface
-{
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
-    ): void {}
-}
 
 final class FactoryStubPlainElement implements FilterElementInterface
 {
@@ -520,71 +304,8 @@ final class FactoryStubOptionsElement implements FilterElementInterface, Options
     ): void {}
 }
 
-final class FactoryStubBoolControl extends AbstractFilterControl
-{
-    public function configureOptions(OptionsResolver $resolver): void
-    {
-        $resolver->define('label')->default('default')->allowedTypes('string');
-    }
 
-    public function configureTransformers(TransformerMap $transformers): void
-    {
-        $transformers->set(FilterModel::class, static function (ConfigBuilder $config, FilterModel $model): void {
-            $config->set('label', 'from model');
-        });
-    }
 
-    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
-
-    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void {}
-
-    public function decode(mixed $data, ControlScope $scope): ?BoolValue
-    {
-        return null;
-    }
-
-    public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
-    {
-        return null;
-    }
-}
-
-final class FactoryStubKeywordsControl extends AbstractFilterControl
-{
-    public function configureOptions(OptionsResolver $resolver): void {}
-
-    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
-
-    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void {}
-
-    public function decode(mixed $data, ControlScope $scope): ?KeywordsValue
-    {
-        return null;
-    }
-
-    public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
-    {
-        return null;
-    }
-}
-
-final class FactoryStubBoolProvider implements ValueProviderInterface
-{
-    public function provide(mixed $stored, FilterElementInterface $element): ?BoolValue
-    {
-        return match ($stored) {
-            null, '' => null,
-            '1' => new BoolValue(true),
-            '0' => new BoolValue(false),
-            'plain' => throw new FilterException('plain'),
-            'bug' => throw new \InvalidArgumentException('a bug in the provider'),
-            'wiring' => throw new FlareException('a wiring error'),
-            default => throw new UnreadableValueException('unreadable'),
-        };
-    }
-
-    public function buildDcaField(DcaFieldBuilderInterface $field, DcaContext $context): void {}
-}
 
 final class FactoryStubSourcedElement implements FilterElementInterface, OptionsContract, TransformerContract
 {

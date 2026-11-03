@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\List\Collector;
 use Contao\Controller;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -54,7 +54,7 @@ readonly class ListModelFilterCollector
      * a control: the element config bounds the whole list. So does a stored control that cannot be resolved, or
      * whose config is broken. The failure is logged as an error and recorded. An unreadable initial value never
      * reaches this point;
-     * {@see FilterFactory::createFromFilterModel()} keeps such a filter without the value.
+     * {@see FilterFactory::create()} keeps such a filter without the value.
      *
      * So does a FlareException from a {@see FilterCollectedEvent} listener; any other exception of a listener is a
      * bug and fails the request.
@@ -77,7 +77,7 @@ readonly class ListModelFilterCollector
 
             try
             {
-                $filter = $this->filterFactory->createFromFilterModel($model);
+                $filter = $this->filterFactory->create($model);
                 // A listener's FlareException fails the list like any filter failure; anything else is a bug.
                 $filter = $this->eventDispatcher->dispatch(new FilterCollectedEvent($filter, $model))->filter;
             }

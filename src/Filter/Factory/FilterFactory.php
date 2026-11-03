@@ -49,6 +49,9 @@ final readonly class FilterFactory
      * @param array<string, mixed> $config Element config, resolved through the element's schema.
      * @param FilterControlInterface|string|null $control Filter control instance or registered control type.
      * @param array<string, mixed> $controlConfig Control config, resolved through the control's schema.
+     * @param object|null $configSource A stored source (e.g. a model) the element's and the control's transformers
+     *   read their config from ({@see \HeimrichHannot\FlareBundle\Contract\TransformerContract}); `$config` and
+     *   `$controlConfig` are merged on top, explicit keys win. Null runs no transformer.
      *
      * @throws FlareException If a control is given without an alias or with one that is no valid form name, the
      *   element or control cannot be resolved, a config does not satisfy its schema, or the control does not match
@@ -66,6 +69,7 @@ final readonly class FilterFactory
         ?ValueInterface                    $value = null,
         ?string                            $targetAlias = null,
         bool                               $targetingForced = false,
+        ?object                            $configSource = null,
         ?string                            $source = null,
     ): Filter {
         $type = $this->resolveType($element, $source);
@@ -89,6 +93,11 @@ final readonly class FilterFactory
 
         $alias = $alias !== null && $alias !== '' ? $alias : self::generateAlias($type);
 
+        if ($configSource !== null) {
+            $transformed = $this->filterTransformerResolver->transform($element, $type, $configSource, $source);
+            $config = [...$transformed ?? [], ...$config];
+        }
+
         $resolvedConfig = $this->filterOptionsResolver->resolve($element, $config, $source);
 
         $controlBinding = null;
@@ -97,6 +106,12 @@ final readonly class FilterFactory
         {
             $controlType = \is_string($control) ? $control : null;
             $control = $this->resolveControl($control, $valueClass, $source);
+
+            if ($configSource !== null) {
+                $transformed = $this->filterTransformerResolver
+                    ->transform($control, $controlType ?? $control::class, $configSource, $source);
+                $controlConfig = [...$transformed ?? [], ...$controlConfig];
+            }
 
             $controlBinding = new ControlBinding(
                 component: $control,

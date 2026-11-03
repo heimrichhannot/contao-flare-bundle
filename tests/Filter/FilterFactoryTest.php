@@ -9,6 +9,7 @@ use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
+use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaFieldBuilderInterface;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -44,6 +45,8 @@ final class FilterFactoryTest extends TestCase
     private const BOOL_ELEMENT = 'bool_element';
     private const BOOL_CONTROL = 'bool_control';
     private const KEYWORDS_CONTROL = 'keywords_control';
+    private const SOURCED_ELEMENT = 'sourced_element';
+    private const SOURCED_CONTROL = 'sourced_control';
 
     /** @var list<array{string, string}> */
     private array $logs = [];
@@ -60,15 +63,22 @@ final class FilterFactoryTest extends TestCase
 
     private function factory(?FilterElementRegistry $elements = null): FilterFactory
     {
-        $elements ??= (new FilterElementRegistry())->add(
-            $this->boolElement,
-            new AsFilterElement(type: self::BOOL_ELEMENT, value: BoolValue::class),
-            self::BOOL_ELEMENT,
-        );
+        $elements ??= (new FilterElementRegistry())
+            ->add(
+                $this->boolElement,
+                new AsFilterElement(type: self::BOOL_ELEMENT, value: BoolValue::class),
+                self::BOOL_ELEMENT,
+            )
+            ->add(
+                new FactoryStubSourcedElement(),
+                new AsFilterElement(type: self::SOURCED_ELEMENT, value: BoolValue::class),
+                self::SOURCED_ELEMENT,
+            );
 
         $controls = (new FilterControlRegistry())
             ->add($this->boolControl, self::BOOL_CONTROL, BoolValue::class)
-            ->add(new FactoryStubKeywordsControl(), self::KEYWORDS_CONTROL, KeywordsValue::class);
+            ->add(new FactoryStubKeywordsControl(), self::KEYWORDS_CONTROL, KeywordsValue::class)
+            ->add(new FactoryStubSourcedControl(), self::SOURCED_CONTROL, BoolValue::class);
 
         $providers = (new ValueProviderRegistry())->add(new FactoryStubBoolProvider(), BoolValue::class);
 
@@ -258,6 +268,45 @@ final class FilterFactoryTest extends TestCase
         $this->expectException(ValueClassMismatchError::class);
 
         $this->factory()->create(element: new FactoryStubPlainElement(), value: new BoolValue(true));
+    }
+
+    public function testConfigSourceIsTransformedForElementAndControl(): void
+    {
+        $filter = $this->factory()->create(
+            element: self::SOURCED_ELEMENT,
+            alias: 'a',
+            control: self::SOURCED_CONTROL,
+            configSource: new \ArrayObject(['label' => 'L', 'placeholder' => 'P']),
+        );
+
+        self::assertSame('L', $filter->element->config->get('label'));
+        self::assertSame('P', $filter->control?->config->get('placeholder'));
+    }
+
+    public function testExplicitConfigWinsOverTheConfigSource(): void
+    {
+        $filter = $this->factory()->create(
+            element: self::SOURCED_ELEMENT,
+            alias: 'a',
+            config: ['label' => 'X'],
+            control: self::SOURCED_CONTROL,
+            configSource: new \ArrayObject(['label' => 'L', 'placeholder' => 'P']),
+        );
+
+        self::assertSame('X', $filter->element->config->get('label'));
+        self::assertSame('P', $filter->control?->config->get('placeholder'));
+    }
+
+    public function testWithoutConfigSourceNoTransformerRuns(): void
+    {
+        self::assertSame('', $this->factory()->create(element: self::SOURCED_ELEMENT)->element->config->get('label'));
+    }
+
+    public function testUnmatchedConfigSourceLeavesTheConfigAlone(): void
+    {
+        $filter = $this->factory()->create(element: self::SOURCED_ELEMENT, configSource: new \stdClass());
+
+        self::assertSame('', $filter->element->config->get('label'));
     }
 
     public function testCreateRecordsTheValueClassOnTheBinding(): void
@@ -535,4 +584,60 @@ final class FactoryStubBoolProvider implements ValueProviderInterface
     }
 
     public function buildDcaField(DcaFieldBuilderInterface $field, DcaContext $context): void {}
+}
+
+final class FactoryStubSourcedElement implements FilterElementInterface, OptionsContract, TransformerContract
+{
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        $resolver->define('label')->default('')->allowedTypes('string');
+    }
+
+    public function configureTransformers(TransformerMap $transformers): void
+    {
+        $transformers->set(
+            sourceClass: \ArrayObject::class,
+            transformer: static function (ConfigBuilder $config, \ArrayObject $source): void {
+                $config->set('label', $source['label']);
+            },
+        );
+    }
+
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {}
+}
+
+final class FactoryStubSourcedControl extends AbstractFilterControl
+{
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        $resolver->define('placeholder')->default('')->allowedTypes('string');
+    }
+
+    public function configureTransformers(TransformerMap $transformers): void
+    {
+        $transformers->set(
+            sourceClass: \ArrayObject::class,
+            transformer: static function (ConfigBuilder $config, \ArrayObject $source): void {
+                $config->set('placeholder', $source['placeholder']);
+            },
+        );
+    }
+
+    protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
+
+    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void {}
+
+    public function decode(mixed $data, ControlScope $scope): ?BoolValue
+    {
+        return null;
+    }
+
+    public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
+    {
+        return null;
+    }
 }

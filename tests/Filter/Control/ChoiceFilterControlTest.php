@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter\Control;
 
 use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
-use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\ChoiceFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;

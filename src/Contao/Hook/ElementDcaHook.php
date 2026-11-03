@@ -9,7 +9,7 @@ use Contao\CoreBundle\Framework\ContaoFramework;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementScopeFactory;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilder;
-use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Contao\Inspection\Reporter\FilterIssueReporter;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent;
@@ -179,7 +179,7 @@ final readonly class ElementDcaHook
 
         if ($control = $this->filterControlRegistry->get($controlType))
         {
-            $controlBuilder = $builder->scope('control');
+            $controlBuilder = $builder->forControl();
 
             if ($control instanceof DcaContract) {
                 $control->buildDca($controlBuilder, $context);

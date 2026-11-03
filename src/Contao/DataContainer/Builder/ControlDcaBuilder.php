@@ -6,11 +6,11 @@ namespace HeimrichHannot\FlareBundle\Contao\DataContainer\Builder;
 
 /**
  * The control's view of the {@see DcaBuilder}: its `palette()` fills the control segment of the
- * merged palette; fields, selectors, affixes and scopes are those of the parent builder.
+ * merged palette; fields, selectors and affixes are those of the parent builder.
  *
- * @internal Created by {@see DcaBuilder::scope()}.
+ * @internal Created by {@see DcaBuilder::forControl()}.
  */
-final class ControlScopeDcaBuilder implements DcaBuilderInterface
+final class ControlDcaBuilder implements DcaBuilderInterface
 {
     private ?string $palette = null;
 
@@ -54,20 +54,10 @@ final class ControlScopeDcaBuilder implements DcaBuilderInterface
         return $this->parent->field($name);
     }
 
-    public function scope(string $segment): DcaBuilderInterface
-    {
-        return $this->parent->scope($segment);
-    }
-
     public function selector(string $field, string $palette, ?string $value = null): self
     {
         $this->parent->selector($field, $palette, $value);
 
         return $this;
-    }
-
-    public function apply(string $table, string $type, bool $applyPalette = true): void
-    {
-        $this->parent->apply($table, $type, $applyPalette);
     }
 }

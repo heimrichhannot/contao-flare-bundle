@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Event;
 
-use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilder;
-use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
+use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use Symfony\Contracts\EventDispatcher\Event;
 
 /**
@@ -16,7 +16,7 @@ use Symfony\Contracts\EventDispatcher\Event;
 class ListDriverBuildDcaEvent extends Event
 {
     public function __construct(
-        public readonly DcaBuilder $builder,
-        public readonly DcaContext $context,
+        public readonly DcaBuilderInterface $builder,
+        public readonly DcaContext          $context,
     ) {}
 }

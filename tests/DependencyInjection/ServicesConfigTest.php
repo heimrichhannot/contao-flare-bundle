@@ -11,9 +11,10 @@ use HeimrichHannot\FlareBundle\Contao\Callback\FlareFilter\FieldsOptionsCallback
 use HeimrichHannot\FlareBundle\Contao\Callback\FlareList\ConfigOnSubmitCallback;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementScopeFactory;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilder;
-use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\ControlDcaBuilder;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\ListContainer;
+use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Contao\Hook\BreadcrumbHook;
 use HeimrichHannot\FlareBundle\Contao\Hook\ElementDcaHook;
 use HeimrichHannot\FlareBundle\Contao\Hook\FormNameRegexpHook;
@@ -87,6 +88,7 @@ final class ServicesConfigTest extends TestCase
             BackendModule::class,
             DcaBuilder::class,
             DcaContext::class,
+            ControlDcaBuilder::class,
             FilterIssue::class,
             ListInspection::class,
             PtableInferrer::class,

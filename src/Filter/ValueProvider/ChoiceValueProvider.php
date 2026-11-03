@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Filter\ValueProvider;
 use Contao\Message;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
-use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaFieldBuilderInterface;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;

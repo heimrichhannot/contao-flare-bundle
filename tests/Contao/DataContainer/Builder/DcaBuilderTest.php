@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Contao\DataContainer\Builder;
 
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaFieldBuilderInterface;
 use PHPUnit\Framework\TestCase;
 
 class DcaBuilderTest extends TestCase
@@ -26,7 +28,7 @@ class DcaBuilderTest extends TestCase
     {
         $dca = new DcaBuilder();
         $dca->palette('{e},el');
-        $dca->scope('control')->palette('{control_legend},ctl');
+        $dca->forControl()->palette('{control_legend},ctl');
         $dca->apply('tl_test', 'x');
 
         self::assertSame('{a},p;{e},el;{control_legend},ctl;{z},s', $GLOBALS['TL_DCA']['tl_test']['palettes']['x']);
@@ -35,7 +37,7 @@ class DcaBuilderTest extends TestCase
     public function testMissingSegmentsAreDropped(): void
     {
         $dca = new DcaBuilder();
-        $dca->scope('control')->palette('{control_legend},ctl');
+        $dca->forControl()->palette('{control_legend},ctl');
         $dca->apply('tl_test', 'x');
 
         self::assertSame('{a},p;{control_legend},ctl;{z},s', $GLOBALS['TL_DCA']['tl_test']['palettes']['x']);
@@ -50,7 +52,7 @@ class DcaBuilderTest extends TestCase
     {
         $dca = new DcaBuilder();
 
-        self::assertSame($dca->field('f'), $dca->scope('control')->field('f'));
+        self::assertSame($dca->field('f'), $dca->forControl()->field('f'));
     }
 
     public function testPrefixCallableReceivesTheCurrentPrefix(): void
@@ -102,10 +104,22 @@ class DcaBuilderTest extends TestCase
         );
     }
 
-    public function testUnknownScopeIsRejected(): void
+    public function testPublicInterfacesAreCollectOnly(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $names = static function (string $interface): array {
+            $names = \array_map(
+                static fn (\ReflectionMethod $method): string => $method->getName(),
+                (new \ReflectionClass($interface))->getMethods(),
+            );
+            \sort($names);
 
-        (new DcaBuilder())->scope('nope');
+            return $names;
+        };
+
+        self::assertSame(
+            ['field', 'getPalette', 'palette', 'prefix', 'selector', 'suffix'],
+            $names(DcaBuilderInterface::class),
+        );
+        self::assertNotContains('applyTo', $names(DcaFieldBuilderInterface::class));
     }
 }

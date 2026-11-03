@@ -22,6 +22,4 @@ interface DcaFieldBuilderInterface
     public function load(callable $fn): self;
 
     public function save(callable $fn): self;
-
-    public function applyTo(array &$definition): void;
 }

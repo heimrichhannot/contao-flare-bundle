@@ -91,12 +91,15 @@ final class DcaBuilder implements DcaBuilderInterface
         return $this->fields[$name] ??= new DcaFieldBuilder();
     }
 
-    public function scope(string $segment): DcaBuilderInterface
+    /**
+     * Returns the control's view of this builder: its `palette()` fills the control segment of the merged
+     * palette, everything else is shared with this builder.
+     *
+     * @internal Called by the FLARE loadDataContainer hook only.
+     */
+    public function forControl(): DcaBuilderInterface
     {
-        return match ($segment) {
-            'control' => new ControlScopeDcaBuilder($this, fn (?string $palette): ?string => $this->controlPalette = $palette),
-            default => throw new \InvalidArgumentException(\sprintf('Unknown DCA scope "%s".', $segment)),
-        };
+        return new ControlDcaBuilder($this, fn (?string $palette): ?string => $this->controlPalette = $palette);
     }
 
     public function selector(string $field, string $palette, ?string $value = null): self

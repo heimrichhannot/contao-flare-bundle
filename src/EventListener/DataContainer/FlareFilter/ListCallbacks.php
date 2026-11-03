@@ -40,7 +40,7 @@ readonly class ListCallbacks
         $title = StringUtil::specialchars($row['title'] ?? '');
 
         if ($type = $row['type'] ?? null) {
-            $typeLabel = StringUtil::specialchars($this->translator->trans($type, [], 'flare_filter'));
+            $typeLabel = StringUtil::specialchars($this->translator->trans($type, [], 'flare_filter_element'));
         }
         $typeLabel ??= 'N/A';
 

@@ -56,7 +56,7 @@ readonly class FieldsOptionsCallbacks
                 continue;
             }
 
-            $options[$type] = $this->translator->trans($type, [], 'flare_filter');
+            $options[$type] = $this->translator->trans($type, [], 'flare_filter_element');
         }
 
         \asort($options, \SORT_NATURAL);

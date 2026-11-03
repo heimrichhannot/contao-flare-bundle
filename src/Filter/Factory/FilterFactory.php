@@ -9,6 +9,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Compiler\ValueClassReflector;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
+use HeimrichHannot\FlareBundle\Exception\ValueClassMismatchError;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
@@ -50,8 +51,9 @@ final readonly class FilterFactory
      * @param array<string, mixed> $controlConfig Control config, resolved through the control's schema.
      *
      * @throws FlareException If a control is given without an alias or with one that is no valid form name, the
-     *   element or control cannot be resolved, a config does not satisfy its schema, or the control or value does not
-     *   match the element's value class.
+     *   element or control cannot be resolved, a config does not satisfy its schema, or the control does not match
+     *   the element's value class.
+     * @throws ValueClassMismatchError If the value does not match the element's value class — a programming error.
      *
      * @see Filter::__construct for the remaining parameters.
      */
@@ -103,19 +105,8 @@ final readonly class FilterFactory
             );
         }
 
-        if ($value !== null && ($valueClass === null || !$value instanceof $valueClass))
-        {
-            throw new FlareException(\sprintf(
-                'The value of class "%s" does not match the value class "%s" of filter element type "%s"%s.',
-                $value::class,
-                $valueClass ?? 'none',
-                $type,
-                $source ? " ({$source})" : '',
-            ), method: __METHOD__, source: $source);
-        }
-
         return new Filter(
-            element: new ElementBinding($element, $type, $resolvedConfig),
+            element: new ElementBinding($element, $type, $resolvedConfig, $valueClass),
             alias: $alias,
             control: $controlBinding,
             value: $value,
@@ -146,19 +137,20 @@ final readonly class FilterFactory
         $element = $this->resolveElement($type, $source);
 
         $config = $this->filterTransformerResolver->transform($element, $type, $filterModel, $source) ?? [];
+        $valueClass = $this->getElementValueClass($type, $element);
 
         $filter = new Filter(
             element: new ElementBinding(
                 component: $element,
                 type: $type,
                 config: $this->filterOptionsResolver->resolve($element, $config, $source),
+                valueClass: $valueClass,
             ),
             alias: $filterModel->getFilterAlias(),
             targetAlias: $filterModel->getFilterTargetAlias() ?: null,
             source: $source,
         );
 
-        $valueClass = $this->getElementValueClass($type, $element);
         $controlType = (string) $filterModel->control;
 
         if ($controlType === '') {

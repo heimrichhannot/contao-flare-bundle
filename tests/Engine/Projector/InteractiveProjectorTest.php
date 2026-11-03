@@ -82,7 +82,7 @@ final class InteractiveProjectorTest extends TestCase
     {
         $spy = new ProjectorSpyElement();
         $list = $this->list(new Filter(
-            element: new ElementBinding($spy, 'test_element', new ComponentConfig([])),
+            element: new ElementBinding($spy, 'test_element', new ComponentConfig([]), KeywordsValue::class),
             alias: 'q',
             control: new ControlBinding(
                 new KeywordsFilterControl(),
@@ -106,7 +106,7 @@ final class InteractiveProjectorTest extends TestCase
     {
         $spy = new ProjectorSpyElement();
         $list = $this->list(new Filter(
-            element: new ElementBinding($spy, 'test_element', new ComponentConfig([])),
+            element: new ElementBinding($spy, 'test_element', new ComponentConfig([]), KeywordsValue::class),
             alias: 'q',
             control: new ControlBinding(
                 new KeywordsFilterControl(),
@@ -124,7 +124,7 @@ final class InteractiveProjectorTest extends TestCase
     public function testProjectorReturnsFailedViewWhenAFixedFilterFails(): void
     {
         $list = $this->list(new Filter(
-            element: new ElementBinding(new ProjectorFailingElement(), 'test_element', new ComponentConfig([])),
+            element: new ElementBinding(new ProjectorFailingElement(), 'test_element', new ComponentConfig([]), null),
             alias: 'fixed',
         ));
 
@@ -142,7 +142,7 @@ final class InteractiveProjectorTest extends TestCase
     {
         $spy = new ProjectorSpyElement();
         $list = $this->list(new Filter(
-            element: new ElementBinding($spy, 'test_element', new ComponentConfig([])),
+            element: new ElementBinding($spy, 'test_element', new ComponentConfig([]), null),
             alias: 'fixed',
         ))
             ->withFailure(new FilterFailure('tl_flare_filter.3', 'tl_flare_filter.3: broken config'));
@@ -158,7 +158,7 @@ final class InteractiveProjectorTest extends TestCase
     public function testFailuresAreRethrownInDebugMode(): void
     {
         $list = $this->list(new Filter(
-            element: new ElementBinding(new ProjectorFailingElement(), 'test_element', new ComponentConfig([])),
+            element: new ElementBinding(new ProjectorFailingElement(), 'test_element', new ComponentConfig([]), null),
             alias: 'fixed',
         ));
 
@@ -242,7 +242,7 @@ final class InteractiveProjectorTest extends TestCase
         FilterControlInterface $control,
     ): Filter {
         return new Filter(
-            element: new ElementBinding($element, 'test_element', new ComponentConfig([])),
+            element: new ElementBinding($element, 'test_element', new ComponentConfig([]), null),
             alias: $alias,
             control: new ControlBinding(
                 $control,

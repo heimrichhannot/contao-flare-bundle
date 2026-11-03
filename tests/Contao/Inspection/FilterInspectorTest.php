@@ -297,7 +297,7 @@ final class FilterInspectorTest extends ContaoTestCase
     public function testFiltersOfTheDriverCountWithoutARow(): void
     {
         $inline = new Filter(
-            element: new ElementBinding(new ThrowingElement(), 'throws', new ComponentConfig()),
+            element: new ElementBinding(new ThrowingElement(), 'throws', new ComponentConfig(), null),
             alias: 'inline',
         );
 
@@ -397,7 +397,7 @@ final class FilterInspectorTest extends ContaoTestCase
         $this->dropSources();
 
         $inline = new Filter(
-            element: new ElementBinding(new OkElement(), 'ok', new ComponentConfig()),
+            element: new ElementBinding(new OkElement(), 'ok', new ComponentConfig(), null),
             alias: 'inline',
         );
 

@@ -79,7 +79,7 @@ final class FilterContextFactoryTest extends TestCase
         $scope = new ElementScope(
             list: new ListSpec(driver: $this->createStub(ListDriverInterface::class), type: 'test_list', dc: 'tl_test'),
             filter: new Filter(
-                element: new ElementBinding($element, 'test_element', new ComponentConfig([])),
+                element: new ElementBinding($element, 'test_element', new ComponentConfig([]), null),
                 alias: 'test',
                 targetAlias: $alias,
                 targetingForced: $forced,

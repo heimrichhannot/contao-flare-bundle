@@ -35,7 +35,7 @@ final class ControlScopeTest extends TestCase
         return new Filter(
             element: new ElementBinding($element ?? new StubFilterElement(), 'test_element', new ComponentConfig([
                 'label' => 'element',
-            ])),
+            ]), null),
             alias: 'test',
             control: $withControl
                 ? new ControlBinding(new KeywordsFilterControl(), 'test_control', new ComponentConfig([

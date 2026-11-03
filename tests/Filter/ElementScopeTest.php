@@ -27,7 +27,7 @@ final class ElementScopeTest extends TestCase
                 element: new ElementBinding(new StubFilterElement(), 'test_element', new ComponentConfig([
                     'label' => 'element',
                     'field' => 'title',
-                ])),
+                ]), null),
                 alias: 'test',
                 control: new ControlBinding(new KeywordsFilterControl(), 'test_control', new ComponentConfig([
                     'label' => 'control',

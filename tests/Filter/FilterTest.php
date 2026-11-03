@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
+use HeimrichHannot\FlareBundle\Exception\ValueClassMismatchError;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
@@ -13,6 +14,7 @@ use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
+use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -31,8 +33,22 @@ final class FilterTest extends TestCase
                 component: $element ??= new StubFilterElement(),
                 type: 'test',
                 config: new ComponentConfig(['a' => 1]),
+                valueClass: BoolValue::class,
             ),
             alias: 'foo',
+            source: 'tl_flare_filter.1',
+        );
+    }
+
+    /**
+     * @param class-string<ValueInterface>|null $valueClass
+     */
+    private static function filterFor(?string $valueClass, ?ValueInterface $value = null): Filter
+    {
+        return new Filter(
+            element: new ElementBinding(new StubFilterElement(), 'test', new ComponentConfig([]), valueClass: $valueClass),
+            alias: 'foo',
+            value: $value,
             source: 'tl_flare_filter.1',
         );
     }
@@ -162,7 +178,7 @@ final class FilterTest extends TestCase
         ], $fingerprint);
 
         $changedConfig = new Filter(
-            element: new ElementBinding($filter->element->component, 'test', new ComponentConfig(['a' => 2])),
+            element: new ElementBinding($filter->element->component, 'test', new ComponentConfig(['a' => 2]), BoolValue::class),
             alias: 'foo',
         );
 
@@ -192,5 +208,46 @@ final class FilterTest extends TestCase
             $base->withValue(new BoolValue(true))->fingerprint(),
             $base->withValue(new BoolValue(true))->fingerprint(),
         );
+    }
+
+    public function testValueOfTheWrongClassIsRejected(): void
+    {
+        $this->expectException(ValueClassMismatchError::class);
+        $this->expectExceptionMessage(BoolValue::class);
+        $this->expectExceptionMessage('tl_flare_filter.1');
+
+        self::filterFor(BoolValue::class)->withValue(new KeywordsValue('x'));
+    }
+
+    public function testValueOnAnElementWithoutValueClassIsRejected(): void
+    {
+        $this->expectException(ValueClassMismatchError::class);
+
+        self::filterFor(null)->withValue(new BoolValue(true));
+    }
+
+    public function testNullValueIsAlwaysAccepted(): void
+    {
+        foreach ([BoolValue::class, null] as $valueClass)
+        {
+            $filter = self::filterFor($valueClass)
+                ->withValue(null)
+                ->withControl(null)
+                ->withTargetAlias('t');
+
+            self::assertNull($filter->value);
+        }
+    }
+
+    public function testMatchingValueIsAccepted(): void
+    {
+        self::assertEquals(new BoolValue(true), self::filterFor(BoolValue::class)->withValue(new BoolValue(true))->value);
+    }
+
+    public function testConstructorRejectsAMismatchingValue(): void
+    {
+        $this->expectException(ValueClassMismatchError::class);
+
+        self::filterFor(BoolValue::class, new KeywordsValue('x'));
     }
 }

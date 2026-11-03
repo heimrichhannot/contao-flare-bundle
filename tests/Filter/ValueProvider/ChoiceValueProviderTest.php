@@ -105,7 +105,7 @@ final class ChoiceValueProviderTest extends TestCase
         $scope = new ElementScope(
             list: new ListSpec(driver: $this->createStub(ListDriverInterface::class), type: 'test', dc: 'tl_test'),
             filter: new Filter(
-                element: new ElementBinding($element, 'test_element', new ComponentConfig(['field' => 'title'])),
+                element: new ElementBinding($element, 'test_element', new ComponentConfig(['field' => 'title']), null),
                 alias: 'test',
             ),
             engineContext: new ConfigurationContext(),

@@ -95,7 +95,7 @@ trait BuildsFormFixturesTrait
         };
 
         return new Filter(
-            element: new ElementBinding($element, 'test_element', new ComponentConfig([])),
+            element: new ElementBinding($element, 'test_element', new ComponentConfig([]), $value !== null ? $value::class : null),
             alias: $alias,
             control: $control !== null ? new ControlBinding(
                 $control,

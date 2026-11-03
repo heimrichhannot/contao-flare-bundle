@@ -244,7 +244,7 @@ final class ListQueryDirectorTest extends TestCase
         ?string                 $source = null,
     ): Filter {
         return new Filter(
-            element: new ElementBinding($element, 'test_element', new ComponentConfig([])),
+            element: new ElementBinding($element, 'test_element', new ComponentConfig([]), BoolValue::class),
             alias: $alias,
             control: $control !== null ? new ControlBinding($control, $control::class, new ComponentConfig([])) : null,
             value: $value,

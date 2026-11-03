@@ -15,6 +15,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
+use HeimrichHannot\FlareBundle\Exception\ValueClassMismatchError;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
@@ -234,7 +235,7 @@ final class FilterFactoryTest extends TestCase
 
     public function testProgrammaticValueOfTheWrongClassIsRejected(): void
     {
-        $this->expectException(FlareException::class);
+        $this->expectException(ValueClassMismatchError::class);
 
         $this->factory()->create(element: self::BOOL_ELEMENT, value: new KeywordsValue('foo'));
     }
@@ -247,16 +248,22 @@ final class FilterFactoryTest extends TestCase
 
         self::assertEquals(new BoolValue(false), $filter->value);
 
-        $this->expectException(FlareException::class);
+        $this->expectException(ValueClassMismatchError::class);
 
         $factory->create(element: new FactoryStubBoolElement(), value: new KeywordsValue('foo'));
     }
 
     public function testElementWithoutValueClassRejectsAnyValue(): void
     {
-        $this->expectException(FlareException::class);
+        $this->expectException(ValueClassMismatchError::class);
 
         $this->factory()->create(element: new FactoryStubPlainElement(), value: new BoolValue(true));
+    }
+
+    public function testCreateRecordsTheValueClassOnTheBinding(): void
+    {
+        self::assertSame(BoolValue::class, $this->factory()->create(element: self::BOOL_ELEMENT)->element->valueClass);
+        self::assertNull($this->factory()->create(element: new FactoryStubPlainElement())->element->valueClass);
     }
 
     public function testValueComesFromTheProviderOfTheElementsValueClass(): void

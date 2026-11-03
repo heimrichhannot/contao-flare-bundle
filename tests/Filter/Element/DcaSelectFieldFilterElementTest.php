@@ -161,7 +161,7 @@ final class DcaSelectFieldFilterElementTest extends TestCase
         return new ElementScope(
             list: new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test'),
             filter: new Filter(
-                element: new ElementBinding($element, 'test_element', new ComponentConfig(['field' => $field])),
+                element: new ElementBinding($element, 'test_element', new ComponentConfig(['field' => $field]), null),
                 alias: 'test',
             ),
             engineContext: new ConfigurationContext(),

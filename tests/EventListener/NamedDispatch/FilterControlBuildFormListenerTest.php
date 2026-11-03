@@ -68,7 +68,7 @@ final class FilterControlBuildFormListenerTest extends TestCase
 
         $list = new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test');
         $filter = new Filter(
-            element: new ElementBinding(new StubFilterElement(), 'b', new ComponentConfig()),
+            element: new ElementBinding(new StubFilterElement(), 'b', new ComponentConfig(), null),
             alias: 'suche',
             control: new ControlBinding(new KeywordsFilterControl(), $controlType, new ComponentConfig()),
         );

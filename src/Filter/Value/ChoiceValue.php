@@ -4,57 +4,66 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Value;
 
-use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceKey;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceObjectInterface;
 
 /**
- * A selection from an option set.
- *
- * Keys, not domain values. Choice keys are strings by construction (Symfony view data always is)
- * and their *meaning* is element-defined, so any further interpretation belongs in the element's
- * {@see ChoiceSourceContract::valueFromChoiceKeys()}.
+ * A selection of choice objects: a set, deduplicated and sorted by canonical key.
  */
 final readonly class ChoiceValue implements ValueInterface
 {
-    /** @var list<string> Non-empty, deduplicated, ascending by string comparison. */
-    public array $keys;
+    /** @var non-empty-list<ChoiceObjectInterface> */
+    public array $choices;
 
     /**
-     * @param array<array-key, mixed> $keys Submitted choice keys. Entries with no string
-     *   representation, and empty strings, are dropped.
+     * @param iterable<ChoiceObjectInterface> $choices Must contain at least one choice.
      */
-    public function __construct(array $keys)
+    public function __construct(iterable $choices)
     {
-        $strings = [];
+        $byKey = [];
 
-        foreach ($keys as $key)
+        foreach ($choices as $choice)
         {
-            if ($key === null || \is_bool($key) || \is_array($key)) {
-                continue;
-            }
-
-            if (\is_object($key) && !$key instanceof \Stringable) {
-                continue;
-            }
-
-            if (($key = (string) $key) !== '') {
-                $strings[] = $key;
-            }
+            $byKey[ChoiceKey::of($choice)] ??= $choice;
         }
 
-        $strings = \array_values(\array_unique($strings));
+        if ($byKey === []) {
+            throw new \InvalidArgumentException('A ChoiceValue requires at least one choice.');
+        }
 
-        \sort($strings, \SORT_STRING);
+        \ksort($byKey, \SORT_STRING);
 
-        $this->keys = $strings;
+        $this->choices = \array_values($byKey);
     }
 
     /**
-     * @param array<array-key, mixed> $keys
+     * @param mixed $data One choice object, or an iterable of them. The empty-option sentinel,
+     *   null and non-choice entries are ignored.
      */
-    public static function tryFrom(array $keys): ?self
+    public static function tryFrom(mixed $data): ?self
     {
-        $value = new self($keys);
+        if ($data instanceof ChoiceObjectInterface) {
+            $data = [$data];
+        }
 
-        return $value->keys === [] ? null : $value;
+        if (!\is_iterable($data)) {
+            return null;
+        }
+
+        $choices = [];
+
+        foreach ($data as $entry)
+        {
+            if ($entry instanceof ChoiceObjectInterface) {
+                $choices[] = $entry;
+            }
+        }
+
+        return $choices === [] ? null : new self($choices);
+    }
+
+    public function fingerprint(): string
+    {
+        return \json_encode(\array_map(ChoiceKey::of(...), $this->choices), \JSON_THROW_ON_ERROR);
     }
 }

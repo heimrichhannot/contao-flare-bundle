@@ -26,6 +26,21 @@ final class SchemaResolver
      */
     public function resolve(string $key, \Closure $configure, array $config): array
     {
+        return $this->resolver($key, $configure)->resolve($config);
+    }
+
+    /**
+     * @param \Closure(OptionsResolver): void $configure Runs once per $key (memoized).
+     *
+     * @return list<string> The option names the schema defines.
+     */
+    public function getDefinedOptions(string $key, \Closure $configure): array
+    {
+        return $this->resolver($key, $configure)->getDefinedOptions();
+    }
+
+    private function resolver(string $key, \Closure $configure): OptionsResolver
+    {
         if (!isset($this->resolvers[$key]))
         {
             $resolver = new OptionsResolver();
@@ -33,6 +48,6 @@ final class SchemaResolver
             $this->resolvers[$key] = $resolver;
         }
 
-        return $this->resolvers[$key]->resolve($config);
+        return $this->resolvers[$key];
     }
 }

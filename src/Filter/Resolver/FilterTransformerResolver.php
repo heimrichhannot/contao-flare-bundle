@@ -4,57 +4,85 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Resolver;
 
-use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\SourceTransformer;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
-use HeimrichHannot\FlareBundle\Event\FilterTransformerEvent;
+use HeimrichHannot\FlareBundle\Event\FilterControlConfigureTransformersEvent;
+use HeimrichHannot\FlareBundle\Event\FilterElementConfigureTransformersEvent;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterComponentInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
- * Runs an element's source transformers ({@see TransformerContract}) to translate a stored
- * source (e.g. a FilterModel) into canonical config values. The configured transformer map
- * is memoized per element class; listeners extend it via {@see FilterTransformerEvent}.
+ * Runs the source transformers ({@see TransformerContract}) of a filter component (element or control)
+ * to translate a stored source (e.g. a FilterModel) into canonical config values. The transformer map is
+ * memoized per type and component class; listeners extend a component's map via
+ * {@see FilterElementConfigureTransformersEvent} and {@see FilterControlConfigureTransformersEvent}.
  */
-final class FilterTransformerResolver
+final readonly class FilterTransformerResolver
 {
-    /**
-     * @var array<class-string, TransformerResolver>
-     */
-    private array $resolvers = [];
-
     public function __construct(
-        private readonly EventDispatcherInterface $eventDispatcher,
+        private SourceTransformer        $sourceTransformer,
+        private EventDispatcherInterface $eventDispatcher,
     ) {}
 
     /**
+     * @param string $type The element type or the control type.
+     * @param string|null $origin Provenance for the exception, e.g. "tl_flare_filter.42".
      * @return array<string, mixed>|null Canonical config values, or null when no transformer matches the source.
+     *
+     * @throws FilterException If configuring or running the transformer fails.
      */
-    public function transform(FilterElementInterface $element, string $type, object $source): ?array
-    {
-        $cacheKey = \sprintf('%s@%s', $type, $element::class);
-
-        if (!isset($this->resolvers[$cacheKey]))
+    public function transform(
+        FilterComponentInterface $owner,
+        string                   $type,
+        object                   $source,
+        ?string                  $origin = null,
+    ): ?array {
+        try
         {
-            $resolver = new TransformerResolver();
+            return $this->sourceTransformer->transform(
+                \sprintf('%s@%s', $type, $owner::class),
+                function (TransformerMap $transformers) use ($owner, $type): void {
+                    if ($owner instanceof TransformerContract) {
+                        $owner->configureTransformers($transformers);
+                    }
 
-            if ($element instanceof TransformerContract) {
-                $element->configureTransformers($resolver);
-            }
+                    $this->dispatchEvent($transformers, $owner, $type);
+                },
+                $source,
+            );
+        }
+        catch (\Throwable $e)
+        {
+            throw new FilterException(
+                \sprintf(
+                    '[FLARE] The config of "%s" could not be read from %s: %s',
+                    $owner::class,
+                    $source::class,
+                    $e->getMessage(),
+                ),
+                previous: $e,
+                method: $owner::class . '::configureTransformers',
+                source: $origin,
+            );
+        }
+    }
 
-            $this->eventDispatcher->dispatch(new FilterTransformerEvent($resolver, $element, $type));
-
-            $this->resolvers[$cacheKey] = $resolver;
+    private function dispatchEvent(TransformerMap $transformers, FilterComponentInterface $owner, string $type): void
+    {
+        if ($owner instanceof FilterElementInterface) {
+            $this->eventDispatcher->dispatch(
+                new FilterElementConfigureTransformersEvent($transformers, $owner, $type),
+            );
         }
 
-        if (!$transformer = $this->resolvers[$cacheKey]->resolve($source)) {
-            return null;
+        if ($owner instanceof FilterControlInterface) {
+            $this->eventDispatcher->dispatch(
+                new FilterControlConfigureTransformersEvent($transformers, $owner, $type),
+            );
         }
-
-        $config = new ConfigBuilder();
-
-        $transformer($config, $source);
-
-        return $config->all();
     }
 }

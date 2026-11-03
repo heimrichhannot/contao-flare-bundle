@@ -26,6 +26,8 @@ class InteractiveView implements ViewInterface
      * @param ReaderUrlGeneratorInterface $readerUrlGenerator Generator for the URL to the reader.
      * @param string $table Table name.
      * @param int $totalItems Total number of items.
+     * @param bool $failed Whether the list could not be created; a failed list is not an empty list, templates
+     *   render a failure message instead of the entries.
      */
     public function __construct(
         private readonly InteractiveLoaderInterface  $loader,
@@ -34,7 +36,16 @@ class InteractiveView implements ViewInterface
         private readonly ReaderUrlGeneratorInterface $readerUrlGenerator,
         private readonly string                      $table,
         private readonly int                         $totalItems,
+        private readonly bool                        $failed = false,
     ) {}
+
+    /**
+     * Whether the list could not be created. Twig: `flare_list.failed`.
+     */
+    public function isFailed(): bool
+    {
+        return $this->failed;
+    }
 
     public function getForm(): FormInterface
     {

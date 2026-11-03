@@ -44,12 +44,12 @@ class GenericDataContainerListDriver extends AbstractListDriver implements OnSub
         $config->set('genericPageMeta', true);
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
         $listModel = $context->listModel;
 
         if (!$listModel->hasParent) {
-            $dca->palette(self::DEFAULT_PALETTE);
+            $builder->palette(self::DEFAULT_PALETTE);
             return;
         }
 
@@ -92,7 +92,7 @@ class GenericDataContainerListDriver extends AbstractListDriver implements OnSub
 
         $this->checkPublishedFilter($listModel);
 
-        $dca->palette($pm->applyToString(self::DEFAULT_PALETTE));
+        $builder->palette($pm->applyToString(self::DEFAULT_PALETTE));
     }
 
     private function checkPublishedFilter(ListModel $listModel): void

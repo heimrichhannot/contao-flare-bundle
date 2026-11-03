@@ -76,7 +76,7 @@ final readonly class ListSpecFactory
 
         BaseListOptions::transform($configBuilder, $listModel);
 
-        $transformed = $this->transformerResolver->transform($resolved->driver, $resolved->type, $listModel);
+        $transformed = $this->transformerResolver->transform($resolved->driver, $resolved->type, $listModel, $source);
 
         foreach ($transformed ?? [] as $key => $value) {
             $configBuilder->set($key, $value);

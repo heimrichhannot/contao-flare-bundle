@@ -47,7 +47,7 @@ readonly class AddTargetAliasFieldCallback
         $prefix = &$GLOBALS['TL_DCA'][FilterContainer::TABLE_NAME]['palettes']['__prefix__'];
 
         $prefix = PaletteManipulator::create()
-            ->addField('targetAlias', 'intrinsic')
+            ->addField('targetAlias', 'control')
             ->applyToString('' . $prefix);
     }
 }

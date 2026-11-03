@@ -22,9 +22,9 @@ class CodefogTagsSearchElement extends AbstractFilterElement
         return false;
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},fieldGeneric,isMultiple,preselect');
+        $builder->palette('{filter_legend},elm_fieldGeneric');
     }
 
     public function configureOptions(OptionsResolver $resolver): void

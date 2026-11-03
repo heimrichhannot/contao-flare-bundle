@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\DataContainer\Builder;
 
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
@@ -15,25 +17,37 @@ use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
 final class DcaContext
 {
     private ListExecutionContext|false|null $executionContext = null;
+    private ElementScope|false|null $elementScope = null;
 
     /**
      * @param \Closure(): ?ListExecutionContext $executionContextFactory
+     * @param \Closure(): ?ElementScope|null $elementScopeFactory
      */
     public function __construct(
-        public readonly string       $table,
-        public readonly string       $type,
-        public readonly ListModel    $listModel,
-        public readonly ?FilterModel $filterModel,
-        private readonly \Closure    $executionContextFactory,
+        public readonly string                  $table,
+        public readonly string                  $type,
+        public readonly ListModel               $listModel,
+        public readonly ?FilterModel            $filterModel,
+        private readonly \Closure               $executionContextFactory,
+        public readonly ?FilterElementInterface $element = null,
+        private readonly ?\Closure              $elementScopeFactory = null,
     ) {}
 
     public function getExecutionContext(): ?ListExecutionContext
     {
-        if ($this->executionContext === null) {
-            $this->executionContext = ($this->executionContextFactory)() ?? false;
-        }
+        $this->executionContext ??= ($this->executionContextFactory)() ?? false;
 
         return $this->executionContext ?: null;
+    }
+
+    /**
+     * The backend scope: the edited filter in a configuration context, or null when it cannot be built.
+     */
+    public function getElementScope(): ?ElementScope
+    {
+        $this->elementScope ??= $this->elementScopeFactory?->__invoke() ?? false;
+
+        return $this->elementScope ?: null;
     }
 
     /**

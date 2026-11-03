@@ -11,8 +11,8 @@ final class KeywordsValueTest extends TestCase
 {
     /**
      * `SearchKeywordsFilterType` splits on `/\s+OR\s+/i` and then re-tokenises each group, so
-     * whitespace variants are multiple representations of one query — which §9 requires the
-     * constructor to normalise.
+     * whitespace variants are multiple representations of one query — which the
+     * constructor must normalise, as in every value object.
      */
     public function testWhitespaceIsTrimmedAndCollapsed(): void
     {
@@ -44,5 +44,10 @@ final class KeywordsValueTest extends TestCase
         };
 
         self::assertSame('foo bar', KeywordsValue::tryFrom($stringable)?->keywords);
+    }
+
+    public function testFingerprint(): void
+    {
+        self::assertSame('foo bar', KeywordsValue::tryFrom("  foo   bar ")?->fingerprint());
     }
 }

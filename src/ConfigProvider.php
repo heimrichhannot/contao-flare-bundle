@@ -11,7 +11,7 @@ readonly final class ConfigProvider
 {
     public function __construct(
         private ParameterBagInterface $parameterBag,
-        private TranslatorInterface $translator,
+        private TranslatorInterface   $translator,
     ) {}
 
     public function getStopWords(?string $locale = null): array

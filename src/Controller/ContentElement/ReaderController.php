@@ -148,6 +148,8 @@ final class ReaderController extends AbstractContentElementController
         }
         catch (FlareException $e)
         {
+            // A failed list (a broken filter element or fixed value) arrives here as a FilterException: membership
+            // cannot be decided, so the reader answers 5xx, never 404 or the entry.
             $this->logger->error(\sprintf('%s (%s)', $e->getMessage(), \implode(', ', $errData)),
                 ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
 
@@ -238,7 +240,7 @@ final class ReaderController extends AbstractContentElementController
             '%s%s <span class="tl_gray">[%s, %s]</span>',
             Str::formatHeadline($model->headline, withTags: true),
             $listModel->title,
-            $this->translator->trans($listModel->type, [], 'flare_list'),
+            $this->translator->trans($listModel->type, [], 'flare_list_driver'),
             $listModel->dc,
         ));
     }

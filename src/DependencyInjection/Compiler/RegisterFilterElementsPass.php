@@ -6,7 +6,9 @@ namespace HeimrichHannot\FlareBundle\DependencyInjection\Compiler;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\DependencyInjection\Factory\TypeNameFactory;
+use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\PriorityTaggedServiceTrait;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -24,6 +26,7 @@ final class RegisterFilterElementsPass implements CompilerPassInterface
 
         $tag = AsFilterElement::TAG;
         $registry = $container->findDefinition(FilterElementRegistry::class);
+        $providedValueClasses = $this->getProvidedValueClasses($container);
 
         foreach ($this->findAndSortTaggedServices($tag, $container) as $reference)
         {
@@ -34,6 +37,19 @@ final class RegisterFilterElementsPass implements CompilerPassInterface
             foreach ($tags as $attributes)
             {
                 $type = $this->getFilterElementType($definition, $attributes);
+
+                $valueClass = $attributes['value'] ?? null;
+
+                if ($valueClass !== null && !isset($providedValueClasses[$valueClass]))
+                {
+                    throw new \InvalidArgumentException(\sprintf(
+                        'The filter element "%s" declares the value class "%s", which has no value provider.'
+                        . ' Register a service implementing %s whose provide() returns it.',
+                        $type,
+                        $valueClass,
+                        ValueProviderInterface::class,
+                    ));
+                }
 
                 /** @see AsFilterElement::__construct */
                 $attribute = new Definition(AsFilterElement::class, [
@@ -52,6 +68,27 @@ final class RegisterFilterElementsPass implements CompilerPassInterface
                     ->setPublic(true);
             }
         }
+    }
+
+    /**
+     * @return array<string, true> The value classes registered with the value provider registry so far.
+     */
+    private function getProvidedValueClasses(ContainerBuilder $container): array
+    {
+        if (!$container->has(ValueProviderRegistry::class)) {
+            return [];
+        }
+
+        $classes = [];
+
+        foreach ($container->findDefinition(ValueProviderRegistry::class)->getMethodCalls() as [$method, $arguments])
+        {
+            if ($method === 'add' && isset($arguments[1])) {
+                $classes[(string) $arguments[1]] = true;
+            }
+        }
+
+        return $classes;
     }
 
     protected function getFilterElementType(Definition $definition, array $attributes): string

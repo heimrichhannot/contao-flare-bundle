@@ -6,18 +6,20 @@ namespace HeimrichHannot\FlareBundle\Form;
 
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Contract\LabelableInterface;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceKey;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceObjectInterface;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Form\ChoiceList\Loader\CallbackChoiceLoader;
-use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Builds Symfony form choice configurations from Contao Models, {@see LabelableInterface}
- * instances, or strings.
+ * Builds Symfony form choice configurations from choice objects ({@see ChoiceObjectInterface}).
  *
- * Aggregates choices with optional values (and groups ffu), then produces the artifacts a Symfony
- * ChoiceType field needs: a choices array via {@see buildChoices()}, a value callback via
+ * Aggregates choices keyed by their canonical key ({@see ChoiceKey::of()}), then produces the artifacts a Symfony
+ * ChoiceType field needs: a choices array via {@see build()}, a value callback via
  * {@see buildChoiceValueCallback()}, and a label callback via {@see buildChoiceLabelCallback()}.
  * For Contao-style option arrays, use {@see buildOptions()} instead.
  *
@@ -38,14 +40,13 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * {@see LabelableInterface::getLabelParameters()}.
  *
  * An optional empty option is enabled via {@see setEmptyOption()}. It is rendered under the
- * sentinel key {@see self::EMPTY_CHOICE} in {@see buildChoices()} (and under an empty-string key
+ * sentinel key {@see self::EMPTY_CHOICE} in {@see build()} (and under an empty-string key
  * in {@see buildOptions()}), with its submitted value controlled by {@see setEmptyOptionValue()}.
  * Use {@see self::EMPTY_CHOICE_VALUE_DEFAULT} for no value or
  * {@see self::EMPTY_CHOICE_VALUE_ALTERNATIVE} when a non-empty URL parameter value is required.
  *
- * Group support ({@see addGroup()}, {@see removeGroup()}) is reserved and not yet implemented.
- *
- * @mago-expect lint:too-many-methods
+ * The submitted value of a choice is its local key while all choices share at most one scope
+ * ({@see usesLocalKeys()}), otherwise its canonical key.
  */
 final class ChoicesBuilder
 {
@@ -62,13 +63,9 @@ final class ChoicesBuilder
      */
     public const EMPTY_CHOICE_VALUE_ALTERNATIVE = '__';
 
-    /** @var array<string|int, Model|LabelableInterface|string> $choices */
+    /** @var array<string, ChoiceObjectInterface> $choices canonical key => choice */
     private array $choices = [];
-    /** @var array<string|int, callable|string|null> $choiceValues */
-    private array $choiceValues = [];
-    private array $groups = [];
-    // @phpstan-ignore property.onlyWritten
-    private array $choiceGroupMap = [];
+    private ?bool $localKeys = null;
     private string $modelSuffix = '';
     private bool $emptyOption = false;
     private string $emptyOptionValue = self::EMPTY_CHOICE_VALUE_DEFAULT;
@@ -77,7 +74,7 @@ final class ChoicesBuilder
     private array $mapTypeLabel = [];
 
     public function __construct(
-        private readonly TranslatorInterface $translator,
+        private readonly TranslatorInterface   $translator,
         private readonly ParameterBagInterface $parameterBag,
     ) {}
 
@@ -89,14 +86,6 @@ final class ChoicesBuilder
         }
 
         $this->mapTypeLabel[$class] = $label;
-
-        return $this;
-    }
-
-    /** @api */
-    public function setLabelForModel(?string $label, Model $model): self
-    {
-        $this->mapTypeLabel[$model::class] = $label;
 
         return $this;
     }
@@ -130,45 +119,25 @@ final class ChoicesBuilder
     }
 
     /** @api */
-    public function getChoice(string|int $key): Model|LabelableInterface|string|null
+    public function add(ChoiceObjectInterface $choice): static
     {
-        return $this->choices[$key] ?? null;
-    }
-
-    /** @api */
-    public function add(
-        string|int                      $alias,
-        Model|LabelableInterface|string $choice,
-        mixed                           $value = null,
-        string|null                     $group = null,
-    ): static {
-        $this->choices[$alias] = $choice;
-
-        if (!\is_null($value)) {
-            $this->choiceValues[$alias] = $value;
-        }
-
-        if (!\is_null($group)) {
-            $this->choiceGroupMap[$alias] = $group;
-        }
+        $this->choices[ChoiceKey::of($choice)] = $choice;
+        $this->localKeys = null;
 
         return $this;
     }
 
-    /** @interal Functionality not yet implemented. */
-    public function addGroup(string $key, string $label): static
+    /**
+     * True iff the choices have at most one distinct scope, so local keys are unambiguous.
+     *
+     * @api
+     */
+    public function usesLocalKeys(): bool
     {
-        $this->groups[$key] = $label;
-
-        return $this;
-    }
-
-    /** @interal Functionality not yet implemented. */
-    public function removeGroup(string $key): static
-    {
-        unset($this->groups[$key]);
-
-        return $this;
+        return $this->localKeys ??= \count(\array_unique(\array_map(
+            static fn (ChoiceObjectInterface $c): ?string => $c->getChoiceScope(),
+            $this->choices,
+        ), \SORT_REGULAR)) <= 1;
     }
 
     public function hasEmptyOption(): bool
@@ -224,8 +193,11 @@ final class ChoicesBuilder
         return \count($this->choices);
     }
 
-    /** @api */
-    public function buildChoices(): array
+    /**
+     * @return array<string, ChoiceObjectInterface|string>
+     * @api
+     */
+    public function build(): array
     {
         $choices = [];
 
@@ -234,9 +206,9 @@ final class ChoicesBuilder
             $choices[self::EMPTY_CHOICE] = self::EMPTY_CHOICE;
         }
 
-        foreach ($this->choices as $alias => $choice)
+        foreach ($this->choices as $key => $choice)
         {
-            $choices[$alias] = $choice;
+            $choices[$key] = $choice;
         }
 
         return $choices;
@@ -244,11 +216,14 @@ final class ChoicesBuilder
 
     public function buildCallbackChoiceLoader(): CallbackChoiceLoader
     {
-        return new CallbackChoiceLoader($this->buildChoices(...));
+        return new CallbackChoiceLoader($this->build(...));
     }
 
-    /** @api */
-    public function buildChoiceValueCallback(): callable
+    /**
+     * @return \Closure(mixed): string
+     * @api
+     */
+    public function buildChoiceValueCallback(): \Closure
     {
         return function (mixed $choice): string {
             if ($choice === self::EMPTY_CHOICE)
@@ -256,21 +231,19 @@ final class ChoicesBuilder
                 return $this->emptyOptionValue;
             }
 
-            $alias = \array_search($choice, $this->choices, true);
-
-            if ($alias === false)
+            if (!$choice instanceof ChoiceObjectInterface)
             {
                 return '';
             }
 
-            return (string) ($this->choiceValues[$alias] ?? $alias);
+            return $this->usesLocalKeys() ? $choice->getChoiceLocalKey() : ChoiceKey::of($choice);
         };
     }
 
     /** @api */
     public function buildChoiceLabelCallback(): callable
     {
-        return function (mixed $choice, string|int $key, mixed $value): TranslatableMessage|string {
+        return function (mixed $choice, string|int $key, mixed $value): string {
             if ($key === self::EMPTY_CHOICE)
             {
                 return $this->buildChoiceLabel($this->emptyOptionLabel, '', $this->emptyOptionValue);
@@ -281,7 +254,7 @@ final class ChoicesBuilder
     }
 
     /** @api */
-    public function buildChoiceLabel(mixed $choice, string|int $key, mixed $value): TranslatableMessage|string
+    public function buildChoiceLabel(mixed $choice, string|int $key, mixed $value): string
     {
         $params = [
             '%@choice%' => Str::wrap($choice),
@@ -301,32 +274,54 @@ final class ChoicesBuilder
             return $this->translator->trans($choice, $params, 'flare_form');
         }
 
-        $label = $this->label;
+        $model = null;
+        $table = '';
 
-        if (\is_object($choice))
+        if ($choice instanceof ContaoModelChoice)
         {
-            $label = $this->tryGetTypeLabel($choice::class)
-                ?? $this->label
-                ?: $this->tryGetDefaultTypeLabel($choice::class);
-        }
+            $table = $choice->getChoiceScope();
+            $model = $choice->getModel();
 
-        if (!$label && $choice instanceof Model)
-        {
-            $label = (string) $choice->id;
-        }
-
-        if ($choice instanceof Model)
-        {
-            $params['%@table%'] = $choice::getTable();
-            $params['%@name%'] = $this->translator->trans('table.' . $choice::getTable(), [], 'flare_form');
-
-            foreach ($choice->row() as $field => $v) {
-                $params['%' . $field . '%'] = $v;
+            if (!$model)
+            {
+                return $choice->table . '.' . $choice->id;
             }
+        }
+
+        $labelClass = match (true) {
+            $model !== null => $model::class,
+            \is_object($choice) => $choice::class,
+            default => null,
+        };
+
+        $label = match (true) {
+            $choice instanceof ValueChoice => $choice->label ?? $choice->value,
+            $labelClass !== null => $this->tryGetTypeLabel($labelClass)
+                ?? $this->label
+                ?: $this->tryGetDefaultTypeLabel($labelClass),
+            default => $this->label,
+        };
+
+        if ($model)
+        {
+            if (!$label)
+            {
+                $label = (string) $model->id;
+            }
+
+            // The row's fields come from ContaoModelChoice::getLabelParameters() below; only the table
+            // parameters need the translator.
+            $params['%@table%'] = $table;
+            $params['%@name%'] = $this->translator->trans('table.' . $table, [], 'flare_form');
 
             if ($this->getModelSuffix()) {
-                $label = \trim($label) . ' ' . \trim($this->getModelSuffix());
+                $label = \trim((string) $label) . ' ' . \trim($this->getModelSuffix());
             }
+        }
+
+        if ($choice instanceof ChoiceObjectInterface)
+        {
+            $params = \array_merge($params, $choice->getLabelParameters());
         }
 
         if ($choice instanceof LabelableInterface)
@@ -351,11 +346,11 @@ final class ChoicesBuilder
         }
 
         $labelFactory = $this->buildChoiceLabelCallback();
+        $toValue = $this->buildChoiceValueCallback();
 
-        foreach ($this->choices as $alias => $choice)
+        foreach ($this->choices as $key => $choice)
         {
-            $value = $this->choiceValues[$alias] ?? $choice;
-            $options[$alias] = $labelFactory($choice, $alias, $value);
+            $options[$key] = $labelFactory($choice, $key, $toValue($choice));
         }
 
         return $options;

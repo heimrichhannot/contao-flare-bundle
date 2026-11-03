@@ -95,7 +95,7 @@ readonly class PaginatorFactory
     public function createUrlGenerator(
         string $routeName,
         string $pageParam,
-        ?array  $routeParams = null,
+        ?array $routeParams = null,
     ): callable {
         $routeParams ??= [];
         return fn (int $page): string => $this->urlGenerator->generate(

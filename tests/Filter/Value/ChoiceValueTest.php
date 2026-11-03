@@ -4,58 +4,39 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Filter\Value;
 
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceKey;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
+use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use PHPUnit\Framework\TestCase;
 
 final class ChoiceValueTest extends TestCase
 {
-    /**
-     * Sorted because all three consuming filter types emit `IN()`, so order is query-irrelevant and
-     * §9 therefore requires normalising it away. Reindexed as a list, which is what today's
-     * `FieldValueChoiceFilterElement::extractSubmittedData()` does *not* do — its two `array_filter`
-     * calls preserve keys, so its documented `list<string>` is really a holed array.
-     */
-    public function testKeysAreCastSortedDedupedAndReindexed(): void
+    public function testDeduplicatesAndSortsByCanonicalKey(): void
     {
-        self::assertSame(['a', 'b', 'c'], (new ChoiceValue(['c', 'b', 'a', 'b']))->keys);
-        self::assertSame(['1', '2'], (new ChoiceValue([2, 1, '2']))->keys);
+        $value = new ChoiceValue([new ValueChoice('b'), new ValueChoice('a'), new ValueChoice('b', 'dup')]);
+        self::assertSame(['a', 'b'], \array_map(ChoiceKey::of(...), $value->choices));
     }
 
-    /**
-     * Dropping the empty string retires `DcaSelectFieldFilterElement`'s `''`-on-miss artifact,
-     * which today reaches `DcaSelectFilterType` as a real search value.
-     */
-    public function testEmptyStringsAndUnrepresentableEntriesAreDropped(): void
+    public function testTryFromIgnoresTheEmptySentinelAndYieldsNullWhenNothingRemains(): void
     {
-        self::assertSame(['a'], (new ChoiceValue(['a', '', null, true, false, [], new \stdClass()]))->keys);
+        self::assertNull(ChoiceValue::tryFrom([ChoicesBuilder::EMPTY_CHOICE, null]));
+        self::assertNull(ChoiceValue::tryFrom(null));
+        self::assertCount(1, ChoiceValue::tryFrom(new ValueChoice('x'))->choices);
     }
 
-    public function testStringableEntriesAreAccepted(): void
+    public function testTryFromIgnoresNonChoiceEntries(): void
     {
-        $stringable = new class implements \Stringable {
-            public function __toString(): string
-            {
-                return 'x';
-            }
-        };
-
-        self::assertSame(['x'], (new ChoiceValue([$stringable]))->keys);
+        $value = ChoiceValue::tryFrom([new ValueChoice('x'), 'plain', 5, new \stdClass()]);
+        self::assertCount(1, $value->choices);
     }
 
-    public function testTryFromReturnsNullWhenNothingSurvives(): void
+    public function testFingerprintIsOrderIndependentAndKeyBased(): void
     {
-        self::assertNull(ChoiceValue::tryFrom([]));
-        self::assertNull(ChoiceValue::tryFrom(['', null, []]));
-        self::assertSame(['a'], ChoiceValue::tryFrom(['a'])?->keys);
-    }
-
-    /**
-     * Case is deliberately preserved. Lowercasing is coupled to `FieldValueChoiceFilterType`'s
-     * `LOWER(TRIM())` and would break `DcaSelectFilterType`'s case-sensitive lookup of DCA option
-     * keys, so it stays in the element that needs it.
-     */
-    public function testCaseIsPreserved(): void
-    {
-        self::assertSame(['A', 'a'], (new ChoiceValue(['a', 'A']))->keys);
+        $a = new ChoiceValue([ContaoModelChoice::ref('t', 2), ContaoModelChoice::ref('t', 1)]);
+        $b = new ChoiceValue([ContaoModelChoice::ref('t', 1), ContaoModelChoice::ref('t', 2)]);
+        self::assertSame($a->fingerprint(), $b->fingerprint());
+        self::assertSame('["t.1","t.2"]', $a->fingerprint());
     }
 }

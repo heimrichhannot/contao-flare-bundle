@@ -72,3 +72,4 @@ $flare['date_time'] = [
 
 $err['listview']['malconfigured'] = 'This list view is misconfigured.';
 $err['tl_content'][ContentContainer::FIELD_FORM_NAME] = 'Must start with a letter and may only contain a-z, 0-9, _. Must not end with _page.';
+$err['form_name'] = 'May only contain a-z, A-Z, 0-9, _, - and :. Must start with a letter, a digit or _.';

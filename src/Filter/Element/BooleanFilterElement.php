@@ -5,139 +5,59 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Filter\Element;
 
 use Contao\Controller;
-use Contao\Message;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
-use HeimrichHannot\FlareBundle\Enum\BoolMode;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
-use HeimrichHannot\FlareBundle\Filter\FormulaBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
-use HeimrichHannot\FlareBundle\Filter\FilterData;
-use HeimrichHannot\FlareBundle\Filter\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
+use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
+use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
-use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-#[AsFilterElement(type: self::TYPE, isTargeted: true)]
+#[AsFilterElement(type: self::TYPE, isTargeted: true, value: BoolValue::class)]
 class BooleanFilterElement extends AbstractFilterElement
 {
     public const TYPE = 'flare_bool';
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('intrinsic')->default(false)->allowedTypes('bool');
-        $resolver->define('field')->default(null)->allowedTypes('string', 'null');
-        $resolver->define('preselect')->default(null)->allowedTypes('bool', 'null');
-        $resolver->define('mode')->default(BoolMode::BINARY)->allowedTypes(BoolMode::class);
-        $resolver->define('binary_choices')->default(BoolBinaryChoices::NULL_TRUE)->allowedTypes(BoolBinaryChoices::class);
-        $resolver->define('label')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('field')->required()->allowedTypes('string')
+            ->allowedValues(static fn (string $value): bool => $value !== '');
     }
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
-        $config
-            ->set('intrinsic', (bool) $model->intrinsic)
-            ->set('field', $model->fieldGeneric ?: null)
-            ->set('preselect', $this->normalizeValue($model->preselect))
-            ->set('mode', BoolMode::tryFrom((string) $model->boolMode) ?? BoolMode::BINARY)
-            ->set('binary_choices', BoolBinaryChoices::tryFrom((string) $model->boolBinaryChoices) ?? BoolBinaryChoices::NULL_TRUE)
-            ->set('label', $model->label ?: $model->title ?: null);
+        $config->set('field', $model->elm_fieldGeneric ?: null);
     }
 
-    public function buildForm(FilterFormBuilderInterface $builder, FilterContext $context): void
-    {
-        if ($context->config['intrinsic']) {
+    /**
+     * @throws FilterException
+     */
+    public function buildContext(
+        FilterContextBuilderInterface $builder,
+        ElementScope                  $scope,
+        ?ValueInterface               $value,
+    ): void {
+        if (!$value = $this->expectValue($value, BoolValue::class)) {
             return;
         }
 
-        $builder->single(CheckboxType::class, [
-            'label' => $context->config['label'] ?? 'CBX',
-            'required' => false,
+        $builder->addPredicate(BooleanPredicate::class, [
+            'field' => $scope->get('field'),
+            'value' => $value->state,
         ]);
     }
 
-    public function buildContext(FilterContextBuilder $builder, ?ValueInterface $value): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $config = $context->config;
+        $builder->palette('{filter_legend},elm_fieldGeneric');
 
-        if (!$targetField = $config['field']) {
-            $builder->abort();
-        }
-
-        $value = $config['intrinsic']
-            ? $config['preselect']
-            : $this->resolveRuntimeValue($value->getSingleValue(), $config);
-
-        if ($value === null) {
-            return;
-        }
-
-        $builder->add(BooleanPredicate::class, [
-            'field' => $targetField,
-            'value' => $value,
-        ]);
-    }
-
-    private function resolveRuntimeValue(mixed $value, array $config): ?bool
-    {
-        $choices = $config['mode'] === BoolMode::BINARY ? $config['binary_choices'] : null;
-
-        return $this->normalizeValue($value, $choices) ?? $config['preselect'];
-    }
-
-    public function normalizeValue(mixed $value, ?BoolBinaryChoices $choices = null): ?bool
-    {
-        if (\is_string($value)) {
-            $value = \strtolower(\trim($value));
-        }
-
-        if ($value === null || $value === '' || $value === 'null')
-        {
-            return null;
-        }
-
-        if ($choices === BoolBinaryChoices::NULL_TRUE && !$value)
-        {
-            return null;
-        }
-
-        return \filter_var($value, \FILTER_VALIDATE_BOOLEAN, \FILTER_NULL_ON_FAILURE);
-    }
-
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
-    {
-        $intrinsic = (bool) $context->filterModel?->intrinsic;
-
-        $dca->palette($intrinsic
-            ? '{filter_legend},fieldGeneric,preselect'
-            : '{filter_legend},fieldGeneric,label,boolMode,preselect');
-
-        $preselectOptions = [
-            'null' => 'flare.bool_preselect.null',
-            'true' => 'flare.bool_preselect.true',
-            'false' => 'flare.bool_preselect.false',
-        ];
-
-        if ($intrinsic) {
-            unset($preselectOptions['null']);
-        }
-
-        $dca->field('preselect')
-            ->inputType('select')
-            ->eval(['includeBlankOption' => false, 'chosen' => false])
-            ->options($preselectOptions);
-
-        $dca->field('fieldGeneric')
+        $builder->field('elm_fieldGeneric')
             ->options(fn (): array => $this->getFieldGenericOptions($context->getTargetTable()));
-
-        if ($context->filterModel?->boolMode === BoolMode::TERNARY->value) {
-            Message::addError('The ternary mode is currently not supported by the boolean filter element. Please use the binary mode instead.');
-        }
     }
 
     protected function getFieldGenericOptions(string $targetTable): array

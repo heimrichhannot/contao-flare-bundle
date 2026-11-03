@@ -47,6 +47,7 @@ class EventsInteractiveProjector extends InteractiveProjector
         ReaderUrlGeneratorInterface $readerUrlGenerator,
         string                      $table,
         int                         $totalItems,
+        bool                        $failed = false,
     ): InteractiveEventsView {
         return new InteractiveEventsView(
             loader: $loader,
@@ -55,6 +56,7 @@ class EventsInteractiveProjector extends InteractiveProjector
             readerUrlGenerator: $readerUrlGenerator,
             table: $table,
             totalItems: $totalItems,
+            failed: $failed,
         );
     }
 }

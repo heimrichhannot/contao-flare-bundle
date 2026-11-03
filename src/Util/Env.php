@@ -50,7 +50,7 @@ final class Env
                 default => false,
             };
         }
-        catch (\Throwable)
+        catch (\Exception)
         {
             return self::$cache[$name] = false;
         }

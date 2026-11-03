@@ -46,6 +46,7 @@ Dockerfile     text eol=lf
 /.gitignore           export-ignore
 /.idea                export-ignore
 /AGENTS.md            export-ignore
+/dev                  export-ignore
 /Makefile             export-ignore
 /docker               export-ignore
 /docker-compose.yml   export-ignore

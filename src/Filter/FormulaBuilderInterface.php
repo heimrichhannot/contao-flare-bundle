@@ -6,6 +6,9 @@ namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\Filter\Predicate\PredicateInterface;
 
+/**
+ * @internal
+ */
 interface FormulaBuilderInterface
 {
     /**

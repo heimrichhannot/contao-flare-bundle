@@ -41,7 +41,7 @@ readonly class FieldsOptionsCallbacks
 
         foreach ($this->listDriverRegistry->keys() as $type)
         {
-            $options[$type] = $this->translator->trans($type, [], 'flare_list');
+            $options[$type] = $this->translator->trans($type, [], 'flare_list_driver');
         }
 
         return $options;

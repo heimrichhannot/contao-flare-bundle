@@ -37,7 +37,7 @@ readonly class RegisterTagsTablesListener
 
         $fields = \array_filter(
             $GLOBALS['TL_DCA'][$table]['fields'] ?? [],
-            static fn ($key) => \in_array($key, $columns, true),
+            static fn ($key): bool => \in_array($key, $columns, true),
             mode: \ARRAY_FILTER_USE_KEY
         );
 

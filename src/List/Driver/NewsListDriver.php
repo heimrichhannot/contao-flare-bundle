@@ -30,9 +30,9 @@ class NewsListDriver extends AbstractListDriver
         return self::DATA_CONTAINER;
     }
 
-    public function buildDca(DcaBuilderInterface $dca, DcaContext $context): void
+    public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
-        $dca->palette('{filter_legend},');
+        $builder->palette('{filter_legend},');
     }
 
     public function buildTableRegistry(TableAliasRegistry $registry): void
@@ -55,7 +55,6 @@ class NewsListDriver extends AbstractListDriver
         $builder->addFilter($this->filterFactory->create(
             element: PublishedFilterElement::TYPE,
             config: [
-                'intrinsic' => true,
                 'published_field' => 'published',
                 'start_field' => 'start',
                 'stop_field' => 'stop',

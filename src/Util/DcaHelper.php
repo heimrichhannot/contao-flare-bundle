@@ -103,8 +103,8 @@ class DcaHelper
 
     public static function getFieldOptions(
         DataContainer|string|null $dc_or_table,
-        ?callable $predicate = null,
-        ?string $alias = null,
+        ?callable                 $predicate = null,
+        ?string                   $alias = null,
     ): array {
         if (\is_string($dc_or_table))
         {

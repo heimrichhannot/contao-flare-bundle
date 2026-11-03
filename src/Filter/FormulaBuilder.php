@@ -10,6 +10,9 @@ use HeimrichHannot\FlareBundle\Filter\Predicate\PredicateInterface;
 use HeimrichHannot\FlareBundle\Registry\FilterPredicateRegistry;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
+/**
+ * @internal
+ */
 final class FormulaBuilder implements FormulaBuilderInterface
 {
     /**

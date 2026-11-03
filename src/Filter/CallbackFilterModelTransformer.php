@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 
 final readonly class CallbackFilterModelTransformer implements TransformerInterface
 {
-    /** @param \Closure(ConfigBuilder $config, object $source): void $transform */
+    /** @param \Closure(ConfigBuilder $config, FilterModel $source): mixed $transform Called with FilterModels only. */
     public function __construct(private \Closure $transform) {}
 
     public function __invoke(ConfigBuilder $config, object $source): void

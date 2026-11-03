@@ -34,7 +34,7 @@ class FilterContainer
                 return [$filterModel, $listModel];
             }
         }
-        catch (\Throwable) {}
+        catch (\Exception) {}
 
         return [null, null];
     }

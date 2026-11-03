@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Resolver;
 
+use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterComponentInterface;
 
 /**
- * Resolves a filter's canonical config through the element's declared schema.
- * Elements without an {@see OptionsContract} receive their config verbatim (unvalidated).
+ * Resolves the canonical config of a filter component (element or control) through its declared schema.
+ * Components without an {@see OptionsContract} receive their config verbatim (unvalidated).
  */
 final readonly class FilterOptionsResolver
 {
@@ -21,26 +21,34 @@ final readonly class FilterOptionsResolver
     ) {}
 
     /**
-     * @return array<string, mixed>
+     * @param array<string, mixed> $config
+     * @param string|null $origin Provenance for the exception, e.g. "tl_flare_filter.42".
      *
-     * @throws FilterException If the config does not satisfy the element's schema.
+     * @throws FilterException If the config does not satisfy the component's schema.
      */
-    public function resolve(FilterElementInterface $element, array $config): array
+    public function resolve(FilterComponentInterface $owner, array $config, ?string $origin = null): ComponentConfig
     {
-        if (!$element instanceof OptionsContract) {
-            return $config;
+        if (!$owner instanceof OptionsContract) {
+            return new ComponentConfig($config, null, \get_debug_type($owner));
         }
 
         try
         {
-            return $this->schemaResolver->resolve($element::class, $element->configureOptions(...), $config);
+            $configure = $owner->configureOptions(...);
+
+            return new ComponentConfig(
+                $this->schemaResolver->resolve($owner::class, $configure, $config),
+                $this->schemaResolver->getDefinedOptions($owner::class, $configure),
+                \get_debug_type($owner),
+            );
         }
-        catch (\Throwable $e)
+        catch (\Exception $e)
         {
             throw new FilterException(
-                \sprintf('[FLARE] Invalid filter config for element "%s": %s', $element::class, $e->getMessage()),
+                \sprintf('[FLARE] Invalid config for "%s": %s', \get_debug_type($owner), $e->getMessage()),
                 previous: $e,
-                method: $element::class . '::configureOptions',
+                method: $owner::class . '::configureOptions',
+                source: $origin,
             );
         }
     }

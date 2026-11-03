@@ -29,6 +29,23 @@ final class SchemaResolverTest extends TestCase
         self::assertSame(2, $calls);
     }
 
+    public function testGetDefinedOptionsSharesTheMemoizedResolver(): void
+    {
+        $schemaResolver = new SchemaResolver();
+
+        $calls = 0;
+        $configure = function (OptionsResolver $resolver) use (&$calls): void {
+            $calls++;
+            $resolver->define('a')->default(1);
+            $resolver->define('x');
+        };
+
+        $schemaResolver->resolve('key', $configure, []);
+
+        self::assertEqualsCanonicalizing(['a', 'x'], $schemaResolver->getDefinedOptions('key', $configure));
+        self::assertSame(1, $calls);
+    }
+
     public function testResolutionFailuresPropagateUntouched(): void
     {
         $schemaResolver = new SchemaResolver();

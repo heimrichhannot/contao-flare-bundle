@@ -1,56 +1,42 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HeimrichHannot\FlareBundle\Filter;
 
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
-use HeimrichHannot\FlareBundle\Filter\Factory\FormulaBuilderFactory;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\Filter\Predicate\PredicateInterface;
 
-class FilterContextBuilder
+/**
+ * Collects what an element contributes to its {@see FilterContext}. Elements only see the
+ * {@see FilterContextBuilderInterface}; {@see build()} is the framework's.
+ *
+ * @internal
+ */
+final class FilterContextBuilder implements FilterContextBuilderInterface
 {
-    private array $predicates = [];
-
     public function __construct(
-        public readonly FormulaBuilderFactory $formulaBuilderFactory,
-        public readonly ListSpec $list,
-        public readonly Filter $filter,
-        public readonly ContextInterface $engineContext,
+        private readonly FormulaBuilderInterface $formulaBuilder,
     ) {}
 
-    public function addPredicate(string $type, array $options = [], ?string $targetAlias = null): self
+    /**
+     * @param class-string<PredicateInterface> $predicateClass
+     * @param array<string, mixed> $options
+     */
+    public function addPredicate(string $predicateClass, array $options = [], ?string $targetAlias = null): static
     {
-        $this->predicates[] = [$type, $options, $targetAlias];
+        $this->formulaBuilder->add($predicateClass, $options, $targetAlias);
 
         return $this;
-    }
-
-    public function setPredicates(array $predicates): self
-    {
-        $this->predicates = $predicates;
-        return $this;
-    }
-
-    public function build(): FilterContext
-    {
-        $formulaBuilder = $this->formulaBuilderFactory->create($this->filter->targetAlias);
-
-        foreach ($this->predicates as [$type, $options, $targetAlias]) {
-            $formulaBuilder->add($type, $options, $targetAlias);
-        }
-
-        $formula = $formulaBuilder->build();
-
-        return new FilterContext(
-            list: $this->list,
-            filter: $this->filter,
-            formula: $formula,
-            engineContext: $this->engineContext,
-        );
     }
 
     public function abort(): never
     {
         throw new AbortFilteringException();
+    }
+
+    public function build(): FilterContext
+    {
+        return new FilterContext(formula: $this->formulaBuilder->build());
     }
 }

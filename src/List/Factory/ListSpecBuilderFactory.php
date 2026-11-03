@@ -13,8 +13,8 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
- * Creates ListSpecBuilders — from a stored tl_flare_list model with its published filters
- * pre-added, or programmatically from a driver.
+ * Creates ListSpecBuilders — from a stored tl_flare_list model with its published filters and
+ * filter failures pre-added, or programmatically from a driver.
  */
 final readonly class ListSpecBuilderFactory
 {
@@ -51,8 +51,16 @@ final readonly class ListSpecBuilderFactory
             source: $listModel::getTable() . '.' . $listModel->id,
         );
 
-        foreach ($this->filterCollector->collect($listModel) ?? [] as $key => $filter) {
+        if (!$collected = $this->filterCollector->collect($listModel)) {
+            return $builder;
+        }
+
+        foreach ($collected->filters as $key => $filter) {
             $builder->addFilter($filter, (string) $key);
+        }
+
+        foreach ($collected->failures as $failure) {
+            $builder->addFailure($failure);
         }
 
         return $builder;

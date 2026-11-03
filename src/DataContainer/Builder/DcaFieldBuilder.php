@@ -15,6 +15,11 @@ final class DcaFieldBuilder implements DcaFieldBuilderInterface
     private array $definition = [];
 
     /**
+     * @var array{0: string, 1: string}|null
+     */
+    private ?array $label = null;
+
+    /**
      * @var callable|array|null
      */
     private mixed $options = null;
@@ -54,6 +59,16 @@ final class DcaFieldBuilder implements DcaFieldBuilderInterface
     }
 
     /**
+     * Replaces the label rather than merging it: Contao sets a default label as a reference into
+     * `$GLOBALS['TL_LANG']`, which a merge would extend or write through.
+     */
+    public function label(string $label, ?string $description = null): self
+    {
+        $this->label = [$label, $description ?? ''];
+        return $this;
+    }
+
+    /**
      * Static options array or an options provider `fn(?DataContainer): array`.
      *
      * @param callable(?DataContainer): array|array $options
@@ -88,6 +103,12 @@ final class DcaFieldBuilder implements DcaFieldBuilderInterface
     public function applyTo(array &$definition): void
     {
         $definition = self::deepMerge($definition, $this->definition);
+
+        if ($this->label !== null)
+        {
+            unset($definition['label']);
+            $definition['label'] = $this->label;
+        }
 
         if (\is_array($this->options))
         {

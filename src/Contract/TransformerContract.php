@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Contract;
 
-use HeimrichHannot\FlareBundle\Config\TransformerResolver;
+use HeimrichHannot\FlareBundle\Config\TransformerMap;
 
 /**
  * Implemented by filter elements and list types that own the translation from stored
@@ -19,5 +19,5 @@ interface TransformerContract
     /**
      * Declares per-source transformers translating a stored source into canonical config values.
      */
-    public function configureTransformers(TransformerResolver $resolver): void;
+    public function configureTransformers(TransformerMap $transformers): void;
 }

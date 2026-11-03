@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Context;
 
-use HeimrichHannot\FlareBundle\Filter\FilterData;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 
 class AggregationContext implements ContextInterface
 {
@@ -14,14 +14,14 @@ class AggregationContext implements ContextInterface
     }
 
     /**
-     * @param array<string|int, FilterData> $filterValues
+     * @param array<string, ?ValueInterface> $filterValues Filter values keyed by filter alias.
      */
     public function __construct(
         private array $filterValues = [],
     ) {}
 
     /**
-     * @return array<string|int, FilterData>
+     * @return array<string, ?ValueInterface>
      */
     public function getFilterValues(): array
     {
@@ -29,7 +29,7 @@ class AggregationContext implements ContextInterface
     }
 
     /**
-     * @param array<string|int, FilterData> $values
+     * @param array<string, ?ValueInterface> $values
      */
     public function withFilterValues(array $values): self
     {

@@ -8,17 +8,26 @@ use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
 
 trait PtableInferrableTrait
 {
+    /**
+     * The column holding the given inference setting (`fieldPid`, `whichPtable`, `fieldPtable`, `tablePtable`);
+     * models whose columns carry a prefix override this.
+     */
+    protected static function getPtableInferColumn(string $name): string
+    {
+        return $name;
+    }
+
     public function getInferFieldPid(): ?string
     {
-        return $this->fieldPid ?: null;
+        return $this->{static::getPtableInferColumn('fieldPid')} ?: null;
     }
 
     public function getInferWhichPtable(): string
     {
-        if ($this->whichPtable
-            && \in_array($this->whichPtable, PtableInferrer::WHICH_PTABLE_OPTIONS, true))
-        {
-            return $this->whichPtable;
+        $whichPtable = $this->{static::getPtableInferColumn('whichPtable')};
+
+        if ($whichPtable && \in_array($whichPtable, PtableInferrer::WHICH_PTABLE_OPTIONS, true)) {
+            return $whichPtable;
         }
 
         return PtableInferrer::WHICH_PTABLE_DEFAULT;
@@ -26,22 +35,24 @@ trait PtableInferrableTrait
 
     public function getInferFieldPtable(): ?string
     {
-        return $this->fieldPtable ?: null;
+        return $this->{static::getPtableInferColumn('fieldPtable')} ?: null;
     }
 
     public function getInferTablePtable(): ?string
     {
-        return $this->tablePtable ?: null;
+        return $this->{static::getPtableInferColumn('tablePtable')} ?: null;
     }
 
     public function whichPtable_disableAutoOption(): void
     {
-        $GLOBALS['TL_DCA'][self::getTable()]['fields']['whichPtable']['options'] = ['dynamic', 'static'];
-        $GLOBALS['TL_DCA'][self::getTable()]['fields']['whichPtable']['default'] = ['dynamic'];
+        $column = static::getPtableInferColumn('whichPtable');
 
-        if ($this->whichPtable === 'auto')
+        $GLOBALS['TL_DCA'][self::getTable()]['fields'][$column]['options'] = ['dynamic', 'static'];
+        $GLOBALS['TL_DCA'][self::getTable()]['fields'][$column]['default'] = ['dynamic'];
+
+        if ($this->{$column} === 'auto')
         {
-            $this->whichPtable = 'dynamic';
+            $this->{$column} = 'dynamic';
             $this->save();
         }
     }

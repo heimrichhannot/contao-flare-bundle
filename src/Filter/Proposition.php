@@ -6,6 +6,9 @@ namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\Filter\Predicate\PredicateInterface;
 
+/**
+ * @internal
+ */
 final readonly class Proposition
 {
     public function __construct(

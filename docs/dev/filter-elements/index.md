@@ -39,6 +39,9 @@ class CityFilterElement extends AbstractFilterElement
 
 ### Attribute Parameters:
 - **`type`**: Unique identifier of the element — the value stored in `tl_flare_filter.type`.
+  The backend labels an element with the translation of its type in the `flare_filter_element` domain (e.g.
+  `translations/flare_filter_element.en.php` returning `['app_city' => 'City']`); without one, it shows the type
+  itself.
 - **`isTargeted`**: (Optional) Boolean. If true, the filter respects the table alias configured on the
   filter record (see [target aliases](../../spec/filtering.md#5-target-aliases)).
 - **`value`**: (Optional) The **value class** the element consumes in `buildContext()`. The editor can choose

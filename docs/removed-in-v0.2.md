@@ -117,6 +117,11 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - `flare_enclosure_files()` — deprecated since v0.1, removed in v0.2; a replacement based on the virtual
   file system is planned for a future release
 
+## Translations
+
+- The `flare_filter` domain (filter element labels) — renamed to `flare_filter_element`, next to the new
+  `flare_filter_control` domain of the control labels
+
 ## Behavioral notes
 
 - Bool filters with a control no longer restrict reader pages: only fixed values and the elements' own config

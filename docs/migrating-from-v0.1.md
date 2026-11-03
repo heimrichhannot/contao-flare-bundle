@@ -41,6 +41,12 @@ For the exhaustive list of deleted APIs, see [Removed in v0.2](./removed-in-v0.2
 | `#[AsFilterInvoker]` | Removed — branch on `$scope->engineContext` inside `buildContext()` or a control hook |
 | `#[AsFilterCallback]`, `#[AsListCallback]`, `#[AsFlareCallback]` | Removed — use [`buildDca()` / the DCA events](./dev/dca-builder.md) |
 
+## Translations
+
+Filter element labels move from the `flare_filter` translation domain to **`flare_filter_element`**. If your
+extension labels its own elements, rename its `translations/flare_filter.{locale}.*` files to
+`flare_filter_element.{locale}.*`. Controls are labelled in the new `flare_filter_control` domain.
+
 ## Filter Element API
 
 The `__invoke(FilterInvocation $invocation, FilterQueryBuilder $qb)` entry point is replaced by a single

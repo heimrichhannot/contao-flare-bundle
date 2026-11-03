@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareFilter;
+namespace HeimrichHannot\FlareBundle\Contao\Callback\FlareFilter;
 
 use Contao\Controller;
 use Contao\CoreBundle\DataContainer\PaletteManipulator;

@@ -4,12 +4,19 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\DependencyInjection;
 
+use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
+use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use HeimrichHannot\FlareBundle\Contao\BackendModule;
+use HeimrichHannot\FlareBundle\Contao\Callback\FlareFilter\FieldsOptionsCallbacks;
+use HeimrichHannot\FlareBundle\Contao\Callback\FlareList\ConfigOnSubmitCallback;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementScopeFactory;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaContext;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\ListContainer;
+use HeimrichHannot\FlareBundle\Contao\Hook\BreadcrumbHook;
+use HeimrichHannot\FlareBundle\Contao\Hook\ElementDcaHook;
+use HeimrichHannot\FlareBundle\Contao\Hook\FormNameRegexpHook;
 use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssue;
 use HeimrichHannot\FlareBundle\Contao\Inspection\Inspector\FilterInspector;
 use HeimrichHannot\FlareBundle\Contao\Inspection\ListInspection;
@@ -61,6 +68,11 @@ final class ServicesConfigTest extends TestCase
             BackendElementScopeFactory::class,
             ListContainer::class,
             FilterContainer::class,
+            ElementDcaHook::class,
+            BreadcrumbHook::class,
+            FormNameRegexpHook::class,
+            ConfigOnSubmitCallback::class,
+            FieldsOptionsCallbacks::class,
         ] as $class) {
             yield $class => [$class];
         }
@@ -107,5 +119,18 @@ final class ServicesConfigTest extends TestCase
             '%kernel.debug%',
             self::container()->getDefinition(FilterInspector::class)->getArgument('$debug'),
         );
+    }
+
+    public function testHooksAndCallbacksKeepTheirAttributes(): void
+    {
+        $hook = (new \ReflectionClass(ElementDcaHook::class))->getAttributes(AsHook::class);
+
+        self::assertCount(1, $hook);
+        self::assertSame(['loadDataContainer', 'priority' => -100], $hook[0]->getArguments());
+
+        $callback = (new \ReflectionMethod(ConfigOnSubmitCallback::class, '__invoke'))->getAttributes(AsCallback::class);
+
+        self::assertCount(1, $callback);
+        self::assertSame([ListContainer::TABLE_NAME, 'config.onsubmit'], $callback[0]->getArguments());
     }
 }

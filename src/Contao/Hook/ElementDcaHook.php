@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\EventListener\Contao;
+namespace HeimrichHannot\FlareBundle\Contao\Hook;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use Contao\CoreBundle\Framework\ContaoFramework;
@@ -39,7 +39,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  * of the previous palette assembly.
  */
 #[AsHook('loadDataContainer', priority: -100)]
-final readonly class ElementDcaListener
+final readonly class ElementDcaHook
 {
     public function __construct(
         private BackendElementScopeFactory  $elementScopeFactory,

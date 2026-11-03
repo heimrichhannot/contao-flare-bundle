@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\EventListener\Contao;
+namespace HeimrichHannot\FlareBundle\Contao\Hook;
 
 use Contao\ArticleModel;
 use Contao\ContentModel;
@@ -23,7 +23,7 @@ use HeimrichHannot\FlareBundle\Util\Env;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 #[AsHook('generateBreadcrumb')]
-readonly class BreadcrumbListener
+readonly class BreadcrumbHook
 {
     public function __construct(
         private Connection               $connection,

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Tests\EventListener\DataContainer\FlareFilter;
+namespace HeimrichHannot\FlareBundle\Tests\Contao\Callback\FlareFilter;
 
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\DataContainer;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareFilter\FieldsOptionsCallbacks;
+use HeimrichHannot\FlareBundle\Contao\Callback\FlareFilter\FieldsOptionsCallbacks;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;

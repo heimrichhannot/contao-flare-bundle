@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Tests\EventListener\Contao;
+namespace HeimrichHannot\FlareBundle\Tests\Contao\Hook;
 
 use Contao\Widget;
-use HeimrichHannot\FlareBundle\EventListener\Contao\FormNameRegexpListener;
+use HeimrichHannot\FlareBundle\Contao\Hook\FormNameRegexpHook;
 use PHPUnit\Framework\TestCase;
 
-final class FormNameRegexpListenerTest extends TestCase
+final class FormNameRegexpHookTest extends TestCase
 {
     /** @var list<string> */
     private array $errors = [];
@@ -35,7 +35,7 @@ final class FormNameRegexpListenerTest extends TestCase
 
     public function testOtherRegexpsAreNotHandled(): void
     {
-        self::assertFalse((new FormNameRegexpListener())('alias', 'price.min', $this->widget()));
+        self::assertFalse((new FormNameRegexpHook())('alias', 'price.min', $this->widget()));
         self::assertSame([], $this->errors);
     }
 
@@ -44,7 +44,7 @@ final class FormNameRegexpListenerTest extends TestCase
      */
     public function testValidFormNamesPass(string $input): void
     {
-        self::assertTrue((new FormNameRegexpListener())(FormNameRegexpListener::RGXP, $input, $this->widget()));
+        self::assertTrue((new FormNameRegexpHook())(FormNameRegexpHook::RGXP, $input, $this->widget()));
         self::assertSame([], $this->errors);
     }
 
@@ -62,7 +62,7 @@ final class FormNameRegexpListenerTest extends TestCase
      */
     public function testInvalidFormNamesAreRejected(string $input): void
     {
-        self::assertTrue((new FormNameRegexpListener())(FormNameRegexpListener::RGXP, $input, $this->widget()));
+        self::assertTrue((new FormNameRegexpHook())(FormNameRegexpHook::RGXP, $input, $this->widget()));
         self::assertSame(['Not a form name.'], $this->errors);
     }
 

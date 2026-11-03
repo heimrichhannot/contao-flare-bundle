@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\EventListener\Contao;
+namespace HeimrichHannot\FlareBundle\Contao\Hook;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use Contao\Widget;
@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Util\Str;
  * Contao's own `alias` rgxp also accepts dots, leading hyphens and non-ASCII letters.
  */
 #[AsHook('addCustomRegexp')]
-final readonly class FormNameRegexpListener
+final readonly class FormNameRegexpHook
 {
     public const RGXP = 'flare_form_name';
 

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Tests\EventListener\Contao;
+namespace HeimrichHannot\FlareBundle\Tests\Contao\Hook;
 
 use Contao\CoreBundle\Framework\Adapter;
 use Contao\Message;
 use Contao\TestCase\ContaoTestCase;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementScopeFactory;
 use HeimrichHannot\FlareBundle\Contao\Inspection\Reporter\FilterIssueReporter;
-use HeimrichHannot\FlareBundle\EventListener\Contao\ElementDcaListener;
+use HeimrichHannot\FlareBundle\Contao\Hook\ElementDcaHook;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
@@ -20,7 +20,7 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
-final class ElementDcaListenerTest extends ContaoTestCase
+final class ElementDcaHookTest extends ContaoTestCase
 {
     use BuildsFilterInspectorTrait;
 
@@ -120,7 +120,7 @@ final class ElementDcaListenerTest extends ContaoTestCase
         return $adapter;
     }
 
-    private function listener(Request $request, Adapter $filters, Adapter $lists): ElementDcaListener
+    private function listener(Request $request, Adapter $filters, Adapter $lists): ElementDcaHook
     {
         $dispatcher = new EventDispatcher();
 
@@ -133,7 +133,7 @@ final class ElementDcaListenerTest extends ContaoTestCase
         $requestStack = new RequestStack();
         $requestStack->push($request);
 
-        return new ElementDcaListener(
+        return new ElementDcaHook(
             elementScopeFactory: new BackendElementScopeFactory($this->createFilterFactory()),
             eventDispatcher: $dispatcher,
             filterControlRegistry: new FilterControlRegistry(),

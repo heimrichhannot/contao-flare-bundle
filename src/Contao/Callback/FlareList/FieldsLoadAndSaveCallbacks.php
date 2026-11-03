@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\EventListener\DataContainer\FlareList;
+namespace HeimrichHannot\FlareBundle\Contao\Callback\FlareList;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;

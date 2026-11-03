@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\List\Collector;
+namespace HeimrichHannot\FlareBundle\Contao\Factory;
 
 use Contao\Controller;
+use HeimrichHannot\FlareBundle\Contao\CollectedFilters;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -19,7 +19,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  * Collects the published tl_flare_filter rows of a list model as Filter DTOs,
  * translating each row through its element's and control's transformers.
  */
-readonly class ListModelFilterCollector
+final readonly class FilterCollector
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,

@@ -15,7 +15,9 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaFieldBuilderInter
 use HeimrichHannot\FlareBundle\Contao\Inspection\Inspector\FilterInspector;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterCollector;
 use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory as ContaoListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory as CoreFilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
@@ -23,7 +25,6 @@ use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
 use HeimrichHannot\FlareBundle\Form\Factory\FilterFormBuilderFactory;
-use HeimrichHannot\FlareBundle\List\Collector\ListModelFilterCollector;
 use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
@@ -170,17 +171,24 @@ trait BuildsFilterInspectorTrait
         return new ListSpecBuilderFactory(
             eventDispatcher: $dispatcher,
             listDriverResolver: $driverResolver,
-            filterCollector: new ListModelFilterCollector(
-                $dispatcher,
-                $this->createFilterFactory(),
-                $registry,
-                new NullLogger(),
-            ),
             specFactory: new ListSpecFactory(
                 $registry,
                 new ListOptionsResolver(new SchemaResolver()),
                 new ListTransformerResolver(new SourceTransformer(), $dispatcher),
                 $driverResolver,
+            ),
+        );
+    }
+
+    private function createContaoListSpecBuilderFactory(EventDispatcherInterface $dispatcher): ContaoListSpecBuilderFactory
+    {
+        return new ContaoListSpecBuilderFactory(
+            builderFactory: $this->createListSpecBuilderFactory($dispatcher),
+            filterCollector: new FilterCollector(
+                $dispatcher,
+                $this->createFilterFactory(),
+                $this->createListDriverRegistry(),
+                new NullLogger(),
             ),
         );
     }

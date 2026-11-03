@@ -15,7 +15,10 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\ControlDcaBuilder;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\CollectedFilters;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterCollector;
 use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Contao\Hook\BreadcrumbHook;
 use HeimrichHannot\FlareBundle\Contao\Hook\ElementDcaHook;
 use HeimrichHannot\FlareBundle\Contao\Hook\FormNameRegexpHook;
@@ -76,6 +79,8 @@ final class ServicesConfigTest extends TestCase
             ConfigOnSubmitCallback::class,
             FieldsOptionsCallbacks::class,
             FilterFactory::class,
+            FilterCollector::class,
+            ListSpecBuilderFactory::class,
         ] as $class) {
             yield $class => [$class];
         }
@@ -91,6 +96,7 @@ final class ServicesConfigTest extends TestCase
             DcaBuilder::class,
             DcaContext::class,
             ControlDcaBuilder::class,
+            CollectedFilters::class,
             FilterIssue::class,
             ListInspection::class,
             PtableInferrer::class,

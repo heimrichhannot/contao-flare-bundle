@@ -16,7 +16,7 @@ use HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\ListDriverBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -127,7 +127,7 @@ final readonly class ElementDcaHook
         // resolution) and fails on broken configurations, so it is built on first use and at most once.
         $spec = null;
         $getSpec = function () use (&$spec, $listModel): ListSpec {
-            return $spec ??= $this->listFactory->createFromListModel($listModel)->build();
+            return $spec ??= $this->listFactory->create($listModel)->build();
         };
 
         $context = new DcaContext(

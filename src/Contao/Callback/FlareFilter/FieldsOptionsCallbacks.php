@@ -12,7 +12,7 @@ use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\IsSupportedContract;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrer;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
@@ -144,7 +144,7 @@ readonly class FieldsOptionsCallbacks
             return [];
         }
 
-        $list = $this->listFactory->createFromListModel($listModel)->build();
+        $list = $this->listFactory->create($listModel)->build();
         $listExecutionContext = $this->listExecutionContextFactory->create($list);
 
         $table = $listExecutionContext->tableAliasRegistry
@@ -261,7 +261,7 @@ readonly class FieldsOptionsCallbacks
             return [];
         }
 
-        $list = $this->listFactory->createFromListModel($listModel)->build();
+        $list = $this->listFactory->create($listModel)->build();
 
         $context = $this->listExecutionContextFactory->create($list);
         $tables = $context->tableAliasRegistry->getTables();

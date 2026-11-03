@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\List\Factory;
 
-use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\List\Collector\ListModelFilterCollector;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
 use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
@@ -13,15 +11,14 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
- * Creates ListSpecBuilders — from a stored tl_flare_list model with its published filters and
- * filter failures pre-added, or programmatically from a driver.
+ * Creates ListSpecBuilders from a driver. A builder for a stored tl_flare_list model, with its published filters
+ * and filter failures pre-added, comes from {@see \HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory}.
  */
 final readonly class ListSpecBuilderFactory
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
         private ListDriverResolver       $listDriverResolver,
-        private ListModelFilterCollector $filterCollector,
         private ListSpecFactory          $specFactory,
     ) {}
 
@@ -38,31 +35,5 @@ final readonly class ListSpecBuilderFactory
             model: $model,
             source: $source,
         );
-    }
-
-    /**
-     * @throws FlareException In case the list driver cannot be resolved.
-     */
-    public function createFromListModel(ListModel $listModel): ListSpecBuilder
-    {
-        $builder = $this->create(
-            driver: (string) $listModel->type,
-            model: $listModel,
-            source: $listModel::getTable() . '.' . $listModel->id,
-        );
-
-        if (!$collected = $this->filterCollector->collect($listModel)) {
-            return $builder;
-        }
-
-        foreach ($collected->filters as $key => $filter) {
-            $builder->addFilter($filter, (string) $key);
-        }
-
-        foreach ($collected->failures as $failure) {
-            $builder->addFailure($failure);
-        }
-
-        return $builder;
     }
 }

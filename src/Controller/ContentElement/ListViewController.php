@@ -19,7 +19,7 @@ use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Psr\Log\LoggerInterface;
@@ -100,7 +100,7 @@ final class ListViewController extends AbstractContentElementController
 
         try
         {
-            $listSpec = $this->listFactory->createFromListModel($listModel)->build();
+            $listSpec = $this->listFactory->create($listModel)->build();
 
             $interactiveConfig = $this->interactiveConfigFactory->createFromContent(
                 contentModel: $contentModel,

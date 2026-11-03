@@ -146,7 +146,7 @@ final class ElementDcaHookTest extends ContaoTestCase
             ),
             framework: $framework,
             listExecutionContextFactory: new ListExecutionContextFactory($dispatcher),
-            listFactory: $this->createListSpecBuilderFactory($dispatcher),
+            listFactory: $this->createContaoListSpecBuilderFactory($dispatcher),
             listDriverRegistry: $this->createListDriverRegistry(),
             requestStack: $requestStack,
             valueProviderRegistry: new ValueProviderRegistry(),

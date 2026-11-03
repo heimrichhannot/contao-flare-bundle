@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Tests\List;
+namespace HeimrichHannot\FlareBundle\Tests\Contao\Factory;
 
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterCollector;
 use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory as CoreFilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
-use HeimrichHannot\FlareBundle\List\Collector\ListModelFilterCollector;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
@@ -20,11 +20,14 @@ use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Exception\ValueClassMismatchError;
+use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
+use HeimrichHannot\FlareBundle\Tests\List\StubFilterElement;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
-final class ListModelFilterCollectorTest extends TestCase
+final class FilterCollectorTest extends TestCase
 {
     /** @var list<array{string, string}> */
     private array $logs = [];
@@ -37,7 +40,7 @@ final class ListModelFilterCollectorTest extends TestCase
         $this->dispatcher = new EventDispatcher();
     }
 
-    private function collector(): ListModelFilterCollector
+    private function collector(): FilterCollector
     {
         $elements = (new FilterElementRegistry())->add(new StubFilterElement(), null, 'stub');
 
@@ -62,7 +65,7 @@ final class ListModelFilterCollectorTest extends TestCase
             logger: $logger,
         );
 
-        return new ListModelFilterCollector(
+        return new FilterCollector(
             eventDispatcher: $this->dispatcher,
             filterFactory: $filterFactory,
             listDriverRegistry: new ListDriverRegistry(),
@@ -124,6 +127,17 @@ final class ListModelFilterCollectorTest extends TestCase
         self::assertSame([], $collected->failures);
         self::assertSame([1, 2], $collectedModels);
         self::assertSame([], $this->logs);
+    }
+
+    public function testListenerSettingAWrongValueEscapesAsError(): void
+    {
+        $this->dispatcher->addListener(FilterCollectedEvent::class, static function (FilterCollectedEvent $event): void {
+            $event->filter = $event->filter->withValue(new BoolValue(true));
+        });
+
+        $this->expectException(ValueClassMismatchError::class);
+
+        $this->collector()->collectFromModels([self::filterModel(1, 'stub')], self::listModel());
     }
 
     public function testListenerFlareExceptionFailsTheList(): void

@@ -35,7 +35,9 @@ class SearchBoxFilterControl extends AbstractFilterControl
 - **`type`**: the stable identifier persisted in `tl_flare_filter.control`, like the `type` of a filter element.
   Prefix third-party types; the empty string (the *intrinsic* state) and `default` are reserved. Defaults to a
   type derived from the class (suffixes `FilterControl` / `Control` stripped). The bundled controls expose it
-  as the `TYPE` constant (e.g. `ChoiceFilterControl::TYPE`).
+  as the `TYPE` constant (e.g. `ChoiceFilterControl::TYPE`). The backend labels a control with the translation of
+  its type in the `flare_filter_control` domain (e.g. `translations/flare_filter_control.en.php` returning
+  `['app_search_box' => 'Search box']`); without one, it shows the type itself.
 - The attribute is repeatable and tags the service `flare.filter_control` (service alias
   `flare.filter_control.{type}`). Two controls claiming one type fail the container build.
 - There is **no value class argument**: it is the narrowed return type of `decode()`, read by reflection by the

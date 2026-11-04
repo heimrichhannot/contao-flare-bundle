@@ -160,7 +160,7 @@ final class FormHarnessFactoryTest extends TestCase
         $this->assertStringContainsString('single field and add children', $harness->getFailures()[0]->message);
     }
 
-    public function testMultiFieldControlMountsNestedCompound(): void
+    public function testMultiFieldControlMountsNestedForm(): void
     {
         $control = $this->control(static function (FilterFormBuilderInterface $builder): void {
             $builder->add('from', TextType::class);
@@ -175,15 +175,15 @@ final class FormHarnessFactoryTest extends TestCase
         $this->assertTrue($child->has('to'));
         $this->assertTrue(
             $child->getConfig()->getEventDispatcher()->hasListeners(FormEvents::POST_SUBMIT),
-            'Deferred listeners must be replayed onto the mounted compound',
+            'Deferred listeners must be replayed onto the mounted form',
         );
     }
 
-    public function testCompoundMountTakesTheControlsCompoundOptions(): void
+    public function testMountTakesTheControlsMountOptions(): void
     {
         $labelled = $this->control(static function (FilterFormBuilderInterface $builder): void {
             $builder->add('from', TextType::class);
-            $builder->compound(['label' => 'Period']);
+            $builder->setMountOptions(['label' => 'Period']);
         });
         $plain = $this->control(static function (FilterFormBuilderInterface $builder): void {
             $builder->add('from', TextType::class);
@@ -373,14 +373,17 @@ final class FormHarnessFactoryTest extends TestCase
     /**
      * @dataProvider provideHydrateFailures
      */
-    public function testHydrateFailureKeepsTheMountWithoutData(bool $compound, \Exception $failure, string $level): void
-    {
-        $control = new class ($compound, $failure) implements FilterControlInterface {
-            public function __construct(private readonly bool $compound, private readonly \Exception $failure) {}
+    public function testHydrateFailureKeepsTheMountWithoutData(
+        bool       $multiField,
+        \Exception $failure,
+        string     $level,
+    ): void {
+        $control = new class ($multiField, $failure) implements FilterControlInterface {
+            public function __construct(private readonly bool $multiField, private readonly \Exception $failure) {}
 
             public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void
             {
-                if ($this->compound) {
+                if ($this->multiField) {
                     $builder->add('from', TextType::class);
                 } else {
                     $builder->single(TextType::class);
@@ -410,7 +413,7 @@ final class FormHarnessFactoryTest extends TestCase
     {
         yield 'single, reported' => [false, new FilterException('unusable value'), 'warning'];
         yield 'single, unexpected' => [false, new \UnexpectedValueException('unusable value'), 'error'];
-        yield 'compound, reported' => [true, new FilterException('unusable value'), 'warning'];
+        yield 'multi-field, reported' => [true, new FilterException('unusable value'), 'warning'];
     }
 
     public function testGetFormReturnsTheRootForm(): void
@@ -424,17 +427,17 @@ final class FormHarnessFactoryTest extends TestCase
         $this->assertSame($form, $harness->getForm(), 'The root form is not rebuilt per call');
     }
 
-    public function testMountMapRecordsSingleAndCompoundFiltersUnderTheirAlias(): void
+    public function testMountMapRecordsSingleAndMultiFieldFiltersUnderTheirAlias(): void
     {
-        $compound = $this->control(static function (FilterFormBuilderInterface $builder): void {
+        $multiField = $this->control(static function (FilterFormBuilderInterface $builder): void {
             $builder->add('from', TextType::class);
             $builder->add('to', TextType::class);
         });
 
         $singleFilter = $this->filter('suche', $this->single());
-        $compoundFilter = $this->filter('range', $compound);
+        $multiFieldFilter = $this->filter('range', $multiField);
 
-        $harness = $this->createFilterSet([$singleFilter, $compoundFilter]);
+        $harness = $this->createFilterSet([$singleFilter, $multiFieldFilter]);
 
         $this->assertSame(['suche', 'range'], \array_keys($harness->getMounts()));
 
@@ -444,10 +447,10 @@ final class FormHarnessFactoryTest extends TestCase
         $this->assertSame('suche', $singleMount->alias);
         $this->assertSame($singleFilter, $singleMount->context->filter);
 
-        $compoundMount = $harness->getMount('range');
-        $this->assertInstanceOf(FilterMount::class, $compoundMount);
-        $this->assertSame('range', $compoundMount->alias);
-        $this->assertSame($compoundFilter, $compoundMount->context->filter);
+        $multiFieldMount = $harness->getMount('range');
+        $this->assertInstanceOf(FilterMount::class, $multiFieldMount);
+        $this->assertSame('range', $multiFieldMount->alias);
+        $this->assertSame($multiFieldFilter, $multiFieldMount->context->filter);
     }
 
     public function testGetChildResolvesTheSameChildAsTheRootForm(): void
@@ -571,7 +574,7 @@ final class FormHarnessFactoryTest extends TestCase
         $this->assertNull($values['q']);
     }
 
-    public function testCompoundMountIsHydratedWithTheControlsArray(): void
+    public function testMultiFieldMountIsHydratedWithTheControlsArray(): void
     {
         $control = new class implements FilterControlInterface {
             public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void

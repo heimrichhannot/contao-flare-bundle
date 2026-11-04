@@ -72,14 +72,14 @@ class DateRangeFilterControl extends AbstractFilterControl
         }
 
         if ($label = $context->get('label')) {
-            $builder->compound(['label' => $label]);
+            $builder->setMountOptions(['label' => $label]);
         }
 
         $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validateRange(...));
     }
 
     /**
-     * @param array{from?: ?\DateTimeInterface, to?: ?\DateTimeInterface}|null $data The data of the compound
+     * @param array{from?: ?\DateTimeInterface, to?: ?\DateTimeInterface}|null $data The data of the nested
      *   form, keyed by its children.
      */
     public function decode(mixed $data, ControlContext $context): ?DateRangeValue

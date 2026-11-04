@@ -133,7 +133,7 @@ final readonly class FormHarnessFactory
                     'inherit_data' => false,
                     'label'        => false,
                     'required'     => false,
-                    ...$builder->getCompoundOptions(),
+                    ...$builder->getMountOptions(),
                 ];
 
                 if ($initial !== null) {

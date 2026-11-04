@@ -35,7 +35,7 @@ interface FilterControlInterface extends FilterComponentInterface
      * - Single-field controls declare their field via {@see FilterFormBuilderInterface::single()};
      *   it is mounted flat on the root form under the filter's alias.
      * - Multi-field controls use {@see FilterFormBuilderInterface::add()} to add children with local
-     *   names, which mount as a compound sub-form.
+     *   names, which mount as a nested Symfony compound form.
      * - Declaring both `single()` and `add()` at once is not supported.
      */
     public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void;

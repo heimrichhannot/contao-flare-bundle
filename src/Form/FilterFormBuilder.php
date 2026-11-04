@@ -21,7 +21,7 @@ final class FilterFormBuilder extends FormBuilder implements FilterFormBuilderIn
     private ?array $single = null;
 
     /** @var array<string, mixed> */
-    private array $compoundOptions = [];
+    private array $mountOptions = [];
 
     /** @var list<array{string, callable, int}> */
     private array $deferredListeners = [];
@@ -38,16 +38,16 @@ final class FilterFormBuilder extends FormBuilder implements FilterFormBuilderIn
         return $this->single;
     }
 
-    public function compound(array $options): static
+    public function setMountOptions(array $options): static
     {
-        $this->compoundOptions = $options;
+        $this->mountOptions = $options;
 
         return $this;
     }
 
-    public function getCompoundOptions(): array
+    public function getMountOptions(): array
     {
-        return $this->compoundOptions;
+        return $this->mountOptions;
     }
 
     /**

@@ -14,6 +14,15 @@ This file provides guidance to AI coding agents, e.g., Claude Code (claude.ai/co
 
 ## Architecture
 
+**Vocabulary** — four nouns name the core concepts; keep them distinct:
+- *Compound* — the assembled, runnable list (`ListCompound`) or filter (`FilterCompound`): bound components with
+  their canonical config, ready to run (a list's `$failures` change its output, not its runnability).
+- *Effect* — an element's abstract building blocks for the query (`FilterEffect`, built in `buildEffect()`):
+  predicates today, later joins, derivations and order hints.
+- *Context* — the pre-filled handover to a hook (`ElementContext`, `ControlContext`, `DcaContext`).
+- *Intent* — what the engine renders a list for, with the expected output (`InteractiveIntent`, `ValidationIntent`,
+  `AggregationIntent`, `ConfigurationIntent`); its type selects the projector.
+
 The core execution flow is:
 
 ```

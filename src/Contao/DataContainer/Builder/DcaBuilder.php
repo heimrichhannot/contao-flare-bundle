@@ -115,7 +115,8 @@ final class DcaBuilder implements DcaBuilderInterface
     /**
      * Writes the collected configuration into `$GLOBALS['TL_DCA'][$table]`.
      *
-     * @internal Called by the FLARE loadDataContainer listener only.
+     * @internal Called by the FLARE loadDataContainer hook only
+     *   ({@see \HeimrichHannot\FlareBundle\Contao\Hook\ElementDcaHook}).
      */
     public function apply(string $table, string $type, bool $applyPalette = true): void
     {

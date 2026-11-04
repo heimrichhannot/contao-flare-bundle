@@ -63,6 +63,12 @@ public function buildEffect(FilterEffectBuilderInterface $builder, ElementContex
   `FilterInvoker`, `FilterCollector`, `CollectedFilters`, `FilterMount`, `FilterFormBuilder*`, `FilterInspector`,
   `FilterException`, `ListDriver*`, `ListQueryDirector`, `ListQueryConfig`, `ResolvedListDriver`, the event
   classes and all named-event strings (`flare.list_driver.{type}.build_list` etc.), the hook `buildList()`.
+- `src/Integration/Terminal42Languages/`: legacy code against v0.1 APIs that no longer exist, not loaded (commented
+  out in the extension) and excluded from PHPStan; it is ported separately and not touched here (Claude's call).
+- Same word, other concept — stays: the choice scope (`ChoiceObjectInterface::getChoiceScope()`, `ChoiceKey`,
+  `ChoicesBuilder` prose), the DCA builder's control segment (`DcaBuilderTest::testControlScopeSharesFieldsWithParent`),
+  Contao's `ScopeMatcher`, and `FilterInspector::checkEffect()` (it checks whether a filter has an effect — the
+  name fits the new vocabulary).
 - Historical design documents in `dev/superpowers/` (specs, plans, ideas) are not rewritten.
 - No new features, no unused-code removal (e.g. whether `getIntentType()` is still needed is a separate question).
 
@@ -135,7 +141,9 @@ Symfony compound form"), never as a bare noun for a filter's mount. Docs: `docs/
 | property `$engineContext` on both | `$intent` |
 | `Contao\DcaContext` | unchanged name; `getElementScope()` → `getElementContext()`, constructor param `$elementScopeFactory` → `$elementContextFactory` |
 | `Contao\DataContainer\BackendElementScopeFactory` | `BackendElementContextFactory` |
-| parameters/variables `$scope` (all hooks, contracts, factories) | `$context` |
+| parameters/variables `$scope` (all hooks, contracts, factories) | `$context` (where a `DcaContext $context` is already in scope, e.g. `ChoiceValueProvider`, use `$elementContext`) |
+| public `$scope` properties: `Event\FilterControlBuildFormEvent::$scope`, `Form\FilterMount::$scope` (`@api`) | `$context` |
+| `FilterInspector`'s "list scope" (`buildScope()` builds the inspected list, tests like `testWithoutAListScopeRowIssuesAreStillReported`) | "list" (`buildList()`, `testWithoutAListRowIssuesAreStillReported` …) |
 | `Form\FilterFormBuilderInterface::ATTR_SCOPE = 'flare.filter_scope'` (`@api`, holds the `ControlScope`) | `ATTR_CONTEXT = 'flare.control_context'` (Claude's call) |
 
 Parameter order stays as documented ("the subject first, the context supplementary"):
@@ -157,6 +165,8 @@ Parameter order stays as documented ("the subject first, the context supplementa
 | `EngineFactory::createEngine(ContextInterface $context, …)` | `createEngine(IntentInterface $intent, …)` |
 | `ProjectorInterface`/`AbstractProjector` `supports()`, `priority()`, `project()` param `$context` (and the `@template TContext`) | `$intent` (`TIntent`) |
 | `{Interactive,Validation,Aggregation}LoaderConfig::$context`, `ListQueryConfig::$context` | `$intent` |
+| `Event\ReaderRenderEvent::$context` (public; v0.1 had `getContext()`) | `$intent` |
+| `ProjectorRegistry::getProjectorFor($list, ContextInterface $config)` and its message "supporting context configuration" | `$intent`, "supporting intent" |
 | `FlareRuntime::project(ListSpec $spec, ContextInterface $config)` | `project(ListCompound $list, IntentInterface $intent)` (Twig function `flare_project` unchanged) |
 | form root attribute `'flare.engine_context'` (`FormHarnessFactory`) | `'flare.intent'` |
 | variables/params holding an engine context (`$context`, `$validationContext`, `$interactiveConfig`, `$aggregationConfigFactory`, `$config` typed as a context …) | `$intent`, `$validationIntent`, `$interactiveIntent`, `$aggregationIntentFactory` … |
@@ -190,7 +200,8 @@ fixture named after an old noun.
   The docs describe the step from v0.1 to the final v0.2 (Claude's call):
   - **Engine contexts are released v0.1 API** (`Engine\Context\ContextInterface`,
     `Engine\Context\Interface\{Form,Paginated,Sortable}ContextInterface`, `InteractiveContext` etc., the
-    `*ContextFactory` classes, `Engine::getContext()`, `Engine::with(context: …)`, `getContextType()`). Add an
+    `*ContextFactory` classes, `Engine\Context\ReaderUrlConfigCreatorTrait`, `Engine::getContext()`,
+    `Engine::with(context: …)`, `getContextType()`, `ReaderRenderEvent::getContext()`). Add an
     engine section to `migrating-from-v0.1.md` and entries to `removed-in-v0.2.md` mapping each v0.1 name to its
     `Intent` successor — for custom projectors, mods and `flare_project` callers.
   - `ListSpec`, `Filter`, `FilterContext`, `ElementScope`/`ControlScope` never existed in a release. Existing

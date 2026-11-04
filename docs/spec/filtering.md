@@ -118,7 +118,7 @@ When a projector executes the list query, the `ListQueryDirector` processes each
 1. The filter's value is determined by its role: **with a control**, the form's value
    (`$values[$alias] ?? null`) — in the interactive list and its aggregation the submission or, unsubmitted,
    the decoded initial value; in a validation context (readers) there is no map, so the initial value does not
-   apply. **Without a control**, the fixed `FilterCompound::$value`, in every context.
+   apply. **Without a control**, the fixed `FilterCompound::$value`, for every intent.
 2. The `FilterEffectFactory` creates the `FilterEffect` from an `ElementContext` and the value: the
    element's `buildEffect()` runs and translates config + value into one or more **predicate calls** on the
    `FilterEffectBuilderInterface`:

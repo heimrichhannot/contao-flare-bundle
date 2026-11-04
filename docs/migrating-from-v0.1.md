@@ -187,6 +187,9 @@ page, a reader validation, a count — and its type selects the projector. Behav
 | `Engine\Context\ReaderUrlConfigCreatorTrait` | `Engine\Intent\ReaderUrlConfigCreatorTrait` |
 | `ContextInterface::getContextType()` | `IntentInterface::getIntentType()` (same return values, e.g. `interactive`) |
 | `Engine::getContext()`, `Engine::with(context: …)` | `Engine::getIntent()`, `Engine::with(intent: …)` |
+| `EngineFactory::createEngine(context: …)` | `EngineFactory::createEngine(intent: …)` |
+| `AggregationContextFactory::createFromConfig()` | `AggregationIntentFactory::createFromIntent()` |
+| `ListQueryConfig::$context` (e.g. `$event->config->context` in a `ModifyListQueryStructEvent` listener), the loader configs' `$context` | `$intent` — an un-migrated `$event->config->context instanceof …` check silently fails |
 | `ProjectorInterface::supports()`/`priority()`/`project()` with a `ContextInterface $context` | the same methods with an `IntentInterface $intent` |
 | `ReaderRenderEvent::getContext()`, `getListSpecification()` | the public readonly properties `$event->intent`, `$event->list` |
 | `flare_project(spec, config)` (Twig) | `flare_project(list, intent)` — only the named-argument names changed |

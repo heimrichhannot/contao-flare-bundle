@@ -7,8 +7,8 @@ sidebar_position: 4
 
 ## 1. Overview
 
-The `ListCompound` is the "Source of Truth" in Flare: a static, context-independent description of what data
-should be fetched and how it should be filtered. It contains no DCA or storage specifics — translating a
+The `ListCompound` is the "Source of Truth" in Flare: the assembled, ready-to-run list — driver, filters and
+canonical config — independent of the intent it is rendered for. It contains no DCA or storage specifics — translating a
 stored `tl_flare_list` row into config is the job of the [build lifecycle](#3-building-a-list-listcompoundbuilder).
 
 ## 2. The `ListCompound`

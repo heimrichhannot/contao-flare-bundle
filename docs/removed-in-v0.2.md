@@ -84,7 +84,7 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - Old hook signatures: `buildEffect(FilterEffectBuilder, ?ValueInterface)` is now
   `buildEffect(FilterEffectBuilderInterface, ElementContext, ?ValueInterface)`; controls take a `ControlContext`
   in `decode(mixed, ControlContext)` and `hydrate(?ValueInterface, ControlContext)`; `buildForm()`,
-  `ChoiceSourceContract::buildChoices()` and `DateBoundsContract::getDateBounds()` take the role-typed scope
+  `ChoiceSourceContract::buildChoices()` and `DateBoundsContract::getDateBounds()` take the role-typed context
 
 ## Events
 

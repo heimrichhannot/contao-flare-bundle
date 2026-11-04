@@ -67,6 +67,11 @@ const config = {
             from: '/docs',
             to: `${latestDocsPath}intro`,
           },
+          // The "List Specs" page became "Compounds" with the v0.2 rename.
+          {
+            from: '/docs/v0.2/spec/specifications',
+            to: '/docs/v0.2/spec/compounds',
+          },
         ],
         // Mirror every latest-stable route to its unversioned /docs/... URL,
         // so bare links and pre-versioning inbound links keep resolving.

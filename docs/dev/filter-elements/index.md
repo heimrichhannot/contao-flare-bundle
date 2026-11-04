@@ -102,7 +102,7 @@ A filter is applied in two stages:
    | `$context->has('key')` | Whether the element's own config holds a value for the key |
    | `$context->list` | The [`ListCompound`](../../spec/compounds.md) the filter belongs to, e.g. `$context->list->dc` |
    | `$context->filter` | The [`FilterCompound` value object](../../spec/filtering.md#1-the-filtercompound-value-object), e.g. `$context->filter->control?->config->get('label')` to read the control's config |
-   | `$context->intent` | The engine context (`IntentInterface`) — interactive, validation, aggregation, or configuration (the backend) |
+   | `$context->intent` | The intent (`IntentInterface`) — interactive, validation, aggregation, or configuration (the backend) |
 
 2. **`FilterEffect`** is the element's *product* for one invocation: the formula of predicates the element
    produced for a given value. Elements contribute to it through the `FilterEffectBuilderInterface` in
@@ -208,7 +208,7 @@ public function buildEffect(
 
 **Where the value comes from.** A filter *with* a control receives what the control decoded from the
 submitted form (or, before submission, the initial value). A filter *without* a control receives its fixed
-`FilterCompound::$value` in every context. See [Intrinsic Filters](#8-intrinsic-and-initial-values).
+`FilterCompound::$value` for every intent. See [Intrinsic Filters](#8-intrinsic-and-initial-values).
 
 ## 6. Complete Example
 

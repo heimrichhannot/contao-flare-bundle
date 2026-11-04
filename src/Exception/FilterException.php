@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Exception;
 
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 
 /**
  * A filter cannot work with its config, its data or its value.
@@ -26,7 +26,7 @@ class FilterException extends FlareException
      *
      * @param string $method The failing hook, e.g. `SomeControl::buildForm`.
      */
-    public static function wrap(\Exception $e, Filter $filter, string $method): self
+    public static function wrap(\Exception $e, FilterCompound $filter, string $method): self
     {
         $source = $filter->source ?: 'filter inlined';
 

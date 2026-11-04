@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\GroupsEntriesTrait;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListDriver\EventsListDriver;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\Loader\EventsInteractiveLoader;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\View\InteractiveEventsView;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
 use Symfony\Component\Form\FormInterface;
@@ -22,12 +22,12 @@ class EventsInteractiveProjector extends InteractiveProjector
 {
     use GroupsEntriesTrait;
 
-    public function supports(ListSpec $list, IntentInterface $intent): bool
+    public function supports(ListCompound $list, IntentInterface $intent): bool
     {
         return $list->driver instanceof EventsListDriver && $intent instanceof InteractiveIntent;
     }
 
-    public function priority(ListSpec $list, IntentInterface $intent): int
+    public function priority(ListCompound $list, IntentInterface $intent): int
     {
         return 100;
     }

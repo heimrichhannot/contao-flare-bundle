@@ -15,24 +15,28 @@ use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Tests\List\StubFilterElement;
 use PHPUnit\Framework\TestCase;
 
 final class ControlContextTest extends TestCase
 {
-    private function list(): ListSpec
+    private function list(): ListCompound
     {
-        return new ListSpec(driver: $this->createStub(ListDriverInterface::class), type: 'test_list', dc: 'tl_test');
+        return new ListCompound(
+            driver: $this->createStub(ListDriverInterface::class),
+            type: 'test_list',
+            dc: 'tl_test',
+        );
     }
 
-    private static function filter(bool $withControl = true, ?FilterElementInterface $element = null): Filter
+    private static function filter(bool $withControl = true, ?FilterElementInterface $element = null): FilterCompound
     {
-        return new Filter(
+        return new FilterCompound(
             element: new ElementBinding($element ?? new StubFilterElement(), 'test_element', new ComponentConfig([
                 'label' => 'element',
             ]), null),

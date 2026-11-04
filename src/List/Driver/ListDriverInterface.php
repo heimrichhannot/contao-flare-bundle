@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\List\Driver;
 
 /**
- * A Flare list driver, registered via #[AsListDriver] or used inline on a ListSpec.
+ * A Flare list driver, registered via #[AsListDriver] or used inline on a ListCompound.
  */
 interface ListDriverInterface
 {

@@ -6,8 +6,8 @@ namespace HeimrichHannot\FlareBundle\Contao\DataContainer;
 
 use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
-use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterCompoundFactory;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 
 /**
@@ -18,24 +18,24 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 final readonly class BackendElementContextFactory
 {
     public function __construct(
-        private FilterFactory $filterFactory,
+        private FilterCompoundFactory $filterCompoundFactory,
     ) {}
 
     /**
      * The backend context knows the control, which decides the element's options, but resolves no value, so an
      * unreadable value cannot block the form that repairs it. Null if the list or the filter cannot be built.
      *
-     * @param \Closure(): ListSpec $getSpec
+     * @param \Closure(): ListCompound $getList
      *
      * @mago-expect lint:no-empty-catch-clause Backend configuration must not fail on broken list configs.
      */
-    public function create(\Closure $getSpec, FilterModel $filterModel): ?ElementContext
+    public function create(\Closure $getList, FilterModel $filterModel): ?ElementContext
     {
         try
         {
             return new ElementContext(
-                list: $getSpec(),
-                filter: $this->filterFactory->create($filterModel, withValue: false),
+                list: $getList(),
+                filter: $this->filterCompoundFactory->create($filterModel, withValue: false),
                 intent: new ConfigurationIntent(),
             );
         }

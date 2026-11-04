@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Engine\Intent\Factory;
 use Contao\ContentModel;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Intent\InteractiveIntent;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Sort\Factory\SortOrderSequenceFactory;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
@@ -20,7 +20,7 @@ readonly class InteractiveIntentFactory
         private ValidatorInterface       $validator,
     ) {}
 
-    public function createFromContent(ContentModel $contentModel, ListSpec $list): InteractiveIntent
+    public function createFromContent(ContentModel $contentModel, ListCompound $list): InteractiveIntent
     {
         $filterFormName = $contentModel->{ContentContainer::FIELD_FORM_NAME}
             ?: ('fl' . ($contentModel->id ?? ''));

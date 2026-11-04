@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use PHPUnit\Framework\TestCase;
 
 final class FilterExceptionTest extends TestCase
@@ -46,9 +46,9 @@ final class FilterExceptionTest extends TestCase
         self::assertSame('Port::buildChoices', $located->getMethod());
     }
 
-    private function filter(?string $source): Filter
+    private function filter(?string $source): FilterCompound
     {
-        return new Filter(
+        return new FilterCompound(
             element: new ElementBinding(
                 $this->createMock(FilterElementInterface::class),
                 'test_element',

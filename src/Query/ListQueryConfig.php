@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Query;
 
 use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 
 readonly class ListQueryConfig
 {
@@ -15,7 +15,7 @@ readonly class ListQueryConfig
      * @param array<string, mixed> $attributes
      */
     public function __construct(
-        public ListSpec        $list,
+        public ListCompound    $list,
         public IntentInterface $intent,
         public array           $filterValues,
         public bool            $isCounting = false,

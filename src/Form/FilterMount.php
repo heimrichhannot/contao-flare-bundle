@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Form;
 
 use HeimrichHannot\FlareBundle\Filter\ControlContext;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 
 /**
  * One filter's node in the root filter form, as recorded by {@see Factory\FormHarnessFactory}.
@@ -28,12 +28,12 @@ final readonly class FilterMount
     public const ATTR_SINGLE_FIELD = 'flare.single_field';
 
     /**
-     * @param Filter $filter The filter this mount belongs to.
+     * @param FilterCompound $filter The filter this mount belongs to.
      * @param string $alias Form name of the mounted node on the root form.
      * @param ControlContext $context Context the filter's control was built, hydrated and decoded with.
      */
     public function __construct(
-        public Filter         $filter,
+        public FilterCompound $filter,
         public string         $alias,
         public ControlContext $context,
     ) {}

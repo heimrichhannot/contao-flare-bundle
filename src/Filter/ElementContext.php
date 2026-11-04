@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 
 /**
  * The value-free situation a filter element hook runs in: the list, the filter, and the intent.
@@ -17,8 +17,8 @@ use HeimrichHannot\FlareBundle\List\ListSpec;
 final readonly class ElementContext
 {
     public function __construct(
-        public ListSpec        $list,
-        public Filter          $filter,
+        public ListCompound    $list,
+        public FilterCompound  $filter,
         public IntentInterface $intent,
     ) {}
 

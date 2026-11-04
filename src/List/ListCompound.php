@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\List;
 
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 
@@ -19,23 +19,23 @@ use HeimrichHannot\FlareBundle\Util\DcaHelper;
  * and the driver's transformers
  * ({@see \HeimrichHannot\FlareBundle\Contract\TransformerContract}).
  *
- * Use {@see Factory\ListSpecFactory} to create instances — it resolves the config schema
+ * Use {@see Factory\ListCompoundFactory} to create instances — it resolves the config schema
  * and guarantees a well-defined data container.
  *
  * @api
  */
-final readonly class ListSpec
+final readonly class ListCompound
 {
     /**
      * @param ListDriverInterface $driver List driver service (registered or inline).
-     * @param array<string, Filter> $filters Keyed by alias, unless added to the builder under an explicit key
-     *   ({@see ListSpecBuilder::addFilter()}).
+     * @param array<string, FilterCompound> $filters Keyed by alias, unless added to the builder under an explicit key
+     *   ({@see ListCompoundBuilder::addFilter()}).
      * @param array<string, mixed> $config Canonical config, resolved through the base and driver schemas.
      * @param string|null $source Provenance for error messages, e.g. "tl_flare_list.5".
      * @param list<FilterFailure> $failures Failures of filters whose element could not be built, or whose fixed
      *   value or alias is broken; a list with failures has failed as a whole.
      *
-     * @internal Use {@see Factory\ListSpecFactory} to create instances.
+     * @internal Use {@see Factory\ListCompoundFactory} to create instances.
      */
     public function __construct(
         public ListDriverInterface $driver,
@@ -56,11 +56,11 @@ final readonly class ListSpec
      *
      * @throws FlareException If the alias is already taken by a filter or a filter's key.
      */
-    public function withFilter(Filter $filter): self
+    public function withFilter(FilterCompound $filter): self
     {
         $taken = isset($this->filters[$filter->alias]) || \array_filter(
             $this->filters,
-            static fn (Filter $existing): bool => $existing->alias === $filter->alias,
+            static fn (FilterCompound $existing): bool => $existing->alias === $filter->alias,
         );
 
         if ($taken)
@@ -79,11 +79,11 @@ final readonly class ListSpec
         return $this->withFilters($filters);
     }
 
-    public function withoutFilter(Filter|string $filter_or_class_or_alias): self
+    public function withoutFilter(FilterCompound|string $filter_or_class_or_alias): self
     {
         $filters = \array_filter(
             $this->filters,
-            static fn (Filter $existingFilter): bool =>
+            static fn (FilterCompound $existingFilter): bool =>
                 $existingFilter !== $filter_or_class_or_alias
                 && $existingFilter->alias !== $filter_or_class_or_alias
                 && $existingFilter->element->component::class !== $filter_or_class_or_alias,
@@ -93,7 +93,7 @@ final readonly class ListSpec
     }
 
     /**
-     * @param array<string, Filter> $filters
+     * @param array<string, FilterCompound> $filters
      */
     public function withFilters(array $filters): self
     {
@@ -155,7 +155,7 @@ final readonly class ListSpec
             $this->dc,
             $this->source,
             $this->config,
-            \array_map(static fn (Filter $filter): array => $filter->fingerprint(), $this->filters),
+            \array_map(static fn (FilterCompound $filter): array => $filter->fingerprint(), $this->filters),
             \array_map(static fn (FilterFailure $f): array => [$f->source, $f->message], $this->failures),
         ]));
     }

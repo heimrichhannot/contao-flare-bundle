@@ -10,11 +10,11 @@ use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\ControlContext;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Form\FilterMount;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\FormBuilder;
@@ -39,7 +39,7 @@ final readonly class FormHarnessFactory
      *
      * @throws FlareException If the form could not be built
      */
-    public function create(ListSpec $list, FormIntentInterface $intent): FormHarness
+    public function create(ListCompound $list, FormIntentInterface $intent): FormHarness
     {
         if (!$intent instanceof IntentInterface) {
             throw new FlareException(
@@ -194,7 +194,7 @@ final readonly class FormHarnessFactory
      * Records a filter whose control could not build its form; it fails the list. The message names the filter and
      * its list, like the collector's.
      */
-    private function fail(ListSpec $list, Filter $filter, FilterException $e): FilterFailure
+    private function fail(ListCompound $list, FilterCompound $filter, FilterException $e): FilterFailure
     {
         $message = \sprintf(
             'Filter %s with control "%s" on %s cannot build its form: %s',
@@ -216,7 +216,7 @@ final readonly class FormHarnessFactory
      *
      * @throws FilterException In debug mode, for an unexpected exception.
      */
-    private function dropInitialValue(Filter $filter, \Exception $e, string $method): void
+    private function dropInitialValue(FilterCompound $filter, \Exception $e, string $method): void
     {
         $expected = $e instanceof FilterException;
         $e = FilterException::wrap($e, $filter, $method);

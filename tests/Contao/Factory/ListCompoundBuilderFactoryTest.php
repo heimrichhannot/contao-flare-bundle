@@ -7,16 +7,16 @@ namespace HeimrichHannot\FlareBundle\Tests\Contao\Factory;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Contao\Factory\FilterCollector;
-use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
-use HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterCompoundFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListCompoundBuilderFactory;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory as CoreFilterFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterCompoundFactory as CoreFilterCompoundFactory;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory as CoreListSpecBuilderFactory;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
+use HeimrichHannot\FlareBundle\List\Factory\ListCompoundBuilderFactory as CoreListCompoundBuilderFactory;
+use HeimrichHannot\FlareBundle\List\Factory\ListCompoundFactory;
 use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
@@ -29,7 +29,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
-final class ListSpecBuilderFactoryTest extends TestCase
+final class ListCompoundBuilderFactoryTest extends TestCase
 {
     public function testCreateCarriesTheModelAndItsSource(): void
     {
@@ -52,7 +52,7 @@ final class ListSpecBuilderFactoryTest extends TestCase
         $this->createFactory()->create(new ListModelFixture(['id' => 3, 'type' => 'gone']));
     }
 
-    private function createFactory(): ListSpecBuilderFactory
+    private function createFactory(): ListCompoundBuilderFactory
     {
         $dispatcher = new EventDispatcher();
 
@@ -64,8 +64,8 @@ final class ListSpecBuilderFactoryTest extends TestCase
         );
         $driverResolver = new ListDriverResolver($registry);
 
-        $filterFactory = new FilterFactory(
-            filterFactory: new CoreFilterFactory(
+        $filterCompoundFactory = new FilterCompoundFactory(
+            filterCompoundFactory: new CoreFilterCompoundFactory(
                 filterElementRegistry: new FilterElementRegistry(),
                 filterControlRegistry: new FilterControlRegistry(),
                 filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
@@ -75,18 +75,18 @@ final class ListSpecBuilderFactoryTest extends TestCase
             logger: new NullLogger(),
         );
 
-        return new ListSpecBuilderFactory(
-            builderFactory: new CoreListSpecBuilderFactory(
+        return new ListCompoundBuilderFactory(
+            builderFactory: new CoreListCompoundBuilderFactory(
                 eventDispatcher: $dispatcher,
                 listDriverResolver: $driverResolver,
-                specFactory: new ListSpecFactory(
+                listCompoundFactory: new ListCompoundFactory(
                     $registry,
                     new ListOptionsResolver(new SchemaResolver()),
                     new ListTransformerResolver(new SourceTransformer(), $dispatcher),
                     $driverResolver,
                 ),
             ),
-            filterCollector: new FilterCollector($dispatcher, $filterFactory, $registry, new NullLogger()),
+            filterCollector: new FilterCollector($dispatcher, $filterCompoundFactory, $registry, new NullLogger()),
         );
     }
 }

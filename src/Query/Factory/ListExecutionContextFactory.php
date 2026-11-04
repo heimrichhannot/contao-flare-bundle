@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Query\Factory;
 use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildQueryContract;
 use HeimrichHannot\FlareBundle\Event\QueryBaseInitializedEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Query\ListExecutionContext;
 use HeimrichHannot\FlareBundle\Query\SqlQueryStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
@@ -22,7 +22,7 @@ readonly class ListExecutionContextFactory
     /**
      * @throws FlareException
      */
-    public function create(ListSpec $list): ListExecutionContext
+    public function create(ListCompound $list): ListExecutionContext
     {
         $driver = $list->driver;
 

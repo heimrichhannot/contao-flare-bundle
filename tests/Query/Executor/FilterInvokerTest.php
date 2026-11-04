@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -108,7 +108,7 @@ final class FilterInvokerTest extends TestCase
 
         return new ElementContext(
             list: $context->list,
-            filter: new Filter(element: $context->filter->element, alias: 'test', source: 'tl_flare_filter.9'),
+            filter: new FilterCompound(element: $context->filter->element, alias: 'test', source: 'tl_flare_filter.9'),
             intent: $context->intent,
         );
     }

@@ -5,25 +5,25 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Contao\Factory;
 
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory as CoreListSpecBuilderFactory;
-use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
+use HeimrichHannot\FlareBundle\List\Factory\ListCompoundBuilderFactory as CoreListCompoundBuilderFactory;
+use HeimrichHannot\FlareBundle\List\ListCompoundBuilder;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
 /**
- * Creates ListSpecBuilders from stored tl_flare_list models, with their published filters and filter failures
+ * Creates ListCompoundBuilders from stored tl_flare_list models, with their published filters and filter failures
  * pre-added.
  */
-final readonly class ListSpecBuilderFactory
+final readonly class ListCompoundBuilderFactory
 {
     public function __construct(
-        private CoreListSpecBuilderFactory $builderFactory,
-        private FilterCollector            $filterCollector,
+        private CoreListCompoundBuilderFactory $builderFactory,
+        private FilterCollector                $filterCollector,
     ) {}
 
     /**
      * @throws FlareException In case the list driver cannot be resolved.
      */
-    public function create(ListModel $listModel): ListSpecBuilder
+    public function create(ListModel $listModel): ListCompoundBuilder
     {
         $builder = $this->builderFactory->create(
             driver: (string) $listModel->type,

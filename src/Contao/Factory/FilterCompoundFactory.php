@@ -7,23 +7,23 @@ namespace HeimrichHannot\FlareBundle\Contao\Factory;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory as CoreFilterFactory;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterCompoundFactory as CoreFilterCompoundFactory;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
 use Psr\Log\LoggerInterface;
 
 /**
- * Creates {@see Filter} DTOs from stored tl_flare_filter rows, on top of the model-free
- * {@see CoreFilterFactory::create()}.
+ * Creates {@see FilterCompound} DTOs from stored tl_flare_filter rows, on top of the model-free
+ * {@see CoreFilterCompoundFactory::create()}.
  */
-final readonly class FilterFactory
+final readonly class FilterCompoundFactory
 {
     public function __construct(
-        private CoreFilterFactory     $filterFactory,
-        private ValueProviderRegistry $valueProviderRegistry,
-        private LoggerInterface       $logger,
+        private CoreFilterCompoundFactory $filterCompoundFactory,
+        private ValueProviderRegistry     $valueProviderRegistry,
+        private LoggerInterface           $logger,
     ) {}
 
     /**
@@ -42,12 +42,12 @@ final readonly class FilterFactory
      *   its schema, the alias of a controlled filter is no valid form name, or — without a control — the stored value
      *   is unreadable ({@see UnreadableValueException}).
      */
-    public function create(FilterModel $model, bool $withValue = true): Filter
+    public function create(FilterModel $model, bool $withValue = true): FilterCompound
     {
         $source = "{$model::getTable()}.{$model->id}";
         $control = (string) $model->control ?: null;
 
-        $filter = $this->filterFactory->create(
+        $filter = $this->filterCompoundFactory->create(
             element: $model->getFilterElementType(),
             alias: $model->getFilterAlias(),
             control: $control,
@@ -71,7 +71,7 @@ final readonly class FilterFactory
      *
      * @throws FlareException If no provider exists for the value class.
      */
-    private function provideInitialValue(Filter $filter, FilterModel $model): ?ValueInterface
+    private function provideInitialValue(FilterCompound $filter, FilterModel $model): ?ValueInterface
     {
         try
         {
@@ -99,7 +99,7 @@ final readonly class FilterFactory
      * @throws FilterException If the stored value is unreadable or the provider fails.
      * @throws FlareException If no provider exists for the value class, or the provider reports a wiring error.
      */
-    private function provideValue(Filter $filter, FilterModel $model): ?ValueInterface
+    private function provideValue(FilterCompound $filter, FilterModel $model): ?ValueInterface
     {
         if (!$valueClass = $filter->element->valueClass) {
             return null;

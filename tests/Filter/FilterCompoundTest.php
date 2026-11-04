@@ -12,7 +12,7 @@ use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -24,11 +24,11 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 final class FilterTest extends TestCase
 {
-    private static function filter(): Filter
+    private static function filter(): FilterCompound
     {
         static $element = null;
 
-        return new Filter(
+        return new FilterCompound(
             element: new ElementBinding(
                 component: $element ??= new StubFilterElement(),
                 type: 'test',
@@ -43,9 +43,9 @@ final class FilterTest extends TestCase
     /**
      * @param class-string<ValueInterface>|null $valueClass
      */
-    private static function filterFor(?string $valueClass, ?ValueInterface $value = null): Filter
+    private static function filterFor(?string $valueClass, ?ValueInterface $value = null): FilterCompound
     {
-        return new Filter(
+        return new FilterCompound(
             element: new ElementBinding(new StubFilterElement(), 'test', new ComponentConfig([]), valueClass: $valueClass),
             alias: 'foo',
             value: $value,
@@ -177,7 +177,7 @@ final class FilterTest extends TestCase
             'targetingForced' => false,
         ], $fingerprint);
 
-        $changedConfig = new Filter(
+        $changedConfig = new FilterCompound(
             element: new ElementBinding($filter->element->component, 'test', new ComponentConfig(['a' => 2]), BoolValue::class),
             alias: 'foo',
         );

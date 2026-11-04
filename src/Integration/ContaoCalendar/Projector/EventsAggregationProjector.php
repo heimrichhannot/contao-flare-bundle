@@ -12,18 +12,18 @@ use HeimrichHannot\FlareBundle\Engine\Projector\AggregationProjector;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\GroupsEntriesTrait;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListDriver\EventsListDriver;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\Loader\EventsAggregationLoader;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 
 class EventsAggregationProjector extends AggregationProjector
 {
     use GroupsEntriesTrait;
 
-    public function supports(ListSpec $list, IntentInterface $intent): bool
+    public function supports(ListCompound $list, IntentInterface $intent): bool
     {
         return $list->driver instanceof EventsListDriver && $intent instanceof AggregationIntent;
     }
 
-    public function priority(ListSpec $list, IntentInterface $intent): int
+    public function priority(ListCompound $list, IntentInterface $intent): int
     {
         return 100;
     }

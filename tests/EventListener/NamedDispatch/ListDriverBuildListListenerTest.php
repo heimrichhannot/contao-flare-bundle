@@ -10,8 +10,8 @@ use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\ListDriverBuildListLi
 use HeimrichHannot\FlareBundle\Event\ListDriverBuildListEvent;
 use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
-use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
+use HeimrichHannot\FlareBundle\List\Factory\ListCompoundFactory;
+use HeimrichHannot\FlareBundle\List\ListCompoundBuilder;
 use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
@@ -55,9 +55,9 @@ final class ListDriverBuildListListenerTest extends TestCase
         $registry = new ListDriverRegistry();
         $listDriverResolver = new ListDriverResolver($registry);
 
-        $builder = new ListSpecBuilder(
+        $builder = new ListCompoundBuilder(
             listDriverResolver: $listDriverResolver,
-            specFactory: new ListSpecFactory(
+            listCompoundFactory: new ListCompoundFactory(
                 $registry,
                 new ListOptionsResolver(new SchemaResolver()),
                 new ListTransformerResolver(new SourceTransformer(), $dispatcher),

@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Engine;
 use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Registry\EngineModRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 
@@ -17,7 +17,7 @@ final class Engine
         private readonly EngineModRegistry $engineModRegistry,
         private readonly ProjectorRegistry $projectorRegistry,
         private IntentInterface            $intent,
-        private ListSpec                   $list,
+        private ListCompound               $list,
         private array                      $mods = [],
     ) {}
 
@@ -26,12 +26,12 @@ final class Engine
         return $this->intent;
     }
 
-    public function getList(): ListSpec
+    public function getList(): ListCompound
     {
         return $this->list;
     }
 
-    public function setList(ListSpec $list): self
+    public function setList(ListCompound $list): self
     {
         $this->list = $list;
 
@@ -104,7 +104,7 @@ final class Engine
         return $this;
     }
 
-    public function with(?IntentInterface $intent = null, ?ListSpec $list = null, ?array $mods = null): self
+    public function with(?IntentInterface $intent = null, ?ListCompound $list = null, ?array $mods = null): self
     {
         return new self(
             engineModRegistry: $this->engineModRegistry,

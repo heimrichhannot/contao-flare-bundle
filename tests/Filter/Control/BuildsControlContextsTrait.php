@@ -14,13 +14,13 @@ use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\Forms;
@@ -53,8 +53,8 @@ trait BuildsControlContextsTrait
         };
 
         return new ControlContext(
-            list: new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test'),
-            filter: new Filter(
+            list: new ListCompound(driver: $driver, type: 'test_list', dc: 'tl_test'),
+            filter: new FilterCompound(
                 element: new ElementBinding($element, 'test_element', $resolver->resolve($element, []), null),
                 alias: 'test',
                 control: new ControlBinding($control, 'test_control', $resolver->resolve($control, $controlConfig)),

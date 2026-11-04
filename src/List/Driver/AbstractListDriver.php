@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
-use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
+use HeimrichHannot\FlareBundle\List\ListCompoundBuilder;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\SqlQueryStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
@@ -52,5 +52,5 @@ abstract class AbstractListDriver implements
 
     public function buildBaseQuery(SqlQueryStruct $struct): void {}
 
-    public function buildList(ListSpecBuilder $builder): void {}
+    public function buildList(ListCompoundBuilder $builder): void {}
 }

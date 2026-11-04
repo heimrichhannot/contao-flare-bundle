@@ -14,7 +14,7 @@ use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
-use HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListCompoundBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
@@ -56,7 +56,7 @@ final class FieldsOptionsCallbacksTest extends TestCase
             filterElementRegistry: $elements,
             translator: $translator,
             // Neither list collaborator is reached by the control options.
-            listFactory: (new \ReflectionClass(ListSpecBuilderFactory::class))->newInstanceWithoutConstructor(),
+            listFactory: (new \ReflectionClass(ListCompoundBuilderFactory::class))->newInstanceWithoutConstructor(),
             listExecutionContextFactory: new ListExecutionContextFactory(new EventDispatcher()),
         );
 

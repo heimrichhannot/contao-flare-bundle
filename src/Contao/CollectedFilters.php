@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Contao;
 
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
 
 /**
@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\List\FilterFailure;
 final readonly class CollectedFilters
 {
     /**
-     * @param array<string, Filter> $filters Keyed by alias; aliases are unique.
+     * @param array<string, FilterCompound> $filters Keyed by alias; aliases are unique.
      * @param list<FilterFailure> $failures
      */
     public function __construct(

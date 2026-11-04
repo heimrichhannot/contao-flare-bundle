@@ -18,7 +18,7 @@ use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterCompoundFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
@@ -36,7 +36,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-final class FilterFactoryTest extends TestCase
+final class FilterCompoundFactoryTest extends TestCase
 {
     private const BOOL_ELEMENT = 'bool_element';
     private const BOOL_CONTROL = 'bool_control';
@@ -53,7 +53,7 @@ final class FilterFactoryTest extends TestCase
         $this->boolControl = new FactoryStubBoolControl();
     }
 
-    private function factory(?FilterElementRegistry $elements = null): FilterFactory
+    private function factory(?FilterElementRegistry $elements = null): FilterCompoundFactory
     {
         $elements ??= (new FilterElementRegistry())
             ->add(
@@ -72,7 +72,7 @@ final class FilterFactoryTest extends TestCase
             ->add(new FactoryStubKeywordsControl(), self::KEYWORDS_CONTROL, KeywordsValue::class)
             ->add(new FactoryStubSourcedControl(), self::SOURCED_CONTROL, BoolValue::class);
 
-        return new FilterFactory(
+        return new FilterCompoundFactory(
             filterElementRegistry: $elements,
             filterControlRegistry: $controls,
             filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),

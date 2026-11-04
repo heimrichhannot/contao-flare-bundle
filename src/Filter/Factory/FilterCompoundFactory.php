@@ -12,7 +12,7 @@ use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -21,9 +21,9 @@ use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Util\Str;
 
 /**
- * Creates {@see Filter} DTOs, resolving registered element and control types to their services.
+ * Creates {@see FilterCompound} DTOs, resolving registered element and control types to their services.
  */
-final readonly class FilterFactory
+final readonly class FilterCompoundFactory
 {
     public function __construct(
         private FilterElementRegistry     $filterElementRegistry,
@@ -34,8 +34,8 @@ final readonly class FilterFactory
 
     /**
      * Creates a filter — the single construction path, also behind
-     * {@see \HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory}. With a control, the value is the filter's
-     * initial value; without one, it is the fixed value.
+     * {@see \HeimrichHannot\FlareBundle\Contao\Factory\FilterCompoundFactory}. With a control, the value is the
+     * filter's initial value; without one, it is the fixed value.
      *
      * @param FilterElementInterface|string $element Filter element instance or registered type alias.
      * @param string|null $alias Required with a control: the alias names the filter's form field, which must stay the
@@ -52,7 +52,7 @@ final readonly class FilterFactory
      *   the element's value class.
      * @throws ValueClassMismatchError If the value does not match the element's value class — a programming error.
      *
-     * @see Filter::__construct for the remaining parameters.
+     * @see FilterCompound::__construct for the remaining parameters.
      */
     public function create(
         FilterElementInterface|string      $element,
@@ -65,7 +65,7 @@ final readonly class FilterFactory
         bool                               $targetingForced = false,
         ?object                            $configSource = null,
         ?string                            $source = null,
-    ): Filter {
+    ): FilterCompound {
         $type = $this->resolveType($element, $source);
 
         if ($control !== null && ($alias === null || $alias === ''))
@@ -114,7 +114,7 @@ final readonly class FilterFactory
             );
         }
 
-        return new Filter(
+        return new FilterCompound(
             element: new ElementBinding($element, $type, $resolvedConfig, $valueClass),
             alias: $alias,
             control: $controlBinding,

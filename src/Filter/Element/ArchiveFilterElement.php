@@ -15,7 +15,7 @@ use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\ArchivePredicate;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BelongsToRelationPredicate;
@@ -25,7 +25,7 @@ use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Contao\PtableInference\Factory\PtableInferrableFactory;
 use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrer;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Translation\TranslatableMessage;
@@ -118,7 +118,7 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
     /**
      * Whether the filter has a control: then the whitelist bounds it, without one its value is the restriction.
      */
-    private static function isControlled(Filter $filter): bool
+    private static function isControlled(FilterCompound $filter): bool
     {
         return $filter->control !== null;
     }
@@ -172,7 +172,7 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
     /**
      * Without a control the fixed value alone restricts, so a filter with neither restricts nothing.
      */
-    public function getIneffectiveReason(Filter $filter): ?TranslatableInterface
+    public function getIneffectiveReason(FilterCompound $filter): ?TranslatableInterface
     {
         if (self::isControlled($filter) || $filter->value !== null) {
             return null;
@@ -352,7 +352,7 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
     /**
      * Depends only on the list's data container and config, so it is cached on exactly those.
      */
-    private function getPtableInferrer(ListSpec $list): PtableInferrer
+    private function getPtableInferrer(ListCompound $list): PtableInferrer
     {
         $cacheKey = \sha1(\serialize([$list->dc, $list->config]));
 

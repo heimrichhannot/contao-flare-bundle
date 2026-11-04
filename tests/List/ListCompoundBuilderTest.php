@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\ValueClassMismatchError;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
@@ -21,8 +21,8 @@ use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
-use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
+use HeimrichHannot\FlareBundle\List\Factory\ListCompoundFactory;
+use HeimrichHannot\FlareBundle\List\ListCompoundBuilder;
 use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
@@ -32,9 +32,9 @@ use HeimrichHannot\FlareBundle\List\FilterFailure;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
-final class ListSpecBuilderTest extends TestCase
+final class ListCompoundBuilderTest extends TestCase
 {
-    public static function filter(string $type, string $alias): Filter
+    public static function filter(string $type, string $alias): FilterCompound
     {
         static $element = null;
 
@@ -46,7 +46,10 @@ final class ListSpecBuilderTest extends TestCase
             ): void {}
         };
 
-        return new Filter(element: new ElementBinding($element, $type, new ComponentConfig([]), null), alias: $alias);
+        return new FilterCompound(
+            element: new ElementBinding($element, $type, new ComponentConfig([]), null),
+            alias: $alias,
+        );
     }
 
     public function testBuildInvokesDriverHookAndDispatchesEvent(): void
@@ -65,20 +68,20 @@ final class ListSpecBuilderTest extends TestCase
         $driver = new class extends AbstractListDriver {
             public int $buildListCalls = 0;
 
-            public function buildList(ListSpecBuilder $builder): void
+            public function buildList(ListCompoundBuilder $builder): void
             {
                 $this->buildListCalls++;
-                $builder->addFilter(ListSpecBuilderTest::filter('from_hook', 'via_hook'));
+                $builder->addFilter(ListCompoundBuilderTest::filter('from_hook', 'via_hook'));
             }
         };
 
         $builder = $this->createBuilder($dispatcher, driver: $driver);
-        $spec = $builder->build();
+        $list = $builder->build();
 
         self::assertSame(1, $driver->buildListCalls);
         self::assertSame($builder, $dispatchedWith);
-        self::assertArrayHasKey('via_hook', $spec->filters);
-        self::assertArrayHasKey('via_event', $spec->filters);
+        self::assertArrayHasKey('via_hook', $list->filters);
+        self::assertArrayHasKey('via_event', $list->filters);
     }
 
     public function testListenerSettingAWrongValueFailsWithAnError(): void
@@ -94,7 +97,7 @@ final class ListSpecBuilderTest extends TestCase
         );
 
         $builder = $this->createBuilder($dispatcher);
-        $builder->addFilter(new Filter(
+        $builder->addFilter(new FilterCompound(
             element: new ElementBinding(new StubFilterElement(), 'stub', new ComponentConfig([]), BoolValue::class),
             alias: 'x',
         ), 'x');
@@ -104,11 +107,11 @@ final class ListSpecBuilderTest extends TestCase
         $builder->build();
     }
 
-    public function testFiltersDcAndSourceCarryOverToTheSpec(): void
+    public function testFiltersDcAndSourceCarryOverToTheList(): void
     {
         $builder = $this->createBuilder(new EventDispatcher());
 
-        $builder->addFilter(new Filter(
+        $builder->addFilter(new FilterCompound(
             element: new ElementBinding(new StubFilterElement(), 'stub', new ComponentConfig([]), null),
             alias: 'x',
         ));
@@ -120,14 +123,14 @@ final class ListSpecBuilderTest extends TestCase
         self::assertTrue($builder->hasFilterInstance(FilterElementInterface::class));
         self::assertFalse($builder->hasFilterInstance(StubFilterElement::class));
 
-        $spec = $builder->build();
+        $list = $builder->build();
 
-        self::assertSame($builder->getDriver(), $spec->driver);
-        self::assertSame('tl_test', $spec->dc);
-        self::assertSame('tl_test', $spec->config['dc']);
-        self::assertSame('tl_flare_list.9', $spec->source);
-        self::assertSame(['y', 'custom'], \array_keys($spec->filters));
-        self::assertSame([$failure], $spec->failures);
+        self::assertSame($builder->getDriver(), $list->driver);
+        self::assertSame('tl_test', $list->dc);
+        self::assertSame('tl_test', $list->config['dc']);
+        self::assertSame('tl_flare_list.9', $list->source);
+        self::assertSame(['y', 'custom'], \array_keys($list->filters));
+        self::assertSame([$failure], $list->failures);
     }
 
     public function testAddFilterRejectsAnExistingKey(): void
@@ -197,9 +200,9 @@ final class ListSpecBuilderTest extends TestCase
         $registry = new ListDriverRegistry();
         $listDriverResolver = new ListDriverResolver($registry);
 
-        $builder = new ListSpecBuilder(
+        $builder = new ListCompoundBuilder(
             listDriverResolver: $listDriverResolver,
-            specFactory: self::specFactory($registry, $listDriverResolver),
+            listCompoundFactory: self::listCompoundFactory($registry, $listDriverResolver),
             eventDispatcher: new EventDispatcher(),
             driver: new class extends AbstractListDriver {},
             source: 'tl_flare_list.9',
@@ -225,12 +228,12 @@ final class ListSpecBuilderTest extends TestCase
         }
     }
 
-    private static function specFactory(
+    private static function listCompoundFactory(
         ListDriverRegistry $registry,
         ListDriverResolver $listDriverResolver,
         ?EventDispatcher   $dispatcher = null,
-    ): ListSpecFactory {
-        return new ListSpecFactory(
+    ): ListCompoundFactory {
+        return new ListCompoundFactory(
             $registry,
             new ListOptionsResolver(new SchemaResolver()),
             new ListTransformerResolver(new SourceTransformer(), $dispatcher ?? new EventDispatcher()),
@@ -242,13 +245,13 @@ final class ListSpecBuilderTest extends TestCase
         EventDispatcher      $dispatcher,
         ?ListDriverInterface $driver = null,
         ?ListModel           $model = null,
-    ): ListSpecBuilder {
+    ): ListCompoundBuilder {
         $registry = new ListDriverRegistry();
         $listDriverResolver = new ListDriverResolver($registry);
 
-        return new ListSpecBuilder(
+        return new ListCompoundBuilder(
             listDriverResolver: $listDriverResolver,
-            specFactory: self::specFactory($registry, $listDriverResolver, $dispatcher),
+            listCompoundFactory: self::listCompoundFactory($registry, $listDriverResolver, $dispatcher),
             eventDispatcher: $dispatcher,
             driver: $driver ?? new class extends AbstractListDriver {},
             model: $model ?? new ListModelStub(['dc' => 'tl_test']),

@@ -12,10 +12,10 @@ use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Tests\List\StubFilterElement;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -66,8 +66,8 @@ final class FilterControlBuildFormListenerTest extends TestCase
             }
         };
 
-        $list = new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test');
-        $filter = new Filter(
+        $list = new ListCompound(driver: $driver, type: 'test_list', dc: 'tl_test');
+        $filter = new FilterCompound(
             element: new ElementBinding(new StubFilterElement(), 'b', new ComponentConfig(), null),
             alias: 'suche',
             control: new ControlBinding(new KeywordsFilterControl(), $controlType, new ComponentConfig()),

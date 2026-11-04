@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 
 /**
  * The value-free situation a filter control hook runs in: the list, the filter, and the intent.
@@ -22,8 +22,8 @@ final readonly class ControlContext
      * @throws \InvalidArgumentException If the filter has no control.
      */
     public function __construct(
-        public ListSpec        $list,
-        public Filter          $filter,
+        public ListCompound    $list,
+        public FilterCompound  $filter,
         public IntentInterface $intent,
     ) {
         if ($filter->control === null) {

@@ -8,8 +8,8 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
-use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterCompoundFactory;
+use HeimrichHannot\FlareBundle\List\ListCompoundBuilder;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Query\SqlJoinStruct;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
@@ -22,7 +22,7 @@ class NewsListDriver extends AbstractListDriver
     public const ALIAS_ARCHIVE = 'news_archive';
 
     public function __construct(
-        private readonly FilterFactory $filterFactory,
+        private readonly FilterCompoundFactory $filterCompoundFactory,
     ) {}
 
     public function resolveDcTable(string $type, array $config, array $attributes): string
@@ -46,13 +46,13 @@ class NewsListDriver extends AbstractListDriver
         ));
     }
 
-    public function buildList(ListSpecBuilder $builder): void
+    public function buildList(ListCompoundBuilder $builder): void
     {
         if ($builder->hasFilterInstance(PublishedFilterElement::class)) {
             return;
         }
 
-        $builder->addFilter($this->filterFactory->create(
+        $builder->addFilter($this->filterCompoundFactory->create(
             element: PublishedFilterElement::TYPE,
             config: [
                 'published_field' => 'published',

@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Util;
 
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 
 trait CreatesFilterExceptionTrait
 {
     protected function createFilterException(
         FilterException $e,
-        Filter          $filter,
+        FilterCompound  $filter,
         string          $fallbackMethod
     ): FilterException {
         $errorMethod = $e->getMethod() ?: $fallbackMethod;

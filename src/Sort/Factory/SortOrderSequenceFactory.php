@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Sort\Factory;
 
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Sort\SortOrder;
 use HeimrichHannot\FlareBundle\Sort\SortOrderSequence;
 
 final readonly class SortOrderSequenceFactory
 {
-    public function createFromList(ListSpec $list): ?SortOrderSequence
+    public function createFromList(ListCompound $list): ?SortOrderSequence
     {
         if (!$sortSettings = ($list->config['sortSettings'] ?? [])) {
             return null;

@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterEffectFactory;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
@@ -82,7 +82,7 @@ final readonly class FilterInvoker
      * unchanged, and other exceptions become a {@see FilterException}. Errors (`\Error`) are programming
      * errors and are never caught.
      */
-    private function wrapFilterFailure(\Exception $e, Filter $filter, string $method): FlareException
+    private function wrapFilterFailure(\Exception $e, FilterCompound $filter, string $method): FlareException
     {
         return match (true) {
             $e instanceof FilterException => $this->createFilterException($e, $filter, $method),

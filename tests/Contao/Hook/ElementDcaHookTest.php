@@ -134,7 +134,7 @@ final class ElementDcaHookTest extends ContaoTestCase
         $requestStack->push($request);
 
         return new ElementDcaHook(
-            elementContextFactory: new BackendElementContextFactory($this->createFilterFactory()),
+            elementContextFactory: new BackendElementContextFactory($this->createFilterCompoundFactory()),
             eventDispatcher: $dispatcher,
             filterControlRegistry: new FilterControlRegistry(),
             filterElementRegistry: $this->createFilterElementRegistry(),
@@ -146,7 +146,7 @@ final class ElementDcaHookTest extends ContaoTestCase
             ),
             framework: $framework,
             listExecutionContextFactory: new ListExecutionContextFactory($dispatcher),
-            listFactory: $this->createContaoListSpecBuilderFactory($dispatcher),
+            listFactory: $this->createContaoListCompoundBuilderFactory($dispatcher),
             listDriverRegistry: $this->createListDriverRegistry(),
             requestStack: $requestStack,
             valueProviderRegistry: new ValueProviderRegistry(),

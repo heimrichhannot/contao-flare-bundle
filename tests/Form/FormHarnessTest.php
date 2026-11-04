@@ -14,14 +14,14 @@ use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterMount;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
@@ -161,12 +161,12 @@ final class FormHarnessTest extends TestCase
         };
 
         $control ??= new KeywordsFilterControl();
-        $list = new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test');
+        $list = new ListCompound(driver: $driver, type: 'test_list', dc: 'tl_test');
         $builder = Forms::createFormFactory()->createNamedBuilder('flare_test', FormType::class);
         $mounts = [];
 
         foreach ($initial as $alias => $keywords) {
-            $filter = new Filter(
+            $filter = new FilterCompound(
                 element: new ElementBinding($element, 'test_element', new ComponentConfig([]), KeywordsValue::class),
                 alias: $alias,
                 control: $control !== null ? new ControlBinding(

@@ -9,19 +9,19 @@ use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Loader\AggregationLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\AggregationLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\AggregationView;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 
 /**
  * @implements ProjectorInterface<AggregationView>
  */
 class AggregationProjector extends AbstractProjector
 {
-    public function supports(ListSpec $list, IntentInterface $intent): bool
+    public function supports(ListCompound $list, IntentInterface $intent): bool
     {
         return $intent instanceof AggregationIntent;
     }
 
-    public function project(ListSpec $list, IntentInterface $intent): AggregationView
+    public function project(ListCompound $list, IntentInterface $intent): AggregationView
     {
         \assert($intent instanceof AggregationIntent, '$intent must be an instance of AggregationIntent');
 

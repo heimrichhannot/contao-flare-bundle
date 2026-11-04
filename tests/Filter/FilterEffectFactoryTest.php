@@ -12,13 +12,13 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use PHPUnit\Framework\TestCase;
@@ -77,8 +77,12 @@ final class FilterEffectFactoryTest extends TestCase
         $registry->add($element, new AsFilterElement(type: 'test_element', isTargeted: $isTargeted), 'test_element');
 
         $context = new ElementContext(
-            list: new ListSpec(driver: $this->createStub(ListDriverInterface::class), type: 'test_list', dc: 'tl_test'),
-            filter: new Filter(
+            list: new ListCompound(
+                driver: $this->createStub(ListDriverInterface::class),
+                type: 'test_list',
+                dc: 'tl_test',
+            ),
+            filter: new FilterCompound(
                 element: new ElementBinding($element, 'test_element', new ComponentConfig([]), null),
                 alias: 'test',
                 targetAlias: $alias,

@@ -29,7 +29,7 @@ final readonly class FilterEffectFactory
         if (!Str::isValidSqlName($table = $context->list->dc))
         {
             throw new FlareException(\sprintf(
-                '[FLARE] ListSpec data container cannot be used as SQL table identifier: "%s"',
+                '[FLARE] ListCompound data container cannot be used as SQL table identifier: "%s"',
                 $table
             ), method: __METHOD__, source: $context->filter->source ?: 'filter inlined');
         }

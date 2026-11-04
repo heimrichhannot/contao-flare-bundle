@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Reader\BackLink;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
 
@@ -18,12 +18,12 @@ use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
  */
 class ValidationProjector extends AbstractProjector
 {
-    public function supports(ListSpec $list, IntentInterface $intent): bool
+    public function supports(ListCompound $list, IntentInterface $intent): bool
     {
         return $intent instanceof ValidationIntent;
     }
 
-    public function project(ListSpec $list, IntentInterface $intent): ValidationView
+    public function project(ListCompound $list, IntentInterface $intent): ValidationView
     {
         \assert($intent instanceof ValidationIntent, '$intent must be an instance of ValidationIntent');
 

@@ -16,11 +16,11 @@ use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
  * transformer responsibility of the element and the control
  * ({@see \HeimrichHannot\FlareBundle\Contract\TransformerContract}).
  *
- * Use {@see Factory\FilterFactory} to create instances.
+ * Use {@see Factory\FilterCompoundFactory} to create instances.
  *
  * @api
  */
-final readonly class Filter
+final readonly class FilterCompound
 {
     /**
      * @param ElementBinding $element The filter element with its type and config.
@@ -37,7 +37,7 @@ final readonly class Filter
      *
      * @throws ValueClassMismatchError If the value does not match the element's value class — a programming error.
      *
-     * @internal Use {@see Factory\FilterFactory} to create instances.
+     * @internal Use {@see Factory\FilterCompoundFactory} to create instances.
      */
     public function __construct(
         public ElementBinding  $element,

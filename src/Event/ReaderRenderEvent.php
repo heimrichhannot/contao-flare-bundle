@@ -8,7 +8,7 @@ use Contao\ContentModel;
 use Contao\Model;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
 use Symfony\Contracts\EventDispatcher\Event;
 
@@ -20,7 +20,7 @@ class ReaderRenderEvent extends Event
         public readonly ContentModel    $contentModel,
         public readonly IntentInterface $intent,
         public readonly Model           $displayModel,
-        public readonly ListSpec        $list,
+        public readonly ListCompound    $list,
         public ReaderPageMeta           $pageMeta,
         private Template                $template,
     ) {}

@@ -11,9 +11,9 @@ use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Tests\List\StubFilterElement;
 use PHPUnit\Framework\TestCase;
 
@@ -22,8 +22,12 @@ final class ElementContextTest extends TestCase
     private function context(): ElementContext
     {
         return new ElementContext(
-            list: new ListSpec(driver: $this->createStub(ListDriverInterface::class), type: 'test_list', dc: 'tl_test'),
-            filter: new Filter(
+            list: new ListCompound(
+                driver: $this->createStub(ListDriverInterface::class),
+                type: 'test_list',
+                dc: 'tl_test',
+            ),
+            filter: new FilterCompound(
                 element: new ElementBinding(new StubFilterElement(), 'test_element', new ComponentConfig([
                     'label' => 'element',
                     'field' => 'title',

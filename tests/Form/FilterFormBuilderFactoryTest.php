@@ -34,7 +34,7 @@ final class FilterFormBuilderFactoryTest extends TestCase
         $filter = $this->filter($alias, $control);
         $factory = new FilterFormBuilderFactory($this->eventDispatcher, Forms::createFormFactory());
 
-        return $factory->create(new ControlContext($this->listSpec([$filter]), $filter, new ConfigurationIntent()));
+        return $factory->create(new ControlContext($this->list([$filter]), $filter, new ConfigurationIntent()));
     }
 
     private function failing(\Exception $e): FilterControlInterface

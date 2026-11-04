@@ -14,7 +14,7 @@ use HeimrichHannot\FlareBundle\Filter\Factory\FilterEffectFactory;
 use HeimrichHannot\FlareBundle\Filter\Factory\FormulaBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\FilterEffect;
 use HeimrichHannot\FlareBundle\Filter\Predicate\PredicateInterface;
@@ -22,7 +22,7 @@ use HeimrichHannot\FlareBundle\Filter\Predicate\SearchKeywordsPredicate;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterPredicateRegistry;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
@@ -66,8 +66,8 @@ trait BuildsFilterEffectsTrait
         };
 
         return new ElementContext(
-            list: new ListSpec(driver: $driver, type: 'test_list', dc: $dc),
-            filter: new Filter(
+            list: new ListCompound(driver: $driver, type: 'test_list', dc: $dc),
+            filter: new FilterCompound(
                 element: new ElementBinding(
                     component: $element,
                     type: 'test_element',

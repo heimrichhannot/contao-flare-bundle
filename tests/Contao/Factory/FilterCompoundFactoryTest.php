@@ -6,14 +6,14 @@ namespace HeimrichHannot\FlareBundle\Tests\Contao\Factory;
 
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
-use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterCompoundFactory;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory as CoreFilterFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterCompoundFactory as CoreFilterCompoundFactory;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
-final class FilterFactoryTest extends TestCase
+final class FilterCompoundFactoryTest extends TestCase
 {
     private const BOOL_ELEMENT = 'bool_element';
     private const BOOL_CONTROL = 'bool_control';
@@ -49,7 +49,7 @@ final class FilterFactoryTest extends TestCase
         $this->boolControl = new FactoryStubBoolControl();
     }
 
-    private function factory(): FilterFactory
+    private function factory(): FilterCompoundFactory
     {
         $elements = (new FilterElementRegistry())->add(
             $this->boolElement,
@@ -71,8 +71,8 @@ final class FilterFactoryTest extends TestCase
             }
         };
 
-        return new FilterFactory(
-            filterFactory: new CoreFilterFactory(
+        return new FilterCompoundFactory(
+            filterCompoundFactory: new CoreFilterCompoundFactory(
                 filterElementRegistry: $elements,
                 filterControlRegistry: $controls,
                 filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),

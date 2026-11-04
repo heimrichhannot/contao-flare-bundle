@@ -6,10 +6,10 @@ namespace HeimrichHannot\FlareBundle\List\Factory;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\List\BaseListOptions;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\List\ResolvedListDriver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
@@ -18,11 +18,11 @@ use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 
 /**
- * The single construction path for {@see ListSpec}: resolves the driver from its type alias if
+ * The single construction path for {@see ListCompound}: resolves the driver from its type alias if
  * necessary, resolves the config through the base and driver schemas, and guarantees a
  * well-defined data container ({@see ListDriverInterface::resolveDcTable()}).
  */
-final readonly class ListSpecFactory
+final readonly class ListCompoundFactory
 {
     public function __construct(
         private ListDriverRegistry      $listDriverRegistry,
@@ -32,7 +32,7 @@ final readonly class ListSpecFactory
     ) {}
 
     /**
-     * @param array<string, Filter> $filters
+     * @param array<string, FilterCompound> $filters
      * @param array<string, mixed> $config Canonical config values, unresolved.
      *
      * @throws FlareException In case the driver cannot be resolved, the config does not satisfy
@@ -43,12 +43,12 @@ final readonly class ListSpecFactory
         array                                         $filters = [],
         array                                         $config = [],
         ?string                                       $source = null,
-    ): ListSpec {
+    ): ListCompound {
         $resolved = $this->listDriverResolver->resolve($driver);
         $config = $this->listOptionsResolver->resolve($resolved->driver, $config, $source);
         $dc = $this->resolveDataContainer($config, $resolved->driver, $resolved->type, $source);
 
-        return new ListSpec(
+        return new ListCompound(
             driver: $resolved->driver,
             type: $resolved->type,
             dc: $dc,
@@ -68,7 +68,7 @@ final readonly class ListSpecFactory
         array                                              $filters = [],
         array                                              $config = [],
         ?string                                            $source = null,
-    ): ListSpec {
+    ): ListCompound {
         $driver ??= $listModel->getListDriverType();
         $resolved = $this->listDriverResolver->resolve($driver);
 
@@ -90,7 +90,7 @@ final readonly class ListSpecFactory
 
         $dc = $this->resolveDataContainer($finalConfig, $resolved->driver, $resolved->type, $source);
 
-        return new ListSpec(
+        return new ListCompound(
             driver: $resolved->driver,
             type: $resolved->type,
             dc: $dc,

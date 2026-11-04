@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\List;
 
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 
-interface ListSpecBuilderInterface
+interface ListCompoundBuilderInterface
 {
     public function getDriver(): ListDriverInterface|string;
 
@@ -19,7 +19,7 @@ interface ListSpecBuilderInterface
 
     public function set(string $key, mixed $value): self;
 
-    public function addFilter(Filter $filter, ?string $key = null): self;
+    public function addFilter(FilterCompound $filter, ?string $key = null): self;
 
     public function removeFilter(string $key): self;
 
@@ -30,7 +30,7 @@ interface ListSpecBuilderInterface
 
     public function getFilters(): array;
 
-    public function getFilter(string $key): ?Filter;
+    public function getFilter(string $key): ?FilterCompound;
 
-    public function build(): ListSpec;
+    public function build(): ListCompound;
 }

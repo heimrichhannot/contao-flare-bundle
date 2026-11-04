@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
 use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
 /**
@@ -21,19 +21,19 @@ interface ProjectorInterface
     /**
      * Checks if this projector supports the given intent.
      */
-    public function supports(ListSpec $list, IntentInterface $intent): bool;
+    public function supports(ListCompound $list, IntentInterface $intent): bool;
 
     /**
-     * Calculates the priority of the projector when supported, considering the given specification.
+     * Calculates the priority of the projector when supported, considering the given list.
      */
-    public function priority(ListSpec $list, IntentInterface $intent): int;
+    public function priority(ListCompound $list, IntentInterface $intent): int;
 
     /**
-     * Projects a list specification into a result based on the intent.
+     * Projects a list into a result based on the intent.
      *
-     * @param ListSpec $list
+     * @param ListCompound $list
      * @param IntentInterface  $intent
      * @return ViewInterface
      */
-    public function project(ListSpec $list, IntentInterface $intent): ViewInterface;
+    public function project(ListCompound $list, IntentInterface $intent): ViewInterface;
 }

@@ -9,7 +9,7 @@ use Contao\Message;
 use Contao\TestCase\ContaoTestCase;
 use HeimrichHannot\FlareBundle\Contao\Inspection\Reporter\FilterIssueReporter;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -178,7 +178,7 @@ final class FilterIssueReporterTest extends ContaoTestCase
     {
         $this->dispatcher->addListener(FilterCollectedEvent::class, static function (FilterCollectedEvent $event) use ($ids): void {
             if (\in_array($event->model->id, $ids, true)) {
-                $event->filter = new Filter(
+                $event->filter = new FilterCompound(
                     element: $event->filter->element,
                     alias: '<dup>',
                     source: $event->filter->source,

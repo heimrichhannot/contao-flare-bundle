@@ -8,8 +8,8 @@ use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterCompoundFactory;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
 use HeimrichHannot\FlareBundle\Util\EntryCache;
@@ -20,7 +20,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
 
     public function __construct(
         private ValidationLoaderConfig $config,
-        private FilterFactory          $filterFactory,
+        private FilterCompoundFactory  $filterCompoundFactory,
         private ListQueryDirector      $listQueryDirector,
     ) {
         $this->entryCache = new EntryCache($this->config->list->dc);
@@ -43,7 +43,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
 
         try
         {
-            $idDefinition = $this->filterFactory->create(
+            $idDefinition = $this->filterCompoundFactory->create(
                 element: SimpleEquationFilterElement::TYPE,
                 alias: '_.id',
                 config: [
@@ -92,7 +92,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
 
         try
         {
-            $autoItemDefinition = $this->filterFactory->create(
+            $autoItemDefinition = $this->filterCompoundFactory->create(
                 element: SimpleEquationFilterElement::TYPE,
                 alias: '_.autoItem',
                 config: [
@@ -127,7 +127,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
     /**
      * @throws \Exception
      */
-    private function executeQuery(ListSpec $list, ValidationIntent $intent): array
+    private function executeQuery(ListCompound $list, ValidationIntent $intent): array
     {
         $qb = $this->listQueryDirector->createQueryBuilder(new ListQueryConfig(
             list: $list,

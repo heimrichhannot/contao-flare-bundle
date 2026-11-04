@@ -18,7 +18,7 @@ use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
@@ -26,7 +26,7 @@ use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Query\Executor\FilterInvoker;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
@@ -222,7 +222,7 @@ final class ListQueryDirectorTest extends TestCase
     }
 
     /**
-     * @param list<Filter> $filters
+     * @param list<FilterCompound> $filters
      * @param array<string, ?ValueInterface> $filterValues
      *
      * @return FilterConditionsBuilder[]
@@ -242,8 +242,8 @@ final class ListQueryDirectorTest extends TestCase
         ?FilterControlInterface $control = null,
         ?ValueInterface         $value = null,
         ?string                 $source = null,
-    ): Filter {
-        return new Filter(
+    ): FilterCompound {
+        return new FilterCompound(
             element: new ElementBinding($element, 'test_element', new ComponentConfig([]), BoolValue::class),
             alias: $alias,
             control: $control !== null ? new ControlBinding($control, $control::class, new ComponentConfig([])) : null,
@@ -253,9 +253,9 @@ final class ListQueryDirectorTest extends TestCase
     }
 
     /**
-     * @param list<Filter> $filters
+     * @param list<FilterCompound> $filters
      */
-    private function list(array $filters): ListSpec
+    private function list(array $filters): ListCompound
     {
         $driver = new class implements ListDriverInterface {
             public function resolveDcTable(string $type, array $config, array $attributes): string
@@ -269,7 +269,7 @@ final class ListQueryDirectorTest extends TestCase
             $keyed[$filter->alias] = $filter;
         }
 
-        return new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test', filters: $keyed);
+        return new ListCompound(driver: $driver, type: 'test_list', dc: 'tl_test', filters: $keyed);
     }
 
     private function createDirector(): ListQueryDirector

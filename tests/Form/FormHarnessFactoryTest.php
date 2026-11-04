@@ -93,7 +93,7 @@ final class FormHarnessFactoryTest extends TestCase
 
     private function createFilterSet(array $filters, bool $debug = false, ?string $listSource = null): FormHarness
     {
-        $list = $this->listSpec($filters, $listSource);
+        $list = $this->list($filters, $listSource);
 
         $intent = new class implements IntentInterface, FormIntentInterface {
             public static function getIntentType(): string

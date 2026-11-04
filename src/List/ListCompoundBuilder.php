@@ -8,25 +8,25 @@ use HeimrichHannot\FlareBundle\Contract\ListDriver\BuildListContract;
 use HeimrichHannot\FlareBundle\Event\ListDriverBuildListEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
+use HeimrichHannot\FlareBundle\List\Factory\ListCompoundFactory;
 use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
- * Configures a list and its filters, then builds the immutable {@see ListSpec}.
+ * Configures a list and its filters, then builds the immutable {@see ListCompound}.
  *
  * Build order: the driver's {@see BuildListContract::buildList()} hook, the
  * {@see ListDriverBuildListEvent} (named dispatch `flare.list_driver.{type}.build_list`), then config assembly —
  * base translation, the driver's model transformers, and explicit {@see set()} overrides —
- * handed to {@see ListSpecFactory} for schema resolution and construction.
+ * handed to {@see ListCompoundFactory} for schema resolution and construction.
  */
-final class ListSpecBuilder implements ListSpecBuilderInterface
+final class ListCompoundBuilder implements ListCompoundBuilderInterface
 {
     /**
-     * @var array<string, Filter>
+     * @var array<string, FilterCompound>
      */
     private array $filters = [];
 
@@ -42,7 +42,7 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
 
     public function __construct(
         private readonly ListDriverResolver         $listDriverResolver,
-        private readonly ListSpecFactory            $specFactory,
+        private readonly ListCompoundFactory        $listCompoundFactory,
         private readonly EventDispatcherInterface   $eventDispatcher,
         private readonly ListDriverInterface|string $driver,
         private readonly ?ListModel                 $model = null,
@@ -82,13 +82,13 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
      *
      * @throws FlareException If the key is already taken, or another filter already has the alias.
      */
-    public function addFilter(Filter $filter, ?string $key = null): self
+    public function addFilter(FilterCompound $filter, ?string $key = null): self
     {
         $key ??= $filter->alias;
 
         $aliasTaken = \array_filter(
             $this->filters,
-            static fn (Filter $existing): bool => $existing->alias === $filter->alias,
+            static fn (FilterCompound $existing): bool => $existing->alias === $filter->alias,
         );
 
         if (isset($this->filters[$key]) || $aliasTaken)
@@ -127,14 +127,14 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
     }
 
     /**
-     * @return array<string, Filter>
+     * @return array<string, FilterCompound>
      */
     public function getFilters(): array
     {
         return $this->filters;
     }
 
-    public function getFilter(string $key): ?Filter
+    public function getFilter(string $key): ?FilterCompound
     {
         return $this->filters[$key] ?? null;
     }
@@ -158,7 +158,7 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
      * @throws FlareException If the resulting config does not satisfy the schema or no data
      *                        container can be determined.
      */
-    public function build(): ListSpec
+    public function build(): ListCompound
     {
         $driver = $this->listDriverResolver->resolve($this->driver);
         if ($driver->driver instanceof BuildListContract) {
@@ -167,15 +167,15 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
 
         $this->eventDispatcher->dispatch(new ListDriverBuildListEvent($this));
 
-        $spec = $this->model
-            ? $this->specFactory->createFromListModel(
+        $list = $this->model
+            ? $this->listCompoundFactory->createFromListModel(
                 listModel: $this->model,
                 driver: $driver,
                 filters: $this->filters,
                 config: $this->overrides,
                 source: $this->source,
             )
-            : $this->specFactory->create(
+            : $this->listCompoundFactory->create(
                 driver: $driver,
                 filters: $this->filters,
                 config: $this->overrides,
@@ -183,9 +183,9 @@ final class ListSpecBuilder implements ListSpecBuilderInterface
             );
 
         foreach ($this->failures as $failure) {
-            $spec = $spec->withFailure($failure);
+            $list = $list->withFailure($failure);
         }
 
-        return $spec;
+        return $list;
     }
 }

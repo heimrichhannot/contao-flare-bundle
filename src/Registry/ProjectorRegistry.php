@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Registry;
 use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Projector\ProjectorInterface;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
 
 readonly class ProjectorRegistry
@@ -26,7 +26,7 @@ readonly class ProjectorRegistry
      * @throws FlareException If no projector is found.
      */
     public function getProjectorFor(
-        ListSpec        $list,
+        ListCompound    $list,
         IntentInterface $intent,
         ?array          $exclude = null
     ): ProjectorInterface {

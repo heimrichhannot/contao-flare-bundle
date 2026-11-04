@@ -8,14 +8,14 @@ use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementContextFactory;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
-use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterCompoundFactory;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaFieldBuilderInterface;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\ArchiveFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory as CoreFilterFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterCompoundFactory as CoreFilterCompoundFactory;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
@@ -23,7 +23,7 @@ use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
@@ -36,7 +36,7 @@ final class BackendElementContextFactoryTest extends TestCase
 {
     public function testTheBackendContextKnowsTheControlButReadsNoValue(): void
     {
-        $context = $this->createFactory()->create($this->getSpec(), self::archiveFilter());
+        $context = $this->createFactory()->create($this->getList(), self::archiveFilter());
 
         self::assertNotNull($context);
         self::assertSame('flare_choice', $context->filter->control?->type, 'the control decides the options');
@@ -45,9 +45,9 @@ final class BackendElementContextFactoryTest extends TestCase
 
     public function testAContextThatCannotBeBuiltIsNull(): void
     {
-        $getSpec = static fn (): ListSpec => throw new FlareException('No list driver found for type "gone"');
+        $getList = static fn (): ListCompound => throw new FlareException('No list driver found for type "gone"');
 
-        self::assertNull($this->createFactory()->create($getSpec, self::archiveFilter()));
+        self::assertNull($this->createFactory()->create($getList, self::archiveFilter()));
     }
 
     public function testLegacyAliasYieldsNoContext(): void
@@ -59,17 +59,17 @@ final class BackendElementContextFactoryTest extends TestCase
             'control' => 'flare_choice',
         ]);
 
-        self::assertNull($this->createFactory()->create($this->getSpec(), $legacy));
+        self::assertNull($this->createFactory()->create($this->getList(), $legacy));
     }
 
     /**
-     * @return \Closure(): ListSpec
+     * @return \Closure(): ListCompound
      */
-    private function getSpec(): \Closure
+    private function getList(): \Closure
     {
         $driver = $this->createStub(ListDriverInterface::class);
 
-        return static fn (): ListSpec => new ListSpec(driver: $driver, type: 'test', dc: 'tl_news');
+        return static fn (): ListCompound => new ListCompound(driver: $driver, type: 'test', dc: 'tl_news');
     }
 
     private static function archiveFilter(): FilterModelFixture
@@ -103,8 +103,8 @@ final class BackendElementContextFactoryTest extends TestCase
             public function buildDcaField(DcaFieldBuilderInterface $field, DcaContext $context): void {}
         }, ChoiceValue::class);
 
-        return new BackendElementContextFactory(new FilterFactory(
-            filterFactory: new CoreFilterFactory(
+        return new BackendElementContextFactory(new FilterCompoundFactory(
+            filterCompoundFactory: new CoreFilterCompoundFactory(
                 filterElementRegistry: $elements,
                 filterControlRegistry: $controls,
                 filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),

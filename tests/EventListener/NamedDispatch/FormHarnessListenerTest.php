@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Tests\EventListener\NamedDispatch;
 use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FormHarnessListener;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
@@ -55,7 +55,7 @@ final class FormHarnessListenerTest extends TestCase
 
         $listener = new FormHarnessListener($dispatcher);
         $listener->onFormHarnessBuildEvent(new FormHarnessBuildEvent(
-            list: new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test'),
+            list: new ListCompound(driver: $driver, type: 'test_list', dc: 'tl_test'),
             formName: $formName,
             formBuilder: $formBuilder,
         ));

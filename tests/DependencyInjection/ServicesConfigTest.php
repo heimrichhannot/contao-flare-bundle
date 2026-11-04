@@ -18,8 +18,8 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Contao\CollectedFilters;
 use HeimrichHannot\FlareBundle\Contao\Factory\FilterCollector;
-use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
-use HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterCompoundFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListCompoundBuilderFactory;
 use HeimrichHannot\FlareBundle\Contao\Hook\BreadcrumbHook;
 use HeimrichHannot\FlareBundle\Contao\Hook\ElementDcaHook;
 use HeimrichHannot\FlareBundle\Contao\Hook\FormNameRegexpHook;
@@ -86,9 +86,9 @@ final class ServicesConfigTest extends TestCase
             FormNameRegexpHook::class,
             ConfigOnSubmitCallback::class,
             FieldsOptionsCallbacks::class,
-            FilterFactory::class,
+            FilterCompoundFactory::class,
             FilterCollector::class,
-            ListSpecBuilderFactory::class,
+            ListCompoundBuilderFactory::class,
             InteractiveIntentFactory::class,
             ValidationIntentFactory::class,
             AggregationIntentFactory::class,

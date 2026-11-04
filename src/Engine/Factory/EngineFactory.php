@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Engine\Factory;
 
 use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Engine;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Registry\EngineModRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 
@@ -17,7 +17,7 @@ final readonly class EngineFactory
         private ProjectorRegistry $projectorRegistry,
     ) {}
 
-    public function createEngine(IntentInterface $intent, ListSpec $list, array $mods = []): Engine
+    public function createEngine(IntentInterface $intent, ListCompound $list, array $mods = []): Engine
     {
         return new Engine(
             engineModRegistry: $this->engineModRegistry,

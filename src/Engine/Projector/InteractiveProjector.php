@@ -19,7 +19,7 @@ use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
@@ -36,7 +36,7 @@ class InteractiveProjector extends AbstractProjector
         private readonly PaginatorFactory         $paginatorFactory,
     ) {}
 
-    public function supports(ListSpec $list, IntentInterface $intent): bool
+    public function supports(ListCompound $list, IntentInterface $intent): bool
     {
         return $intent instanceof InteractiveIntent;
     }
@@ -45,7 +45,7 @@ class InteractiveProjector extends AbstractProjector
      * @throws FilterException In debug mode, if the list has failed.
      * @throws FlareException
      */
-    public function project(ListSpec $list, IntentInterface $intent): InteractiveView
+    public function project(ListCompound $list, IntentInterface $intent): InteractiveView
     {
         \assert($intent instanceof InteractiveIntent, '$intent must be an instance of InteractiveIntent');
 
@@ -118,7 +118,7 @@ class InteractiveProjector extends AbstractProjector
      */
     protected function createFailedView(
         FilterException             $e,
-        ListSpec                    $list,
+        ListCompound                $list,
         InteractiveIntent           $intent,
         FormInterface               $form,
         ReaderUrlGeneratorInterface $readerUrlGenerator,
@@ -172,7 +172,7 @@ class InteractiveProjector extends AbstractProjector
     /**
      * @throws FlareException
      */
-    public function createForm(ListSpec $list, InteractiveIntent $intent): FormInterface
+    public function createForm(ListCompound $list, InteractiveIntent $intent): FormInterface
     {
         return $this->createFormHarness($list, $intent)->getForm();
     }
@@ -182,7 +182,7 @@ class InteractiveProjector extends AbstractProjector
      *
      * @throws FlareException
      */
-    protected function createFormHarness(ListSpec $list, InteractiveIntent $intent): FormHarness
+    protected function createFormHarness(ListCompound $list, InteractiveIntent $intent): FormHarness
     {
         $harness = $this->formHarnessFactory->create($list, $intent);
 
@@ -197,7 +197,7 @@ class InteractiveProjector extends AbstractProjector
      * @throws FlareException
      */
     protected function createAggregationView(
-        ListSpec          $spec,
+        ListCompound      $list,
         InteractiveIntent $interactiveIntent,
         array             $filterValues,
     ): AggregationView {
@@ -205,8 +205,8 @@ class InteractiveProjector extends AbstractProjector
 
         $aggregationIntent = $aggregationIntent->withFilterValues($filterValues);
 
-        $projector = $this->getProjectorFor($spec, $aggregationIntent);
-        $projection = $projector->project($spec, $aggregationIntent);
+        $projector = $this->getProjectorFor($list, $aggregationIntent);
+        $projection = $projector->project($list, $aggregationIntent);
 
         \assert($projection instanceof AggregationView, 'Expected AggregationView from projector.');
 

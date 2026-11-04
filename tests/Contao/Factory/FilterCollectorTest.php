@@ -9,8 +9,8 @@ use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Contao\Factory\FilterCollector;
-use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory as CoreFilterFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterCompoundFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterCompoundFactory as CoreFilterCompoundFactory;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -54,8 +54,8 @@ final class FilterCollectorTest extends TestCase
             }
         };
 
-        $filterFactory = new FilterFactory(
-            filterFactory: new CoreFilterFactory(
+        $filterCompoundFactory = new FilterCompoundFactory(
+            filterCompoundFactory: new CoreFilterCompoundFactory(
                 filterElementRegistry: $elements,
                 filterControlRegistry: new FilterControlRegistry(),
                 filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
@@ -67,7 +67,7 @@ final class FilterCollectorTest extends TestCase
 
         return new FilterCollector(
             eventDispatcher: $this->dispatcher,
-            filterFactory: $filterFactory,
+            filterCompoundFactory: $filterCompoundFactory,
             listDriverRegistry: new ListDriverRegistry(),
             logger: $logger,
         );

@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use Symfony\Component\Translation\TranslatableMessage;
@@ -18,7 +18,7 @@ use Symfony\Contracts\Translation\TranslatableInterface;
  */
 final class IneffectiveElement implements FilterElementInterface, IneffectiveFilterContract
 {
-    public function getIneffectiveReason(Filter $filter): ?TranslatableInterface
+    public function getIneffectiveReason(FilterCompound $filter): ?TranslatableInterface
     {
         if ($filter->control !== null || $filter->value !== null) {
             return null;

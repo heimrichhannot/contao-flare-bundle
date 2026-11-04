@@ -6,8 +6,8 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter\ValueProvider;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaFieldBuilder;
+use HeimrichHannot\FlareBundle\Contao\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaFieldBuilder;
 use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -105,7 +105,7 @@ final class ChoiceValueProviderTest extends TestCase
         $scope = new ElementScope(
             list: new ListSpec(driver: $this->createStub(ListDriverInterface::class), type: 'test', dc: 'tl_test'),
             filter: new Filter(
-                element: new ElementBinding($element, 'test_element', new ComponentConfig(['field' => 'title'])),
+                element: new ElementBinding($element, 'test_element', new ComponentConfig(['field' => 'title']), null),
                 alias: 'test',
             ),
             engineContext: new ConfigurationContext(),

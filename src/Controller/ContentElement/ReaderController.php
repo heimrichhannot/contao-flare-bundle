@@ -16,7 +16,7 @@ use Contao\CoreBundle\Routing\ResponseContext\ResponseContextAccessor;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Input;
 use Contao\Template;
-use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\ValidationContextFactory;
 use HeimrichHannot\FlareBundle\Engine\Factory\EngineFactory;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
@@ -24,7 +24,7 @@ use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
 use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\ViewException;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Reader\Factory\ReaderRequestAttributeFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
@@ -113,7 +113,7 @@ final class ReaderController extends AbstractContentElementController
 
         try
         {
-            $list = $this->listFactory->createFromListModel($listModel)->build();
+            $list = $this->listFactory->create($listModel)->build();
 
             $validationContext = $this->validationContextFactory->createFromContent(
                 contentModel: $contentModel,

@@ -10,13 +10,55 @@ use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Event\ListDriverConfigureTransformersEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 final class ListTransformerResolverTest extends TestCase
 {
+    /**
+     * @param array<string, mixed> $row
+     */
+    private static function listModel(array $row): ListModel
+    {
+        $model = (new \ReflectionClass(ListModel::class))->newInstanceWithoutConstructor();
+
+        (function (array $row): void {
+            $this->arrData = $row;
+        })->call($model, $row);
+
+        return $model;
+    }
+
+    private static function modelTransformingDriver(): AbstractListDriver
+    {
+        return new class extends AbstractListDriver {
+            protected function transformListModel(ConfigBuilder $config, ListModel $model): void
+            {
+                $config->set('title', $model->title);
+            }
+        };
+    }
+
+    public function testAbstractDriverTransformsAListModel(): void
+    {
+        $resolver = new ListTransformerResolver(new SourceTransformer(), new EventDispatcher());
+
+        $values = $resolver->transform(self::modelTransformingDriver(), 'abstract', self::listModel(['title' => 'T']));
+
+        self::assertSame(['title' => 'T'], $values);
+    }
+
+    public function testAbstractDriverIgnoresOtherSources(): void
+    {
+        $resolver = new ListTransformerResolver(new SourceTransformer(), new EventDispatcher());
+
+        self::assertNull($resolver->transform(self::modelTransformingDriver(), 'abstract', new \stdClass()));
+    }
+
     public function testTransformsSourceThroughDriverTransformers(): void
     {
         $resolver = new ListTransformerResolver(new SourceTransformer(), new EventDispatcher());

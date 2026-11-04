@@ -10,13 +10,13 @@ use Contao\DataContainer;
 use Contao\Message;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Contract\ListDriver\OnSubmitDcContract;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
-use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
+use HeimrichHannot\FlareBundle\Contao\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
-use HeimrichHannot\FlareBundle\InferPtable\PtableInferrer;
+use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrer;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use Symfony\Contracts\Translation\TranslatorInterface;
 

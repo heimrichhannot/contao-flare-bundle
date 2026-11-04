@@ -124,7 +124,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
         return new ElementScope(
             list: new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test'),
             filter: new Filter(
-                element: new ElementBinding($element, 'test_element', new ComponentConfig($config)),
+                element: new ElementBinding($element, 'test_element', new ComponentConfig($config), null),
                 alias: 'test',
             ),
             engineContext: new ConfigurationContext(),

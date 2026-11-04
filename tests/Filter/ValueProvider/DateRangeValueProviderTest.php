@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Filter\ValueProvider;
 
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaFieldBuilder;
+use HeimrichHannot\FlareBundle\Contao\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaFieldBuilder;
 use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
 use HeimrichHannot\FlareBundle\Filter\ValueProvider\DateRangeValueProvider;
 use HeimrichHannot\FlareBundle\Model\ListModel;

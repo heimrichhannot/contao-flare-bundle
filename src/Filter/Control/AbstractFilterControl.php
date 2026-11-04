@@ -9,9 +9,8 @@ use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilderInterface;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
-use HeimrichHannot\FlareBundle\Filter\CallbackFilterModelTransformer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
+use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\ExpectsValueTrait;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -38,7 +37,7 @@ abstract class AbstractFilterControl implements
     {
         $transformers->set(
             sourceClass: FilterModel::class,
-            transformer: new CallbackFilterModelTransformer($this->transformFilterModel(...)),
+            transformer: $this->transformFilterModel(...),
         );
     }
 

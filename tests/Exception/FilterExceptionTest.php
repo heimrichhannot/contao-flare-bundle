@@ -52,8 +52,7 @@ final class FilterExceptionTest extends TestCase
             element: new ElementBinding(
                 $this->createMock(FilterElementInterface::class),
                 'test_element',
-                new ComponentConfig(),
-            ),
+                new ComponentConfig(), null),
             alias: 'test',
             source: $source,
         );

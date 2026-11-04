@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\EventListener\NamedDispatch;
 
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaBuilder;
-use HeimrichHannot\FlareBundle\DataContainer\Builder\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilder;
+use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\ListDriverBuildDcaEvent;
@@ -41,7 +41,7 @@ final class DcaEventListenerTest extends TestCase
         $listener = new DcaEventListener($this->recordingDispatcher($names));
 
         $listener->onFilterControlDca(new FilterControlBuildDcaEvent(
-            (new DcaBuilder())->scope('control'),
+            (new DcaBuilder())->forControl(),
             self::context('tl_flare_filter', 'flare_archive'),
             'flare_choice',
         ));

@@ -11,10 +11,16 @@ services:
         resource: ../src
         exclude:
             - ../src/{Config,Contao,ContaoManager,Contract,DependencyInjection,Dto,Engine,Event,Integration,Model,Trait,Util}
-            - ../src/{Filter,Form,InferPtable,List,Paginator,Query,Sort}/*.php
-            - ../src/DataContainer/Builder
-            - ../src/DataContainer/Inspection/*.php
+            - ../src/{Filter,Form,List,Paginator,Query,Sort}/*.php
             - ../src/Filter/Value
+
+    HeimrichHannot\FlareBundle\Contao\:
+        resource: ../src/Contao
+        exclude:
+            - ../src/Contao/*.php
+            - ../src/Contao/DataContainer/Builder
+            - ../src/Contao/Inspection/*.php
+            - ../src/Contao/PtableInference/*.php
 
     HeimrichHannot\FlareBundle\Engine\:
         resource: ../src/Engine
@@ -28,7 +34,7 @@ services:
         arguments:
             $debug: '%kernel.debug%'
 
-    HeimrichHannot\FlareBundle\DataContainer\Inspection\Inspector\FilterInspector:
+    HeimrichHannot\FlareBundle\Contao\Inspection\Inspector\FilterInspector:
         arguments:
             $debug: '%kernel.debug%'
 

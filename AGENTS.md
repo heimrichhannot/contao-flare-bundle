@@ -18,7 +18,7 @@ The core execution flow is:
 
 ```
 ContentElement Controller
-  → ListSpecBuilderFactory::createFromListModel(...)->build() — builds the immutable ListSpec (src/List/)
+  → Contao\Factory\ListSpecBuilderFactory::create($listModel)->build() — builds the immutable ListSpec (src/List/)
     → EngineFactory → Engine
       → Context (Interactive / Validation / Aggregation) — src/Engine/Context/
         → Loader (src/Engine/Loader/) + Mods (src/Engine/Mod/)
@@ -41,7 +41,10 @@ recorded as `FilterFailure`s (`src/List/`) on the `ListSpec`. A controlled filte
 (warning); if the retry fails too (or the value was already null) the element config is broken and the list fails
 closed. `\Error`s escape unwrapped. `UndefinedConfigKeyError` (an `\Error`, thrown when a component reads a config key
 its schema does not define) is a programming error: never retried, never degraded into a skipped filter or a
-failed list — it fails the request. The bundle catches `\Exception`, not `\Throwable`, so no `\Error` is wrapped
+failed list — it fails the request. So is a filter value of the wrong class (`ValueClassMismatchError`, an `\Error`
+thrown by `Filter`'s constructor, so by `withValue()` too): stored data cannot produce one (value providers and
+controls are registered by their narrowed return type), so it always comes from code — e.g. a `ListDriverBuildListEvent`
+or `FilterCollectedEvent` listener — and fails the request with HTTP 500, never as a `FilterFailure`. The bundle catches `\Exception`, not `\Throwable`, so no `\Error` is wrapped
 or swallowed; only the transformer resolvers still wrap any `\Throwable` (a transformer casting stale stored data
 may throw a `\ValueError`), and the backend `FilterInspector` catches `\Error` outside debug mode to mark the filter
 as a programming error (the frontend request still fails).
@@ -51,7 +54,7 @@ the message itself where an editor may see it (`AbstractFilterElement::trans()`,
 other exceptions in `src/Exception/` are thrown by the framework only; userland may catch them. Every filter hook
 (element `buildContext()`, control `buildForm()`/`hydrate()`/`decode()`) catches any `\Exception` and normalizes it
 with `FilterException::wrap()`; a non-`FilterException` is unexpected: logged as an error. Value providers are
-treated alike (`FilterFactory` wraps their exceptions; a non-`FilterException` `FlareException`, a wiring error,
+treated alike (`Contao\Factory\FilterFactory` wraps their exceptions; a non-`FilterException` `FlareException`, a wiring error,
 passes unwrapped). A control's `buildForm()` failure fails the list (error, rethrown by the failed view in debug
 mode); a `hydrate()` failure mounts the filter without its initial value (warning; an unexpected exception is
 rethrown in debug mode); a `decode()` failure drops the value and puts a form error on a submitted field.
@@ -70,11 +73,12 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   because `List` is reserved in PHP — conceptually it is the list, as `Filter` is the filter), `ListSpecBuilder`
   (build lifecycle: driver's `buildList()` hook → `ListDriverBuildListEvent` → config assembly → schema resolution),
   `BaseListOptions` (framework-owned base schema for tl_flare_list columns)
-- `src/Filter/` — `Filter` DTO (`ElementBinding` = element + type + element config `elm_*`, optional
+- `src/Filter/` — `Filter` DTO (`ElementBinding` = element + type + element config `elm_*` + value class, optional
   `ControlBinding` = control + type + control config `ctl_*`, `?ValueInterface $value`); each config is an immutable
   `ComponentConfig` (`src/Config/`, `get()` throws `UndefinedConfigKeyError` for an undefined key), elements
-  (`Element/`), predicates (`Predicate/`, the public SQL-fragment layer, formerly "filter types"), collector,
-  resolvers (`FilterOptionsResolver`, `FilterTransformerResolver`).
+  (`Element/`), predicates (`Predicate/`, the public SQL-fragment layer, formerly "filter types"),
+  resolvers (`FilterOptionsResolver`, `FilterTransformerResolver`). `Factory/FilterFactory::create()` is the single
+  construction path; it knows no model — a stored source reaches the components' transformers as `$configSource`.
   A filter is applied in two stages: a value-free, role-typed scope — `ElementScope` for element hooks and
   contracts, `ControlScope` for control hooks (list × filter × engine context; `$scope->get('key')` reads the
   calling component's own config; `ControlScope::element(Contract::class)` / `tryElement()` return the element as a
@@ -97,7 +101,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 - `src/Contract/FilterElement/` — capability ports an element implements for controls/providers to pull from
   (`ChoiceSourceContract`, `DateBoundsContract`); controls never reach into an element otherwise.
   `IneffectiveFilterContract` lets an element explain why its filter restricts nothing as configured. One backend
-  inspector (`DataContainer/Inspection/Inspector/FilterInspector`) finds every filter issue of a list once, as one of four
+  inspector (`Contao/Inspection/Inspector/FilterInspector`) finds every filter issue of a list once, as one of four
   kinds — programming error, duplicate alias, broken (cannot be created, or conditions that cannot be built with
   the default value, through the shared `Query/Executor/FilterInvoker`, or a control that cannot build its form,
   through the shared `Form/Factory/FilterFormBuilderFactory`), ineffective; `Inspection/Reporter/FilterIssueReporter` shows
@@ -121,8 +125,18 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   element's `buildContext()`. Each is `final readonly`, implements `ValueInterface` and expresses its identity
   through `fingerprint()` (`ValueObjectContainmentTest` enforces this by reflection). Deliberately not services
   (excluded in `config/services.yaml`)
+- `src/Contao/` — the Contao-specific backend code. DTOs / domain classes sit directly in `Contao/` (`BackendModule`,
+  `DcaContext`, `CollectedFilters`; also directly in `Inspection/` and `PtableInference/`), Symfony services in
+  subfolders (`config/services.yaml` has its own `Contao` block; `DataContainer/Builder` is the one excluded
+  subfolder): `DataContainer/` (table classes `ContentContainer`/`FilterContainer`/`ListContainer`,
+  `BackendElementScopeFactory`, the DCA `Builder/`), `Inspection/` (see the inspector above), `Hook/` (Contao hooks,
+  named `*Hook`), `Callback/` (DCA callbacks per table), `PtableInference/` (parent-table inference) and `Factory/`.
+  All processing of `FilterModel` into `Filter` lives here: `Factory/FilterFactory::create(FilterModel)` (on top of
+  the model-free core `FilterFactory`, owning value providers and the stored-value failure semantics),
+  `Factory/FilterCollector` (a list's published filter rows) and `Factory/ListSpecBuilderFactory::create(ListModel)`.
+  Exception, until their own refactor: `ListSpec`, `ListSpecBuilder`, `ListSpecFactory` and `BaseListOptions` still
+  take a `ListModel`. Hooks and callbacks of optional integrations stay in `src/Integration/`
 - `src/Reader/` — reader/detail-page URL generation (`ReaderUrlGenerator`)
-- `src/InferPtable/` — parent-table inference for DCAs
 - `src/Integration/` — optional integrations (Codefog Tags, Terminal42 ChangeLanguage), wired via `config/integrations/*.yaml`
 - `src/EventListener/NamedDispatch/` — re-dispatches base events under dynamic names (see Event system below)
 
@@ -140,8 +154,10 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 - `#[AsListDriver(type: '...', dataContainer: '...')]` — register a list driver
 
 Attributes are in `src/DependencyInjection/Attribute/`, compiler passes in `src/DependencyInjection/Compiler/`.
-Backend palettes/fields are declared in code via `DcaContract::buildDca(DcaBuilder, DcaContext)` (both
-tl_flare_filter and tl_flare_list).
+Backend palettes/fields are declared in code via `DcaContract::buildDca(DcaBuilderInterface, DcaContext)` (both
+tl_flare_filter and tl_flare_list). The builder interfaces (`Contao/DataContainer/Builder/`) only collect; the
+concrete `DcaBuilder` is created and applied to `$GLOBALS['TL_DCA']` by the `loadDataContainer` hook
+(`Contao/Hook/ElementDcaHook`), which also opens the control's palette segment (`forControl()`).
 
 **Event system** — Events, some with aliased dispatch for targeted listening
 (`flare.form.{name}.build`, `flare.filter_control.{type}.build_form` (`FilterControlBuildFormEvent`),

@@ -55,7 +55,7 @@ trait BuildsControlScopesTrait
         return new ControlScope(
             list: new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test'),
             filter: new Filter(
-                element: new ElementBinding($element, 'test_element', $resolver->resolve($element, [])),
+                element: new ElementBinding($element, 'test_element', $resolver->resolve($element, []), null),
                 alias: 'test',
                 control: new ControlBinding($control, 'test_control', $resolver->resolve($control, $controlConfig)),
             ),

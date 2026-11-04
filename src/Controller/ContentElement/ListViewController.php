@@ -12,14 +12,14 @@ use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Template;
 use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
-use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Context\Factory\InteractiveContextFactory;
 use HeimrichHannot\FlareBundle\Engine\Factory\EngineFactory;
 use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Psr\Log\LoggerInterface;
@@ -100,7 +100,7 @@ final class ListViewController extends AbstractContentElementController
 
         try
         {
-            $listSpec = $this->listFactory->createFromListModel($listModel)->build();
+            $listSpec = $this->listFactory->create($listModel)->build();
 
             $interactiveConfig = $this->interactiveConfigFactory->createFromContent(
                 contentModel: $contentModel,

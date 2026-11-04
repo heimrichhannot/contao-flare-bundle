@@ -34,7 +34,7 @@ final class ListSpecTest extends TestCase
         static $element = null;
 
         return new Filter(
-            element: new ElementBinding($element ??= new StubFilterElement(), $type, new ComponentConfig([])),
+            element: new ElementBinding($element ??= new StubFilterElement(), $type, new ComponentConfig([]), null),
             alias: $alias,
         );
     }
@@ -117,7 +117,7 @@ final class ListSpecTest extends TestCase
     public function testWithoutFilterRemovesByElementClass(): void
     {
         $published = new Filter(
-            element: new ElementBinding(new PublishedFilterElement(), 'published', new ComponentConfig([])),
+            element: new ElementBinding(new PublishedFilterElement(), 'published', new ComponentConfig([]), null),
             alias: 'p',
         );
 
@@ -160,7 +160,7 @@ final class ListSpecTest extends TestCase
     {
         $spec = self::spec()
             ->withFilter(new Filter(
-                element: new ElementBinding(new StubFilterElement(), 'stub', new ComponentConfig([])),
+                element: new ElementBinding(new StubFilterElement(), 'stub', new ComponentConfig([]), null),
                 alias: 'p',
             ));
 

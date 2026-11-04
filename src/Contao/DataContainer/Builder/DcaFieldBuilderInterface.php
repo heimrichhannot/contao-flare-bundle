@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace HeimrichHannot\FlareBundle\Contao\DataContainer\Builder;
+
+interface DcaFieldBuilderInterface
+{
+    public function inputType(string $inputType): self;
+
+    public function eval(array $eval): self;
+
+    public function merge(array $definition): self;
+
+    /**
+     * Replaces the field's label and description, e.g. for a field whose meaning depends on the type.
+     */
+    public function label(string $label, ?string $description = null): self;
+
+    public function options(callable|array $options): self;
+
+    public function load(callable $fn): self;
+
+    public function save(callable $fn): self;
+}

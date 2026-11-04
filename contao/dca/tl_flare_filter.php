@@ -4,7 +4,7 @@ use Contao\DataContainer;
 use Contao\DC_Table;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
-use HeimrichHannot\FlareBundle\EventListener\Contao\FormNameRegexpListener;
+use HeimrichHannot\FlareBundle\Contao\Hook\FormNameRegexpHook;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
@@ -155,7 +155,7 @@ $dca['fields'] = [
             'maxlength' => 128,
             'tl_class' => 'w50',
             'doNotCopy' => true,
-            'rgxp' => FormNameRegexpListener::RGXP,
+            'rgxp' => FormNameRegexpHook::RGXP,
         ],
         'sql' => ['type' => 'string', 'length' => 128, 'default' => '', 'notnull' => true],
     ],

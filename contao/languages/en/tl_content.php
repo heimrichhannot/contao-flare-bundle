@@ -1,6 +1,6 @@
 <?php
 
-use HeimrichHannot\FlareBundle\DataContainer\ContentContainer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
 
 $lang = &$GLOBALS['TL_LANG']['tl_content'];
 

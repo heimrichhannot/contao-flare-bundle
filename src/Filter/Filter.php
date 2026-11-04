@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
+use HeimrichHannot\FlareBundle\Exception\ValueClassMismatchError;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 
 /**
@@ -28,11 +29,13 @@ final readonly class Filter
      *   control) never mounts form children.
      * @param ControlBinding|null $control The control presenting the filter with its type and config, or null
      *   for a filter without user input (intrinsic).
-     * @param ValueInterface|null $value A value of the element's value class: the initial value with a
-     *   control, the fixed value without one.
+     * @param ValueInterface|null $value A value of the element's value class ({@see ElementBinding::$valueClass}):
+     *   the initial value with a control, the fixed value without one.
      * @param string|null $targetAlias Table alias the filter's conditions apply to.
      * @param bool $targetingForced Whether the target alias applies even if the element is not marked as targeted.
      * @param string|null $source Provenance for error messages, e.g. "tl_flare_filter.42".
+     *
+     * @throws ValueClassMismatchError If the value does not match the element's value class — a programming error.
      *
      * @internal Use {@see Factory\FilterFactory} to create instances.
      */
@@ -44,7 +47,11 @@ final readonly class Filter
         public ?string         $targetAlias = null,
         public bool            $targetingForced = false,
         public ?string         $source = null,
-    ) {}
+    ) {
+        if ($value !== null && ($element->valueClass === null || !$value instanceof $element->valueClass)) {
+            throw new ValueClassMismatchError($value, $element->valueClass, $element->type, $source);
+        }
+    }
 
     public function withValue(?ValueInterface $value): self
     {

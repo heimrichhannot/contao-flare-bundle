@@ -6,9 +6,8 @@ namespace HeimrichHannot\FlareBundle\Filter\Factory;
 
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\DependencyInjection\Compiler\ValueClassReflector;
-use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
+use HeimrichHannot\FlareBundle\Exception\ValueClassMismatchError;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
@@ -17,12 +16,9 @@ use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
-use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
-use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
 use HeimrichHannot\FlareBundle\Util\Str;
-use Psr\Log\LoggerInterface;
 
 /**
  * Creates {@see Filter} DTOs, resolving registered element and control types to their services.
@@ -32,15 +28,14 @@ final readonly class FilterFactory
     public function __construct(
         private FilterElementRegistry     $filterElementRegistry,
         private FilterControlRegistry     $filterControlRegistry,
-        private ValueProviderRegistry     $valueProviderRegistry,
         private FilterOptionsResolver     $filterOptionsResolver,
         private FilterTransformerResolver $filterTransformerResolver,
-        private LoggerInterface           $logger,
     ) {}
 
     /**
-     * Creates a filter programmatically. With a control, the value is the filter's initial value;
-     * without one, it is the fixed value.
+     * Creates a filter — the single construction path, also behind
+     * {@see \HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory}. With a control, the value is the filter's
+     * initial value; without one, it is the fixed value.
      *
      * @param FilterElementInterface|string $element Filter element instance or registered type alias.
      * @param string|null $alias Required with a control: the alias names the filter's form field, which must stay the
@@ -48,10 +43,14 @@ final readonly class FilterFactory
      * @param array<string, mixed> $config Element config, resolved through the element's schema.
      * @param FilterControlInterface|string|null $control Filter control instance or registered control type.
      * @param array<string, mixed> $controlConfig Control config, resolved through the control's schema.
+     * @param object|null $configSource A stored source (e.g. a model) the element's and the control's transformers
+     *   read their config from ({@see \HeimrichHannot\FlareBundle\Contract\TransformerContract}); `$config` and
+     *   `$controlConfig` are merged on top, explicit keys win. Null runs no transformer.
      *
      * @throws FlareException If a control is given without an alias or with one that is no valid form name, the
-     *   element or control cannot be resolved, a config does not satisfy its schema, or the control or value does not
-     *   match the element's value class.
+     *   element or control cannot be resolved, a config does not satisfy its schema, or the control does not match
+     *   the element's value class.
+     * @throws ValueClassMismatchError If the value does not match the element's value class — a programming error.
      *
      * @see Filter::__construct for the remaining parameters.
      */
@@ -64,6 +63,7 @@ final readonly class FilterFactory
         ?ValueInterface                    $value = null,
         ?string                            $targetAlias = null,
         bool                               $targetingForced = false,
+        ?object                            $configSource = null,
         ?string                            $source = null,
     ): Filter {
         $type = $this->resolveType($element, $source);
@@ -87,6 +87,11 @@ final readonly class FilterFactory
 
         $alias = $alias !== null && $alias !== '' ? $alias : self::generateAlias($type);
 
+        if ($configSource !== null) {
+            $transformed = $this->filterTransformerResolver->transform($element, $type, $configSource, $source);
+            $config = [...$transformed ?? [], ...$config];
+        }
+
         $resolvedConfig = $this->filterOptionsResolver->resolve($element, $config, $source);
 
         $controlBinding = null;
@@ -96,6 +101,12 @@ final readonly class FilterFactory
             $controlType = \is_string($control) ? $control : null;
             $control = $this->resolveControl($control, $valueClass, $source);
 
+            if ($configSource !== null) {
+                $transformed = $this->filterTransformerResolver
+                    ->transform($control, $controlType ?? $control::class, $configSource, $source);
+                $controlConfig = [...$transformed ?? [], ...$controlConfig];
+            }
+
             $controlBinding = new ControlBinding(
                 component: $control,
                 type: $controlType ?? $control::class,
@@ -103,19 +114,8 @@ final readonly class FilterFactory
             );
         }
 
-        if ($value !== null && ($valueClass === null || !$value instanceof $valueClass))
-        {
-            throw new FlareException(\sprintf(
-                'The value of class "%s" does not match the value class "%s" of filter element type "%s"%s.',
-                $value::class,
-                $valueClass ?? 'none',
-                $type,
-                $source ? " ({$source})" : '',
-            ), method: __METHOD__, source: $source);
-        }
-
         return new Filter(
-            element: new ElementBinding($element, $type, $resolvedConfig),
+            element: new ElementBinding($element, $type, $resolvedConfig, $valueClass),
             alias: $alias,
             control: $controlBinding,
             value: $value,
@@ -123,91 +123,6 @@ final readonly class FilterFactory
             targetingForced: $targetingForced,
             source: $source,
         );
-    }
-
-    /**
-     * Creates a filter from a stored tl_flare_filter row.
-     *
-     * Failure handling: a broken element config throws, and so does a stored control that cannot be resolved for
-     * the element's value class or whose config is broken — the editor chose it, and the filter must not apply
-     * without it. An unreadable initial value only drops the value (warning);
-     * an unreadable fixed value (no control) throws.
-     *
-     * @param bool $withValue False to skip reading the stored value, e.g. for backend option lists, which must
-     *   load even when the value is unreadable. The control is always resolved.
-     *
-     * @throws FlareException If the element or the stored control cannot be resolved, either config does not satisfy
-     *   its schema, or — without a control — the stored value is unreadable ({@see UnreadableValueException}).
-     */
-    public function createFromFilterModel(FilterModel $filterModel, bool $withValue = true): Filter
-    {
-        $source = "{$filterModel::getTable()}.{$filterModel->id}";
-        $type = $this->resolveType($filterModel->getFilterElementType(), $source);
-        $element = $this->resolveElement($type, $source);
-
-        $config = $this->filterTransformerResolver->transform($element, $type, $filterModel, $source) ?? [];
-
-        $filter = new Filter(
-            element: new ElementBinding(
-                component: $element,
-                type: $type,
-                config: $this->filterOptionsResolver->resolve($element, $config, $source),
-            ),
-            alias: $filterModel->getFilterAlias(),
-            targetAlias: $filterModel->getFilterTargetAlias() ?: null,
-            source: $source,
-        );
-
-        $valueClass = $this->getElementValueClass($type, $element);
-        $controlType = (string) $filterModel->control;
-
-        if ($controlType === '') {
-            return $withValue ? $filter->withValue($this->provideValue($valueClass, $filterModel, $element)) : $filter;
-        }
-
-        // Without the value, the filter serves the backend form, which must load to repair a legacy alias.
-        if ($withValue) {
-            self::assertFormName($filter->alias, $source);
-        }
-
-        $control = $this->resolveControl($controlType, $valueClass, $source);
-
-        $controlConfig = $this->filterTransformerResolver->transform($control, $controlType, $filterModel, $source) ?? [];
-        $controlConfig = $this->filterOptionsResolver->resolve($control, $controlConfig, $source);
-
-        $filter = $filter->withControl(new ControlBinding($control, $controlType, $controlConfig));
-
-        return $withValue ? $filter->withValue($this->provideInitialValue($valueClass, $filterModel, $element)) : $filter;
-    }
-
-    /**
-     * The initial value of a filter with a control: unreadable — any {@see FilterException} from the value provider,
-     * as its contract promises — it is dropped with a warning, keeping the control.
-     *
-     * @param class-string<ValueInterface>|null $valueClass
-     *
-     * @throws FlareException If no provider exists for the value class.
-     */
-    private function provideInitialValue(
-        ?string                $valueClass,
-        FilterModel            $filterModel,
-        FilterElementInterface $element,
-    ): ?ValueInterface {
-        try
-        {
-            return $this->provideValue($valueClass, $filterModel, $element);
-        }
-        catch (FilterException $e)
-        {
-            $this->logger->warning(\sprintf(
-                '[FLARE] Initial value of filter %s.%s is ignored -- [Message] %s',
-                $filterModel::getTable(),
-                $filterModel->id,
-                $e->getMessage(),
-            ));
-        }
-
-        return null;
     }
 
     /**
@@ -250,62 +165,6 @@ final readonly class FilterFactory
         $attributes = (new \ReflectionClass($element))->getAttributes(AsFilterElement::class);
 
         return isset($attributes[0]) ? $attributes[0]->newInstance()->value : null;
-    }
-
-    /**
-     * Value providers are handled like filter hooks: a FilterException is the provider's report, any other exception
-     * is unexpected, logged as an error and wrapped. A FlareException that is no FilterException (a wiring error, e.g.
-     * an element lacking the contract its provider needs) passes unwrapped, so it is never mistaken for an unreadable
-     * value.
-     *
-     * @param class-string<ValueInterface>|null $valueClass
-     *
-     * @throws FilterException If the stored value is unreadable or the provider fails.
-     * @throws FlareException If no provider exists for the value class, or the provider reports a wiring error.
-     */
-    private function provideValue(
-        ?string                $valueClass,
-        FilterModel            $filterModel,
-        FilterElementInterface $element,
-    ): ?ValueInterface {
-        if ($valueClass === null) {
-            return null;
-        }
-
-        $provider = $this->valueProviderRegistry->get($valueClass)
-            ?? throw new FlareException(
-                \sprintf('No value provider is registered for the value class "%s".', $valueClass),
-                method: __METHOD__,
-            );
-
-        try
-        {
-            return $provider->provide($filterModel->value, $element);
-        }
-        catch (FlareException $e)
-        {
-            throw $e;
-        }
-        // @phpstan-ignore catch.neverThrown (userland providers may break their contract)
-        catch (\Exception $e)
-        {
-            $source = "{$filterModel::getTable()}.{$filterModel->id}";
-
-            $this->logger->error(\sprintf(
-                '[FLARE] The value provider %s failed unexpectedly for filter %s: %s',
-                $provider::class,
-                $source,
-                $e->getMessage(),
-            ), ['exception' => $e]);
-
-            throw new FilterException(
-                $e->getMessage(),
-                $e->getCode(),
-                $e,
-                method: $provider::class . '::provide',
-                source: $source,
-            );
-        }
     }
 
     /**

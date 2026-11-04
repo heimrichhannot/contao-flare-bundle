@@ -19,6 +19,7 @@ use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\FilterContext;
 use HeimrichHannot\FlareBundle\Filter\Predicate\PredicateInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\SearchKeywordsPredicate;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
@@ -71,11 +72,24 @@ trait BuildsFilterContextsTrait
                     component: $element,
                     type: 'test_element',
                     config: (new FilterOptionsResolver(new SchemaResolver()))->resolve($element, $config),
+                    valueClass: self::valueClassOf($element),
                 ),
                 alias: 'test',
             ),
             engineContext: $engineContext ?? new ConfigurationContext(),
         );
+    }
+
+    /**
+     * The value class from the element's {@see AsFilterElement} attribute, as the factory reads it.
+     *
+     * @return class-string<ValueInterface>|null
+     */
+    private static function valueClassOf(FilterElementInterface $element): ?string
+    {
+        $attributes = (new \ReflectionClass($element))->getAttributes(AsFilterElement::class);
+
+        return isset($attributes[0]) ? $attributes[0]->newInstance()->value : null;
     }
 
     protected function createFilterContextFactory(?FilterElementRegistry $elementRegistry = null): FilterContextFactory

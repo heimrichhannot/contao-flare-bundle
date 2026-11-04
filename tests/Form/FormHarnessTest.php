@@ -167,7 +167,7 @@ final class FormHarnessTest extends TestCase
 
         foreach ($initial as $alias => $keywords) {
             $filter = new Filter(
-                element: new ElementBinding($element, 'test_element', new ComponentConfig([])),
+                element: new ElementBinding($element, 'test_element', new ComponentConfig([]), KeywordsValue::class),
                 alias: $alias,
                 control: $control !== null ? new ControlBinding(
                     $control,

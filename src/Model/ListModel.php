@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Model;
 
 use Contao\Model;
-use HeimrichHannot\FlareBundle\DataContainer\ListContainer;
-use HeimrichHannot\FlareBundle\InferPtable\PtableInferrableInterface;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\ListContainer;
+use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrableInterface;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 
 /**

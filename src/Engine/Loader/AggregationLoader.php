@@ -24,7 +24,7 @@ readonly class AggregationLoader implements AggregationLoaderInterface
         {
             $queryConfig = new ListQueryConfig(
                 list: $this->config->list,
-                context: $this->config->context,
+                intent: $this->config->intent,
                 filterValues: $this->config->filterValues,
                 isCounting: true,
             );

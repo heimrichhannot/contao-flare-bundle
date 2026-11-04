@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Util\Str;
@@ -41,11 +41,11 @@ final readonly class FilterFormBuilderFactory
      * @throws FilterException
      * @throws UndefinedConfigKeyError If the control reads a config key its schema does not define.
      */
-    public function create(ControlScope $scope): ?FilterFormBuilder
+    public function create(ControlContext $context): ?FilterFormBuilder
     {
-        $filter = $scope->filter;
-        $control = $scope->filter->control?->component;
-        \assert($control !== null, 'A control scope always has a control.');
+        $filter = $context->filter;
+        $control = $context->filter->control?->component;
+        \assert($control !== null, 'A control context always has a control.');
 
         $method = $control::class . '::buildForm';
 
@@ -60,11 +60,11 @@ final readonly class FilterFormBuilderFactory
         // Collect-only builder: never mounted itself; its single-field spec, children, attributes, and deferred
         // listeners are transferred onto the mounted builder by the harness.
         $builder = new FilterFormBuilder($filter->alias, null, new EventDispatcher(), $this->formFactory);
-        $builder->setAttribute(FilterFormBuilderInterface::ATTR_SCOPE, $scope);
+        $builder->setAttribute(FilterFormBuilderInterface::ATTR_CONTEXT, $context);
 
         try
         {
-            $control->buildForm($builder, $scope);
+            $control->buildForm($builder, $context);
         }
         catch (\Exception $e)
         {
@@ -74,7 +74,7 @@ final readonly class FilterFormBuilderFactory
         try
         {
             /** @var FilterControlBuildFormEvent $event */
-            $event = $this->eventDispatcher->dispatch(new FilterControlBuildFormEvent($builder, $scope));
+            $event = $this->eventDispatcher->dispatch(new FilterControlBuildFormEvent($builder, $context));
         }
         catch (FlareException $e)
         {

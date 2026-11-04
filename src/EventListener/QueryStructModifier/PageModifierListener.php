@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\EventListener\QueryStructModifier;
 
-use HeimrichHannot\FlareBundle\Engine\Context\PaginatedContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\PaginatedIntentInterface;
 use HeimrichHannot\FlareBundle\Event\ModifyListQueryStructEvent;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
@@ -17,12 +17,12 @@ readonly class PageModifierListener
             return;
         }
 
-        $context = $event->config->context;
-        if (!$context instanceof PaginatedContextInterface) {
+        $intent = $event->config->intent;
+        if (!$intent instanceof PaginatedIntentInterface) {
             return;
         }
 
-        $paginator = $context->getPaginatorConfig();
+        $paginator = $intent->getPaginatorConfig();
         $event->queryStruct->setLimit($paginator->getItemsPerPage() ?: null); // unlimited: 0 -> null
         $event->queryStruct->setOffset($paginator->getOffset());
     }

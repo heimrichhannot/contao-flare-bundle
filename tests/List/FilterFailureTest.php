@@ -22,7 +22,7 @@ final class FilterFailureTest extends TestCase
     {
         $cause = new FilterException('No parent archives are whitelisted.');
         $wrapper = new FilterException(
-            '[FLARE] Query denied: No parent archives are whitelisted. / Callback: X::buildContext',
+            '[FLARE] Query denied: No parent archives are whitelisted. / Callback: X::buildEffect',
             previous: $cause,
         );
 

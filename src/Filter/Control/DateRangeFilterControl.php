@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
@@ -48,11 +48,11 @@ class DateRangeFilterControl extends AbstractFilterControl
         $builder->palette('{control_legend},ctl_label');
     }
 
-    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
+    public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void
     {
         $attr = [];
 
-        if ($bounds = $scope->tryElement(DateBoundsContract::class)?->getDateBounds($scope->forElement()))
+        if ($bounds = $context->tryElement(DateBoundsContract::class)?->getDateBounds($context->forElement()))
         {
             $attr = \array_filter([
                 'min' => $bounds->min?->format('Y-m-d'),
@@ -71,18 +71,18 @@ class DateRangeFilterControl extends AbstractFilterControl
             ]);
         }
 
-        if ($label = $scope->get('label')) {
-            $builder->compound(['label' => $label]);
+        if ($label = $context->get('label')) {
+            $builder->setMountOptions(['label' => $label]);
         }
 
         $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validateRange(...));
     }
 
     /**
-     * @param array{from?: ?\DateTimeInterface, to?: ?\DateTimeInterface}|null $data The data of the compound
+     * @param array{from?: ?\DateTimeInterface, to?: ?\DateTimeInterface}|null $data The data of the nested
      *   form, keyed by its children.
      */
-    public function decode(mixed $data, ControlScope $scope): ?DateRangeValue
+    public function decode(mixed $data, ControlContext $context): ?DateRangeValue
     {
         if (!\is_array($data)) {
             return null;
@@ -94,7 +94,7 @@ class DateRangeFilterControl extends AbstractFilterControl
     /**
      * @return array{from: ?\DateTimeImmutable, to: ?\DateTimeImmutable}
      */
-    public function hydrate(?ValueInterface $value, ControlScope $scope): array
+    public function hydrate(?ValueInterface $value, ControlContext $context): array
     {
         $value = $this->expectValue($value, DateRangeValue::class);
 

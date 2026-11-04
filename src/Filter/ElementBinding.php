@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 
 /**
- * The filter element of a {@see Filter}, together with its registered type, resolved config and value class.
+ * The filter element of a {@see FilterCompound}, together with its registered type, resolved config and value class.
  *
  * @api
  */

@@ -10,9 +10,9 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\CalendarCurrentPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -46,17 +46,17 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
             ->set('has_extended_events', (bool) $model->elm_hasExtendedEvents);
     }
 
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementContext               $context,
+        ?ValueInterface              $value,
     ): void {
         $value = $this->expectValue($value, DateRangeValue::class);
 
-        $start = \strtotime((string) $scope->get('start_at')) ?: 0;
-        $stop = \strtotime((string) $scope->get('stop_at')) ?: DateTimeHelper::maxTimestamp();
+        $start = \strtotime((string) $context->get('start_at')) ?: 0;
+        $stop = \strtotime((string) $context->get('stop_at')) ?: DateTimeHelper::maxTimestamp();
 
-        if (!$scope->get('is_limited') && $scope->engineContext instanceof ValidationContext)
+        if (!$context->get('is_limited') && $context->intent instanceof ValidationIntent)
         {
             // Unlimited defaults only shape the initial display; the whole list is bounded by a fixed
             // value alone (controlled filters have none here).
@@ -70,14 +70,14 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
 
         if (($from = $value?->from?->getTimestamp()) !== null)
         {
-            if (!$scope->get('is_limited') || $from >= $start) {
+            if (!$context->get('is_limited') || $from >= $start) {
                 $start = $from;
             }
         }
 
         if (($to = $value?->to?->getTimestamp()) !== null)
         {
-            if (!$scope->get('is_limited') || $to <= $stop) {
+            if (!$context->get('is_limited') || $to <= $stop) {
                 $stop = $to;
             }
         }
@@ -85,13 +85,13 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
         $builder->addPredicate(CalendarCurrentPredicate::class, [
             'start' => $start,
             'stop' => $stop,
-            'has_extended_events' => $scope->get('has_extended_events'),
+            'has_extended_events' => $context->get('has_extended_events'),
         ]);
     }
 
-    public function getDateBounds(ElementScope $scope): DateBounds
+    public function getDateBounds(ElementContext $context): DateBounds
     {
-        return $this->resolveFormLimits($scope);
+        return $this->resolveFormLimits($context);
     }
 
     public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
@@ -107,25 +107,25 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
      * Resolves the form's lower and upper date limits from the canonical config, replicating
      * the former handleFormTypeOptions() logic (from_min/to_min and from_max/to_max).
      */
-    private function resolveFormLimits(ElementScope $scope): DateBounds
+    private function resolveFormLimits(ElementContext $context): DateBounds
     {
-        if (!$scope->get('is_limited')) {
+        if (!$context->get('is_limited')) {
             return new DateBounds();
         }
 
         $min = null;
         $max = null;
 
-        if ($scope->get('configure_start')
-            && $scope->get('start_at')
-            && ($startAt = \strtotime($scope->get('start_at'))))
+        if ($context->get('configure_start')
+            && $context->get('start_at')
+            && ($startAt = \strtotime($context->get('start_at'))))
         {
             $min = DateTimeHelper::timestampToDateTime($startAt);
         }
 
-        if ($scope->get('configure_stop')
-            && $scope->get('stop_at')
-            && ($stopAt = \strtotime($scope->get('stop_at'))))
+        if ($context->get('configure_stop')
+            && $context->get('stop_at')
+            && ($stopAt = \strtotime($context->get('stop_at'))))
         {
             $max = DateTimeHelper::timestampToDateTime($stopAt);
         }

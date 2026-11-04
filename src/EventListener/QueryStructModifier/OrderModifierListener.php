@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\EventListener\QueryStructModifier;
 
-use HeimrichHannot\FlareBundle\Engine\Context\SortableContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\SortableIntentInterface;
 use HeimrichHannot\FlareBundle\Event\ModifyListQueryStructEvent;
 use HeimrichHannot\FlareBundle\Sort\SortOrder;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
@@ -18,12 +18,12 @@ readonly class OrderModifierListener
             return;
         }
 
-        $context = $event->config->context;
-        if (!$context instanceof SortableContextInterface) {
+        $intent = $event->config->intent;
+        if (!$intent instanceof SortableIntentInterface) {
             return;
         }
 
-        if (!$sortOrderSequence = $context->getSortOrderSequence()) {
+        if (!$sortOrderSequence = $intent->getSortOrderSequence()) {
             return;
         }
 

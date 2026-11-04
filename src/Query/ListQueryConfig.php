@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Query;
 
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 
 readonly class ListQueryConfig
 {
@@ -15,12 +15,12 @@ readonly class ListQueryConfig
      * @param array<string, mixed> $attributes
      */
     public function __construct(
-        public ListSpec         $list,
-        public ContextInterface $context,
-        public array            $filterValues,
-        public bool             $isCounting = false,
-        public bool             $onlyId = false,
-        public array            $attributes = [],
+        public ListCompound    $list,
+        public IntentInterface $intent,
+        public array           $filterValues,
+        public bool            $isCounting = false,
+        public bool            $onlyId = false,
+        public array           $attributes = [],
     ) {}
 
     /**
@@ -35,7 +35,7 @@ readonly class ListQueryConfig
     ): self {
         return new self(
             list: $this->list,
-            context: $this->context,
+            intent: $this->intent,
             filterValues: $filterValues ?? $this->filterValues,
             isCounting: $isCounting ?? $this->isCounting,
             onlyId: $onlyId ?? $this->onlyId,

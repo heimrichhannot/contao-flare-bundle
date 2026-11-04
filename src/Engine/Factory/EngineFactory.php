@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Factory;
 
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Engine;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Registry\EngineModRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 
@@ -17,12 +17,12 @@ final readonly class EngineFactory
         private ProjectorRegistry $projectorRegistry,
     ) {}
 
-    public function createEngine(ContextInterface $context, ListSpec $list, array $mods = []): Engine
+    public function createEngine(IntentInterface $intent, ListCompound $list, array $mods = []): Engine
     {
         return new Engine(
             engineModRegistry: $this->engineModRegistry,
             projectorRegistry: $this->projectorRegistry,
-            context: $context,
+            intent: $intent,
             list: $list,
             mods: $mods,
         );

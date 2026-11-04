@@ -9,8 +9,8 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\SimpleEquationPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -40,15 +40,15 @@ class SimpleEquationFilterElement extends AbstractFilterElement
             ->set('right', $model->elm_equationRight);
     }
 
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementContext               $context,
+        ?ValueInterface              $value,
     ): void {
         $builder->addPredicate(SimpleEquationPredicate::class, [
-            'operand_left' => $scope->get('left'),
-            'operator' => $scope->get('operator'),
-            'operand_right' => $scope->get('right'),
+            'operand_left' => $context->get('left'),
+            'operator' => $context->get('operator'),
+            'operand_right' => $context->get('right'),
         ]);
     }
 

@@ -16,9 +16,9 @@ use HeimrichHannot\FlareBundle\Contao\Inspection\Inspector\FilterInspector;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Contao\Factory\FilterCollector;
-use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
-use HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory as ContaoListSpecBuilderFactory;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory as CoreFilterFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterCompoundFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListCompoundBuilderFactory as ContaoListCompoundBuilderFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterCompoundFactory as CoreFilterCompoundFactory;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
@@ -26,8 +26,8 @@ use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
 use HeimrichHannot\FlareBundle\Form\Factory\FilterFormBuilderFactory;
 use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecFactory;
+use HeimrichHannot\FlareBundle\List\Factory\ListCompoundBuilderFactory;
+use HeimrichHannot\FlareBundle\List\Factory\ListCompoundFactory;
 use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
 use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
@@ -47,7 +47,7 @@ use HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub\RawElement;
 use HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub\ThrowingElement;
 use HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub\UnbuildableControl;
 use HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub\ValueSensitiveElement;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use HeimrichHannot\FlareBundle\Tests\Fixture\FilterModelFixture;
 use HeimrichHannot\FlareBundle\Tests\Fixture\ListModelFixture;
 use Psr\Log\LoggerInterface;
@@ -61,14 +61,14 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * A real {@see FilterInspector} over filter rows a test describes, and the backend collaborators around it. For
  * {@see \Contao\TestCase\ContaoTestCase} subclasses.
  *
- * Element types: 'ok', 'throws' (FilterException "broken" in buildContext()), 'aborts', 'raw' (RuntimeException
+ * Element types: 'ok', 'throws' (FilterException "broken" in buildEffect()), 'aborts', 'raw' (RuntimeException
  * "raw"), 'errors' (\Error "bug"), 'sensitive' (rejects any value) and 'ineffective' (reason "stub.ineffective"
  * without control and value), the last two consuming BoolValue; controls 'flare_checkbox' (a checkbox) and
  * 'unbuildable' (FilterException "cannot build" in buildForm()) for BoolValue; list driver 'test_list' on tl_test.
  */
 trait BuildsFilterInspectorTrait
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
 
     private function createFilterInspector(
         ContaoFramework           $framework,
@@ -84,13 +84,13 @@ trait BuildsFilterInspectorTrait
 
         return new FilterInspector(
             eventDispatcher: $dispatcher,
-            filterFactory: $this->createFilterFactory(),
+            filterCompoundFactory: $this->createFilterCompoundFactory(),
             filterInvoker: new FilterInvoker(
-                $this->createFilterContextFactory(),
+                $this->createFilterEffectFactory(),
                 new FilterQueryBuilderFactory($connection),
             ),
             filterFormBuilderFactory: new FilterFormBuilderFactory($dispatcher, Forms::createFormFactory()),
-            listSpecBuilderFactory: $this->createListSpecBuilderFactory($dispatcher),
+            listCompoundBuilderFactory: $this->createListCompoundBuilderFactory($dispatcher),
             translator: self::echoTranslator(),
             logger: $logger ?? new NullLogger(),
             framework: $framework,
@@ -118,7 +118,7 @@ trait BuildsFilterInspectorTrait
             );
     }
 
-    private function createFilterFactory(): FilterFactory
+    private function createFilterCompoundFactory(): FilterCompoundFactory
     {
         $controls = (new FilterControlRegistry())
             ->add(new CheckboxStubControl(), 'flare_checkbox', BoolValue::class)
@@ -133,8 +133,8 @@ trait BuildsFilterInspectorTrait
             public function buildDcaField(DcaFieldBuilderInterface $field, DcaContext $context): void {}
         }, BoolValue::class);
 
-        return new FilterFactory(
-            filterFactory: new CoreFilterFactory(
+        return new FilterCompoundFactory(
+            filterCompoundFactory: new CoreFilterCompoundFactory(
                 filterElementRegistry: $this->createFilterElementRegistry(),
                 filterControlRegistry: $controls,
                 filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
@@ -163,15 +163,15 @@ trait BuildsFilterInspectorTrait
         return $registry;
     }
 
-    private function createListSpecBuilderFactory(EventDispatcherInterface $dispatcher): ListSpecBuilderFactory
+    private function createListCompoundBuilderFactory(EventDispatcherInterface $dispatcher): ListCompoundBuilderFactory
     {
         $registry = $this->createListDriverRegistry();
         $driverResolver = new ListDriverResolver($registry);
 
-        return new ListSpecBuilderFactory(
+        return new ListCompoundBuilderFactory(
             eventDispatcher: $dispatcher,
             listDriverResolver: $driverResolver,
-            specFactory: new ListSpecFactory(
+            listCompoundFactory: new ListCompoundFactory(
                 $registry,
                 new ListOptionsResolver(new SchemaResolver()),
                 new ListTransformerResolver(new SourceTransformer(), $dispatcher),
@@ -180,13 +180,14 @@ trait BuildsFilterInspectorTrait
         );
     }
 
-    private function createContaoListSpecBuilderFactory(EventDispatcherInterface $dispatcher): ContaoListSpecBuilderFactory
-    {
-        return new ContaoListSpecBuilderFactory(
-            builderFactory: $this->createListSpecBuilderFactory($dispatcher),
+    private function createContaoListCompoundBuilderFactory(
+        EventDispatcherInterface $dispatcher,
+    ): ContaoListCompoundBuilderFactory {
+        return new ContaoListCompoundBuilderFactory(
+            builderFactory: $this->createListCompoundBuilderFactory($dispatcher),
             filterCollector: new FilterCollector(
                 $dispatcher,
-                $this->createFilterFactory(),
+                $this->createFilterCompoundFactory(),
                 $this->createListDriverRegistry(),
                 new NullLogger(),
             ),

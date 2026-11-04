@@ -5,25 +5,25 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Filter\Element;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
-use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Element\CalendarCurrentFilterElement;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Predicate\CalendarCurrentPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\List\ListCompound;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use PHPUnit\Framework\TestCase;
 
 final class CalendarCurrentFilterElementTest extends TestCase
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
 
     private const BASE = [
         'is_limited' => false,
@@ -36,7 +36,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
 
     public function testValueNarrowsTheUnlimitedRange(): void
     {
-        $p = $this->buildFilterContext(
+        $p = $this->buildFilterEffect(
             new CalendarCurrentFilterElement(),
             self::BASE,
             DateRangeValue::tryFrom(1000, 2000),
@@ -50,7 +50,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
     {
         $config = ['is_limited' => true, 'start_at' => '@1000', 'stop_at' => '@2000'] + self::BASE;
 
-        $p = $this->buildFilterContext(
+        $p = $this->buildFilterEffect(
             new CalendarCurrentFilterElement(),
             $config,
             DateRangeValue::tryFrom(500, 3000),
@@ -61,25 +61,25 @@ final class CalendarCurrentFilterElementTest extends TestCase
 
     public function testValidationSkipsAnUnlimitedFilter(): void
     {
-        $context = $this->buildFilterContext(
+        $effect = $this->buildFilterEffect(
             new CalendarCurrentFilterElement(),
             self::BASE,
             null,
-            new ValidationContext(),
+            new ValidationIntent(),
         );
 
-        self::assertSame([], $context->formula->propositions);
+        self::assertSame([], $effect->formula->propositions);
     }
 
     public function testValidationAppliesAFixedRangeWithoutTheConfiguredDefaults(): void
     {
         $config = ['start_at' => '@5000', 'stop_at' => '@6000'] + self::BASE;
 
-        $p = $this->buildFilterContext(
+        $p = $this->buildFilterEffect(
             new CalendarCurrentFilterElement(),
             $config,
             DateRangeValue::tryFrom(1000, null),
-            new ValidationContext(),
+            new ValidationIntent(),
         )->formula->propositions[0];
 
         self::assertSame(CalendarCurrentPredicate::class, $p->predicateClass);
@@ -90,11 +90,11 @@ final class CalendarCurrentFilterElementTest extends TestCase
     {
         $element = new CalendarCurrentFilterElement();
 
-        $open = $element->getDateBounds($this->createScope($element, self::BASE));
+        $open = $element->getDateBounds($this->createContext($element, self::BASE));
         self::assertNull($open->min);
         self::assertNull($open->max);
 
-        $bounds = $element->getDateBounds($this->createScope($element, [
+        $bounds = $element->getDateBounds($this->createContext($element, [
             'is_limited' => true,
             'configure_start' => '1',
             'configure_stop' => '1',
@@ -109,10 +109,10 @@ final class CalendarCurrentFilterElementTest extends TestCase
     {
         $this->expectException(FilterException::class);
 
-        $this->buildFilterContext(new CalendarCurrentFilterElement(), self::BASE, new BoolValue(true));
+        $this->buildFilterEffect(new CalendarCurrentFilterElement(), self::BASE, new BoolValue(true));
     }
 
-    private function createScope(CalendarCurrentFilterElement $element, array $config): ElementScope
+    private function createContext(CalendarCurrentFilterElement $element, array $config): ElementContext
     {
         $driver = new class implements ListDriverInterface {
             public function resolveDcTable(string $type, array $config, array $attributes): string
@@ -121,13 +121,13 @@ final class CalendarCurrentFilterElementTest extends TestCase
             }
         };
 
-        return new ElementScope(
-            list: new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test'),
-            filter: new Filter(
+        return new ElementContext(
+            list: new ListCompound(driver: $driver, type: 'test_list', dc: 'tl_test'),
+            filter: new FilterCompound(
                 element: new ElementBinding($element, 'test_element', new ComponentConfig($config), null),
                 alias: 'test',
             ),
-            engineContext: new ConfigurationContext(),
+            intent: new ConfigurationIntent(),
         );
     }
 }

@@ -10,11 +10,11 @@ use Contao\FrontendTemplate;
 use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Event\ReaderSchemaOrgEvent;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Util\CallableWrapper;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -27,9 +27,9 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
         private ProjectorRegistry        $projectorRegistry,
     ) {}
 
-    public function project(ListSpec $spec, ContextInterface $config): ViewInterface
+    public function project(ListCompound $list, IntentInterface $intent): ViewInterface
     {
-        return $this->projectorRegistry->getProjectorFor($spec, $config)->project($spec, $config);
+        return $this->projectorRegistry->getProjectorFor($list, $intent)->project($list, $intent);
     }
 
     public function getTlContent(Model $model): ?callable
@@ -102,7 +102,7 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
         return [];
     }
 
-    public function getSchemaOrg(array $context, ?Model $model = null, ?ListSpec $list = null): ?array
+    public function getSchemaOrg(array $context, ?Model $model = null, ?ListCompound $list = null): ?array
     {
         $model ??= $context['model'] ?? null;
         if (!$model instanceof Model) {

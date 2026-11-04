@@ -5,27 +5,27 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Filter\Element;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
-use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
+use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Filter\Element\DcaSelectFieldFilterElement;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Predicate\DcaSelectPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\List\ListCompound;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class DcaSelectFieldFilterElementTest extends TestCase
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
     use StubsContaoDcaTrait;
 
     protected function setUp(): void
@@ -53,15 +53,15 @@ final class DcaSelectFieldFilterElementTest extends TestCase
 
     public function testSelectedValuesBecomeTheDcaSelectPredicate(): void
     {
-        $context = $this->buildFilterContext(
+        $effect = $this->buildFilterEffect(
             $this->createElement(),
             ['field' => 'status'],
             new ChoiceValue([new ValueChoice('published')]),
         );
 
-        self::assertCount(1, $context->formula->propositions);
+        self::assertCount(1, $effect->formula->propositions);
 
-        $p = $context->formula->propositions[0];
+        $p = $effect->formula->propositions[0];
         self::assertSame(DcaSelectPredicate::class, $p->predicateClass);
         self::assertSame('status', $p->options['field']);
         self::assertSame(['published'], $p->options['selected']);
@@ -71,41 +71,41 @@ final class DcaSelectFieldFilterElementTest extends TestCase
 
     public function testMultipleDcaFieldIsPassedOn(): void
     {
-        $context = $this->buildFilterContext(
+        $effect = $this->buildFilterEffect(
             $this->createElement(),
             ['field' => 'tags'],
             new ChoiceValue([new ValueChoice('b'), new ValueChoice('a')]),
         );
 
-        $p = $context->formula->propositions[0];
+        $p = $effect->formula->propositions[0];
         self::assertSame(['a', 'b'], $p->options['selected']);
         self::assertTrue($p->options['is_serialized']);
     }
 
     public function testFixedValueAppliesInValidation(): void
     {
-        $context = $this->buildFilterContext(
+        $effect = $this->buildFilterEffect(
             $this->createElement(),
             ['field' => 'status'],
             new ChoiceValue([new ValueChoice('draft')]),
-            new ValidationContext(),
+            new ValidationIntent(),
         );
 
-        self::assertCount(1, $context->formula->propositions);
+        self::assertCount(1, $effect->formula->propositions);
     }
 
     public function testNoValueAddsNothing(): void
     {
-        $context = $this->buildFilterContext($this->createElement(), ['field' => 'status']);
+        $effect = $this->buildFilterEffect($this->createElement(), ['field' => 'status']);
 
-        self::assertSame([], $context->formula->propositions);
+        self::assertSame([], $effect->formula->propositions);
     }
 
     public function testValueForAFieldWithoutOptionsAborts(): void
     {
         $this->expectException(AbortFilteringException::class);
 
-        $this->buildFilterContext($this->createElement(), ['field' => 'free'], new ChoiceValue([new ValueChoice('a')]));
+        $this->buildFilterEffect($this->createElement(), ['field' => 'free'], new ChoiceValue([new ValueChoice('a')]));
     }
 
     public function testBuildChoicesKeysTheFieldOptionsByValue(): void
@@ -148,23 +148,23 @@ final class DcaSelectFieldFilterElementTest extends TestCase
             $this->createMock(ParameterBagInterface::class),
         ))->createChoicesBuilder();
 
-        $this->createElement()->buildChoices($choices, $this->createScope($field));
+        $this->createElement()->buildChoices($choices, $this->createContext($field));
 
         return $choices->build();
     }
 
-    private function createScope(string $field): ElementScope
+    private function createContext(string $field): ElementContext
     {
         $driver = $this->createMock(ListDriverInterface::class);
         $element = $this->createElement();
 
-        return new ElementScope(
-            list: new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test'),
-            filter: new Filter(
+        return new ElementContext(
+            list: new ListCompound(driver: $driver, type: 'test_list', dc: 'tl_test'),
+            filter: new FilterCompound(
                 element: new ElementBinding($element, 'test_element', new ComponentConfig(['field' => $field]), null),
                 alias: 'test',
             ),
-            engineContext: new ConfigurationContext(),
+            intent: new ConfigurationIntent(),
         );
     }
 }

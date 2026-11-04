@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
-use HeimrichHannot\FlareBundle\Engine\Context\Factory\AggregationContextFactory;
-use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
-use HeimrichHannot\FlareBundle\Engine\Context\PaginatedContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\Factory\AggregationIntentFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\InteractiveIntent;
+use HeimrichHannot\FlareBundle\Engine\Intent\PaginatedIntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveEmptyLoader;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
@@ -19,7 +19,7 @@ use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
@@ -31,30 +31,30 @@ use Symfony\Component\Form\FormInterface;
 class InteractiveProjector extends AbstractProjector
 {
     public function __construct(
-        private readonly AggregationContextFactory $aggregationConfigFactory,
-        private readonly FormHarnessFactory        $formHarnessFactory,
-        private readonly PaginatorFactory          $paginatorFactory,
+        private readonly AggregationIntentFactory $aggregationIntentFactory,
+        private readonly FormHarnessFactory       $formHarnessFactory,
+        private readonly PaginatorFactory         $paginatorFactory,
     ) {}
 
-    public function supports(ListSpec $list, ContextInterface $context): bool
+    public function supports(ListCompound $list, IntentInterface $intent): bool
     {
-        return $context instanceof InteractiveContext;
+        return $intent instanceof InteractiveIntent;
     }
 
     /**
      * @throws FilterException In debug mode, if the list has failed.
      * @throws FlareException
      */
-    public function project(ListSpec $list, ContextInterface $context): InteractiveView
+    public function project(ListCompound $list, IntentInterface $intent): InteractiveView
     {
-        \assert($context instanceof InteractiveContext, '$config must be an instance of InteractiveConfig');
+        \assert($intent instanceof InteractiveIntent, '$intent must be an instance of InteractiveIntent');
 
         // the filter values decoded from the form: the submission, or the initial values when unsubmitted
-        $harness = $this->createFormHarness($list, $context);
+        $harness = $this->createFormHarness($list, $intent);
         $form = $harness->getForm();
         $filterValues = $harness->decode();
 
-        $readerUrlConfig = $context->createReaderUrlConfig();
+        $readerUrlConfig = $intent->createReaderUrlConfig();
         $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($readerUrlConfig);
 
         // The failures known without building conditions win over an invalid submission.
@@ -64,7 +64,7 @@ class InteractiveProjector extends AbstractProjector
         {
             $e = FilterFailure::toListException($failures, $list->source ?? 'list inlined', __METHOD__);
 
-            return $this->createFailedView($e, $list, $context, $form, $readerUrlGenerator);
+            return $this->createFailedView($e, $list, $intent, $form, $readerUrlGenerator);
         }
 
         // An invalid submission shows no entries and is not counted.
@@ -73,7 +73,7 @@ class InteractiveProjector extends AbstractProjector
             return $this->createView(
                 loader: new InteractiveEmptyLoader(),
                 form: $form,
-                paginator: $this->paginatorFactory->createEmpty(pageParam: $this->getPageParam($form, $context)),
+                paginator: $this->paginatorFactory->createEmpty(pageParam: $this->getPageParam($form, $intent)),
                 readerUrlGenerator: $readerUrlGenerator,
                 table: $list->dc,
                 totalItems: 0,
@@ -83,20 +83,20 @@ class InteractiveProjector extends AbstractProjector
         // pagination setup
         try
         {
-            $totalItems = $this->createAggregationView($list, $context, $filterValues)->getCount();
+            $totalItems = $this->createAggregationView($list, $intent, $filterValues)->getCount();
         }
         catch (FilterException $e)
         {
-            return $this->createFailedView($e, $list, $context, $form, $readerUrlGenerator);
+            return $this->createFailedView($e, $list, $intent, $form, $readerUrlGenerator);
         }
 
-        $paginator = $this->createPaginator($form, $context, $totalItems);
-        // override list context to include the proper paginator config
-        $context = $context->with(paginatorConfig: $paginator);
+        $paginator = $this->createPaginator($form, $intent, $totalItems);
+        // override the intent to include the proper paginator config
+        $intent = $intent->with(paginatorConfig: $paginator);
 
         $loader = $this->createLoader(new InteractiveLoaderConfig(
             list: $list,
-            context: $context,
+            intent: $intent,
             filterValues: $filterValues,
         ));
 
@@ -118,8 +118,8 @@ class InteractiveProjector extends AbstractProjector
      */
     protected function createFailedView(
         FilterException             $e,
-        ListSpec                    $list,
-        InteractiveContext          $context,
+        ListCompound                $list,
+        InteractiveIntent           $intent,
         FormInterface               $form,
         ReaderUrlGeneratorInterface $readerUrlGenerator,
     ): InteractiveView {
@@ -136,7 +136,7 @@ class InteractiveProjector extends AbstractProjector
         return $this->createView(
             loader: new InteractiveEmptyLoader(),
             form: $form,
-            paginator: $this->paginatorFactory->createEmpty(pageParam: $this->getPageParam($form, $context)),
+            paginator: $this->paginatorFactory->createEmpty(pageParam: $this->getPageParam($form, $intent)),
             readerUrlGenerator: $readerUrlGenerator,
             table: $list->dc,
             totalItems: 0,
@@ -172,9 +172,9 @@ class InteractiveProjector extends AbstractProjector
     /**
      * @throws FlareException
      */
-    public function createForm(ListSpec $list, InteractiveContext $context): FormInterface
+    public function createForm(ListCompound $list, InteractiveIntent $intent): FormInterface
     {
-        return $this->createFormHarness($list, $context)->getForm();
+        return $this->createFormHarness($list, $intent)->getForm();
     }
 
     /**
@@ -182,9 +182,9 @@ class InteractiveProjector extends AbstractProjector
      *
      * @throws FlareException
      */
-    protected function createFormHarness(ListSpec $list, InteractiveContext $context): FormHarness
+    protected function createFormHarness(ListCompound $list, InteractiveIntent $intent): FormHarness
     {
-        $harness = $this->formHarnessFactory->create($list, $context);
+        $harness = $this->formHarnessFactory->create($list, $intent);
 
         $harness->getForm()->handleRequest($this->getCurrentRequest());
 
@@ -197,39 +197,39 @@ class InteractiveProjector extends AbstractProjector
      * @throws FlareException
      */
     protected function createAggregationView(
-        ListSpec           $spec,
-        InteractiveContext $interactiveConfig,
-        array              $filterValues,
+        ListCompound      $list,
+        InteractiveIntent $interactiveIntent,
+        array             $filterValues,
     ): AggregationView {
-        $aggregationConfig = $this->aggregationConfigFactory->createFromConfig($interactiveConfig);
+        $aggregationIntent = $this->aggregationIntentFactory->createFromIntent($interactiveIntent);
 
-        $aggregationConfig = $aggregationConfig->withFilterValues($filterValues);
+        $aggregationIntent = $aggregationIntent->withFilterValues($filterValues);
 
-        $projector = $this->getProjectorFor($spec, $aggregationConfig);
-        $projection = $projector->project($spec, $aggregationConfig);
+        $projector = $this->getProjectorFor($list, $aggregationIntent);
+        $projection = $projector->project($list, $aggregationIntent);
 
         \assert($projection instanceof AggregationView, 'Expected AggregationView from projector.');
 
         return $projection;
     }
 
-    public function createPaginator(FormInterface $form, PaginatedContextInterface $context, int $totalItems): Paginator
+    public function createPaginator(FormInterface $form, PaginatedIntentInterface $intent, int $totalItems): Paginator
     {
-        $pageParam = $this->getPageParam($form, $context);
+        $pageParam = $this->getPageParam($form, $intent);
 
         if ($form->isSubmitted() && !$form->isValid()) {
             return $this->paginatorFactory->createEmpty(pageParam: $pageParam);
         }
 
         return $this->paginatorFactory->create(
-            config: $context->getPaginatorConfig()->with(totalItems: $totalItems),
+            config: $intent->getPaginatorConfig()->with(totalItems: $totalItems),
             pageParam: $pageParam,
         );
     }
 
-    protected function getPageParam(FormInterface $form, PaginatedContextInterface $context): string
+    protected function getPageParam(FormInterface $form, PaginatedIntentInterface $intent): string
     {
-        $pageParam = $context->getPaginatorQueryParameter() ?: $form->getName();
+        $pageParam = $intent->getPaginatorQueryParameter() ?: $form->getName();
         $pageParam = $this->paginatorFactory->sanitizePageParam($pageParam);
 
         if ($pageParam === $form->getName()) {

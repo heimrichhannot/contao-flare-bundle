@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
@@ -42,15 +42,15 @@ class KeywordsFilterControl extends AbstractFilterControl
         $builder->palette('{control_legend},ctl_label,ctl_placeholder');
     }
 
-    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
+    public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void
     {
         $options = [
-            'label' => $scope->get('label') ?: false,
+            'label' => $context->get('label') ?: false,
             'required' => false,
         ];
 
-        if ($scope->get('placeholder')) {
-            $options['attr'] = ['placeholder' => $scope->get('placeholder')];
+        if ($context->get('placeholder')) {
+            $options['attr'] = ['placeholder' => $context->get('placeholder')];
         }
 
         $builder->single(TextType::class, $options);
@@ -59,12 +59,12 @@ class KeywordsFilterControl extends AbstractFilterControl
     /**
      * @param string|null $data The submitted search phrase.
      */
-    public function decode(mixed $data, ControlScope $scope): ?KeywordsValue
+    public function decode(mixed $data, ControlContext $context): ?KeywordsValue
     {
         return KeywordsValue::tryFrom($data);
     }
 
-    public function hydrate(?ValueInterface $value, ControlScope $scope): ?string
+    public function hydrate(?ValueInterface $value, ControlContext $context): ?string
     {
         return $this->expectValue($value, KeywordsValue::class)?->keywords;
     }

@@ -12,7 +12,7 @@ use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contract\IsSupportedContract;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrer;
-use HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListCompoundBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
@@ -38,7 +38,7 @@ readonly class FieldsOptionsCallbacks
         private FilterControlRegistry       $filterControlRegistry,
         private FilterElementRegistry       $filterElementRegistry,
         private TranslatorInterface         $translator,
-        private ListSpecBuilderFactory      $listFactory,
+        private ListCompoundBuilderFactory  $listFactory,
         private ListExecutionContextFactory $listExecutionContextFactory,
     ) {}
 

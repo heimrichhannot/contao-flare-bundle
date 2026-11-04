@@ -10,8 +10,8 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\SearchKeywordsPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -37,10 +37,10 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
     /**
      * @throws FilterException
      */
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementContext               $context,
+        ?ValueInterface              $value,
     ): void {
         if (!$value = $this->expectValue($value, KeywordsValue::class)) {
             return;
@@ -48,7 +48,7 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
 
         $builder->addPredicate(SearchKeywordsPredicate::class, [
             'value' => $value->keywords,
-            'columns' => $scope->get('columns'),
+            'columns' => $context->get('columns'),
         ]);
     }
 

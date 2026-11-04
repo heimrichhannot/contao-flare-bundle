@@ -1,0 +1,120 @@
+<?php
+
+declare(strict_types=1);
+
+namespace HeimrichHannot\FlareBundle\Tests\Contao\DataContainer;
+
+use HeimrichHannot\FlareBundle\Config\SchemaResolver;
+use HeimrichHannot\FlareBundle\Config\SourceTransformer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementContextFactory;
+use HeimrichHannot\FlareBundle\Contao\DcaContext;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterCompoundFactory;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaFieldBuilderInterface;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
+use HeimrichHannot\FlareBundle\Filter\Element\ArchiveFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterCompoundFactory as CoreFilterCompoundFactory;
+use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
+use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
+use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
+use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
+use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
+use HeimrichHannot\FlareBundle\List\ListCompound;
+use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
+use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
+use HeimrichHannot\FlareBundle\Tests\Fixture\FilterModelFixture;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+
+final class BackendElementContextFactoryTest extends TestCase
+{
+    public function testTheBackendContextKnowsTheControlButReadsNoValue(): void
+    {
+        $context = $this->createFactory()->create($this->getList(), self::archiveFilter());
+
+        self::assertNotNull($context);
+        self::assertSame('flare_choice', $context->filter->control?->type, 'the control decides the options');
+        self::assertNull($context->filter->value);
+    }
+
+    public function testAContextThatCannotBeBuiltIsNull(): void
+    {
+        $getList = static fn (): ListCompound => throw new FlareException('No list driver found for type "gone"');
+
+        self::assertNull($this->createFactory()->create($getList, self::archiveFilter()));
+    }
+
+    public function testLegacyAliasYieldsNoContext(): void
+    {
+        $legacy = new FilterModelFixture([
+            'id' => 7,
+            'type' => ArchiveFilterElement::TYPE,
+            'alias' => 'price.min',
+            'control' => 'flare_choice',
+        ]);
+
+        self::assertNull($this->createFactory()->create($this->getList(), $legacy));
+    }
+
+    /**
+     * @return \Closure(): ListCompound
+     */
+    private function getList(): \Closure
+    {
+        $driver = $this->createStub(ListDriverInterface::class);
+
+        return static fn (): ListCompound => new ListCompound(driver: $driver, type: 'test', dc: 'tl_news');
+    }
+
+    private static function archiveFilter(): FilterModelFixture
+    {
+        return new FilterModelFixture([
+            'id' => 7,
+            'type' => ArchiveFilterElement::TYPE,
+            'control' => 'flare_choice',
+            'value' => 'tl_news_archive.5',
+        ]);
+    }
+
+    private function createFactory(): BackendElementContextFactory
+    {
+        $elements = (new FilterElementRegistry())->add(
+            new ArchiveFilterElement(),
+            new AsFilterElement(type: ArchiveFilterElement::TYPE, value: ChoiceValue::class),
+            ArchiveFilterElement::TYPE,
+        );
+
+        $controls = (new FilterControlRegistry())
+            ->add($this->createMock(FilterControlInterface::class), 'flare_choice', ChoiceValue::class);
+
+        $providers = (new ValueProviderRegistry())->add(new class implements ValueProviderInterface {
+            public function provide(mixed $stored, FilterElementInterface $element): ?ValueInterface
+            {
+                // Readable: the backend context must not read it even then.
+                return new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5)]);
+            }
+
+            public function buildDcaField(DcaFieldBuilderInterface $field, DcaContext $context): void {}
+        }, ChoiceValue::class);
+
+        return new BackendElementContextFactory(new FilterCompoundFactory(
+            filterCompoundFactory: new CoreFilterCompoundFactory(
+                filterElementRegistry: $elements,
+                filterControlRegistry: $controls,
+                filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
+                filterTransformerResolver: new FilterTransformerResolver(
+                    new SourceTransformer(),
+                    new EventDispatcher(),
+                ),
+            ),
+            valueProviderRegistry: $providers,
+            logger: new NullLogger(),
+        ));
+    }
+}

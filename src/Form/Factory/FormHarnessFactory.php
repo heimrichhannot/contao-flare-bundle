@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Form\Factory;
 
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
-use HeimrichHannot\FlareBundle\Engine\Context\FormContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\FormIntentInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Form\FilterMount;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\FormBuilder;
@@ -39,16 +39,16 @@ final readonly class FormHarnessFactory
      *
      * @throws FlareException If the form could not be built
      */
-    public function create(ListSpec $list, FormContextInterface $context): FormHarness
+    public function create(ListCompound $list, FormIntentInterface $intent): FormHarness
     {
-        if (!$context instanceof ContextInterface) {
+        if (!$intent instanceof IntentInterface) {
             throw new FlareException(
-                'Filter form context must implement ContextInterface.',
+                'Filter form intent must implement IntentInterface.',
                 method: __METHOD__,
             );
         }
 
-        $name = $context->getFormName();
+        $name = $intent->getFormName();
 
         $formOptions = [
             'method' => 'GET',
@@ -59,13 +59,13 @@ final readonly class FormHarnessFactory
             ],
         ];
 
-        if ($action = $context->createFormActionUrl()) {
+        if ($action = $intent->createFormActionUrl()) {
             $formOptions['action'] = $action;
         }
 
         $root = $this->formFactory->createNamedBuilder($name, FormType::class, null, $formOptions);
         $root->setAttribute('flare.list', $list);
-        $root->setAttribute('flare.engine_context', $context);
+        $root->setAttribute('flare.intent', $intent);
 
         /** @var array<string, FilterMount> $mounts */
         $mounts = [];
@@ -83,11 +83,11 @@ final readonly class FormHarnessFactory
                 continue;
             }
 
-            $scope = new ControlScope($list, $filter, $context);
+            $context = new ControlContext($list, $filter, $intent);
 
             try
             {
-                $builder = $this->filterFormBuilderFactory->create($scope);
+                $builder = $this->filterFormBuilderFactory->create($context);
             }
             catch (FilterException $e)
                 // Fail closed: a control the editor chose must not be lost silently.
@@ -106,7 +106,7 @@ final readonly class FormHarnessFactory
 
             try
             {
-                $initial = $control->hydrate($filter->value, $scope);
+                $initial = $control->hydrate($filter->value, $context);
             }
             catch (\Exception $e)
                 // Fail open: an initial value that cannot be shown only drops the value.
@@ -133,7 +133,7 @@ final readonly class FormHarnessFactory
                     'inherit_data' => false,
                     'label'        => false,
                     'required'     => false,
-                    ...$builder->getCompoundOptions(),
+                    ...$builder->getMountOptions(),
                 ];
 
                 if ($initial !== null) {
@@ -155,7 +155,7 @@ final readonly class FormHarnessFactory
                 $mount->addEventListener($eventName, $listener, $priority);
             }
 
-            $mounts[$alias] = new FilterMount($filter, $alias, $scope);
+            $mounts[$alias] = new FilterMount($filter, $alias, $context);
 
             $root->add($mount);
         }
@@ -194,7 +194,7 @@ final readonly class FormHarnessFactory
      * Records a filter whose control could not build its form; it fails the list. The message names the filter and
      * its list, like the collector's.
      */
-    private function fail(ListSpec $list, Filter $filter, FilterException $e): FilterFailure
+    private function fail(ListCompound $list, FilterCompound $filter, FilterException $e): FilterFailure
     {
         $message = \sprintf(
             'Filter %s with control "%s" on %s cannot build its form: %s',
@@ -216,7 +216,7 @@ final readonly class FormHarnessFactory
      *
      * @throws FilterException In debug mode, for an unexpected exception.
      */
-    private function dropInitialValue(Filter $filter, \Exception $e, string $method): void
+    private function dropInitialValue(FilterCompound $filter, \Exception $e, string $method): void
     {
         $expected = $e instanceof FilterException;
         $e = FilterException::wrap($e, $filter, $method);

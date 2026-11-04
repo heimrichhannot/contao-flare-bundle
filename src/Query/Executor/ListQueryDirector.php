@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Event\ModifyListQueryStructEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\QueryBuilderFactory;
@@ -32,7 +32,7 @@ readonly class ListQueryDirector
     /**
      * Creates a query builder based on the provided list query configuration.
      *
-     * A list that recorded failures while it was built has failed as a whole: it is never queried, in any context.
+     * A list that recorded failures while it was built has failed as a whole: it is never queried, for any intent.
      *
      * @param ListQueryConfig $config Configuration for creating the query.
      * @return QueryBuilder|null Returns the constructed query builder, or null if filtering is aborted.
@@ -82,7 +82,7 @@ readonly class ListQueryDirector
      * Invokes every filter of the list with its value and collects the condition builders.
      *
      * The value is taken by the filter's role: with a control, only the form's value map applies;
-     * without one, the filter's fixed value applies in every context.
+     * without one, the filter's fixed value applies for every intent.
      *
      * A failing filter fails by what it bounds. A filter with a control that fails with
      * a value is retried without it: the element's own config (e.g. a whitelist) still bounds the
@@ -104,11 +104,11 @@ readonly class ListQueryDirector
         foreach ($list->filters as $filter)
         {
             $value = $filter->control !== null ? ($values[$filter->alias] ?? null) : $filter->value;
-            $scope = new ElementScope($list, $filter, $options->context);
+            $context = new ElementContext($list, $filter, $options->intent);
 
             try
             {
-                $builders = $this->filterInvoker->invoke($scope, $value);
+                $builders = $this->filterInvoker->invoke($context, $value);
             }
             catch (FilterException $e)
             {
@@ -117,7 +117,7 @@ readonly class ListQueryDirector
                 }
 
                 // Throws if the element's config is broken regardless of the value: fail closed.
-                $builders = $this->filterInvoker->invoke($scope, null);
+                $builders = $this->filterInvoker->invoke($context, null);
 
                 $this->logger->warning(\sprintf(
                     '[FLARE] Filter "%s" (%s) failed with its value, which is dropped: %s',

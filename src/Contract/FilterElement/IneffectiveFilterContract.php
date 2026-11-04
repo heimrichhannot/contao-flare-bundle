@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Contract\FilterElement;
 
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use Symfony\Contracts\Translation\TranslatableInterface;
 
 /**
@@ -18,5 +18,5 @@ interface IneffectiveFilterContract
     /**
      * Why the filter restricts nothing as configured, or null if it does restrict.
      */
-    public function getIneffectiveReason(Filter $filter): ?TranslatableInterface;
+    public function getIneffectiveReason(FilterCompound $filter): ?TranslatableInterface;
 }

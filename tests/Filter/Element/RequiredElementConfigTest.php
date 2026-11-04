@@ -15,7 +15,7 @@ use HeimrichHannot\FlareBundle\Filter\Element\FieldValueChoiceFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\SearchKeywordsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -25,7 +25,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 final class RequiredElementConfigTest extends TestCase
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
 
     /**
      * @dataProvider missingRequiredConfig
@@ -37,7 +37,7 @@ final class RequiredElementConfigTest extends TestCase
     {
         $this->expectException(FilterException::class);
 
-        $this->buildElementScope($this->createElement($class), $config);
+        $this->buildElementContext($this->createElement($class), $config);
     }
 
     public static function missingRequiredConfig(): iterable

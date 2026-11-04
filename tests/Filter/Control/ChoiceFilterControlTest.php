@@ -10,8 +10,8 @@ use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\ChoiceFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceObjectInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
@@ -28,7 +28,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class ChoiceFilterControlTest extends TestCase
 {
-    use BuildsControlScopesTrait;
+    use BuildsControlContextsTrait;
 
     private function control(): ChoiceFilterControl
     {
@@ -43,13 +43,13 @@ final class ChoiceFilterControlTest extends TestCase
         return new class($ids) implements FilterElementInterface, ChoiceSourceContract {
             public function __construct(private array $ids) {}
 
-            public function buildContext(
-                FilterContextBuilderInterface $builder,
-                ElementScope                  $scope,
-                ?ValueInterface               $value,
+            public function buildEffect(
+                FilterEffectBuilderInterface $builder,
+                ElementContext               $context,
+                ?ValueInterface              $value,
             ): void {}
 
-            public function buildChoices(ChoicesBuilder $choices, ElementScope $scope): void
+            public function buildChoices(ChoicesBuilder $choices, ElementContext $context): void
             {
                 foreach ($this->ids as $id) {
                     $choices->add(ContaoModelChoice::ref('tl_news_archive', $id));
@@ -70,7 +70,7 @@ final class ChoiceFilterControlTest extends TestCase
     {
         $ctl = $this->control();
         $builder = $this->newFormBuilder();
-        $ctl->buildForm($builder, $this->scope($ctl, $config, $this->element(...($ids ?: [5, 7]))));
+        $ctl->buildForm($builder, $this->context($ctl, $config, $this->element(...($ids ?: [5, 7]))));
 
         $single = $builder->getSingle();
         $single['options']['data'] = $data;
@@ -81,52 +81,52 @@ final class ChoiceFilterControlTest extends TestCase
     public function testHydratedCanonicalReferenceMatchesShortSubmittedKey(): void
     {
         $ctl = $this->control();
-        $scope = $this->scope($ctl, [], $this->element(5, 7));
+        $context = $this->context($ctl, [], $this->element(5, 7));
 
-        $data = $ctl->hydrate(new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5)]), $scope);
+        $data = $ctl->hydrate(new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5)]), $context);
         $form = $this->form([], $data);
 
         self::assertSame('5', $form->createView()->vars['value']);
 
         $form->submit('7');
-        self::assertSame('7', $ctl->decode($form->getData(), $scope)->choices[0]->getChoiceLocalKey());
+        self::assertSame('7', $ctl->decode($form->getData(), $context)->choices[0]->getChoiceLocalKey());
     }
 
     public function testMultipleHydratesAllChoices(): void
     {
         $ctl = $this->control();
-        $scope = $this->scope($ctl, ['is_multiple' => true], $this->element(5, 7));
+        $context = $this->context($ctl, ['is_multiple' => true], $this->element(5, 7));
 
         $value = new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5), ContaoModelChoice::ref('tl_news_archive', 7)]);
 
-        self::assertSame($value->choices, $ctl->hydrate($value, $scope));
-        self::assertSame([], $ctl->hydrate(null, $scope));
+        self::assertSame($value->choices, $ctl->hydrate($value, $context));
+        self::assertSame([], $ctl->hydrate(null, $context));
 
-        $form = $this->form(['is_multiple' => true], $ctl->hydrate($value, $scope));
+        $form = $this->form(['is_multiple' => true], $ctl->hydrate($value, $context));
         self::assertSame(['5', '7'], $form->createView()->vars['value']);
     }
 
     public function testSingleSelectHydratesTheFirstChoice(): void
     {
         $ctl = $this->control();
-        $scope = $this->scope($ctl, [], $this->element(5, 7));
+        $context = $this->context($ctl, [], $this->element(5, 7));
         $value = new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 7), ContaoModelChoice::ref('tl_news_archive', 5)]);
 
-        self::assertSame($value->choices[0], $ctl->hydrate($value, $scope));
-        self::assertNull($ctl->hydrate(null, $scope));
+        self::assertSame($value->choices[0], $ctl->hydrate($value, $context));
+        self::assertNull($ctl->hydrate(null, $context));
     }
 
     public function testDecode(): void
     {
         $ctl = $this->control();
-        $scope = $this->scope($ctl, [], $this->element(5));
+        $context = $this->context($ctl, [], $this->element(5));
         $choice = ContaoModelChoice::ref('tl_news_archive', 5);
 
-        self::assertEquals(new ChoiceValue([$choice]), $ctl->decode($choice, $scope));
-        self::assertEquals(new ChoiceValue([$choice]), $ctl->decode([$choice, ChoicesBuilder::EMPTY_CHOICE], $scope));
-        self::assertNull($ctl->decode(null, $scope));
-        self::assertNull($ctl->decode([], $scope));
-        self::assertNull($ctl->decode(ChoicesBuilder::EMPTY_CHOICE, $scope));
+        self::assertEquals(new ChoiceValue([$choice]), $ctl->decode($choice, $context));
+        self::assertEquals(new ChoiceValue([$choice]), $ctl->decode([$choice, ChoicesBuilder::EMPTY_CHOICE], $context));
+        self::assertNull($ctl->decode(null, $context));
+        self::assertNull($ctl->decode([], $context));
+        self::assertNull($ctl->decode(ChoicesBuilder::EMPTY_CHOICE, $context));
     }
 
     public function testElementWithoutChoiceSourceFails(): void
@@ -135,7 +135,7 @@ final class ChoiceFilterControlTest extends TestCase
 
         $this->expectException(FilterException::class);
 
-        $ctl->buildForm($this->newFormBuilder(), $this->scope($ctl));
+        $ctl->buildForm($this->newFormBuilder(), $this->context($ctl));
     }
 
     public function testPlaceholderAttributeOnlyWithoutEmptyOption(): void
@@ -143,11 +143,14 @@ final class ChoiceFilterControlTest extends TestCase
         $ctl = $this->control();
 
         $without = $this->newFormBuilder();
-        $ctl->buildForm($without, $this->scope($ctl, ['placeholder' => 'Pick'], $this->element(5)));
+        $ctl->buildForm($without, $this->context($ctl, ['placeholder' => 'Pick'], $this->element(5)));
         self::assertSame(['placeholder' => 'Pick'], $without->getSingle()['options']['attr']);
 
         $with = $this->newFormBuilder();
-        $ctl->buildForm($with, $this->scope($ctl, ['placeholder' => 'Pick', 'has_empty_option' => true], $this->element(5)));
+        $ctl->buildForm(
+            $with,
+            $this->context($ctl, ['placeholder' => 'Pick', 'has_empty_option' => true], $this->element(5)),
+        );
         self::assertArrayNotHasKey('attr', $with->getSingle()['options']);
     }
 
@@ -166,7 +169,7 @@ final class ChoiceFilterControlTest extends TestCase
         $ctl = $this->control();
         $builder = $this->newFormBuilder();
 
-        $ctl->buildForm($builder, $this->scope($ctl, [
+        $ctl->buildForm($builder, $this->context($ctl, [
             'label' => 'Archive',
             'is_mandatory' => true,
             'is_multiple' => true,
@@ -188,7 +191,7 @@ final class ChoiceFilterControlTest extends TestCase
         $ctl = $this->control();
 
         $builder = $this->newFormBuilder();
-        $ctl->buildForm($builder, $this->scope($ctl, [
+        $ctl->buildForm($builder, $this->context($ctl, [
             'has_empty_option' => true,
             'is_multiple' => true,
             'is_expanded' => true,
@@ -198,7 +201,7 @@ final class ChoiceFilterControlTest extends TestCase
         self::assertSame(ChoicesBuilder::EMPTY_CHOICE_VALUE_ALTERNATIVE, $valueOf(ChoicesBuilder::EMPTY_CHOICE));
 
         $builder = $this->newFormBuilder();
-        $ctl->buildForm($builder, $this->scope($ctl, ['has_empty_option' => true], $this->element(5)));
+        $ctl->buildForm($builder, $this->context($ctl, ['has_empty_option' => true], $this->element(5)));
 
         $valueOf = $builder->getSingle()['options']['choice_value'];
         self::assertSame(ChoicesBuilder::EMPTY_CHOICE_VALUE_DEFAULT, $valueOf(ChoicesBuilder::EMPTY_CHOICE));

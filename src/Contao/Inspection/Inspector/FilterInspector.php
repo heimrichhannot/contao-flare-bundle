@@ -9,20 +9,20 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
 use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssueKind;
 use HeimrichHannot\FlareBundle\Contao\Inspection\InspectedRows;
 use HeimrichHannot\FlareBundle\Contao\Inspection\ListInspection;
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterCompoundFactory;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Form\Factory\FilterFormBuilderFactory;
-use HeimrichHannot\FlareBundle\List\Factory\ListSpecBuilderFactory;
+use HeimrichHannot\FlareBundle\List\Factory\ListCompoundBuilderFactory;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\Executor\FilterInvoker;
@@ -54,15 +54,15 @@ final class FilterInspector implements ResetInterface
     private array $inspections = [];
 
     public function __construct(
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly FilterFactory            $filterFactory,
-        private readonly FilterInvoker            $filterInvoker,
-        private readonly FilterFormBuilderFactory $filterFormBuilderFactory,
-        private readonly ListSpecBuilderFactory   $listSpecBuilderFactory,
-        private readonly TranslatorInterface      $translator,
-        private readonly LoggerInterface          $logger,
-        private readonly ContaoFramework          $framework,
-        private readonly bool                     $debug,
+        private readonly EventDispatcherInterface   $eventDispatcher,
+        private readonly FilterCompoundFactory      $filterCompoundFactory,
+        private readonly FilterInvoker              $filterInvoker,
+        private readonly FilterFormBuilderFactory   $filterFormBuilderFactory,
+        private readonly ListCompoundBuilderFactory $listCompoundBuilderFactory,
+        private readonly TranslatorInterface        $translator,
+        private readonly LoggerInterface            $logger,
+        private readonly ContaoFramework            $framework,
+        private readonly bool                       $debug,
     ) {}
 
     public function inspect(ListModel $listModel): ListInspection
@@ -72,8 +72,8 @@ final class FilterInspector implements ResetInterface
         return $this->inspections[$id] ??= $this->inspectModels(
             $this->framework->getAdapter(FilterModel::class)->findBy(['pid=?', 'tstamp>0'], [$id], ['order' => 'sorting'])
                 ?? [],
-            function (array $filters) use ($listModel): ListSpec {
-                $builder = $this->listSpecBuilderFactory->create(
+            function (array $filters) use ($listModel): ListCompound {
+                $builder = $this->listCompoundBuilderFactory->create(
                     driver: (string) $listModel->type,
                     model: $listModel,
                     source: "{$listModel::getTable()}.{$listModel->id}",
@@ -95,10 +95,10 @@ final class FilterInspector implements ResetInterface
 
     /**
      * @param iterable<FilterModel> $models Every saved filter row of the list, in sorting order.
-     * @param \Closure(array<string, Filter>): ListSpec $buildScope Builds the list with the given row filters (keyed
-     *   by alias) added, the way the runtime does.
+     * @param \Closure(array<string, FilterCompound>): ListCompound $buildList Builds the list with the given row
+     *   filters (keyed by alias) added, the way the runtime does.
      */
-    public function inspectModels(iterable $models, \Closure $buildScope): ListInspection
+    public function inspectModels(iterable $models, \Closure $buildList): ListInspection
     {
         $rows = new InspectedRows();
 
@@ -112,7 +112,7 @@ final class FilterInspector implements ResetInterface
         }
 
         $this->markDuplicates($rows);
-        $this->checkFilters($this->buildScope($buildScope, $rows), $rows);
+        $this->checkFilters($this->buildList($buildList, $rows), $rows);
 
         return $rows->toInspection();
     }
@@ -122,11 +122,11 @@ final class FilterInspector implements ResetInterface
      * row instead. A FlareException fails the list at runtime (broken); any other exception, which only a listener
      * can throw, fails the request (programming error).
      */
-    private function build(FilterModel $model, InspectedRows $rows): ?Filter
+    private function build(FilterModel $model, InspectedRows $rows): ?FilterCompound
     {
         try
         {
-            $filter = $this->filterFactory->create($model);
+            $filter = $this->filterCompoundFactory->create($model);
 
             return $this->eventDispatcher->dispatch(new FilterCollectedEvent($filter, $model))->filter;
         }
@@ -183,9 +183,9 @@ final class FilterInspector implements ResetInterface
      * same filters. Null if the list cannot be built: an \Exception there is the list's problem, not a filter's (the
      * list driver reports its configuration); an \Error counts as a programming error without a row.
      *
-     * @param \Closure(array<string, Filter>): ListSpec $buildScope
+     * @param \Closure(array<string, FilterCompound>): ListCompound $buildList
      */
-    private function buildScope(\Closure $buildScope, InspectedRows $rows): ?ListSpec
+    private function buildList(\Closure $buildList, InspectedRows $rows): ?ListCompound
     {
         $filters = [];
 
@@ -198,7 +198,7 @@ final class FilterInspector implements ResetInterface
 
         try
         {
-            return $buildScope($filters);
+            return $buildList($filters);
         }
         catch (\Exception)
         {
@@ -221,7 +221,7 @@ final class FilterInspector implements ResetInterface
      * A filter of the list belongs to a row if it is the row's built filter (a FilterCollectedEvent listener may
      * have replaced it without a source), else if its source names the row.
      */
-    private function checkFilters(?ListSpec $spec, InspectedRows $rows): void
+    private function checkFilters(?ListCompound $list, InspectedRows $rows): void
     {
         $rowOf = [];
 
@@ -229,11 +229,11 @@ final class FilterInspector implements ResetInterface
             $rowOf[\spl_object_id($filter)] = $id;
         }
 
-        /** @var list<array{Filter, int|null}> $filters Each filter to check with its row id. */
+        /** @var list<array{FilterCompound, int|null}> $filters Each filter to check with its row id. */
         $filters = [];
         $inList = [];
 
-        foreach ($spec->filters ?? [] as $filter)
+        foreach ($list->filters ?? [] as $filter)
         {
             $id = $rowOf[\spl_object_id($filter)] ?? $rows->idOf($filter->source);
             $filters[] = [$filter, $id];
@@ -250,7 +250,7 @@ final class FilterInspector implements ResetInterface
             }
         }
 
-        foreach ($spec->failures ?? [] as $failure) {
+        foreach ($list->failures ?? [] as $failure) {
             $rows->addIssue($rows->idOf($failure->source), FilterIssueKind::Broken, $failure->getReason());
         }
 
@@ -259,8 +259,8 @@ final class FilterInspector implements ResetInterface
             $found = [];
 
             $checks = [
-                $spec ? $this->checkConditions($spec, $filter) : null,
-                $spec && $filter->control !== null ? $this->checkForm($spec, $filter) : null,
+                $list ? $this->checkConditions($list, $filter) : null,
+                $list && $filter->control !== null ? $this->checkForm($list, $filter) : null,
                 $this->checkEffect($filter),
             ];
 
@@ -283,13 +283,13 @@ final class FilterInspector implements ResetInterface
      *
      * @return array{FilterIssueKind, string}|null
      */
-    private function checkConditions(ListSpec $spec, Filter $filter): ?array
+    private function checkConditions(ListCompound $list, FilterCompound $filter): ?array
     {
         $value = $filter->control !== null ? null : $filter->value;
 
         try
         {
-            $this->filterInvoker->invoke(new ElementScope($spec, $filter, new ConfigurationContext()), $value);
+            $this->filterInvoker->invoke(new ElementContext($list, $filter, new ConfigurationIntent()), $value);
         }
         catch (AbortFilteringException)
         {
@@ -314,11 +314,11 @@ final class FilterInspector implements ResetInterface
      *
      * @return array{FilterIssueKind, string}|null
      */
-    private function checkForm(ListSpec $spec, Filter $filter): ?array
+    private function checkForm(ListCompound $list, FilterCompound $filter): ?array
     {
         try
         {
-            $this->filterFormBuilderFactory->create(new ControlScope($spec, $filter, new ConfigurationContext()));
+            $this->filterFormBuilderFactory->create(new ControlContext($list, $filter, new ConfigurationIntent()));
         }
         catch (FilterException $e)
         {
@@ -342,7 +342,7 @@ final class FilterInspector implements ResetInterface
      *
      * @return array{FilterIssueKind, string}|null
      */
-    private function checkEffect(Filter $filter): ?array
+    private function checkEffect(FilterCompound $filter): ?array
     {
         $element = $filter->element->component;
 
@@ -383,7 +383,7 @@ final class FilterInspector implements ResetInterface
         return $error->getMessage();
     }
 
-    private static function describe(Filter $filter): string
+    private static function describe(FilterCompound $filter): string
     {
         return $filter->source !== null ? "filter {$filter->source}" : "filter \"{$filter->alias}\"";
     }

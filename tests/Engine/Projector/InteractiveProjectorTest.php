@@ -8,8 +8,8 @@ use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
-use HeimrichHannot\FlareBundle\Engine\Context\Factory\AggregationContextFactory;
-use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\Factory\AggregationIntentFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\InteractiveIntent;
 use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
@@ -19,13 +19,13 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
-use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterCompoundFactory;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
@@ -35,7 +35,7 @@ use HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Query\Executor\FilterInvoker;
@@ -47,7 +47,7 @@ use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
@@ -72,7 +72,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 final class InteractiveProjectorTest extends TestCase
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
 
     /** @var list<array{string, string}> */
     private array $logs = [];
@@ -80,7 +80,7 @@ final class InteractiveProjectorTest extends TestCase
     public function testValuesComeFromTheHarness(): void
     {
         $spy = new ProjectorSpyElement();
-        $list = $this->list(new Filter(
+        $list = $this->list(new FilterCompound(
             element: new ElementBinding($spy, 'test_element', new ComponentConfig([]), KeywordsValue::class),
             alias: 'q',
             control: new ControlBinding(
@@ -92,7 +92,7 @@ final class InteractiveProjectorTest extends TestCase
         ));
 
         $projector = $this->createProjector(query: ['f' => ['q' => 'submitted']]);
-        $view = $projector->project($list, $this->context());
+        $view = $projector->project($list, $this->intent());
 
         self::assertFalse($view->isFailed());
         self::assertSame(0, $view->getCount());
@@ -104,7 +104,7 @@ final class InteractiveProjectorTest extends TestCase
     public function testUnsubmittedHarnessDecodesTheInitialValue(): void
     {
         $spy = new ProjectorSpyElement();
-        $list = $this->list(new Filter(
+        $list = $this->list(new FilterCompound(
             element: new ElementBinding($spy, 'test_element', new ComponentConfig([]), KeywordsValue::class),
             alias: 'q',
             control: new ControlBinding(
@@ -115,19 +115,19 @@ final class InteractiveProjectorTest extends TestCase
             value: new KeywordsValue('initial'),
         ));
 
-        $this->createProjector()->project($list, $this->context());
+        $this->createProjector()->project($list, $this->intent());
 
         self::assertSame('initial', $spy->received?->keywords);
     }
 
     public function testProjectorReturnsFailedViewWhenAFixedFilterFails(): void
     {
-        $list = $this->list(new Filter(
+        $list = $this->list(new FilterCompound(
             element: new ElementBinding(new ProjectorFailingElement(), 'test_element', new ComponentConfig([]), null),
             alias: 'fixed',
         ));
 
-        $view = $this->createProjector()->project($list, $this->context());
+        $view = $this->createProjector()->project($list, $this->intent());
 
         self::assertTrue($view->isFailed());
         self::assertSame(0, $view->getCount());
@@ -140,13 +140,13 @@ final class InteractiveProjectorTest extends TestCase
     public function testListFailuresRecordedAtBuildTimeYieldTheFailedView(): void
     {
         $spy = new ProjectorSpyElement();
-        $list = $this->list(new Filter(
+        $list = $this->list(new FilterCompound(
             element: new ElementBinding($spy, 'test_element', new ComponentConfig([]), null),
             alias: 'fixed',
         ))
             ->withFailure(new FilterFailure('tl_flare_filter.3', 'tl_flare_filter.3: broken config'));
 
-        $view = $this->createProjector()->project($list, $this->context());
+        $view = $this->createProjector()->project($list, $this->intent());
 
         self::assertTrue($view->isFailed());
         self::assertSame(0, $view->getCount());
@@ -156,14 +156,14 @@ final class InteractiveProjectorTest extends TestCase
 
     public function testFailuresAreRethrownInDebugMode(): void
     {
-        $list = $this->list(new Filter(
+        $list = $this->list(new FilterCompound(
             element: new ElementBinding(new ProjectorFailingElement(), 'test_element', new ComponentConfig([]), null),
             alias: 'fixed',
         ));
 
         $this->expectException(FilterException::class);
 
-        $this->createProjector(debug: true)->project($list, $this->context());
+        $this->createProjector(debug: true)->project($list, $this->intent());
     }
 
     public function testInvalidSubmissionIsNotCounted(): void
@@ -171,7 +171,7 @@ final class InteractiveProjectorTest extends TestCase
         $spy = new ProjectorSpyElement();
         $list = $this->list(self::controlled($spy, 'q', new ProjectorRejectingControl()));
 
-        $view = $this->createProjector(query: ['f' => ['q' => 'bad']])->project($list, $this->context());
+        $view = $this->createProjector(query: ['f' => ['q' => 'bad']])->project($list, $this->intent());
 
         self::assertFalse($view->isFailed());
         self::assertSame(0, $view->getCount());
@@ -187,7 +187,7 @@ final class InteractiveProjectorTest extends TestCase
         $list = $this->list(self::controlled(new ProjectorSpyElement(), 'broken', new ProjectorUnbuildableControl()))
             ->withFilter(self::controlled($spy, 'q', self::keywords()));
 
-        $view = $this->createProjector()->project($list, $this->context());
+        $view = $this->createProjector()->project($list, $this->intent());
 
         self::assertTrue($view->isFailed());
         self::assertSame(0, $spy->calls);
@@ -208,7 +208,7 @@ final class InteractiveProjectorTest extends TestCase
                 self::controlled(new ProjectorSpyElement(), 'broken', new ProjectorUnbuildableControl()),
             );
 
-        $view = $this->createProjector(query: ['f' => ['q' => 'bad']])->project($list, $this->context());
+        $view = $this->createProjector(query: ['f' => ['q' => 'bad']])->project($list, $this->intent());
 
         self::assertTrue($view->isFailed());
         self::assertSame(0, $spy->calls, 'No count query ran.');
@@ -227,7 +227,7 @@ final class InteractiveProjectorTest extends TestCase
         $this->expectException(FilterException::class);
         $this->expectExceptionMessage('cannot build');
 
-        $this->createProjector(debug: true)->project($list, $this->context());
+        $this->createProjector(debug: true)->project($list, $this->intent());
     }
 
     private static function keywords(): KeywordsFilterControl
@@ -239,8 +239,8 @@ final class InteractiveProjectorTest extends TestCase
         FilterElementInterface $element,
         string                 $alias,
         FilterControlInterface $control,
-    ): Filter {
-        return new Filter(
+    ): FilterCompound {
+        return new FilterCompound(
             element: new ElementBinding($element, 'test_element', new ComponentConfig([]), null),
             alias: $alias,
             control: new ControlBinding(
@@ -251,12 +251,12 @@ final class InteractiveProjectorTest extends TestCase
         );
     }
 
-    private function context(): InteractiveContext
+    private function intent(): InteractiveIntent
     {
-        return new InteractiveContext(paginatorConfig: new PaginatorConfig(itemsPerPage: 10), formName: 'f');
+        return new InteractiveIntent(paginatorConfig: new PaginatorConfig(itemsPerPage: 10), formName: 'f');
     }
 
-    private function list(Filter $filter): ListSpec
+    private function list(FilterCompound $filter): ListCompound
     {
         $driver = new class implements ListDriverInterface {
             public function resolveDcTable(string $type, array $config, array $attributes): string
@@ -265,7 +265,12 @@ final class InteractiveProjectorTest extends TestCase
             }
         };
 
-        return new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test', filters: [$filter->alias => $filter]);
+        return new ListCompound(
+            driver: $driver,
+            type: 'test_list',
+            dc: 'tl_test',
+            filters: [$filter->alias => $filter],
+        );
     }
 
     /**
@@ -293,7 +298,7 @@ final class InteractiveProjectorTest extends TestCase
         $director = new ListQueryDirector(
             eventDispatcher: $dispatcher,
             filterInvoker: new FilterInvoker(
-                $this->createFilterContextFactory(),
+                $this->createFilterEffectFactory(),
                 new FilterQueryBuilderFactory($connection),
             ),
             listExecutionContextFactory: new ListExecutionContextFactory($dispatcher),
@@ -301,7 +306,7 @@ final class InteractiveProjectorTest extends TestCase
             logger: $logger,
         );
 
-        $filterFactory = new FilterFactory(
+        $filterCompoundFactory = new FilterCompoundFactory(
             filterElementRegistry: new FilterElementRegistry(),
             filterControlRegistry: new FilterControlRegistry(),
             filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
@@ -312,7 +317,7 @@ final class InteractiveProjectorTest extends TestCase
 
         $container = new ServiceLocator([
             ListQueryDirector::class => static fn () => $director,
-            LoaderFactory::class => static fn () => new LoaderFactory($filterFactory, $director),
+            LoaderFactory::class => static fn () => new LoaderFactory($filterCompoundFactory, $director),
             ProjectorRegistry::class => static fn () => new ProjectorRegistry([$aggregationProjector]),
             ReaderUrlGeneratorFactory::class => static fn () => new ReaderUrlGeneratorFactory($dispatcher),
             RequestStack::class => static fn () => $requestStack,
@@ -328,7 +333,7 @@ final class InteractiveProjectorTest extends TestCase
             ->getFormFactory();
 
         $projector = new RecordingInteractiveProjector(
-            aggregationConfigFactory: new AggregationContextFactory(),
+            aggregationIntentFactory: new AggregationIntentFactory(),
             formHarnessFactory: new FormHarnessFactory(
                 $dispatcher,
                 new FilterFormBuilderFactory($dispatcher, $formFactory),
@@ -364,10 +369,10 @@ final class ProjectorSpyElement implements FilterElementInterface
     public ?ValueInterface $received = null;
     public int $calls = 0;
 
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementContext               $context,
+        ?ValueInterface              $value,
     ): void {
         $this->received = $value;
         ++$this->calls;
@@ -378,10 +383,10 @@ final class ProjectorSpyElement implements FilterElementInterface
 
 final class ProjectorFailingElement implements FilterElementInterface
 {
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementContext               $context,
+        ?ValueInterface              $value,
     ): void {
         throw new FilterException('broken element');
     }
@@ -392,12 +397,12 @@ final class ProjectorFailingElement implements FilterElementInterface
  */
 final class ProjectorRejectingControl implements FilterControlInterface
 {
-    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
+    public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void
     {
         $builder->single(TextType::class, ['required' => false]);
     }
 
-    public function decode(mixed $data, ControlScope $scope): ?KeywordsValue
+    public function decode(mixed $data, ControlContext $context): ?KeywordsValue
     {
         if ($data !== null && $data !== '') {
             throw new FilterException('rejected');
@@ -406,7 +411,7 @@ final class ProjectorRejectingControl implements FilterControlInterface
         return null;
     }
 
-    public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
+    public function hydrate(?ValueInterface $value, ControlContext $context): mixed
     {
         return null;
     }
@@ -414,17 +419,17 @@ final class ProjectorRejectingControl implements FilterControlInterface
 
 final class ProjectorUnbuildableControl implements FilterControlInterface
 {
-    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
+    public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void
     {
         throw new FilterException('This control cannot build its form.');
     }
 
-    public function decode(mixed $data, ControlScope $scope): ?KeywordsValue
+    public function decode(mixed $data, ControlContext $context): ?KeywordsValue
     {
         return null;
     }
 
-    public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
+    public function hydrate(?ValueInterface $value, ControlContext $context): mixed
     {
         return null;
     }

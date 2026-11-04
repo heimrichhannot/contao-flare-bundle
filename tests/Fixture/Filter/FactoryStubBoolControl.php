@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Fixture\Filter;
 
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\TransformerMap;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -30,14 +30,14 @@ final class FactoryStubBoolControl extends AbstractFilterControl
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
 
-    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void {}
+    public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void {}
 
-    public function decode(mixed $data, ControlScope $scope): ?BoolValue
+    public function decode(mixed $data, ControlContext $context): ?BoolValue
     {
         return null;
     }
 
-    public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
+    public function hydrate(?ValueInterface $value, ControlContext $context): mixed
     {
         return null;
     }

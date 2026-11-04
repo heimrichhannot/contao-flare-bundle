@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\EventListener\NamedDispatch;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterControlBuildFormListener;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilder;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Tests\List\StubFilterElement;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -59,26 +59,26 @@ final class FilterControlBuildFormListenerTest extends TestCase
             }
         };
 
-        $engineContext = new class implements ContextInterface {
-            public static function getContextType(): string
+        $intent = new class implements IntentInterface {
+            public static function getIntentType(): string
             {
                 return 'test';
             }
         };
 
-        $list = new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test');
-        $filter = new Filter(
+        $list = new ListCompound(driver: $driver, type: 'test_list', dc: 'tl_test');
+        $filter = new FilterCompound(
             element: new ElementBinding(new StubFilterElement(), 'b', new ComponentConfig(), null),
             alias: 'suche',
             control: new ControlBinding(new KeywordsFilterControl(), $controlType, new ComponentConfig()),
         );
 
-        $scope = new ControlScope(list: $list, filter: $filter, engineContext: $engineContext);
+        $context = new ControlContext(list: $list, filter: $filter, intent: $intent);
 
         $builder = new FilterFormBuilder('suche', null, new EventDispatcher(), Forms::createFormFactory());
 
         $listener = new FilterControlBuildFormListener($dispatcher);
-        $listener->onFilterControlBuildForm(new FilterControlBuildFormEvent($builder, $scope));
+        $listener->onFilterControlBuildForm(new FilterControlBuildFormEvent($builder, $context));
 
         return $names;
     }

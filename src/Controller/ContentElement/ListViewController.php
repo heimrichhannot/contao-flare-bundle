@@ -13,13 +13,13 @@ use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Template;
 use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\Engine\Context\Factory\InteractiveContextFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\Factory\InteractiveIntentFactory;
 use HeimrichHannot\FlareBundle\Engine\Factory\EngineFactory;
 use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListCompoundBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Psr\Log\LoggerInterface;
@@ -42,15 +42,15 @@ final class ListViewController extends AbstractContentElementController
     private const TEMPLATE_VAR_VIEW = 'flare_list';
 
     public function __construct(
-        private readonly EngineFactory             $engineFactory,
-        private readonly EventDispatcherInterface  $eventDispatcher,
-        private readonly InteractiveContextFactory $interactiveConfigFactory,
-        private readonly KernelInterface           $kernel,
-        private readonly ListSpecBuilderFactory    $listFactory,
-        private readonly LoggerInterface           $logger,
-        private readonly ScopeMatcher              $scopeMatcher,
-        private readonly SymfonyResponseTagger     $responseTagger,
-        private readonly TranslatorInterface       $translator,
+        private readonly EngineFactory              $engineFactory,
+        private readonly EventDispatcherInterface   $eventDispatcher,
+        private readonly InteractiveIntentFactory   $interactiveIntentFactory,
+        private readonly KernelInterface            $kernel,
+        private readonly ListCompoundBuilderFactory $listFactory,
+        private readonly LoggerInterface            $logger,
+        private readonly ScopeMatcher               $scopeMatcher,
+        private readonly SymfonyResponseTagger      $responseTagger,
+        private readonly TranslatorInterface        $translator,
     ) {}
 
     /**
@@ -100,14 +100,14 @@ final class ListViewController extends AbstractContentElementController
 
         try
         {
-            $listSpec = $this->listFactory->create($listModel)->build();
+            $list = $this->listFactory->create($listModel)->build();
 
-            $interactiveConfig = $this->interactiveConfigFactory->createFromContent(
+            $interactiveIntent = $this->interactiveIntentFactory->createFromContent(
                 contentModel: $contentModel,
-                list: $listSpec,
+                list: $list,
             );
 
-            $engine = $this->engineFactory->createEngine($interactiveConfig, $listSpec);
+            $engine = $this->engineFactory->createEngine($interactiveIntent, $list);
         }
         catch (ValidationFailedException $e)
         {

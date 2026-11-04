@@ -8,21 +8,21 @@ use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaFieldBuilder;
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceKey;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceObjectInterface;
 use HeimrichHannot\FlareBundle\Filter\ValueProvider\ChoiceValueProvider;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
@@ -91,9 +91,9 @@ final class ChoiceValueProviderTest extends TestCase
     public function testUndefinedConfigKeyEscapesTheOptionsCallback(): void
     {
         $element = new class extends ProviderStubElement implements ChoiceSourceContract {
-            public function buildChoices(ChoicesBuilder $choices, ElementScope $scope): void
+            public function buildChoices(ChoicesBuilder $choices, ElementContext $context): void
             {
-                $scope->get('typo');
+                $context->get('typo');
             }
 
             public function choiceFromKey(string $key): ?ChoiceObjectInterface
@@ -102,13 +102,13 @@ final class ChoiceValueProviderTest extends TestCase
             }
         };
 
-        $scope = new ElementScope(
-            list: new ListSpec(driver: $this->createStub(ListDriverInterface::class), type: 'test', dc: 'tl_test'),
-            filter: new Filter(
+        $context = new ElementContext(
+            list: new ListCompound(driver: $this->createStub(ListDriverInterface::class), type: 'test', dc: 'tl_test'),
+            filter: new FilterCompound(
                 element: new ElementBinding($element, 'test_element', new ComponentConfig(['field' => 'title']), null),
                 alias: 'test',
             ),
-            engineContext: new ConfigurationContext(),
+            intent: new ConfigurationIntent(),
         );
 
         $builder = new DcaFieldBuilder();
@@ -119,7 +119,7 @@ final class ChoiceValueProviderTest extends TestCase
             null,
             static fn (): null => null,
             $element,
-            static fn (): ElementScope => $scope,
+            static fn (): ElementContext => $context,
         ));
 
         $definition = [];

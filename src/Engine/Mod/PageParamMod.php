@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Mod;
 
-use HeimrichHannot\FlareBundle\Engine\Context\PaginatedContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Engine;
+use HeimrichHannot\FlareBundle\Engine\Intent\PaginatedIntentInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class PageParamMod extends AbstractMod
@@ -17,13 +17,13 @@ class PageParamMod extends AbstractMod
 
     public function __invoke(Engine $engine, array $options): void
     {
-        $context = $engine->getContext();
+        $intent = $engine->getIntent();
 
-        if (!$context instanceof PaginatedContextInterface) {
+        if (!$intent instanceof PaginatedIntentInterface) {
             return;
         }
 
-        $context->setPaginatorQueryParameter($options['param'] ?? null);
+        $intent->setPaginatorQueryParameter($options['param'] ?? null);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

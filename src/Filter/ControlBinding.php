@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 
 /**
- * The filter control of a {@see Filter}, together with its registered type and resolved config.
+ * The filter control of a {@see FilterCompound}, together with its registered type and resolved config.
  *
  * @api
  */

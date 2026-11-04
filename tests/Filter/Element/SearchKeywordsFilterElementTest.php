@@ -9,22 +9,22 @@ use HeimrichHannot\FlareBundle\Filter\Element\SearchKeywordsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Predicate\SearchKeywordsPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use PHPUnit\Framework\TestCase;
 
 final class SearchKeywordsFilterElementTest extends TestCase
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
 
     public function testKeywordsAndColumnsBecomeThePredicate(): void
     {
-        $context = $this->buildFilterContext(
+        $effect = $this->buildFilterEffect(
             new SearchKeywordsFilterElement(),
             ['columns' => ['title', 'teaser']],
             new KeywordsValue('foo  bar'),
         );
 
-        $p = $context->formula->propositions[0];
+        $p = $effect->formula->propositions[0];
 
         self::assertSame(SearchKeywordsPredicate::class, $p->predicateClass);
         self::assertSame('foo bar', $p->options['value']);
@@ -35,13 +35,13 @@ final class SearchKeywordsFilterElementTest extends TestCase
     {
         $element = new SearchKeywordsFilterElement();
 
-        self::assertSame([], $this->buildFilterContext($element, ['columns' => ['title']])->formula->propositions);
+        self::assertSame([], $this->buildFilterEffect($element, ['columns' => ['title']])->formula->propositions);
     }
 
     public function testWrongValueClassIsRejected(): void
     {
         $this->expectException(FilterException::class);
 
-        $this->buildFilterContext(new SearchKeywordsFilterElement(), ['columns' => ['title']], new BoolValue(true));
+        $this->buildFilterEffect(new SearchKeywordsFilterElement(), ['columns' => ['title']], new BoolValue(true));
     }
 }

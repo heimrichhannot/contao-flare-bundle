@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Event;
 
-use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
+use HeimrichHannot\FlareBundle\List\ListCompoundBuilder;
 use Symfony\Contracts\EventDispatcher\Event;
 
 /**
@@ -15,6 +15,6 @@ use Symfony\Contracts\EventDispatcher\Event;
 class ListDriverBuildListEvent extends Event
 {
     public function __construct(
-        public readonly ListSpecBuilder $builder,
+        public readonly ListCompoundBuilder $builder,
     ) {}
 }

@@ -5,23 +5,23 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Form;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterMount;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
@@ -153,20 +153,20 @@ final class FormHarnessTest extends TestCase
         };
 
         $element = new class implements FilterElementInterface {
-            public function buildContext(
-                FilterContextBuilderInterface $builder,
-                ElementScope                  $scope,
-                ?ValueInterface               $value,
+            public function buildEffect(
+                FilterEffectBuilderInterface $builder,
+                ElementContext               $context,
+                ?ValueInterface              $value,
             ): void {}
         };
 
         $control ??= new KeywordsFilterControl();
-        $list = new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test');
+        $list = new ListCompound(driver: $driver, type: 'test_list', dc: 'tl_test');
         $builder = Forms::createFormFactory()->createNamedBuilder('flare_test', FormType::class);
         $mounts = [];
 
         foreach ($initial as $alias => $keywords) {
-            $filter = new Filter(
+            $filter = new FilterCompound(
                 element: new ElementBinding($element, 'test_element', new ComponentConfig([]), KeywordsValue::class),
                 alias: $alias,
                 control: $control !== null ? new ControlBinding(
@@ -178,8 +178,8 @@ final class FormHarnessTest extends TestCase
             );
 
             $builder->add($alias, TextType::class, ['required' => false, 'data' => $keywords]);
-            $scope = new ControlScope($list, $filter, new ConfigurationContext());
-            $mounts[$alias] = new FilterMount($filter, $alias, $scope);
+            $context = new ControlContext($list, $filter, new ConfigurationIntent());
+            $mounts[$alias] = new FilterMount($filter, $alias, $context);
         }
 
         foreach ($remove as $alias) {
@@ -210,7 +210,7 @@ final class FormHarnessTest extends TestCase
  */
 final class RejectingKeywordsControl extends KeywordsFilterControl
 {
-    public function decode(mixed $data, ControlScope $scope): ?KeywordsValue
+    public function decode(mixed $data, ControlContext $context): ?KeywordsValue
     {
         if ($data === 'rejected') {
             throw new FilterException('Rejected.', method: __METHOD__);
@@ -220,6 +220,6 @@ final class RejectingKeywordsControl extends KeywordsFilterControl
             throw new \RuntimeException('Connection lost.');
         }
 
-        return parent::decode($data, $scope);
+        return parent::decode($data, $context);
     }
 }

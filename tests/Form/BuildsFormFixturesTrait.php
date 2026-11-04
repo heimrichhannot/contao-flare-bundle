@@ -7,17 +7,17 @@ namespace HeimrichHannot\FlareBundle\Tests\Form;
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 
 /**
@@ -26,9 +26,9 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 trait BuildsFormFixturesTrait
 {
     /**
-     * @param list<Filter> $filters
+     * @param list<FilterCompound> $filters
      */
-    private function listSpec(array $filters = [], ?string $source = null): ListSpec
+    private function list(array $filters = [], ?string $source = null): ListCompound
     {
         $driver = new class implements ListDriverInterface {
             public function resolveDcTable(string $type, array $config, array $attributes): string
@@ -37,7 +37,7 @@ trait BuildsFormFixturesTrait
             }
         };
 
-        return new ListSpec(
+        return new ListCompound(
             driver: $driver,
             type: 'test_list',
             dc: 'tl_test',
@@ -49,7 +49,7 @@ trait BuildsFormFixturesTrait
     /**
      * Creates a control building its form via the given callable; it decodes to a KeywordsValue.
      *
-     * @param callable(FilterFormBuilderInterface, ControlScope): void $buildForm
+     * @param callable(FilterFormBuilderInterface, ControlContext): void $buildForm
      */
     private function control(callable $buildForm): FilterControlInterface
     {
@@ -62,17 +62,17 @@ trait BuildsFormFixturesTrait
                 $this->buildForm = $buildForm;
             }
 
-            public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
+            public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void
             {
-                ($this->buildForm)($builder, $scope);
+                ($this->buildForm)($builder, $context);
             }
 
-            public function decode(mixed $data, ControlScope $scope): ?ValueInterface
+            public function decode(mixed $data, ControlContext $context): ?ValueInterface
             {
                 return KeywordsValue::tryFrom($data);
             }
 
-            public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
+            public function hydrate(?ValueInterface $value, ControlContext $context): mixed
             {
                 return null;
             }
@@ -85,16 +85,16 @@ trait BuildsFormFixturesTrait
         ?ValueInterface         $value = null,
         ?FilterElementInterface $element = null,
         ?string                 $source = null,
-    ): Filter {
+    ): FilterCompound {
         $element ??= new class implements FilterElementInterface {
-            public function buildContext(
-                FilterContextBuilderInterface $builder,
-                ElementScope                  $scope,
-                ?ValueInterface               $value,
+            public function buildEffect(
+                FilterEffectBuilderInterface $builder,
+                ElementContext               $context,
+                ?ValueInterface              $value,
             ): void {}
         };
 
-        return new Filter(
+        return new FilterCompound(
             element: new ElementBinding($element, 'test_element', new ComponentConfig([]), $value !== null ? $value::class : null),
             alias: $alias,
             control: $control !== null ? new ControlBinding(

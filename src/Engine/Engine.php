@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine;
 
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Registry\EngineModRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 
@@ -16,22 +16,22 @@ final class Engine
     public function __construct(
         private readonly EngineModRegistry $engineModRegistry,
         private readonly ProjectorRegistry $projectorRegistry,
-        private ContextInterface           $context,
-        private ListSpec                   $list,
+        private IntentInterface            $intent,
+        private ListCompound               $list,
         private array                      $mods = [],
     ) {}
 
-    public function getContext(): ContextInterface
+    public function getIntent(): IntentInterface
     {
-        return $this->context;
+        return $this->intent;
     }
 
-    public function getList(): ListSpec
+    public function getList(): ListCompound
     {
         return $this->list;
     }
 
-    public function setList(ListSpec $list): self
+    public function setList(ListCompound $list): self
     {
         $this->list = $list;
 
@@ -59,8 +59,8 @@ final class Engine
         }
 
         return $engine->projectorRegistry
-            ->getProjectorFor($engine->list, $engine->context)
-            ->project($engine->list, $engine->context);
+            ->getProjectorFor($engine->list, $engine->intent)
+            ->project($engine->list, $engine->intent);
     }
 
     /**
@@ -104,12 +104,12 @@ final class Engine
         return $this;
     }
 
-    public function with(?ContextInterface $context = null, ?ListSpec $list = null, ?array $mods = null): self
+    public function with(?IntentInterface $intent = null, ?ListCompound $list = null, ?array $mods = null): self
     {
         return new self(
             engineModRegistry: $this->engineModRegistry,
             projectorRegistry: $this->projectorRegistry,
-            context: $context ?? clone $this->context,
+            intent: $intent ?? clone $this->intent,
             list: $list ?? $this->list,
             mods: $mods ?? $this->mods,
         );
@@ -122,6 +122,6 @@ final class Engine
 
     public function __clone(): void
     {
-        $this->context = clone $this->context;
+        $this->intent = clone $this->intent;
     }
 }

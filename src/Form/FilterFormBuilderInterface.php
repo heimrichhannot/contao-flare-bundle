@@ -18,10 +18,10 @@ use Symfony\Component\Form\FormBuilderInterface;
 interface FilterFormBuilderInterface extends FormBuilderInterface
 {
     /**
-     * Attribute-bag key under which the filter's {@see \HeimrichHannot\FlareBundle\Filter\ControlScope} is stored on
+     * Attribute-bag key under which the filter's {@see \HeimrichHannot\FlareBundle\Filter\ControlContext} is stored on
      * the builder; the harness carries it over onto the mounted node.
      */
-    public const ATTR_SCOPE = 'flare.filter_scope';
+    public const ATTR_CONTEXT = 'flare.control_context';
 
     /**
      * Declares this filter as a single-field filter of the given form type.
@@ -41,16 +41,16 @@ interface FilterFormBuilderInterface extends FormBuilderInterface
     public function getSingle(): ?array;
 
     /**
-     * Sets form options of the compound mount of a multi-field filter, e.g. its `label`; merged over the
+     * Sets form options of the mount of a multi-field filter, e.g. its `label`; merged over the
      * mount's defaults (no label, not required). Ignored for a single-field filter, whose options are
      * passed to {@see single()}. Calling this method again overwrites the previous options.
      *
-     * @param array<string, mixed> $options Form options of the compound mount.
+     * @param array<string, mixed> $options Form options of the multi-field filter's mount.
      */
-    public function compound(array $options): static;
+    public function setMountOptions(array $options): static;
 
     /**
      * @return array<string, mixed>
      */
-    public function getCompoundOptions(): array;
+    public function getMountOptions(): array;
 }

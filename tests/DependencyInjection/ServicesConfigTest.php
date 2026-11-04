@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Contao\BackendModule;
 use HeimrichHannot\FlareBundle\Contao\Callback\FlareFilter\FieldsOptionsCallbacks;
 use HeimrichHannot\FlareBundle\Contao\Callback\FlareList\ConfigOnSubmitCallback;
 use HeimrichHannot\FlareBundle\Contao\Callback\FlareList\FieldsOptionsCallbacks as ListFieldsOptionsCallbacks;
-use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementScopeFactory;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementContextFactory;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\ControlDcaBuilder;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterContainer;
@@ -18,8 +18,8 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Contao\CollectedFilters;
 use HeimrichHannot\FlareBundle\Contao\Factory\FilterCollector;
-use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
-use HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterCompoundFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListCompoundBuilderFactory;
 use HeimrichHannot\FlareBundle\Contao\Hook\BreadcrumbHook;
 use HeimrichHannot\FlareBundle\Contao\Hook\ElementDcaHook;
 use HeimrichHannot\FlareBundle\Contao\Hook\FormNameRegexpHook;
@@ -28,6 +28,13 @@ use HeimrichHannot\FlareBundle\Contao\Inspection\Inspector\FilterInspector;
 use HeimrichHannot\FlareBundle\Contao\Inspection\ListInspection;
 use HeimrichHannot\FlareBundle\Contao\Inspection\Reporter\FilterIssueReporter;
 use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrable;
+use HeimrichHannot\FlareBundle\Engine\Intent\AggregationIntent;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
+use HeimrichHannot\FlareBundle\Engine\Intent\Factory\AggregationIntentFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\Factory\InteractiveIntentFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\Factory\ValidationIntentFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\InteractiveIntent;
+use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrer;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\FileLocator;
@@ -71,7 +78,7 @@ final class ServicesConfigTest extends TestCase
         foreach ([
             FilterInspector::class,
             FilterIssueReporter::class,
-            BackendElementScopeFactory::class,
+            BackendElementContextFactory::class,
             ListContainer::class,
             FilterContainer::class,
             ElementDcaHook::class,
@@ -79,9 +86,12 @@ final class ServicesConfigTest extends TestCase
             FormNameRegexpHook::class,
             ConfigOnSubmitCallback::class,
             FieldsOptionsCallbacks::class,
-            FilterFactory::class,
+            FilterCompoundFactory::class,
             FilterCollector::class,
-            ListSpecBuilderFactory::class,
+            ListCompoundBuilderFactory::class,
+            InteractiveIntentFactory::class,
+            ValidationIntentFactory::class,
+            AggregationIntentFactory::class,
         ] as $class) {
             yield $class => [$class];
         }
@@ -102,6 +112,10 @@ final class ServicesConfigTest extends TestCase
             ListInspection::class,
             PtableInferrer::class,
             PtableInferrable::class,
+            InteractiveIntent::class,
+            ValidationIntent::class,
+            AggregationIntent::class,
+            ConfigurationIntent::class,
         ] as $class) {
             yield $class => [$class];
         }

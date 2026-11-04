@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Registry;
 
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Projector\ProjectorInterface;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
 
 readonly class ProjectorRegistry
@@ -21,14 +21,14 @@ readonly class ProjectorRegistry
     ) {}
 
     /**
-     * Finds the matching projector for the given config.
+     * Finds the matching projector for the given intent.
      *
      * @throws FlareException If no projector is found.
      */
     public function getProjectorFor(
-        ListSpec         $list,
-        ContextInterface $config,
-        ?array           $exclude = null
+        ListCompound    $list,
+        IntentInterface $intent,
+        ?array          $exclude = null
     ): ProjectorInterface {
         $exclude = $exclude ? \array_fill_keys($exclude, true) : null;
         $winner = null;
@@ -40,11 +40,11 @@ readonly class ProjectorRegistry
                 continue;
             }
 
-            if (!$projector->supports($list, $config)) {
+            if (!$projector->supports($list, $intent)) {
                 continue;
             }
 
-            $priority = $projector->priority($list, $config);
+            $priority = $projector->priority($list, $intent);
 
             if ($priority > $highestPriority) {
                 $highestPriority = $priority;
@@ -54,8 +54,8 @@ readonly class ProjectorRegistry
 
         if (!$winner) {
             throw new FlareException(\sprintf(
-                'No projector found supporting context configuration "%s".',
-                \get_class($config)
+                'No projector found supporting intent "%s".',
+                \get_class($intent)
             ), method: __METHOD__, source: $list->source ?? 'list inlined');
         }
 

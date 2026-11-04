@@ -13,9 +13,9 @@ use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub\OkElement;
 use HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub\ThrowingElement;
@@ -115,7 +115,11 @@ final class FilterInspectorTest extends ContaoTestCase
     {
         $this->dispatcher->addListener(FilterCollectedEvent::class, static function (FilterCollectedEvent $event): void {
             if ($event->model->id === 2) {
-                $event->filter = new Filter(element: $event->filter->element, alias: 'dup', source: $event->filter->source);
+                $event->filter = new FilterCompound(
+                    element: $event->filter->element,
+                    alias: 'dup',
+                    source: $event->filter->source,
+                );
             }
         });
 
@@ -296,21 +300,21 @@ final class FilterInspectorTest extends ContaoTestCase
 
     public function testFiltersOfTheDriverCountWithoutARow(): void
     {
-        $inline = new Filter(
+        $inline = new FilterCompound(
             element: new ElementBinding(new ThrowingElement(), 'throws', new ComponentConfig(), null),
             alias: 'inline',
         );
 
         $inspection = $this->inspect(
             [self::filterModel(1, 'ok', 'a')],
-            static fn (array $filters): ListSpec => self::spec($filters + ['inline' => $inline]),
+            static fn (array $filters): ListCompound => self::list($filters + ['inline' => $inline]),
         );
 
         self::assertSame([], $inspection->rows);
         self::assertSame(1, $inspection->count(FilterIssueKind::Broken));
     }
 
-    public function testOnlyTheFirstOfADuplicateGroupEntersTheScope(): void
+    public function testOnlyTheFirstOfADuplicateGroupEntersTheList(): void
     {
         $received = null;
 
@@ -320,21 +324,21 @@ final class FilterInspectorTest extends ContaoTestCase
                 self::filterModel(2, 'throws', 'dup'),
                 self::filterModel(3, 'ok', 'b', published: false),
             ],
-            static function (array $filters) use (&$received): ListSpec {
+            static function (array $filters) use (&$received): ListCompound {
                 $received = $filters;
 
-                return self::spec($filters);
+                return self::list($filters);
             },
         );
 
         self::assertIsArray($received);
         self::assertSame(['dup'], \array_keys($received));
         self::assertSame('tl_flare_filter.1', $received['dup']->source);
-        // The later duplicate is still checked, with the scope as its list.
+        // The later duplicate is still checked, with the built list.
         self::assertSame([FilterIssueKind::DuplicateAlias, FilterIssueKind::Broken], self::kinds($inspection, 2));
     }
 
-    public function testWithoutAListScopeRowIssuesAreStillReported(): void
+    public function testWithoutAListRowIssuesAreStillReported(): void
     {
         $inspection = $this->inspect(
             [
@@ -344,7 +348,7 @@ final class FilterInspectorTest extends ContaoTestCase
                 self::filterModel(4, 'ineffective', 'c'),
                 self::filterModel(5, 'throws', 'd'),
             ],
-            static fn (): ListSpec => throw new FlareException('No list driver found for type "gone"'),
+            static fn (): ListCompound => throw new FlareException('No list driver found for type "gone"'),
         );
 
         self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
@@ -355,14 +359,14 @@ final class FilterInspectorTest extends ContaoTestCase
         self::assertSame(0, $inspection->count(FilterIssueKind::ProgrammingError));
     }
 
-    public function testAScopeErrorIsAListLevelProgrammingError(): void
+    public function testAListBuildErrorIsAListLevelProgrammingError(): void
     {
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('critical');
 
         $inspection = $this->inspect(
             [self::filterModel(1, 'ok', 'a')],
-            static fn (): ListSpec => throw new \Error('driver bug'),
+            static fn (): ListCompound => throw new \Error('driver bug'),
             logger: $logger,
         );
 
@@ -370,11 +374,15 @@ final class FilterInspectorTest extends ContaoTestCase
         self::assertSame(1, $inspection->count(FilterIssueKind::ProgrammingError));
     }
 
-    public function testScopeErrorsEscapeInDebugMode(): void
+    public function testListBuildErrorsEscapeInDebugMode(): void
     {
         $this->expectException(\Error::class);
 
-        $this->inspect([self::filterModel(1, 'ok', 'a')], static fn (): ListSpec => throw new \Error('driver bug'), debug: true);
+        $this->inspect(
+            [self::filterModel(1, 'ok', 'a')],
+            static fn (): ListCompound => throw new \Error('driver bug'),
+            debug: true,
+        );
     }
 
     public function testAReplacedFilterWithoutASourceKeepsItsRow(): void
@@ -396,14 +404,14 @@ final class FilterInspectorTest extends ContaoTestCase
     {
         $this->dropSources();
 
-        $inline = new Filter(
+        $inline = new FilterCompound(
             element: new ElementBinding(new OkElement(), 'ok', new ComponentConfig(), null),
             alias: 'inline',
         );
 
         $inspection = $this->inspect(
             [self::filterModel(1, 'throws', 'a', published: false)],
-            static fn (array $filters): ListSpec => self::spec($filters + ['inline' => $inline]),
+            static fn (array $filters): ListCompound => self::list($filters + ['inline' => $inline]),
         );
 
         self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
@@ -425,7 +433,7 @@ final class FilterInspectorTest extends ContaoTestCase
         $inspection = $this->createFilterInspector($this->mockContaoFramework([FilterModel::class => $filters]), $this->dispatcher)
             ->inspect(self::listModel(5));
 
-        // Only a built list scope lets the conditions of row 1 be checked.
+        // Only a built list lets the conditions of row 1 be checked.
         self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
         self::assertSame([FilterIssueKind::DuplicateAlias], self::kinds($inspection, 2));
         self::assertSame(['dup'], $inspection->blockingAliases);
@@ -458,7 +466,7 @@ final class FilterInspectorTest extends ContaoTestCase
     private function dropSources(): void
     {
         $this->dispatcher->addListener(FilterCollectedEvent::class, static function (FilterCollectedEvent $event): void {
-            $event->filter = new Filter(element: $event->filter->element, alias: $event->filter->alias);
+            $event->filter = new FilterCompound(element: $event->filter->element, alias: $event->filter->alias);
         });
     }
 
@@ -473,11 +481,11 @@ final class FilterInspectorTest extends ContaoTestCase
 
     /**
      * @param list<FilterModel> $models
-     * @param (\Closure(array<string, Filter>): ListSpec)|null $buildScope
+     * @param (\Closure(array<string, FilterCompound>): ListCompound)|null $buildList
      */
     private function inspect(
         array            $models,
-        ?\Closure        $buildScope = null,
+        ?\Closure        $buildList = null,
         bool             $debug = false,
         ?LoggerInterface $logger = null,
     ): ListInspection {
@@ -485,14 +493,14 @@ final class FilterInspectorTest extends ContaoTestCase
 
         return $this->createFilterInspector($framework, $this->dispatcher, $debug, $logger)->inspectModels(
             $models,
-            $buildScope ?? static fn (array $filters): ListSpec => self::spec($filters),
+            $buildList ?? static fn (array $filters): ListCompound => self::list($filters),
         );
     }
 
     /**
-     * @param array<string, Filter> $filters
+     * @param array<string, FilterCompound> $filters
      */
-    private static function spec(array $filters = []): ListSpec
+    private static function list(array $filters = []): ListCompound
     {
         $driver = new class implements ListDriverInterface {
             public function resolveDcTable(string $type, array $config, array $attributes): string
@@ -501,7 +509,7 @@ final class FilterInspectorTest extends ContaoTestCase
             }
         };
 
-        return new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test', filters: $filters);
+        return new ListCompound(driver: $driver, type: 'test_list', dc: 'tl_test', filters: $filters);
     }
 
     /**

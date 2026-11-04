@@ -16,14 +16,14 @@ use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
- * Collects the published tl_flare_filter rows of a list model as Filter DTOs,
+ * Collects the published tl_flare_filter rows of a list model as FilterCompound DTOs,
  * translating each row through its element's and control's transformers.
  */
 final readonly class FilterCollector
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,
-        private FilterFactory            $filterFactory,
+        private FilterCompoundFactory    $filterCompoundFactory,
         private ListDriverRegistry       $listDriverRegistry,
         private LoggerInterface          $logger,
     ) {}
@@ -31,7 +31,7 @@ final readonly class FilterCollector
     /**
      * @throws FlareException If no list driver is registered for the list's type. A filter that fails
      *   with a FlareException does not throw (it is recorded, see {@see collectFromModels()}),
-     *   so backend callbacks building the ListSpec keep working; other throwables still escape.
+     *   so backend callbacks building the ListCompound keep working; other throwables still escape.
      */
     public function collect(ListModel $listModel): ?CollectedFilters
     {
@@ -54,7 +54,7 @@ final readonly class FilterCollector
      * a control: the element config bounds the whole list. So does a stored control that cannot be resolved, or
      * whose config is broken. The failure is logged as an error and recorded. An unreadable initial value never
      * reaches this point;
-     * {@see FilterFactory::create()} keeps such a filter without the value.
+     * {@see FilterCompoundFactory::create()} keeps such a filter without the value.
      *
      * So does a FlareException from a {@see FilterCollectedEvent} listener; any other exception of a listener is a
      * bug and fails the request.
@@ -77,7 +77,7 @@ final readonly class FilterCollector
 
             try
             {
-                $filter = $this->filterFactory->create($model);
+                $filter = $this->filterCompoundFactory->create($model);
                 // A listener's FlareException fails the list like any filter failure; anything else is a bug.
                 $filter = $this->eventDispatcher->dispatch(new FilterCollectedEvent($filter, $model))->filter;
             }

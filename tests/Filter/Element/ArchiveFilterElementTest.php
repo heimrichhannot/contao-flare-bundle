@@ -10,20 +10,20 @@ use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\Element\ArchiveFilterElement;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
+use HeimrichHannot\FlareBundle\Filter\FilterEffect;
 use HeimrichHannot\FlareBundle\Filter\Predicate\ArchivePredicate;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BelongsToRelationPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Form\Factory\ChoicesBuilderFactory;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use PHPUnit\Framework\TestCase;
 use Contao\Model;
 use Contao\Model\Collection;
@@ -35,7 +35,7 @@ use Symfony\Contracts\Translation\TranslatorTrait;
 
 final class ArchiveFilterElementTest extends TestCase
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
     use StubsContaoDcaTrait;
 
     private const GROUPS = [
@@ -142,15 +142,15 @@ final class ArchiveFilterElementTest extends TestCase
 
     public function testFixedValueAppliesInValidation(): void
     {
-        $context = $this->buildFilterContext(
+        $effect = $this->buildFilterEffect(
             $this->createElement(),
             ['whitelist_parents' => [3, 5], 'use_whitelist_for_options_only' => true],
             new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 3)]),
-            new ValidationContext(),
+            new ValidationIntent(),
             'tl_news',
         );
 
-        self::assertSame([3], $context->formula->propositions[0]->options['parent_ids']);
+        self::assertSame([3], $effect->formula->propositions[0]->options['parent_ids']);
     }
 
     public function testDynamicSelectionBecomesGroupedSubmittedData(): void
@@ -195,15 +195,15 @@ final class ArchiveFilterElementTest extends TestCase
     {
         $this->expectException(FilterException::class);
 
-        $this->buildFilterContext($this->createElement(), ['whitelist_parents' => [3]], null, null, 'tl_orphan');
+        $this->buildFilterEffect($this->createElement(), ['whitelist_parents' => [3]], null, null, 'tl_orphan');
     }
 
     public function testListWithoutPtableFailsWithoutControlToo(): void
     {
         $this->expectException(FilterException::class);
 
-        $this->createFilterContextFactory()->create(
-            $this->buildElementScope($this->createElement(), [], null, 'tl_orphan'),
+        $this->createFilterEffectFactory()->create(
+            $this->buildElementContext($this->createElement(), [], null, 'tl_orphan'),
             new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5)]),
         );
     }
@@ -254,7 +254,7 @@ final class ArchiveFilterElementTest extends TestCase
     public function testOnlyAFilterWithoutControlAndValueIsIneffective(): void
     {
         $element = $this->createElement();
-        $filter = $this->buildElementScope(
+        $filter = $this->buildElementContext(
             $element,
             ['whitelist_parents' => [1], 'use_whitelist_for_options_only' => true],
             dc: 'tl_news',
@@ -284,11 +284,11 @@ final class ArchiveFilterElementTest extends TestCase
     public function testWithoutControlChoicesAreAllRecordsOfThePtable(): void
     {
         $element = $this->recordingElement(['tl_news_archive' => [3, 5, 9]]);
-        $scope = $this->buildElementScope($element, ['whitelist_parents' => [3]], null, 'tl_news');
+        $context = $this->buildElementContext($element, ['whitelist_parents' => [3]], null, 'tl_news');
 
         self::assertSame(
             ['tl_news_archive.3', 'tl_news_archive.5', 'tl_news_archive.9'],
-            $this->choiceKeys($element, $scope),
+            $this->choiceKeys($element, $context),
         );
         self::assertSame([['all', 'tl_news_archive']], $element->calls, 'the whitelist is not read');
     }
@@ -299,9 +299,14 @@ final class ArchiveFilterElementTest extends TestCase
             ['tl_news' => [1], 'tl_calendar' => [7]],
             ['tl_news', 'tl_unknown', 'tl_calendar'],
         );
-        $scope = $this->buildElementScope($element, ['group_whitelist_parents' => self::GROUPS], null, 'tl_content');
+        $context = $this->buildElementContext(
+            $element,
+            ['group_whitelist_parents' => self::GROUPS],
+            null,
+            'tl_content',
+        );
 
-        self::assertSame(['tl_news.1', 'tl_calendar.7'], $this->choiceKeys($element, $scope));
+        self::assertSame(['tl_news.1', 'tl_calendar.7'], $this->choiceKeys($element, $context));
         self::assertSame(
             [['tables', 'tl_content'], ['all', 'tl_news'], ['all', 'tl_unknown'], ['all', 'tl_calendar']],
             $element->calls,
@@ -313,19 +318,21 @@ final class ArchiveFilterElementTest extends TestCase
         $static = $this->recordingElement([]);
         $dynamic = $this->recordingElement([], []);
 
-        self::assertSame([], $this->choiceKeys($static, $this->buildElementScope($static, [], null, 'tl_news')));
-        self::assertSame([], $this->choiceKeys($dynamic, $this->buildElementScope($dynamic, [], null, 'tl_content')));
+        self::assertSame([], $this->choiceKeys($static, $this->buildElementContext($static, [], null, 'tl_news')));
+        self::assertSame([], $this->choiceKeys($dynamic, $this->buildElementContext($dynamic, [], null, 'tl_content')));
     }
 
     public function testWithControlChoicesStayTheWhitelist(): void
     {
         $element = $this->recordingElement(['tl_news_archive' => [3, 5, 9]]);
         $element->setTranslator(self::prefixingTranslator());
-        $scope = $this->controlled($this->buildElementScope($element, ['whitelist_parents' => [3]], null, 'tl_news'));
+        $context = $this->controlled(
+            $this->buildElementContext($element, ['whitelist_parents' => [3]], null, 'tl_news'),
+        );
 
         try
         {
-            $this->choiceKeys($element, $scope);
+            $this->choiceKeys($element, $context);
             self::fail('The stub has no whitelisted parents, so the controlled path throws.');
         }
         catch (FilterException $e)
@@ -343,14 +350,14 @@ final class ArchiveFilterElementTest extends TestCase
         $this->expectException(FilterException::class);
         $this->expectExceptionMessage('flare: errors.archive.no_ptable');
 
-        $this->choiceKeys($element, $this->buildElementScope($element, [], null, 'tl_orphan'));
+        $this->choiceKeys($element, $this->buildElementContext($element, [], null, 'tl_orphan'));
     }
 
     public function testWithoutATranslatorTheMessageIsTheKey(): void
     {
         $this->expectExceptionMessage('errors.archive.no_ptable');
 
-        $this->buildFilterContext($this->createElement(), [], null, null, 'tl_orphan');
+        $this->buildFilterEffect($this->createElement(), [], null, null, 'tl_orphan');
     }
 
     public function testDynamicParentTablesAreTheDistinctNonEmptyPtablesOfTheDataContainer(): void
@@ -452,7 +459,7 @@ final class ArchiveFilterElementTest extends TestCase
         bool  $optionsOnly,
         array $selected = [],
         bool  $controlled = true,
-    ): FilterContext {
+    ): FilterEffect {
         return $this->build(
             ['whitelist_parents' => $whitelist, 'use_whitelist_for_options_only' => $optionsOnly],
             $selected,
@@ -464,7 +471,7 @@ final class ArchiveFilterElementTest extends TestCase
     /**
      * @param list<ContaoModelChoice> $selected
      */
-    private function buildDynamic(bool $optionsOnly, array $selected = [], bool $controlled = true): FilterContext
+    private function buildDynamic(bool $optionsOnly, array $selected = [], bool $controlled = true): FilterEffect
     {
         return $this->build(
             ['group_whitelist_parents' => self::GROUPS, 'use_whitelist_for_options_only' => $optionsOnly],
@@ -478,29 +485,29 @@ final class ArchiveFilterElementTest extends TestCase
      * @param array<string, mixed> $config
      * @param list<ContaoModelChoice> $selected
      */
-    private function build(array $config, array $selected, string $dc, bool $controlled): FilterContext
+    private function build(array $config, array $selected, string $dc, bool $controlled): FilterEffect
     {
-        $scope = $this->buildElementScope($this->createElement(), $config, null, $dc);
+        $context = $this->buildElementContext($this->createElement(), $config, null, $dc);
 
-        return $this->createFilterContextFactory()->create(
-            $controlled ? $this->controlled($scope) : $scope,
+        return $this->createFilterEffectFactory()->create(
+            $controlled ? $this->controlled($context) : $context,
             $selected ? new ChoiceValue($selected) : null,
         );
     }
 
     /**
-     * The scope of the same filter with a control: the whitelist then provides the options and bounds the value.
+     * The context of the same filter with a control: the whitelist then provides the options and bounds the value.
      */
-    private function controlled(ElementScope $scope): ElementScope
+    private function controlled(ElementContext $context): ElementContext
     {
-        return new ElementScope(
-            $scope->list,
-            $scope->filter->withControl(new ControlBinding(
+        return new ElementContext(
+            $context->list,
+            $context->filter->withControl(new ControlBinding(
                 $this->createMock(FilterControlInterface::class),
                 'flare_choice',
                 new ComponentConfig(),
             )),
-            $scope->engineContext,
+            $context->intent,
         );
     }
 
@@ -568,14 +575,14 @@ final class ArchiveFilterElementTest extends TestCase
     /**
      * @return list<string>
      */
-    private function choiceKeys(ArchiveFilterElement $element, ElementScope $scope): array
+    private function choiceKeys(ArchiveFilterElement $element, ElementContext $context): array
     {
         $choices = (new ChoicesBuilderFactory(
             $this->createMock(TranslatorInterface::class),
             $this->createMock(ParameterBagInterface::class),
         ))->createChoicesBuilder();
 
-        $element->buildChoices($choices, $scope);
+        $element->buildChoices($choices, $context);
 
         return \array_map('strval', \array_keys($choices->build()));
     }

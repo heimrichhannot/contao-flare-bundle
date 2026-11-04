@@ -11,8 +11,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
  * Framework-owned base schema and translation for every list. Applied unconditionally by
- * {@see Resolver\ListOptionsResolver} and {@see ListSpecBuilder} before the list type's own
- * schema and transformers run, so framework consumers (page meta, comments, contexts)
+ * {@see Resolver\ListOptionsResolver} and {@see ListCompoundBuilder} before the list type's own
+ * schema and transformers run, so framework consumers (page meta, comments, intents)
  * can rely on these keys regardless of the type implementation.
  *
  * Canonical keys keep the tl_flare_list column names to preserve `{{list.*}}` tokens.

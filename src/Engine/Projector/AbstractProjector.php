@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
 use Doctrine\DBAL\Query\QueryBuilder;
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
 use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
 use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
@@ -51,14 +51,14 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
     /**
      * {@inheritdoc}
      */
-    abstract public function supports(ListSpec $list, ContextInterface $context): bool;
+    abstract public function supports(ListCompound $list, IntentInterface $intent): bool;
 
     /**
      * {@inheritdoc}
      *
      * The default priority is 0, but can be overriden by subclasses.
      */
-    public function priority(ListSpec $list, ContextInterface $context): int
+    public function priority(ListCompound $list, IntentInterface $intent): int
     {
         return 0;
     }
@@ -66,9 +66,9 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
     /**
      * {@inheritdoc}
      *
-     * @throws FlareException Thrown if the projector does not support the provided list context and configuration.
+     * @throws FlareException Thrown if the projector does not support the provided list and intent.
      */
-    abstract public function project(ListSpec $list, ContextInterface $context): ViewInterface;
+    abstract public function project(ListCompound $list, IntentInterface $intent): ViewInterface;
 
     protected function getListQueryDirector(): ListQueryDirector
     {
@@ -102,13 +102,13 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
      * @throws FlareException
      */
     protected function getProjectorFor(
-        ListSpec         $spec,
-        ContextInterface $config,
-        ?array           $exclude = null,
+        ListCompound    $list,
+        IntentInterface $intent,
+        ?array          $exclude = null,
     ): ProjectorInterface {
         try
         {
-            return $this->container->get(ProjectorRegistry::class)?->getProjectorFor($spec, $config, $exclude);
+            return $this->container->get(ProjectorRegistry::class)?->getProjectorFor($list, $intent, $exclude);
         }
         catch (ContainerExceptionInterface $e)
         {

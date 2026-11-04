@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\ExpectsValueTrait;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
@@ -49,9 +49,9 @@ abstract class AbstractFilterControl implements
 
     public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void {}
 
-    abstract public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void;
+    abstract public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void;
 
-    abstract public function decode(mixed $data, ControlScope $scope): ?ValueInterface;
+    abstract public function decode(mixed $data, ControlContext $context): ?ValueInterface;
 
-    abstract public function hydrate(?ValueInterface $value, ControlScope $scope): mixed;
+    abstract public function hydrate(?ValueInterface $value, ControlContext $context): mixed;
 }

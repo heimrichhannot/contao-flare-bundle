@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceObjectInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -74,36 +74,36 @@ class ChoiceFilterControl extends AbstractFilterControl
     /**
      * @throws FilterException
      */
-    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
+    public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void
     {
         $choices = $this->choicesBuilderFactory->createChoicesBuilder();
-        $scope->element(ChoiceSourceContract::class)->buildChoices($choices, $scope->forElement());
+        $context->element(ChoiceSourceContract::class)->buildChoices($choices, $context->forElement());
 
-        if ($scope->get('format_label')) {
-            $choices->setLabel($scope->get('format_label'));
+        if ($context->get('format_label')) {
+            $choices->setLabel($context->get('format_label'));
         }
 
-        if ($scope->get('has_empty_option'))
+        if ($context->get('has_empty_option'))
         {
-            $emptyOptionValue = ($scope->get('is_expanded') && $scope->get('is_multiple'))
+            $emptyOptionValue = ($context->get('is_expanded') && $context->get('is_multiple'))
                 ? ChoicesBuilder::EMPTY_CHOICE_VALUE_ALTERNATIVE
                 : null;
 
-            $choices->setEmptyOption($scope->get('format_empty_option') ?: true, $emptyOptionValue);
+            $choices->setEmptyOption($context->get('format_empty_option') ?: true, $emptyOptionValue);
         }
 
         $options = [
-            'label' => $scope->get('label') ?: false,
-            'required' => $scope->get('is_mandatory'),
-            'multiple' => $scope->get('is_multiple'),
-            'expanded' => $scope->get('is_expanded'),
+            'label' => $context->get('label') ?: false,
+            'required' => $context->get('is_mandatory'),
+            'multiple' => $context->get('is_multiple'),
+            'expanded' => $context->get('is_expanded'),
             // The empty option is a real choice; Symfony's implicit placeholder would add a second,
             // blank option or an untranslated "None" radio.
             'placeholder' => false,
         ];
 
-        if ($scope->get('placeholder') && !$choices->hasEmptyOption()) {
-            $options['attr'] = ['placeholder' => $scope->get('placeholder')];
+        if ($context->get('placeholder') && !$choices->hasEmptyOption()) {
+            $options['attr'] = ['placeholder' => $context->get('placeholder')];
         }
 
         $choices->applyFormOptions($options);
@@ -115,7 +115,7 @@ class ChoiceFilterControl extends AbstractFilterControl
      * @param ChoiceObjectInterface|iterable<mixed>|null $data The selected choice, or the selected choices of a
      *   multiple widget; entries that are no choice objects (e.g. the empty option) are ignored.
      */
-    public function decode(mixed $data, ControlScope $scope): ?ChoiceValue
+    public function decode(mixed $data, ControlContext $context): ?ChoiceValue
     {
         return ChoiceValue::tryFrom($data);
     }
@@ -123,11 +123,11 @@ class ChoiceFilterControl extends AbstractFilterControl
     /**
      * @return ChoiceObjectInterface|list<ChoiceObjectInterface>|null A list for a multiple widget.
      */
-    public function hydrate(?ValueInterface $value, ControlScope $scope): ChoiceObjectInterface|array|null
+    public function hydrate(?ValueInterface $value, ControlContext $context): ChoiceObjectInterface|array|null
     {
         $value = $this->expectValue($value, ChoiceValue::class);
 
-        if ($scope->get('is_multiple')) {
+        if ($context->get('is_multiple')) {
             return $value->choices ?? [];
         }
 

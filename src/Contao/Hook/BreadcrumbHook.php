@@ -12,11 +12,11 @@ use Contao\Module;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ReaderController;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\Engine\Context\Factory\ValidationContextFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\Factory\ValidationIntentFactory;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
 use HeimrichHannot\FlareBundle\Exception\ViewException;
-use HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListCompoundBuilderFactory;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Util\Env;
@@ -26,11 +26,11 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 readonly class BreadcrumbHook
 {
     public function __construct(
-        private Connection               $connection,
-        private EventDispatcherInterface $eventDispatcher,
-        private ListSpecBuilderFactory   $listFactory,
-        private ProjectorRegistry        $projectorRegistry,
-        private ValidationContextFactory $validationContextFactory,
+        private Connection                 $connection,
+        private EventDispatcherInterface   $eventDispatcher,
+        private ListCompoundBuilderFactory $listFactory,
+        private ProjectorRegistry          $projectorRegistry,
+        private ValidationIntentFactory    $validationIntentFactory,
     ) {}
 
     public function __invoke(array $items, Module $module): array
@@ -93,15 +93,15 @@ readonly class BreadcrumbHook
                 return $items;
             }
 
-            $listSpec = $this->listFactory->create($listModel)->build();
+            $list = $this->listFactory->create($listModel)->build();
 
-            $validationContext = $this->validationContextFactory->createFromContent(
+            $validationIntent = $this->validationIntentFactory->createFromContent(
                 contentModel: $contentModel,
-                list: $listSpec,
+                list: $list,
             );
 
-            $validationProjector = $this->projectorRegistry->getProjectorFor($listSpec, $validationContext);
-            $validationView = $validationProjector->project($listSpec, $validationContext);
+            $validationProjector = $this->projectorRegistry->getProjectorFor($list, $validationIntent);
+            $validationView = $validationProjector->project($list, $validationIntent);
 
             if (!$validationView instanceof ValidationView) {
                 throw ViewException::create(ValidationView::class, $validationView, __METHOD__);
@@ -115,7 +115,7 @@ readonly class BreadcrumbHook
             $pageMetaEvent = $this->eventDispatcher->dispatch(new ReaderPageMetaEvent(
                 contentModel: $contentModel,
                 displayModel: $autoItemModel,
-                list: $listSpec,
+                list: $list,
             ));
 
             $title = $pageMetaEvent->pageMeta->getTitle();

@@ -14,13 +14,23 @@ This file provides guidance to AI coding agents, e.g., Claude Code (claude.ai/co
 
 ## Architecture
 
+**Vocabulary** — four nouns name the core concepts; keep them distinct:
+- *Compound* — the assembled, runnable list (`ListCompound`) or filter (`FilterCompound`): bound components with
+  their canonical config, ready to run (a list's `$failures` change its output, not its runnability).
+- *Effect* — an element's abstract building blocks for the query (`FilterEffect`, built in `buildEffect()`):
+  predicates today, later joins, derivations and order hints.
+- *Context* — the pre-filled handover to a hook (`ElementContext`, `ControlContext`, `DcaContext`).
+- *Intent* — what the engine renders a list for, with the expected output (`InteractiveIntent`, `ValidationIntent`,
+  `AggregationIntent`, `ConfigurationIntent`); its type selects the projector.
+
 The core execution flow is:
 
 ```
 ContentElement Controller
-  → Contao\Factory\ListSpecBuilderFactory::create($listModel)->build() — builds the immutable ListSpec (src/List/)
+  → Contao\Factory\ListCompoundBuilderFactory::create($listModel)->build()
+    — builds the immutable ListCompound (src/List/)
     → EngineFactory → Engine
-      → Context (Interactive / Validation / Aggregation) — src/Engine/Context/
+      → Intent (Interactive / Validation / Aggregation) — src/Engine/Intent/
         → Loader (src/Engine/Loader/) + Mods (src/Engine/Mod/)
           → Projector (Interactive / Validation / Aggregation / Export) — orchestrates query + filter execution
             → View (formats data for Twig template)
@@ -28,8 +38,9 @@ ContentElement Controller
 
 Filter execution inside the projector: the `FormHarness` decodes submitted form data per filter control into value
 objects; `ListQueryDirector` (`src/Query/Executor/`) picks each filter's value (with a control: the form's value;
-without: the fixed `Filter::$value`), creates the `FilterContext` via `FilterContextFactory::create(ElementScope, ?value)`
-(the element's `buildContext($builder, $scope, $value)` adds predicates) and runs each predicate into a `FilterConditionsBuilder`. A
+without: the fixed `FilterCompound::$value`), creates the `FilterEffect` via
+`FilterEffectFactory::create(ElementContext, ?value)` (the element's `buildEffect($builder, $context, $value)` adds
+predicates) and runs each predicate into a `FilterConditionsBuilder`. A
 filter whose element cannot be built (with or without a control) — required element config is required by the
 element's schema —, a stored control that cannot be resolved or whose config is broken, a control that cannot build
 its form (`Form/Factory/FilterFormBuilderFactory`: a `buildForm()` failure, a `FlareException` from a `FilterControlBuildFormEvent`
@@ -37,60 +48,60 @@ listener, an alias that is no valid form name), a broken fixed value, a `FlareEx
 listener, or two published filters sharing an alias fail the whole list (`list.failed` in the view, HTTP 500 in the
 reader); an unreadable initial value only drops the value (warning). These failures win over an invalid submission,
 which shows no entries and runs no COUNT. `abort()` means only "legitimately matches nothing". Failures are
-recorded as `FilterFailure`s (`src/List/`) on the `ListSpec`. A controlled filter that fails with a non-null value is retried once with value null: success drops only the value
-(warning); if the retry fails too (or the value was already null) the element config is broken and the list fails
-closed. `\Error`s escape unwrapped. `UndefinedConfigKeyError` (an `\Error`, thrown when a component reads a config key
-its schema does not define) is a programming error: never retried, never degraded into a skipped filter or a
-failed list — it fails the request. So is a filter value of the wrong class (`ValueClassMismatchError`, an `\Error`
-thrown by `Filter`'s constructor, so by `withValue()` too): stored data cannot produce one (value providers and
-controls are registered by their narrowed return type), so it always comes from code — e.g. a
-`ListDriverBuildListEvent` or `FilterCollectedEvent` listener — and fails the request with HTTP 500, never as a
-`FilterFailure`. The bundle catches `\Exception`, not `\Throwable`, so no `\Error` is wrapped or swallowed; only the
-transformer resolvers still wrap any `\Throwable` (a transformer casting stale stored data may throw a `\ValueError`),
-and the backend `FilterInspector` catches `\Error` outside debug mode to mark the filter
-as a programming error (the frontend request still fails).
+recorded as `FilterFailure`s (`src/List/`) on the `ListCompound`. A controlled filter that fails with a non-null value
+is retried once with value null: success drops only the value (warning); if the retry fails too (or the value was
+already null) the element config is broken and the list fails closed. `\Error`s escape unwrapped.
+`UndefinedConfigKeyError` (an `\Error`, thrown when a component reads a config key its schema does not define) is a
+programming error: never retried, never degraded into a skipped filter or a failed list — it fails the request. So is a
+filter value of the wrong class (`ValueClassMismatchError`, an `\Error` thrown by `FilterCompound`'s constructor, so by
+`withValue()` too): stored data cannot produce one (value providers and controls are registered by their narrowed return
+type), so it always comes from code — e.g. a `ListDriverBuildListEvent` or `FilterCollectedEvent` listener — and fails
+the request with HTTP 500, never as a `FilterFailure`. The bundle catches `\Exception`, not `\Throwable`, so no `\Error`
+is wrapped or swallowed; only the transformer resolvers still wrap any `\Throwable` (a transformer casting stale stored
+data may throw a `\ValueError`), and the backend `FilterInspector` catches `\Error` outside debug mode to mark the
+filter as a programming error (the frontend request still fails).
 Who throws what: `FilterException` (and its `UnreadableValueException`) is public API — filter components, bundled
 and userland, throw it to report a filter that cannot work with its config, data or value; a component translates
 the message itself where an editor may see it (`AbstractFilterElement::trans()`, `flare` domain). `FlareException` and the
 other exceptions in `src/Exception/` are thrown by the framework only; userland may catch them. Every filter hook
-(element `buildContext()`, control `buildForm()`/`hydrate()`/`decode()`) catches any `\Exception` and normalizes it
+(element `buildEffect()`, control `buildForm()`/`hydrate()`/`decode()`) catches any `\Exception` and normalizes it
 with `FilterException::wrap()`; a non-`FilterException` is unexpected: logged as an error. Value providers are
-treated alike (`Contao\Factory\FilterFactory` wraps their exceptions; a non-`FilterException` `FlareException`, a
-wiring error, passes unwrapped). A control's `buildForm()` failure fails the list (error, rethrown by the failed view in
-debug mode); a `hydrate()` failure mounts the filter without its initial value (warning; an unexpected exception is
+treated alike (`Contao\Factory\FilterCompoundFactory` wraps their exceptions; a non-`FilterException` `FlareException`,
+a wiring error, passes unwrapped). A control's `buildForm()` failure fails the list (error, rethrown by the failed view
+in debug mode); a `hydrate()` failure mounts the filter without its initial value (warning; an unexpected exception is
 rethrown in debug mode); a `decode()` failure drops the value and puts a form error on a submitted field.
 
-Note: Contexts and Projectors/Views are separate axes — (Export Context/Projector/View are currently not implemented).
+Note: Intents and Projectors/Views are separate axes — (Export Intent/Projector/View are currently not implemented).
 
 The bundle follows standard Symfony Bundle architecture with deep Contao integration.
 
 **Lifecycle taxonomy** — elements and list types own their lifecycle through two method families:
 `configure*` methods are declarative, memoizable setup (`configureOptions` = OptionsResolver schema,
 `configureTransformers` = source→canonical-config mappings); `build*` methods are per-invocation construction
-(`buildDca`, `buildForm`, `buildContext`, `buildList`, `buildTableRegistry`/`buildBaseQuery`).
+(`buildDca`, `buildForm`, `buildEffect`, `buildList`, `buildTableRegistry`/`buildBaseQuery`).
 
 **Notable subsystems** (beyond the flow above):
-- `src/List/` — `ListSpec` (immutable list DTO: type, dc, filters, canonical config, source; named "Spec" only
-  because `List` is reserved in PHP — conceptually it is the list, as `Filter` is the filter), `ListSpecBuilder`
+- `src/List/` — `ListCompound` (immutable list DTO: type, dc, filters, canonical config, source; a *compound*
+  because it is assembled from bound components — driver and filter compounds — ready to run), `ListCompoundBuilder`
   (build lifecycle: driver's `buildList()` hook → `ListDriverBuildListEvent` → config assembly → schema resolution),
   `BaseListOptions` (framework-owned base schema for tl_flare_list columns)
-- `src/Filter/` — `Filter` DTO (`ElementBinding` = element + type + element config `elm_*` + value class, optional
-  `ControlBinding` = control + type + control config `ctl_*`, `?ValueInterface $value`); each config is an immutable
-  `ComponentConfig` (`src/Config/`, `get()` throws `UndefinedConfigKeyError` for an undefined key), elements
+- `src/Filter/` — `FilterCompound` DTO (`ElementBinding` = element + type + element config `elm_*` + value class,
+  optional `ControlBinding` = control + type + control config `ctl_*`, `?ValueInterface $value`); each config is an
+  immutable `ComponentConfig` (`src/Config/`, `get()` throws `UndefinedConfigKeyError` for an undefined key), elements
   (`Element/`), predicates (`Predicate/`, the public SQL-fragment layer, formerly "filter types"),
-  resolvers (`FilterOptionsResolver`, `FilterTransformerResolver`). `Factory/FilterFactory::create()` is the single
-  construction path; it knows no model — a stored source reaches the components' transformers as `$configSource`.
-  A filter is applied in two stages: a value-free, role-typed scope — `ElementScope` for element hooks and
-  contracts, `ControlScope` for control hooks (list × filter × engine context; `$scope->get('key')` reads the
-  calling component's own config; `ControlScope::element(Contract::class)` / `tryElement()` return the element as a
-  capability port, `forElement()` hands element contracts their scope) — handed to
-  everything that happens before a value exists, and `FilterContext` (the element's product for one invocation,
-  collected through the public `FilterContextBuilderInterface` and built by `FilterContextFactory` from scope +
-  value, only inside `ListQueryDirector`). Hook parameter order: the subject first, the scope supplementary —
-  `buildContext($builder, $scope, $value)`, `buildForm($builder, $scope)`, `decode($data, $scope)`,
-  `hydrate($value, $scope)`.
+  resolvers (`FilterOptionsResolver`, `FilterTransformerResolver`). `Factory/FilterCompoundFactory::create()` is the
+  single construction path; it knows no model — a stored source reaches the components' transformers as `$configSource`.
+  A filter is applied in two stages: a value-free, role-typed context — `ElementContext` for element hooks and
+  contracts, `ControlContext` for control hooks (list × filter × intent; `$context->get('key')` reads the
+  calling component's own config; `ControlContext::element(Contract::class)` / `tryElement()` return the element as a
+  capability port, `forElement()` hands element contracts their context) — handed to
+  everything that happens before a value exists, and `FilterEffect` (the element's product for one invocation,
+  collected through the public `FilterEffectBuilderInterface` and built by `FilterEffectFactory` from context +
+  value, only inside `ListQueryDirector`). Hook parameter order: the subject first, the context supplementary —
+  `buildEffect($builder, $context, $value)`, `buildForm($builder, $context)`, `decode($data, $context)`,
+  `hydrate($value, $context)`.
   `FormHarnessFactory` builds a `FormHarness` (root form + mount↔filter map of `FilterMount`s) per list ×
-  form context; the harness owns the `decode()` loop
+  form intent; the harness owns the `decode()` loop
 - `src/Filter/Control/` — `FilterControl` implementations (peers of `src/Filter/Element/`) behind
   `FilterControlInterface` (`buildForm()`, `decode()`, `hydrate()`), registered with `#[AsFilterControl]`.
   Controls bind to a value *class* (the narrowed return type of `decode()`), never to an element type:
@@ -107,7 +118,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   the default value, through the shared `Query/Executor/FilterInvoker`, or a control that cannot build its form,
   through the shared `Form/Factory/FilterFormBuilderFactory`), ineffective; `Inspection/Reporter/FilterIssueReporter` shows
   them on the filter row (icon), the edit form and the list's filter overview (counts of published filters only). It inspects every saved row, builds
-  the list scope the way the runtime does, and catches `\Error` outside debug mode only (logged as critical)
+  the list the way the runtime does, and catches `\Error` outside debug mode only (logged as critical)
 - `src/Filter/ValueProvider/` — one `ValueProviderInterface` service per value class (`provide()` turns the
   stored `value` column into a value object; `buildDcaField()` renders the backend widget), registered via the
   `flare.value_provider` tag and `ValueProviderRegistry`
@@ -123,20 +134,21 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `$origin` as the exception's source)
 - `src/Filter/Value/` — immutable filter value objects (`BoolValue`, `ChoiceValue`, `KeywordsValue`,
   `DateRangeValue`; choices in `Value/Choice/`), the typed channel between a control's `decode()` and an
-  element's `buildContext()`. Each is `final readonly`, implements `ValueInterface` and expresses its identity
+  element's `buildEffect()`. Each is `final readonly`, implements `ValueInterface` and expresses its identity
   through `fingerprint()` (`ValueObjectContainmentTest` enforces this by reflection). Deliberately not services
   (excluded in `config/services.yaml`)
 - `src/Contao/` — the Contao-specific backend code. DTOs / domain classes sit directly in `Contao/` (`BackendModule`,
   `DcaContext`, `CollectedFilters`; also directly in `Inspection/` and `PtableInference/`), Symfony services in
   subfolders (`config/services.yaml` has its own `Contao` block; `DataContainer/Builder` is the one excluded
   subfolder): `DataContainer/` (table classes `ContentContainer`/`FilterContainer`/`ListContainer`,
-  `BackendElementScopeFactory`, the DCA `Builder/`), `Inspection/` (see the inspector above), `Hook/` (Contao hooks,
+  `BackendElementContextFactory`, the DCA `Builder/`), `Inspection/` (see the inspector above), `Hook/` (Contao hooks,
   named `*Hook`), `Callback/` (DCA callbacks per table), `PtableInference/` (parent-table inference) and `Factory/`.
-  All processing of `FilterModel` into `Filter` lives here: `Factory/FilterFactory::create(FilterModel)` (on top of
-  the model-free core `FilterFactory`, owning value providers and the stored-value failure semantics),
-  `Factory/FilterCollector` (a list's published filter rows) and `Factory/ListSpecBuilderFactory::create(ListModel)`.
-  Exception, until their own refactor: `ListSpec`, `ListSpecBuilder`, `ListSpecFactory` and `BaseListOptions` still
-  take a `ListModel`. Hooks and callbacks of optional integrations stay in `src/Integration/`
+  All processing of `FilterModel` into `FilterCompound` lives here: `Factory/FilterCompoundFactory::create(FilterModel)`
+  (on top of the model-free core `FilterCompoundFactory`, owning value providers and the stored-value failure
+  semantics), `Factory/FilterCollector` (a list's published filter rows) and
+  `Factory/ListCompoundBuilderFactory::create(ListModel)`. Exception, until their own refactor: `ListCompound`,
+  `ListCompoundBuilder`, `ListCompoundFactory` and `BaseListOptions` still take a `ListModel`. Hooks and callbacks of
+  optional integrations stay in `src/Integration/`
 - `src/Reader/` — reader/detail-page URL generation (`ReaderUrlGenerator`)
 - `src/Integration/` — optional integrations (Codefog Tags, Terminal42 ChangeLanguage), wired via `config/integrations/*.yaml`
 - `src/EventListener/NamedDispatch/` — re-dispatches base events under dynamic names (see Event system below)
@@ -144,7 +156,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 **Key entry points:**
 - `src/HeimrichHannotFlareBundle.php` — bundle entry, registers compiler passes
 - `src/DependencyInjection/HeimrichHannotFlareExtension.php` — DI setup
-- `src/Engine/Factory/EngineFactory.php` — creates Engine with appropriate Context
+- `src/Engine/Factory/EngineFactory.php` — creates Engine with appropriate Intent
 - `src/Controller/ContentElement/ListViewController.php` / `ReaderController.php` — frontend controllers
 
 **Extensibility via PHP 8 attributes** (compiler passes auto-register tagged services):
@@ -176,7 +188,7 @@ that component's registered type and the suffix is short (`dca`, `transformers`)
 left as they are until the query architecture is reworked. Elements and controls share
 `FilterComponentInterface`, the type the config resolvers use.
 The former per-element `FilterElementBuildingEvent`/`FilterElementBuiltEvent` (and their `.building`/`.built`
-aliases) are removed; use `ListDriverBuildListEvent` or a programmatic `Filter::$value` instead.
+aliases) are removed; use `ListDriverBuildListEvent` or a programmatic `FilterCompound::$value` instead.
 Prefer events over overriding services for customization.
 
 **Registry pattern** — Registries in `src/Registry/` map type names to implementations: `FilterElementRegistry`, `FilterControlRegistry`, `ValueProviderRegistry`, `ListDriverRegistry`, `FilterPredicateRegistry`, `ProjectorRegistry`, `EngineModRegistry`. `FilterControlRegistry` differs from the others: it stores

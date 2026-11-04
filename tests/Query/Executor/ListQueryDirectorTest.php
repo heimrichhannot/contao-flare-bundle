@@ -7,26 +7,26 @@ namespace HeimrichHannot\FlareBundle\Tests\Query\Executor;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
-use HeimrichHannot\FlareBundle\Engine\Context\AggregationContext;
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
-use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\AggregationIntent;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Query\Executor\FilterInvoker;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
@@ -34,7 +34,7 @@ use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\QueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -45,7 +45,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
  */
 final class ListQueryDirectorTest extends TestCase
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
 
     /** @var list<array{string, string}> */
     private array $logs = [];
@@ -55,7 +55,7 @@ final class ListQueryDirectorTest extends TestCase
         $spy = new DirectorSpyElement();
         $filter = $this->filter($spy, control: new DirectorStubControl(), value: new BoolValue(true));
 
-        $this->invoke([$filter], new ValidationContext(), filterValues: []);
+        $this->invoke([$filter], new ValidationIntent(), filterValues: []);
 
         self::assertSame(1, $spy->calls);
         self::assertNull($spy->received);
@@ -67,11 +67,11 @@ final class ListQueryDirectorTest extends TestCase
         $filter = $this->filter($spy, control: new DirectorStubControl(), value: new BoolValue(true));
         $submitted = new BoolValue(false);
 
-        $this->invoke([$filter], new AggregationContext(), filterValues: ['f' => $submitted]);
+        $this->invoke([$filter], new AggregationIntent(), filterValues: ['f' => $submitted]);
         self::assertSame($submitted, $spy->received);
 
         // An emptied submission clears the filter instead of falling back to the initial value.
-        $this->invoke([$filter], new AggregationContext(), filterValues: ['f' => null]);
+        $this->invoke([$filter], new AggregationIntent(), filterValues: ['f' => null]);
         self::assertNull($spy->received);
     }
 
@@ -81,7 +81,7 @@ final class ListQueryDirectorTest extends TestCase
         $fixed = new BoolValue(true);
         $filter = $this->filter($spy, value: $fixed);
 
-        $this->invoke([$filter], new ValidationContext(), filterValues: ['f' => new BoolValue(false)]);
+        $this->invoke([$filter], new ValidationIntent(), filterValues: ['f' => new BoolValue(false)]);
 
         self::assertSame($fixed, $spy->received);
     }
@@ -95,7 +95,7 @@ final class ListQueryDirectorTest extends TestCase
             $this->filter($next, alias: 'next', value: new BoolValue(true)),
         ];
 
-        $builders = $this->invoke($filters, new ValidationContext(), ['broken' => new BoolValue(true)]);
+        $builders = $this->invoke($filters, new ValidationIntent(), ['broken' => new BoolValue(true)]);
 
         self::assertSame([true, false], $element->calledWithValue, 'Retried once without the value.');
         self::assertCount(1, $builders, 'The config-bound predicate of the retry applies.');
@@ -112,7 +112,7 @@ final class ListQueryDirectorTest extends TestCase
         $this->expectException(FilterException::class);
         $this->expectExceptionMessage('broken element');
 
-        $this->invoke([$filter], new AggregationContext(), ['broken' => new BoolValue(true)]);
+        $this->invoke([$filter], new AggregationIntent(), ['broken' => new BoolValue(true)]);
     }
 
     public function testControlledFilterFailingWithANullValueFailsTheList(): void
@@ -121,7 +121,7 @@ final class ListQueryDirectorTest extends TestCase
 
         $this->expectException(FilterException::class);
 
-        $this->invoke([$filter], new AggregationContext());
+        $this->invoke([$filter], new AggregationIntent());
     }
 
     public function testUndefinedConfigKeyEscapesWithoutRetry(): void
@@ -131,7 +131,7 @@ final class ListQueryDirectorTest extends TestCase
 
         try
         {
-            $this->invoke([$filter], new ValidationContext(), ['f' => new BoolValue(true)]);
+            $this->invoke([$filter], new ValidationIntent(), ['f' => new BoolValue(true)]);
             self::fail('Expected an UndefinedConfigKeyError.');
         }
         catch (UndefinedConfigKeyError $e)
@@ -149,7 +149,7 @@ final class ListQueryDirectorTest extends TestCase
 
         $this->expectException(\TypeError::class);
 
-        $this->invoke([$filter], new AggregationContext(), ['f' => new BoolValue(true)]);
+        $this->invoke([$filter], new AggregationIntent(), ['f' => new BoolValue(true)]);
     }
 
     public function testOtherExceptionsBecomeFilterExceptions(): void
@@ -158,7 +158,7 @@ final class ListQueryDirectorTest extends TestCase
 
         try
         {
-            $this->invoke([$filter], new AggregationContext());
+            $this->invoke([$filter], new AggregationIntent());
             self::fail('A failing filter without a control must fail the list.');
         }
         catch (FilterException $e)
@@ -174,7 +174,7 @@ final class ListQueryDirectorTest extends TestCase
 
         try
         {
-            $this->invoke([$filter], new AggregationContext());
+            $this->invoke([$filter], new AggregationIntent());
             self::fail('A failing filter without a control must fail the list.');
         }
         catch (FilterException $e)
@@ -196,7 +196,7 @@ final class ListQueryDirectorTest extends TestCase
         {
             $this->createDirector()->createQueryBuilder(new ListQueryConfig(
                 list: $list,
-                context: new AggregationContext(),
+                intent: new AggregationIntent(),
                 filterValues: [],
             ));
             self::fail('A list with failures must not be queried.');
@@ -214,7 +214,7 @@ final class ListQueryDirectorTest extends TestCase
 
         $qb = $this->createDirector()->createQueryBuilder(new ListQueryConfig(
             list: $this->list([$filter]),
-            context: new AggregationContext(),
+            intent: new AggregationIntent(),
             filterValues: [],
         ));
 
@@ -222,16 +222,16 @@ final class ListQueryDirectorTest extends TestCase
     }
 
     /**
-     * @param list<Filter> $filters
+     * @param list<FilterCompound> $filters
      * @param array<string, ?ValueInterface> $filterValues
      *
      * @return FilterConditionsBuilder[]
      */
-    private function invoke(array $filters, ContextInterface $context, array $filterValues = []): array
+    private function invoke(array $filters, IntentInterface $intent, array $filterValues = []): array
     {
         return $this->createDirector()->invokeFilters(new ListQueryConfig(
             list: $this->list($filters),
-            context: $context,
+            intent: $intent,
             filterValues: $filterValues,
         ));
     }
@@ -242,8 +242,8 @@ final class ListQueryDirectorTest extends TestCase
         ?FilterControlInterface $control = null,
         ?ValueInterface         $value = null,
         ?string                 $source = null,
-    ): Filter {
-        return new Filter(
+    ): FilterCompound {
+        return new FilterCompound(
             element: new ElementBinding($element, 'test_element', new ComponentConfig([]), BoolValue::class),
             alias: $alias,
             control: $control !== null ? new ControlBinding($control, $control::class, new ComponentConfig([])) : null,
@@ -253,9 +253,9 @@ final class ListQueryDirectorTest extends TestCase
     }
 
     /**
-     * @param list<Filter> $filters
+     * @param list<FilterCompound> $filters
      */
-    private function list(array $filters): ListSpec
+    private function list(array $filters): ListCompound
     {
         $driver = new class implements ListDriverInterface {
             public function resolveDcTable(string $type, array $config, array $attributes): string
@@ -269,7 +269,7 @@ final class ListQueryDirectorTest extends TestCase
             $keyed[$filter->alias] = $filter;
         }
 
-        return new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test', filters: $keyed);
+        return new ListCompound(driver: $driver, type: 'test_list', dc: 'tl_test', filters: $keyed);
     }
 
     private function createDirector(): ListQueryDirector
@@ -292,7 +292,7 @@ final class ListQueryDirectorTest extends TestCase
         return new ListQueryDirector(
             eventDispatcher: $dispatcher,
             filterInvoker: new FilterInvoker(
-                $this->createFilterContextFactory(),
+                $this->createFilterEffectFactory(),
                 new FilterQueryBuilderFactory($connection),
             ),
             listExecutionContextFactory: new ListExecutionContextFactory($dispatcher),
@@ -310,10 +310,10 @@ class DirectorSpyElement implements FilterElementInterface
     public ?ValueInterface $received = null;
     public int $calls = 0;
 
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementContext               $context,
+        ?ValueInterface              $value,
     ): void {
         $this->received = $value;
         ++$this->calls;
@@ -322,10 +322,10 @@ class DirectorSpyElement implements FilterElementInterface
 
 class DirectorFailingElement implements FilterElementInterface
 {
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementContext               $context,
+        ?ValueInterface              $value,
     ): void {
         throw new FilterException('broken element');
     }
@@ -339,10 +339,10 @@ class DirectorValueRejectingElement implements FilterElementInterface
     /** @var list<bool> Whether each call received a value. */
     public array $calledWithValue = [];
 
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementContext               $context,
+        ?ValueInterface              $value,
     ): void {
         $this->calledWithValue[] = $value !== null;
 
@@ -358,25 +358,25 @@ class DirectorTypoElement implements FilterElementInterface
 {
     public int $calls = 0;
 
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementContext               $context,
+        ?ValueInterface              $value,
     ): void {
         ++$this->calls;
 
         if ($value !== null) {
-            $scope->get('typo');
+            $context->get('typo');
         }
     }
 }
 
 class DirectorErroringElement implements FilterElementInterface
 {
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementContext               $context,
+        ?ValueInterface              $value,
     ): void {
         throw new \TypeError('programming error');
     }
@@ -384,10 +384,10 @@ class DirectorErroringElement implements FilterElementInterface
 
 class DirectorThrowingElement implements FilterElementInterface
 {
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementContext               $context,
+        ?ValueInterface              $value,
     ): void {
         throw new \RuntimeException('unexpected');
     }
@@ -395,10 +395,10 @@ class DirectorThrowingElement implements FilterElementInterface
 
 class DirectorAbortingElement implements FilterElementInterface
 {
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementContext               $context,
+        ?ValueInterface              $value,
     ): void {
         $builder->abort();
     }
@@ -406,14 +406,14 @@ class DirectorAbortingElement implements FilterElementInterface
 
 class DirectorStubControl implements FilterControlInterface
 {
-    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void {}
+    public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void {}
 
-    public function decode(mixed $data, ControlScope $scope): ?BoolValue
+    public function decode(mixed $data, ControlContext $context): ?BoolValue
     {
         return BoolValue::tryFrom($data);
     }
 
-    public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
+    public function hydrate(?ValueInterface $value, ControlContext $context): mixed
     {
         return $value instanceof BoolValue ? $value->state : null;
     }

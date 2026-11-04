@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Contract\FilterElement;
 
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 
 /**
  * Optional port for elements that restrict a date range control: the bounds for the widget's
@@ -14,5 +14,5 @@ use HeimrichHannot\FlareBundle\Filter\ElementScope;
  */
 interface DateBoundsContract
 {
-    public function getDateBounds(ElementScope $scope): DateBounds;
+    public function getDateBounds(ElementContext $context): DateBounds;
 }

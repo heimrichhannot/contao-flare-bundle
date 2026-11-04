@@ -12,8 +12,8 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\FieldValueChoicePredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
@@ -48,16 +48,16 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement implements Cho
     /**
      * @throws FilterException
      */
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementContext               $context,
+        ?ValueInterface              $value,
     ): void {
         if (!$value = $this->expectValue($value, ChoiceValue::class)) {
             return;
         }
 
-        $field = $scope->get('field');
+        $field = $context->get('field');
 
         // The predicate compares LOWER(TRIM(field)), so the values are normalized alike;
         // a blank value would match every empty row.
@@ -91,10 +91,10 @@ class FieldValueChoiceFilterElement extends AbstractFilterElement implements Cho
      *
      * @throws FilterException
      */
-    public function buildChoices(ChoicesBuilder $choices, ElementScope $scope): void
+    public function buildChoices(ChoicesBuilder $choices, ElementContext $context): void
     {
-        $table = $scope->list->dc;
-        $field = $scope->get('field');
+        $table = $context->list->dc;
+        $field = $context->get('field');
 
         if (!\is_null($foreignValues = $this->getForeignValues($table, $field)))
         {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Contao\Inspection;
 
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 
 /**
@@ -18,7 +18,7 @@ final class InspectedRows
     /** @var array<int, FilterModel> By tl_flare_filter id, in sorting order. */
     private array $models = [];
 
-    /** @var array<int, Filter> The built filter of each row that could be built. */
+    /** @var array<int, FilterCompound> The built filter of each row that could be built. */
     private array $filters = [];
 
     /** @var array<int, array<string, FilterIssue>> By row id and kind value; the first issue of a kind wins. */
@@ -35,13 +35,13 @@ final class InspectedRows
         $this->models[(int) $model->id] = $model;
     }
 
-    public function setFilter(int $id, Filter $filter): void
+    public function setFilter(int $id, FilterCompound $filter): void
     {
         $this->filters[$id] = $filter;
     }
 
     /**
-     * @return array<int, Filter> The built filters, by row id, in sorting order.
+     * @return array<int, FilterCompound> The built filters, by row id, in sorting order.
      */
     public function getFilters(): array
     {

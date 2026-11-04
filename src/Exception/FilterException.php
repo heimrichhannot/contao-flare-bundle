@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Exception;
 
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 
 /**
  * A filter cannot work with its config, its data or its value.
  *
  * This is the exception filter components throw, the bundled ones and userland ones alike: elements (in
- * buildContext() and the capability ports), controls (in buildForm(), decode() and hydrate()) and value providers.
+ * buildEffect() and the capability ports), controls (in buildForm(), decode() and hydrate()) and value providers.
  * The framework handles it per hook, from dropping a value to failing the list, and adds the filter's source; see
  * the hook's documentation. Any other exception from a hook is handled the same way but treated as unexpected:
  * logged as an error, and rethrown in debug mode. {@see FlareException} is reserved for the framework itself.
@@ -26,7 +26,7 @@ class FilterException extends FlareException
      *
      * @param string $method The failing hook, e.g. `SomeControl::buildForm`.
      */
-    public static function wrap(\Exception $e, Filter $filter, string $method): self
+    public static function wrap(\Exception $e, FilterCompound $filter, string $method): self
     {
         $source = $filter->source ?: 'filter inlined';
 

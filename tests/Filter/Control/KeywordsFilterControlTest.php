@@ -11,25 +11,25 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 
 final class KeywordsFilterControlTest extends TestCase
 {
-    use BuildsControlScopesTrait;
+    use BuildsControlContextsTrait;
 
     public function testDecode(): void
     {
         $ctl = new KeywordsFilterControl();
-        $scope = $this->scope($ctl);
+        $context = $this->context($ctl);
 
-        self::assertSame('foo bar', $ctl->decode("  foo \n bar ", $scope)->keywords);
-        self::assertNull($ctl->decode('   ', $scope));
-        self::assertNull($ctl->decode(null, $scope));
+        self::assertSame('foo bar', $ctl->decode("  foo \n bar ", $context)->keywords);
+        self::assertNull($ctl->decode('   ', $context));
+        self::assertNull($ctl->decode(null, $context));
     }
 
     public function testHydrate(): void
     {
         $ctl = new KeywordsFilterControl();
-        $scope = $this->scope($ctl);
+        $context = $this->context($ctl);
 
-        self::assertSame('foo', $ctl->hydrate(new KeywordsValue('foo'), $scope));
-        self::assertNull($ctl->hydrate(null, $scope));
+        self::assertSame('foo', $ctl->hydrate(new KeywordsValue('foo'), $context));
+        self::assertNull($ctl->hydrate(null, $context));
     }
 
     public function testBuildFormWithPlaceholder(): void
@@ -37,7 +37,7 @@ final class KeywordsFilterControlTest extends TestCase
         $ctl = new KeywordsFilterControl();
         $builder = $this->newFormBuilder();
 
-        $ctl->buildForm($builder, $this->scope($ctl, ['placeholder' => 'Search']));
+        $ctl->buildForm($builder, $this->context($ctl, ['placeholder' => 'Search']));
 
         self::assertSame(TextType::class, $builder->getSingle()['type']);
         self::assertSame(['placeholder' => 'Search'], $builder->getSingle()['options']['attr']);
@@ -49,7 +49,7 @@ final class KeywordsFilterControlTest extends TestCase
         $ctl = new KeywordsFilterControl();
         $builder = $this->newFormBuilder();
 
-        $ctl->buildForm($builder, $this->scope($ctl));
+        $ctl->buildForm($builder, $this->context($ctl));
 
         self::assertArrayNotHasKey('attr', $builder->getSingle()['options']);
     }

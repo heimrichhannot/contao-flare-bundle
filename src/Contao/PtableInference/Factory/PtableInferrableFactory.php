@@ -10,7 +10,7 @@ class PtableInferrableFactory
 {
     /**
      * Creates an inferrable from a list's canonical config
-     * ({@see \HeimrichHannot\FlareBundle\List\ListSpec::$config}).
+     * ({@see \HeimrichHannot\FlareBundle\List\ListCompound::$config}).
      *
      * @param array<string, mixed> $config
      */

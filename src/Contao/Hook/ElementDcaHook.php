@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Contao\Hook;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use HeimrichHannot\FlareBundle\Contract\DcaContract;
-use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementScopeFactory;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementContextFactory;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Contao\Inspection\Reporter\FilterIssueReporter;
@@ -15,9 +15,9 @@ use HeimrichHannot\FlareBundle\Event\FilterControlBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\FilterElementBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Event\ListDriverBuildDcaEvent;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Contao\Factory\ListSpecBuilderFactory;
-use HeimrichHannot\FlareBundle\List\ListSpec;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListCompoundBuilderFactory;
+use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
@@ -42,17 +42,17 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 final readonly class ElementDcaHook
 {
     public function __construct(
-        private BackendElementScopeFactory  $elementScopeFactory,
-        private EventDispatcherInterface    $eventDispatcher,
-        private FilterControlRegistry       $filterControlRegistry,
-        private FilterElementRegistry       $filterElementRegistry,
-        private FilterIssueReporter         $filterIssueReporter,
-        private ContaoFramework             $framework,
-        private ListExecutionContextFactory $listExecutionContextFactory,
-        private ListSpecBuilderFactory      $listFactory,
-        private ListDriverRegistry          $listDriverRegistry,
-        private RequestStack                $requestStack,
-        private ValueProviderRegistry       $valueProviderRegistry,
+        private BackendElementContextFactory $elementContextFactory,
+        private EventDispatcherInterface     $eventDispatcher,
+        private FilterControlRegistry        $filterControlRegistry,
+        private FilterElementRegistry        $filterElementRegistry,
+        private FilterIssueReporter          $filterIssueReporter,
+        private ContaoFramework              $framework,
+        private ListExecutionContextFactory  $listExecutionContextFactory,
+        private ListCompoundBuilderFactory   $listFactory,
+        private ListDriverRegistry           $listDriverRegistry,
+        private RequestStack                 $requestStack,
+        private ValueProviderRegistry        $valueProviderRegistry,
     ) {}
 
     public function __invoke(string $table): void
@@ -123,11 +123,11 @@ final readonly class ElementDcaHook
         }
 
         // The DCA is loaded on every backend request to the table, list views included, but only option
-        // callbacks need the list spec. Building it runs the whole list build (all filters, schema
+        // callbacks need the list. Building it runs the whole list build (all filters, schema
         // resolution) and fails on broken configurations, so it is built on first use and at most once.
-        $spec = null;
-        $getSpec = function () use (&$spec, $listModel): ListSpec {
-            return $spec ??= $this->listFactory->create($listModel)->build();
+        $list = null;
+        $getList = function () use (&$list, $listModel): ListCompound {
+            return $list ??= $this->listFactory->create($listModel)->build();
         };
 
         $context = new DcaContext(
@@ -135,10 +135,10 @@ final readonly class ElementDcaHook
             type: $type,
             listModel: $listModel,
             filterModel: $filterModel,
-            executionContextFactory: fn (): ?ListExecutionContext => $this->createExecutionContext($getSpec),
+            executionContextFactory: fn (): ?ListExecutionContext => $this->createExecutionContext($getList),
             element: $service instanceof FilterElementInterface ? $service : null,
-            elementScopeFactory: fn (): ?ElementScope => $filterModel
-                ? $this->elementScopeFactory->create($getSpec, $filterModel)
+            elementContextFactory: fn (): ?ElementContext => $filterModel
+                ? $this->elementContextFactory->create($getList, $filterModel)
                 : null,
         );
 
@@ -202,11 +202,11 @@ final readonly class ElementDcaHook
     /**
      * @mago-expect lint:no-empty-catch-clause Backend configuration must not fail on broken list configs.
      */
-    private function createExecutionContext(\Closure $getSpec): ?ListExecutionContext
+    private function createExecutionContext(\Closure $getList): ?ListExecutionContext
     {
         try
         {
-            return $this->listExecutionContextFactory->create($getSpec());
+            return $this->listExecutionContextFactory->create($getList());
         }
         catch (\Exception) {}
 

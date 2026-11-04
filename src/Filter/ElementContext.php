@@ -9,12 +9,12 @@ use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 
 /**
- * The value-free situation a filter element hook runs in: the list, the filter, and the engine context.
+ * The value-free situation a filter element hook runs in: the list, the filter, and the intent.
  * {@see get()} reads the element's own config.
  *
  * @api
  */
-final readonly class ElementScope
+final readonly class ElementContext
 {
     public function __construct(
         public ListSpec        $list,

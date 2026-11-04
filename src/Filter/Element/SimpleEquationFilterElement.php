@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\SimpleEquationPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -42,13 +42,13 @@ class SimpleEquationFilterElement extends AbstractFilterElement
 
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         $builder->addPredicate(SimpleEquationPredicate::class, [
-            'operand_left' => $scope->get('left'),
-            'operator' => $scope->get('operator'),
-            'operand_right' => $scope->get('right'),
+            'operand_left' => $context->get('left'),
+            'operator' => $context->get('operator'),
+            'operand_right' => $context->get('right'),
         ]);
     }
 

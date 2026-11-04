@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\AbstractFilterElement;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\IntegerIdChoicePredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
@@ -44,7 +44,7 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement implements Ch
      */
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         if (!$value = $this->expectValue($value, ChoiceValue::class)) {
@@ -73,11 +73,11 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement implements Ch
     /**
      * @throws FilterException
      */
-    public function buildChoices(ChoicesBuilder $choices, ElementScope $scope): void
+    public function buildChoices(ChoicesBuilder $choices, ElementContext $context): void
     {
         try
         {
-            $executionContext = $this->listExecutionContextFactory->create($scope->list);
+            $executionContext = $this->listExecutionContextFactory->create($context->list);
         }
         catch (FlareException $e)
         {
@@ -86,9 +86,9 @@ class CodefogTagsChoiceFilterElement extends AbstractFilterElement implements Ch
 
         $options = $this->getOptions(
             executionContext: $executionContext,
-            targetAlias: $scope->filter->targetAlias,
-            listInfo: \sprintf('%s (%s)', $scope->list->driver::class, $scope->list->source ?? 'N/A'),
-            filterInfo: \sprintf('%s (%s)', self::TYPE, $scope->filter->source ?? 'inlined'),
+            targetAlias: $context->filter->targetAlias,
+            listInfo: \sprintf('%s (%s)', $context->list->driver::class, $context->list->source ?? 'N/A'),
+            filterInfo: \sprintf('%s (%s)', self::TYPE, $context->filter->source ?? 'inlined'),
         );
 
         if (\is_null($options)) {

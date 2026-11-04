@@ -37,7 +37,7 @@ final class RequiredElementConfigTest extends TestCase
     {
         $this->expectException(FilterException::class);
 
-        $this->buildElementScope($this->createElement($class), $config);
+        $this->buildElementContext($this->createElement($class), $config);
     }
 
     public static function missingRequiredConfig(): iterable

@@ -12,7 +12,7 @@ use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\InferenceException;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BelongsToRelationPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -57,13 +57,13 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
      */
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
-        $fieldPid = $scope->get('field_pid');
+        $fieldPid = $context->get('field_pid');
 
-        $inferrable = PtableInferrableFactory::createFromConfig($scope->list->config);
-        $inferrer = new PtableInferrer($inferrable, $scope->list->dc);
+        $inferrable = PtableInferrableFactory::createFromConfig($context->list->config);
+        $inferrer = new PtableInferrer($inferrable, $context->list->dc);
 
         try
         {
@@ -81,13 +81,13 @@ class BelongsToRelationFilterElement extends AbstractFilterElement
             $builder->addPredicate(BelongsToRelationPredicate::class, [
                 'field_pid' => $fieldPid,
                 'field_dynamic_ptable' => $fieldDynamicPtable,
-                'parent_groups' => $this->getDynamicParentGroups($scope->get('group_whitelist_parents')),
+                'parent_groups' => $this->getDynamicParentGroups($context->get('group_whitelist_parents')),
             ]);
 
             return;
         }
 
-        if (!$ptable || !$whitelistParents = $scope->get('whitelist_parents')) {
+        if (!$ptable || !$whitelistParents = $context->get('whitelist_parents')) {
             throw new FilterException('No whitelisted parents.');
         }
 

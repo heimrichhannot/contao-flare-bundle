@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Event\ModifyListQueryStructEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\QueryBuilderFactory;
@@ -104,11 +104,11 @@ readonly class ListQueryDirector
         foreach ($list->filters as $filter)
         {
             $value = $filter->control !== null ? ($values[$filter->alias] ?? null) : $filter->value;
-            $scope = new ElementScope($list, $filter, $options->intent);
+            $context = new ElementContext($list, $filter, $options->intent);
 
             try
             {
-                $builders = $this->filterInvoker->invoke($scope, $value);
+                $builders = $this->filterInvoker->invoke($context, $value);
             }
             catch (FilterException $e)
             {
@@ -117,7 +117,7 @@ readonly class ListQueryDirector
                 }
 
                 // Throws if the element's config is broken regardless of the value: fail closed.
-                $builders = $this->filterInvoker->invoke($scope, null);
+                $builders = $this->filterInvoker->invoke($context, null);
 
                 $this->logger->warning(\sprintf(
                     '[FLARE] Filter "%s" (%s) failed with its value, which is dropped: %s',

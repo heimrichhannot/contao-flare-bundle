@@ -15,8 +15,8 @@ use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Form\Factory\FilterFormBuilderFactory;
@@ -95,10 +95,10 @@ final class FilterInspector implements ResetInterface
 
     /**
      * @param iterable<FilterModel> $models Every saved filter row of the list, in sorting order.
-     * @param \Closure(array<string, Filter>): ListSpec $buildScope Builds the list with the given row filters (keyed
+     * @param \Closure(array<string, Filter>): ListSpec $buildList Builds the list with the given row filters (keyed
      *   by alias) added, the way the runtime does.
      */
-    public function inspectModels(iterable $models, \Closure $buildScope): ListInspection
+    public function inspectModels(iterable $models, \Closure $buildList): ListInspection
     {
         $rows = new InspectedRows();
 
@@ -112,7 +112,7 @@ final class FilterInspector implements ResetInterface
         }
 
         $this->markDuplicates($rows);
-        $this->checkFilters($this->buildScope($buildScope, $rows), $rows);
+        $this->checkFilters($this->buildList($buildList, $rows), $rows);
 
         return $rows->toInspection();
     }
@@ -183,9 +183,9 @@ final class FilterInspector implements ResetInterface
      * same filters. Null if the list cannot be built: an \Exception there is the list's problem, not a filter's (the
      * list driver reports its configuration); an \Error counts as a programming error without a row.
      *
-     * @param \Closure(array<string, Filter>): ListSpec $buildScope
+     * @param \Closure(array<string, Filter>): ListSpec $buildList
      */
-    private function buildScope(\Closure $buildScope, InspectedRows $rows): ?ListSpec
+    private function buildList(\Closure $buildList, InspectedRows $rows): ?ListSpec
     {
         $filters = [];
 
@@ -198,7 +198,7 @@ final class FilterInspector implements ResetInterface
 
         try
         {
-            return $buildScope($filters);
+            return $buildList($filters);
         }
         catch (\Exception)
         {
@@ -289,7 +289,7 @@ final class FilterInspector implements ResetInterface
 
         try
         {
-            $this->filterInvoker->invoke(new ElementScope($spec, $filter, new ConfigurationIntent()), $value);
+            $this->filterInvoker->invoke(new ElementContext($spec, $filter, new ConfigurationIntent()), $value);
         }
         catch (AbortFilteringException)
         {
@@ -318,7 +318,7 @@ final class FilterInspector implements ResetInterface
     {
         try
         {
-            $this->filterFormBuilderFactory->create(new ControlScope($spec, $filter, new ConfigurationIntent()));
+            $this->filterFormBuilderFactory->create(new ControlContext($spec, $filter, new ConfigurationIntent()));
         }
         catch (FilterException $e)
         {

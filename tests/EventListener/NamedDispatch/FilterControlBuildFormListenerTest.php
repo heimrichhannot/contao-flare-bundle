@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterControlBuildFormListener;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilder;
@@ -73,12 +73,12 @@ final class FilterControlBuildFormListenerTest extends TestCase
             control: new ControlBinding(new KeywordsFilterControl(), $controlType, new ComponentConfig()),
         );
 
-        $scope = new ControlScope(list: $list, filter: $filter, intent: $intent);
+        $context = new ControlContext(list: $list, filter: $filter, intent: $intent);
 
         $builder = new FilterFormBuilder('suche', null, new EventDispatcher(), Forms::createFormFactory());
 
         $listener = new FilterControlBuildFormListener($dispatcher);
-        $listener->onFilterControlBuildForm(new FilterControlBuildFormEvent($builder, $scope));
+        $listener->onFilterControlBuildForm(new FilterControlBuildFormEvent($builder, $context));
 
         return $names;
     }

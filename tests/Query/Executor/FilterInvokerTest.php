@@ -9,7 +9,7 @@ use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
@@ -25,10 +25,12 @@ final class FilterInvokerTest extends TestCase
 
     public function testBuildsOneConditionsBuilderPerPredicateCall(): void
     {
-        $builders = $this->invoker()->invoke($this->scope(static function (FilterEffectBuilderInterface $builder): void {
+        $context = $this->context(static function (FilterEffectBuilderInterface $builder): void {
             $builder->addPredicate(BooleanPredicate::class, ['field' => 'published', 'value' => true]);
             $builder->addPredicate(BooleanPredicate::class, ['field' => 'featured', 'value' => true]);
-        }), null);
+        });
+
+        $builders = $this->invoker()->invoke($context, null);
 
         self::assertCount(2, $builders);
     }
@@ -37,7 +39,7 @@ final class FilterInvokerTest extends TestCase
     {
         try
         {
-            $this->invoker()->invoke($this->scope(static function (): void {
+            $this->invoker()->invoke($this->context(static function (): void {
                 throw new FilterException('boom');
             }), null);
             self::fail('The failure must surface.');
@@ -54,7 +56,7 @@ final class FilterInvokerTest extends TestCase
     {
         try
         {
-            $this->invoker()->invoke($this->scope(static function (): void {
+            $this->invoker()->invoke($this->context(static function (): void {
                 throw new \RuntimeException('raw');
             }), null);
             self::fail('The failure must surface.');
@@ -71,7 +73,7 @@ final class FilterInvokerTest extends TestCase
     {
         $this->expectException(AbortFilteringException::class);
 
-        $this->invoker()->invoke($this->scope(static function (FilterEffectBuilderInterface $builder): void {
+        $this->invoker()->invoke($this->context(static function (FilterEffectBuilderInterface $builder): void {
             $builder->abort();
         }), null);
     }
@@ -88,26 +90,26 @@ final class FilterInvokerTest extends TestCase
     /**
      * @param \Closure(FilterEffectBuilderInterface): void $buildEffect
      */
-    private function scope(\Closure $buildEffect): ElementScope
+    private function context(\Closure $buildEffect): ElementContext
     {
         $element = new class ($buildEffect) implements FilterElementInterface {
             public function __construct(private readonly \Closure $buildEffect) {}
 
             public function buildEffect(
                 FilterEffectBuilderInterface $builder,
-                ElementScope                 $scope,
+                ElementContext               $context,
                 ?ValueInterface              $value,
             ): void {
                 ($this->buildEffect)($builder);
             }
         };
 
-        $scope = $this->buildElementScope($element);
+        $context = $this->buildElementContext($element);
 
-        return new ElementScope(
-            list: $scope->list,
-            filter: new Filter(element: $scope->filter->element, alias: 'test', source: 'tl_flare_filter.9'),
-            intent: $scope->intent,
+        return new ElementContext(
+            list: $context->list,
+            filter: new Filter(element: $context->filter->element, alias: 'test', source: 'tl_flare_filter.9'),
+            intent: $context->intent,
         );
     }
 }

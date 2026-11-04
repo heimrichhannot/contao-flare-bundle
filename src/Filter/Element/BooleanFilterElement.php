@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
@@ -39,7 +39,7 @@ class BooleanFilterElement extends AbstractFilterElement
      */
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         if (!$value = $this->expectValue($value, BoolValue::class)) {
@@ -47,7 +47,7 @@ class BooleanFilterElement extends AbstractFilterElement
         }
 
         $builder->addPredicate(BooleanPredicate::class, [
-            'field' => $scope->get('field'),
+            'field' => $context->get('field'),
             'value' => $value->state,
         ]);
     }

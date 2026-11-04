@@ -28,8 +28,9 @@ ContentElement Controller
 
 Filter execution inside the projector: the `FormHarness` decodes submitted form data per filter control into value
 objects; `ListQueryDirector` (`src/Query/Executor/`) picks each filter's value (with a control: the form's value;
-without: the fixed `Filter::$value`), creates the `FilterEffect` via `FilterEffectFactory::create(ElementScope, ?value)`
-(the element's `buildEffect($builder, $scope, $value)` adds predicates) and runs each predicate into a `FilterConditionsBuilder`. A
+without: the fixed `Filter::$value`), creates the `FilterEffect` via
+`FilterEffectFactory::create(ElementContext, ?value)` (the element's `buildEffect($builder, $context, $value)` adds
+predicates) and runs each predicate into a `FilterConditionsBuilder`. A
 filter whose element cannot be built (with or without a control) — required element config is required by the
 element's schema —, a stored control that cannot be resolved or whose config is broken, a control that cannot build
 its form (`Form/Factory/FilterFormBuilderFactory`: a `buildForm()` failure, a `FlareException` from a `FilterControlBuildFormEvent`
@@ -80,15 +81,15 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   (`Element/`), predicates (`Predicate/`, the public SQL-fragment layer, formerly "filter types"),
   resolvers (`FilterOptionsResolver`, `FilterTransformerResolver`). `Factory/FilterFactory::create()` is the single
   construction path; it knows no model — a stored source reaches the components' transformers as `$configSource`.
-  A filter is applied in two stages: a value-free, role-typed scope — `ElementScope` for element hooks and
-  contracts, `ControlScope` for control hooks (list × filter × intent; `$scope->get('key')` reads the
-  calling component's own config; `ControlScope::element(Contract::class)` / `tryElement()` return the element as a
-  capability port, `forElement()` hands element contracts their scope) — handed to
+  A filter is applied in two stages: a value-free, role-typed context — `ElementContext` for element hooks and
+  contracts, `ControlContext` for control hooks (list × filter × intent; `$context->get('key')` reads the
+  calling component's own config; `ControlContext::element(Contract::class)` / `tryElement()` return the element as a
+  capability port, `forElement()` hands element contracts their context) — handed to
   everything that happens before a value exists, and `FilterEffect` (the element's product for one invocation,
-  collected through the public `FilterEffectBuilderInterface` and built by `FilterEffectFactory` from scope +
-  value, only inside `ListQueryDirector`). Hook parameter order: the subject first, the scope supplementary —
-  `buildEffect($builder, $scope, $value)`, `buildForm($builder, $scope)`, `decode($data, $scope)`,
-  `hydrate($value, $scope)`.
+  collected through the public `FilterEffectBuilderInterface` and built by `FilterEffectFactory` from context +
+  value, only inside `ListQueryDirector`). Hook parameter order: the subject first, the context supplementary —
+  `buildEffect($builder, $context, $value)`, `buildForm($builder, $context)`, `decode($data, $context)`,
+  `hydrate($value, $context)`.
   `FormHarnessFactory` builds a `FormHarness` (root form + mount↔filter map of `FilterMount`s) per list ×
   form intent; the harness owns the `decode()` loop
 - `src/Filter/Control/` — `FilterControl` implementations (peers of `src/Filter/Element/`) behind
@@ -107,7 +108,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   the default value, through the shared `Query/Executor/FilterInvoker`, or a control that cannot build its form,
   through the shared `Form/Factory/FilterFormBuilderFactory`), ineffective; `Inspection/Reporter/FilterIssueReporter` shows
   them on the filter row (icon), the edit form and the list's filter overview (counts of published filters only). It inspects every saved row, builds
-  the list scope the way the runtime does, and catches `\Error` outside debug mode only (logged as critical)
+  the list the way the runtime does, and catches `\Error` outside debug mode only (logged as critical)
 - `src/Filter/ValueProvider/` — one `ValueProviderInterface` service per value class (`provide()` turns the
   stored `value` column into a value object; `buildDcaField()` renders the backend widget), registered via the
   `flare.value_provider` tag and `ValueProviderRegistry`
@@ -130,7 +131,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `DcaContext`, `CollectedFilters`; also directly in `Inspection/` and `PtableInference/`), Symfony services in
   subfolders (`config/services.yaml` has its own `Contao` block; `DataContainer/Builder` is the one excluded
   subfolder): `DataContainer/` (table classes `ContentContainer`/`FilterContainer`/`ListContainer`,
-  `BackendElementScopeFactory`, the DCA `Builder/`), `Inspection/` (see the inspector above), `Hook/` (Contao hooks,
+  `BackendElementContextFactory`, the DCA `Builder/`), `Inspection/` (see the inspector above), `Hook/` (Contao hooks,
   named `*Hook`), `Callback/` (DCA callbacks per table), `PtableInference/` (parent-table inference) and `Factory/`.
   All processing of `FilterModel` into `Filter` lives here: `Factory/FilterFactory::create(FilterModel)` (on top of
   the model-free core `FilterFactory`, owning value providers and the stored-value failure semantics),

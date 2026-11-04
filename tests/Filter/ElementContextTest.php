@@ -10,18 +10,18 @@ use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Tests\List\StubFilterElement;
 use PHPUnit\Framework\TestCase;
 
-final class ElementScopeTest extends TestCase
+final class ElementContextTest extends TestCase
 {
-    private function scope(): ElementScope
+    private function context(): ElementContext
     {
-        return new ElementScope(
+        return new ElementContext(
             list: new ListSpec(driver: $this->createStub(ListDriverInterface::class), type: 'test_list', dc: 'tl_test'),
             filter: new Filter(
                 element: new ElementBinding(new StubFilterElement(), 'test_element', new ComponentConfig([
@@ -39,20 +39,20 @@ final class ElementScopeTest extends TestCase
 
     public function testGetReadsTheElementConfig(): void
     {
-        self::assertSame('element', $this->scope()->get('label'));
-        self::assertSame('title', $this->scope()->get('field'));
+        self::assertSame('element', $this->context()->get('label'));
+        self::assertSame('title', $this->context()->get('field'));
     }
 
     public function testGetThrowsForUndefinedKey(): void
     {
         $this->expectException(UndefinedConfigKeyError::class);
 
-        $this->scope()->get('placeholder');
+        $this->context()->get('placeholder');
     }
 
     public function testHasMirrorsTheElementConfig(): void
     {
-        self::assertTrue($this->scope()->has('field'));
-        self::assertFalse($this->scope()->has('placeholder'));
+        self::assertTrue($this->context()->has('field'));
+        self::assertFalse($this->context()->has('placeholder'));
     }
 }

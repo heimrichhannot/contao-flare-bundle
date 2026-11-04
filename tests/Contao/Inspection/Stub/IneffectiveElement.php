@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub;
 
 use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
@@ -29,7 +29,7 @@ final class IneffectiveElement implements FilterElementInterface, IneffectiveFil
 
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {}
 }

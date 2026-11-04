@@ -10,10 +10,10 @@ use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
@@ -25,16 +25,16 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\Forms;
 
-trait BuildsControlScopesTrait
+trait BuildsControlContextsTrait
 {
     /**
      * @param array<string, mixed> $controlConfig Overrides over the control's option defaults.
      */
-    private function scope(
+    private function context(
         AbstractFilterControl   $control,
         array                   $controlConfig = [],
         ?FilterElementInterface $element = null,
-    ): ControlScope {
+    ): ControlContext {
         $resolver = new FilterOptionsResolver(new SchemaResolver());
 
         $driver = new class implements ListDriverInterface {
@@ -47,12 +47,12 @@ trait BuildsControlScopesTrait
         $element ??= new class implements FilterElementInterface {
             public function buildEffect(
                 FilterEffectBuilderInterface $builder,
-                ElementScope                 $scope,
+                ElementContext               $context,
                 ?ValueInterface              $value,
             ): void {}
         };
 
-        return new ControlScope(
+        return new ControlContext(
             list: new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test'),
             filter: new Filter(
                 element: new ElementBinding($element, 'test_element', $resolver->resolve($element, []), null),

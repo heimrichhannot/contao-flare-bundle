@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\PublishedPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -46,14 +46,14 @@ class PublishedFilterElement extends AbstractFilterElement
 
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         $builder->addPredicate(PublishedPredicate::class, [
-            'published_field' => $scope->get('published_field'),
-            'start_field' => $scope->get('start_field'),
-            'stop_field' => $scope->get('stop_field'),
-            'invert_published' => $scope->get('invert'),
+            'published_field' => $context->get('published_field'),
+            'start_field' => $context->get('start_field'),
+            'stop_field' => $context->get('stop_field'),
+            'invert_published' => $context->get('invert'),
             'now' => \time(),
         ]);
     }

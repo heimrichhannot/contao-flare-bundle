@@ -7,12 +7,12 @@ namespace HeimrichHannot\FlareBundle\Filter\Factory;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\FilterEffect;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Util\Str;
 
 /**
- * Builds the {@see FilterEffect} of one invocation: applies the element to the scope and the value.
+ * Builds the {@see FilterEffect} of one invocation: applies the element to the context and the value.
  */
 final readonly class FilterEffectFactory
 {
@@ -24,19 +24,19 @@ final readonly class FilterEffectFactory
      * @throws FilterException If the filter's config violates the element's schema
      * @throws FlareException
      */
-    public function create(ElementScope $scope, ?ValueInterface $value): FilterEffect
+    public function create(ElementContext $context, ?ValueInterface $value): FilterEffect
     {
-        if (!Str::isValidSqlName($table = $scope->list->dc))
+        if (!Str::isValidSqlName($table = $context->list->dc))
         {
             throw new FlareException(\sprintf(
                 '[FLARE] ListSpec data container cannot be used as SQL table identifier: "%s"',
                 $table
-            ), method: __METHOD__, source: $scope->filter->source ?: 'filter inlined');
+            ), method: __METHOD__, source: $context->filter->source ?: 'filter inlined');
         }
 
-        $effectBuilder = $this->filterEffectBuilderFactory->create($scope);
+        $effectBuilder = $this->filterEffectBuilderFactory->create($context);
 
-        $scope->filter->element->component->buildEffect($effectBuilder, $scope, $value);
+        $context->filter->element->component->buildEffect($effectBuilder, $context, $value);
 
         return $effectBuilder->build();
     }

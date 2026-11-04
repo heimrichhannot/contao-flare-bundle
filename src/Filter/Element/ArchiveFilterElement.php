@@ -14,7 +14,7 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\ArchivePredicate;
@@ -57,18 +57,18 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
     /**
      * @throws FilterException
      */
-    public function buildChoices(ChoicesBuilder $choices, ElementScope $scope): void
+    public function buildChoices(ChoicesBuilder $choices, ElementContext $context): void
     {
-        $inferrer = $this->getPtableInferrer($scope->list);
+        $inferrer = $this->getPtableInferrer($context->list);
 
-        if (!self::isControlled($scope->filter)) {
-            $this->buildAllChoices($choices, $inferrer, $scope->list->dc);
+        if (!self::isControlled($context->filter)) {
+            $this->buildAllChoices($choices, $inferrer, $context->list->dc);
             return;
         }
 
         if ($ptable = $inferrer->getDcaMainPtable())
         {
-            $parents = $this->fetchParents($ptable, $scope->get('whitelist_parents'));
+            $parents = $this->fetchParents($ptable, $context->get('whitelist_parents'));
 
             if (!$parents) {
                 throw new FilterException($this->trans('errors.archive.no_parents'), method: __METHOD__);
@@ -92,7 +92,7 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
          * ## We are dealing with a _dynamic ptable_ henceforth.
          */
 
-        if (!$groups = $scope->get('group_whitelist_parents'))
+        if (!$groups = $context->get('group_whitelist_parents'))
         {
             throw new FilterException($this->trans('errors.archive.no_parents'), method: __METHOD__);
         }
@@ -188,20 +188,20 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
      */
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         $value = $this->expectValue($value, ChoiceValue::class);
-        $inferrer = $this->getPtableInferrer($scope->list);
+        $inferrer = $this->getPtableInferrer($context->list);
 
-        if (!self::isControlled($scope->filter)) {
+        if (!self::isControlled($context->filter)) {
             $this->buildFixedEffect($builder, $inferrer, $value);
             return;
         }
 
-        $allowed = $this->getAllowedParentIds($inferrer, $scope);
+        $allowed = $this->getAllowedParentIds($inferrer, $context);
 
-        if (!$value && $scope->get('use_whitelist_for_options_only')) {
+        if (!$value && $context->get('use_whitelist_for_options_only')) {
             return;
         }
 
@@ -226,7 +226,7 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
         $builder->addPredicate(BelongsToRelationPredicate::class, [
             'field_pid' => 'pid',
             'field_dynamic_ptable' => 'ptable',
-            'parent_groups' => $this->getDynamicParentGroups($scope->get('group_whitelist_parents')),
+            'parent_groups' => $this->getDynamicParentGroups($context->get('group_whitelist_parents')),
             'submitted_data' => $parentIds,
         ]);
     }
@@ -309,10 +309,10 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
      * @return array<string, list<int>>
      * @throws FilterException
      */
-    private function getAllowedParentIds(PtableInferrer $inferrer, ElementScope $scope): array
+    private function getAllowedParentIds(PtableInferrer $inferrer, ElementContext $context): array
     {
         if ($ptable = $inferrer->getDcaMainPtable()) {
-            return [$ptable => $scope->get('whitelist_parents')];
+            return [$ptable => $context->get('whitelist_parents')];
         }
 
         if (!$inferrer->isDcaDynamicPtable()) {
@@ -321,7 +321,7 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
 
         $grouped = [];
 
-        foreach ($scope->get('group_whitelist_parents') as $group)
+        foreach ($context->get('group_whitelist_parents') as $group)
         {
             $grouped[$group['table']] = \array_values(\array_unique(
                 \array_merge($grouped[$group['table']] ?? [], $group['ids']),

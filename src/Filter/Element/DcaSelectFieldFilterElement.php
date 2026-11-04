@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\DcaSelectPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
@@ -44,15 +44,15 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
      */
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         if (!$value = $this->expectValue($value, ChoiceValue::class)) {
             return;
         }
 
-        $field = $scope->get('field');
-        $table = $scope->list->dc;
+        $field = $context->get('field');
+        $table = $context->list->dc;
 
         if (!$options = $this->getOptions($table, $field)) {
             $builder->abort();
@@ -84,13 +84,13 @@ class DcaSelectFieldFilterElement extends AbstractFilterElement implements Choic
     /**
      * @throws FilterException
      */
-    public function buildChoices(ChoicesBuilder $choices, ElementScope $scope): void
+    public function buildChoices(ChoicesBuilder $choices, ElementContext $context): void
     {
-        $field = $scope->get('field');
+        $field = $context->get('field');
 
-        if (\is_null($options = $this->getOptions($scope->list->dc, $field))) {
+        if (\is_null($options = $this->getOptions($context->list->dc, $field))) {
             throw new FilterException(
-                \sprintf('No options found for the select field "%s.%s".', $scope->list->dc, (string) $field),
+                \sprintf('No options found for the select field "%s.%s".', $context->list->dc, (string) $field),
                 method: __METHOD__,
             );
         }

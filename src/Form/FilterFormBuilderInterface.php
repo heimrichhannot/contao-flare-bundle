@@ -18,10 +18,10 @@ use Symfony\Component\Form\FormBuilderInterface;
 interface FilterFormBuilderInterface extends FormBuilderInterface
 {
     /**
-     * Attribute-bag key under which the filter's {@see \HeimrichHannot\FlareBundle\Filter\ControlScope} is stored on
+     * Attribute-bag key under which the filter's {@see \HeimrichHannot\FlareBundle\Filter\ControlContext} is stored on
      * the builder; the harness carries it over onto the mounted node.
      */
-    public const ATTR_SCOPE = 'flare.filter_scope';
+    public const ATTR_CONTEXT = 'flare.control_context';
 
     /**
      * Declares this filter as a single-field filter of the given form type.

@@ -12,40 +12,40 @@ use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 
 final class CheckboxFilterControlTest extends TestCase
 {
-    use BuildsControlScopesTrait;
+    use BuildsControlContextsTrait;
 
     public function testUntouchedCheckboxContributesNothingEvenUnderTrueFalse(): void
     {
         $ctl = new CheckboxFilterControl();
 
-        self::assertNull($ctl->decode(null, $this->scope($ctl, ['binary_choices' => BoolBinaryChoices::TRUE_FALSE])));
+        self::assertNull($ctl->decode(null, $this->context($ctl, ['binary_choices' => BoolBinaryChoices::TRUE_FALSE])));
     }
 
     public function testCheckedMeansTrue(): void
     {
         $ctl = new CheckboxFilterControl();
 
-        self::assertTrue($ctl->decode(true, $this->scope($ctl))->state);
+        self::assertTrue($ctl->decode(true, $this->context($ctl))->state);
     }
 
     public function testUncheckedMeansFalseOnlyUnderTrueFalse(): void
     {
         $ctl = new CheckboxFilterControl();
 
-        $trueFalse = $this->scope($ctl, ['binary_choices' => BoolBinaryChoices::TRUE_FALSE]);
+        $trueFalse = $this->context($ctl, ['binary_choices' => BoolBinaryChoices::TRUE_FALSE]);
         self::assertFalse($ctl->decode(false, $trueFalse)->state);
-        self::assertNull($ctl->decode(false, $this->scope($ctl, ['binary_choices' => BoolBinaryChoices::NULL_TRUE])));
-        self::assertNull($ctl->decode(false, $this->scope($ctl)));
+        self::assertNull($ctl->decode(false, $this->context($ctl, ['binary_choices' => BoolBinaryChoices::NULL_TRUE])));
+        self::assertNull($ctl->decode(false, $this->context($ctl)));
     }
 
     public function testHydrate(): void
     {
         $ctl = new CheckboxFilterControl();
-        $scope = $this->scope($ctl);
+        $context = $this->context($ctl);
 
-        self::assertTrue($ctl->hydrate(new BoolValue(true), $scope));
-        self::assertFalse($ctl->hydrate(new BoolValue(false), $scope));
-        self::assertNull($ctl->hydrate(null, $scope));
+        self::assertTrue($ctl->hydrate(new BoolValue(true), $context));
+        self::assertFalse($ctl->hydrate(new BoolValue(false), $context));
+        self::assertNull($ctl->hydrate(null, $context));
     }
 
     public function testTransformerBinaryChoices(): void
@@ -75,7 +75,7 @@ final class CheckboxFilterControlTest extends TestCase
         $ctl = new CheckboxFilterControl();
         $builder = $this->newFormBuilder();
 
-        $ctl->buildForm($builder, $this->scope($ctl, ['label' => 'Open']));
+        $ctl->buildForm($builder, $this->context($ctl, ['label' => 'Open']));
 
         self::assertSame(
             ['type' => CheckboxType::class, 'options' => ['label' => 'Open', 'required' => false]],

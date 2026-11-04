@@ -84,9 +84,9 @@ final readonly class ChoiceValueProvider implements ValueProviderInterface
             ->eval(['multiple' => true, 'chosen' => true, 'tl_class' => 'clr'])
             ->options(function () use ($context): array {
                 $element = $context->element;
-                $scope = $context->getElementScope();
+                $elementContext = $context->getElementContext();
 
-                if (!$element instanceof ChoiceSourceContract || $scope === null)
+                if (!$element instanceof ChoiceSourceContract || $elementContext === null)
                 {
                     Message::addError($this->translator->trans('errors.choices_not_loaded', [], 'flare'));
 
@@ -96,7 +96,7 @@ final readonly class ChoiceValueProvider implements ValueProviderInterface
                 try
                 {
                     $choices = $this->choicesBuilderFactory->createChoicesBuilder();
-                    $element->buildChoices($choices, $scope);
+                    $element->buildChoices($choices, $elementContext);
 
                     return $choices->buildContaoOptions();
                 }

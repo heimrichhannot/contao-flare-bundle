@@ -125,7 +125,7 @@ final readonly class FormHarness
 
             try
             {
-                $value = $mount->filter->control->component->decode($child->getData(), $mount->scope);
+                $value = $mount->filter->control->component->decode($child->getData(), $mount->context);
             }
             catch (\Exception $e)
             {

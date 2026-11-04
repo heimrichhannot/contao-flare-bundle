@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Engine\Intent\FormIntentInterface;
 use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Form\FilterMount;
 use HeimrichHannot\FlareBundle\Form\FormHarness;
@@ -83,11 +83,11 @@ final readonly class FormHarnessFactory
                 continue;
             }
 
-            $scope = new ControlScope($list, $filter, $intent);
+            $context = new ControlContext($list, $filter, $intent);
 
             try
             {
-                $builder = $this->filterFormBuilderFactory->create($scope);
+                $builder = $this->filterFormBuilderFactory->create($context);
             }
             catch (FilterException $e)
                 // Fail closed: a control the editor chose must not be lost silently.
@@ -106,7 +106,7 @@ final readonly class FormHarnessFactory
 
             try
             {
-                $initial = $control->hydrate($filter->value, $scope);
+                $initial = $control->hydrate($filter->value, $context);
             }
             catch (\Exception $e)
                 // Fail open: an initial value that cannot be shown only drops the value.
@@ -155,7 +155,7 @@ final readonly class FormHarnessFactory
                 $mount->addEventListener($eventName, $listener, $priority);
             }
 
-            $mounts[$alias] = new FilterMount($filter, $alias, $scope);
+            $mounts[$alias] = new FilterMount($filter, $alias, $context);
 
             $root->add($mount);
         }

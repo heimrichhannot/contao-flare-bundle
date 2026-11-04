@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Query\Executor;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterEffectFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -40,13 +40,13 @@ final readonly class FilterInvoker
      * @throws FilterException Wrapped with the filter's source.
      * @throws FlareException
      */
-    public function invoke(ElementScope $scope, ?ValueInterface $value): array
+    public function invoke(ElementContext $context, ?ValueInterface $value): array
     {
-        $filter = $scope->filter;
+        $filter = $context->filter;
 
         try
         {
-            $effect = $this->filterEffectFactory->create($scope, $value);
+            $effect = $this->filterEffectFactory->create($context, $value);
         }
         catch (\Exception $e)
         {

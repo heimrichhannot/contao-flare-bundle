@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Filter\Factory\FilterEffectBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterEffectFactory;
 use HeimrichHannot\FlareBundle\Filter\Factory\FormulaBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\FilterEffect;
@@ -44,7 +44,7 @@ trait BuildsFilterEffectsTrait
         string                 $dc = 'tl_test',
     ): FilterEffect {
         return $this->createFilterEffectFactory()->create(
-            $this->buildElementScope($element, $config, $intent, $dc),
+            $this->buildElementContext($element, $config, $intent, $dc),
             $value,
         );
     }
@@ -52,12 +52,12 @@ trait BuildsFilterEffectsTrait
     /**
      * @param array<string, mixed> $config Resolved through the element's schema, if it has one.
      */
-    protected function buildElementScope(
+    protected function buildElementContext(
         FilterElementInterface $element,
         array                  $config = [],
         ?IntentInterface       $intent = null,
         string                 $dc = 'tl_test',
-    ): ElementScope {
+    ): ElementContext {
         $driver = new class implements ListDriverInterface {
             public function resolveDcTable(string $type, array $config, array $attributes): string
             {
@@ -65,7 +65,7 @@ trait BuildsFilterEffectsTrait
             }
         };
 
-        return new ElementScope(
+        return new ElementContext(
             list: new ListSpec(driver: $driver, type: 'test_list', dc: $dc),
             filter: new Filter(
                 element: new ElementBinding(

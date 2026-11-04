@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Element\CalendarCurrentFilterElement;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Predicate\CalendarCurrentPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
@@ -90,11 +90,11 @@ final class CalendarCurrentFilterElementTest extends TestCase
     {
         $element = new CalendarCurrentFilterElement();
 
-        $open = $element->getDateBounds($this->createScope($element, self::BASE));
+        $open = $element->getDateBounds($this->createContext($element, self::BASE));
         self::assertNull($open->min);
         self::assertNull($open->max);
 
-        $bounds = $element->getDateBounds($this->createScope($element, [
+        $bounds = $element->getDateBounds($this->createContext($element, [
             'is_limited' => true,
             'configure_start' => '1',
             'configure_stop' => '1',
@@ -112,7 +112,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
         $this->buildFilterEffect(new CalendarCurrentFilterElement(), self::BASE, new BoolValue(true));
     }
 
-    private function createScope(CalendarCurrentFilterElement $element, array $config): ElementScope
+    private function createContext(CalendarCurrentFilterElement $element, array $config): ElementContext
     {
         $driver = new class implements ListDriverInterface {
             public function resolveDcTable(string $type, array $config, array $attributes): string
@@ -121,7 +121,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
             }
         };
 
-        return new ElementScope(
+        return new ElementContext(
             list: new ListSpec(driver: $driver, type: 'test_list', dc: 'tl_test'),
             filter: new Filter(
                 element: new ElementBinding($element, 'test_element', new ComponentConfig($config), null),

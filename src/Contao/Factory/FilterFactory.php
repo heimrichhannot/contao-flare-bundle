@@ -35,7 +35,7 @@ final readonly class FilterFactory
      * alias must be renamed. An unreadable initial value only drops the value (warning); an unreadable fixed value
      * (no control) throws.
      *
-     * @param bool $withValue False to skip reading the stored value, e.g. for the backend scope and option lists,
+     * @param bool $withValue False to skip reading the stored value, e.g. for the backend context and option lists,
      *   which must load even when the value is unreadable. The control is always resolved.
      *
      * @throws FlareException If the element or the stored control cannot be resolved, either config does not satisfy

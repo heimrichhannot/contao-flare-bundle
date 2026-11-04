@@ -14,7 +14,7 @@ use HeimrichHannot\FlareBundle\Exception\ValueClassMismatchError;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
@@ -41,7 +41,7 @@ final class ListSpecBuilderTest extends TestCase
         $element ??= new class implements FilterElementInterface {
             public function buildEffect(
                 FilterEffectBuilderInterface $builder,
-                ElementScope                 $scope,
+                ElementContext               $context,
                 ?ValueInterface              $value,
             ): void {}
         };

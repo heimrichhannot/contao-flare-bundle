@@ -10,9 +10,9 @@ use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
@@ -73,7 +73,7 @@ final class FilterOptionsResolverTest extends TestCase
         $element = new class implements FilterElementInterface {
             public function buildEffect(
                 FilterEffectBuilderInterface $builder,
-                ElementScope                 $scope,
+                ElementContext               $context,
                 ?ValueInterface              $value,
             ): void {}
         };
@@ -129,7 +129,7 @@ final class ElementConfigAwareElement implements FilterElementInterface, Options
 
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
     }
@@ -144,7 +144,7 @@ final class UnsetOptionElement implements FilterElementInterface, OptionsContrac
 
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
     }
@@ -154,7 +154,7 @@ final class PlainElement implements FilterElementInterface
 {
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
     }
@@ -169,16 +169,16 @@ final class ConfigAwareControl extends AbstractFilterControl
 
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
 
-    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
+    public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void
     {
     }
 
-    public function decode(mixed $data, ControlScope $scope): ?BoolValue
+    public function decode(mixed $data, ControlContext $context): ?BoolValue
     {
         return null;
     }
 
-    public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
+    public function hydrate(?ValueInterface $value, ControlContext $context): mixed
     {
         return null;
     }

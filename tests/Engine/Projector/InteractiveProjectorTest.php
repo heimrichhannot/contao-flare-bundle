@@ -19,10 +19,10 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
@@ -366,7 +366,7 @@ final class ProjectorSpyElement implements FilterElementInterface
 
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         $this->received = $value;
@@ -380,7 +380,7 @@ final class ProjectorFailingElement implements FilterElementInterface
 {
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         throw new FilterException('broken element');
@@ -392,12 +392,12 @@ final class ProjectorFailingElement implements FilterElementInterface
  */
 final class ProjectorRejectingControl implements FilterControlInterface
 {
-    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
+    public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void
     {
         $builder->single(TextType::class, ['required' => false]);
     }
 
-    public function decode(mixed $data, ControlScope $scope): ?KeywordsValue
+    public function decode(mixed $data, ControlContext $context): ?KeywordsValue
     {
         if ($data !== null && $data !== '') {
             throw new FilterException('rejected');
@@ -406,7 +406,7 @@ final class ProjectorRejectingControl implements FilterControlInterface
         return null;
     }
 
-    public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
+    public function hydrate(?ValueInterface $value, ControlContext $context): mixed
     {
         return null;
     }
@@ -414,17 +414,17 @@ final class ProjectorRejectingControl implements FilterControlInterface
 
 final class ProjectorUnbuildableControl implements FilterControlInterface
 {
-    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
+    public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void
     {
         throw new FilterException('This control cannot build its form.');
     }
 
-    public function decode(mixed $data, ControlScope $scope): ?KeywordsValue
+    public function decode(mixed $data, ControlContext $context): ?KeywordsValue
     {
         return null;
     }
 
-    public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
+    public function hydrate(?ValueInterface $value, ControlContext $context): mixed
     {
         return null;
     }

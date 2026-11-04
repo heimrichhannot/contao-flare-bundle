@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Event;
 
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use Symfony\Contracts\EventDispatcher\Event;
 
@@ -25,7 +25,7 @@ class FilterControlBuildFormEvent extends Event
 {
     public function __construct(
         public readonly FilterFormBuilderInterface $builder,
-        public readonly ControlScope               $scope,
+        public readonly ControlContext             $context,
         private bool                               $cancelled = false,
     ) {}
 

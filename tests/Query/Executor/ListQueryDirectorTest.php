@@ -14,10 +14,10 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
@@ -312,7 +312,7 @@ class DirectorSpyElement implements FilterElementInterface
 
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         $this->received = $value;
@@ -324,7 +324,7 @@ class DirectorFailingElement implements FilterElementInterface
 {
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         throw new FilterException('broken element');
@@ -341,7 +341,7 @@ class DirectorValueRejectingElement implements FilterElementInterface
 
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         $this->calledWithValue[] = $value !== null;
@@ -360,13 +360,13 @@ class DirectorTypoElement implements FilterElementInterface
 
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         ++$this->calls;
 
         if ($value !== null) {
-            $scope->get('typo');
+            $context->get('typo');
         }
     }
 }
@@ -375,7 +375,7 @@ class DirectorErroringElement implements FilterElementInterface
 {
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         throw new \TypeError('programming error');
@@ -386,7 +386,7 @@ class DirectorThrowingElement implements FilterElementInterface
 {
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         throw new \RuntimeException('unexpected');
@@ -397,7 +397,7 @@ class DirectorAbortingElement implements FilterElementInterface
 {
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         $builder->abort();
@@ -406,14 +406,14 @@ class DirectorAbortingElement implements FilterElementInterface
 
 class DirectorStubControl implements FilterControlInterface
 {
-    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void {}
+    public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void {}
 
-    public function decode(mixed $data, ControlScope $scope): ?BoolValue
+    public function decode(mixed $data, ControlContext $context): ?BoolValue
     {
         return BoolValue::tryFrom($data);
     }
 
-    public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
+    public function hydrate(?ValueInterface $value, ControlContext $context): mixed
     {
         return $value instanceof BoolValue ? $value->state : null;
     }

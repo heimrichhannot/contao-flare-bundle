@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterControl;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
@@ -39,10 +39,10 @@ class ChoiceBoolFilterControl extends AbstractFilterControl
         $builder->palette('{control_legend},ctl_label');
     }
 
-    public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
+    public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void
     {
         $builder->single(ChoiceType::class, [
-            'label' => $scope->get('label') ?: false,
+            'label' => $context->get('label') ?: false,
             'required' => false,
             'choices' => [
                 'empty_option.yes' => '1',
@@ -56,7 +56,7 @@ class ChoiceBoolFilterControl extends AbstractFilterControl
     /**
      * @param string|null $data The selected choice value: "1", "0", or null for the empty option.
      */
-    public function decode(mixed $data, ControlScope $scope): ?BoolValue
+    public function decode(mixed $data, ControlContext $context): ?BoolValue
     {
         return match ($data) {
             '1' => new BoolValue(true),
@@ -65,7 +65,7 @@ class ChoiceBoolFilterControl extends AbstractFilterControl
         };
     }
 
-    public function hydrate(?ValueInterface $value, ControlScope $scope): ?string
+    public function hydrate(?ValueInterface $value, ControlContext $context): ?string
     {
         $value = $this->expectValue($value, BoolValue::class);
 

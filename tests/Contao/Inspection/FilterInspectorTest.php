@@ -310,7 +310,7 @@ final class FilterInspectorTest extends ContaoTestCase
         self::assertSame(1, $inspection->count(FilterIssueKind::Broken));
     }
 
-    public function testOnlyTheFirstOfADuplicateGroupEntersTheScope(): void
+    public function testOnlyTheFirstOfADuplicateGroupEntersTheList(): void
     {
         $received = null;
 
@@ -330,11 +330,11 @@ final class FilterInspectorTest extends ContaoTestCase
         self::assertIsArray($received);
         self::assertSame(['dup'], \array_keys($received));
         self::assertSame('tl_flare_filter.1', $received['dup']->source);
-        // The later duplicate is still checked, with the scope as its list.
+        // The later duplicate is still checked, with the built list.
         self::assertSame([FilterIssueKind::DuplicateAlias, FilterIssueKind::Broken], self::kinds($inspection, 2));
     }
 
-    public function testWithoutAListScopeRowIssuesAreStillReported(): void
+    public function testWithoutAListRowIssuesAreStillReported(): void
     {
         $inspection = $this->inspect(
             [
@@ -355,7 +355,7 @@ final class FilterInspectorTest extends ContaoTestCase
         self::assertSame(0, $inspection->count(FilterIssueKind::ProgrammingError));
     }
 
-    public function testAScopeErrorIsAListLevelProgrammingError(): void
+    public function testAListBuildErrorIsAListLevelProgrammingError(): void
     {
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::once())->method('critical');
@@ -370,7 +370,7 @@ final class FilterInspectorTest extends ContaoTestCase
         self::assertSame(1, $inspection->count(FilterIssueKind::ProgrammingError));
     }
 
-    public function testScopeErrorsEscapeInDebugMode(): void
+    public function testListBuildErrorsEscapeInDebugMode(): void
     {
         $this->expectException(\Error::class);
 
@@ -425,7 +425,7 @@ final class FilterInspectorTest extends ContaoTestCase
         $inspection = $this->createFilterInspector($this->mockContaoFramework([FilterModel::class => $filters]), $this->dispatcher)
             ->inspect(self::listModel(5));
 
-        // Only a built list scope lets the conditions of row 1 be checked.
+        // Only a built list lets the conditions of row 1 be checked.
         self::assertSame([FilterIssueKind::Broken], self::kinds($inspection, 1));
         self::assertSame([FilterIssueKind::DuplicateAlias], self::kinds($inspection, 2));
         self::assertSame(['dup'], $inspection->blockingAliases);
@@ -473,11 +473,11 @@ final class FilterInspectorTest extends ContaoTestCase
 
     /**
      * @param list<FilterModel> $models
-     * @param (\Closure(array<string, Filter>): ListSpec)|null $buildScope
+     * @param (\Closure(array<string, Filter>): ListSpec)|null $buildList
      */
     private function inspect(
         array            $models,
-        ?\Closure        $buildScope = null,
+        ?\Closure        $buildList = null,
         bool             $debug = false,
         ?LoggerInterface $logger = null,
     ): ListInspection {
@@ -485,7 +485,7 @@ final class FilterInspectorTest extends ContaoTestCase
 
         return $this->createFilterInspector($framework, $this->dispatcher, $debug, $logger)->inspectModels(
             $models,
-            $buildScope ?? static fn (array $filters): ListSpec => self::spec($filters),
+            $buildList ?? static fn (array $filters): ListSpec => self::spec($filters),
         );
     }
 

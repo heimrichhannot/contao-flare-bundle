@@ -7,10 +7,10 @@ namespace HeimrichHannot\FlareBundle\Tests\Form;
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
@@ -49,7 +49,7 @@ trait BuildsFormFixturesTrait
     /**
      * Creates a control building its form via the given callable; it decodes to a KeywordsValue.
      *
-     * @param callable(FilterFormBuilderInterface, ControlScope): void $buildForm
+     * @param callable(FilterFormBuilderInterface, ControlContext): void $buildForm
      */
     private function control(callable $buildForm): FilterControlInterface
     {
@@ -62,17 +62,17 @@ trait BuildsFormFixturesTrait
                 $this->buildForm = $buildForm;
             }
 
-            public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void
+            public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void
             {
-                ($this->buildForm)($builder, $scope);
+                ($this->buildForm)($builder, $context);
             }
 
-            public function decode(mixed $data, ControlScope $scope): ?ValueInterface
+            public function decode(mixed $data, ControlContext $context): ?ValueInterface
             {
                 return KeywordsValue::tryFrom($data);
             }
 
-            public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
+            public function hydrate(?ValueInterface $value, ControlContext $context): mixed
             {
                 return null;
             }
@@ -89,7 +89,7 @@ trait BuildsFormFixturesTrait
         $element ??= new class implements FilterElementInterface {
             public function buildEffect(
                 FilterEffectBuilderInterface $builder,
-                ElementScope                 $scope,
+                ElementContext               $context,
                 ?ValueInterface              $value,
             ): void {}
         };

@@ -14,7 +14,7 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceKey;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceObjectInterface;
@@ -91,9 +91,9 @@ final class ChoiceValueProviderTest extends TestCase
     public function testUndefinedConfigKeyEscapesTheOptionsCallback(): void
     {
         $element = new class extends ProviderStubElement implements ChoiceSourceContract {
-            public function buildChoices(ChoicesBuilder $choices, ElementScope $scope): void
+            public function buildChoices(ChoicesBuilder $choices, ElementContext $context): void
             {
-                $scope->get('typo');
+                $context->get('typo');
             }
 
             public function choiceFromKey(string $key): ?ChoiceObjectInterface
@@ -102,7 +102,7 @@ final class ChoiceValueProviderTest extends TestCase
             }
         };
 
-        $scope = new ElementScope(
+        $context = new ElementContext(
             list: new ListSpec(driver: $this->createStub(ListDriverInterface::class), type: 'test', dc: 'tl_test'),
             filter: new Filter(
                 element: new ElementBinding($element, 'test_element', new ComponentConfig(['field' => 'title']), null),
@@ -119,7 +119,7 @@ final class ChoiceValueProviderTest extends TestCase
             null,
             static fn (): null => null,
             $element,
-            static fn (): ElementScope => $scope,
+            static fn (): ElementContext => $context,
         ));
 
         $definition = [];

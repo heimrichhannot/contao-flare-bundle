@@ -10,10 +10,10 @@ use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
@@ -155,7 +155,7 @@ final class FormHarnessTest extends TestCase
         $element = new class implements FilterElementInterface {
             public function buildEffect(
                 FilterEffectBuilderInterface $builder,
-                ElementScope                 $scope,
+                ElementContext               $context,
                 ?ValueInterface              $value,
             ): void {}
         };
@@ -178,8 +178,8 @@ final class FormHarnessTest extends TestCase
             );
 
             $builder->add($alias, TextType::class, ['required' => false, 'data' => $keywords]);
-            $scope = new ControlScope($list, $filter, new ConfigurationIntent());
-            $mounts[$alias] = new FilterMount($filter, $alias, $scope);
+            $context = new ControlContext($list, $filter, new ConfigurationIntent());
+            $mounts[$alias] = new FilterMount($filter, $alias, $context);
         }
 
         foreach ($remove as $alias) {
@@ -210,7 +210,7 @@ final class FormHarnessTest extends TestCase
  */
 final class RejectingKeywordsControl extends KeywordsFilterControl
 {
-    public function decode(mixed $data, ControlScope $scope): ?KeywordsValue
+    public function decode(mixed $data, ControlContext $context): ?KeywordsValue
     {
         if ($data === 'rejected') {
             throw new FilterException('Rejected.', method: __METHOD__);
@@ -220,6 +220,6 @@ final class RejectingKeywordsControl extends KeywordsFilterControl
             throw new \RuntimeException('Connection lost.');
         }
 
-        return parent::decode($data, $scope);
+        return parent::decode($data, $context);
     }
 }

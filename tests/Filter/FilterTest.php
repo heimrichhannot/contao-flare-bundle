@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Exception\ValueClassMismatchError;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
@@ -71,14 +71,14 @@ final class FilterTest extends TestCase
 
             protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void {}
 
-            public function buildForm(FilterFormBuilderInterface $builder, ControlScope $scope): void {}
+            public function buildForm(FilterFormBuilderInterface $builder, ControlContext $context): void {}
 
-            public function decode(mixed $data, ControlScope $scope): ?BoolValue
+            public function decode(mixed $data, ControlContext $context): ?BoolValue
             {
                 return null;
             }
 
-            public function hydrate(?ValueInterface $value, ControlScope $scope): mixed
+            public function hydrate(?ValueInterface $value, ControlContext $context): mixed
             {
                 return null;
             }

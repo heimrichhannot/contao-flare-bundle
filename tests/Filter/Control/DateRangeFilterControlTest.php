@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBounds;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
 use HeimrichHannot\FlareBundle\Filter\Control\DateRangeFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -20,7 +20,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class DateRangeFilterControlTest extends TestCase
 {
-    use BuildsControlScopesTrait;
+    use BuildsControlContextsTrait;
 
     private function control(): DateRangeFilterControl
     {
@@ -35,24 +35,24 @@ final class DateRangeFilterControlTest extends TestCase
         $ctl = $this->control();
 
         $plain = $this->newFormBuilder();
-        $ctl->buildForm($plain, $this->scope($ctl));
+        $ctl->buildForm($plain, $this->context($ctl));
         self::assertSame([], $plain->get('from')->getOption('attr'));
 
         $bounded = new class implements FilterElementInterface, DateBoundsContract {
             public function buildEffect(
                 FilterEffectBuilderInterface $builder,
-                ElementScope                 $scope,
+                ElementContext               $context,
                 ?ValueInterface              $value,
             ): void {}
 
-            public function getDateBounds(ElementScope $scope): DateBounds
+            public function getDateBounds(ElementContext $context): DateBounds
             {
                 return new DateBounds(new \DateTimeImmutable('2024-01-01'), new \DateTimeImmutable('2025-01-01 00:00:00'));
             }
         };
 
         $builder = $this->newFormBuilder();
-        $ctl->buildForm($builder, $this->scope($ctl, [], $bounded));
+        $ctl->buildForm($builder, $this->context($ctl, [], $bounded));
 
         foreach (['from', 'to'] as $name) {
             self::assertSame(
@@ -67,11 +67,11 @@ final class DateRangeFilterControlTest extends TestCase
         $ctl = $this->control();
 
         $labelled = $this->newFormBuilder();
-        $ctl->buildForm($labelled, $this->scope($ctl, ['label' => 'Period']));
+        $ctl->buildForm($labelled, $this->context($ctl, ['label' => 'Period']));
         self::assertSame(['label' => 'Period'], $labelled->getCompoundOptions());
 
         $plain = $this->newFormBuilder();
-        $ctl->buildForm($plain, $this->scope($ctl));
+        $ctl->buildForm($plain, $this->context($ctl));
         self::assertSame([], $plain->getCompoundOptions());
     }
 
@@ -81,18 +81,18 @@ final class DateRangeFilterControlTest extends TestCase
         $element = new class implements FilterElementInterface, DateBoundsContract {
             public function buildEffect(
                 FilterEffectBuilderInterface $builder,
-                ElementScope                 $scope,
+                ElementContext               $context,
                 ?ValueInterface              $value,
             ): void {}
 
-            public function getDateBounds(ElementScope $scope): DateBounds
+            public function getDateBounds(ElementContext $context): DateBounds
             {
                 return new DateBounds(new \DateTimeImmutable('2024-01-01'));
             }
         };
 
         $builder = $this->newFormBuilder();
-        $ctl->buildForm($builder, $this->scope($ctl, [], $element));
+        $ctl->buildForm($builder, $this->context($ctl, [], $element));
 
         self::assertSame(['min' => '2024-01-01'], $builder->get('from')->getOption('attr'));
     }
@@ -100,17 +100,17 @@ final class DateRangeFilterControlTest extends TestCase
     public function testDecodeAndHydrateRoundTrip(): void
     {
         $ctl = $this->control();
-        $scope = $this->scope($ctl);
+        $context = $this->context($ctl);
 
         $value = $ctl->decode(
             ['from' => new \DateTimeImmutable('2024-03-01'), 'to' => null],
-            $scope);
+            $context);
 
         self::assertInstanceOf(DateRangeValue::class, $value);
         self::assertSame('2024-03-01', $value->from->format('Y-m-d'));
         self::assertNull($value->to);
 
-        $data = $ctl->hydrate($value, $scope);
+        $data = $ctl->hydrate($value, $context);
         self::assertSame($value->from, $data['from']);
         self::assertNull($data['to']);
     }
@@ -118,18 +118,18 @@ final class DateRangeFilterControlTest extends TestCase
     public function testDecodeEmptyIsNull(): void
     {
         $ctl = $this->control();
-        $scope = $this->scope($ctl);
+        $context = $this->context($ctl);
 
-        self::assertNull($ctl->decode(['from' => null, 'to' => null], $scope));
-        self::assertNull($ctl->decode(null, $scope));
-        self::assertSame(['from' => null, 'to' => null], $ctl->hydrate(null, $scope));
+        self::assertNull($ctl->decode(['from' => null, 'to' => null], $context));
+        self::assertNull($ctl->decode(null, $context));
+        self::assertSame(['from' => null, 'to' => null], $ctl->hydrate(null, $context));
     }
 
     public function testFromAfterToFailsValidation(): void
     {
         $ctl = $this->control();
         $builder = $this->newFormBuilder();
-        $ctl->buildForm($builder, $this->scope($ctl));
+        $ctl->buildForm($builder, $this->context($ctl));
 
         $listeners = $builder->getDeferredListeners();
         self::assertSame(FormEvents::POST_SUBMIT, $listeners[0][0]);
@@ -150,7 +150,7 @@ final class DateRangeFilterControlTest extends TestCase
     {
         $ctl = $this->control();
         $builder = $this->newFormBuilder();
-        $ctl->buildForm($builder, $this->scope($ctl));
+        $ctl->buildForm($builder, $this->context($ctl));
 
         $form = Forms::createFormFactory()->createBuilder(FormType::class)
             ->add($builder->get('from'))

@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Contao\Hook;
 use Contao\CoreBundle\Framework\Adapter;
 use Contao\Message;
 use Contao\TestCase\ContaoTestCase;
-use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementScopeFactory;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementContextFactory;
 use HeimrichHannot\FlareBundle\Contao\Inspection\Reporter\FilterIssueReporter;
 use HeimrichHannot\FlareBundle\Contao\Hook\ElementDcaHook;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -134,7 +134,7 @@ final class ElementDcaHookTest extends ContaoTestCase
         $requestStack->push($request);
 
         return new ElementDcaHook(
-            elementScopeFactory: new BackendElementScopeFactory($this->createFilterFactory()),
+            elementContextFactory: new BackendElementContextFactory($this->createFilterFactory()),
             eventDispatcher: $dispatcher,
             filterControlRegistry: new FilterControlRegistry(),
             filterElementRegistry: $this->createFilterElementRegistry(),

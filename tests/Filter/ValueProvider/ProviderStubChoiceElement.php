@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Filter\ValueProvider;
 
 use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ChoiceObjectInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
 use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 /** Knows only the keys "k1" and "k2". */
 final class ProviderStubChoiceElement extends ProviderStubElement implements ChoiceSourceContract
 {
-    public function buildChoices(ChoicesBuilder $choices, ElementScope $scope): void
+    public function buildChoices(ChoicesBuilder $choices, ElementContext $context): void
     {
         throw new \LogicException('Not needed.');
     }

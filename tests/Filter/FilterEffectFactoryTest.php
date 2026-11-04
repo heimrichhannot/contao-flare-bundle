@@ -11,7 +11,7 @@ use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
@@ -46,14 +46,14 @@ final class FilterEffectFactoryTest extends TestCase
         self::assertSame(2, $element->calls);
     }
 
-    public function testElementReceivesTheScope(): void
+    public function testElementReceivesTheContext(): void
     {
         $element = new SpyFilterElement();
-        $scope = $this->buildElementScope($element, ['a' => 1]);
+        $context = $this->buildElementContext($element, ['a' => 1]);
 
-        $effect = $this->createFilterEffectFactory()->create($scope, null);
+        $effect = $this->createFilterEffectFactory()->create($context, null);
 
-        self::assertSame($scope, $element->scope);
+        self::assertSame($context, $element->context);
         self::assertCount(1, $effect->formula->propositions);
         self::assertSame(BooleanPredicate::class, $effect->formula->propositions[0]->predicateClass);
     }
@@ -76,7 +76,7 @@ final class FilterEffectFactoryTest extends TestCase
         $registry = new FilterElementRegistry();
         $registry->add($element, new AsFilterElement(type: 'test_element', isTargeted: $isTargeted), 'test_element');
 
-        $scope = new ElementScope(
+        $context = new ElementContext(
             list: new ListSpec(driver: $this->createStub(ListDriverInterface::class), type: 'test_list', dc: 'tl_test'),
             filter: new Filter(
                 element: new ElementBinding($element, 'test_element', new ComponentConfig([]), null),
@@ -87,7 +87,7 @@ final class FilterEffectFactoryTest extends TestCase
             intent: new ConfigurationIntent(),
         );
 
-        $effect = $this->createFilterEffectFactory($registry)->create($scope, null);
+        $effect = $this->createFilterEffectFactory($registry)->create($context, null);
 
         self::assertSame($expected, $effect->formula->propositions[0]->targetAlias);
     }
@@ -105,7 +105,7 @@ final class FilterEffectFactoryTest extends TestCase
         $element = new class extends SpyFilterElement {
             public function buildEffect(
                 FilterEffectBuilderInterface $builder,
-                ElementScope                 $scope,
+                ElementContext               $context,
                 ?ValueInterface              $value,
             ): void
             {
@@ -123,7 +123,7 @@ final class FilterEffectFactoryTest extends TestCase
         $element = new class extends SpyFilterElement {
             public function buildEffect(
                 FilterEffectBuilderInterface $builder,
-                ElementScope                 $scope,
+                ElementContext               $context,
                 ?ValueInterface              $value,
             ): void
             {
@@ -145,16 +145,16 @@ final class FilterEffectFactoryTest extends TestCase
 class SpyFilterElement implements FilterElementInterface
 {
     public ?ValueInterface $received = null;
-    public ?ElementScope $scope = null;
+    public ?ElementContext $context = null;
     public int $calls = 0;
 
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         $this->received = $value;
-        $this->scope = $scope;
+        $this->context = $context;
         ++$this->calls;
         $builder->addPredicate(BooleanPredicate::class, ['field' => 'published', 'value' => true]);
     }

@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Contao\DataContainer;
 
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
-use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementScopeFactory;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementContextFactory;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaFieldBuilderInterface;
@@ -32,25 +32,25 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
-final class BackendElementScopeFactoryTest extends TestCase
+final class BackendElementContextFactoryTest extends TestCase
 {
-    public function testTheBackendScopeKnowsTheControlButReadsNoValue(): void
+    public function testTheBackendContextKnowsTheControlButReadsNoValue(): void
     {
-        $scope = $this->createFactory()->create($this->getSpec(), self::archiveFilter());
+        $context = $this->createFactory()->create($this->getSpec(), self::archiveFilter());
 
-        self::assertNotNull($scope);
-        self::assertSame('flare_choice', $scope->filter->control?->type, 'the control decides the options');
-        self::assertNull($scope->filter->value);
+        self::assertNotNull($context);
+        self::assertSame('flare_choice', $context->filter->control?->type, 'the control decides the options');
+        self::assertNull($context->filter->value);
     }
 
-    public function testAScopeThatCannotBeBuiltIsNull(): void
+    public function testAContextThatCannotBeBuiltIsNull(): void
     {
         $getSpec = static fn (): ListSpec => throw new FlareException('No list driver found for type "gone"');
 
         self::assertNull($this->createFactory()->create($getSpec, self::archiveFilter()));
     }
 
-    public function testLegacyAliasYieldsNoScope(): void
+    public function testLegacyAliasYieldsNoContext(): void
     {
         $legacy = new FilterModelFixture([
             'id' => 7,
@@ -82,7 +82,7 @@ final class BackendElementScopeFactoryTest extends TestCase
         ]);
     }
 
-    private function createFactory(): BackendElementScopeFactory
+    private function createFactory(): BackendElementContextFactory
     {
         $elements = (new FilterElementRegistry())->add(
             new ArchiveFilterElement(),
@@ -96,14 +96,14 @@ final class BackendElementScopeFactoryTest extends TestCase
         $providers = (new ValueProviderRegistry())->add(new class implements ValueProviderInterface {
             public function provide(mixed $stored, FilterElementInterface $element): ?ValueInterface
             {
-                // Readable: the backend scope must not read it even then.
+                // Readable: the backend context must not read it even then.
                 return new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5)]);
             }
 
             public function buildDcaField(DcaFieldBuilderInterface $field, DcaContext $context): void {}
         }, ChoiceValue::class);
 
-        return new BackendElementScopeFactory(new FilterFactory(
+        return new BackendElementContextFactory(new FilterFactory(
             filterFactory: new CoreFilterFactory(
                 filterElementRegistry: $elements,
                 filterControlRegistry: $controls,

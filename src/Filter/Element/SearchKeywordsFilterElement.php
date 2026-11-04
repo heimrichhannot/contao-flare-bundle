@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\SearchKeywordsPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
@@ -39,7 +39,7 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
      */
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         if (!$value = $this->expectValue($value, KeywordsValue::class)) {
@@ -48,7 +48,7 @@ class SearchKeywordsFilterElement extends AbstractFilterElement
 
         $builder->addPredicate(SearchKeywordsPredicate::class, [
             'value' => $value->keywords,
-            'columns' => $scope->get('columns'),
+            'columns' => $context->get('columns'),
         ]);
     }
 

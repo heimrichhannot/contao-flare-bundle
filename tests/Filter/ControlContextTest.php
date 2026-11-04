@@ -11,10 +11,10 @@ use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
-use HeimrichHannot\FlareBundle\Filter\ControlScope;
+use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -23,7 +23,7 @@ use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Tests\List\StubFilterElement;
 use PHPUnit\Framework\TestCase;
 
-final class ControlScopeTest extends TestCase
+final class ControlContextTest extends TestCase
 {
     private function list(): ListSpec
     {
@@ -49,48 +49,52 @@ final class ControlScopeTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        new ControlScope($this->list(), self::filter(withControl: false), new ConfigurationIntent());
+        new ControlContext($this->list(), self::filter(withControl: false), new ConfigurationIntent());
     }
 
     public function testGetReadsTheControlConfig(): void
     {
-        $scope = new ControlScope($this->list(), self::filter(), new ConfigurationIntent());
+        $context = new ControlContext($this->list(), self::filter(), new ConfigurationIntent());
 
-        self::assertSame('control', $scope->get('label'));
-        self::assertTrue($scope->has('label'));
+        self::assertSame('control', $context->get('label'));
+        self::assertTrue($context->has('label'));
     }
 
     public function testForElementKeepsListFilterAndIntent(): void
     {
-        $scope = new ControlScope($list = $this->list(), $filter = self::filter(), $intent = new ConfigurationIntent());
+        $context = new ControlContext(
+            $list = $this->list(),
+            $filter = self::filter(),
+            $intent = new ConfigurationIntent(),
+        );
 
-        $elementScope = $scope->forElement();
+        $elementContext = $context->forElement();
 
-        self::assertSame($list, $elementScope->list);
-        self::assertSame($filter, $elementScope->filter);
-        self::assertSame($intent, $elementScope->intent);
-        self::assertSame('element', $elementScope->get('label'));
+        self::assertSame($list, $elementContext->list);
+        self::assertSame($filter, $elementContext->filter);
+        self::assertSame($intent, $elementContext->intent);
+        self::assertSame('element', $elementContext->get('label'));
     }
 
     public function testElementWithoutContractReturnsTheElement(): void
     {
         $element = new StubFilterElement();
-        $scope = new ControlScope($this->list(), self::filter(element: $element), new ConfigurationIntent());
+        $context = new ControlContext($this->list(), self::filter(element: $element), new ConfigurationIntent());
 
-        self::assertSame($element, $scope->element());
+        self::assertSame($element, $context->element());
     }
 
     public function testElementReturnsTheElementAsTheContract(): void
     {
-        $element = new ScopeBoundsElement();
-        $scope = new ControlScope($this->list(), self::filter(element: $element), new ConfigurationIntent());
+        $element = new ContextBoundsElement();
+        $context = new ControlContext($this->list(), self::filter(element: $element), new ConfigurationIntent());
 
-        self::assertSame($element, $scope->element(DateBoundsContract::class));
+        self::assertSame($element, $context->element(DateBoundsContract::class));
     }
 
     public function testElementThrowsForAMissingContract(): void
     {
-        $scope = new ControlScope($this->list(), self::filter(), new ConfigurationIntent());
+        $context = new ControlContext($this->list(), self::filter(), new ConfigurationIntent());
 
         $this->expectException(FilterException::class);
         $this->expectExceptionMessage(\sprintf(
@@ -99,34 +103,34 @@ final class ControlScopeTest extends TestCase
             StubFilterElement::class,
         ));
 
-        $scope->element(DateBoundsContract::class);
+        $context->element(DateBoundsContract::class);
     }
 
     public function testTryElementReturnsTheElementAsTheContract(): void
     {
-        $element = new ScopeBoundsElement();
-        $scope = new ControlScope($this->list(), self::filter(element: $element), new ConfigurationIntent());
+        $element = new ContextBoundsElement();
+        $context = new ControlContext($this->list(), self::filter(element: $element), new ConfigurationIntent());
 
-        self::assertSame($element, $scope->tryElement(DateBoundsContract::class));
+        self::assertSame($element, $context->tryElement(DateBoundsContract::class));
     }
 
     public function testTryElementReturnsNullForAMissingContract(): void
     {
-        $scope = new ControlScope($this->list(), self::filter(), new ConfigurationIntent());
+        $context = new ControlContext($this->list(), self::filter(), new ConfigurationIntent());
 
-        self::assertNull($scope->tryElement(DateBoundsContract::class));
+        self::assertNull($context->tryElement(DateBoundsContract::class));
     }
 }
 
-final class ScopeBoundsElement implements FilterElementInterface, DateBoundsContract
+final class ContextBoundsElement implements FilterElementInterface, DateBoundsContract
 {
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {}
 
-    public function getDateBounds(ElementScope $scope): DateBounds
+    public function getDateBounds(ElementContext $context): DateBounds
     {
         return new DateBounds();
     }

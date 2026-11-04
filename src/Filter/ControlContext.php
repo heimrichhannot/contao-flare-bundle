@@ -11,12 +11,12 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 
 /**
- * The value-free situation a filter control hook runs in: the list, the filter, and the engine context.
- * {@see get()} reads the control's own config; {@see forElement()} hands the element its own scope.
+ * The value-free situation a filter control hook runs in: the list, the filter, and the intent.
+ * {@see get()} reads the control's own config; {@see forElement()} hands the element its own context.
  *
  * @api
  */
-final readonly class ControlScope
+final readonly class ControlContext
 {
     /**
      * @throws \InvalidArgumentException If the filter has no control.
@@ -92,13 +92,13 @@ final readonly class ControlScope
     }
 
     /**
-     * The element's scope over the same list, filter and engine context, to hand to element contracts
+     * The element's context over the same list, filter and intent, to hand to element contracts
      * ({@see \HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract},
      * {@see \HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract}).
      */
-    public function forElement(): ElementScope
+    public function forElement(): ElementContext
     {
-        return new ElementScope($this->list, $this->filter, $this->intent);
+        return new ElementContext($this->list, $this->filter, $this->intent);
     }
 
     private function controlBinding(): ControlBinding

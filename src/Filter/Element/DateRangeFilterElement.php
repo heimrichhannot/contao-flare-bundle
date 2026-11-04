@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\DateRangePredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
@@ -38,7 +38,7 @@ class DateRangeFilterElement extends AbstractFilterElement
      */
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
-        ElementScope                 $scope,
+        ElementContext               $context,
         ?ValueInterface              $value,
     ): void {
         if (!$value = $this->expectValue($value, DateRangeValue::class)) {
@@ -46,7 +46,7 @@ class DateRangeFilterElement extends AbstractFilterElement
         }
 
         $builder->addPredicate(DateRangePredicate::class, [
-            'field' => $scope->get('field'),
+            'field' => $context->get('field'),
             'from' => $value->from,
             'to' => $value->to,
         ]);

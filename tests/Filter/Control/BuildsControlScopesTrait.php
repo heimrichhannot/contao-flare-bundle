@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter\Control;
 use HeimrichHannot\FlareBundle\Config\ConfigBuilder;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\TransformerMap;
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
@@ -59,7 +59,7 @@ trait BuildsControlScopesTrait
                 alias: 'test',
                 control: new ControlBinding($control, 'test_control', $resolver->resolve($control, $controlConfig)),
             ),
-            engineContext: new ConfigurationContext(),
+            intent: new ConfigurationIntent(),
         );
     }
 

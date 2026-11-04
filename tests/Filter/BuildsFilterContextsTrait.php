@@ -6,8 +6,8 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\ConfigProvider;
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
@@ -40,11 +40,11 @@ trait BuildsFilterContextsTrait
         FilterElementInterface $element,
         array                  $config = [],
         ?ValueInterface        $value = null,
-        ?ContextInterface      $engineContext = null,
+        ?IntentInterface       $intent = null,
         string                 $dc = 'tl_test',
     ): FilterContext {
         return $this->createFilterContextFactory()->create(
-            $this->buildElementScope($element, $config, $engineContext, $dc),
+            $this->buildElementScope($element, $config, $intent, $dc),
             $value,
         );
     }
@@ -55,7 +55,7 @@ trait BuildsFilterContextsTrait
     protected function buildElementScope(
         FilterElementInterface $element,
         array                  $config = [],
-        ?ContextInterface      $engineContext = null,
+        ?IntentInterface       $intent = null,
         string                 $dc = 'tl_test',
     ): ElementScope {
         $driver = new class implements ListDriverInterface {
@@ -76,7 +76,7 @@ trait BuildsFilterContextsTrait
                 ),
                 alias: 'test',
             ),
-            engineContext: $engineContext ?? new ConfigurationContext(),
+            intent: $intent ?? new ConfigurationIntent(),
         );
     }
 

@@ -25,7 +25,7 @@ readonly class InteractiveLoader implements InteractiveLoaderInterface
         {
             $queryConfig = new ListQueryConfig(
                 list: $this->config->list,
-                context: $this->config->context,
+                intent: $this->config->intent,
                 filterValues: $this->config->filterValues,
             );
 

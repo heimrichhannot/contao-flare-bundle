@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Filter\Element;
 
 use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Element\FieldValueChoiceFilterElement;
@@ -64,7 +64,7 @@ final class FieldValueChoiceFilterElementTest extends TestCase
             $this->createElement(),
             ['field' => 'category'],
             new ChoiceValue([new ValueChoice('a')]),
-            new ValidationContext(),
+            new ValidationIntent(),
         );
 
         self::assertCount(1, $context->formula->propositions);

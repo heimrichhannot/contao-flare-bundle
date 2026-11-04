@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Form;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
@@ -178,7 +178,7 @@ final class FormHarnessTest extends TestCase
             );
 
             $builder->add($alias, TextType::class, ['required' => false, 'data' => $keywords]);
-            $scope = new ControlScope($list, $filter, new ConfigurationContext());
+            $scope = new ControlScope($list, $filter, new ConfigurationIntent());
             $mounts[$alias] = new FilterMount($filter, $alias, $scope);
         }
 

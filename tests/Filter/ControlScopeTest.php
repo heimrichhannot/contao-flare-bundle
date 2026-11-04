@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter;
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBounds;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
@@ -49,33 +49,33 @@ final class ControlScopeTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        new ControlScope($this->list(), self::filter(withControl: false), new ConfigurationContext());
+        new ControlScope($this->list(), self::filter(withControl: false), new ConfigurationIntent());
     }
 
     public function testGetReadsTheControlConfig(): void
     {
-        $scope = new ControlScope($this->list(), self::filter(), new ConfigurationContext());
+        $scope = new ControlScope($this->list(), self::filter(), new ConfigurationIntent());
 
         self::assertSame('control', $scope->get('label'));
         self::assertTrue($scope->has('label'));
     }
 
-    public function testForElementKeepsListFilterAndContext(): void
+    public function testForElementKeepsListFilterAndIntent(): void
     {
-        $scope = new ControlScope($list = $this->list(), $filter = self::filter(), $context = new ConfigurationContext());
+        $scope = new ControlScope($list = $this->list(), $filter = self::filter(), $intent = new ConfigurationIntent());
 
         $elementScope = $scope->forElement();
 
         self::assertSame($list, $elementScope->list);
         self::assertSame($filter, $elementScope->filter);
-        self::assertSame($context, $elementScope->engineContext);
+        self::assertSame($intent, $elementScope->intent);
         self::assertSame('element', $elementScope->get('label'));
     }
 
     public function testElementWithoutContractReturnsTheElement(): void
     {
         $element = new StubFilterElement();
-        $scope = new ControlScope($this->list(), self::filter(element: $element), new ConfigurationContext());
+        $scope = new ControlScope($this->list(), self::filter(element: $element), new ConfigurationIntent());
 
         self::assertSame($element, $scope->element());
     }
@@ -83,14 +83,14 @@ final class ControlScopeTest extends TestCase
     public function testElementReturnsTheElementAsTheContract(): void
     {
         $element = new ScopeBoundsElement();
-        $scope = new ControlScope($this->list(), self::filter(element: $element), new ConfigurationContext());
+        $scope = new ControlScope($this->list(), self::filter(element: $element), new ConfigurationIntent());
 
         self::assertSame($element, $scope->element(DateBoundsContract::class));
     }
 
     public function testElementThrowsForAMissingContract(): void
     {
-        $scope = new ControlScope($this->list(), self::filter(), new ConfigurationContext());
+        $scope = new ControlScope($this->list(), self::filter(), new ConfigurationIntent());
 
         $this->expectException(FilterException::class);
         $this->expectExceptionMessage(\sprintf(
@@ -105,14 +105,14 @@ final class ControlScopeTest extends TestCase
     public function testTryElementReturnsTheElementAsTheContract(): void
     {
         $element = new ScopeBoundsElement();
-        $scope = new ControlScope($this->list(), self::filter(element: $element), new ConfigurationContext());
+        $scope = new ControlScope($this->list(), self::filter(element: $element), new ConfigurationIntent());
 
         self::assertSame($element, $scope->tryElement(DateBoundsContract::class));
     }
 
     public function testTryElementReturnsNullForAMissingContract(): void
     {
-        $scope = new ControlScope($this->list(), self::filter(), new ConfigurationContext());
+        $scope = new ControlScope($this->list(), self::filter(), new ConfigurationIntent());
 
         self::assertNull($scope->tryElement(DateBoundsContract::class));
     }

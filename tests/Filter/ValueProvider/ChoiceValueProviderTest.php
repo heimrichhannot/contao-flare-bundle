@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaFieldBuilder;
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
@@ -108,7 +108,7 @@ final class ChoiceValueProviderTest extends TestCase
                 element: new ElementBinding($element, 'test_element', new ComponentConfig(['field' => 'title']), null),
                 alias: 'test',
             ),
-            engineContext: new ConfigurationContext(),
+            intent: new ConfigurationIntent(),
         );
 
         $builder = new DcaFieldBuilder();

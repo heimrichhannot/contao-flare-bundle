@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
-use HeimrichHannot\FlareBundle\Engine\Context\AggregationContext;
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\AggregationIntent;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Loader\AggregationLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\AggregationLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\AggregationView;
@@ -16,19 +16,19 @@ use HeimrichHannot\FlareBundle\List\ListSpec;
  */
 class AggregationProjector extends AbstractProjector
 {
-    public function supports(ListSpec $list, ContextInterface $context): bool
+    public function supports(ListSpec $list, IntentInterface $intent): bool
     {
-        return $context instanceof AggregationContext;
+        return $intent instanceof AggregationIntent;
     }
 
-    public function project(ListSpec $list, ContextInterface $context): AggregationView
+    public function project(ListSpec $list, IntentInterface $intent): AggregationView
     {
-        \assert($context instanceof AggregationContext, '$config must be an instance of AggregationConfig');
+        \assert($intent instanceof AggregationIntent, '$intent must be an instance of AggregationIntent');
 
         $loader = $this->createLoader(new AggregationLoaderConfig(
             list: $list,
-            context: $context,
-            filterValues: $context->getFilterValues(),
+            intent: $intent,
+            filterValues: $intent->getFilterValues(),
         ));
 
         return $this->createView($loader);

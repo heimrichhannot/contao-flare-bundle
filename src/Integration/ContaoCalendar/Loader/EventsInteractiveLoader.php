@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Integration\ContaoCalendar\Loader;
 
-use HeimrichHannot\FlareBundle\Engine\Context\PaginatedContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\PaginatedIntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\GroupsEntriesTrait;
@@ -24,7 +24,7 @@ readonly class EventsInteractiveLoader implements InteractiveLoaderInterface
     {
         $queryConfig = new ListQueryConfig(
             list: $this->config->list,
-            context: $this->config->context,
+            intent: $this->config->intent,
             filterValues: $this->config->filterValues,
         );
 
@@ -47,8 +47,8 @@ readonly class EventsInteractiveLoader implements InteractiveLoaderInterface
 
         $byDate = $this->groupEntriesByDate($entries);
 
-        $paginatorConfig = $queryConfig->context instanceof PaginatedContextInterface
-            ? $queryConfig->context->getPaginatorConfig()
+        $paginatorConfig = $queryConfig->intent instanceof PaginatedIntentInterface
+            ? $queryConfig->intent->getPaginatorConfig()
             : null;
 
         $limit = $paginatorConfig?->getItemsPerPage() ?: null;

@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
@@ -146,7 +146,7 @@ final class ArchiveFilterElementTest extends TestCase
             $this->createElement(),
             ['whitelist_parents' => [3, 5], 'use_whitelist_for_options_only' => true],
             new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 3)]),
-            new ValidationContext(),
+            new ValidationIntent(),
             'tl_news',
         );
 
@@ -500,7 +500,7 @@ final class ArchiveFilterElementTest extends TestCase
                 'flare_choice',
                 new ComponentConfig(),
             )),
-            $scope->engineContext,
+            $scope->intent,
         );
     }
 

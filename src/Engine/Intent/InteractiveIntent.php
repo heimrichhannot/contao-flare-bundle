@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Engine\Context;
+namespace HeimrichHannot\FlareBundle\Engine\Intent;
 
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Sort\SortOrderSequence;
 use HeimrichHannot\FlareBundle\Util\LazyPage;
 use Symfony\Component\Validator\Constraints as Assert;
 
-class InteractiveContext implements
-    ContextInterface,
-    FormContextInterface,
-    PaginatedContextInterface,
-    SortableContextInterface
+class InteractiveIntent implements
+    IntentInterface,
+    FormIntentInterface,
+    PaginatedIntentInterface,
+    SortableIntentInterface
 {
     use ReaderUrlConfigCreatorTrait;
 
     private readonly LazyPage $formActionPage;
 
-    public static function getContextType(): string
+    public static function getIntentType(): string
     {
         return 'interactive';
     }

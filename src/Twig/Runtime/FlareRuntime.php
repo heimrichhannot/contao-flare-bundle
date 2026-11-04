@@ -10,7 +10,7 @@ use Contao\FrontendTemplate;
 use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Event\ReaderSchemaOrgEvent;
@@ -27,9 +27,9 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
         private ProjectorRegistry        $projectorRegistry,
     ) {}
 
-    public function project(ListSpec $spec, ContextInterface $config): ViewInterface
+    public function project(ListSpec $spec, IntentInterface $intent): ViewInterface
     {
-        return $this->projectorRegistry->getProjectorFor($spec, $config)->project($spec, $config);
+        return $this->projectorRegistry->getProjectorFor($spec, $intent)->project($spec, $intent);
     }
 
     public function getTlContent(Model $model): ?callable

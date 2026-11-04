@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
-use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
@@ -18,21 +18,21 @@ use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
  */
 class ValidationProjector extends AbstractProjector
 {
-    public function supports(ListSpec $list, ContextInterface $context): bool
+    public function supports(ListSpec $list, IntentInterface $intent): bool
     {
-        return $context instanceof ValidationContext;
+        return $intent instanceof ValidationIntent;
     }
 
-    public function project(ListSpec $list, ContextInterface $context): ValidationView
+    public function project(ListSpec $list, IntentInterface $intent): ValidationView
     {
-        \assert($context instanceof ValidationContext, '$config must be an instance of ValidationConfig');
+        \assert($intent instanceof ValidationIntent, '$intent must be an instance of ValidationIntent');
 
-        $readerUrlConfig = $context->createReaderUrlConfig();
-        $autoItemField = $readerUrlConfig->autoItemField ?? $context->autoItemField;
+        $readerUrlConfig = $intent->createReaderUrlConfig();
+        $autoItemField = $readerUrlConfig->autoItemField ?? $intent->autoItemField;
 
         $loader = $this->createLoader(new ValidationLoaderConfig(
             list: $list,
-            context: $context,
+            intent: $intent,
             autoItemField: $autoItemField,
         ));
 
@@ -43,7 +43,7 @@ class ValidationProjector extends AbstractProjector
             readerUrlGenerator: $readerUrlGenerator,
             table: $list->dc,
             autoItemField: $autoItemField,
-            backLink: $context->createBackLink(),
+            backLink: $intent->createBackLink(),
         );
     }
 

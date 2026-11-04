@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Loader;
 
-use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
@@ -55,7 +55,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
 
             $list = $this->config->list->withFilter($idDefinition);
 
-            $entry = $this->executeQuery($list, $this->config->context);
+            $entry = $this->executeQuery($list, $this->config->intent);
 
             $this->entryCache->add('id:' . $id, $entry);
 
@@ -104,7 +104,7 @@ readonly class ValidationLoader implements ValidationLoaderInterface
 
             $list = $this->config->list->withFilter($autoItemDefinition);
 
-            $entry = $this->executeQuery($list, $this->config->context);
+            $entry = $this->executeQuery($list, $this->config->intent);
 
             $this->entryCache->add('autoItem:' . $autoItem, $entry);
 
@@ -127,12 +127,12 @@ readonly class ValidationLoader implements ValidationLoaderInterface
     /**
      * @throws \Exception
      */
-    private function executeQuery(ListSpec $list, ValidationContext $context): array
+    private function executeQuery(ListSpec $list, ValidationIntent $intent): array
     {
         $qb = $this->listQueryDirector->createQueryBuilder(new ListQueryConfig(
             list: $list,
-            context: $context,
-            filterValues: $context->getFilterValues(),
+            intent: $intent,
+            filterValues: $intent->getFilterValues(),
         ));
 
         if (!$qb) {

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\EventListener\NamedDispatch;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterControlBuildFormListener;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
@@ -59,8 +59,8 @@ final class FilterControlBuildFormListenerTest extends TestCase
             }
         };
 
-        $engineContext = new class implements ContextInterface {
-            public static function getContextType(): string
+        $intent = new class implements IntentInterface {
+            public static function getIntentType(): string
             {
                 return 'test';
             }
@@ -73,7 +73,7 @@ final class FilterControlBuildFormListenerTest extends TestCase
             control: new ControlBinding(new KeywordsFilterControl(), $controlType, new ComponentConfig()),
         );
 
-        $scope = new ControlScope(list: $list, filter: $filter, engineContext: $engineContext);
+        $scope = new ControlScope(list: $list, filter: $filter, intent: $intent);
 
         $builder = new FilterFormBuilder('suche', null, new EventDispatcher(), Forms::createFormFactory());
 

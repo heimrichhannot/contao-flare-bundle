@@ -17,7 +17,7 @@ use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Input;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\Engine\Context\Factory\ValidationContextFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\Factory\ValidationIntentFactory;
 use HeimrichHannot\FlareBundle\Engine\Factory\EngineFactory;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
@@ -55,7 +55,7 @@ final class ReaderController extends AbstractContentElementController
         private readonly ResponseContextAccessor        $responseContextAccessor,
         private readonly ScopeMatcher                   $scopeMatcher,
         private readonly TranslatorInterface            $translator,
-        private readonly ValidationContextFactory       $validationContextFactory,
+        private readonly ValidationIntentFactory        $validationIntentFactory,
     ) {}
 
     /**
@@ -115,12 +115,12 @@ final class ReaderController extends AbstractContentElementController
         {
             $list = $this->listFactory->create($listModel)->build();
 
-            $validationContext = $this->validationContextFactory->createFromContent(
+            $validationIntent = $this->validationIntentFactory->createFromContent(
                 contentModel: $contentModel,
                 list: $list,
             );
 
-            $engine = $this->engineFactory->createEngine($validationContext, $list);
+            $engine = $this->engineFactory->createEngine($validationIntent, $list);
 
             $validationView = $engine->createView();
 
@@ -159,7 +159,7 @@ final class ReaderController extends AbstractContentElementController
         $event = $this->eventDispatcher->dispatch(
             new ReaderRenderEvent(
                 contentModel: $contentModel,
-                context: $validationContext,
+                intent: $validationIntent,
                 displayModel: $autoItemModel,
                 list: $list,
                 pageMeta: $pageMeta,

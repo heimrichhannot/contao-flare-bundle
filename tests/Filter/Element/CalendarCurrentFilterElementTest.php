@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Filter\Element;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
-use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Element\CalendarCurrentFilterElement;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
@@ -14,7 +14,7 @@ use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Predicate\CalendarCurrentPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
@@ -65,7 +65,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
             new CalendarCurrentFilterElement(),
             self::BASE,
             null,
-            new ValidationContext(),
+            new ValidationIntent(),
         );
 
         self::assertSame([], $context->formula->propositions);
@@ -79,7 +79,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
             new CalendarCurrentFilterElement(),
             $config,
             DateRangeValue::tryFrom(1000, null),
-            new ValidationContext(),
+            new ValidationIntent(),
         )->formula->propositions[0];
 
         self::assertSame(CalendarCurrentPredicate::class, $p->predicateClass);
@@ -127,7 +127,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
                 element: new ElementBinding($element, 'test_element', new ComponentConfig($config), null),
                 alias: 'test',
             ),
-            engineContext: new ConfigurationContext(),
+            intent: new ConfigurationIntent(),
         );
     }
 }

@@ -20,7 +20,7 @@ The core execution flow is:
 ContentElement Controller
   → Contao\Factory\ListSpecBuilderFactory::create($listModel)->build() — builds the immutable ListSpec (src/List/)
     → EngineFactory → Engine
-      → Context (Interactive / Validation / Aggregation) — src/Engine/Context/
+      → Intent (Interactive / Validation / Aggregation) — src/Engine/Intent/
         → Loader (src/Engine/Loader/) + Mods (src/Engine/Mod/)
           → Projector (Interactive / Validation / Aggregation / Export) — orchestrates query + filter execution
             → View (formats data for Twig template)
@@ -60,7 +60,7 @@ wiring error, passes unwrapped). A control's `buildForm()` failure fails the lis
 debug mode); a `hydrate()` failure mounts the filter without its initial value (warning; an unexpected exception is
 rethrown in debug mode); a `decode()` failure drops the value and puts a form error on a submitted field.
 
-Note: Contexts and Projectors/Views are separate axes — (Export Context/Projector/View are currently not implemented).
+Note: Intents and Projectors/Views are separate axes — (Export Intent/Projector/View are currently not implemented).
 
 The bundle follows standard Symfony Bundle architecture with deep Contao integration.
 
@@ -81,7 +81,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   resolvers (`FilterOptionsResolver`, `FilterTransformerResolver`). `Factory/FilterFactory::create()` is the single
   construction path; it knows no model — a stored source reaches the components' transformers as `$configSource`.
   A filter is applied in two stages: a value-free, role-typed scope — `ElementScope` for element hooks and
-  contracts, `ControlScope` for control hooks (list × filter × engine context; `$scope->get('key')` reads the
+  contracts, `ControlScope` for control hooks (list × filter × intent; `$scope->get('key')` reads the
   calling component's own config; `ControlScope::element(Contract::class)` / `tryElement()` return the element as a
   capability port, `forElement()` hands element contracts their scope) — handed to
   everything that happens before a value exists, and `FilterContext` (the element's product for one invocation,
@@ -90,7 +90,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `buildContext($builder, $scope, $value)`, `buildForm($builder, $scope)`, `decode($data, $scope)`,
   `hydrate($value, $scope)`.
   `FormHarnessFactory` builds a `FormHarness` (root form + mount↔filter map of `FilterMount`s) per list ×
-  form context; the harness owns the `decode()` loop
+  form intent; the harness owns the `decode()` loop
 - `src/Filter/Control/` — `FilterControl` implementations (peers of `src/Filter/Element/`) behind
   `FilterControlInterface` (`buildForm()`, `decode()`, `hydrate()`), registered with `#[AsFilterControl]`.
   Controls bind to a value *class* (the narrowed return type of `decode()`), never to an element type:
@@ -144,7 +144,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 **Key entry points:**
 - `src/HeimrichHannotFlareBundle.php` — bundle entry, registers compiler passes
 - `src/DependencyInjection/HeimrichHannotFlareExtension.php` — DI setup
-- `src/Engine/Factory/EngineFactory.php` — creates Engine with appropriate Context
+- `src/Engine/Factory/EngineFactory.php` — creates Engine with appropriate Intent
 - `src/Controller/ContentElement/ListViewController.php` / `ReaderController.php` — frontend controllers
 
 **Extensibility via PHP 8 attributes** (compiler passes auto-register tagged services):

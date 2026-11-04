@@ -7,9 +7,9 @@ namespace HeimrichHannot\FlareBundle\Tests\Query\Executor;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
-use HeimrichHannot\FlareBundle\Engine\Context\AggregationContext;
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
-use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\AggregationIntent;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
@@ -55,7 +55,7 @@ final class ListQueryDirectorTest extends TestCase
         $spy = new DirectorSpyElement();
         $filter = $this->filter($spy, control: new DirectorStubControl(), value: new BoolValue(true));
 
-        $this->invoke([$filter], new ValidationContext(), filterValues: []);
+        $this->invoke([$filter], new ValidationIntent(), filterValues: []);
 
         self::assertSame(1, $spy->calls);
         self::assertNull($spy->received);
@@ -67,11 +67,11 @@ final class ListQueryDirectorTest extends TestCase
         $filter = $this->filter($spy, control: new DirectorStubControl(), value: new BoolValue(true));
         $submitted = new BoolValue(false);
 
-        $this->invoke([$filter], new AggregationContext(), filterValues: ['f' => $submitted]);
+        $this->invoke([$filter], new AggregationIntent(), filterValues: ['f' => $submitted]);
         self::assertSame($submitted, $spy->received);
 
         // An emptied submission clears the filter instead of falling back to the initial value.
-        $this->invoke([$filter], new AggregationContext(), filterValues: ['f' => null]);
+        $this->invoke([$filter], new AggregationIntent(), filterValues: ['f' => null]);
         self::assertNull($spy->received);
     }
 
@@ -81,7 +81,7 @@ final class ListQueryDirectorTest extends TestCase
         $fixed = new BoolValue(true);
         $filter = $this->filter($spy, value: $fixed);
 
-        $this->invoke([$filter], new ValidationContext(), filterValues: ['f' => new BoolValue(false)]);
+        $this->invoke([$filter], new ValidationIntent(), filterValues: ['f' => new BoolValue(false)]);
 
         self::assertSame($fixed, $spy->received);
     }
@@ -95,7 +95,7 @@ final class ListQueryDirectorTest extends TestCase
             $this->filter($next, alias: 'next', value: new BoolValue(true)),
         ];
 
-        $builders = $this->invoke($filters, new ValidationContext(), ['broken' => new BoolValue(true)]);
+        $builders = $this->invoke($filters, new ValidationIntent(), ['broken' => new BoolValue(true)]);
 
         self::assertSame([true, false], $element->calledWithValue, 'Retried once without the value.');
         self::assertCount(1, $builders, 'The config-bound predicate of the retry applies.');
@@ -112,7 +112,7 @@ final class ListQueryDirectorTest extends TestCase
         $this->expectException(FilterException::class);
         $this->expectExceptionMessage('broken element');
 
-        $this->invoke([$filter], new AggregationContext(), ['broken' => new BoolValue(true)]);
+        $this->invoke([$filter], new AggregationIntent(), ['broken' => new BoolValue(true)]);
     }
 
     public function testControlledFilterFailingWithANullValueFailsTheList(): void
@@ -121,7 +121,7 @@ final class ListQueryDirectorTest extends TestCase
 
         $this->expectException(FilterException::class);
 
-        $this->invoke([$filter], new AggregationContext());
+        $this->invoke([$filter], new AggregationIntent());
     }
 
     public function testUndefinedConfigKeyEscapesWithoutRetry(): void
@@ -131,7 +131,7 @@ final class ListQueryDirectorTest extends TestCase
 
         try
         {
-            $this->invoke([$filter], new ValidationContext(), ['f' => new BoolValue(true)]);
+            $this->invoke([$filter], new ValidationIntent(), ['f' => new BoolValue(true)]);
             self::fail('Expected an UndefinedConfigKeyError.');
         }
         catch (UndefinedConfigKeyError $e)
@@ -149,7 +149,7 @@ final class ListQueryDirectorTest extends TestCase
 
         $this->expectException(\TypeError::class);
 
-        $this->invoke([$filter], new AggregationContext(), ['f' => new BoolValue(true)]);
+        $this->invoke([$filter], new AggregationIntent(), ['f' => new BoolValue(true)]);
     }
 
     public function testOtherExceptionsBecomeFilterExceptions(): void
@@ -158,7 +158,7 @@ final class ListQueryDirectorTest extends TestCase
 
         try
         {
-            $this->invoke([$filter], new AggregationContext());
+            $this->invoke([$filter], new AggregationIntent());
             self::fail('A failing filter without a control must fail the list.');
         }
         catch (FilterException $e)
@@ -174,7 +174,7 @@ final class ListQueryDirectorTest extends TestCase
 
         try
         {
-            $this->invoke([$filter], new AggregationContext());
+            $this->invoke([$filter], new AggregationIntent());
             self::fail('A failing filter without a control must fail the list.');
         }
         catch (FilterException $e)
@@ -196,7 +196,7 @@ final class ListQueryDirectorTest extends TestCase
         {
             $this->createDirector()->createQueryBuilder(new ListQueryConfig(
                 list: $list,
-                context: new AggregationContext(),
+                intent: new AggregationIntent(),
                 filterValues: [],
             ));
             self::fail('A list with failures must not be queried.');
@@ -214,7 +214,7 @@ final class ListQueryDirectorTest extends TestCase
 
         $qb = $this->createDirector()->createQueryBuilder(new ListQueryConfig(
             list: $this->list([$filter]),
-            context: new AggregationContext(),
+            intent: new AggregationIntent(),
             filterValues: [],
         ));
 
@@ -227,11 +227,11 @@ final class ListQueryDirectorTest extends TestCase
      *
      * @return FilterConditionsBuilder[]
      */
-    private function invoke(array $filters, ContextInterface $context, array $filterValues = []): array
+    private function invoke(array $filters, IntentInterface $intent, array $filterValues = []): array
     {
         return $this->createDirector()->invokeFilters(new ListQueryConfig(
             list: $this->list($filters),
-            context: $context,
+            intent: $intent,
             filterValues: $filterValues,
         ));
     }

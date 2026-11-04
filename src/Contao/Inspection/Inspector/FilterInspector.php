@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
 use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssueKind;
 use HeimrichHannot\FlareBundle\Contao\Inspection\InspectedRows;
 use HeimrichHannot\FlareBundle\Contao\Inspection\ListInspection;
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
@@ -289,7 +289,7 @@ final class FilterInspector implements ResetInterface
 
         try
         {
-            $this->filterInvoker->invoke(new ElementScope($spec, $filter, new ConfigurationContext()), $value);
+            $this->filterInvoker->invoke(new ElementScope($spec, $filter, new ConfigurationIntent()), $value);
         }
         catch (AbortFilteringException)
         {
@@ -318,7 +318,7 @@ final class FilterInspector implements ResetInterface
     {
         try
         {
-            $this->filterFormBuilderFactory->create(new ControlScope($spec, $filter, new ConfigurationContext()));
+            $this->filterFormBuilderFactory->create(new ControlScope($spec, $filter, new ConfigurationIntent()));
         }
         catch (FilterException $e)
         {

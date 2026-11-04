@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Integration\ContaoCalendar\Projector;
 
-use HeimrichHannot\FlareBundle\Engine\Context\AggregationContext;
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\AggregationIntent;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Loader\AggregationLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\AggregationLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\Projector\AggregationProjector;
@@ -18,12 +18,12 @@ class EventsAggregationProjector extends AggregationProjector
 {
     use GroupsEntriesTrait;
 
-    public function supports(ListSpec $list, ContextInterface $context): bool
+    public function supports(ListSpec $list, IntentInterface $intent): bool
     {
-        return $list->driver instanceof EventsListDriver && $context instanceof AggregationContext;
+        return $list->driver instanceof EventsListDriver && $intent instanceof AggregationIntent;
     }
 
-    public function priority(ListSpec $list, ContextInterface $context): int
+    public function priority(ListSpec $list, IntentInterface $intent): int
     {
         return 100;
     }

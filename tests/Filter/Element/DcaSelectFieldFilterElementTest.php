@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Filter\Element;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
-use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
+use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Filter\Element\DcaSelectFieldFilterElement;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
@@ -88,7 +88,7 @@ final class DcaSelectFieldFilterElementTest extends TestCase
             $this->createElement(),
             ['field' => 'status'],
             new ChoiceValue([new ValueChoice('draft')]),
-            new ValidationContext(),
+            new ValidationIntent(),
         );
 
         self::assertCount(1, $context->formula->propositions);
@@ -164,7 +164,7 @@ final class DcaSelectFieldFilterElementTest extends TestCase
                 element: new ElementBinding($element, 'test_element', new ComponentConfig(['field' => $field]), null),
                 alias: 'test',
             ),
-            engineContext: new ConfigurationContext(),
+            intent: new ConfigurationIntent(),
         );
     }
 }

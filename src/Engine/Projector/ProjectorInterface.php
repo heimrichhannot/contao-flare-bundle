@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
 /**
  * @template TView of ViewInterface
- * @template TContext of ContextInterface
+ * @template TIntent of IntentInterface
  */
 #[AutoconfigureTag(self::FLARE_PROJECTOR_TAG)]
 interface ProjectorInterface
@@ -19,21 +19,21 @@ interface ProjectorInterface
     public const FLARE_PROJECTOR_TAG = 'flare.projector';
 
     /**
-     * Checks if this projector supports the given context configuration.
+     * Checks if this projector supports the given intent.
      */
-    public function supports(ListSpec $list, ContextInterface $context): bool;
+    public function supports(ListSpec $list, IntentInterface $intent): bool;
 
     /**
      * Calculates the priority of the projector when supported, considering the given specification.
      */
-    public function priority(ListSpec $list, ContextInterface $context): int;
+    public function priority(ListSpec $list, IntentInterface $intent): int;
 
     /**
-     * Projects a list specification into a result based on the context config.
+     * Projects a list specification into a result based on the intent.
      *
      * @param ListSpec $list
-     * @param ContextInterface  $context
+     * @param IntentInterface  $intent
      * @return ViewInterface
      */
-    public function project(ListSpec $list, ContextInterface $context): ViewInterface;
+    public function project(ListSpec $list, IntentInterface $intent): ViewInterface;
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
@@ -22,9 +22,9 @@ final readonly class ControlScope
      * @throws \InvalidArgumentException If the filter has no control.
      */
     public function __construct(
-        public ListSpec         $list,
-        public Filter           $filter,
-        public ContextInterface $engineContext,
+        public ListSpec        $list,
+        public Filter          $filter,
+        public IntentInterface $intent,
     ) {
         if ($filter->control === null) {
             throw new \InvalidArgumentException(\sprintf('The filter "%s" has no control.', $filter->alias));
@@ -98,7 +98,7 @@ final readonly class ControlScope
      */
     public function forElement(): ElementScope
     {
-        return new ElementScope($this->list, $this->filter, $this->engineContext);
+        return new ElementScope($this->list, $this->filter, $this->intent);
     }
 
     private function controlBinding(): ControlBinding

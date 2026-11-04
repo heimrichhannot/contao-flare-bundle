@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Engine\Context;
+namespace HeimrichHannot\FlareBundle\Engine\Intent;
 
-interface FormContextInterface
+interface FormIntentInterface
 {
     public function getFormName(): string;
 

@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Engine\Context\ValidationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\CalendarCurrentPredicate;
@@ -56,7 +56,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
         $start = \strtotime((string) $scope->get('start_at')) ?: 0;
         $stop = \strtotime((string) $scope->get('stop_at')) ?: DateTimeHelper::maxTimestamp();
 
-        if (!$scope->get('is_limited') && $scope->engineContext instanceof ValidationContext)
+        if (!$scope->get('is_limited') && $scope->intent instanceof ValidationIntent)
         {
             // Unlimited defaults only shape the initial display; the whole list is bounded by a fixed
             // value alone (controlled filters have none here).

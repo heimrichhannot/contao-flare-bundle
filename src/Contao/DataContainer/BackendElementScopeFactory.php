@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Contao\DataContainer;
 
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Contao\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\List\ListSpec;
@@ -36,7 +36,7 @@ final readonly class BackendElementScopeFactory
             return new ElementScope(
                 list: $getSpec(),
                 filter: $this->filterFactory->create($filterModel, withValue: false),
-                engineContext: new ConfigurationContext(),
+                intent: new ConfigurationIntent(),
             );
         }
         catch (\Exception) {}

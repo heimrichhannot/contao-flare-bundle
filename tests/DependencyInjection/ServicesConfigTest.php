@@ -28,6 +28,13 @@ use HeimrichHannot\FlareBundle\Contao\Inspection\Inspector\FilterInspector;
 use HeimrichHannot\FlareBundle\Contao\Inspection\ListInspection;
 use HeimrichHannot\FlareBundle\Contao\Inspection\Reporter\FilterIssueReporter;
 use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrable;
+use HeimrichHannot\FlareBundle\Engine\Intent\AggregationIntent;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
+use HeimrichHannot\FlareBundle\Engine\Intent\Factory\AggregationIntentFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\Factory\InteractiveIntentFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\Factory\ValidationIntentFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\InteractiveIntent;
+use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrer;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\FileLocator;
@@ -82,6 +89,9 @@ final class ServicesConfigTest extends TestCase
             FilterFactory::class,
             FilterCollector::class,
             ListSpecBuilderFactory::class,
+            InteractiveIntentFactory::class,
+            ValidationIntentFactory::class,
+            AggregationIntentFactory::class,
         ] as $class) {
             yield $class => [$class];
         }
@@ -102,6 +112,10 @@ final class ServicesConfigTest extends TestCase
             ListInspection::class,
             PtableInferrer::class,
             PtableInferrable::class,
+            InteractiveIntent::class,
+            ValidationIntent::class,
+            AggregationIntent::class,
+            ConfigurationIntent::class,
         ] as $class) {
             yield $class => [$class];
         }

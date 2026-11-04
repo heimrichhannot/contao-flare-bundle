@@ -13,7 +13,7 @@ use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Template;
 use FOS\HttpCacheBundle\Http\SymfonyResponseTagger;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\Engine\Context\Factory\InteractiveContextFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\Factory\InteractiveIntentFactory;
 use HeimrichHannot\FlareBundle\Engine\Factory\EngineFactory;
 use HeimrichHannot\FlareBundle\Engine\View\InteractiveView;
 use HeimrichHannot\FlareBundle\Event\ListViewRenderEvent;
@@ -42,15 +42,15 @@ final class ListViewController extends AbstractContentElementController
     private const TEMPLATE_VAR_VIEW = 'flare_list';
 
     public function __construct(
-        private readonly EngineFactory             $engineFactory,
-        private readonly EventDispatcherInterface  $eventDispatcher,
-        private readonly InteractiveContextFactory $interactiveConfigFactory,
-        private readonly KernelInterface           $kernel,
-        private readonly ListSpecBuilderFactory    $listFactory,
-        private readonly LoggerInterface           $logger,
-        private readonly ScopeMatcher              $scopeMatcher,
-        private readonly SymfonyResponseTagger     $responseTagger,
-        private readonly TranslatorInterface       $translator,
+        private readonly EngineFactory            $engineFactory,
+        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly InteractiveIntentFactory $interactiveIntentFactory,
+        private readonly KernelInterface          $kernel,
+        private readonly ListSpecBuilderFactory   $listFactory,
+        private readonly LoggerInterface          $logger,
+        private readonly ScopeMatcher             $scopeMatcher,
+        private readonly SymfonyResponseTagger    $responseTagger,
+        private readonly TranslatorInterface      $translator,
     ) {}
 
     /**
@@ -102,12 +102,12 @@ final class ListViewController extends AbstractContentElementController
         {
             $listSpec = $this->listFactory->create($listModel)->build();
 
-            $interactiveConfig = $this->interactiveConfigFactory->createFromContent(
+            $interactiveIntent = $this->interactiveIntentFactory->createFromContent(
                 contentModel: $contentModel,
                 list: $listSpec,
             );
 
-            $engine = $this->engineFactory->createEngine($interactiveConfig, $listSpec);
+            $engine = $this->engineFactory->createEngine($interactiveIntent, $listSpec);
         }
         catch (ValidationFailedException $e)
         {

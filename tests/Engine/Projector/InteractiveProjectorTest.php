@@ -8,8 +8,8 @@ use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
-use HeimrichHannot\FlareBundle\Engine\Context\Factory\AggregationContextFactory;
-use HeimrichHannot\FlareBundle\Engine\Context\InteractiveContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\Factory\AggregationIntentFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\InteractiveIntent;
 use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
@@ -92,7 +92,7 @@ final class InteractiveProjectorTest extends TestCase
         ));
 
         $projector = $this->createProjector(query: ['f' => ['q' => 'submitted']]);
-        $view = $projector->project($list, $this->context());
+        $view = $projector->project($list, $this->intent());
 
         self::assertFalse($view->isFailed());
         self::assertSame(0, $view->getCount());
@@ -115,7 +115,7 @@ final class InteractiveProjectorTest extends TestCase
             value: new KeywordsValue('initial'),
         ));
 
-        $this->createProjector()->project($list, $this->context());
+        $this->createProjector()->project($list, $this->intent());
 
         self::assertSame('initial', $spy->received?->keywords);
     }
@@ -127,7 +127,7 @@ final class InteractiveProjectorTest extends TestCase
             alias: 'fixed',
         ));
 
-        $view = $this->createProjector()->project($list, $this->context());
+        $view = $this->createProjector()->project($list, $this->intent());
 
         self::assertTrue($view->isFailed());
         self::assertSame(0, $view->getCount());
@@ -146,7 +146,7 @@ final class InteractiveProjectorTest extends TestCase
         ))
             ->withFailure(new FilterFailure('tl_flare_filter.3', 'tl_flare_filter.3: broken config'));
 
-        $view = $this->createProjector()->project($list, $this->context());
+        $view = $this->createProjector()->project($list, $this->intent());
 
         self::assertTrue($view->isFailed());
         self::assertSame(0, $view->getCount());
@@ -163,7 +163,7 @@ final class InteractiveProjectorTest extends TestCase
 
         $this->expectException(FilterException::class);
 
-        $this->createProjector(debug: true)->project($list, $this->context());
+        $this->createProjector(debug: true)->project($list, $this->intent());
     }
 
     public function testInvalidSubmissionIsNotCounted(): void
@@ -171,7 +171,7 @@ final class InteractiveProjectorTest extends TestCase
         $spy = new ProjectorSpyElement();
         $list = $this->list(self::controlled($spy, 'q', new ProjectorRejectingControl()));
 
-        $view = $this->createProjector(query: ['f' => ['q' => 'bad']])->project($list, $this->context());
+        $view = $this->createProjector(query: ['f' => ['q' => 'bad']])->project($list, $this->intent());
 
         self::assertFalse($view->isFailed());
         self::assertSame(0, $view->getCount());
@@ -187,7 +187,7 @@ final class InteractiveProjectorTest extends TestCase
         $list = $this->list(self::controlled(new ProjectorSpyElement(), 'broken', new ProjectorUnbuildableControl()))
             ->withFilter(self::controlled($spy, 'q', self::keywords()));
 
-        $view = $this->createProjector()->project($list, $this->context());
+        $view = $this->createProjector()->project($list, $this->intent());
 
         self::assertTrue($view->isFailed());
         self::assertSame(0, $spy->calls);
@@ -208,7 +208,7 @@ final class InteractiveProjectorTest extends TestCase
                 self::controlled(new ProjectorSpyElement(), 'broken', new ProjectorUnbuildableControl()),
             );
 
-        $view = $this->createProjector(query: ['f' => ['q' => 'bad']])->project($list, $this->context());
+        $view = $this->createProjector(query: ['f' => ['q' => 'bad']])->project($list, $this->intent());
 
         self::assertTrue($view->isFailed());
         self::assertSame(0, $spy->calls, 'No count query ran.');
@@ -227,7 +227,7 @@ final class InteractiveProjectorTest extends TestCase
         $this->expectException(FilterException::class);
         $this->expectExceptionMessage('cannot build');
 
-        $this->createProjector(debug: true)->project($list, $this->context());
+        $this->createProjector(debug: true)->project($list, $this->intent());
     }
 
     private static function keywords(): KeywordsFilterControl
@@ -251,9 +251,9 @@ final class InteractiveProjectorTest extends TestCase
         );
     }
 
-    private function context(): InteractiveContext
+    private function intent(): InteractiveIntent
     {
-        return new InteractiveContext(paginatorConfig: new PaginatorConfig(itemsPerPage: 10), formName: 'f');
+        return new InteractiveIntent(paginatorConfig: new PaginatorConfig(itemsPerPage: 10), formName: 'f');
     }
 
     private function list(Filter $filter): ListSpec
@@ -328,7 +328,7 @@ final class InteractiveProjectorTest extends TestCase
             ->getFormFactory();
 
         $projector = new RecordingInteractiveProjector(
-            aggregationConfigFactory: new AggregationContextFactory(),
+            aggregationIntentFactory: new AggregationIntentFactory(),
             formHarnessFactory: new FormHarnessFactory(
                 $dispatcher,
                 new FilterFormBuilderFactory($dispatcher, $formFactory),

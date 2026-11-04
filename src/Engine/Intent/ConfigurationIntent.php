@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Engine\Context;
+namespace HeimrichHannot\FlareBundle\Engine\Intent;
 
 /**
  * The list is being configured in the backend: filters are evaluated for their options,
  * but never queried.
  */
-final readonly class ConfigurationContext implements ContextInterface
+final readonly class ConfigurationIntent implements IntentInterface
 {
-    public static function getContextType(): string
+    public static function getIntentType(): string
     {
         return 'configuration';
     }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Engine\Context;
+namespace HeimrichHannot\FlareBundle\Engine\Intent;
 
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
@@ -10,14 +10,14 @@ use HeimrichHannot\FlareBundle\Reader\BackLink;
 use HeimrichHannot\FlareBundle\Util\LazyPage;
 use Symfony\Component\Validator\Constraints as Assert;
 
-readonly class ValidationContext implements ContextInterface, PaginatedContextInterface
+readonly class ValidationIntent implements IntentInterface, PaginatedIntentInterface
 {
     use ReaderUrlConfigCreatorTrait;
 
     private PaginatorConfig $paginatorConfig;
     private LazyPage $jumpToListViewPage;
 
-    public static function getContextType(): string
+    public static function getIntentType(): string
     {
         return 'validation';
     }

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Engine\Context;
+namespace HeimrichHannot\FlareBundle\Engine\Intent;
 
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 
-class AggregationContext implements ContextInterface
+class AggregationIntent implements IntentInterface
 {
-    public static function getContextType(): string
+    public static function getIntentType(): string
     {
         return 'aggregation';
     }

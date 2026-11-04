@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Engine\Context;
+namespace HeimrichHannot\FlareBundle\Engine\Intent;
 
 use HeimrichHannot\FlareBundle\Sort\SortOrderSequence;
 
-interface SortableContextInterface
+interface SortableIntentInterface
 {
     public function getSortOrderSequence(): ?SortOrderSequence;
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\List\ListSpec;
 
@@ -17,9 +17,9 @@ use HeimrichHannot\FlareBundle\List\ListSpec;
 final readonly class ElementScope
 {
     public function __construct(
-        public ListSpec         $list,
-        public Filter           $filter,
-        public ContextInterface $engineContext,
+        public ListSpec        $list,
+        public Filter          $filter,
+        public IntentInterface $intent,
     ) {}
 
     /**

@@ -12,7 +12,7 @@ use Contao\Module;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ReaderController;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\Engine\Context\Factory\ValidationContextFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\Factory\ValidationIntentFactory;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
 use HeimrichHannot\FlareBundle\Exception\ViewException;
@@ -30,7 +30,7 @@ readonly class BreadcrumbHook
         private EventDispatcherInterface $eventDispatcher,
         private ListSpecBuilderFactory   $listFactory,
         private ProjectorRegistry        $projectorRegistry,
-        private ValidationContextFactory $validationContextFactory,
+        private ValidationIntentFactory  $validationIntentFactory,
     ) {}
 
     public function __invoke(array $items, Module $module): array
@@ -95,13 +95,13 @@ readonly class BreadcrumbHook
 
             $listSpec = $this->listFactory->create($listModel)->build();
 
-            $validationContext = $this->validationContextFactory->createFromContent(
+            $validationIntent = $this->validationIntentFactory->createFromContent(
                 contentModel: $contentModel,
                 list: $listSpec,
             );
 
-            $validationProjector = $this->projectorRegistry->getProjectorFor($listSpec, $validationContext);
-            $validationView = $validationProjector->project($listSpec, $validationContext);
+            $validationProjector = $this->projectorRegistry->getProjectorFor($listSpec, $validationIntent);
+            $validationView = $validationProjector->project($listSpec, $validationIntent);
 
             if (!$validationView instanceof ValidationView) {
                 throw ViewException::create(ValidationView::class, $validationView, __METHOD__);

@@ -105,7 +105,7 @@ final class FilterInvokerTest extends TestCase
         return new ElementScope(
             list: $scope->list,
             filter: new Filter(element: $scope->filter->element, alias: 'test', source: 'tl_flare_filter.9'),
-            engineContext: $scope->engineContext,
+            intent: $scope->intent,
         );
     }
 }

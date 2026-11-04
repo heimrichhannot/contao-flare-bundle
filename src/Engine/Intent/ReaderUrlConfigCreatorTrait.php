@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace HeimrichHannot\FlareBundle\Engine\Context;
+namespace HeimrichHannot\FlareBundle\Engine\Intent;
 
 use Contao\PageModel;
 use HeimrichHannot\FlareBundle\Reader\ReaderUrlConfig;

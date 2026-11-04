@@ -104,7 +104,7 @@ readonly class ListQueryDirector
         foreach ($list->filters as $filter)
         {
             $value = $filter->control !== null ? ($values[$filter->alias] ?? null) : $filter->value;
-            $scope = new ElementScope($list, $filter, $options->context);
+            $scope = new ElementScope($list, $filter, $options->intent);
 
             try
             {

@@ -6,8 +6,8 @@ namespace HeimrichHannot\FlareBundle\Tests\Form;
 
 use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBounds;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
-use HeimrichHannot\FlareBundle\Engine\Context\FormContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\FormIntentInterface;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
@@ -95,8 +95,8 @@ final class FormHarnessFactoryTest extends TestCase
     {
         $list = $this->listSpec($filters, $listSource);
 
-        $context = new class implements ContextInterface, FormContextInterface {
-            public static function getContextType(): string
+        $intent = new class implements IntentInterface, FormIntentInterface {
+            public static function getIntentType(): string
             {
                 return 'test';
             }
@@ -112,7 +112,14 @@ final class FormHarnessFactoryTest extends TestCase
             }
         };
 
-        return $this->createFactory($debug)->create($list, $context);
+        return $this->createFactory($debug)->create($list, $intent);
+    }
+
+    public function testRootFormCarriesTheIntent(): void
+    {
+        $root = $this->createFilterSet([])->getForm();
+
+        $this->assertInstanceOf(IntentInterface::class, $root->getConfig()->getAttribute('flare.intent'));
     }
 
     public function testSingleFieldMountsFlatUnderTheAlias(): void

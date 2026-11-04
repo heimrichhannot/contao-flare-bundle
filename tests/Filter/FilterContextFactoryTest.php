@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Engine\Context\ConfigurationContext;
+use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
@@ -29,7 +29,7 @@ final class FilterContextFactoryTest extends TestCase
 
     public function testConfigurationContextHasItsOwnType(): void
     {
-        self::assertSame('configuration', ConfigurationContext::getContextType());
+        self::assertSame('configuration', ConfigurationIntent::getIntentType());
     }
 
     public function testHandsTheValueToTheElement(): void
@@ -84,7 +84,7 @@ final class FilterContextFactoryTest extends TestCase
                 targetAlias: $alias,
                 targetingForced: $forced,
             ),
-            engineContext: new ConfigurationContext(),
+            intent: new ConfigurationIntent(),
         );
 
         $context = $this->createFilterContextFactory($registry)->create($scope, null);

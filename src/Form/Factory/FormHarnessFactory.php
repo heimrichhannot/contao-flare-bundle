@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Form\Factory;
 
-use HeimrichHannot\FlareBundle\Engine\Context\ContextInterface;
-use HeimrichHannot\FlareBundle\Engine\Context\FormContextInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\FormIntentInterface;
 use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -39,16 +39,16 @@ final readonly class FormHarnessFactory
      *
      * @throws FlareException If the form could not be built
      */
-    public function create(ListSpec $list, FormContextInterface $context): FormHarness
+    public function create(ListSpec $list, FormIntentInterface $intent): FormHarness
     {
-        if (!$context instanceof ContextInterface) {
+        if (!$intent instanceof IntentInterface) {
             throw new FlareException(
-                'Filter form context must implement ContextInterface.',
+                'Filter form context must implement IntentInterface.',
                 method: __METHOD__,
             );
         }
 
-        $name = $context->getFormName();
+        $name = $intent->getFormName();
 
         $formOptions = [
             'method' => 'GET',
@@ -59,13 +59,13 @@ final readonly class FormHarnessFactory
             ],
         ];
 
-        if ($action = $context->createFormActionUrl()) {
+        if ($action = $intent->createFormActionUrl()) {
             $formOptions['action'] = $action;
         }
 
         $root = $this->formFactory->createNamedBuilder($name, FormType::class, null, $formOptions);
         $root->setAttribute('flare.list', $list);
-        $root->setAttribute('flare.engine_context', $context);
+        $root->setAttribute('flare.intent', $intent);
 
         /** @var array<string, FilterMount> $mounts */
         $mounts = [];
@@ -83,7 +83,7 @@ final readonly class FormHarnessFactory
                 continue;
             }
 
-            $scope = new ControlScope($list, $filter, $context);
+            $scope = new ControlScope($list, $filter, $intent);
 
             try
             {

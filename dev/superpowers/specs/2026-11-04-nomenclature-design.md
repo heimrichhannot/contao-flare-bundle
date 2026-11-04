@@ -168,9 +168,9 @@ Test classes, traits and helper methods follow their subjects, e.g. `ListSpecTes
 `ListSpecBuilderTest`, `ListSpecFactoryTest`, `ListSpecBuilderFactoryTest`, `FilterTest` → `FilterCompoundTest`,
 `FilterFactoryTest`, `FilterContextFactoryTest` → `FilterEffectFactoryTest`, `ElementScopeTest` →
 `ElementContextTest`, `ControlScopeTest` → `ControlContextTest`, `BackendElementScopeFactoryTest`,
-`BuildsFilterContextsTrait` → `BuildsElementContextsTrait` (it builds element scopes today),
-`BuildsControlScopesTrait` → `BuildsControlContextsTrait`, helpers `buildFilterContext()`/`buildElementScope()` →
-`buildElementContext()`, `createFilterContextFactory()` → `createFilterEffectFactory()`,
+`BuildsFilterContextsTrait` → `BuildsFilterEffectsTrait` (it builds `FilterContext`s, i.e. effects),
+`BuildsControlScopesTrait` → `BuildsControlContextsTrait`, helpers `buildFilterContext()` → `buildFilterEffect()`,
+`buildElementScope()` → `buildElementContext()`, `createFilterContextFactory()` → `createFilterEffectFactory()`,
 `createListSpecBuilderFactory()` → `createListCompoundBuilderFactory()`,
 `testConfigurationContextHasItsOwnType` → `testConfigurationIntentHasItsOwnType`, and so on for any test or
 fixture named after an old noun.

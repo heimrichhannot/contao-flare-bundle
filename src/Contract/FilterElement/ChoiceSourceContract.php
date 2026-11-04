@@ -20,7 +20,7 @@ use HeimrichHannot\FlareBundle\Form\ChoicesBuilder;
 interface ChoiceSourceContract
 {
     /**
-     * Adds the element's choices for the given filter scope to a fresh builder the caller provides.
+     * Adds the element's choices for the given element context to a fresh builder the caller provides.
      *
      * Labelling is split: this method MAY set labels the element owns (setLabelForTable() fed from
      * element-owned whitelist rows); the control owns only global overrides.

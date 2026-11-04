@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Mod;
 
-use HeimrichHannot\FlareBundle\Engine\Intent\PaginatedIntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Engine;
+use HeimrichHannot\FlareBundle\Engine\Intent\PaginatedIntentInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class PageParamMod extends AbstractMod

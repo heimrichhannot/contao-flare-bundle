@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Contao\DataContainer;
 
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterCompoundFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
-use HeimrichHannot\FlareBundle\Contao\Factory\FilterCompoundFactory;
 use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 

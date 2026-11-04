@@ -7,10 +7,8 @@ namespace HeimrichHannot\FlareBundle\Tests\Registry;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
-use HeimrichHannot\FlareBundle\Filter\FilterEffect;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
-use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use PHPUnit\Framework\TestCase;
 
@@ -59,8 +57,6 @@ final class FilterElementRegistryTest extends TestCase
 
 final class RegistryElementStub implements FilterElementInterface
 {
-    public function buildForm(FilterFormBuilderInterface $builder, FilterEffect $effect): void {}
-
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
         ElementContext               $context,

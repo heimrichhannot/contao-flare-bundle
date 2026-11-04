@@ -13,7 +13,7 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * The filters of one list within one form context: their root form and the mount <-> filter map.
+ * The filters of one list within one form intent: their root form and the mount <-> filter map.
  *
  * Created by {@see Factory\FormHarnessFactory}. Callers that only need the form go through
  * {@see getForm()}; callers that need to relate a mounted node back to its filter go through

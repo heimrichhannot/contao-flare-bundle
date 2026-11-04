@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
 use Doctrine\DBAL\Query\QueryBuilder;
-use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;

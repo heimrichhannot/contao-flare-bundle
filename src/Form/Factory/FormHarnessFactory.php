@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Form\Factory;
 
-use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Intent\FormIntentInterface;
+use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -43,7 +43,7 @@ final readonly class FormHarnessFactory
     {
         if (!$intent instanceof IntentInterface) {
             throw new FlareException(
-                'Filter form context must implement IntentInterface.',
+                'Filter form intent must implement IntentInterface.',
                 method: __METHOD__,
             );
         }

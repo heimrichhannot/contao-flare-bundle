@@ -41,7 +41,7 @@ final class DcaContext
     }
 
     /**
-     * The backend context: the edited filter in a configuration context, or null when it cannot be built.
+     * The backend context: the edited filter with a configuration intent, or null when it cannot be built.
      */
     public function getElementContext(): ?ElementContext
     {

@@ -88,6 +88,6 @@ final class ListCompoundFactoryTest extends TestCase
         $list = $this->createFactory()->create(driver: $driver);
 
         self::assertSame('tl_news', $list->dc);
-        self::assertSame('', $list->config['dc']); // dc lives on the spec; config keeps its own value
+        self::assertSame('', $list->config['dc']); // dc lives on the list; config keeps its own value
     }
 }

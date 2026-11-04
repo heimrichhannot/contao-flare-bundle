@@ -27,7 +27,7 @@ final class FilterEffectFactoryTest extends TestCase
 {
     use BuildsFilterEffectsTrait;
 
-    public function testConfigurationContextHasItsOwnType(): void
+    public function testConfigurationIntentHasItsOwnType(): void
     {
         self::assertSame('configuration', ConfigurationIntent::getIntentType());
     }

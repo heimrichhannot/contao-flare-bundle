@@ -24,7 +24,7 @@ Behavior is:
 
 This hook is about backend record configuration, not query execution: at runtime, the list's main table is
 resolved from the canonical config via `ListDriverInterface::getDataContainerName(array $config)` when the
-`ListSpec` is created — see
+`ListCompound` is created — see
 [Data Container Resolution](../list-types/index.md#3-data-container-resolution-getdatacontainername).
 A driver pinned to one table typically implements both methods to return that table.
 

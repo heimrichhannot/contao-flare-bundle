@@ -453,7 +453,7 @@ used for pagination.
     - `param` (string): the query parameter name.
 
 Mods are also the way to add ad-hoc filters from Twig — the built-in `equation` mod covers simple
-conditions, and [custom mods](dev/engine-mods) can add any [`Filter`](spec/filtering.md#1-the-filter-value-object)
+conditions, and [custom mods](dev/engine-mods) can add any [`FilterCompound`](spec/filtering.md#1-the-filtercompound-value-object)
 to the list.
 
 ### Examples
@@ -525,8 +525,8 @@ Flare currently registers these Twig functions (see the [Twig functions referenc
   ```php
   \Contao\Controller::addEnclosuresToTemplate(...)
   ```
-- `flare_project(list_spec, context)` for running a projection directly from a template: returns the view
-  for the given `ListSpec` and context configuration, without going through a content element's engine.
+- `flare_project(list, intent)` for running a projection directly from a template: returns the view
+  for the given `ListCompound` and intent, without going through a content element's engine.
 - `flare_schema_org(?model = null)` (uses model from context if not provided): prints the JSON-LD schema markup for the given model in a reader context.
   The data can be influenced using the `ReaderSchemaOrgEvent`.
 

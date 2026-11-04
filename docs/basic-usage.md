@@ -19,7 +19,7 @@ Using Flare is simple: define a list, add filters, and display it on your page.
 
 ## Core Concepts
 
-### 1. List Configuration (The "Specification")
+### 1. List Configuration
 A list configuration is the static definition of your data source. It determines:
 - Which database table to use.
 - Which filter elements are available.
@@ -27,7 +27,7 @@ A list configuration is the static definition of your data source. It determines
 - The "auto_item" field used for detail page URLs.
 
 ### 2. Interactive Lists
-A **Flare List View** content element uses the `InteractiveContext`. This automatically:
+A **Flare List View** content element uses the `InteractiveIntent`. This automatically:
 - Generates a Symfony filter form.
 - Handles pagination and URL parameters.
 - Processes user input to filter the list in real-time.

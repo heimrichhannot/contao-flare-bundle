@@ -21,6 +21,8 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 
 ## Classes
 
+- `Engine\Context\*` — the engine contexts, their interfaces, factories and `ReaderUrlConfigCreatorTrait` are
+  renamed to `Engine\Intent\*` (see [migrating](./migrating-from-v0.1.md#engine-contexts--intents))
 - `Specification\FilterDefinition`
 - `Specification\Factory\FilterDefinitionFactory`
 - `Specification\DataSource\FilterDataSourceInterface`
@@ -34,31 +36,32 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - `DataContainer\FlareCallbackContainerInterface`
 - `Contract\Config\PaletteConfig`, `Contract\Config\ListItemProviderConfig`
 - `Util\MethodInjector`
-- `Filter\FilterData` and `Filter::$data` / `Filter::withData()` — programmatic runtime values are `Filter::$value`
+- `Filter\FilterData` and `FilterCompound::$data` / `FilterCompound::withData()` — programmatic runtime values are `FilterCompound::$value`
 - `Filter\FilterExecutor` and `Filter\FilterBuilder` — replaced by the `ListQueryDirector`,
-  `FilterContextBuilderInterface` and `FormulaBuilder`
-- `Filter\FilterScope` — replaced by the role-typed `Filter\ElementScope` (element hooks and ports) and
-  `Filter\ControlScope` (control hooks); `$scope->get('key')` reads the calling component's own config, and
-  `ControlScope::forElement()` hands element ports their scope. `FilterScope::ATTR_SELF` became
-  `Form\FilterFormBuilderInterface::ATTR_SCOPE`, `FilterScope::ATTR_SINGLE_FIELD` became
+  `FilterEffectBuilderInterface` and `FormulaBuilder`
+- `Filter\FilterScope` — replaced by the role-typed `Filter\ElementContext` (element hooks and ports) and
+  `Filter\ControlContext` (control hooks); `$context->get('key')` reads the calling component's own config, and
+  `ControlContext::forElement()` hands element ports their context. `FilterScope::ATTR_SELF` became
+  `Form\FilterFormBuilderInterface::ATTR_CONTEXT`, `FilterScope::ATTR_SINGLE_FIELD` became
   `Form\FilterMount::ATTR_SINGLE_FIELD`
-- `FilterContextBuilder::$scope` and `FilterContext::$scope` — the element receives the scope as a
-  `buildContext()` parameter; `FilterContextBuilder::build()` is internal, elements see only
-  `FilterContextBuilderInterface`
-- `Filter::$type`, `Filter::$config`, `Filter::$controlConfig`, `Filter::$controlType` — a filter now holds an
+- `FilterEffectBuilder::$context` and `FilterEffect::$context` — the element receives the context as a
+  `buildEffect()` parameter; `FilterEffectBuilder::build()` is internal, elements see only
+  `FilterEffectBuilderInterface`
+- `FilterCompound::$type`, `FilterCompound::$config`, `FilterCompound::$controlConfig`,
+  `FilterCompound::$controlType` — a filter now holds an
   `ElementBinding` and an optional `ControlBinding`, each with `component`, `type` and a `ComponentConfig`:
 
   | Removed | Replacement |
   |---|---|
-  | `$filter->element` (the element) | `$filter->element->component` — in a control hook: `$scope->element()`, or `$scope->element(SomeContract::class)` for a port |
+  | `$filter->element` (the element) | `$filter->element->component` — in a control hook: `$context->element()`, or `$context->element(SomeContract::class)` for a port |
   | `$filter->type` | `$filter->element->type` |
-  | `$filter->config['key']` | `$filter->element->config->get('key')` — in a hook: `$scope->get('key')` |
+  | `$filter->config['key']` | `$filter->element->config->get('key')` — in a hook: `$context->get('key')` |
   | `$filter->control` (the control) | `$filter->control?->component` |
-  | `$filter->controlConfig['key']` | `$filter->control?->config->get('key')` — in a control hook: `$scope->get('key')` |
+  | `$filter->controlConfig['key']` | `$filter->control?->config->get('key')` — in a control hook: `$context->get('key')` |
   | `$filter->controlType` | `$filter->control?->type` |
-  | `Filter::withControl($control, $config, $type)` | `Filter::withControl(?ControlBinding)` |
+  | `FilterCompound::withControl($control, $config, $type)` | `FilterCompound::withControl(?ControlBinding)` |
 
-- `DcaContext::getFilterScope()` — replaced by `DcaContext::getElementScope()`
+- `DcaContext::getFilterScope()` — replaced by `DcaContext::getElementContext()`
 - `Util\Fingerprint` — value objects express their identity through `ValueInterface::fingerprint()`
 - `Filter\Value\ParentRefValue` (use `ChoiceValue` of `ContaoModelChoice` references)
 - `ChoicesBuilder::setLabelForModel()`, `::getChoice()`, `::addGroup()`, `::removeGroup()` and the `@api`
@@ -76,11 +79,11 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - `Contract\FilterElement\RuntimeValueContract`
 - `Contract\FilterElement\IntrinsicContract` — an element without a value class is intrinsic; otherwise the
   filter record's `control` field is left blank
-- `FilterElementInterface::buildForm()` and `::buildFilter()` — replaced by `buildContext()` on the element and
+- `FilterElementInterface::buildForm()` and `::buildFilter()` — replaced by `buildEffect()` on the element and
   `buildForm()` / `decode()` / `hydrate()` on a [filter control](./dev/filter-controls.md)
-- Old hook signatures: `buildContext(FilterContextBuilder, ?ValueInterface)` is now
-  `buildContext(FilterContextBuilderInterface, ElementScope, ?ValueInterface)`; controls take a `ControlScope`
-  in `decode(mixed, ControlScope)` and `hydrate(?ValueInterface, ControlScope)`; `buildForm()`,
+- Old hook signatures: `buildEffect(FilterEffectBuilder, ?ValueInterface)` is now
+  `buildEffect(FilterEffectBuilderInterface, ElementContext, ?ValueInterface)`; controls take a `ControlContext`
+  in `decode(mixed, ControlContext)` and `hydrate(?ValueInterface, ControlContext)`; `buildForm()`,
   `ChoiceSourceContract::buildChoices()` and `DateBoundsContract::getDateBounds()` take the role-typed scope
 
 ## Events
@@ -93,7 +96,7 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - `FilterDefinitionCreatedEvent`
 - `FilterElementBuildingEvent` and `FilterElementBuiltEvent` (v0.2 development only) — and with them
   `FilterElementInvokingEvent` / `FilterElementInvokedEvent` have **no successor**: use `ListDriverBuildListEvent`
-  (`flare.list_driver.{type}.build_list`), a programmatic `Filter::$value`, or a custom filter element
+  (`flare.list_driver.{type}.build_list`), a programmatic `FilterCompound::$value`, or a custom filter element
 
 ### Named event aliases
 
@@ -130,11 +133,11 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - A list with a broken filter element (with or without a control), a broken fixed value, or two published
   filters sharing an alias now renders `list.failed` (HTTP 200) instead of an empty or unfiltered result; its
   reader answers 500.
-- `ListSpec::withFilter()` and `ListSpecBuilder::addFilter()` throw a `FlareException` on a duplicate alias
+- `ListCompound::withFilter()` and `ListCompoundBuilder::addFilter()` throw a `FlareException` on a duplicate alias
   (`addFilter()` also on a taken key) instead of replacing the filter.
 - An archive filter (`flare_archive`) **without a control** is restricted by its `value` only. The element ignores
   `whitelist_parents`, `group_whitelist_parents` and `use_whitelist_for_options_only` then — also when they are
-  passed to `FilterFactory::create()` — and without a value the filter restricts nothing. Code that built an
+  passed to `FilterCompoundFactory::create()` — and without a value the filter restricts nothing. Code that built an
   intrinsic archive filter from a whitelist must pass the archives as its `value` (a `ChoiceValue`) instead.
 
 - Filter element classes moved from `FilterElement\` to `Filter\Element\` and gained a `FilterElement`

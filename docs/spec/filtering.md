@@ -20,28 +20,28 @@ As of v0.2, FLARE's filtering is built from four decoupled concepts:
   stateless query-fragment builders — the only components that write SQL conditions.
   See [Predicates](../dev/predicates.md).
 
-A filter is applied in **two stages**: a value-free, role-typed scope (list × filter × engine context) is what
-hooks receive before a value exists — an `ElementScope` for the element's `buildContext()` and its ports, a
-`ControlScope` for the control; `$scope->get('key')` reads the calling component's own config. The
-`FilterContext` is the element's product for one invocation, built once a value is known.
+A filter is applied in **two stages**: a value-free, role-typed context (list × filter × intent) is what
+hooks receive before a value exists — an `ElementContext` for the element's `buildEffect()` and its ports, a
+`ControlContext` for the control; `$context->get('key')` reads the calling component's own config. The
+`FilterEffect` is the element's product for one invocation, built once a value is known.
 
 The pipeline, end to end:
 
 ```
-tl_flare_filter rows ──(collector + transformers + value provider)──▶ Filter[] on the ListSpec
+tl_flare_filter rows ──(collector + transformers + value provider)──▶ FilterCompound[] on the ListCompound
                                                           │
-          form building: control->buildForm(builder, scope) per filter ──▶ FormHarness (root form + mounts)
+          form building: control->buildForm(builder, context) per filter ──▶ FormHarness (root form + mounts)
                                                           │
-         submit: control->decode(data, scope) ──▶ value object per filter alias
+         submit: control->decode(data, context) ──▶ value object per filter alias
                                                           │
- query building (ListQueryDirector): element->buildContext(builder, scope, value) ──▶ Proposition[]
+ query building (ListQueryDirector): element->buildEffect(builder, context, value) ──▶ Proposition[]
                                                           │
                       predicate->buildConditions() ──▶ FilterConditionsBuilder[] ──▶ SQL conditions
 ```
 
-## 1. The `Filter` Value Object
+## 1. The `FilterCompound` Value Object
 
-`HeimrichHannot\FlareBundle\Filter\Filter` is the immutable runtime representation of a single filter within
+`HeimrichHannot\FlareBundle\Filter\FilterCompound` is the immutable runtime representation of a single filter within
 a list. It binds a filter element with its canonical configuration, an optional control with its own, and an
 optional value — no DCA or storage specifics.
 
@@ -60,17 +60,17 @@ Constructor properties:
 Both configs are a `ComponentConfig` (`HeimrichHannot\FlareBundle\Config\ComponentConfig`): immutable, holding
 scalars, arrays and enums only. `get('key')` returns a value — `null` for an option defined without default and
 not set — and throws `UndefinedConfigKeyError` (an `\Error`) for a key the component's schema does not define;
-`has('key')` and `all()` complete it. Inside a hook, `$scope->get('key')` is the short way to the own config.
+`has('key')` and `all()` complete it. Inside a hook, `$context->get('key')` is the short way to the own config.
 
-Because `Filter` is immutable, all modification happens through withers that return a new instance:
+Because `FilterCompound` is immutable, all modification happens through withers that return a new instance:
 `withValue()`, `withControl(?ControlBinding)`, `withTargetAlias(?string, bool $forced = true)`.
 
-Filters are created without a database row through the `FilterFactory` service — which resolves registered
-element aliases and control names to their services — or by constructing a `Filter` directly around an inline
+Filters are created without a database row through the `FilterCompoundFactory` service — which resolves registered
+element aliases and control names to their services — or by constructing a `FilterCompound` directly around an inline
 element instance; see
 [Programmatic Filters](../dev/filter-elements/index.md#9-programmatic-filters-without-a-backend-record).
-`Filter::fingerprint()` returns a representation (element class, configs, control class and the value's
-`fingerprint()`) used by `ListSpec::hash()` for in-request caching.
+`FilterCompound::fingerprint()` returns a representation (element class, configs, control class and the value's
+`fingerprint()`) used by `ListCompound::hash()` for in-request caching.
 
 **Fixed vs. initial value.** The `control` column of a filter record decides the role of its value:
 
@@ -82,7 +82,7 @@ element instance; see
 ## 2. Collection
 
 The `ListModelFilterCollector` (`Filter\Collector\`) reads the published `tl_flare_filter` rows of a
-`tl_flare_list` record; the `FilterFactory` translates each row into a `Filter`: element config through the
+`tl_flare_list` record; the `FilterCompoundFactory` translates each row into a `FilterCompound`: element config through the
 element's transformers (the `configureTransformers()` map, usually the `transformFilterModel()` hook — see
 [Config Schema](../dev/filter-elements/index.md#3-config-schema-configureoptions--configuretransformers)), the
 control and its config through the control's transformers, and the value through the value provider for the
@@ -93,14 +93,15 @@ listeners may replace the (mutable) `$event->filter`, e.g. to change its config 
 ## 3. Form Building
 
 For each filter *with a control* whose alias is a valid Symfony form name, the `FormHarnessFactory` creates a
-`ControlScope` and hands a collect-only per-filter builder (`FilterFormBuilderInterface`) to the control's
+`ControlContext` and hands a collect-only per-filter builder (`FilterFormBuilderInterface`) to the control's
 `buildForm()`. **Single-field controls** declare their one field via `single()` — it is mounted flat on the root
 form under the filter's alias (`form[alias]=x`). **Multi-field controls** `add()` children under local names,
-which mount as a compound sub-form (`form[alias][from]=x`); `compound()` sets its form options, e.g. a label.
+which mount as a nested Symfony compound form (`form[alias][from]=x`); `setMountOptions()` sets its form options,
+e.g. a label.
 Each mount is hydrated with
-`control->hydrate($filter->value, $scope)`.
+`control->hydrate($filter->value, $context)`.
 
-The per-filter builder carries the `ControlScope` in its attribute bag under `FilterFormBuilderInterface::ATTR_SCOPE`.
+The per-filter builder carries the `ControlContext` in its attribute bag under `FilterFormBuilderInterface::ATTR_CONTEXT`.
 After the control built its fields, a `FilterControlBuildFormEvent` is dispatched — listeners can add, remove, or
 replace children, adjust the `single()` declaration, or `cancel()` the filter's form entirely. Filters that declare no
 fields are not mounted onto the root form.
@@ -112,15 +113,15 @@ for every mount (`null` included), for an unsubmitted one the non-null results (
 
 ## 4. Query Building
 
-When a projector executes the list query, the `ListQueryDirector` processes each filter on the spec:
+When a projector executes the list query, the `ListQueryDirector` processes each filter on the list:
 
 1. The filter's value is determined by its role: **with a control**, the form's value
    (`$values[$alias] ?? null`) — in the interactive list and its aggregation the submission or, unsubmitted,
    the decoded initial value; in a validation context (readers) there is no map, so the initial value does not
-   apply. **Without a control**, the fixed `Filter::$value`, in every context.
-2. The `FilterContextFactory` creates the `FilterContext` from an `ElementScope` and the value: the
-   element's `buildContext()` runs and translates config + value into one or more **predicate calls** on the
-   `FilterContextBuilderInterface`:
+   apply. **Without a control**, the fixed `FilterCompound::$value`, in every context.
+2. The `FilterEffectFactory` creates the `FilterEffect` from an `ElementContext` and the value: the
+   element's `buildEffect()` runs and translates config + value into one or more **predicate calls** on the
+   `FilterEffectBuilderInterface`:
 
    ```php
    $builder->addPredicate(BooleanPredicate::class, ['field' => 'featured', 'value' => true]);
@@ -140,7 +141,7 @@ the list to an empty result set — useful when a required value is missing or i
 Every predicate call runs against a table alias — by default `main`, the list's primary table (see
 [SQL Query Struct & Aliasing](./query-struct.md)). Elements registered with
 `#[AsFilterElement(isTargeted: true)]` respect the target alias configured on the filter record; a
-programmatic filter can force one with `Filter::withTargetAlias('my_alias')`. In the backend,
+programmatic filter can force one with `FilterCompound::withTargetAlias('my_alias')`. In the backend,
 `DcaContext::getTargetTable()` resolves the same aliasing so DCA option lookups match the queried table.
 
 ## 6. Failure Handling
@@ -194,7 +195,7 @@ Every saved filter is inspected, published or not; an unpublished filter's icon 
 above the overview, which counts published filters and those added by the list driver. Duplicate aliases: two or
 more published filters sharing an alias block the list, and all filters of that alias are marked; with one published
 filter only the unpublished ones are marked (they would block the list once published); with none, none is.
-Failures are recorded on the `ListSpec` as `FilterFailure` objects (source, message, exception).
+Failures are recorded on the `ListCompound` as `FilterFailure` objects (source, message, exception).
 
 **Which exception to throw.** `FilterException` (and its subclass `UnreadableValueException`) is public API: filter
 components — elements, controls, value providers and capability ports, bundled and userland alike — throw it to

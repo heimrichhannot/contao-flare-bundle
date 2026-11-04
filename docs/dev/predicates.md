@@ -106,20 +106,20 @@ That's it — no attribute, no manual registration.
 
 ## 4. Consuming Predicates
 
-**From a filter element**, inside `buildContext()`:
+**From a filter element**, inside `buildEffect()`:
 
 ```php
-public function buildContext(
-    FilterContextBuilderInterface $builder,
-    ElementScope                  $scope,
-    ?ValueInterface               $value,
+public function buildEffect(
+    FilterEffectBuilderInterface $builder,
+    ElementContext               $context,
+    ?ValueInterface              $value,
 ): void {
     if (!$value = $this->expectValue($value, MyPriceValue::class)) {
         return; // no value, no condition
     }
 
     $builder->addPredicate(MinPricePredicate::class, [
-        'field' => $scope->get('field'),
+        'field' => $context->get('field'),
         'min' => $value->min,
     ]);
 }
@@ -130,28 +130,28 @@ validated against the predicate's `configureOptions()` schema.
 
 **Programmatically**, through a
 [programmatic filter](./filter-elements/index.md#9-programmatic-filters-without-a-backend-record) whose element
-emits the call — added to a list through `ListSpecBuilder::addFilter()` or `ListSpec::withFilter()`:
+emits the call — added to a list through `ListCompoundBuilder::addFilter()` or `ListCompound::withFilter()`:
 
 ```php
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\Filter;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
-use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 
 $element = new class implements FilterElementInterface {
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementContext               $context,
+        ?ValueInterface              $value,
     ): void {
         $builder->addPredicate(MinPricePredicate::class, ['field' => 'price', 'min' => 10]);
     }
 };
 
-$filter = new Filter(
+$filter = new FilterCompound(
     // the type is only used for named events; free for an unregistered element
     element: new ElementBinding($element, 'app_min_price', new ComponentConfig()),
     alias: 'min_price',     // the filter's key within the list

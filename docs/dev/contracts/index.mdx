@@ -18,12 +18,12 @@ Contracts are grouped into three categories:
 The element lifecycle interfaces live in `HeimrichHannot\FlareBundle\Filter\Element\` and are covered in
 depth by the [custom filter elements guide](../filter-elements/index.md):
 
-- **`FilterElementInterface`**: The core contract every element implements — `buildContext()` translates
+- **`FilterElementInterface`**: The core contract every element implements — `buildEffect()` translates
   config and the filter's value object into predicate calls. Presentation is the job of a
   [filter control](../filter-controls.md).
 - **Capability ports** (`Contract\FilterElement\`): `ChoiceSourceContract` (the element offers a set of
   choices) and `DateBoundsContract` (the element bounds a date range) — what controls and value providers pull
-  from an element. Both take an `ElementScope`, so the element reads its own config with `$scope->get()`. See [filter controls](../filter-controls.md#3-capability-ports).
+  from an element. Both take an `ElementContext`, so the element reads its own config with `$context->get()`. See [filter controls](../filter-controls.md#3-capability-ports).
   `IneffectiveFilterContract` lets an element tell the backend why its filter restricts nothing as configured;
   see [filter elements](../filter-elements/index.md).
 
@@ -32,8 +32,8 @@ depth by the [custom filter elements guide](../filter-elements/index.md):
 These live in `HeimrichHannot\FlareBundle\Contract\ListDriver\`:
 
 - [**`BuildQueryContract`**](./build-query-contract.md): Register joins and customize the base SQL query.
-- **`BuildListContract`**: Take part in the list build lifecycle — `buildList(ListSpecBuilder)` adds filters or
-  config overrides before the `ListSpec` is built (see the [custom list drivers guide](../list-types/index.md)).
+- **`BuildListContract`**: Take part in the list build lifecycle — `buildList(ListCompoundBuilder)` adds filters or
+  config overrides before the `ListCompound` is built (see the [custom list drivers guide](../list-types/index.md)).
 - [**`DataContainerContract`**](./data-container-contract.md): Resolve the list record's `dc` value during backend
   editing.
 

@@ -21,17 +21,17 @@ Dispatched after the `TableAliasRegistry` and base `SqlQueryStruct` are initiali
 ## 2. List Build & Filter Collection Lifecycle
 
 ### `ListDriverBuildListEvent`
-Dispatched while a list is being built into its [`ListSpec`](../spec/specifications.md) — after the
+Dispatched while a list is being built into its [`ListCompound`](../spec/compounds.md) — after the
 driver's `buildList()` hook and before the config is resolved.
 - **Use Case:** Adding or removing filters and setting canonical config overrides at runtime.
 - **Class:** `HeimrichHannot\FlareBundle\Event\ListDriverBuildListEvent`
-- **Properties:** `builder` (readonly `ListSpecBuilder` — `addFilter()`, `removeFilter()`, `set()`, ...)
+- **Properties:** `builder` (readonly `ListCompoundBuilder` — `addFilter()`, `removeFilter()`, `set()`, ...)
 
 ### `FilterCollectedEvent`
 Dispatched for every filter collected from the database, before it is added to the list.
 - **Use Case:** Replacing or reconfiguring a filter based on its `tl_flare_filter` record.
 - **Class:** `HeimrichHannot\FlareBundle\Event\FilterCollectedEvent`
-- **Properties:** `filter` (mutable `Filter` — assign a replacement), `model` (readonly `FilterModel`)
+- **Properties:** `filter` (mutable `FilterCompound` — assign a replacement), `model` (readonly `FilterModel`)
 
 ### `FilterElementConfigureTransformersEvent`
 Dispatched once per filter element class and type when its transformer map is configured, after the
@@ -89,25 +89,25 @@ Dispatched after every filter mounted onto the root form, before the form is bui
 `FormBuilderInterface`.
 - **Use Case:** Adding, removing, or reconfiguring form children of the filter form.
 - **Class:** `HeimrichHannot\FlareBundle\Event\FormHarnessBuildEvent`
-- **Properties:** `list` (readonly `ListSpec`), `formName` (readonly), `formBuilder`
+- **Properties:** `list` (readonly `ListCompound`), `formName` (readonly), `formBuilder`
 
 ### `FilterControlBuildFormEvent`
 Dispatched after a filter's [control](./filter-controls.md) `buildForm()` declared its fields on the collect-only per-filter
 builder, before the factory mounts them onto the root form (flat for `single()` fields without companions,
-nested compound otherwise).
+nested Symfony compound form otherwise).
 - **Use Case:** Adding, removing, or replacing one filter's form children (re-adding a same-named child
   overwrites it), adjusting the single-field declaration via `single()`/`getSingle()`, or preventing the
   filter from being mounted at all. Adding a child alongside a `single()` declaration switches the filter
-  to the nested compound layout.
+  to the nested layout.
 - **Class:** `HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent`
-- **Properties:** `builder` (readonly `FilterFormBuilderInterface`), `scope` (readonly `ControlScope`)
+- **Properties:** `builder` (readonly `FilterFormBuilderInterface`), `context` (readonly `ControlContext`)
 - **API:** `cancel()` / `isCancelled()`
 
 :::info[No per-element events]
 
 `FilterElementBuildingEvent` and `FilterElementBuiltEvent` were removed together with the `buildFilter()`
 element lifecycle they surrounded. To add or remove filters, use
-[`ListDriverBuildListEvent`](#listdriverbuildlistevent); to influence a filter's value, set `Filter::$value` programmatically; for
+[`ListDriverBuildListEvent`](#listdriverbuildlistevent); to influence a filter's value, set `FilterCompound::$value` programmatically; for
 bespoke matching, write a custom filter element.
 
 :::
@@ -171,10 +171,10 @@ How `{type}` is derived:
   `ListDriverRegistry` and fire once per type alias it is registered under (a driver registered under
   several aliases dispatches once per alias). An inline driver instance that is not registered fires no
   named events — the base event still fires.
-- **`flare.filter_element.{type}.transformers`** uses the element's type (`Filter::$element->type`) — the registered *element* type
-  captured when the filter was created from one (e.g. via `FilterFactory`).
+- **`flare.filter_element.{type}.transformers`** uses the element's type (`FilterCompound::$element->type`) — the registered *element* type
+  captured when the filter was created from one (e.g. via `FilterCompoundFactory`).
 - **`flare.filter_control.{type}.transformers` and `.build_form`** use the registered *control* type the control
-  was resolved from (`Filter::$control->type`). For a control passed to `FilterFactory` as an instance, the type
+  was resolved from (`FilterCompound::$control->type`). For a control passed to `FilterCompoundFactory` as an instance, the type
   is its class name.
 - **`.dca`** events run in the backend and use the type stored on the record being edited — the element type
   (`type`), the control type (`control`) or the list driver type.

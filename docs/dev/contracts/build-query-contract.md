@@ -11,7 +11,7 @@ they need.
 
 Before your methods run, Flare creates the query context with:
 
-- The list's main table (`ListSpec::$dc`, definitively resolved when the spec was created)
+- The list's main table (`ListCompound::$dc`, definitively resolved when the list was created)
 - `main` as the default table alias
 - `SELECT main.*`
 - `GROUP BY main.id`

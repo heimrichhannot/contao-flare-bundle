@@ -6,7 +6,7 @@ sidebar_position: 10
 
 Engine mods allow developers to manipulate the Flare `Engine` before a view is created. They are applied in Twig
 templates via `flare.addMod(type, options)` and executed during `flare.createView()`. Mods can add filters, change
-pagination parameters, or modify any other aspect of the engine's context or list spec.
+pagination parameters, or modify any other aspect of the engine's intent or list.
 
 See the [Templating](../templating#modding-the-flare-engine) page for usage in Twig.
 
@@ -22,7 +22,7 @@ The flow:
 2. Template calls `flare.createView()` — the engine clones itself, iterates over queued mods, resolves each from the
    registry, and calls `ModInterface::apply()`.
 3. `apply()` runs the mod's logic — `AbstractMod` first resolves the options via Symfony's `OptionsResolver`.
-4. The mod manipulates the cloned engine (its `ListSpec`, `ContextInterface`, etc.).
+4. The mod manipulates the cloned engine (its `ListCompound`, `IntentInterface`, etc.).
 5. After all mods have been applied, the engine projects the view.
 
 ## Creating a Custom Mod
@@ -45,13 +45,13 @@ use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Engine\Mod\AbstractMod;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterCompoundFactory;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class BooleanTrueMod extends AbstractMod
 {
     public function __construct(
-        private readonly FilterFactory $filterFactory,
+        private readonly FilterCompoundFactory $filterCompoundFactory,
     ) {}
 
     public static function getType(): string
@@ -67,7 +67,7 @@ class BooleanTrueMod extends AbstractMod
 
     public function __invoke(Engine $engine, array $options): void
     {
-        $filter = $this->filterFactory->create(
+        $filter = $this->filterCompoundFactory->create(
             element: SimpleEquationFilterElement::TYPE,
             config: [
                 'left' => $options['field'],
@@ -134,14 +134,14 @@ this for you — it defines an overridable `configureOptions()` hook, resolves t
 
 The `Engine` passed to your mod exposes:
 
-- `$engine->getList()` / `$engine->setList()` — the [`ListSpec`](../spec/specifications.md), giving access
-  to filters, config, and table setup. `ListSpec` is immutable: derive a new spec with its `with*()`
+- `$engine->getList()` / `$engine->setList()` — the [`ListCompound`](../spec/compounds.md), giving access
+  to filters, config, and table setup. `ListCompound` is immutable: derive a new list with its `with*()`
   methods and set it back on the engine.
-- `$engine->getContext()` — the `ContextInterface`, giving access to request-level state like pagination parameters.
+- `$engine->getIntent()` — the `IntentInterface`, giving access to request-level state like pagination parameters.
 
 ### Common operations
 
-**Add a filter** (a [`Filter`](../spec/filtering.md#1-the-filter-value-object) value object; keyed by its
+**Add a filter** (a [`FilterCompound`](../spec/filtering.md#1-the-filtercompound-value-object) value object; keyed by its
 alias — a duplicate alias throws a `FlareException`, nothing is replaced silently):
 
 ```php
@@ -157,9 +157,9 @@ $engine->setList($engine->getList()->withoutFilter('my_filter'));
 **Change the pagination query parameter:**
 
 ```php
-$context = $engine->getContext();
-if ($context instanceof PaginatedContextInterface) {
-    $context->setPaginatorQueryParameter('my_page');
+$intent = $engine->getIntent();
+if ($intent instanceof PaginatedIntentInterface) {
+    $intent->setPaginatorQueryParameter('my_page');
 }
 ```
 

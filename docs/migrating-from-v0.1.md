@@ -24,8 +24,8 @@ For the exhaustive list of deleted APIs, see [Removed in v0.2](./removed-in-v0.2
 | v0.1 | v0.2 |
 |---|---|
 | `HeimrichHannot\FlareBundle\FilterElement\FooElement` | `HeimrichHannot\FlareBundle\Filter\Element\FooFilterElement` — all elements moved and renamed with a `FilterElement` suffix; the `::TYPE` strings (e.g. `flare_bool`) are unchanged |
-| `Specification\FilterDefinition`, `Collection\FilterDefinitionCollection` | `Filter\Filter` — a single immutable value object; see [Filter Pipeline](./spec/filtering.md) |
-| `FilterCollector\*` | `Filter\Collector\*`; `collect()` now returns `array<string\|int, Filter>\|null` |
+| `Specification\FilterDefinition`, `Collection\FilterDefinitionCollection` | `Filter\FilterCompound` — a single immutable value object; see [Filter Pipeline](./spec/filtering.md) |
+| `FilterCollector\*` | `Filter\Collector\*`; `collect()` now returns `array<string\|int, FilterCompound>\|null` |
 | `Form\Type\DateRangeFilterType` (Symfony form type) | `Form\Type\DateRangeFormType` — renamed; the query-side `Filter\Type\*FilterType` classes are now `Filter\Predicate\*Predicate` |
 | `ListType\ListTypeInterface`, `ListType\AbstractListType` | `List\Driver\ListDriverInterface`, `List\Driver\AbstractListDriver` — "list types" are implemented by **list drivers**; the registered type aliases (e.g. `flare_news`) are unchanged |
 | `ListType\NewsListType`, `ListType\GenericDataContainerListType`, ... | `List\Driver\NewsListDriver`, `List\Driver\GenericDataContainerListDriver`, ... — built-in drivers renamed accordingly (see [built-in list types](./reference/list-types.md)) |
@@ -35,10 +35,10 @@ For the exhaustive list of deleted APIs, see [Removed in v0.2](./removed-in-v0.2
 
 | v0.1 | v0.2 |
 |---|---|
-| `#[AsFilterElement(type:, formType:, palette:, method:, isTargeted:)]` | `#[AsFilterElement(type:, isTargeted:, value:)]` — palette moves into `buildDca()`, the form type into a [filter control](./dev/filter-controls.md), the invoked method is always `buildContext()`; `value:` names the value class the element consumes (none = always intrinsic) |
+| `#[AsFilterElement(type:, formType:, palette:, method:, isTargeted:)]` | `#[AsFilterElement(type:, isTargeted:, value:)]` — palette moves into `buildDca()`, the form type into a [filter control](./dev/filter-controls.md), the invoked method is always `buildEffect()`; `value:` names the value class the element consumes (none = always intrinsic) |
 | — | `#[AsFilterControl(type:)]` — registers a [filter control](./dev/filter-controls.md); new in v0.2 |
 | `#[AsListType(type:, dataContainer:, palette:)]` | `#[AsListDriver(type:, dataContainer:)]` — renamed; palette moves into `buildDca()`; `dataContainer` is only a backend default for new records |
-| `#[AsFilterInvoker]` | Removed — branch on `$scope->engineContext` inside `buildContext()` or a control hook |
+| `#[AsFilterInvoker]` | Removed — branch on `$context->intent` inside `buildEffect()` or a control hook |
 | `#[AsFilterCallback]`, `#[AsListCallback]`, `#[AsFlareCallback]` | Removed — use [`buildDca()` / the DCA events](./dev/dca-builder.md) |
 
 ## Translations
@@ -61,12 +61,12 @@ lifecycle method on the element, plus a separate control (see the
 
 | v0.1 | v0.2 |
 |---|---|
-| `formType:` attribute parameter | A [`FilterControlInterface`](./dev/filter-controls.md): `buildForm(FilterFormBuilderInterface $builder, ControlScope $scope)`, `decode()`, `hydrate()` — registered with `#[AsFilterControl]` and chosen per filter record in the `control` field |
-| `__invoke(FilterInvocation, FilterQueryBuilder)` | `buildContext(FilterContextBuilderInterface $builder, ElementScope $scope, ?ValueInterface $value): void` — emit predicate calls instead of writing SQL |
+| `formType:` attribute parameter | A [`FilterControlInterface`](./dev/filter-controls.md): `buildForm(FilterFormBuilderInterface $builder, ControlContext $context)`, `decode()`, `hydrate()` — registered with `#[AsFilterControl]` and chosen per filter record in the `control` field |
+| `__invoke(FilterInvocation, FilterQueryBuilder)` | `buildEffect(FilterEffectBuilderInterface $builder, ElementContext $context, ?ValueInterface $value): void` — emit predicate calls instead of writing SQL |
 | SQL written directly in the element | A [`PredicateInterface`](./dev/predicates.md) service; the element calls `$builder->addPredicate(MyPredicate::class, [...])` |
-| `FilterInvocation->getValue()` | `$value` — a typed value object (`BoolValue`, `ChoiceValue`, `DateRangeValue`, `KeywordsValue`) — and `$scope->get('key')` (resolved config) |
-| `FilterQueryBuilder::abort()` in the element | `$builder->abort()` on the `FilterContextBuilderInterface` (predicates may still use `FilterConditionsBuilder::abort()`) |
-| `$filter->data` / `FilterData` | Removed. Programmatic runtime data is `Filter::$value` — a fixed value without a control, an initial value with one |
+| `FilterInvocation->getValue()` | `$value` — a typed value object (`BoolValue`, `ChoiceValue`, `DateRangeValue`, `KeywordsValue`) — and `$context->get('key')` (resolved config) |
+| `FilterQueryBuilder::abort()` in the element | `$builder->abort()` on the `FilterEffectBuilderInterface` (predicates may still use `FilterConditionsBuilder::abort()`) |
+| `$filter->data` / `FilterData` | Removed. Programmatic runtime data is `FilterCompound::$value` — a fixed value without a control, an initial value with one |
 | `IntrinsicContract` / `intrinsic` config option | Removed. An element without a value class is intrinsic; otherwise the editor leaves `control` blank (the `value` is then a fixed value) |
 | `ChoicesBuilder::add(string\|int $key, Model\|... $value)` | `ChoicesBuilder::add(ChoiceObjectInterface $choice)` — pass a `ContaoModelChoice` or `ValueChoice`; `setLabelForModel()`, `getChoice()`, `addGroup()` and `removeGroup()` are gone |
 
@@ -75,7 +75,7 @@ lifecycle method on the element, plus a separate control (see the
 | v0.1 contract | v0.2 equivalent |
 |---|---|
 | `FormDataContract::extractFormData()` | The control's `decode()` — returns a value object |
-| `RuntimeValueContract::processRuntimeValue()` | Normalize values in the control's `decode()` or the element's `buildContext()` |
+| `RuntimeValueContract::processRuntimeValue()` | Normalize values in the control's `decode()` or the element's `buildEffect()` |
 | `IntrinsicValueContract::getIntrinsicValue()` | `$value` of a filter without a control — the fixed value |
 | `HydrateFormContract::hydrateForm()` | The control's `hydrate()` |
 | `FormTypeOptionsContract::handleFormTypeOptions()` | Build options directly in the control's `buildForm()`; third parties use `FilterControlBuildFormEvent` |
@@ -90,7 +90,7 @@ New interfaces: `FilterElementInterface` (required, one method), `FilterControlI
 
 | v0.1 | v0.2 |
 |---|---|
-| `FilterElementInvokingEvent` (`flare.filter_element.{type}.invoking`) | **No successor.** Add or remove filters in a `ListDriverBuildListEvent` (`flare.list_driver.{type}.build_list`), set `Filter::$value` programmatically, or write a custom filter element |
+| `FilterElementInvokingEvent` (`flare.filter_element.{type}.invoking`) | **No successor.** Add or remove filters in a `ListDriverBuildListEvent` (`flare.list_driver.{type}.build_list`), set `FilterCompound::$value` programmatically, or write a custom filter element |
 | `FilterElementInvokedEvent` (`flare.filter_element.{type}.invoked`) | **No successor** — same alternatives |
 | `FilterFormChildOptionsEvent` (`flare.form.{parent}.child.{name}.options`) | Removed — customize in the control's `buildForm()`, or listen to `FilterControlBuildFormEvent` (`flare.filter_control.{type}.build_form`) |
 | `FilterElementFormTypeOptionsEvent` | Removed — same replacement as above |
@@ -173,29 +173,47 @@ Backend changes in the filter form:
   and above the filter list: programming error (bug), duplicate alias (copy-x), broken (bone-fracture) and
   ineffective (engine).
 
-## ListSpecification → ListSpec
+## Engine Contexts → Intents
 
-`ListSpecification` is replaced by the immutable `List\ListSpec`, built by the `List\ListSpecBuilder`
-(see [List Specs & Filters](./spec/specifications.md)); programmatic construction goes through the
-`ListSpecFactory` service, which accepts a driver instance or a registered type alias and resolves the
-list's data container definitively. The spec carries the driver instance as `$spec->driver`; the main
-table is `$spec->dc`. Filters are a keyed `array<string, Filter>`
-instead of a `FilterDefinitionCollection`. While a list is being built (a driver's `buildList()` hook
-or a `ListDriverBuildListEvent` listener), use the mutable builder; on a finished spec, use the withers:
+The engine's contexts are renamed to **intents**: an intent says what a list is rendered for — an interactive
+page, a reader validation, a count — and its type selects the projector. Behavior is unchanged.
 
 | v0.1 | v0.2 |
 |---|---|
-| `$spec->getFilters()->add($definition)` | `$builder->addFilter($filter)` while building; `$spec = $spec->withFilter($filter)` afterwards |
-| `$spec->getFilters()->set('name', $definition)` | `$builder->addFilter($filter, 'name')` while building; on a finished spec `$spec->withFilter($filter)`, keyed by the filter's alias. Neither replaces: **a taken key or a duplicate alias throws a `FlareException`** (remove the filter first with `removeFilter()` / `withoutFilter()`) |
-| `$spec->getFilters()->hasType('flare_bool')` | `hasFilterInstance(BooleanFilterElement::class)` on builder or spec |
-| — | `$builder->getFilter('name')`, `$builder->removeFilter('name')`, `$spec->withoutFilter('name')` |
-| `$definition->forceTargetAlias('alias')` | `$filter->withTargetAlias('alias')` — **returns a new instance** (`Filter` is immutable) |
+| `Engine\Context\ContextInterface` | `Engine\Intent\IntentInterface` |
+| `Engine\Context\InteractiveContext`, `ValidationContext`, `AggregationContext` | `Engine\Intent\InteractiveIntent`, `ValidationIntent`, `AggregationIntent` |
+| `Engine\Context\Interface\FormContextInterface`, `PaginatedContextInterface`, `SortableContextInterface` | `Engine\Intent\FormIntentInterface`, `PaginatedIntentInterface`, `SortableIntentInterface` |
+| `Engine\Context\Factory\InteractiveContextFactory`, `ValidationContextFactory`, `AggregationContextFactory` | `Engine\Intent\Factory\InteractiveIntentFactory`, `ValidationIntentFactory`, `AggregationIntentFactory` |
+| `Engine\Context\ReaderUrlConfigCreatorTrait` | `Engine\Intent\ReaderUrlConfigCreatorTrait` |
+| `ContextInterface::getContextType()` | `IntentInterface::getIntentType()` (same return values, e.g. `interactive`) |
+| `Engine::getContext()`, `Engine::with(context: …)` | `Engine::getIntent()`, `Engine::with(intent: …)` |
+| `ProjectorInterface::supports()`/`priority()`/`project()` with a `ContextInterface $context` | the same methods with an `IntentInterface $intent` |
+| `ReaderRenderEvent::getContext()`, `getListSpecification()` | the public readonly properties `$event->intent`, `$event->list` |
+| `flare_project(spec, config)` (Twig) | `flare_project(list, intent)` — only the named-argument names changed |
+
+## ListSpecification → ListCompound
+
+`ListSpecification` is replaced by the immutable `List\ListCompound`, built by the `List\ListCompoundBuilder`
+(see [List & Filter Compounds](./spec/compounds.md)); programmatic construction goes through the
+`ListCompoundFactory` service, which accepts a driver instance or a registered type alias and resolves the
+list's data container definitively. The list carries the driver instance as `$list->driver`; the main
+table is `$list->dc`. Filters are a keyed `array<string, FilterCompound>`
+instead of a `FilterDefinitionCollection`. While a list is being built (a driver's `buildList()` hook
+or a `ListDriverBuildListEvent` listener), use the mutable builder; on a finished list, use the withers:
+
+| v0.1 | v0.2 |
+|---|---|
+| `$spec->getFilters()->add($definition)` | `$builder->addFilter($filter)` while building; `$list = $list->withFilter($filter)` afterwards |
+| `$spec->getFilters()->set('name', $definition)` | `$builder->addFilter($filter, 'name')` while building; on a finished list `$list->withFilter($filter)`, keyed by the filter's alias. Neither replaces: **a taken key or a duplicate alias throws a `FlareException`** (remove the filter first with `removeFilter()` / `withoutFilter()`) |
+| `$spec->getFilters()->hasType('flare_bool')` | `hasFilterInstance(BooleanFilterElement::class)` on builder or list |
+| — | `$builder->getFilter('name')`, `$builder->removeFilter('name')`, `$list->withoutFilter('name')` |
+| `$definition->forceTargetAlias('alias')` | `$filter->withTargetAlias('alias')` — **returns a new instance** (`FilterCompound` is immutable) |
 
 Element `define()` factories (e.g. `PublishedFilterElement::define()`,
 `SimpleEquationFilterElement::define(...)`) were removed: construct a
-[`Filter`](./dev/filter-elements/index.md#9-programmatic-filters-without-a-backend-record) directly with the element's
+[`FilterCompound`](./dev/filter-elements/index.md#9-programmatic-filters-without-a-backend-record) directly with the element's
 type alias and canonical config, e.g.
-`FilterFactory::create(element: PublishedFilterElement::TYPE, config: [...])`.
+`FilterCompoundFactory::create(element: PublishedFilterElement::TYPE, config: [...])`.
 
 ## Before / After
 
@@ -237,17 +255,17 @@ class CityFilterElement extends AbstractFilterElement
         $builder->palette('{filter_legend},elm_fieldGeneric');
     }
 
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementContext               $context,
+        ?ValueInterface              $value,
     ): void {
         if (!$value = $this->expectValue($value, KeywordsValue::class)) {
             return;
         }
 
         $builder->addPredicate(SimpleEquationPredicate::class, [
-            'operand_left' => $scope->get('field'),
+            'operand_left' => $context->get('field'),
             'operator' => SqlEquationOperator::EQUALS,
             'operand_right' => $value->keywords,
         ]);

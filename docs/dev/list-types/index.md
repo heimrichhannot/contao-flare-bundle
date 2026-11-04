@@ -75,13 +75,13 @@ protected function transformListModel(ConfigBuilder $config, ListModel $model): 
 ```
 
 Both methods are declarative, memoizable setup — they run once per driver class, not per list.
-Downstream, the resolved config is available as `ListSpec::$config`.
+Downstream, the resolved config is available as `ListCompound::$config`.
 
 ## 3. Data Container Resolution (`getDataContainerName`)
 
-Every `ListSpec` has a definitive main table. When the spec is created, the driver's
+Every `ListCompound` has a definitive main table. When the list is created, the driver's
 `getDataContainerName(array $config): string` (declared on `ListDriverInterface`) is called with the
-resolved canonical config; an empty return value aborts the spec creation with an exception.
+resolved canonical config; an empty return value aborts the list creation with an exception.
 `AbstractListDriver` returns `$config['dc']` — the record's stored `dc` column, translated by the base
 schema — which is right for drivers whose table is user-selected.
 
@@ -101,8 +101,8 @@ part in runtime resolution.
 
 ## 4. Build Lifecycle (`buildList`)
 
-A list is built by the `ListSpecBuilder` into an immutable
-[`ListSpec`](../../spec/specifications.md). Drivers that implement
+A list is built by the `ListCompoundBuilder` into an immutable
+[`ListCompound`](../../spec/compounds.md). Drivers that implement
 `Contract\ListDriver\BuildListContract` take part in that lifecycle: `buildList()` runs first and may add
 filters or set config overrides. Afterwards, the [`ListDriverBuildListEvent`](../events.md)
 (`flare.list_driver.{type}.build_list`) gives third parties the same access, then the config is assembled and
@@ -112,22 +112,22 @@ The built-in news list driver uses this to guarantee a published-state filter:
 
 ```php
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
-use HeimrichHannot\FlareBundle\List\ListSpecBuilder;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterCompoundFactory;
+use HeimrichHannot\FlareBundle\List\ListCompoundBuilder;
 
 class MyCustomListDriver extends AbstractListDriver
 {
     public function __construct(
-        private readonly FilterFactory $filterFactory,
+        private readonly FilterCompoundFactory $filterCompoundFactory,
     ) {}
 
-    public function buildList(ListSpecBuilder $builder): void
+    public function buildList(ListCompoundBuilder $builder): void
     {
         if ($builder->hasFilterInstance(PublishedFilterElement::class)) {
             return;
         }
 
-        $builder->addFilter($this->filterFactory->create(
+        $builder->addFilter($this->filterCompoundFactory->create(
             element: PublishedFilterElement::TYPE,
             config: [
                 'published_field' => 'published',

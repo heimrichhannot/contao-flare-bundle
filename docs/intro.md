@@ -11,8 +11,8 @@ Built on a modern, decoupled architecture, Flare provides a flexible and develop
 
 ## Features
 
-- **Decoupled Architecture**: Clean separation of Specification, Context, and View.
-- **Context-Aware Filtering**: Different filtering logic for interactive lists, aggregations, or exports.
+- **Decoupled Architecture**: Clean separation of List, Intent, and View.
+- **Intent-Aware Filtering**: Different filtering logic for interactive lists, aggregations, or exports.
 - **Symfony Forms Integration**: Filter forms are built using standard Symfony FormTypes, ensuring full compatibility and easy customization.
 - **High Performance**: Optimized SQL query building with structured aliasing and automatic join resolution.
 - **Custom Pagination**: Built-in paginator that is robust and easy to style (Twig-based).

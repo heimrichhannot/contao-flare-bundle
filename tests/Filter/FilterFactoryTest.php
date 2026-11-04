@@ -10,12 +10,8 @@ use HeimrichHannot\FlareBundle\Config\SourceTransformer;
 use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contract\OptionsContract;
 use HeimrichHannot\FlareBundle\Contract\TransformerContract;
-use HeimrichHannot\FlareBundle\Contao\DcaContext;
-use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaFieldBuilderInterface;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
 use HeimrichHannot\FlareBundle\Exception\ValueClassMismatchError;
 use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
@@ -28,7 +24,6 @@ use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
-use HeimrichHannot\FlareBundle\Filter\ValueProvider\ValueProviderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -76,7 +71,6 @@ final class FilterFactoryTest extends TestCase
             ->add($this->boolControl, self::BOOL_CONTROL, BoolValue::class)
             ->add(new FactoryStubKeywordsControl(), self::KEYWORDS_CONTROL, KeywordsValue::class)
             ->add(new FactoryStubSourcedControl(), self::SOURCED_CONTROL, BoolValue::class);
-
 
         return new FilterFactory(
             filterElementRegistry: $elements,
@@ -252,6 +246,18 @@ final class FilterFactoryTest extends TestCase
         self::assertSame('P', $filter->control?->config->get('placeholder'));
     }
 
+    public function testExplicitElementConfigKeepsTheOtherSourceKeys(): void
+    {
+        $filter = $this->factory()->create(
+            element: self::SOURCED_ELEMENT,
+            config: ['label' => 'X'],
+            configSource: new \ArrayObject(['label' => 'L', 'hint' => 'H']),
+        );
+
+        self::assertSame('X', $filter->element->config->get('label'));
+        self::assertSame('H', $filter->element->config->get('hint'));
+    }
+
     public function testWithoutConfigSourceNoTransformerRuns(): void
     {
         self::assertSame('', $this->factory()->create(element: self::SOURCED_ELEMENT)->element->config->get('label'));
@@ -280,7 +286,6 @@ final class FilterFactoryTest extends TestCase
     }
 }
 
-
 final class FactoryStubPlainElement implements FilterElementInterface
 {
     public function buildContext(
@@ -304,14 +309,12 @@ final class FactoryStubOptionsElement implements FilterElementInterface, Options
     ): void {}
 }
 
-
-
-
 final class FactoryStubSourcedElement implements FilterElementInterface, OptionsContract, TransformerContract
 {
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->define('label')->default('')->allowedTypes('string');
+        $resolver->define('hint')->default('')->allowedTypes('string');
     }
 
     public function configureTransformers(TransformerMap $transformers): void
@@ -319,7 +322,8 @@ final class FactoryStubSourcedElement implements FilterElementInterface, Options
         $transformers->set(
             sourceClass: \ArrayObject::class,
             transformer: static function (ConfigBuilder $config, \ArrayObject $source): void {
-                $config->set('label', $source['label']);
+                $config->set('label', $source['label'] ?? '');
+                $config->set('hint', $source['hint'] ?? '');
             },
         );
     }

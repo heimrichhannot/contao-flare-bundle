@@ -43,10 +43,11 @@ closed. `\Error`s escape unwrapped. `UndefinedConfigKeyError` (an `\Error`, thro
 its schema does not define) is a programming error: never retried, never degraded into a skipped filter or a
 failed list — it fails the request. So is a filter value of the wrong class (`ValueClassMismatchError`, an `\Error`
 thrown by `Filter`'s constructor, so by `withValue()` too): stored data cannot produce one (value providers and
-controls are registered by their narrowed return type), so it always comes from code — e.g. a `ListDriverBuildListEvent`
-or `FilterCollectedEvent` listener — and fails the request with HTTP 500, never as a `FilterFailure`. The bundle catches `\Exception`, not `\Throwable`, so no `\Error` is wrapped
-or swallowed; only the transformer resolvers still wrap any `\Throwable` (a transformer casting stale stored data
-may throw a `\ValueError`), and the backend `FilterInspector` catches `\Error` outside debug mode to mark the filter
+controls are registered by their narrowed return type), so it always comes from code — e.g. a
+`ListDriverBuildListEvent` or `FilterCollectedEvent` listener — and fails the request with HTTP 500, never as a
+`FilterFailure`. The bundle catches `\Exception`, not `\Throwable`, so no `\Error` is wrapped or swallowed; only the
+transformer resolvers still wrap any `\Throwable` (a transformer casting stale stored data may throw a `\ValueError`),
+and the backend `FilterInspector` catches `\Error` outside debug mode to mark the filter
 as a programming error (the frontend request still fails).
 Who throws what: `FilterException` (and its `UnreadableValueException`) is public API — filter components, bundled
 and userland, throw it to report a filter that cannot work with its config, data or value; a component translates
@@ -54,9 +55,9 @@ the message itself where an editor may see it (`AbstractFilterElement::trans()`,
 other exceptions in `src/Exception/` are thrown by the framework only; userland may catch them. Every filter hook
 (element `buildContext()`, control `buildForm()`/`hydrate()`/`decode()`) catches any `\Exception` and normalizes it
 with `FilterException::wrap()`; a non-`FilterException` is unexpected: logged as an error. Value providers are
-treated alike (`Contao\Factory\FilterFactory` wraps their exceptions; a non-`FilterException` `FlareException`, a wiring error,
-passes unwrapped). A control's `buildForm()` failure fails the list (error, rethrown by the failed view in debug
-mode); a `hydrate()` failure mounts the filter without its initial value (warning; an unexpected exception is
+treated alike (`Contao\Factory\FilterFactory` wraps their exceptions; a non-`FilterException` `FlareException`, a
+wiring error, passes unwrapped). A control's `buildForm()` failure fails the list (error, rethrown by the failed view in
+debug mode); a `hydrate()` failure mounts the filter without its initial value (warning; an unexpected exception is
 rethrown in debug mode); a `decode()` failure drops the value and puts a form error on a submitted field.
 
 Note: Contexts and Projectors/Views are separate axes — (Export Context/Projector/View are currently not implemented).

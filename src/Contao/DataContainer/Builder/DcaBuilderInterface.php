@@ -16,7 +16,6 @@ interface DcaBuilderInterface
 
     public function field(string $name): DcaFieldBuilderInterface;
 
-
     /**
      * Registers `$field` as a palette selector and `$palette` as its subpalette
      * (`$field` for checkbox selectors, `{$field}_{$value}` for select selectors).

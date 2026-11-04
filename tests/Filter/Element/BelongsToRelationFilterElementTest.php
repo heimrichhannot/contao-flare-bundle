@@ -6,13 +6,13 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter\Element;
 
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Element\BelongsToRelationFilterElement;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class BelongsToRelationFilterElementTest extends TestCase
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
     use StubsContaoDcaTrait;
 
     public function testAParentTableThatCannotBeInferredFailsTheFilter(): void
@@ -22,7 +22,7 @@ final class BelongsToRelationFilterElementTest extends TestCase
 
         $this->expectException(FilterException::class);
 
-        $this->buildFilterContext(
+        $this->buildFilterEffect(
             new BelongsToRelationFilterElement($this->createMock(TranslatorInterface::class)),
             ['field_pid' => 'pid'],
             dc: 'tl_missing',

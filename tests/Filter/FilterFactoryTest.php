@@ -19,7 +19,7 @@ use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
@@ -288,10 +288,10 @@ final class FilterFactoryTest extends TestCase
 
 final class FactoryStubPlainElement implements FilterElementInterface
 {
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {}
 }
 
@@ -302,10 +302,10 @@ final class FactoryStubOptionsElement implements FilterElementInterface, Options
         $resolver->define('columns')->default([])->allowedTypes('array');
     }
 
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {}
 }
 
@@ -328,10 +328,10 @@ final class FactoryStubSourcedElement implements FilterElementInterface, Options
         );
     }
 
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {}
 }
 

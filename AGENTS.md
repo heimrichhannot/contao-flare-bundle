@@ -28,8 +28,8 @@ ContentElement Controller
 
 Filter execution inside the projector: the `FormHarness` decodes submitted form data per filter control into value
 objects; `ListQueryDirector` (`src/Query/Executor/`) picks each filter's value (with a control: the form's value;
-without: the fixed `Filter::$value`), creates the `FilterContext` via `FilterContextFactory::create(ElementScope, ?value)`
-(the element's `buildContext($builder, $scope, $value)` adds predicates) and runs each predicate into a `FilterConditionsBuilder`. A
+without: the fixed `Filter::$value`), creates the `FilterEffect` via `FilterEffectFactory::create(ElementScope, ?value)`
+(the element's `buildEffect($builder, $scope, $value)` adds predicates) and runs each predicate into a `FilterConditionsBuilder`. A
 filter whose element cannot be built (with or without a control) — required element config is required by the
 element's schema —, a stored control that cannot be resolved or whose config is broken, a control that cannot build
 its form (`Form/Factory/FilterFormBuilderFactory`: a `buildForm()` failure, a `FlareException` from a `FilterControlBuildFormEvent`
@@ -53,7 +53,7 @@ Who throws what: `FilterException` (and its `UnreadableValueException`) is publi
 and userland, throw it to report a filter that cannot work with its config, data or value; a component translates
 the message itself where an editor may see it (`AbstractFilterElement::trans()`, `flare` domain). `FlareException` and the
 other exceptions in `src/Exception/` are thrown by the framework only; userland may catch them. Every filter hook
-(element `buildContext()`, control `buildForm()`/`hydrate()`/`decode()`) catches any `\Exception` and normalizes it
+(element `buildEffect()`, control `buildForm()`/`hydrate()`/`decode()`) catches any `\Exception` and normalizes it
 with `FilterException::wrap()`; a non-`FilterException` is unexpected: logged as an error. Value providers are
 treated alike (`Contao\Factory\FilterFactory` wraps their exceptions; a non-`FilterException` `FlareException`, a
 wiring error, passes unwrapped). A control's `buildForm()` failure fails the list (error, rethrown by the failed view in
@@ -67,7 +67,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 **Lifecycle taxonomy** — elements and list types own their lifecycle through two method families:
 `configure*` methods are declarative, memoizable setup (`configureOptions` = OptionsResolver schema,
 `configureTransformers` = source→canonical-config mappings); `build*` methods are per-invocation construction
-(`buildDca`, `buildForm`, `buildContext`, `buildList`, `buildTableRegistry`/`buildBaseQuery`).
+(`buildDca`, `buildForm`, `buildEffect`, `buildList`, `buildTableRegistry`/`buildBaseQuery`).
 
 **Notable subsystems** (beyond the flow above):
 - `src/List/` — `ListSpec` (immutable list DTO: type, dc, filters, canonical config, source; named "Spec" only
@@ -84,10 +84,10 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   contracts, `ControlScope` for control hooks (list × filter × intent; `$scope->get('key')` reads the
   calling component's own config; `ControlScope::element(Contract::class)` / `tryElement()` return the element as a
   capability port, `forElement()` hands element contracts their scope) — handed to
-  everything that happens before a value exists, and `FilterContext` (the element's product for one invocation,
-  collected through the public `FilterContextBuilderInterface` and built by `FilterContextFactory` from scope +
+  everything that happens before a value exists, and `FilterEffect` (the element's product for one invocation,
+  collected through the public `FilterEffectBuilderInterface` and built by `FilterEffectFactory` from scope +
   value, only inside `ListQueryDirector`). Hook parameter order: the subject first, the scope supplementary —
-  `buildContext($builder, $scope, $value)`, `buildForm($builder, $scope)`, `decode($data, $scope)`,
+  `buildEffect($builder, $scope, $value)`, `buildForm($builder, $scope)`, `decode($data, $scope)`,
   `hydrate($value, $scope)`.
   `FormHarnessFactory` builds a `FormHarness` (root form + mount↔filter map of `FilterMount`s) per list ×
   form intent; the harness owns the `decode()` loop
@@ -123,7 +123,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `$origin` as the exception's source)
 - `src/Filter/Value/` — immutable filter value objects (`BoolValue`, `ChoiceValue`, `KeywordsValue`,
   `DateRangeValue`; choices in `Value/Choice/`), the typed channel between a control's `decode()` and an
-  element's `buildContext()`. Each is `final readonly`, implements `ValueInterface` and expresses its identity
+  element's `buildEffect()`. Each is `final readonly`, implements `ValueInterface` and expresses its identity
   through `fingerprint()` (`ValueObjectContainmentTest` enforces this by reflection). Deliberately not services
   (excluded in `config/services.yaml`)
 - `src/Contao/` — the Contao-specific backend code. DTOs / domain classes sit directly in `Contao/` (`BackendModule`,

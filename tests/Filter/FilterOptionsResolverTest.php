@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Filter\Control\AbstractFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlScope;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -71,10 +71,10 @@ final class FilterOptionsResolverTest extends TestCase
     public function testErrorMessagesNameAnonymousComponentsReadably(): void
     {
         $element = new class implements FilterElementInterface {
-            public function buildContext(
-                FilterContextBuilderInterface $builder,
-                ElementScope                  $scope,
-                ?ValueInterface               $value,
+            public function buildEffect(
+                FilterEffectBuilderInterface $builder,
+                ElementScope                 $scope,
+                ?ValueInterface              $value,
             ): void {}
         };
 
@@ -127,10 +127,10 @@ final class ElementConfigAwareElement implements FilterElementInterface, Options
         $resolver->define('field')->default(null)->allowedTypes('string', 'null');
     }
 
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {
     }
 }
@@ -142,20 +142,20 @@ final class UnsetOptionElement implements FilterElementInterface, OptionsContrac
         $resolver->define('x');
     }
 
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {
     }
 }
 
 final class PlainElement implements FilterElementInterface
 {
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {
     }
 }

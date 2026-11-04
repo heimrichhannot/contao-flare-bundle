@@ -9,7 +9,7 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
 use HeimrichHannot\FlareBundle\Filter\Control\DateRangeFilterControl;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use PHPUnit\Framework\TestCase;
@@ -39,10 +39,10 @@ final class DateRangeFilterControlTest extends TestCase
         self::assertSame([], $plain->get('from')->getOption('attr'));
 
         $bounded = new class implements FilterElementInterface, DateBoundsContract {
-            public function buildContext(
-                FilterContextBuilderInterface $builder,
-                ElementScope                  $scope,
-                ?ValueInterface               $value,
+            public function buildEffect(
+                FilterEffectBuilderInterface $builder,
+                ElementScope                 $scope,
+                ?ValueInterface              $value,
             ): void {}
 
             public function getDateBounds(ElementScope $scope): DateBounds
@@ -79,10 +79,10 @@ final class DateRangeFilterControlTest extends TestCase
     {
         $ctl = $this->control();
         $element = new class implements FilterElementInterface, DateBoundsContract {
-            public function buildContext(
-                FilterContextBuilderInterface $builder,
-                ElementScope                  $scope,
-                ?ValueInterface               $value,
+            public function buildEffect(
+                FilterEffectBuilderInterface $builder,
+                ElementScope                 $scope,
+                ?ValueInterface              $value,
             ): void {}
 
             public function getDateBounds(ElementScope $scope): DateBounds

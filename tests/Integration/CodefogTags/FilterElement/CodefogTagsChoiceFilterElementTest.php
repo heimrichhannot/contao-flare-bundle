@@ -10,33 +10,33 @@ use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\FilterElement\CodefogTagsChoiceFilterElement;
 use HeimrichHannot\FlareBundle\Integration\CodefogTags\Registry\CfgTagsJoinsRegistry;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 final class CodefogTagsChoiceFilterElementTest extends TestCase
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
 
     public function testSelectedTagsBecomeIntegerIds(): void
     {
-        $context = $this->buildFilterContext(
+        $effect = $this->buildFilterEffect(
             $this->createElement(),
             [],
             new ChoiceValue([new ValueChoice('12', 'Foo [12]'), new ValueChoice('3', 'Bar [3]')]),
         );
 
-        self::assertCount(1, $context->formula->propositions);
+        self::assertCount(1, $effect->formula->propositions);
 
-        $p = $context->formula->propositions[0];
+        $p = $effect->formula->propositions[0];
         self::assertSame(IntegerIdChoicePredicate::class, $p->predicateClass);
         self::assertSame(['field' => 'id', 'ids' => [12, 3]], $p->options);
     }
 
     public function testNoValueAddsNothing(): void
     {
-        self::assertSame([], $this->buildFilterContext($this->createElement())->formula->propositions);
+        self::assertSame([], $this->buildFilterEffect($this->createElement())->formula->propositions);
     }
 
     public function testChoiceFromKeyAcceptsPositiveIdsOnly(): void

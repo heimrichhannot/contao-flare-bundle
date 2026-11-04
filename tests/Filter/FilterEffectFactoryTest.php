@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -23,9 +23,9 @@ use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use PHPUnit\Framework\TestCase;
 
-final class FilterContextFactoryTest extends TestCase
+final class FilterEffectFactoryTest extends TestCase
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
 
     public function testConfigurationContextHasItsOwnType(): void
     {
@@ -37,11 +37,11 @@ final class FilterContextFactoryTest extends TestCase
         $element = new SpyFilterElement();
         $value = new BoolValue(true);
 
-        $this->buildFilterContext($element, value: $value);
+        $this->buildFilterEffect($element, value: $value);
         self::assertSame($value, $element->received);
         self::assertSame(1, $element->calls);
 
-        $this->buildFilterContext($element);
+        $this->buildFilterEffect($element);
         self::assertNull($element->received);
         self::assertSame(2, $element->calls);
     }
@@ -51,16 +51,16 @@ final class FilterContextFactoryTest extends TestCase
         $element = new SpyFilterElement();
         $scope = $this->buildElementScope($element, ['a' => 1]);
 
-        $context = $this->createFilterContextFactory()->create($scope, null);
+        $effect = $this->createFilterEffectFactory()->create($scope, null);
 
         self::assertSame($scope, $element->scope);
-        self::assertCount(1, $context->formula->propositions);
-        self::assertSame(BooleanPredicate::class, $context->formula->propositions[0]->predicateClass);
+        self::assertCount(1, $effect->formula->propositions);
+        self::assertSame(BooleanPredicate::class, $effect->formula->propositions[0]->predicateClass);
     }
 
     public function testBuildIsNotExposedToElements(): void
     {
-        self::assertFalse((new \ReflectionClass(FilterContextBuilderInterface::class))->hasMethod('build'));
+        self::assertFalse((new \ReflectionClass(FilterEffectBuilderInterface::class))->hasMethod('build'));
     }
 
     /**
@@ -87,9 +87,9 @@ final class FilterContextFactoryTest extends TestCase
             intent: new ConfigurationIntent(),
         );
 
-        $context = $this->createFilterContextFactory($registry)->create($scope, null);
+        $effect = $this->createFilterEffectFactory($registry)->create($scope, null);
 
-        self::assertSame($expected, $context->formula->propositions[0]->targetAlias);
+        self::assertSame($expected, $effect->formula->propositions[0]->targetAlias);
     }
 
     public static function targetAliasCases(): iterable
@@ -103,28 +103,28 @@ final class FilterContextFactoryTest extends TestCase
     public function testExplicitPredicateAliasWins(): void
     {
         $element = new class extends SpyFilterElement {
-            public function buildContext(
-                FilterContextBuilderInterface $builder,
-                ElementScope                  $scope,
-                ?ValueInterface               $value,
+            public function buildEffect(
+                FilterEffectBuilderInterface $builder,
+                ElementScope                 $scope,
+                ?ValueInterface              $value,
             ): void
             {
                 $builder->addPredicate(BooleanPredicate::class, ['field' => 'x', 'value' => true], 'other');
             }
         };
 
-        $context = $this->buildFilterContext($element);
+        $effect = $this->buildFilterEffect($element);
 
-        self::assertSame('other', $context->formula->propositions[0]->targetAlias);
+        self::assertSame('other', $effect->formula->propositions[0]->targetAlias);
     }
 
     public function testAbortPropagates(): void
     {
         $element = new class extends SpyFilterElement {
-            public function buildContext(
-                FilterContextBuilderInterface $builder,
-                ElementScope                  $scope,
-                ?ValueInterface               $value,
+            public function buildEffect(
+                FilterEffectBuilderInterface $builder,
+                ElementScope                 $scope,
+                ?ValueInterface              $value,
             ): void
             {
                 $builder->abort();
@@ -132,13 +132,13 @@ final class FilterContextFactoryTest extends TestCase
         };
 
         $this->expectException(AbortFilteringException::class);
-        $this->buildFilterContext($element);
+        $this->buildFilterEffect($element);
     }
 
     public function testRejectsInvalidSqlTableName(): void
     {
         $this->expectException(FlareException::class);
-        $this->buildFilterContext(new SpyFilterElement(), dc: 'tl_test; DROP');
+        $this->buildFilterEffect(new SpyFilterElement(), dc: 'tl_test; DROP');
     }
 }
 
@@ -148,10 +148,10 @@ class SpyFilterElement implements FilterElementInterface
     public ?ElementScope $scope = null;
     public int $calls = 0;
 
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {
         $this->received = $value;
         $this->scope = $scope;

@@ -9,18 +9,18 @@ use HeimrichHannot\FlareBundle\Filter\Element\DateRangeFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Predicate\DateRangePredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use PHPUnit\Framework\TestCase;
 
 final class DateRangeFilterElementTest extends TestCase
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
 
     public function testRangeBecomesTheDateRangePredicate(): void
     {
         $value = DateRangeValue::tryFrom(1000, 2000);
 
-        $p = $this->buildFilterContext(new DateRangeFilterElement(), ['field' => 'date'], $value)
+        $p = $this->buildFilterEffect(new DateRangeFilterElement(), ['field' => 'date'], $value)
             ->formula->propositions[0];
 
         self::assertSame(DateRangePredicate::class, $p->predicateClass);
@@ -31,7 +31,7 @@ final class DateRangeFilterElementTest extends TestCase
 
     public function testOpenEndedRangeKeepsTheOtherBoundNull(): void
     {
-        $p = $this->buildFilterContext(
+        $p = $this->buildFilterEffect(
             new DateRangeFilterElement(),
             ['field' => 'date'],
             DateRangeValue::tryFrom(1000, null),
@@ -42,15 +42,15 @@ final class DateRangeFilterElementTest extends TestCase
 
     public function testNoValueAddsNothing(): void
     {
-        $context = $this->buildFilterContext(new DateRangeFilterElement(), ['field' => 'date']);
+        $effect = $this->buildFilterEffect(new DateRangeFilterElement(), ['field' => 'date']);
 
-        self::assertSame([], $context->formula->propositions);
+        self::assertSame([], $effect->formula->propositions);
     }
 
     public function testWrongValueClassIsRejected(): void
     {
         $this->expectException(FilterException::class);
 
-        $this->buildFilterContext(new DateRangeFilterElement(), ['field' => 'date'], new BoolValue(true));
+        $this->buildFilterEffect(new DateRangeFilterElement(), ['field' => 'date'], new BoolValue(true));
     }
 }

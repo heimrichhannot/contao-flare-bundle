@@ -16,7 +16,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\ArchivePredicate;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BelongsToRelationPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ContaoModelChoice;
@@ -186,16 +186,16 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
      *
      * @throws FilterException
      */
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {
         $value = $this->expectValue($value, ChoiceValue::class);
         $inferrer = $this->getPtableInferrer($scope->list);
 
         if (!self::isControlled($scope->filter)) {
-            $this->buildFixedContext($builder, $inferrer, $value);
+            $this->buildFixedEffect($builder, $inferrer, $value);
             return;
         }
 
@@ -237,10 +237,10 @@ class ArchiveFilterElement extends AbstractFilterElement implements ChoiceSource
      *
      * @throws FilterException
      */
-    private function buildFixedContext(
-        FilterContextBuilderInterface $builder,
-        PtableInferrer                $inferrer,
-        ?ChoiceValue                  $value,
+    private function buildFixedEffect(
+        FilterEffectBuilderInterface $builder,
+        PtableInferrer               $inferrer,
+        ?ChoiceValue                 $value,
     ): void {
         $ptable = $inferrer->getDcaMainPtable();
 

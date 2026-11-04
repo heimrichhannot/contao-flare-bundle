@@ -25,7 +25,7 @@ use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
@@ -47,7 +47,7 @@ use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
@@ -72,7 +72,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 final class InteractiveProjectorTest extends TestCase
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
 
     /** @var list<array{string, string}> */
     private array $logs = [];
@@ -293,7 +293,7 @@ final class InteractiveProjectorTest extends TestCase
         $director = new ListQueryDirector(
             eventDispatcher: $dispatcher,
             filterInvoker: new FilterInvoker(
-                $this->createFilterContextFactory(),
+                $this->createFilterEffectFactory(),
                 new FilterQueryBuilderFactory($connection),
             ),
             listExecutionContextFactory: new ListExecutionContextFactory($dispatcher),
@@ -364,10 +364,10 @@ final class ProjectorSpyElement implements FilterElementInterface
     public ?ValueInterface $received = null;
     public int $calls = 0;
 
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {
         $this->received = $value;
         ++$this->calls;
@@ -378,10 +378,10 @@ final class ProjectorSpyElement implements FilterElementInterface
 
 final class ProjectorFailingElement implements FilterElementInterface
 {
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {
         throw new FilterException('broken element');
     }

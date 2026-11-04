@@ -17,13 +17,13 @@ use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
 use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListSpec;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use PHPUnit\Framework\TestCase;
 
 final class CalendarCurrentFilterElementTest extends TestCase
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
 
     private const BASE = [
         'is_limited' => false,
@@ -36,7 +36,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
 
     public function testValueNarrowsTheUnlimitedRange(): void
     {
-        $p = $this->buildFilterContext(
+        $p = $this->buildFilterEffect(
             new CalendarCurrentFilterElement(),
             self::BASE,
             DateRangeValue::tryFrom(1000, 2000),
@@ -50,7 +50,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
     {
         $config = ['is_limited' => true, 'start_at' => '@1000', 'stop_at' => '@2000'] + self::BASE;
 
-        $p = $this->buildFilterContext(
+        $p = $this->buildFilterEffect(
             new CalendarCurrentFilterElement(),
             $config,
             DateRangeValue::tryFrom(500, 3000),
@@ -61,21 +61,21 @@ final class CalendarCurrentFilterElementTest extends TestCase
 
     public function testValidationSkipsAnUnlimitedFilter(): void
     {
-        $context = $this->buildFilterContext(
+        $effect = $this->buildFilterEffect(
             new CalendarCurrentFilterElement(),
             self::BASE,
             null,
             new ValidationIntent(),
         );
 
-        self::assertSame([], $context->formula->propositions);
+        self::assertSame([], $effect->formula->propositions);
     }
 
     public function testValidationAppliesAFixedRangeWithoutTheConfiguredDefaults(): void
     {
         $config = ['start_at' => '@5000', 'stop_at' => '@6000'] + self::BASE;
 
-        $p = $this->buildFilterContext(
+        $p = $this->buildFilterEffect(
             new CalendarCurrentFilterElement(),
             $config,
             DateRangeValue::tryFrom(1000, null),
@@ -109,7 +109,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
     {
         $this->expectException(FilterException::class);
 
-        $this->buildFilterContext(new CalendarCurrentFilterElement(), self::BASE, new BoolValue(true));
+        $this->buildFilterEffect(new CalendarCurrentFilterElement(), self::BASE, new BoolValue(true));
     }
 
     private function createScope(CalendarCurrentFilterElement $element, array $config): ElementScope

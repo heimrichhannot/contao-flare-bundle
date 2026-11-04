@@ -8,7 +8,7 @@ use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterEffectFactory;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
@@ -26,12 +26,12 @@ final readonly class FilterInvoker
     use CreatesFilterExceptionTrait;
 
     public function __construct(
-        private FilterContextFactory      $filterContextFactory,
+        private FilterEffectFactory       $filterEffectFactory,
         private FilterQueryBuilderFactory $filterQueryBuilderFactory,
     ) {}
 
     /**
-     * Builds the filter's context with the given value and runs each of its predicate calls into a conditions
+     * Builds the filter's effect with the given value and runs each of its predicate calls into a conditions
      * builder.
      *
      * @return list<FilterConditionsBuilder>
@@ -46,17 +46,17 @@ final readonly class FilterInvoker
 
         try
         {
-            $context = $this->filterContextFactory->create($scope, $value);
+            $effect = $this->filterEffectFactory->create($scope, $value);
         }
         catch (\Exception $e)
         {
-            throw $this->wrapFilterFailure($e, $filter, $filter->element->component::class . '::buildContext');
+            throw $this->wrapFilterFailure($e, $filter, $filter->element->component::class . '::buildEffect');
         }
 
         $filterQueryBuilders = [];
 
-        foreach ($context->formula->propositions as $proposition)
-        // todo: this should be simplified, either FilterConditionsBuilderFactory like FilterContextFactory
+        foreach ($effect->formula->propositions as $proposition)
+        // todo: this should be simplified, either FilterConditionsBuilderFactory like FilterEffectFactory
         //   or skip collecting the builders and build right away
         {
             $filterQueryBuilder = $this->filterQueryBuilderFactory->create($proposition->targetAlias);

@@ -19,7 +19,7 @@ use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Filter;
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilderInterface;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\BooleanPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -34,7 +34,7 @@ use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\QueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -45,7 +45,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
  */
 final class ListQueryDirectorTest extends TestCase
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
 
     /** @var list<array{string, string}> */
     private array $logs = [];
@@ -292,7 +292,7 @@ final class ListQueryDirectorTest extends TestCase
         return new ListQueryDirector(
             eventDispatcher: $dispatcher,
             filterInvoker: new FilterInvoker(
-                $this->createFilterContextFactory(),
+                $this->createFilterEffectFactory(),
                 new FilterQueryBuilderFactory($connection),
             ),
             listExecutionContextFactory: new ListExecutionContextFactory($dispatcher),
@@ -310,10 +310,10 @@ class DirectorSpyElement implements FilterElementInterface
     public ?ValueInterface $received = null;
     public int $calls = 0;
 
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {
         $this->received = $value;
         ++$this->calls;
@@ -322,10 +322,10 @@ class DirectorSpyElement implements FilterElementInterface
 
 class DirectorFailingElement implements FilterElementInterface
 {
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {
         throw new FilterException('broken element');
     }
@@ -339,10 +339,10 @@ class DirectorValueRejectingElement implements FilterElementInterface
     /** @var list<bool> Whether each call received a value. */
     public array $calledWithValue = [];
 
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {
         $this->calledWithValue[] = $value !== null;
 
@@ -358,10 +358,10 @@ class DirectorTypoElement implements FilterElementInterface
 {
     public int $calls = 0;
 
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {
         ++$this->calls;
 
@@ -373,10 +373,10 @@ class DirectorTypoElement implements FilterElementInterface
 
 class DirectorErroringElement implements FilterElementInterface
 {
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {
         throw new \TypeError('programming error');
     }
@@ -384,10 +384,10 @@ class DirectorErroringElement implements FilterElementInterface
 
 class DirectorThrowingElement implements FilterElementInterface
 {
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {
         throw new \RuntimeException('unexpected');
     }
@@ -395,10 +395,10 @@ class DirectorThrowingElement implements FilterElementInterface
 
 class DirectorAbortingElement implements FilterElementInterface
 {
-    public function buildContext(
-        FilterContextBuilderInterface $builder,
-        ElementScope                  $scope,
-        ?ValueInterface               $value,
+    public function buildEffect(
+        FilterEffectBuilderInterface $builder,
+        ElementScope                 $scope,
+        ?ValueInterface              $value,
     ): void {
         $builder->abort();
     }

@@ -47,7 +47,7 @@ use HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub\RawElement;
 use HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub\ThrowingElement;
 use HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub\UnbuildableControl;
 use HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub\ValueSensitiveElement;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use HeimrichHannot\FlareBundle\Tests\Fixture\FilterModelFixture;
 use HeimrichHannot\FlareBundle\Tests\Fixture\ListModelFixture;
 use Psr\Log\LoggerInterface;
@@ -61,14 +61,14 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * A real {@see FilterInspector} over filter rows a test describes, and the backend collaborators around it. For
  * {@see \Contao\TestCase\ContaoTestCase} subclasses.
  *
- * Element types: 'ok', 'throws' (FilterException "broken" in buildContext()), 'aborts', 'raw' (RuntimeException
+ * Element types: 'ok', 'throws' (FilterException "broken" in buildEffect()), 'aborts', 'raw' (RuntimeException
  * "raw"), 'errors' (\Error "bug"), 'sensitive' (rejects any value) and 'ineffective' (reason "stub.ineffective"
  * without control and value), the last two consuming BoolValue; controls 'flare_checkbox' (a checkbox) and
  * 'unbuildable' (FilterException "cannot build" in buildForm()) for BoolValue; list driver 'test_list' on tl_test.
  */
 trait BuildsFilterInspectorTrait
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
 
     private function createFilterInspector(
         ContaoFramework           $framework,
@@ -86,7 +86,7 @@ trait BuildsFilterInspectorTrait
             eventDispatcher: $dispatcher,
             filterFactory: $this->createFilterFactory(),
             filterInvoker: new FilterInvoker(
-                $this->createFilterContextFactory(),
+                $this->createFilterEffectFactory(),
                 new FilterQueryBuilderFactory($connection),
             ),
             filterFormBuilderFactory: new FilterFormBuilderFactory($dispatcher, Forms::createFormFactory()),

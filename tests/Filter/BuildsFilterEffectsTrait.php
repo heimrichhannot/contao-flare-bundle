@@ -9,14 +9,14 @@ use HeimrichHannot\FlareBundle\ConfigProvider;
 use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextBuilderFactory;
-use HeimrichHannot\FlareBundle\Filter\Factory\FilterContextFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterEffectBuilderFactory;
+use HeimrichHannot\FlareBundle\Filter\Factory\FilterEffectFactory;
 use HeimrichHannot\FlareBundle\Filter\Factory\FormulaBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Filter\Filter;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
-use HeimrichHannot\FlareBundle\Filter\FilterContext;
+use HeimrichHannot\FlareBundle\Filter\FilterEffect;
 use HeimrichHannot\FlareBundle\Filter\Predicate\PredicateInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\SearchKeywordsPredicate;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
@@ -29,21 +29,21 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Builds real {@see FilterContext}s from an element over the real factories and every shipped predicate.
+ * Builds real {@see FilterEffect}s from an element over the real factories and every shipped predicate.
  */
-trait BuildsFilterContextsTrait
+trait BuildsFilterEffectsTrait
 {
     /**
      * @param array<string, mixed> $config
      */
-    protected function buildFilterContext(
+    protected function buildFilterEffect(
         FilterElementInterface $element,
         array                  $config = [],
         ?ValueInterface        $value = null,
         ?IntentInterface       $intent = null,
         string                 $dc = 'tl_test',
-    ): FilterContext {
-        return $this->createFilterContextFactory()->create(
+    ): FilterEffect {
+        return $this->createFilterEffectFactory()->create(
             $this->buildElementScope($element, $config, $intent, $dc),
             $value,
         );
@@ -92,9 +92,9 @@ trait BuildsFilterContextsTrait
         return isset($attributes[0]) ? $attributes[0]->newInstance()->value : null;
     }
 
-    protected function createFilterContextFactory(?FilterElementRegistry $elementRegistry = null): FilterContextFactory
+    protected function createFilterEffectFactory(?FilterElementRegistry $elementRegistry = null): FilterEffectFactory
     {
-        return new FilterContextFactory(new FilterContextBuilderFactory(
+        return new FilterEffectFactory(new FilterEffectBuilderFactory(
             new FormulaBuilderFactory($this->createFilterPredicateRegistry()),
             $elementRegistry ?? new FilterElementRegistry(),
         ));

@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter\Factory;
 
-use HeimrichHannot\FlareBundle\Filter\FilterContextBuilder;
+use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilder;
 use HeimrichHannot\FlareBundle\Filter\ElementScope;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 
-final readonly class FilterContextBuilderFactory
+final readonly class FilterEffectBuilderFactory
 {
     public function __construct(
         private FormulaBuilderFactory $formulaBuilderFactory,
         private FilterElementRegistry $filterElementRegistry,
     ) {}
 
-    public function create(ElementScope $scope): FilterContextBuilder
+    public function create(ElementScope $scope): FilterEffectBuilder
     {
-        return new FilterContextBuilder(
+        return new FilterEffectBuilder(
             formulaBuilder: $this->formulaBuilderFactory->create($this->resolveTargetAlias($scope)),
         );
     }

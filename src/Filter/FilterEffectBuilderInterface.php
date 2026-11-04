@@ -8,12 +8,12 @@ use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Filter\Predicate\PredicateInterface;
 
 /**
- * What {@see Element\FilterElementInterface::buildContext()} receives: the only way an element
- * contributes to its {@see FilterContext}.
+ * What {@see Element\FilterElementInterface::buildEffect()} receives: the only way an element
+ * contributes to its {@see FilterEffect}.
  *
  * @api
  */
-interface FilterContextBuilderInterface
+interface FilterEffectBuilderInterface
 {
     /**
      * @param class-string<PredicateInterface> $predicateClass

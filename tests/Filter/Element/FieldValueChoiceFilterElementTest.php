@@ -13,24 +13,24 @@ use HeimrichHannot\FlareBundle\Filter\Predicate\FieldValueChoicePredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\Choice\ValueChoice;
 use HeimrichHannot\FlareBundle\Filter\Value\ChoiceValue;
-use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterContextsTrait;
+use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use PHPUnit\Framework\TestCase;
 
 final class FieldValueChoiceFilterElementTest extends TestCase
 {
-    use BuildsFilterContextsTrait;
+    use BuildsFilterEffectsTrait;
 
     public function testSelectedValuesBecomeTheFieldValueChoicePredicate(): void
     {
-        $context = $this->buildFilterContext(
+        $effect = $this->buildFilterEffect(
             $this->createElement(),
             ['field' => 'category'],
             new ChoiceValue([new ValueChoice('a'), new ValueChoice('b')]),
         );
 
-        self::assertCount(1, $context->formula->propositions);
+        self::assertCount(1, $effect->formula->propositions);
 
-        $p = $context->formula->propositions[0];
+        $p = $effect->formula->propositions[0];
         self::assertSame(FieldValueChoicePredicate::class, $p->predicateClass);
         self::assertSame('category', $p->options['field']);
         self::assertSame(['a', 'b'], $p->options['values']);
@@ -38,61 +38,61 @@ final class FieldValueChoiceFilterElementTest extends TestCase
 
     public function testDuplicateLabelsResolveToDistinctValues(): void
     {
-        $context = $this->buildFilterContext(
+        $effect = $this->buildFilterEffect(
             $this->createElement(),
             ['field' => 'author'],
             new ChoiceValue([new ValueChoice('1', 'Same'), new ValueChoice('2', 'Same')]),
         );
 
-        self::assertSame(['1', '2'], $context->formula->propositions[0]->options['values']);
+        self::assertSame(['1', '2'], $effect->formula->propositions[0]->options['values']);
     }
 
     public function testValuesAreNormalizedForTheCaseInsensitiveComparison(): void
     {
-        $context = $this->buildFilterContext(
+        $effect = $this->buildFilterEffect(
             $this->createElement(),
             ['field' => 'category'],
             new ChoiceValue([new ValueChoice(' Äpfel '), new ValueChoice('äpfel')]),
         );
 
-        self::assertSame(['äpfel'], $context->formula->propositions[0]->options['values']);
+        self::assertSame(['äpfel'], $effect->formula->propositions[0]->options['values']);
     }
 
     public function testFixedValueAppliesInValidation(): void
     {
-        $context = $this->buildFilterContext(
+        $effect = $this->buildFilterEffect(
             $this->createElement(),
             ['field' => 'category'],
             new ChoiceValue([new ValueChoice('a')]),
             new ValidationIntent(),
         );
 
-        self::assertCount(1, $context->formula->propositions);
+        self::assertCount(1, $effect->formula->propositions);
     }
 
     public function testNoValueAddsNothing(): void
     {
-        $context = $this->buildFilterContext($this->createElement(), ['field' => 'category']);
+        $effect = $this->buildFilterEffect($this->createElement(), ['field' => 'category']);
 
-        self::assertSame([], $context->formula->propositions);
+        self::assertSame([], $effect->formula->propositions);
     }
 
     public function testBlankValuesAreDropped(): void
     {
-        $context = $this->buildFilterContext(
+        $effect = $this->buildFilterEffect(
             $this->createElement(),
             ['field' => 'category'],
             new ChoiceValue([new ValueChoice('  '), new ValueChoice('a')]),
         );
 
-        self::assertSame(['a'], $context->formula->propositions[0]->options['values']);
+        self::assertSame(['a'], $effect->formula->propositions[0]->options['values']);
     }
 
     public function testOnlyBlankValuesAbort(): void
     {
         $this->expectException(AbortFilteringException::class);
 
-        $this->buildFilterContext(
+        $this->buildFilterEffect(
             $this->createElement(),
             ['field' => 'category'],
             new ChoiceValue([new ValueChoice(''), new ValueChoice(' ')]),
@@ -103,7 +103,7 @@ final class FieldValueChoiceFilterElementTest extends TestCase
     {
         $this->expectException(FilterException::class);
 
-        $this->buildFilterContext($this->createElement(), ['field' => 'category'], new BoolValue(true));
+        $this->buildFilterEffect($this->createElement(), ['field' => 'category'], new BoolValue(true));
     }
 
     public function testChoiceFromKeyKeepsDotsInTheValue(): void

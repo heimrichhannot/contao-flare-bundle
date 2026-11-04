@@ -8,7 +8,7 @@ namespace HeimrichHannot\FlareBundle\Filter;
  * The element's product for one invocation (stage 2): the formula it produced for the value.
  * A formula only exists once the value is known.
  */
-final readonly class FilterContext
+final readonly class FilterEffect
 {
     public function __construct(
         public Formula $formula,

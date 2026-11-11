@@ -242,7 +242,11 @@ EXISTS (SELECT 1 FROM tl_cfg_tag_news codefog_tags_news_join
   ANDed correctly.
 - **Inside the subquery** only the aliases actually used plus their from-alias / `requires` closure are joined (adding
   the whole path's INNER joins would drop dangling relation rows that a relation-only condition matches today); the
-  to-many root's join condition becomes the correlation in `WHERE`; LEFT joins within become INNER (existence).
+  to-many root's join condition becomes the correlation in `WHERE`; every join below the root keeps its declared
+  type (user's decision after the 4th review). Turning LEFT into INNER would drop related rows whose optional
+  descendant is missing before a proposition that does not reject NULLs (`relation.x OR tags.y`, `IS NULL`,
+  `COALESCE`) is evaluated; for NULL-rejecting propositions — all bundled ones — both give the same rows, and MySQL
+  and MariaDB simplify such a LEFT join to INNER themselves.
   A proposition that reaches two independent to-many branches (e.g. tags and categories, both from `main`) gets both
   joined into one subquery.
 - **No renaming** (Claude's call after review): to-many aliases never appear in the outer query, and each `EXISTS` is
@@ -255,8 +259,9 @@ EXISTS (SELECT 1 FROM tl_cfg_tag_news codefog_tags_news_join
 - **Existential semantics, stated** (Claude's call after review): a condition on a to-many alias means "there is a
   related row for which the condition holds". Today the LEFT join chain also yields one NULL row for entries without
   related rows, so the two agree for every NULL-rejecting condition — all bundled predicates on tags except one: a
-  `flare_equation_simple` with `IS NULL` on a tags alias matches untagged entries today and nothing afterwards. This is
-  an accepted change (goal 11, migration notes). Predicates that want other semantics ("title matches OR has tag",
+  `flare_equation_simple` with `IS NULL` on a tags alias matches untagged entries today and afterwards only entries
+  with a related row for which it holds (for `tags.id IS NULL`: a relation row whose tag no longer exists, since the
+  tags join keeps its LEFT type). This is an accepted change (goal 11, migration notes). Predicates that want other semantics ("title matches OR has tag",
   "has no tag X") will use an explicit builder helper (outlook, §7); the framework's automatic wrapping covers only
   propositions that place no subquery themselves.
 - Projection, identity, base conditions, mapping and sort keys may only reference outer-joinable aliases;
@@ -662,7 +667,7 @@ event; projection and order → a driver (subclass); grouping → no longer poss
 | D22 | Target alias validated eagerly at list build (`FilterFailure`), plus a query-time backstop | Claude (after review) |
 | D23 | Parent relation for Archive/BelongsTo: list config for `main`, element config or target-table inference otherwise | Claude (after review) |
 | D24 | `FilterInvoker` returns invocation results (effect, conditions, used aliases) | Claude (after review) |
-| D25 | To-many aliases never in the outer query; per filter one correlated `EXISTS` per connected component, whole propositions, no renaming, anchors activated; existential semantics (`IS NULL` on to-many accepted change) | user (details: Claude after review) |
+| D25 | To-many aliases never in the outer query; per filter one correlated `EXISTS` per connected component, whole propositions, no renaming, anchors activated, joins below the root keep their declared type; existential semantics (`IS NULL` on to-many accepted change) | user (details: Claude after review; join types: user after 4th review) |
 | D26 | Sort-only joins become LEFT; Count ignores sort keys; `main.id` tie-breaker | Claude (after review) |
 | D27 | Opt-out elements always target `main`, stored value ignored | Claude (after review) |
 | D28 | New-hook failures are list-level failures (`list.failed`); views do not register models from non-default projections | Claude (after review) |
@@ -691,7 +696,9 @@ new-hook failures reach `list.failed`, the order of commits. Anything marked "bu
   multiplying rejected, hidden/mandatory), column mapping and physical access, join parameter scoping (incl. inside
   `EXISTS` and the derived count table) and the unbound-parameter `\Error`, the `EXISTS` compilation (one per filter
   and connected component, whole propositions, two tag filters ANDed, relation-only conditions keep dangling relation
-  rows, two to-many branches in one proposition, anchors activated, `IS NULL` on a to-many alias, path joins and
+  rows, declared join types kept below the root (a proposition over the relation and an optional descendant keeps
+  relation rows without that descendant), two to-many branches in one proposition, anchors activated, `IS NULL` on a
+  to-many alias, path joins and
   correlation, empty conditions → no `EXISTS`), the marker surviving `--schema-only` and later schema diffs, targeting (`column()`,
   `for:`, eager validation → `FilterFailure`, query-time backstop for `withFilter()`-added filters, opt-out ignores a
   stored target, outer join activation incl. empty-SQL propositions, from-alias and `requires` closure, identical

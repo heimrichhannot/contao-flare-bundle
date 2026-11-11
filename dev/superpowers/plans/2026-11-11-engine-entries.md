@@ -39,7 +39,7 @@ plan uses them throughout, so a rename is a search-and-replace in this file befo
 | cache tags | `EntryCacheTagger` | `src/Contao/Entry/` |
 | reader resolver / its value | `ReaderResolver` / `ReaderResolution` (DTO) | `src/Contao/Reader/` / `src/Contao/` |
 | discovery / auto-item | `ReaderElementFinder` / `AutoItemReader` | `src/Contao/Reader/` |
-| `\Error` subclasses | `EntryNameCollisionError`, `SealedEntriesError`, `UndefinedEntryKeyError`, `MissingEntryIdError`, `InvalidLookupIdError`, `MissingModelRefError`, `UndefinedRelationError` | `src/Exception/` |
+| `\Error` subclasses | `EntryNameCollisionError`, `SealedEntriesError`, `UndefinedEntryKeyError`, `ReadonlyEntryError`, `MissingEntryIdError`, `InvalidLookupIdError`, `MissingModelRefError`, `UndefinedRelationError` | `src/Exception/` |
 
 ## Global Constraints
 
@@ -60,17 +60,21 @@ plan uses them throughout, so a rename is a search-and-replace in this file befo
   (used by `HtmlDecoder` since 4.13 — confirm against the 4.13 tag), `Controller::isVisibleElement()`,
   `ContentModel::findPublishedByPidAndTable()`, `DcaExtractor::getInstance()->getFields()/getRelations()`.
   `Input::encodeInput()` and `InputEncodingMode` are 5.x only: tests may use them, production code must not.
-- `declare(strict_types=1)`, PSR-12/PER, 120 characters. Before each commit:
-  `git diff --name-only HEAD | grep '\.php$' | xargs -r awk 'length > 120 {print FILENAME":"FNR}'` → no output.
+- `declare(strict_types=1)`, PSR-12/PER, 120 characters. After staging, before each commit (also catches new files):
+  `git diff --cached --name-only --diff-filter=d | grep '\.php$' | xargs -r awk 'length > 120 {print FILENAME":"FNR}'`
+  → no output.
 - PHPStan analyses `src/` only, excludes `src/Integration/Terminal42Languages` (check it with
-  `make php -l <file>`) and ignores `class.notFound` in `src/Integration/` (`NewsModel`, `CalendarEventsModel` do
-  not exist in the suite).
+  `docker compose run --rm php -l <file>`; `make php -l` does not work, make takes `-l` as its own option) and
+  ignores `class.notFound` in `src/Integration/` (`NewsModel`, `CalendarEventsModel` do not exist in the suite).
+- `make test <path>` passes **one** path to PHPUnit 9 (further paths are ignored): run one call per path a step
+  names.
 - Every task ends with `make test` → `OK`, `make phpstan` → `[OK] No errors`, `mago lint --minimum-fail-level note`
   → no issues, then one commit.
 - `AGENTS.md` (`CLAUDE.md` is a symlink) and the docs worktree change in Task 11 only. `docs/` is its own worktree on
   `docs/main`: commit there with `git -C docs`, never push it.
-- `tests/DependencyInjection/ServicesConfigTest.php` pins service registration: every task that adds a class adds it
-  to `provideServices()` or `provideNonServices()`.
+- `tests/DependencyInjection/ServicesConfigTest.php` pins service registration: every task adds its new services to
+  `provideServices()` and its new runtime objects (DTOs, entries, collectors, lookups) to `provideNonServices()`, as
+  each task lists. Errors, interfaces, events and event listeners are not pinned.
 
 ## Review Focus
 
@@ -86,6 +90,12 @@ plan uses them throughout, so a rename is a search-and-replace in this file befo
 5. **Rows that do not share keys** (another source, a `ModifyListQueryStructEvent` select): `column()` skips rows
    without the key; a collection-level `attach()` collides with a column of *any* row. Pinned in Task 1.
 
+Known limits, documented in Task 11 and not fixed (outside the spec's round-trip character list): an auto-item value
+containing `/` or a literal `%2F` cannot round-trip (Symfony's router keeps `%2F` as a path separator, Contao splits
+the parameters at `/`); on Contao 4.13 also `%` followed by a sprintf letter (`%s`, `%d`, `%b`, …), which 4.13's
+legacy URL logic decodes. Such a link ends in a 404, never in another entry. The breadcrumb ignores Contao's preview
+mode (invisible readers are not found there).
+
 ---
 
 ## File Structure
@@ -94,7 +104,7 @@ plan uses them throughout, so a rename is a search-and-replace in this file befo
 |---|---|---|
 | `src/Entry/Entry.php`, `EntryMeta.php`, `ModelRef.php`, `EntryCollection.php` | create (T1) | the wrapper |
 | `src/Entry/EntryLookupInterface.php`, `EntryTaggerInterface.php` | create (T2) | ports for listeners and cache tags |
-| `src/Exception/{EntryNameCollision,SealedEntries,UndefinedEntryKey,MissingEntryId}Error.php` | create (T1) | |
+| `src/Exception/{EntryNameCollision,SealedEntries,UndefinedEntryKey,ReadonlyEntry,MissingEntryId}Error.php` | create (T1) | |
 | `src/Exception/InvalidLookupIdError.php` (T3), `MissingModelRefError.php` (T6), `UndefinedRelationError.php` (T10) | create | |
 | `src/Event/ListDriverEntriesEvent.php`, `src/EventListener/NamedDispatch/ListDriverEntriesListener.php` | create (T2) | entries event |
 | `src/Engine/Entry/EntryCollector.php` (T2), `ListEntryLookup.php` (T3) | create | rows → sealed collection; membership lookup |
@@ -129,7 +139,8 @@ Read the spec sections "What it looks like", "`Entry`", "`EntryMeta` and `ModelR
 **Files:**
 - Create: `src/Entry/Entry.php`, `src/Entry/EntryMeta.php`, `src/Entry/ModelRef.php`, `src/Entry/EntryCollection.php`
 - Create: `src/Exception/EntryNameCollisionError.php`, `src/Exception/SealedEntriesError.php`,
-  `src/Exception/UndefinedEntryKeyError.php`, `src/Exception/MissingEntryIdError.php`
+  `src/Exception/UndefinedEntryKeyError.php`, `src/Exception/ReadonlyEntryError.php`,
+  `src/Exception/MissingEntryIdError.php`
 - Modify: `config/services.yaml` — add `Entry` to the root `exclude` braces (`../src/{Config,Contao,…,Entry,…}`)
 - Test: `tests/Entry/EntryTest.php`, `tests/Entry/EntryCollectionTest.php`, `tests/Entry/EntryTwigTest.php`,
   `tests/DependencyInjection/ServicesConfigTest.php`
@@ -157,6 +168,9 @@ final class Entry
     public function attach(string $name, mixed $value): void; // a \Closure(Entry): mixed is lazy, run once
     public function __get(string $name): mixed;
     public function __isset(string $name): bool;
+    /** Both throw ReadonlyEntryError: an entry is written only through attach() (no dynamic properties). */
+    public function __set(string $name, mixed $value): void;
+    public function __unset(string $name): void;
     /** @internal */ public function ownsAttachment(string $name): bool;
 }
 
@@ -263,6 +277,14 @@ public function testEntryAttachCollisionsThrow(string $name): void
 public function testEntryIsNotIterable(): void
 {
     self::assertNotInstanceOf(\Traversable::class, self::entries([['id' => 1]])->first());
+}
+
+public function testWritingOrUnsettingAPropertyThrows(): void
+{
+    $entry = self::entries([['id' => 1]])->first();
+    try { $entry->archive = 'x'; self::fail(); } catch (ReadonlyEntryError) {}
+    $this->expectException(ReadonlyEntryError::class);
+    unset($entry->id);
 }
 ```
 
@@ -380,19 +402,20 @@ public function testUnknownNameFollowsTwigsRules(): void
 
 - [ ] **Step 2: Run the tests — expect failure**
 
-Run: `make test tests/Entry tests/DependencyInjection/ServicesConfigTest.php`
+Run: `make test tests/Entry` and `make test tests/DependencyInjection/ServicesConfigTest.php`
 Expected: errors `Class "HeimrichHannot\FlareBundle\Entry\EntryCollection" not found`.
 
 - [ ] **Step 3: Implement the classes and errors listed above; add `Entry` to the services exclude**
 
 - [ ] **Step 4: Run the tests — expect pass**
 
-Run: `make test tests/Entry tests/DependencyInjection/ServicesConfigTest.php` → `OK`.
+Run: the same two calls → `OK`.
 
 - [ ] **Step 5: Full checks and commit**
 
-`make test`, `make phpstan`, `mago lint --minimum-fail-level note`, the 120-character and Contao-free greps.
-`git add src/Entry src/Exception config/services.yaml tests/Entry tests/DependencyInjection && git commit -m "feat(entries): add Entry, EntryMeta, ModelRef and EntryCollection"`
+`make test`, `make phpstan`, `mago lint --minimum-fail-level note`, the Contao-free grep;
+`git add src/Entry src/Exception config/services.yaml tests/Entry tests/DependencyInjection`, the staged
+120-character check, `git commit -m "feat(entries): add Entry, EntryMeta, ModelRef and EntryCollection"`
 
 ---
 
@@ -415,10 +438,13 @@ Read the spec sections "Entries event" and "Views" (first bullet).
 interface EntryLookupInterface
 {
     /**
-     * @param int|string|list<int|string> $ids ids of the list's own table
+     * `mixed`, not `int|string|array`: Twig calls methods without strict_types, so a typed parameter would coerce
+     * `true` to 1 and turn `null` into a TypeError before the implementation can reject it with its own message.
+     *
+     * @param int|string|list<int|string> $ids ids of the list's own table; anything else throws InvalidLookupIdError
      * @return ($ids is array ? EntryCollection : ?Entry)
      */
-    public function lookup(int|string|array $ids): Entry|EntryCollection|null;
+    public function lookup(mixed $ids): Entry|EntryCollection|null;
 }
 
 interface EntryTaggerInterface { public function tag(Entry ...$entries): void; }
@@ -503,9 +529,10 @@ public function testEventAttachHandsPhaseOneTheLookup(): void
 `flare.list_driver.test_list.entries` receives the same event object. `ServicesConfigTest`: `EntryCollector`,
 `ListDriverEntriesEvent` → non-services.
 
-- [ ] **Step 2: Run — expect failure.** `make test tests/Engine/Entry tests/EventListener/NamedDispatch` → class not found.
+- [ ] **Step 2: Run — expect failure.** `make test tests/Engine/Entry`, `make test tests/EventListener/NamedDispatch`,
+  `make test tests/DependencyInjection/ServicesConfigTest.php` → class not found.
 - [ ] **Step 3: Implement the interfaces, the event, the listener and the collector; add the services exclude.**
-- [ ] **Step 4: Run — expect pass.** Same command → `OK`.
+- [ ] **Step 4: Run — expect pass.** The same three calls → `OK`.
 - [ ] **Step 5: Full checks and commit.** `feat(entries): add the entries event and EntryCollector`
 
 ---
@@ -544,13 +571,14 @@ final class ListEntryLookup implements EntryLookupInterface
         private readonly EntryCollector            $collector,
         private readonly EntryTaggerInterface      $tagger,
     ) {}
-    public function lookup(int|string|array $ids): Entry|EntryCollection|null;
+    public function lookup(mixed $ids): Entry|EntryCollection|null;
 }
 
 final readonly class EntryCacheTagger implements EntryTaggerInterface
 {
-    public function __construct(private SymfonyResponseTagger $responseTagger) {}
-    /** Adds "contao.db.<table>.<id>" for every entry with a modelRef; skips the others. */
+    /** FOS registers the tagger only when cache tagging is enabled; Contao injects it optionally too. */
+    public function __construct(private ?SymfonyResponseTagger $responseTagger = null) {}
+    /** Adds "contao.db.<table>.<id>" for every entry with a modelRef; skips the others; no-op without a tagger. */
     public function tag(Entry ...$entries): void;
 }
 ```
@@ -561,14 +589,15 @@ the loader config, as `executeQuery()` does), then
 `setFirstResult(0)`, `setMaxResults(null)`; a `null` query builder (aborted filter) yields `[]`.
 
 `ListEntryLookup::lookup()`:
-1. Normalize: a scalar becomes a one-element list. Each element must be an `int` or a string matching `/^\d+$/`;
-   anything else throws `InvalidLookupIdError` (message: ids of the list's own table — an int, a numeric string or
-   a list of those; deserialize a stored value first). Cast to `int`, keep the first occurrence of duplicates.
-2. Empty list → an empty, sealed `EntryCollection` (no query, no event); a scalar input returns `null`.
+1. Validate before anything is coerced: a non-array input is a single id. Each id must be an `int` or a string
+   matching `/^\d+$/`; anything else — `null`, `''`, `true`, a float, a serialized string — throws
+   `InvalidLookupIdError` (message: ids of the list's own table — an int, a numeric string or a list of those;
+   deserialize a stored value first). Cast to `int`, keep the first occurrence of duplicates.
+2. An empty list → an empty, sealed `EntryCollection` (no query, no event).
 3. Memo key `implode(',', $ids)`: identical normalized lookups query once.
 4. `fetchEntriesByIds()`, reorder the rows to the given id order (rows indexed by `(int) $row['id']`), then
    `$collector->collect($rows, $this)`, then `$tagger->tag(...$collection)`.
-5. Scalar input → `$collection->first()`; list input → the collection.
+5. A single id → `$collection->first()` (`null` for a non-member); a list → the collection.
 
 **Test support — `tests/Engine/EnginePipelineTrait.php`** (uses `BuildsFilterEffectsTrait`; construction patterns
 from `InteractiveProjectorTest::createProjector()` and `ListQueryDirectorTest::createDirector()`):
@@ -593,7 +622,7 @@ trait EnginePipelineTrait
     protected function createLoaderFactory(Connection $connection, EventDispatcher $dispatcher): LoaderFactory;
 
     /** ListCompound of type 'test_list' on 'tl_test' with the given filters (keyed by alias). */
-    protected function testList(FilterCompound ...$filters): ListCompound;
+    protected function createList(FilterCompound ...$filters): ListCompound;
 
     /** A fixed filter `published = 1` (SimpleEquationFilterElement, alias 'published'). */
     protected static function publishedOnly(): FilterCompound;
@@ -615,7 +644,7 @@ private function lookup(?EventDispatcher $dispatcher = null, ?SpyTagger &$tagger
         ['id' => 1, 'published' => 1], ['id' => 2, 'published' => 1], ['id' => 3, 'published' => 1],
         ['id' => 4, 'published' => 0],
     ]);
-    $list = $this->testList(self::publishedOnly());
+    $list = $this->createList(self::publishedOnly());
     $intent = new ValidationIntent();
     $loader = $this->createLoaderFactory($connection, $dispatcher)
         ->createValidationLoader(new ValidationLoaderConfig($list, $intent, 'id'));
@@ -653,7 +682,20 @@ public function testInvalidIdsThrow(mixed $ids): void
     $this->expectException(InvalidLookupIdError::class);
     $this->lookup()->lookup($ids);
 }
-// provideInvalidIds: ['a:2:{i:0;s:1:"1";i:1;s:1:"2";}'], [['1', 'x']], ['1.5'], [[null]]
+// provideInvalidIds: ['a:2:{i:0;s:1:"1";i:1;s:1:"2";}'], [['1', 'x']], ['1.5'], [1.5], [null], [''], [true], [[null]]
+
+/** @dataProvider provideInvalidTwigIds  through a real Twig\Environment, which calls methods without strict_types */
+public function testInvalidIdsThrowThroughTwig(mixed $ids): void
+{
+    $twig = new Environment(new ArrayLoader(['t' => '{% set r = l.lookup(v) %}']), ['strict_variables' => true]);
+    try {
+        $twig->render('t', ['l' => $this->lookup(), 'v' => $ids]);
+        self::fail('No error thrown.');
+    } catch (\Twig\Error\RuntimeError $e) {
+        self::assertInstanceOf(InvalidLookupIdError::class, $e->getPrevious());
+    }
+}
+// provideInvalidTwigIds: [true], [null], ['a:1:{i:0;s:1:"1";}']
 
 public function testEmptyLookupQueriesNothing(): void   // Review Focus 2
 {
@@ -679,19 +721,28 @@ public function testMembersHaveLinksRunTheEventAndAreTagged(): void
 
 public function testLookupInPhaseOneDoesNotRecurseAndChainsOnlyWhenRead(): void
 {
+    // the same listener serves every collection, the lookup's result included; the batch lookup runs in phase 1
+    $phase1 = 0;
     $dispatcher = new EventDispatcher();
     $dispatcher->addListener(ListDriverEntriesEvent::class, static fn (ListDriverEntriesEvent $e) => $e->attach(
         'similar',
-        static fn (EntryCollection $all, EntryLookupInterface $l): \Closure =>
-            static fn (Entry $x): EntryCollection => $l->lookup([((int) $x->row['id'] % 3) + 1]),
+        static function (EntryCollection $all, EntryLookupInterface $l) use (&$phase1): \Closure {
+            ++$phase1;
+            $next = static fn (mixed $id): int => ((int) $id % 3) + 1;
+            $similar = $l->lookup(\array_map($next, $all->column('id')));
+            return static function (Entry $x) use ($similar, $next): ?Entry {
+                foreach ($similar as $s) { if ((int) $s->row['id'] === $next($x->row['id'])) { return $s; } }
+                return null;
+            };
+        },
     ));
     $entry = $this->lookup($dispatcher)->lookup(1);
-    self::assertSame(1, $this->queries);
+    self::assertSame([1, 0], [$this->queries, $phase1]);   // dispatching ran no phase 1
 
-    self::assertSame([2], self::ids($entry->similar));
-    self::assertSame(2, $this->queries);
-    self::assertSame([3], self::ids($entry->similar->first()->similar));
-    self::assertSame(3, $this->queries);
+    self::assertSame(2, (int) $entry->similar->row['id']);
+    self::assertSame([2, 1], [$this->queries, $phase1]);   // the result's own event registered lazily
+    self::assertSame(3, (int) $entry->similar->similar->row['id']);
+    self::assertSame([3, 2], [$this->queries, $phase1]);
 }
 ```
 
@@ -702,16 +753,23 @@ public function testTagsEntriesWithAModelRef(): void
     $responseTagger = new SymfonyResponseTagger();
     $entries = EntryCollection::forTable('tl_news', [['id' => 5], ['id' => 6]]);
     (new EntryCacheTagger($responseTagger))->tag(...$entries, ...new EntryCollection([['id' => 7]]));
-    self::assertSame(['contao.db.tl_news.5', 'contao.db.tl_news.6'], $responseTagger->getTags());
+    self::assertSame('contao.db.tl_news.5,contao.db.tl_news.6', $responseTagger->getTagsHeaderValue());
+}
+
+public function testWithoutAResponseTaggerNothingHappens(): void
+{
+    (new EntryCacheTagger())->tag(...EntryCollection::forTable('tl_news', [['id' => 5]]));
+    $this->addToAssertionCount(1);
 }
 ```
 
 `ServicesConfigTest`: `ListEntryLookup` → non-service; `EntryCacheTagger` → service; new test
 `testEntryTaggerIsAliasedToTheCacheTagger` (`getAlias(EntryTaggerInterface::class)` → `EntryCacheTagger::class`).
 
-- [ ] **Step 2: Run — expect failure.** `make test tests/Engine/Entry tests/Contao/Entry` → class not found.
+- [ ] **Step 2: Run — expect failure.** `make test tests/Engine/Entry`, `make test tests/Contao/Entry`,
+  `make test tests/DependencyInjection/ServicesConfigTest.php` → class not found.
 - [ ] **Step 3: Implement the trait, `fetchEntriesByIds()`, `ListEntryLookup`, `InvalidLookupIdError`, `EntryCacheTagger`, the alias.**
-- [ ] **Step 4: Run — expect pass.**
+- [ ] **Step 4: Run — expect pass.** The same three calls → `OK`.
 - [ ] **Step 5: Full checks and commit.** `feat(entries): look up member entries of a list in one query`
 
 ---
@@ -804,11 +862,12 @@ invalid paths' collectors with the incoming intent (their collections are empty,
 `flare_listview.html.twig` debug block: link `entry.to`, heading `entry.meta.modelRef.table`, the `dl` iterates
 `entry.row` (keys except `password`); no `flare_list.to()`, no `flare_list.model()`.
 
-`EnginePipelineTrait::createProjectorRegistry(Connection, EventDispatcher, bool $debug = false): ProjectorRegistry`
-— Interactive, Aggregation and Validation projectors over the trait's director and loader factory, each with a
-`ServiceLocator` that serves `AbstractProjector::getSubscribedServices()` (wiring as in
-`InteractiveProjectorTest::createProjector()`), an `EntryCollectorFactory` with a spy tagger, and request query
-`$query` (parameter) on a `RequestStack`.
+`EnginePipelineTrait::createProjectorRegistry(Connection $connection, EventDispatcher $dispatcher, array $query = [],
+bool $debug = false): ProjectorRegistry` — Interactive, Aggregation and Validation projectors over the trait's
+director and loader factory, each with a `ServiceLocator` that serves `AbstractProjector::getSubscribedServices()`
+(wiring as in `InteractiveProjectorTest::createProjector()`), an `EntryCollectorFactory` with a spy tagger, and a
+`RequestStack` whose current request carries `$query` as its query parameters (a submission of form `f` is
+`['f' => ['q' => '2']]`).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -834,7 +893,7 @@ public function testEntriesCarryModelRefsAndRunTheEventOnce(): void
 public function testEmptyViewsDispatchNothing(string $case): void
 {
     // 'failed': the list carries a FilterFailure; 'invalid': a controlled filter rejects the submitted value;
-    // 'empty page': page 3 of 2 items per page. Listener counter as above.
+    // 'no rows': all rows unpublished, so the published filter matches nothing. Listener counter as above.
     self::assertCount(0, $view->getEntries());
     self::assertSame(0, $events);
 }
@@ -885,9 +944,10 @@ public function testReadsTheAutoItemFromTheRowAndDispatchesTheEntry(): void
 `EntryCollectorFactory` from the locator, replace `assertSame([], $view->getEntries())` by
 `assertCount(0, $view->getEntries())`. `ServicesConfigTest`: `EntryCollectorFactory` → service.
 
-- [ ] **Step 2: Run — expect failure.** `make test tests/Engine tests/Integration/ContaoCalendar tests/Reader`
+- [ ] **Step 2: Run — expect failure.** `make test tests/Engine`, `make test tests/Integration/ContaoCalendar`,
+  `make test tests/Reader`.
 - [ ] **Step 3: Implement the changes listed under Files.**
-- [ ] **Step 4: Run — expect pass.** Then
+- [ ] **Step 4: Run — expect pass.** The same three calls → `OK`. Then
   `grep -rn "LinksToReaderTrait\|EntryCache\b\|fetchEntryById\|createModelsFromEntries\|flare_list\.to\|flare_list\.model" src contao tests config`
   → no output.
 - [ ] **Step 5: Full checks and commit.** `refactor(engine): hand out entries in the list view`
@@ -899,14 +959,22 @@ public function testReadsTheAutoItemFromTheRowAndDispatchesTheEntry(): void
 Read the spec section "Reader URL" (round trip) and "Intent" bug 5.
 
 **Files:**
-- Modify: `src/Reader/ReaderUrlGenerator.php`
-- Test: `tests/Reader/ReaderUrlRoundTripTest.php`
+- Modify: `src/Reader/ReaderUrlGenerator.php`, `src/Event/ReaderUrlGeneratedEvent.php` (doc comment of `$autoItem`)
+- Test: `tests/Reader/ReaderUrlRoundTripTest.php`, `tests/Reader/ReaderUrlGeneratorTest.php`
 
 **Interfaces — Consumes:** Task 4's `ReaderUrlGenerator`. Produces nothing new.
 
 The generator passes `'/' . StringUtil::revertInputEncoding($stored)` to `getAbsoluteUrl()` — the router owns
-percent-encoding; `Str::urlEncodePath()` is no longer called here. `revertInputEncoding()` is the inverse of how
-`Input::get('auto_item', false, true)` encodes the routed value, so stored value → URL → auto-item is the identity.
+percent-encoding; `Str::urlEncodePath()` is no longer called here. `revertInputEncoding()` (exists since Contao 4.13)
+is the inverse of how `Input::get('auto_item', false, true)` encodes the routed value, so stored value → URL →
+auto-item is the identity. `ReaderUrlGeneratedEvent::$autoItem` is that URL text — the reverted value, never
+percent-encoded; a listener that builds another URL from it passes it to the router as is. (The dormant
+`ChangelanguageListener` still calls `Str::urlEncodePath()` on it; it stays unchanged, see the spec's non-goals.)
+`ReaderUrlGeneratorTest::testReadsTheAutoItemFromTheRowAndDispatchesTheEntry` gains a case with a stored
+`a&#35;b`: `getAbsoluteUrl('/a#b')`, `$event->autoItem === 'a#b'`.
+
+Out of scope (Review Focus, known limits): values with `/` or a literal `%2F`, and on Contao 4.13 `%` followed by a
+sprintf letter. No test pins them.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -937,10 +1005,10 @@ public function testLinkRoutesBackToTheSameStoredValue(string $raw): void
 //                'percent' => ['100%'], 'ampersand' => ['a&b']
 ```
 
-- [ ] **Step 2: Run — expect failure.** `make test tests/Reader/ReaderUrlRoundTripTest.php` → `space`, `hash`,
-  `quotes`, `percent` fail (`%2520`, `%2523`, …).
-- [ ] **Step 3: Implement the generator change.**
-- [ ] **Step 4: Run — expect pass.** Also `make test tests/Reader`.
+- [ ] **Step 2: Run — expect failure.** `make test tests/Reader` → all six values fail (`%2520`, `%25C3…`,
+  `%2526…`), and the new `a&#35;b` case of `ReaderUrlGeneratorTest`.
+- [ ] **Step 3: Implement the generator change and the doc comment.**
+- [ ] **Step 4: Run — expect pass.** `make test tests/Reader` → `OK`.
 - [ ] **Step 5: Full checks and commit.** `fix(reader): let reader URLs round-trip special characters`
 
 ---
@@ -961,7 +1029,7 @@ final readonly class EntryModelFactory
 {
     public function __construct(private ContaoFramework $framework) {}
     /** MissingModelRefError without modelRef; null without a model class for the table; the registry's instance
-     *  for (table, id) if any; else createInstance($class, [$row restricted to DcaExtractor::getInstance($table)->getFields() keys]). */
+     *  for (table, id) if any; else createInstance($class, [$row restricted to the table's columns]). */
     public function create(Entry $entry): ?Model;
 }
 
@@ -978,8 +1046,20 @@ class TestModelFixture extends Model
 }
 ```
 
-All Contao access goes through adapters: `Model::getClassFromTable()`, `Model\Registry::getInstance()->fetch()`,
-`DcaExtractor::getInstance()->getFields()`, and `$framework->createInstance()`.
+`create()` in this order; all Contao access goes through adapters:
+1. The model class, resolved in one guarded step: the `Model` adapter's `getClassFromTable()` throws a
+   `\RuntimeException` on Contao 5 when `$GLOBALS['TL_MODELS']` has no entry for the table (4.13 returns a derived
+   name instead) — catch it → `null`. A class that does not exist or is no `Model` subclass → `null`.
+2. Only then the registry (`Model\Registry::getInstance()->fetch($table, $id)` — `fetch()` itself calls
+   `getClassFromTable()`, hence step 1 first).
+3. Else the row restricted to the keys of `DcaExtractor::getInstance($table)->getFields()`, always keeping `id`
+   (a table without `sql` fields would otherwise lose its primary key), and
+   `$framework->createInstance($class, [$row])` — Contao's constructor registers the new model.
+
+The test builds its framework with `createMock(ContaoFramework::class)` and stubs `getAdapter()` and
+`createInstance()` itself (`mockContaoFramework()`'s `$instances` closures receive no arguments). The
+`createInstance()` stub builds a `TestModelFixture` from the given row and puts it into the array behind the
+registry mock's `fetch()`, as Contao's constructor would register it.
 
 - [ ] **Step 1: Write the failing tests** (`EntryModelFactoryTest extends ContaoTestCase`)
 
@@ -990,9 +1070,15 @@ public function testWithoutModelRefThrows(): void
     $this->factory()->create(new Entry(['id' => 1]));
 }
 
-public function testWithoutModelClassReturnsNull(): void
+public function testWithoutRegisteredModelClassReturnsNull(): void
 {
-    // Model adapter: getClassFromTable('tl_test') → 'Contao\NoSuchModel'
+    // Model adapter: getClassFromTable('tl_test') throws \RuntimeException (Contao 5); registry never asked
+    self::assertNull($this->factory(classLookupThrows: true)->create($this->entry()));
+}
+
+public function testARegisteredButMissingModelClassReturnsNull(): void
+{
+    // Model adapter: getClassFromTable('tl_test') → 'Contao\NoSuchModel' (4.13, or a stale TL_MODELS entry)
     self::assertNull($this->factory(class: 'Contao\NoSuchModel')->create($this->entry()));
 }
 
@@ -1003,22 +1089,33 @@ public function testReturnsTheRegistryInstance(): void
     self::assertSame($registered, $this->factory(registered: $registered)->create($this->entry()));
 }
 
-public function testCreatesAModelFromTheTableColumnsOnly(): void
+public function testCreatesAndRegistersAModelFromTheTableColumnsOnly(): void
 {
-    // DcaExtractor mock getFields() → ['id' => …, 'title' => …]; createInstance(TestModelFixture::class, [$row])
-    // stubbed to build and record the fixture
-    $model = $this->factory()->create($this->entry(['id' => 5, 'title' => 'T', '_flare_event_group' => 'x', 'a__b' => 1]));
+    // DcaExtractor mock getFields() → ['id' => …, 'title' => …]; createInstance stubbed as described above
+    $factory = $this->factory();
+    $entry = $this->entry(['id' => 5, 'title' => 'T', '_flare_event_group' => 'x', 'a__b' => 1]);
+
+    $model = $factory->create($entry);
     self::assertInstanceOf(TestModelFixture::class, $model);
     self::assertSame(['id' => 5, 'title' => 'T'], $model->row());
+    self::assertSame($model, $factory->create($entry));   // the registered instance; createInstance ran once
+    self::assertSame(1, $this->instancesCreated);
+}
+
+public function testTheIdSurvivesATableWithoutSqlFields(): void
+{
+    // getFields() → []
+    self::assertSame(['id' => 5], $this->factory(fields: [])->create($this->entry(['id' => 5, 'title' => 'T']))?->row());
 }
 // entry(): EntryCollection::forTable('tl_test', [$row])->first()
 ```
 
 `ServicesConfigTest`: `EntryModelFactory` → service.
 
-- [ ] **Step 2: Run — expect failure.** `make test tests/Contao/Entry/EntryModelFactoryTest.php`
+- [ ] **Step 2: Run — expect failure.** `make test tests/Contao/Entry/EntryModelFactoryTest.php`,
+  `make test tests/DependencyInjection/ServicesConfigTest.php`
 - [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run — expect pass.**
+- [ ] **Step 4: Run — expect pass.** The same two calls → `OK`.
 - [ ] **Step 5: Full checks and commit.** `feat(contao): turn entries into models at the Contao boundary`
 
 ---
@@ -1031,7 +1128,7 @@ Read the spec section "Reader resolver" (discovery, auto-item) and "Anti-goals" 
 - Create: `src/Contao/Reader/ReaderElementFinder.php`, `src/Contao/Reader/AutoItemReader.php`
 - Modify: `tests/Engine/EnginePipelineTrait.php` — add
   `createReaderTables(Connection $connection, array $articles, array $elements): void` (the SQLite tables below,
-  filled with the given rows; defaults: published/visible, `start`/`stop` `''`)
+  filled with the given rows; defaults: published/visible, `start`/`stop` `''`, `tstamp` 1, `ptable` `tl_article`)
 - Test: `tests/Contao/Reader/ReaderElementFinderTest.php`, `tests/Contao/Reader/AutoItemReaderTest.php`,
   `tests/DependencyInjection/ServicesConfigTest.php`
 
@@ -1060,10 +1157,12 @@ final readonly class ReaderElementFinder
 `find()`:
 1. Page id: the **main** request's `pageModel` attribute — a `PageModel` (its `id`) or a numeric id — else
    `$GLOBALS['objPage']->id` if set; none → `null`.
-2. One DBAL query: `tl_content` (`type = 'flare_reader'`, `ptable = 'tl_article'` — top level only) joined to
-   `tl_article` on `pid`, `tl_article.pid = :page`; article `published = 1` and start/stop, element `invisible = 0`
-   and start/stop, written like `ContentModel::findPublishedByPidAndTable()` (`(start = '' OR start <= :time) AND
-   (stop = '' OR stop > :time)`); ordered by article `sorting`, then element `sorting`; selects both ids.
+2. One DBAL query: `tl_content` (`type = 'flare_reader'`; top level only: `ptable = 'tl_article'` or, as Contao 4.13
+   stores article content, `ptable = ''`) joined to `tl_article` on `pid`, `tl_article.pid = :page`; article
+   `published = 1` and start/stop; element `invisible = 0`, `tstamp != 0` (unsaved elements, as Contao's finders
+   skip them) and start/stop — written like `ContentModel::findPublishedByPidAndTable()`:
+   `(start = '' OR start <= :time) AND (stop = '' OR stop > :time)` with `:time = Date::floorToMinute()`; ordered by
+   article `sorting`, then element `sorting`; selects both ids. Preview mode is not honored (known limit).
 3. Per candidate: load `ContentModel` and `ArticleModel` via adapters (`findByPk`), keep it if the Controller
    adapter's `isVisibleElement()` is true for both (protected/groups; guests on 4.13; the hook).
 4. Exactly one left → that `ContentModel`; otherwise `null`.
@@ -1072,13 +1171,15 @@ final readonly class ReaderElementFinder
 
 ```php
 // tests/Contao/Reader/ReaderElementFinderTest.php (ContaoTestCase) — SQLite tables tl_article(id, pid, sorting,
-// published, start, stop) and tl_content(id, pid, ptable, type, sorting, invisible, start, stop); page id 7.
+// published, start, stop) and tl_content(id, pid, ptable, type, sorting, invisible, start, stop, tstamp); page id 7.
 public function testFindsTheOneVisibleReader(): void { self::assertSame(20, (int) $this->finder()->find()?->id); }
 public function testHiddenElementsAndArticlesAreSkipped(): void
 {
     // reader 20 invisible=1; reader 21 in an unpublished article; reader 22 with start in the future → null
 }
 public function testTwoVisibleReadersFindNothing(): void {}
+public function testAnUnsavedReaderIsIgnored(): void {}      // 20 saved, 21 with tstamp 0 → 20
+public function testALegacyEmptyPtableCounts(): void {}      // 20 with ptable '' (Contao 4.13) → 20
 public function testANestedReaderIsIgnored(): void {}        // ptable 'tl_content'
 public function testAProtectedReaderIsSkipped(): void {}     // isVisibleElement false for 20, 21 visible → 21
 public function testThePageMayBeAnIdOnTheMainRequest(): void {}   // Review Focus 1: attribute pageModel = 7
@@ -1099,9 +1200,10 @@ public function testReadsTheAutoItemWithoutMarkingItUsed(): void
 
 `ServicesConfigTest`: both → services. The `tearDown()` of the finder test unsets `$GLOBALS['objPage']`.
 
-- [ ] **Step 2: Run — expect failure.** `make test tests/Contao/Reader`
+- [ ] **Step 2: Run — expect failure.** `make test tests/Contao/Reader`,
+  `make test tests/DependencyInjection/ServicesConfigTest.php`
 - [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run — expect pass.**
+- [ ] **Step 4: Run — expect pass.** The same two calls → `OK`.
 - [ ] **Step 5: Full checks and commit.** `feat(reader): find the page's reader element and read the auto-item`
 
 ---
@@ -1143,8 +1245,9 @@ class ValidationView implements ViewInterface
     public function getBackLink(): ?BackLink;
     /** A one-entry collection with the linker, memoized per auto-item (misses too). */
     public function getEntryByAutoItem(string $autoItem): ?Entry;
-    /** @param int|string|list<int|string> $ids */
-    public function lookup(int|string|array $ids): Entry|EntryCollection|null;
+    /** Delegates to the lookup; `mixed` for the reason given at EntryLookupInterface.
+     *  @param int|string|list<int|string> $ids */
+    public function lookup(mixed $ids): Entry|EntryCollection|null;
 }
 
 final class ReaderResolution
@@ -1175,7 +1278,9 @@ final class ReaderResolver implements ResetInterface
         private readonly ValidationIntentFactory    $validationIntentFactory,
     ) {}
     public function resolve(ContentModel $reader): ReaderResolution;
-    public function resolveForPage(): ?ReaderResolution;   // $elementFinder->find() → resolve() or null
+    /** null without an auto-item (nothing is built, no finder query); else $elementFinder->find() → resolve() or null */
+    public function resolveForPage(): ?ReaderResolution;
+    /** Empties the resolution memo and the memoized auto-item. */
     public function reset(): void;
 }
 
@@ -1184,11 +1289,13 @@ class ReaderRenderEvent extends Event { public function __construct(ContentModel
 ```
 
 `resolve()`:
-1. `$autoItem = $autoItemReader->read()`; memo key `"{$reader->id}|{$autoItem}"`; a hit returns the same object.
+1. The auto-item is read **once per request**: `$autoItemReader->read()` on the first call, memoized including
+   `null`. Without an auto-item → `new ReaderResolution($reader)` (nothing built, nothing queried). Memo key
+   `"{$reader->id}|{$autoItem}"`; a hit returns the same object.
 2. Inside one `try`: the list model via `$reader->getRelated(ContentContainer::FIELD_LIST)` (an `\Exception` there or
    a non-`ListModel` becomes `FlareException('No list model found.')`), `listFactory->create()->build()`,
    `validationIntentFactory->createFromContent()`, `engineFactory->createEngine()->createView()` (not a
-   `ValidationView` → `ViewException`), then `getEntryByAutoItem()` only if `$autoItem !== null`.
+   `ValidationView` → `ViewException`), then `getEntryByAutoItem($autoItem)`.
 3. `catch (FlareException $e)` → a resolution with `failure` (and whatever was built). Other exceptions propagate
    unmemoized; `\Error`s are never caught.
 4. `pageMeta` closure: `$eventDispatcher->dispatch(new ReaderPageMetaEvent($reader, $entry, $list))->pageMeta`.
@@ -1199,22 +1306,25 @@ Callers:
   → log + `InternalServerErrorHttpException`; no entry → 404; `EntryTaggerInterface::tag($entry)`;
   `ReaderRenderEvent`; template data `flare` (engine), `flare_reader` (view), `entry`, `content_model`, `headline`;
   `applyPageMeta($resolution->getPageMeta())`. Constructor: drop `EngineFactory`, `EntityCacheTags`,
-  `ListCompoundBuilderFactory`, the attribute factory/resolver and `ValidationIntentFactory`; add `ReaderResolver`,
-  `EntryTaggerInterface`. Remove `getErrorResponse()` if unused.
+  `KernelInterface` (only `getErrorResponse()` read it), `ListCompoundBuilderFactory`, the attribute
+  factory/resolver and `ValidationIntentFactory`; add `ReaderResolver`, `EntryTaggerInterface`. Remove
+  `getErrorResponse()`.
 - `BreadcrumbHook(ReaderResolver $readerResolver)`: `resolveForPage()` inside `try … catch (\Exception)` (items
-  unchanged, `@mago-expect lint:no-empty-catch-clause` as today); no resolution, a failure or no entry → items
-  unchanged; on Contao 4.13 (`Env::isContao4()`) drop the second-to-last item when the last two share their page id
-  (today's handling); set the last item's `title` and `link` to the page meta title. Its SQL, `Connection`,
-  `ProjectorRegistry` and `tryGetReaderPageId()` go.
+  unchanged, `@mago-expect lint:no-empty-catch-clause` as today); no resolution, a failure, no entry or an empty
+  page meta title → items unchanged. Only on success with a non-empty title: on Contao 4.13 (`Env::isContao4()`)
+  drop the second-to-last item when the last two share their page id (today's handling), then set the last item's
+  `title` and `link` to that title. Its SQL, `Connection`, `ProjectorRegistry` and `tryGetReaderPageId()` go.
 - Listeners: Generic reads tokens from `$event->entry->row`; Title falls back over the row's `headline`
   (`Str::formatHeadline`), `title`, `question`, `name`, `alias`, `id`; News/Events page meta return unless
   `$event->entry->meta->modelRef?->table === NewsModel::getTable()` / `CalendarEventsModel::getTable()` and read the
-  row; Comments: same table check for `tl_news`, archive `NewsArchiveModel::findByPk($row['pid'])`, author
-  `$row['author']`, `strSource: 'tl_news'`, `intParent: (int) $row['id']`.
+  row; Comments: its existing `class_exists` guard stays **first** (the comments integration loads without the news
+  bundle), then the same table check with `NewsModel::getTable()`, archive
+  `NewsArchiveModel::findByPk($row['pid'])`, author `$row['author']`, `strSource: NewsModel::getTable()`,
+  `intParent: (int) $row['id']`.
 - `ChangelanguageListener`: constructor `ReaderResolver $readerResolver` instead of the attribute resolver; in
   `onChangeLanguageNavigation()` take `resolveForPage()`, return without an entry, `$table` from
   `$entry->meta->modelRef?->table`, `$listModel` = `$resolution->list`. Nothing else. Check with
-  `make php -l src/Integration/Terminal42Languages/EventListener/ChangelanguageListener.php`.
+  `docker compose run --rm php -l src/Integration/Terminal42Languages/EventListener/ChangelanguageListener.php`.
 - `flare_reader.html.twig`: `{# @var \HeimrichHannot\FlareBundle\Entry\Entry entry #}`, debug heading
   `entry.meta.modelRef.table`, `dl` over `entry.row`.
 
@@ -1236,9 +1346,11 @@ protected int $builds = 0;
  *  driver 'test_list' on 'tl_test'; $filters/$failures added by a ListDriverBuildListEvent listener that also
  *  counts $builds), the real ValidationIntentFactory (with a ValidatorInterface stub returning an empty
  *  ConstraintViolationList) and EngineFactory (createProjectorRegistry()), an AutoItemReader on a mocked Input
- *  adapter returning $autoItem, and a ReaderElementFinder over $connection (tables of Task 7, page 7 on the main
- *  request) whose ContentModel adapter returns $content. */
-protected function createReaderResolver(Connection $connection, EventDispatcher $dispatcher, ?string $autoItem,
+ *  adapter returning $autoItem (a list: consecutive reads) and counting its calls in $autoItemReads, and a
+ *  ReaderElementFinder over $connection (tables of Task 7, page 7 on the main request) whose ContentModel adapter
+ *  returns $content. Uses mockContaoFramework(): tests using it extend ContaoTestCase. */
+protected int $autoItemReads = 0;
+protected function createReaderResolver(Connection $connection, EventDispatcher $dispatcher, string|array|null $autoItem,
     array $filters = [], array $failures = [], ?ContentModelFixture $content = null): ReaderResolver;
 ```
 
@@ -1251,16 +1363,32 @@ so the auto-item field is `alias`.
 
 ```php
 // tests/Contao/Reader/ReaderResolverTest.php (ContaoTestCase + EnginePipelineTrait + StubsContaoDcaTrait)
-// rows: 1 'visible' published, 2 'hidden' unpublished; content id 5 → ListModelFixture(id 0, type test_list)
-public function testAnEntryOutsideTheListIsNotFoundEvenIfTheRegistryHoldsIt(): void
-{
-    // the old shortcut returned a registered instance whose `published` is set, without the list's query
-    $registered = new TestModelFixture(['id' => 2, 'alias' => 'hidden', 'published' => '1']);
-    Registry::getInstance()->register($registered);   // unregistered in tearDown()
+// rows: 1 'visible' published, 2 'hidden' unpublished; content id 5 → ListModelFixture(id 0, type test_list).
+// Registry set-up (the state in which the old shortcut fired): $GLOBALS['TL_MODELS']['tl_test'] =
+// TestModelFixture::class (Registry::fetch() needs it); register the fixture and registerAlias($m, 'alias', $value)
+// (its onRegister() is a no-op); tearDown(): unregisterAlias(), unregister(), restore TL_MODELS.
 
-    $resolution = $this->resolver(autoItem: 'hidden', filters: [self::publishedOnly()])->resolve($this->content());
+/** @dataProvider provideRegistryKeys  ['by alias' => ['alias', 'hidden']], ['by id' => ['id', '2']] */
+public function testAnEntryOutsideTheListIsNotFoundEvenIfTheRegistryHoldsIt(string $autoItemField, string $autoItem): void
+{
+    // the DCA stub has an `alias` field only for 'alias', so the auto-item field becomes `id` for 'id'
+    $registered = $this->register(new TestModelFixture(['id' => 2, 'alias' => 'hidden', 'published' => '1']));
+    self::assertSame($registered, Registry::getInstance()->fetch('tl_test', 2));                // precondition
+    self::assertSame($registered, Registry::getInstance()->fetch('tl_test', 'hidden', 'alias'));
+
+    $resolver = $this->resolver(autoItem: $autoItem, filters: [self::publishedOnly()], content: $this->content());
+    self::assertNull($resolver->resolveForPage()?->entry);                                     // breadcrumb path
+    $resolution = $resolver->resolve($this->content());                                         // reader path
     self::assertNull($resolution->entry);
     self::assertNull($resolution->failure);
+}
+
+public function testARegisteredUnpublishedInstanceDoesNotCrashTheReader(): void
+{
+    // bug 2: the old code built a second model for a registered id and threw "already contains an instance"
+    $this->register(new TestModelFixture(['id' => 1, 'alias' => 'visible', 'published' => '']));
+    $entry = $this->resolver(autoItem: 'visible')->resolve($this->content())->entry;   // no published filter
+    self::assertSame(1, (int) $entry?->row['id']);
 }
 
 public function testAnEntryInsideTheListIsResolved(): void
@@ -1296,10 +1424,11 @@ public function testTheSameElementTwiceQueriesOnce(): void
     self::assertSame(1, $this->queries);
 }
 
-public function testBreadcrumbThenReaderShareTheEntry(): void
+public function testBreadcrumbThenReaderShareTheEntryAndReadTheAutoItemOnce(): void
 {
     $resolver = $this->resolver(autoItem: 'visible', content: $this->content());   // finder finds content 5
     self::assertSame($resolver->resolveForPage()?->entry, $resolver->resolve($this->content())->entry);
+    self::assertSame(1, $this->autoItemReads);
 }
 
 public function testPageMetaIsDispatchedOnce(): void
@@ -1310,20 +1439,22 @@ public function testPageMetaIsDispatchedOnce(): void
     self::assertSame(1, $dispatches);
 }
 
-public function testWithoutAutoItemNothingIsQueried(): void   // Review Focus 3
+public function testWithoutAutoItemNothingIsBuiltOrQueried(): void   // Review Focus 3
 {
-    $resolution = $this->resolver(autoItem: null)->resolve($this->content());
-    self::assertNull($resolution->entry);
-    self::assertSame(0, $this->queries);
+    $resolver = $this->resolver(autoItem: null, content: $this->content());
+    self::assertNull($resolver->resolveForPage());
+    self::assertNull($resolver->resolve($this->content())->entry);
+    self::assertSame([0, 0], [$this->queries, $this->builds]);
 }
 
-public function testResetEmptiesTheMemo(): void   // Review Focus 4
+public function testResetEmptiesTheMemoAndTheAutoItem(): void   // Review Focus 4
 {
-    $resolver = $this->resolver(autoItem: 'visible');
+    $resolver = $this->resolver(autoItem: ['visible', 'hidden']);   // consecutive reads: two main requests
     $first = $resolver->resolve($this->content());
     $resolver->reset();
-    self::assertNotSame($first, $resolver->resolve($this->content()));
-    self::assertSame(2, $this->queries);
+    $second = $resolver->resolve($this->content());
+    self::assertSame(['visible', 'hidden'], [$first->entry?->row['alias'], $second->entry?->row['alias']]);
+    self::assertSame(2, $this->autoItemReads);
 }
 ```
 
@@ -1350,12 +1481,14 @@ public function testTitleFallsBackToTheTitleColumn(): void {}   // row ['id' => 
 `ServicesConfigTest`: `ReaderResolver` → service, `ReaderResolution` → non-service; drop the deleted classes from
 any list; `BreadcrumbHook` stays a service.
 
-- [ ] **Step 2: Run — expect failure.** `make test tests/Contao tests/EventListener/Reader`
+- [ ] **Step 2: Run — expect failure.** `make test tests/Contao`, `make test tests/EventListener/Reader`,
+  `make test tests/DependencyInjection/ServicesConfigTest.php`
 - [ ] **Step 3: Implement everything listed under Files.**
-- [ ] **Step 4: Run — expect pass.** Then
+- [ ] **Step 4: Run — expect pass.** The same three calls → `OK`. Then
   `grep -rn "getModelByAutoItem\|displayModel\|ReaderRequestAttribute\|HandlesModelsTrait" src contao tests config`
   → no output; `grep -n "pageMeta" src/Event/ReaderRenderEvent.php` → no output;
-  `make php -l src/Integration/Terminal42Languages/EventListener/ChangelanguageListener.php` → no errors.
+  `docker compose run --rm php -l src/Integration/Terminal42Languages/EventListener/ChangelanguageListener.php`
+  → `No syntax errors detected`.
 - [ ] **Step 5: Full checks and commit.** `refactor(reader): resolve the reader once per request, on entries`
 
 ---
@@ -1438,7 +1571,9 @@ public function testEnclosureFilesIsGone(): void
 
 - [ ] **Step 2: Run — expect failure.** `make test tests/Twig`
 - [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run — expect pass.** `grep -rn "flare_enclosure_files\|getEnclosureFiles" src contao tests` → no output.
+- [ ] **Step 4: Run — expect pass.** `make test tests/Twig` → `OK`;
+  `grep -rn "flare_enclosure_files\|getEnclosureFiles" src contao` → no output (the negative assertion in
+  `FlareExtensionTest` is the only reference left in `tests/`).
 - [ ] **Step 5: Full checks and commit.** `refactor(twig): render content, enclosures and schema.org from entries`
 
 ---
@@ -1449,8 +1584,10 @@ Read the spec section "`flare_related(entry, 'column')`".
 
 **Files:**
 - Create: `src/Contao/Entry/EntryRelationResolver.php`, `src/Exception/UndefinedRelationError.php`
-- Modify: `src/Twig/Runtime/FlareRuntime.php` (constructor + `getRelated()`), `src/Twig/Extension/FlareExtension.php`
+- Modify: `src/Twig/Runtime/FlareRuntime.php` (constructor: `EntryRelationResolver $relationResolver` appended as
+  the last parameter; `getRelated()`), `src/Twig/Extension/FlareExtension.php`
 - Test: `tests/Contao/Entry/EntryRelationResolverTest.php`, `tests/Twig/FlareExtensionTest.php`,
+  `tests/Twig/FlareRuntimeTest.php` (its `runtime()` helper passes the new argument),
   `tests/DependencyInjection/ServicesConfigTest.php`
 
 **Interfaces — Consumes:** Tasks 1, 6. **Produces:**
@@ -1500,9 +1637,10 @@ public function testAColumnWithoutRelationThrows(): void { /* 'title' → Undefi
 `FlareExtensionTest::testRelatedIsRegistered` (`flare_related` in the names). `ServicesConfigTest`:
 `EntryRelationResolver` → service.
 
-- [ ] **Step 2: Run — expect failure.** `make test tests/Contao/Entry tests/Twig`
+- [ ] **Step 2: Run — expect failure.** `make test tests/Contao/Entry`, `make test tests/Twig`,
+  `make test tests/DependencyInjection/ServicesConfigTest.php`
 - [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run — expect pass.**
+- [ ] **Step 4: Run — expect pass.** The same three calls → `OK`.
 - [ ] **Step 5: Full checks and commit.** `feat(twig): add flare_related() for Contao relations of an entry`
 
 ---
@@ -1524,21 +1662,29 @@ Content (decisions, not prose):
   `src/Entry/` (wrapper, ports), `src/Engine/Entry/` (collector, lookup), `src/Contao/Entry/` (model factory,
   relations, cache tags), `src/Contao/Reader/` + `ReaderResolution` (request-scoped reader, discovery, auto-item);
   the event list gets `flare.list_driver.{type}.entries` (`ListDriverEntriesEvent`); `src/Reader/` loses the
-  request attribute; the failure paragraph moves "a control that cannot build its form" out of "HTTP 500 in the
-  reader": it fails the list view only, the reader builds no form.
+  request attribute. The failure paragraph is split, not just shortened: the two failures only the form harness
+  detects — `buildForm()` throws, or a `FilterControlBuildFormEvent` listener throws a `FlareException` — fail the
+  list view only (the reader builds no form). An alias that is no valid form name is recorded by
+  `FilterCollector` as a `FilterFailure` on `ListCompound::$failures` and keeps failing the reader with HTTP 500,
+  like every other recorded failure.
 - `templating.mdx`: list loop over `flare_list.entries` with `entry.to`, `entry.row.<column>`,
   `entry.meta.modelRef.table`, reserved names `to`/`row`/`meta`, `is empty`/`|length`; delete the
   `flare_list.to/model/models` passages (around lines 104, 139–174); reader variable `entry` (234–264); back-button
   text `flare_reader.to(id)` → `flare_reader.lookup(id).to` (299); Twig functions list (523–530): `flare_content(entry)`,
   `flare_enclosure(entry|array)`, `flare_schema_org(entry?)`, `flare_related(entry, column)`, `flare_reader.lookup()`
-  (membership in *this* list; the reader on the jump-to page must use the same list).
+  (membership in *this* list; the reader on the jump-to page must use the same list; ids only — deserialize stored
+  lists first). The known limits of reader URLs from the plan's Review Focus (`/`, literal `%2F`, on 4.13 `%` before
+  a sprintf letter).
 - `reference/twig.md`: the same function rows.
 - `dev/events.md`: a section for `ListDriverEntriesEvent` / `flare.list_driver.{type}.entries`; reader events carry
-  `entry`; `ReaderRenderEvent` has no `pageMeta` (change it in `ReaderPageMetaEvent`); `ReaderUrlGeneratedEvent::$entry`.
+  `entry`; `ReaderRenderEvent` has no `pageMeta` (change it in `ReaderPageMetaEvent`); `ReaderUrlGeneratedEvent::$entry`,
+  and `$autoItem` is the URL text (decoded, never percent-encoded — pass it to the router as is).
 - `dev/entries.md` (new guide): the spec's listener example (to-one), a to-many example, computed similarity with
   the `EntryLookupInterface` in phase 1, cheap per-entry values with `$entry->attach()`, tagging loaded data with
   `EntityCacheTags`, `flare_related()` returns the raw relation (no membership — use `lookup()` for that), the
-  boundary service for Contao APIs that need a model.
+  boundary service for Contao APIs that need a model. Request context: the reader's entries event and its lazy
+  values may run while the breadcrumb renders, in the main request, before the reader's fragment sub-request
+  exists — listeners must not depend on the fragment request.
 - `integrations/index.md`: `getEntriesGrouped()` returns entries.
 - `removed-in-v0.2.md`: `flare_list.to()`, `flare_list.model()`, `flare_list.models`, `flare_reader.to()`, the
   reader variable `model`, `InteractiveView::getModels()/getModel()`, `ValidationView::getModel()/
@@ -1547,13 +1693,14 @@ Content (decisions, not prose):
   the reader events and `ReaderUrlGeneratedEvent`; `flare_enclosure_files()` stays listed.
 - `preflight-v0.2.md`: tick "`flare_enclosure_files` Twig function".
 - `spec/filtering.md` (row "A control cannot build its form"), `migrating-from-v0.1.md` (~165) and
-  `dev/filter-controls.md` (~245): the list fails; the reader is unaffected.
+  `dev/filter-controls.md` (~245): split like `AGENTS.md` — `buildForm()` and the `FilterControlBuildFormEvent`
+  listener fail the list, the reader is unaffected; an invalid alias still fails the reader with HTTP 500.
 
 - [ ] **Step 1: Edit `AGENTS.md`.**
 - [ ] **Step 2: Edit the docs pages.**
 - [ ] **Step 3: Audit.** `grep -rn "flare_list\.to\|flare_list\.model\|flare_reader\.to(\|displayModel\|getModelByAutoItem" docs/docs`
-  → only `removed-in-v0.2.md`. Reread `AGENTS.md`'s failure paragraph: "a control that cannot build its form" is
-  no longer among the failures with "HTTP 500 in the reader".
+  → only `removed-in-v0.2.md`. Reread `AGENTS.md`'s failure paragraph and the three docs pages: only `buildForm()`
+  and the `FilterControlBuildFormEvent` listener are exempt from "HTTP 500 in the reader"; the invalid alias is not.
 - [ ] **Step 4: Commit both trees.**
   `git add AGENTS.md && git commit -m "docs: describe entries, the reader resolver and the lookup in AGENTS.md"`;
   `git -C docs add -A docs && git -C docs commit -m "docs: entries instead of models in templates, events and reader"`
@@ -1567,3 +1714,8 @@ Content (decisions, not prose):
   9 (10), every task + 11 (11). Every bullet of the spec's "Tests" section has a named test above.
 - Not tested in the suite, by design: Contao 4.13 branches (`Env::isContao4()` in the breadcrumb, 4.13's `Input`
   and `guests`), News/Events listeners (their bundles are no dev dependencies), the default templates.
+- Reviewed 2026-11-12 by Codex (gpt-6-astra, max) and Claude (Opus 5.5, xhigh), independently; all findings applied
+  (Contao 5's throwing `getClassFromTable()`, optional response tagger, `lookup(mixed)`, discovery SQL with `tstamp`
+  and the 4.13 empty `ptable`, a registry test that reproduces the old shortcut by id and alias, the auto-item read
+  once per request, the narrow failure correction in the docs, and smaller ones). The URL limits for `/`, `%2F`
+  and 4.13's sprintf placeholders are documented, not fixed.

@@ -1,5 +1,8 @@
 # Idea: the engine works with rows only, models are made at the Contao boundary
 
+Status: superseded by the design `dev/superpowers/specs/2026-11-11-engine-entries-design.md` on branch
+`v0.2-entries` (2026-11-11), which replaces the "Direction" below and answers the open questions.
+
 Noted during the 4th review of the query refactor (`dev/superpowers/specs/2026-11-04-query-architecture-design.md`,
 §2 "Projection and the model registry", D28). It goes in **its own PR on `v0.2`, before `v0.2-query`** (user's
 decision). Breaking the view API is fine (user's decision; v0.2 is unreleased).

@@ -5,11 +5,12 @@
 **Goal:** The engine views hand out `Entry` objects instead of Contao models; a model is made only at the Contao
 boundary; reader and breadcrumb share one request-scoped resolution.
 
-**Architecture:** A new Contao-free namespace `src/Entry/` holds the wrapper (`Entry`, `EntryMeta`, `ModelRef`,
-`EntryCollection`) and two ports (`EntryLookupInterface`, `EntryTaggerInterface`). The engine wraps loaded rows
-through `Engine\Entry\EntryCollector`, which dispatches the entries event and seals the collection;
-`Engine\Entry\ListEntryLookup` proves membership by the reader's rules in one query. Contao-side services turn
-entries into models (`Contao\Entry\*`) and resolve the reader once per request (`Contao\Reader\*`). The order is
+**Architecture:** A new Contao-free namespace `src/List/Entry/` — the list's runtime data, as `Filter\Value\` is the
+filter's — holds the wrapper (`Entry`, `EntryMeta`, `ModelRef`, `EntryCollection`) and two ports
+(`EntryLookupInterface`, `EntryTaggerInterface`). The engine wraps loaded rows
+through `Engine\ListEntry\EntryCollector`, which dispatches the entries event and seals the collection;
+`Engine\ListEntry\EntryLookup` proves membership by the reader's rules in one query. Contao-side services turn
+entries into models (`Contao\ListEntry\*`) and resolve the reader once per request (`Contao\Reader\*`). The order is
 additive first, then the list side, then the reader side, then Twig, then docs; every task ends green.
 
 **Tech Stack:** PHP 8.2, Symfony 5.4–7, Contao 4.13/5 (the suite runs Contao 5.3), Twig 3, DBAL ≥ 3.6, PHPUnit 9.6
@@ -22,21 +23,23 @@ names, files, order and tests. Each task names the spec sections to read first.
 ## Names (for the user's review before execution)
 
 The spec leaves all names to the builder. Proposed, in the user's style (short nouns, the concrete term last); the
-plan uses them throughout, so a rename is a search-and-replace in this file before execution.
+plan uses them throughout, so a rename is a search-and-replace in this file before execution. The namespaces are the
+user's decision (2026-11-12): `List\Entry` for the Contao-free core, `Engine\ListEntry` and `Contao\ListEntry` for
+the engine and Contao sides.
 
 | Spec placeholder / concept | Name | Location |
 |---|---|---|
-| wrapper, meta, model reference, collection | `Entry`, `EntryMeta`, `ModelRef`, `EntryCollection` | `src/Entry/` |
-| `EntryLookup` (phase 1's second argument) | `EntryLookupInterface` | `src/Entry/` |
-| port for cache tags | `EntryTaggerInterface` | `src/Entry/` |
+| wrapper, meta, model reference, collection | `Entry`, `EntryMeta`, `ModelRef`, `EntryCollection` | `src/List/Entry/` |
+| the spec's `EntryLookup` type (phase 1's second argument) | `EntryLookupInterface` | `src/List/Entry/` |
+| port for cache tags | `EntryTaggerInterface` | `src/List/Entry/` |
 | `ListEntriesLoadedEvent` | `ListDriverEntriesEvent`, named `flare.list_driver.{type}.entries` | `src/Event/` |
 | its named dispatch | `ListDriverEntriesListener` | `src/EventListener/NamedDispatch/` |
-| builds a sealed collection + dispatches | `EntryCollector` (not a service) | `src/Engine/Entry/` |
-| the lookup | `ListEntryLookup` (not a service) | `src/Engine/Entry/` |
+| builds a sealed collection + dispatches | `EntryCollector` (not a service) | `src/Engine/ListEntry/` |
+| the lookup | `EntryLookup` (not a service) | `src/Engine/ListEntry/` |
 | creates both | `EntryCollectorFactory` (service) | `src/Engine/Factory/` |
-| boundary service | `EntryModelFactory` | `src/Contao/Entry/` |
-| `flare_related()` backend | `EntryRelationResolver` | `src/Contao/Entry/` |
-| cache tags | `EntryCacheTagger` | `src/Contao/Entry/` |
+| boundary service | `EntryModelFactory` | `src/Contao/ListEntry/` |
+| `flare_related()` backend | `EntryRelationResolver` | `src/Contao/ListEntry/` |
+| cache tags | `EntryCacheTagger` | `src/Contao/ListEntry/` |
 | reader resolver / its value | `ReaderResolver` / `ReaderResolution` (DTO) | `src/Contao/Reader/` / `src/Contao/` |
 | discovery / auto-item | `ReaderElementFinder` / `AutoItemReader` | `src/Contao/Reader/` |
 | `\Error` subclasses | `EntryNameCollisionError`, `SealedEntriesError`, `UndefinedEntryKeyError`, `ReadonlyEntryError`, `MissingEntryIdError`, `InvalidLookupIdError`, `MissingModelRefError`, `UndefinedRelationError` | `src/Exception/` |
@@ -46,9 +49,9 @@ plan uses them throughout, so a rename is a search-and-replace in this file befo
 - Branch `v0.2-entries`. Commits: **no `Co-Authored-By` trailer, never push.** Message style
   `feat(entries): …`, `refactor(reader): …`, `docs: …`.
 - v0.2 is unreleased: break the API, no BC shims, no `class_alias`, no deprecations.
-- Contao-free: `src/Entry/`, `src/Engine/Entry/` and `src/Event/ListDriverEntriesEvent.php` import nothing from
-  `Contao\`. Check before each commit: `grep -rn 'use Contao\\' src/Entry src/Engine/Entry src/Event/ListDriverEntriesEvent.php`
-  → no output.
+- Contao-free: `src/List/Entry/`, `src/Engine/ListEntry/` and `src/Event/ListDriverEntriesEvent.php` import nothing
+  from `Contao\`. Check before each commit:
+  `grep -rn 'use Contao\\' src/List/Entry src/Engine/ListEntry src/Event/ListDriverEntriesEvent.php` → no output.
 - Programming errors are `final` `\Error` subclasses in `src/Exception/`, built like `UndefinedConfigKeyError` (the
   constructor builds the message). The bundle catches `\Exception`, never `\Throwable` or `\Error`.
 - Production code is tested through its public API, no reflection. Contao statics that a test must control go
@@ -102,12 +105,12 @@ mode (invisible readers are not found there).
 
 | Path | Change | Responsibility |
 |---|---|---|
-| `src/Entry/Entry.php`, `EntryMeta.php`, `ModelRef.php`, `EntryCollection.php` | create (T1) | the wrapper |
-| `src/Entry/EntryLookupInterface.php`, `EntryTaggerInterface.php` | create (T2) | ports for listeners and cache tags |
+| `src/List/Entry/Entry.php`, `EntryMeta.php`, `ModelRef.php`, `EntryCollection.php` | create (T1) | the wrapper |
+| `src/List/Entry/EntryLookupInterface.php`, `EntryTaggerInterface.php` | create (T2) | ports for listeners and cache tags |
 | `src/Exception/{EntryNameCollision,SealedEntries,UndefinedEntryKey,ReadonlyEntry,MissingEntryId}Error.php` | create (T1) | |
 | `src/Exception/InvalidLookupIdError.php` (T3), `MissingModelRefError.php` (T6), `UndefinedRelationError.php` (T10) | create | |
 | `src/Event/ListDriverEntriesEvent.php`, `src/EventListener/NamedDispatch/ListDriverEntriesListener.php` | create (T2) | entries event |
-| `src/Engine/Entry/EntryCollector.php` (T2), `ListEntryLookup.php` (T3) | create | rows → sealed collection; membership lookup |
+| `src/Engine/ListEntry/EntryCollector.php` (T2), `EntryLookup.php` (T3) | create | rows → sealed collection; membership lookup |
 | `src/Engine/Factory/EntryCollectorFactory.php` | create (T4) | wires collectors and lookups |
 | `src/Engine/Loader/ValidationLoader{,Interface}.php` | modify (T3, T4) | `fetchEntriesByIds()`; no `fetchEntryById()`, no cache |
 | `src/Util/EntryCache.php`, `src/Engine/View/LinksToReaderTrait.php` | delete (T4) | |
@@ -117,7 +120,7 @@ mode (invisible readers are not found there).
 | `src/Engine/Intent/Factory/ValidationIntentFactory.php` | modify (T4) | `createFromIntent()` |
 | `src/Reader/{ReaderUrlGeneratorInterface,ReaderUrlGenerator,NullReaderUrlGenerator}.php`, `src/Event/ReaderUrlGeneratedEvent.php` | modify (T4, T5) | links from entries, one encoding layer |
 | `src/Integration/ContaoCalendar/{View/InteractiveEventsView,Projector/EventsInteractiveProjector}.php` | modify (T4) | |
-| `src/Contao/Entry/EntryCacheTagger.php` (T3), `EntryModelFactory.php` (T6), `EntryRelationResolver.php` (T10) | create | Contao side of entries |
+| `src/Contao/ListEntry/EntryCacheTagger.php` (T3), `EntryModelFactory.php` (T6), `EntryRelationResolver.php` (T10) | create | Contao side of entries |
 | `src/Contao/Reader/ReaderElementFinder.php`, `AutoItemReader.php` (T7), `ReaderResolver.php` (T8); `src/Contao/ReaderResolution.php` (T8) | create | request-scoped reader |
 | `src/Reader/ReaderRequestAttribute.php`, `src/Reader/Factory/ReaderRequestAttributeFactory.php`, `src/Reader/Resolver/ReaderRequestAttributeResolver.php` | delete (T8) | |
 | `src/Event/Reader{PageMeta,Render}Event.php`, `src/EventListener/Reader/*`, `src/Integration/{ContaoNews,ContaoCalendar}/EventListener/*PageMetaListener.php`, `src/Integration/ContaoComments/EventListener/ContaoCommentsListener.php` | modify (T8) | reader events carry `Entry` |
@@ -137,18 +140,19 @@ mode (invisible readers are not found there).
 Read the spec sections "What it looks like", "`Entry`", "`EntryMeta` and `ModelRef`" and "`EntryCollection`".
 
 **Files:**
-- Create: `src/Entry/Entry.php`, `src/Entry/EntryMeta.php`, `src/Entry/ModelRef.php`, `src/Entry/EntryCollection.php`
+- Create: `src/List/Entry/Entry.php`, `src/List/Entry/EntryMeta.php`, `src/List/Entry/ModelRef.php`, `src/List/Entry/EntryCollection.php`
 - Create: `src/Exception/EntryNameCollisionError.php`, `src/Exception/SealedEntriesError.php`,
   `src/Exception/UndefinedEntryKeyError.php`, `src/Exception/ReadonlyEntryError.php`,
   `src/Exception/MissingEntryIdError.php`
-- Modify: `config/services.yaml` — add `Entry` to the root `exclude` braces (`../src/{Config,Contao,…,Entry,…}`)
-- Test: `tests/Entry/EntryTest.php`, `tests/Entry/EntryCollectionTest.php`, `tests/Entry/EntryTwigTest.php`,
+- Modify: `config/services.yaml` — add `- ../src/List/Entry` to the root block's `exclude` list, next to
+  `- ../src/Filter/Value` (the existing `../src/{…,List,…}/*.php` glob covers only files directly in `List/`)
+- Test: `tests/List/Entry/EntryTest.php`, `tests/List/Entry/EntryCollectionTest.php`, `tests/List/Entry/EntryTwigTest.php`,
   `tests/DependencyInjection/ServicesConfigTest.php`
 
 **Interfaces — Produces:**
 
 ```php
-namespace HeimrichHannot\FlareBundle\Entry;
+namespace HeimrichHannot\FlareBundle\List\Entry;
 
 final readonly class ModelRef { public function __construct(public string $table, public int|string $id) {} }
 final readonly class EntryMeta { public function __construct(public ?ModelRef $modelRef = null) {} }
@@ -215,7 +219,7 @@ Rules the signatures leave open (all from the spec):
 - [ ] **Step 1: Write the failing tests**
 
 ```php
-// tests/Entry/EntryTest.php
+// tests/List/Entry/EntryTest.php
 private static function entries(array $rows, ?\Closure $linker = null): EntryCollection
 {
     return new EntryCollection($rows, $linker ?? static fn (Entry $e): string => '/reader/' . $e->row['id']);
@@ -289,7 +293,7 @@ public function testWritingOrUnsettingAPropertyThrows(): void
 ```
 
 ```php
-// tests/Entry/EntryCollectionTest.php
+// tests/List/Entry/EntryCollectionTest.php
 public function testCollectionLoaderRunsOncePerCollectionAndOnlyWhenRead(): void
 {
     $phase1 = 0; $picks = 0;
@@ -361,7 +365,7 @@ public function testIsAListWithFreshIteratorsAndRepeatedIds(): void
 ```
 
 ```php
-// tests/Entry/EntryTwigTest.php — a real Twig\Environment over an ArrayLoader
+// tests/List/Entry/EntryTwigTest.php — a real Twig\Environment over an ArrayLoader
 private function render(string $template, array $context, bool $strict = true): string
 {
     $twig = new Environment(new ArrayLoader(['t' => $template]), ['strict_variables' => $strict]);
@@ -402,10 +406,10 @@ public function testUnknownNameFollowsTwigsRules(): void
 
 - [ ] **Step 2: Run the tests — expect failure**
 
-Run: `make test tests/Entry` and `make test tests/DependencyInjection/ServicesConfigTest.php`
-Expected: errors `Class "HeimrichHannot\FlareBundle\Entry\EntryCollection" not found`.
+Run: `make test tests/List/Entry` and `make test tests/DependencyInjection/ServicesConfigTest.php`
+Expected: errors `Class "HeimrichHannot\FlareBundle\List\Entry\EntryCollection" not found`.
 
-- [ ] **Step 3: Implement the classes and errors listed above; add `Entry` to the services exclude**
+- [ ] **Step 3: Implement the classes and errors listed above; add the `../src/List/Entry` services exclude**
 
 - [ ] **Step 4: Run the tests — expect pass**
 
@@ -414,7 +418,7 @@ Run: the same two calls → `OK`.
 - [ ] **Step 5: Full checks and commit**
 
 `make test`, `make phpstan`, `mago lint --minimum-fail-level note`, the Contao-free grep;
-`git add src/Entry src/Exception config/services.yaml tests/Entry tests/DependencyInjection`, the staged
+`git add src/List/Entry src/Exception config/services.yaml tests/List/Entry tests/DependencyInjection`, the staged
 120-character check, `git commit -m "feat(entries): add Entry, EntryMeta, ModelRef and EntryCollection"`
 
 ---
@@ -424,11 +428,11 @@ Run: the same two calls → `OK`.
 Read the spec sections "Entries event" and "Views" (first bullet).
 
 **Files:**
-- Create: `src/Entry/EntryLookupInterface.php`, `src/Entry/EntryTaggerInterface.php`
+- Create: `src/List/Entry/EntryLookupInterface.php`, `src/List/Entry/EntryTaggerInterface.php`
 - Create: `src/Event/ListDriverEntriesEvent.php`, `src/EventListener/NamedDispatch/ListDriverEntriesListener.php`
-- Create: `src/Engine/Entry/EntryCollector.php`
-- Modify: `config/services.yaml` — add `../src/Engine/Entry` to the `Engine\` block's `exclude`
-- Test: `tests/Engine/Entry/EntryCollectorTest.php`,
+- Create: `src/Engine/ListEntry/EntryCollector.php`
+- Modify: `config/services.yaml` — add `../src/Engine/ListEntry` to the `Engine\` block's `exclude`
+- Test: `tests/Engine/ListEntry/EntryCollectorTest.php`,
   `tests/EventListener/NamedDispatch/ListDriverEntriesListenerTest.php` (pattern:
   `ListDriverBuildListListenerTest`), `tests/DependencyInjection/ServicesConfigTest.php`
 
@@ -485,7 +489,7 @@ final readonly class EntryCollector
 - [ ] **Step 1: Write the failing tests**
 
 ```php
-// tests/Engine/Entry/EntryCollectorTest.php — list(): new ListCompound(driver: <anonymous ListDriverInterface,
+// tests/Engine/ListEntry/EntryCollectorTest.php — list(): new ListCompound(driver: <anonymous ListDriverInterface,
 // as in BuildsFilterEffectsTrait::buildElementContext()>, type: 'test_list', dc: 'tl_test')
 public function testNonEmptyRowsDispatchOnceAndAreSealed(): void
 {
@@ -529,7 +533,7 @@ public function testEventAttachHandsPhaseOneTheLookup(): void
 `flare.list_driver.test_list.entries` receives the same event object. `ServicesConfigTest`: `EntryCollector`,
 `ListDriverEntriesEvent` → non-services.
 
-- [ ] **Step 2: Run — expect failure.** `make test tests/Engine/Entry`, `make test tests/EventListener/NamedDispatch`,
+- [ ] **Step 2: Run — expect failure.** `make test tests/Engine/ListEntry`, `make test tests/EventListener/NamedDispatch`,
   `make test tests/DependencyInjection/ServicesConfigTest.php` → class not found.
 - [ ] **Step 3: Implement the interfaces, the event, the listener and the collector; add the services exclude.**
 - [ ] **Step 4: Run — expect pass.** The same three calls → `OK`.
@@ -537,7 +541,7 @@ public function testEventAttachHandsPhaseOneTheLookup(): void
 
 ---
 
-### Task 3: The lookup (`ListEntryLookup`), `fetchEntriesByIds()`, `EntryCacheTagger`
+### Task 3: The lookup (`EntryLookup`), `fetchEntriesByIds()`, `EntryCacheTagger`
 
 Read the spec section "Lookup" and "Non-goals" (cache invalidation).
 
@@ -545,11 +549,11 @@ Read the spec section "Lookup" and "Non-goals" (cache invalidation).
 - Create: `tests/Engine/EnginePipelineTrait.php` (test support, see below)
 - Modify: `src/Engine/Loader/ValidationLoaderInterface.php`, `src/Engine/Loader/ValidationLoader.php` — add
   `fetchEntriesByIds()` (the rest stays until Task 4)
-- Create: `src/Engine/Entry/ListEntryLookup.php`, `src/Exception/InvalidLookupIdError.php`
-- Create: `src/Contao/Entry/EntryCacheTagger.php`
+- Create: `src/Engine/ListEntry/EntryLookup.php`, `src/Exception/InvalidLookupIdError.php`
+- Create: `src/Contao/ListEntry/EntryCacheTagger.php`
 - Modify: `config/services.yaml` — alias
-  `HeimrichHannot\FlareBundle\Entry\EntryTaggerInterface: '@HeimrichHannot\FlareBundle\Contao\Entry\EntryCacheTagger'`
-- Test: `tests/Engine/Entry/ListEntryLookupTest.php`, `tests/Contao/Entry/EntryCacheTaggerTest.php`,
+  `HeimrichHannot\FlareBundle\List\Entry\EntryTaggerInterface: '@HeimrichHannot\FlareBundle\Contao\ListEntry\EntryCacheTagger'`
+- Test: `tests/Engine/ListEntry/EntryLookupTest.php`, `tests/Contao/ListEntry/EntryCacheTaggerTest.php`,
   `tests/DependencyInjection/ServicesConfigTest.php`
 
 **Interfaces — Consumes:** Tasks 1–2. **Produces:**
@@ -564,7 +568,7 @@ interface ValidationLoaderInterface
     // fetchEntryById(), fetchEntryByAutoItem() unchanged in this task
 }
 
-final class ListEntryLookup implements EntryLookupInterface
+final class EntryLookup implements EntryLookupInterface
 {
     public function __construct(
         private readonly ValidationLoaderInterface $loader,
@@ -588,7 +592,7 @@ the loader config, as `executeQuery()` does), then
 `andWhere($qb->expr()->in('main.id', ':flare_lookup_ids'))`, `setParameter(…, $ids, ArrayParameterType::INTEGER)`,
 `setFirstResult(0)`, `setMaxResults(null)`; a `null` query builder (aborted filter) yields `[]`.
 
-`ListEntryLookup::lookup()`:
+`EntryLookup::lookup()`:
 1. Validate before anything is coerced: a non-array input is a single id. Each id must be an `int` or a string
    matching `/^\d+$/`; anything else — `null`, `''`, `true`, a float, a serialized string — throws
    `InvalidLookupIdError` (message: ids of the list's own table — an int, a numeric string or a list of those;
@@ -634,10 +638,10 @@ trait EnginePipelineTrait
 - [ ] **Step 1: Write the failing tests**
 
 ```php
-// tests/Engine/Entry/ListEntryLookupTest.php — rows: 1..3 published, 4 unpublished.
+// tests/Engine/ListEntry/EntryLookupTest.php — rows: 1..3 published, 4 unpublished.
 // SpyTagger (in the test file) implements EntryTaggerInterface; $tagged lists "<table>.<id>" per tagged entry.
 // ids(EntryCollection): list<int> of the entries' row ids.
-private function lookup(?EventDispatcher $dispatcher = null, ?SpyTagger &$tagger = null): ListEntryLookup
+private function lookup(?EventDispatcher $dispatcher = null, ?SpyTagger &$tagger = null): EntryLookup
 {
     $dispatcher ??= new EventDispatcher();
     $connection = $this->createConnection([
@@ -650,7 +654,7 @@ private function lookup(?EventDispatcher $dispatcher = null, ?SpyTagger &$tagger
         ->createValidationLoader(new ValidationLoaderConfig($list, $intent, 'id'));
     $tagger = new SpyTagger();     // records tagged entries
 
-    return new ListEntryLookup($loader, new EntryCollector($dispatcher, $list, $intent,
+    return new EntryLookup($loader, new EntryCollector($dispatcher, $list, $intent,
         static fn (Entry $e): string => '/r/' . $e->row['id']), $tagger);
 }
 
@@ -747,7 +751,7 @@ public function testLookupInPhaseOneDoesNotRecurseAndChainsOnlyWhenRead(): void
 ```
 
 ```php
-// tests/Contao/Entry/EntryCacheTaggerTest.php
+// tests/Contao/ListEntry/EntryCacheTaggerTest.php
 public function testTagsEntriesWithAModelRef(): void
 {
     $responseTagger = new SymfonyResponseTagger();
@@ -763,12 +767,12 @@ public function testWithoutAResponseTaggerNothingHappens(): void
 }
 ```
 
-`ServicesConfigTest`: `ListEntryLookup` → non-service; `EntryCacheTagger` → service; new test
+`ServicesConfigTest`: `EntryLookup` → non-service; `EntryCacheTagger` → service; new test
 `testEntryTaggerIsAliasedToTheCacheTagger` (`getAlias(EntryTaggerInterface::class)` → `EntryCacheTagger::class`).
 
-- [ ] **Step 2: Run — expect failure.** `make test tests/Engine/Entry`, `make test tests/Contao/Entry`,
+- [ ] **Step 2: Run — expect failure.** `make test tests/Engine/ListEntry`, `make test tests/Contao/ListEntry`,
   `make test tests/DependencyInjection/ServicesConfigTest.php` → class not found.
-- [ ] **Step 3: Implement the trait, `fetchEntriesByIds()`, `ListEntryLookup`, `InvalidLookupIdError`, `EntryCacheTagger`, the alias.**
+- [ ] **Step 3: Implement the trait, `fetchEntriesByIds()`, `EntryLookup`, `InvalidLookupIdError`, `EntryCacheTagger`, the alias.**
 - [ ] **Step 4: Run — expect pass.** The same three calls → `OK`.
 - [ ] **Step 5: Full checks and commit.** `feat(entries): look up member entries of a list in one query`
 
@@ -1018,9 +1022,9 @@ public function testLinkRoutesBackToTheSameStoredValue(string $raw): void
 Read the spec section "Contao boundary service" and "Tests" (seams).
 
 **Files:**
-- Create: `src/Contao/Entry/EntryModelFactory.php`, `src/Exception/MissingModelRefError.php`
+- Create: `src/Contao/ListEntry/EntryModelFactory.php`, `src/Exception/MissingModelRefError.php`
 - Create: `tests/Fixture/TestModelFixture.php`
-- Test: `tests/Contao/Entry/EntryModelFactoryTest.php`, `tests/DependencyInjection/ServicesConfigTest.php`
+- Test: `tests/Contao/ListEntry/EntryModelFactoryTest.php`, `tests/DependencyInjection/ServicesConfigTest.php`
 
 **Interfaces — Consumes:** Task 1. **Produces:**
 
@@ -1112,7 +1116,7 @@ public function testTheIdSurvivesATableWithoutSqlFields(): void
 
 `ServicesConfigTest`: `EntryModelFactory` → service.
 
-- [ ] **Step 2: Run — expect failure.** `make test tests/Contao/Entry/EntryModelFactoryTest.php`,
+- [ ] **Step 2: Run — expect failure.** `make test tests/Contao/ListEntry/EntryModelFactoryTest.php`,
   `make test tests/DependencyInjection/ServicesConfigTest.php`
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run — expect pass.** The same two calls → `OK`.
@@ -1325,7 +1329,7 @@ Callers:
   `onChangeLanguageNavigation()` take `resolveForPage()`, return without an entry, `$table` from
   `$entry->meta->modelRef?->table`, `$listModel` = `$resolution->list`. Nothing else. Check with
   `docker compose run --rm php -l src/Integration/Terminal42Languages/EventListener/ChangelanguageListener.php`.
-- `flare_reader.html.twig`: `{# @var \HeimrichHannot\FlareBundle\Entry\Entry entry #}`, debug heading
+- `flare_reader.html.twig`: `{# @var \HeimrichHannot\FlareBundle\List\Entry\Entry entry #}`, debug heading
   `entry.meta.modelRef.table`, `dl` over `entry.row`.
 
 Test support additions:
@@ -1583,10 +1587,10 @@ public function testEnclosureFilesIsGone(): void
 Read the spec section "`flare_related(entry, 'column')`".
 
 **Files:**
-- Create: `src/Contao/Entry/EntryRelationResolver.php`, `src/Exception/UndefinedRelationError.php`
+- Create: `src/Contao/ListEntry/EntryRelationResolver.php`, `src/Exception/UndefinedRelationError.php`
 - Modify: `src/Twig/Runtime/FlareRuntime.php` (constructor: `EntryRelationResolver $relationResolver` appended as
   the last parameter; `getRelated()`), `src/Twig/Extension/FlareExtension.php`
-- Test: `tests/Contao/Entry/EntryRelationResolverTest.php`, `tests/Twig/FlareExtensionTest.php`,
+- Test: `tests/Contao/ListEntry/EntryRelationResolverTest.php`, `tests/Twig/FlareExtensionTest.php`,
   `tests/Twig/FlareRuntimeTest.php` (its `runtime()` helper passes the new argument),
   `tests/DependencyInjection/ServicesConfigTest.php`
 
@@ -1637,7 +1641,7 @@ public function testAColumnWithoutRelationThrows(): void { /* 'title' → Undefi
 `FlareExtensionTest::testRelatedIsRegistered` (`flare_related` in the names). `ServicesConfigTest`:
 `EntryRelationResolver` → service.
 
-- [ ] **Step 2: Run — expect failure.** `make test tests/Contao/Entry`, `make test tests/Twig`,
+- [ ] **Step 2: Run — expect failure.** `make test tests/Contao/ListEntry`, `make test tests/Twig`,
   `make test tests/DependencyInjection/ServicesConfigTest.php`
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run — expect pass.** The same three calls → `OK`.
@@ -1658,8 +1662,8 @@ Read the spec section "Documentation".
 - Create: `docs/docs/dev/entries.md`
 
 Content (decisions, not prose):
-- `AGENTS.md`: the execution flow ends in "→ View (entries for Twig: `src/Entry/`)"; notable subsystems get
-  `src/Entry/` (wrapper, ports), `src/Engine/Entry/` (collector, lookup), `src/Contao/Entry/` (model factory,
+- `AGENTS.md`: the execution flow ends in "→ View (entries for Twig: `src/List/Entry/`)"; notable subsystems get
+  `src/List/Entry/` (wrapper, ports), `src/Engine/ListEntry/` (collector, lookup), `src/Contao/ListEntry/` (model factory,
   relations, cache tags), `src/Contao/Reader/` + `ReaderResolution` (request-scoped reader, discovery, auto-item);
   the event list gets `flare.list_driver.{type}.entries` (`ListDriverEntriesEvent`); `src/Reader/` loses the
   request attribute. The failure paragraph is split, not just shortened: the two failures only the form harness

@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\List\Entry;
 
 use HeimrichHannot\FlareBundle\Exception\EntryNameCollisionError;
 use HeimrichHannot\FlareBundle\Exception\MissingEntryIdError;
+use HeimrichHannot\FlareBundle\Exception\RecursiveEntryLoadError;
 use HeimrichHannot\FlareBundle\Exception\SealedEntriesError;
 use HeimrichHannot\FlareBundle\List\Entry\Entry;
 use HeimrichHannot\FlareBundle\List\Entry\EntryCollection;
@@ -34,6 +35,52 @@ class EntryCollectionTest extends TestCase
         self::assertSame('A10', $a->archive);
         self::assertSame('A20', $b->archive);
         self::assertSame([1, 2], [$phase1, $picks]);
+    }
+
+    /**
+     * Phase 1 runs inside the `__get()` of the entry being read; reading the name again on that same entry never
+     * reaches `__get()` (PHP's recursion guard emits an "Undefined property" warning), so the loader reads another one.
+     */
+    public function testACollectionLoaderReadingItsOwnNameFails(): void
+    {
+        $entries = new EntryCollection([['id' => 1], ['id' => 2]]);
+        $entries->attach('self', static function (EntryCollection $all): \Closure {
+            $value = $all->first()?->self;
+            return static fn (): mixed => $value;
+        });
+        $second = \iterator_to_array($entries)[1];
+
+        // a later read fails the same way: the failed load leaves nothing behind
+        for ($read = 1; $read <= 2; ++$read) {
+            try {
+                $second->self;
+                self::fail('Phase 1 reading its own name must fail.');
+            } catch (RecursiveEntryLoadError $error) {
+                self::assertSame('self', $error->name);
+            }
+        }
+    }
+
+    public function testACollectionLoaderThatThrowsRunsAgainOnTheNextRead(): void
+    {
+        $calls = 0;
+        $entries = new EntryCollection([['id' => 1]]);
+        $entries->attach('flaky', static function () use (&$calls): \Closure {
+            if (++$calls === 1) {
+                throw new \RuntimeException('down');
+            }
+            return static fn (): string => 'up';
+        });
+
+        try {
+            $entries->first()->flaky;
+            self::fail('The first load must throw.');
+        } catch (\RuntimeException $exception) {
+            self::assertSame('down', $exception->getMessage());
+        }
+
+        self::assertSame('up', $entries->first()->flaky);
+        self::assertSame(2, $calls);
     }
 
     /** @dataProvider provideCollectionCollisions */

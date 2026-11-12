@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\List\Entry;
 
 use HeimrichHannot\FlareBundle\Exception\EntryNameCollisionError;
 use HeimrichHannot\FlareBundle\Exception\MissingEntryIdError;
+use HeimrichHannot\FlareBundle\Exception\RecursiveEntryLoadError;
 use HeimrichHannot\FlareBundle\Exception\SealedEntriesError;
 
 /**
@@ -26,6 +27,9 @@ final class EntryCollection implements \IteratorAggregate, \Countable
 
     /** @var array<string, \Closure(Entry): mixed> */
     private array $pickers = [];
+
+    /** @var array<string, true> the names whose phase 1 is running */
+    private array $loading = [];
 
     private bool $sealed = false;
 
@@ -157,10 +161,26 @@ final class EntryCollection implements \IteratorAggregate, \Countable
         return isset($this->loaders[$name]);
     }
 
-    /** @internal runs phase 1 once per name, returns the picker's value for $entry */
+    /**
+     * @internal runs phase 1 once per name, returns the picker's value for $entry; a phase 1 that throws runs again
+     *     on the next read
+     * @throws RecursiveEntryLoadError when phase 1 reads its own name
+     */
     public function resolveFor(string $name, Entry $entry): mixed
     {
-        $this->pickers[$name] ??= ($this->loaders[$name])($this);
+        if (!isset($this->pickers[$name])) {
+            if (isset($this->loading[$name])) {
+                throw new RecursiveEntryLoadError($name);
+            }
+
+            $this->loading[$name] = true;
+
+            try {
+                $this->pickers[$name] = ($this->loaders[$name])($this);
+            } finally {
+                unset($this->loading[$name]);
+            }
+        }
 
         return ($this->pickers[$name])($entry);
     }

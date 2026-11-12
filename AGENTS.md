@@ -110,7 +110,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   duplicates collapsed, memoized per id list; each result is its own sealed collection with its own entries event;
   members are cache-tagged; `lookup([])` queries nothing; `null`/`''` count as no id, anything else invalid throws
   `InvalidLookupIdError`). Neither is a service: `Engine/Factory/EntryCollectorFactory`
-  creates both. The views use them lazily: `InteractiveView::getEntries()` (`flare_list.entries`),
+  creates both (the lookup as a `LazyEntryLookup`, built on its first call). The views use them lazily: `InteractiveView::getEntries()` (`flare_list.entries`),
   `ValidationView::getEntryByAutoItem()` (memoized, misses too) and `ValidationView::lookup()`
   (`flare_reader.lookup()`); a listener gets the lookup only as the second argument of phase 1
 - `src/Filter/` — `FilterCompound` DTO (`ElementBinding` = element + type + element config `elm_*` + value class,
@@ -187,10 +187,13 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `contao.db.<table>.<id>` response tags; no-op without FOS's response tagger)
 - `src/Contao/Reader/` + `Contao/ReaderResolution` — the request-scoped reader. `ReaderResolver` (`ResetInterface`)
   is the only path from a reader element and the auto-item to its entry (list → intent → engine → view → entry),
-  memoized per `tl_content.id` + auto-item; a `FlareException` is stored as the resolution's `failure` (anything else
-  propagates, unmemoized); without an auto-item nothing is built or queried. `resolve(ContentModel)` for
+  memoized per `tl_content.id` + auto-item; a `FlareException` (also an `IntentException` for an intent that violates
+  its constraints) is stored as the resolution's `failure` (anything else propagates, unmemoized); without an
+  auto-item nothing is built or queried. Only the stored value itself finds the entry (`ValidationLoader` compares the
+  fetched value strictly: no numeric casts, collations or trailing spaces of the database → 404). `resolve(ContentModel)` for
   `ReaderController` (failure → 5xx, no entry → 404), `resolveForPage()` for `Contao/Hook/BreadcrumbHook` (no
-  resolution, a failure or no entry → items unchanged). The cache lives in the service, not in request attributes (a
+  resolution, a failure or no entry → items unchanged; an unexpected exception is logged, rethrown in debug mode; the
+  title is escaped without insert tags). The cache lives in the service, not in request attributes (a
   fragment's sub-request never hands them back). `ReaderElementFinder` (discovery: the single visible top-level
   `flare_reader` element in the page's visible articles; the page from the main request's `pageModel`, else 4.13's
   `$GLOBALS['objPage']`; none or several → no reader; preview mode not honored) and `AutoItemReader`

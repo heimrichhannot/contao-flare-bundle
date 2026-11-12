@@ -44,6 +44,29 @@ final class BreadcrumbHookTest extends ContaoTestCase
     }
 
     /**
+     * Contao's template echoes `link` raw, so the title goes in HTML-escaped like Contao's own items, without
+     * double-encoding the entities of an already encoded title.
+     *
+     * @dataProvider provideEscapedTitles
+     */
+    public function testTheReaderTitleIsEscaped(string $title, string $expected): void
+    {
+        $result = $this->hook('visible', title: $title)(self::ITEMS, $this->createMock(Module::class));
+
+        self::assertSame([$expected, $expected], [$result[1]['title'], $result[1]['link']]);
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function provideEscapedTitles(): iterable
+    {
+        yield 'a tag' => ['<img src=x onerror=alert(1)>', '&lt;img src=x onerror=alert(1)&gt;'];
+        yield 'an ampersand and quotes' => ['Tom & "Jerry"', 'Tom &amp; &quot;Jerry&quot;'];
+        yield 'an already encoded title' => ['Tom &amp; Jerry &lt;3', 'Tom &amp; Jerry &lt;3'];
+    }
+
+    /**
      * @dataProvider provideUnchanged
      */
     public function testItemsStayUnchanged(?string $autoItem, bool $hasReader, bool $failed, string $title): void

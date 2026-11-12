@@ -6,12 +6,14 @@ namespace HeimrichHannot\FlareBundle\Contao\Hook;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use Contao\Module;
+use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contao\Reader\ReaderResolver;
 use HeimrichHannot\FlareBundle\Util\Env;
 
 /**
  * Titles the last breadcrumb item after the entry of the page's reader, with the reader's page meta title. Leaves the
- * items unchanged without a reader, an auto-item, an entry or a title, and when the list failed.
+ * items unchanged without a reader, an auto-item, an entry or a title, and when the list failed. Contao's template
+ * echoes `link` raw, so the title goes in HTML-escaped like Contao's own items (existing entities stay as they are).
  */
 #[AsHook('generateBreadcrumb')]
 readonly class BreadcrumbHook
@@ -45,8 +47,9 @@ readonly class BreadcrumbHook
         }
 
         $last = \count($items) - 1;
-        $items[$last]['title'] = $title;
-        $items[$last]['link'] = $title;
+        $escaped = StringUtil::specialchars($title);
+        $items[$last]['title'] = $escaped;
+        $items[$last]['link'] = $escaped;
 
         return $items;
     }

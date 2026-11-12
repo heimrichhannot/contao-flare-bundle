@@ -35,6 +35,8 @@ use HeimrichHannot\FlareBundle\Engine\Intent\Factory\InteractiveIntentFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\Factory\ValidationIntentFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\InteractiveIntent;
 use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
+use HeimrichHannot\FlareBundle\Engine\ListEntry\EntryCollector;
+use HeimrichHannot\FlareBundle\Event\ListDriverEntriesEvent;
 use HeimrichHannot\FlareBundle\List\Entry\Entry;
 use HeimrichHannot\FlareBundle\List\Entry\EntryCollection;
 use HeimrichHannot\FlareBundle\List\Entry\EntryMeta;
@@ -124,6 +126,8 @@ final class ServicesConfigTest extends TestCase
             EntryMeta::class,
             ModelRef::class,
             EntryCollection::class,
+            EntryCollector::class,
+            ListDriverEntriesEvent::class,
         ] as $class) {
             yield $class => [$class];
         }

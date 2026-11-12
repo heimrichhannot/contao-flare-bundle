@@ -29,6 +29,7 @@ services:
             - ../src/Engine/Engine.php
             - ../src/Engine/Intent/*.php
             - ../src/Engine/Loader
+            - ../src/Engine/ListEntry
             - ../src/Engine/View
 
     HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory:

@@ -9,6 +9,7 @@ use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use Contao\PageModel;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
+use HeimrichHannot\FlareBundle\Contao\Reader\ReaderResolver;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Event\AbstractFetchEvent;
 use HeimrichHannot\FlareBundle\Event\ReaderUrlGeneratedEvent;
@@ -20,7 +21,6 @@ use HeimrichHannot\FlareBundle\Filter\Factory\FilterFactory;
 use HeimrichHannot\FlareBundle\Integration\Terminal42Languages\ListType\DcMultilingualListType;
 use HeimrichHannot\FlareBundle\Query\JoinTypeEnum;
 use HeimrichHannot\FlareBundle\Query\ListQueryBuilder;
-use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;
 use HeimrichHannot\FlareBundle\Util\DcMultilingualHelper;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
@@ -37,10 +37,10 @@ class ChangelanguageListener
     private array $pageFinderCache = [];
 
     public function __construct(
-        private readonly Connection                     $connection,
-        private readonly FilterFactory                  $filterFactory,
-        private readonly ReaderRequestAttributeResolver $attributeResolver,
-        private readonly RequestStack                   $requestStack,
+        private readonly Connection     $connection,
+        private readonly FilterFactory  $filterFactory,
+        private readonly ReaderResolver $readerResolver,
+        private readonly RequestStack   $requestStack,
     ) {}
 
     /**
@@ -262,12 +262,14 @@ class ChangelanguageListener
             return;
         }
 
-        if (!$reader = $this->attributeResolver->resolve()) {
+        $resolution = $this->readerResolver->resolveForPage();
+
+        if (!$entry = $resolution?->entry) {
             return;
         }
 
-        $table = $reader->displayModel::getTable();
-        $listModel = $reader->listModel;
+        $table = $entry->meta->modelRef?->table;
+        $listModel = $resolution->list;
 
         if ($listModel->dc !== $table) {
             return;

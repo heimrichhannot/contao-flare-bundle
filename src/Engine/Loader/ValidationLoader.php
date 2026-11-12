@@ -29,7 +29,8 @@ readonly class ValidationLoader implements ValidationLoaderInterface
      */
     public function fetchEntryByAutoItem(string $autoItem): ?array
     {
-        if (!$this->config->autoItemField || !$autoItem) {
+        // '0' is an auto-item like any other: the reader URL generator links it.
+        if (!$this->config->autoItemField || $autoItem === '') {
             return null;
         }
 

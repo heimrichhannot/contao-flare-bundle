@@ -6,9 +6,11 @@ namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
 use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
+use HeimrichHannot\FlareBundle\Engine\ListEntry\EntryCollector;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
+use HeimrichHannot\FlareBundle\List\Entry\EntryLookupInterface;
 use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Reader\BackLink;
 
@@ -32,10 +34,13 @@ class ValidationProjector extends AbstractProjector
             autoItemField: $intent->autoItemField,
         ));
 
+        $entryCollectorFactory = $this->getEntryCollectorFactory();
+        $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($intent->createReaderUrlConfig());
+
         return $this->createView(
             loader: $loader,
-            table: $list->dc,
-            autoItemField: $intent->autoItemField,
+            collector: $entryCollectorFactory->create($list, $intent, $readerUrlGenerator),
+            lookup: $entryCollectorFactory->createLookup($list, $intent),
             backLink: $intent->createBackLink(),
         );
     }
@@ -47,14 +52,14 @@ class ValidationProjector extends AbstractProjector
 
     protected function createView(
         ValidationLoaderInterface $loader,
-        string                    $table,
-        string                    $autoItemField,
+        EntryCollector            $collector,
+        EntryLookupInterface      $lookup,
         ?BackLink                 $backLink = null,
     ): ValidationView {
         return new ValidationView(
             loader: $loader,
-            table: $table,
-            autoItemField: $autoItemField,
+            collector: $collector,
+            lookup: $lookup,
             backLink: $backLink,
         );
     }

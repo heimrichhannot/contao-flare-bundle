@@ -4,11 +4,24 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Engine;
 
+use Contao\ArticleModel;
+use Contao\ContentModel;
+use Contao\Controller;
+use Contao\Date;
+use Contao\Input;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterCollector;
+use HeimrichHannot\FlareBundle\Contao\Factory\FilterCompoundFactory as ContaoFilterCompoundFactory;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListCompoundBuilderFactory;
+use HeimrichHannot\FlareBundle\Contao\Reader\AutoItemReader;
+use HeimrichHannot\FlareBundle\Contao\Reader\ReaderElementFinder;
+use HeimrichHannot\FlareBundle\Contao\Reader\ReaderResolver;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
+use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
+use HeimrichHannot\FlareBundle\Engine\Factory\EngineFactory;
 use HeimrichHannot\FlareBundle\Engine\Factory\EntryCollectorFactory;
 use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\Factory\AggregationIntentFactory;
@@ -18,6 +31,7 @@ use HeimrichHannot\FlareBundle\Engine\Projector\AggregationProjector;
 use HeimrichHannot\FlareBundle\Engine\Projector\InteractiveProjector;
 use HeimrichHannot\FlareBundle\Engine\Projector\ValidationProjector;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
+use HeimrichHannot\FlareBundle\Event\ListDriverBuildListEvent;
 use HeimrichHannot\FlareBundle\Event\ModifyListQueryStructEvent;
 use HeimrichHannot\FlareBundle\EventListener\QueryStructModifier\ConditionsModifierListener;
 use HeimrichHannot\FlareBundle\EventListener\QueryStructModifier\JoinModifierListener;
@@ -32,8 +46,15 @@ use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Form\Factory\FilterFormBuilderFactory;
 use HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory;
+use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
+use HeimrichHannot\FlareBundle\List\Factory\ListCompoundBuilderFactory as CoreListCompoundBuilderFactory;
+use HeimrichHannot\FlareBundle\List\Factory\ListCompoundFactory;
+use HeimrichHannot\FlareBundle\List\FilterFailure;
 use HeimrichHannot\FlareBundle\List\ListCompound;
+use HeimrichHannot\FlareBundle\List\Resolver\ListDriverResolver;
+use HeimrichHannot\FlareBundle\List\Resolver\ListOptionsResolver;
+use HeimrichHannot\FlareBundle\List\Resolver\ListTransformerResolver;
 use HeimrichHannot\FlareBundle\Paginator\Factory\PaginatorFactory;
 use HeimrichHannot\FlareBundle\Query\Executor\FilterInvoker;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
@@ -41,10 +62,14 @@ use HeimrichHannot\FlareBundle\Query\Factory\FilterQueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\ListExecutionContextFactory;
 use HeimrichHannot\FlareBundle\Query\Factory\QueryBuilderFactory;
 use HeimrichHannot\FlareBundle\Reader\Factory\ReaderUrlGeneratorFactory;
+use HeimrichHannot\FlareBundle\Registry\EngineModRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
+use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
+use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
 use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
+use HeimrichHannot\FlareBundle\Tests\Fixture\ContentModelFixture;
 use HeimrichHannot\FlareBundle\Tests\Fixture\SpyTagger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -60,6 +85,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Csrf\CsrfTokenManager;
+use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -73,6 +99,12 @@ trait EnginePipelineTrait
 
     /** Number of list queries built (ModifyListQueryStructEvent dispatches). */
     protected int $queries = 0;
+
+    /** Number of lists built (ListDriverBuildListEvent dispatches) by {@see createReaderResolver()}. */
+    protected int $builds = 0;
+
+    /** Number of auto-item reads of the reader resolver from {@see createReaderResolver()}. */
+    protected int $autoItemReads = 0;
 
     /** @var array<int, ListQueryDirector> keyed by the dispatcher's object id */
     private array $directors = [];
@@ -259,6 +291,129 @@ trait EnginePipelineTrait
         }
 
         return $registry;
+    }
+
+    /**
+     * A ReaderResolver over the real list builder (stored list driver 'test_list' on 'tl_test'), the real
+     * ValidationIntentFactory (its validator finds no violations) and EngineFactory over
+     * {@see createProjectorRegistry()}. Every list built gets $filters and $failures and counts in $builds. The
+     * auto-item comes from a mocked Input adapter, each read counts in $autoItemReads. The ReaderElementFinder runs
+     * over $connection with page 7 on the main request, one article and the reader element 5, which the ContentModel
+     * adapter resolves to $content. Uses mockContaoFramework(): tests using it extend ContaoTestCase.
+     *
+     * @param string|list<?string>|null $autoItem the request's auto-item; a list: the value of each consecutive read
+     *   (the last one repeats)
+     * @param list<FilterCompound>       $filters
+     * @param list<FilterFailure>        $failures
+     * @param ?ContentModelFixture       $content  the page's reader element; null: the page has none
+     */
+    protected function createReaderResolver(
+        Connection           $connection,
+        EventDispatcher      $dispatcher,
+        string|array|null    $autoItem,
+        array                $filters = [],
+        array                $failures = [],
+        ?ContentModelFixture $content = null,
+    ): ReaderResolver {
+        $dispatcher->addListener(
+            ListDriverBuildListEvent::class,
+            function (ListDriverBuildListEvent $event) use ($filters, $failures): void {
+                ++$this->builds;
+
+                foreach ($filters as $filter) {
+                    $event->builder->addFilter($filter);
+                }
+
+                foreach ($failures as $failure) {
+                    $event->builder->addFailure($failure);
+                }
+            },
+        );
+
+        $values = \is_array($autoItem) ? \array_values($autoItem) : [$autoItem];
+        $input = $this->mockAdapter(['get']);
+        $input->method('get')->willReturnCallback(function () use ($values): ?string {
+            $value = $values[\min($this->autoItemReads, \count($values) - 1)];
+            ++$this->autoItemReads;
+
+            return $value;
+        });
+
+        $contentModels = $this->mockAdapter(['findByPk']);
+        $contentModels->method('findByPk')->willReturn($content);
+        $articleModels = $this->mockAdapter(['findByPk']);
+        $articleModels->method('findByPk')->willReturnCallback(
+            fn (int $id) => $this->mockClassWithProperties(ArticleModel::class, ['id' => $id]),
+        );
+
+        $framework = $this->mockContaoFramework([
+            Input::class => $input,
+            Date::class => $this->mockConfiguredAdapter(['floorToMinute' => 1_800_000_000]),
+            ContentModel::class => $contentModels,
+            ArticleModel::class => $articleModels,
+            Controller::class => $this->mockConfiguredAdapter(['isVisibleElement' => true]),
+        ]);
+
+        $this->createReaderTables($connection, [['id' => 1, 'pid' => 7]], [['id' => 5, 'pid' => 1]]);
+        $request = new Request();
+        $request->attributes->set('pageModel', 7);
+        $requestStack = new RequestStack();
+        $requestStack->push($request);
+
+        $validator = $this->createMock(ValidatorInterface::class);
+        $validator->method('validate')->willReturn(new ConstraintViolationList());
+
+        return new ReaderResolver(
+            autoItemReader: new AutoItemReader($framework),
+            engineFactory: new EngineFactory(
+                new EngineModRegistry([]),
+                $this->createProjectorRegistry($connection, $dispatcher),
+            ),
+            eventDispatcher: $dispatcher,
+            listFactory: $this->createListCompoundBuilderFactory($dispatcher),
+            elementFinder: new ReaderElementFinder($connection, $framework, $requestStack),
+            validationIntentFactory: new ValidationIntentFactory($validator),
+        );
+    }
+
+    /**
+     * The stored-list builder factory with the list driver 'test_list' on 'tl_test'; a list model without id has no
+     * stored filters (and needs no database).
+     */
+    private function createListCompoundBuilderFactory(EventDispatcher $dispatcher): ListCompoundBuilderFactory
+    {
+        $registry = new ListDriverRegistry();
+        $registry->add(
+            new class extends AbstractListDriver {},
+            new AsListDriver(type: 'test_list', dataContainer: 'tl_test'),
+            'test_list',
+        );
+        $driverResolver = new ListDriverResolver($registry);
+
+        $filterCompoundFactory = new ContaoFilterCompoundFactory(
+            filterCompoundFactory: new FilterCompoundFactory(
+                filterElementRegistry: $this->createPipelineElementRegistry(),
+                filterControlRegistry: new FilterControlRegistry(),
+                filterOptionsResolver: new FilterOptionsResolver(new SchemaResolver()),
+                filterTransformerResolver: new FilterTransformerResolver(new SourceTransformer(), $dispatcher),
+            ),
+            valueProviderRegistry: new ValueProviderRegistry(),
+            logger: new NullLogger(),
+        );
+
+        return new ListCompoundBuilderFactory(
+            builderFactory: new CoreListCompoundBuilderFactory(
+                eventDispatcher: $dispatcher,
+                listDriverResolver: $driverResolver,
+                listCompoundFactory: new ListCompoundFactory(
+                    $registry,
+                    new ListOptionsResolver(new SchemaResolver()),
+                    new ListTransformerResolver(new SourceTransformer(), $dispatcher),
+                    $driverResolver,
+                ),
+            ),
+            filterCollector: new FilterCollector($dispatcher, $filterCompoundFactory, $registry, new NullLogger()),
+        );
     }
 
     /**

@@ -42,13 +42,13 @@ readonly class ContaoCommentsListener
             return;
         }
 
-        /** @var NewsModel $newsModel */
-        $newsModel = $event->displayModel;
-        if (!$newsModel instanceof NewsModel) {
+        if ($event->entry->meta->modelRef?->table !== NewsModel::getTable()) {
             return;
         }
 
-        $archiveModel = $newsModel->getRelated('pid');
+        $row = $event->entry->row;
+
+        $archiveModel = NewsArchiveModel::findByPk($row['pid'] ?? 0);
         if (!$archiveModel instanceof NewsArchiveModel) {
             return;
         }
@@ -68,7 +68,7 @@ readonly class ContaoCommentsListener
             }
 
             if ($archiveModel->notify !== 'notify_admin'
-                && $authorEmail = (UserModel::findById($newsModel->author ?: 0)?->email))
+                && $authorEmail = (UserModel::findById(($row['author'] ?? null) ?: 0)?->email))
             {
                 $notifies[] = $authorEmail;
             }
@@ -88,8 +88,8 @@ readonly class ContaoCommentsListener
         (new Comments())->addCommentsToTemplate(
             objTemplate: $commentsTemplate,
             objConfig: $config,
-            strSource: $newsModel::getTable(),
-            intParent: $newsModel->id,
+            strSource: NewsModel::getTable(),
+            intParent: (int) $row['id'],
             varNotifies: $notifies,
         );
 

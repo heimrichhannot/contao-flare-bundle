@@ -9,6 +9,9 @@ use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
+/**
+ * The fallback title, unless a listener set one: the first of the row's headline, title, question, name, alias, id.
+ */
 #[AsEventListener(priority: -200)]
 readonly class ReaderPageMetaTitleListener
 {
@@ -22,17 +25,18 @@ readonly class ReaderPageMetaTitleListener
             return;
         }
 
-        $model = $event->displayModel;
+        $row = $event->entry->row;
 
         $title = $this->htmlDecoder->inputEncodedToPlainText(
             (string) (
-                (Str::formatHeadline($model->headline) ?: null)
-                ?? $model->title
-                ?? $model->question
-                ?? $model->name
-                ?? $model->alias
-                ?? $model->id
-            ) ?: '',
+                (Str::formatHeadline($row['headline'] ?? null) ?: null)
+                ?? $row['title']
+                ?? $row['question']
+                ?? $row['name']
+                ?? $row['alias']
+                ?? $row['id']
+                ?? ''
+            ),
         );
 
         if (!$title) {

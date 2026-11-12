@@ -32,6 +32,8 @@ use HeimrichHannot\FlareBundle\Contao\ListEntry\EntryModelFactory;
 use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrable;
 use HeimrichHannot\FlareBundle\Contao\Reader\AutoItemReader;
 use HeimrichHannot\FlareBundle\Contao\Reader\ReaderElementFinder;
+use HeimrichHannot\FlareBundle\Contao\Reader\ReaderResolver;
+use HeimrichHannot\FlareBundle\Contao\ReaderResolution;
 use HeimrichHannot\FlareBundle\Engine\Factory\EntryCollectorFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\AggregationIntent;
 use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
@@ -110,6 +112,7 @@ final class ServicesConfigTest extends TestCase
             EntryModelFactory::class,
             ReaderElementFinder::class,
             AutoItemReader::class,
+            ReaderResolver::class,
         ] as $class) {
             yield $class => [$class];
         }
@@ -141,6 +144,7 @@ final class ServicesConfigTest extends TestCase
             EntryCollector::class,
             EntryLookup::class,
             ListDriverEntriesEvent::class,
+            ReaderResolution::class,
         ] as $class) {
             yield $class => [$class];
         }

@@ -46,7 +46,7 @@ readonly class GenericReaderPageMetaListener
 
         $this->addTokensFromProperties($tokens, $list->config, prefix: 'list');
         $this->addTokensFromProperties($tokens, $event->contentModel->row(), prefix: 'ce');
-        $this->addTokensFromProperties($tokens, $event->displayModel->row());
+        $this->addTokensFromProperties($tokens, $event->entry->row);
 
         if ($titleFormat)
         {

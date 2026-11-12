@@ -21,19 +21,20 @@ readonly class NewsReaderPageMetaListener
     {
         global $objPage;
 
-        $model = $event->displayModel;
-        if (!$model instanceof NewsModel) {
+        if ($event->entry->meta->modelRef?->table !== NewsModel::getTable()) {
             return;
         }
 
+        $row = $event->entry->row;
         $pageMeta = $event->pageMeta;
 
-        $headline = Str::formatHeadline($model->headline) ?: Str::formatHeadline($event->contentModel->headline);
+        $headline = Str::formatHeadline($row['headline'] ?? null)
+            ?: Str::formatHeadline($event->contentModel->headline);
         $title = $headline ?: $this->htmlDecoder->inputEncodedToPlainText($objPage->title);
         $pageMeta->setTitle($title);
 
-        $teaser = $model->teaser
-            ? $this->htmlDecoder->inputEncodedToPlainText($model->teaser)
+        $teaser = ($row['teaser'] ?? null)
+            ? $this->htmlDecoder->inputEncodedToPlainText($row['teaser'])
             : null;
 
         if ($teaser) {

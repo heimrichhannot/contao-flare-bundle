@@ -21,33 +21,32 @@ readonly class EventsReaderPageMetaListener
     {
         global $objPage;
 
-        /** @var CalendarEventsModel $model */
-        $model = $event->displayModel;
-        if (!$model instanceof CalendarEventsModel) {
+        if ($event->entry->meta->modelRef?->table !== CalendarEventsModel::getTable()) {
             return;
         }
 
+        $row = $event->entry->row;
         $pageMeta = $event->pageMeta;
 
         $pageMeta->setTitle($this->htmlDecoder->inputEncodedToPlainText(
-            Str::coalesce($model->pageTitle, $model->title, $objPage?->title) ?? ''
+            Str::coalesce($row['pageTitle'] ?? null, $row['title'] ?? null, $objPage?->title) ?? ''
         ));
 
         $description = null;
 
-        if ($model->description) {
-            $description = $this->htmlDecoder->inputEncodedToPlainText($model->description) ?: null;
+        if ($row['description'] ?? null) {
+            $description = $this->htmlDecoder->inputEncodedToPlainText($row['description']) ?: null;
         }
 
-        if (!$description && $model->teaser) {
-            $description = Str::htmlToMeta($this->htmlDecoder->inputEncodedToPlainText($model->teaser), 250) ?: null;
+        if (!$description && ($row['teaser'] ?? null)) {
+            $description = Str::htmlToMeta($this->htmlDecoder->inputEncodedToPlainText($row['teaser']), 250) ?: null;
         }
 
         if ($description) {
             $pageMeta->setDescription($description);
         }
 
-        if ($robots = $model->robots ?: null) {
+        if ($robots = ($row['robots'] ?? null) ?: null) {
             $pageMeta->setRobots($robots);
         }
 

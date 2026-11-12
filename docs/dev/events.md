@@ -127,12 +127,12 @@ Dispatched after every filter mounted onto the root form, before the form is bui
 
 ### `FilterControlBuildFormEvent`
 Dispatched after a filter's [control](./filter-controls.md) `buildForm()` declared its fields on the collect-only per-filter
-builder, before the factory mounts them onto the root form (flat for `single()` fields without companions,
-nested Symfony compound form otherwise).
+builder, before the factory mounts them onto the root form (flat for a `single()` field, a nested Symfony
+compound form for children).
 - **Use Case:** Adding, removing, or replacing one filter's form children (re-adding a same-named child
   overwrites it), adjusting the single-field declaration via `single()`/`getSingle()`, or preventing the
-  filter from being mounted at all. Adding a child alongside a `single()` declaration switches the filter
-  to the nested layout.
+  filter from being mounted at all. Declaring a single field and children at once is not supported: the
+  filter cannot build its form, and the list view fails (fail closed).
 - **Class:** `HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent`
 - **Properties:** `builder` (readonly `FilterFormBuilderInterface`), `context` (readonly `ControlContext`)
 - **API:** `cancel()` / `isCancelled()`

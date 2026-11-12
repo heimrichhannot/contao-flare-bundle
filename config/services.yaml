@@ -13,6 +13,7 @@ services:
             - ../src/{Config,Contao,ContaoManager,Contract,DependencyInjection,Dto,Engine,Event,Integration,Model,Trait,Util}
             - ../src/{Filter,Form,List,Paginator,Query,Sort}/*.php
             - ../src/Filter/Value
+            - ../src/List/Entry
 
     HeimrichHannot\FlareBundle\Contao\:
         resource: ../src/Contao
@@ -28,6 +29,7 @@ services:
             - ../src/Engine/Engine.php
             - ../src/Engine/Intent/*.php
             - ../src/Engine/Loader
+            - ../src/Engine/ListEntry
             - ../src/Engine/View
 
     HeimrichHannot\FlareBundle\Form\Factory\FormHarnessFactory:
@@ -37,6 +39,12 @@ services:
     HeimrichHannot\FlareBundle\Contao\Inspection\Inspector\FilterInspector:
         arguments:
             $debug: '%kernel.debug%'
+
+    HeimrichHannot\FlareBundle\Contao\Hook\BreadcrumbHook:
+        arguments:
+            $debug: '%kernel.debug%'
+
+    HeimrichHannot\FlareBundle\List\Entry\EntryTaggerInterface: '@HeimrichHannot\FlareBundle\Contao\ListEntry\EntryCacheTagger'
 
     # Util classes registered as twig globals must be defined as services
     HeimrichHannot\FlareBundle\Util\Env: ~

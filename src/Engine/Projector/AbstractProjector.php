@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
 use Doctrine\DBAL\Query\QueryBuilder;
+use HeimrichHannot\FlareBundle\Engine\Factory\EntryCollectorFactory;
 use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
@@ -42,6 +43,7 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
             LoaderFactory::class,
             ProjectorRegistry::class,
             ReaderUrlGeneratorFactory::class,
+            EntryCollectorFactory::class,
             RequestStack::class,
             LoggerInterface::class,
             ParameterBagInterface::class,
@@ -83,6 +85,11 @@ abstract class AbstractProjector implements ProjectorInterface, ServiceSubscribe
     protected function getReaderUrlGeneratorFactory(): ReaderUrlGeneratorFactory
     {
         return $this->container->get(ReaderUrlGeneratorFactory::class);
+    }
+
+    protected function getEntryCollectorFactory(): EntryCollectorFactory
+    {
+        return $this->container->get(EntryCollectorFactory::class);
     }
 
     protected function getLogger(): LoggerInterface

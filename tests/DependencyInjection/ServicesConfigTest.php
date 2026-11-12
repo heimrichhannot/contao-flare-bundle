@@ -27,7 +27,15 @@ use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssue;
 use HeimrichHannot\FlareBundle\Contao\Inspection\Inspector\FilterInspector;
 use HeimrichHannot\FlareBundle\Contao\Inspection\ListInspection;
 use HeimrichHannot\FlareBundle\Contao\Inspection\Reporter\FilterIssueReporter;
+use HeimrichHannot\FlareBundle\Contao\ListEntry\EntryCacheTagger;
+use HeimrichHannot\FlareBundle\Contao\ListEntry\EntryModelFactory;
+use HeimrichHannot\FlareBundle\Contao\ListEntry\EntryRelationResolver;
 use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrable;
+use HeimrichHannot\FlareBundle\Contao\Reader\AutoItemReader;
+use HeimrichHannot\FlareBundle\Contao\Reader\ReaderElementFinder;
+use HeimrichHannot\FlareBundle\Contao\Reader\ReaderResolver;
+use HeimrichHannot\FlareBundle\Contao\ReaderResolution;
+use HeimrichHannot\FlareBundle\Engine\Factory\EntryCollectorFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\AggregationIntent;
 use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Engine\Intent\Factory\AggregationIntentFactory;
@@ -35,6 +43,14 @@ use HeimrichHannot\FlareBundle\Engine\Intent\Factory\InteractiveIntentFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\Factory\ValidationIntentFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\InteractiveIntent;
 use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
+use HeimrichHannot\FlareBundle\Engine\ListEntry\EntryCollector;
+use HeimrichHannot\FlareBundle\Engine\ListEntry\EntryLookup;
+use HeimrichHannot\FlareBundle\Event\ListDriverEntriesEvent;
+use HeimrichHannot\FlareBundle\List\Entry\Entry;
+use HeimrichHannot\FlareBundle\List\Entry\EntryCollection;
+use HeimrichHannot\FlareBundle\List\Entry\EntryMeta;
+use HeimrichHannot\FlareBundle\List\Entry\EntryTaggerInterface;
+use HeimrichHannot\FlareBundle\List\Entry\ModelRef;
 use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrer;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\FileLocator;
@@ -92,6 +108,13 @@ final class ServicesConfigTest extends TestCase
             InteractiveIntentFactory::class,
             ValidationIntentFactory::class,
             AggregationIntentFactory::class,
+            EntryCacheTagger::class,
+            EntryCollectorFactory::class,
+            EntryModelFactory::class,
+            EntryRelationResolver::class,
+            ReaderElementFinder::class,
+            AutoItemReader::class,
+            ReaderResolver::class,
         ] as $class) {
             yield $class => [$class];
         }
@@ -116,6 +139,14 @@ final class ServicesConfigTest extends TestCase
             ValidationIntent::class,
             AggregationIntent::class,
             ConfigurationIntent::class,
+            Entry::class,
+            EntryMeta::class,
+            ModelRef::class,
+            EntryCollection::class,
+            EntryCollector::class,
+            EntryLookup::class,
+            ListDriverEntriesEvent::class,
+            ReaderResolution::class,
         ] as $class) {
             yield $class => [$class];
         }
@@ -143,6 +174,14 @@ final class ServicesConfigTest extends TestCase
         self::assertSame(
             '%kernel.debug%',
             self::container()->getDefinition(FilterInspector::class)->getArgument('$debug'),
+        );
+    }
+
+    public function testEntryTaggerIsAliasedToTheCacheTagger(): void
+    {
+        self::assertSame(
+            EntryCacheTagger::class,
+            (string) self::container()->getAlias(EntryTaggerInterface::class),
         );
     }
 

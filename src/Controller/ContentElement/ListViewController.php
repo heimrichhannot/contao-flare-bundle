@@ -26,7 +26,6 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Error\RuntimeError;
@@ -108,10 +107,6 @@ final class ListViewController extends AbstractContentElementController
             );
 
             $engine = $this->engineFactory->createEngine($interactiveIntent, $list);
-        }
-        catch (ValidationFailedException $e)
-        {
-            return $this->getErrorResponse($e);
         }
         catch (FlareException $e)
         {

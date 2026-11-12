@@ -4,166 +4,95 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Contao\Hook;
 
-use Contao\ArticleModel;
-use Contao\ContentModel;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
-use Contao\Input;
+use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\Module;
-use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\Controller\ContentElement\ReaderController;
-use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\Engine\Intent\Factory\ValidationIntentFactory;
-use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
-use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
-use HeimrichHannot\FlareBundle\Exception\ViewException;
-use HeimrichHannot\FlareBundle\Contao\Factory\ListCompoundBuilderFactory;
-use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
+use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\Contao\Reader\ReaderResolver;
 use HeimrichHannot\FlareBundle\Util\Env;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Psr\Log\LoggerInterface;
 
+/**
+ * Titles the last breadcrumb item after the entry of the page's reader, with the reader's page meta title. Leaves the
+ * items unchanged without a reader, an auto-item, an entry or a title, and when the list failed. Contao's template
+ * echoes `link` raw, so the title goes in HTML-escaped and without insert tags like Contao's own items (existing
+ * entities stay as they are). An unexpected exception (a failed list is no exception here, the resolver keeps it) is
+ * logged and leaves the items unchanged; in debug mode it is rethrown.
+ */
 #[AsHook('generateBreadcrumb')]
 readonly class BreadcrumbHook
 {
     public function __construct(
-        private Connection                 $connection,
-        private EventDispatcherInterface   $eventDispatcher,
-        private ListCompoundBuilderFactory $listFactory,
-        private ProjectorRegistry          $projectorRegistry,
-        private ValidationIntentFactory    $validationIntentFactory,
+        private ReaderResolver  $readerResolver,
+        private LoggerInterface $logger,
+        private bool            $debug = false,
     ) {}
 
+    /**
+     * @throws \Exception in debug mode, an unexpected exception while resolving the reader
+     */
     public function __invoke(array $items, Module $module): array
     {
-        if (!$pageId = $this->tryGetReaderPageId($items)) {
-            return $items;
-        }
-
-        $qArticle = $this->connection->quoteIdentifier(ArticleModel::getTable());
-        $qId = $this->connection->quoteIdentifier('id');
-        $qPid = $this->connection->quoteIdentifier('pid');
-
-        $stmt = $this->connection->prepare("SELECT DISTINCT({$qId}) AS {$qId} FROM {$qArticle} WHERE {$qPid} = :pid LIMIT 1");
-        $stmt->bindValue('pid', $pageId);
-        $result = $stmt->executeQuery();
-        $articleIds = $result->fetchFirstColumn();
-        $result->free();
-
-        if (!$articleIds) {
-            return $items;
-        }
-
-        $articleIds = \array_map('\intval', $articleIds);
-
-        $contentModel = ContentModel::findOneBy(
-            ['ptable=? AND pid IN (?) AND type=?'],
-            [ArticleModel::getTable(), \implode(',', $articleIds), ReaderController::TYPE],
-        );
-
-        if (!$contentModel) {
-            return $items;
-        }
-
-        if (Env::isContao4())
-            // remove second to last item
+        try
         {
-            unset($items[\count($items) - 2]);
+            $title = $this->readerResolver->resolveForPage()?->getPageMeta()?->getTitle();
+        }
+        catch (\Exception $e)
+        {
+            if ($this->debug) {
+                throw $e;
+            }
+
+            $this->logger->error(
+                \sprintf('The breadcrumb could not resolve the reader: %s', $e->getMessage()),
+                ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e],
+            );
+
+            return $items;
+        }
+
+        if ($title === null || $title === '' || $items === []) {
+            return $items;
         }
 
         $items = \array_values($items);
 
-        if (!\count($items)) {
-            return $items;
+        if (Env::isContao4()) {
+            $items = self::dropRepeatedReaderPage($items);
         }
 
-        try
-        {
-            // @phpstan-ignore function.alreadyNarrowedType
-            $autoItem = \method_exists(Input::class, 'findGet')
-                ? Input::findGet('auto_item')
-                : Input::get('auto_item', false, true);
-
-            if (!$autoItem) {
-                return $items;
-            }
-
-            $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST);
-
-            if (!$listModel instanceof ListModel) {
-                return $items;
-            }
-
-            $list = $this->listFactory->create($listModel)->build();
-
-            $validationIntent = $this->validationIntentFactory->createFromContent(
-                contentModel: $contentModel,
-                list: $list,
-            );
-
-            $validationProjector = $this->projectorRegistry->getProjectorFor($list, $validationIntent);
-            $validationView = $validationProjector->project($list, $validationIntent);
-
-            if (!$validationView instanceof ValidationView) {
-                throw ViewException::create(ValidationView::class, $validationView, __METHOD__);
-            }
-
-            if (!$autoItemModel = $validationView->getModelByAutoItem($autoItem)) {
-                return $items;
-            }
-
-            /** @var ReaderPageMetaEvent $pageMetaEvent */
-            $pageMetaEvent = $this->eventDispatcher->dispatch(new ReaderPageMetaEvent(
-                contentModel: $contentModel,
-                displayModel: $autoItemModel,
-                list: $list,
-            ));
-
-            $title = $pageMetaEvent->pageMeta->getTitle();
-            $item = &$items[\count($items) - 1];
-
-            if ($title && $item)
-            {
-                $item['title'] = $title;
-                $item['link'] = $title;
-            }
-        }
-        // @mago-expect lint:no-empty-catch-clause Intentionally ignored to not break the breadcrumb
-        catch (\Exception)
-        {
-            // ignore
-        }
+        $last = \count($items) - 1;
+        $escaped = StringUtil::specialchars($title, true);
+        $items[$last]['title'] = $escaped;
+        $items[$last]['link'] = $escaped;
 
         return $items;
     }
 
-    public function tryGetReaderPageId(array $items): ?int
+    /**
+     * On Contao 4.13 the reader page can end the breadcrumb twice: drops the second-to-last item when the last two
+     * share their page id.
+     *
+     * @param list<array<string, mixed>> $items
+     * @return list<array<string, mixed>>
+     */
+    private static function dropRepeatedReaderPage(array $items): array
     {
-        $isContao4 = Env::isContao4();
-        if (!\count($items) || ($isContao4 && \count($items) < 2)) {
-            return null;
-        }
-
-        $items = \array_values($items);
         $count = \count($items);
 
-        $last = $items[$count - 1];
-        $lastPageId = (int) ($last['data']['id'] ?? 0);
-
-        if (!$isContao4) {
-            return $lastPageId ?: null;
+        if ($count < 2) {
+            return $items;
         }
 
-        $secondLast = $items[$count - 2];
-        $secondLastPageId = (int) ($secondLast['data']['id'] ?? 0);
+        $lastPageId = (int) ($items[$count - 1]['data']['id'] ?? 0);
+        $secondLastPageId = (int) ($items[$count - 2]['data']['id'] ?? 0);
 
-        if (!$lastPageId || !$secondLastPageId) {
-            return null;
+        if ($lastPageId === 0 || $lastPageId !== $secondLastPageId) {
+            return $items;
         }
 
-        if ($lastPageId !== $secondLastPageId) {
-            return null;
-        }
+        unset($items[$count - 2]);
 
-        return $lastPageId;
+        return \array_values($items);
     }
 }

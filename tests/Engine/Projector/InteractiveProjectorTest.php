@@ -8,7 +8,9 @@ use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\Config\SourceTransformer;
+use HeimrichHannot\FlareBundle\Engine\Factory\EntryCollectorFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\Factory\AggregationIntentFactory;
+use HeimrichHannot\FlareBundle\Engine\Intent\Factory\ValidationIntentFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\InteractiveIntent;
 use HeimrichHannot\FlareBundle\Engine\Factory\LoaderFactory;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderConfig;
@@ -48,6 +50,7 @@ use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
+use HeimrichHannot\FlareBundle\Tests\Fixture\SpyTagger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
@@ -131,7 +134,7 @@ final class InteractiveProjectorTest extends TestCase
 
         self::assertTrue($view->isFailed());
         self::assertSame(0, $view->getCount());
-        self::assertSame([], $view->getEntries());
+        self::assertCount(0, $view->getEntries());
         self::assertSame(0, $view->getPaginator()->getTotalItems());
         self::assertSame('error', $this->logs[0][0] ?? null);
         self::assertStringContainsString('broken element', $this->logs[0][1]);
@@ -175,7 +178,7 @@ final class InteractiveProjectorTest extends TestCase
 
         self::assertFalse($view->isFailed());
         self::assertSame(0, $view->getCount());
-        self::assertSame([], $view->getEntries());
+        self::assertCount(0, $view->getEntries());
         self::assertSame(0, $view->getPaginator()->getTotalItems());
         self::assertSame(0, $spy->calls, 'Neither counted nor loaded.');
         self::assertFalse($view->getForm()->isValid());
@@ -314,12 +317,19 @@ final class InteractiveProjectorTest extends TestCase
         );
 
         $aggregationProjector = new AggregationProjector();
+        $loaderFactory = new LoaderFactory($filterCompoundFactory, $director);
 
         $container = new ServiceLocator([
             ListQueryDirector::class => static fn () => $director,
-            LoaderFactory::class => static fn () => new LoaderFactory($filterCompoundFactory, $director),
+            LoaderFactory::class => static fn () => $loaderFactory,
             ProjectorRegistry::class => static fn () => new ProjectorRegistry([$aggregationProjector]),
             ReaderUrlGeneratorFactory::class => static fn () => new ReaderUrlGeneratorFactory($dispatcher),
+            EntryCollectorFactory::class => static fn () => new EntryCollectorFactory(
+                $dispatcher,
+                $loaderFactory,
+                new ReaderUrlGeneratorFactory($dispatcher),
+                new SpyTagger(),
+            ),
             RequestStack::class => static fn () => $requestStack,
             LoggerInterface::class => static fn () => $logger,
             ParameterBagInterface::class => static fn () => new ParameterBag(['kernel.debug' => $debug]),
@@ -342,6 +352,7 @@ final class InteractiveProjectorTest extends TestCase
                 $this->createMock(TranslatorInterface::class),
             ),
             paginatorFactory: new PaginatorFactory($requestStack, $this->createMock(UrlGeneratorInterface::class)),
+            validationIntentFactory: new ValidationIntentFactory($this->createMock(ValidatorInterface::class)),
         );
         $projector->setContainer($container);
 

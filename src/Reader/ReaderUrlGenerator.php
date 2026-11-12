@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Reader;
 
-use Contao\Model;
+use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Event\ReaderUrlGeneratedEvent;
-use HeimrichHannot\FlareBundle\Util\CallbackHelper;
-use HeimrichHannot\FlareBundle\Util\Str;
+use HeimrichHannot\FlareBundle\List\Entry\Entry;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class ReaderUrlGenerator implements ReaderUrlGeneratorInterface
@@ -17,17 +16,24 @@ readonly class ReaderUrlGenerator implements ReaderUrlGeneratorInterface
         private ReaderUrlConfig          $config,
     ) {}
 
-    public function generate(Model $model): ?string
+    /**
+     * Reads the auto-item value from the entry's row; an empty value has no link.
+     */
+    public function generate(Entry $entry): ?string
     {
-        if (!$autoItem = (string) CallbackHelper::tryGetProperty($model, $this->config->autoItemField)) {
+        $autoItem = (string) ($entry->row[$this->config->autoItemField] ?? '');
+
+        if ($autoItem === '') {
             return null;
         }
 
-        $url = $this->config->readerPage->getAbsoluteUrl('/' . Str::urlEncodePath($autoItem));
+        // The stored value is Contao-input-encoded; the URL text is its inverse, and the router percent-encodes it.
+        $autoItem = StringUtil::revertInputEncoding($autoItem);
+        $url = $this->config->readerPage->getAbsoluteUrl('/' . $autoItem);
 
         $event = $this->eventDispatcher->dispatch(
             new ReaderUrlGeneratedEvent(
-                model: $model,
+                entry: $entry,
                 autoItem: $autoItem,
                 page: $this->config->readerPage,
                 url: $url,

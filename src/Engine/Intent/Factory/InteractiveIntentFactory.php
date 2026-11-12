@@ -7,10 +7,10 @@ namespace HeimrichHannot\FlareBundle\Engine\Intent\Factory;
 use Contao\ContentModel;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Intent\InteractiveIntent;
+use HeimrichHannot\FlareBundle\Exception\IntentException;
 use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Sort\Factory\SortOrderSequenceFactory;
-use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 readonly class InteractiveIntentFactory
@@ -20,6 +20,9 @@ readonly class InteractiveIntentFactory
         private ValidatorInterface       $validator,
     ) {}
 
+    /**
+     * @throws IntentException
+     */
     public function createFromContent(ContentModel $contentModel, ListCompound $list): InteractiveIntent
     {
         $filterFormName = $contentModel->{ContentContainer::FIELD_FORM_NAME}
@@ -49,7 +52,7 @@ readonly class InteractiveIntentFactory
         $violations = $this->validator->validate($intent);
 
         if ($violations->count()) {
-            throw new ValidationFailedException($intent, $violations);
+            throw IntentException::fromViolations($intent, $violations, __METHOD__);
         }
 
         return $intent;

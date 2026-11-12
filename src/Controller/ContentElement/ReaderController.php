@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Controller\ContentElement;
 
 use Contao\ContentModel;
-use Contao\CoreBundle\Cache\EntityCacheTags;
 use Contao\CoreBundle\Controller\ContentElement\AbstractContentElementController;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsContentElement;
 use Contao\CoreBundle\Exception\InternalServerErrorHttpException;
@@ -17,23 +16,15 @@ use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Input;
 use Contao\Template;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
-use HeimrichHannot\FlareBundle\Engine\Intent\Factory\ValidationIntentFactory;
-use HeimrichHannot\FlareBundle\Engine\Factory\EngineFactory;
-use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
-use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
+use HeimrichHannot\FlareBundle\Contao\Reader\ReaderResolver;
 use HeimrichHannot\FlareBundle\Event\ReaderRenderEvent;
-use HeimrichHannot\FlareBundle\Exception\FlareException;
-use HeimrichHannot\FlareBundle\Exception\ViewException;
-use HeimrichHannot\FlareBundle\Contao\Factory\ListCompoundBuilderFactory;
+use HeimrichHannot\FlareBundle\List\Entry\EntryTaggerInterface;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Reader\Factory\ReaderRequestAttributeFactory;
 use HeimrichHannot\FlareBundle\Reader\ReaderPageMeta;
-use HeimrichHannot\FlareBundle\Reader\Resolver\ReaderRequestAttributeResolver;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Error\RuntimeError;
@@ -44,18 +35,13 @@ final class ReaderController extends AbstractContentElementController
     public const TYPE = 'flare_reader';
 
     public function __construct(
-        private readonly EventDispatcherInterface       $eventDispatcher,
-        private readonly EngineFactory                  $engineFactory,
-        private readonly EntityCacheTags                $entityCacheTags,
-        private readonly KernelInterface                $kernel,
-        private readonly ListCompoundBuilderFactory     $listFactory,
-        private readonly LoggerInterface                $logger,
-        private readonly ReaderRequestAttributeFactory  $attributeFactory,
-        private readonly ReaderRequestAttributeResolver $attributeResolver,
-        private readonly ResponseContextAccessor        $responseContextAccessor,
-        private readonly ScopeMatcher                   $scopeMatcher,
-        private readonly TranslatorInterface            $translator,
-        private readonly ValidationIntentFactory        $validationIntentFactory,
+        private readonly EntryTaggerInterface     $entryTagger,
+        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly LoggerInterface          $logger,
+        private readonly ReaderResolver           $readerResolver,
+        private readonly ResponseContextAccessor  $responseContextAccessor,
+        private readonly ScopeMatcher             $scopeMatcher,
+        private readonly TranslatorInterface      $translator,
     ) {}
 
     /**
@@ -71,112 +57,65 @@ final class ReaderController extends AbstractContentElementController
     /**
      * @throws \Exception
      */
-    protected function getErrorResponse(?\Exception $e = null): Response
-    {
-        if (isset($e) && $this->kernel->isDebug()) {
-            throw $e;
-        }
-        /** @noinspection PhpTranslationKeyInspection, PhpTranslationDomainInspection */
-        $msg = $this->translator->trans('ERR.flare.listview.malconfigured', [], 'contao_modules');
-        return new Response($msg, status: Response::HTTP_INTERNAL_SERVER_ERROR);
-    }
-
-    /**
-     * @throws \Exception
-     */
     protected function getFrontendResponse(Template $template, ContentModel $contentModel, Request $request): Response
     {
-        if (!$autoItem = Input::get('auto_item')) {
+        // Marks the auto-item as used; the resolver reads it on its own.
+        $autoItem = Input::get('auto_item');
+
+        if ($autoItem === null || $autoItem === '') {
             throw $this->createNotFoundException('No auto_item supplied.');
         }
 
-        try
-        {
-            $listModel = $contentModel->getRelated(ContentContainer::FIELD_LIST);
+        $resolution = $this->readerResolver->resolve($contentModel);
 
-            if (!$listModel instanceof ListModel) {
-                throw new FlareException('No list model found.', method: __METHOD__);
-            }
-        }
-        catch (\Exception $e)
-        {
-            $this->logger->error(\sprintf('%s (tl_content.id=%s)', $e->getMessage(), $contentModel->id),
-                ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
-
-            return $this->getErrorResponse($e);
-        }
-
-        $errData = [
-            "tl_content.id={$contentModel->id}",
-            "tl_flare_list.id={$listModel->id}",
-        ];
-
-        try
-        {
-            $list = $this->listFactory->create($listModel)->build();
-
-            $validationIntent = $this->validationIntentFactory->createFromContent(
-                contentModel: $contentModel,
-                list: $list,
-            );
-
-            $engine = $this->engineFactory->createEngine($validationIntent, $list);
-
-            $validationView = $engine->createView();
-
-            if (!$validationView instanceof ValidationView) {
-                throw ViewException::create(ValidationView::class, $validationView, method: __METHOD__);
-            }
-
-            if (!$autoItemModel = $validationView->getModelByAutoItem($autoItem)) {
-                throw $this->createNotFoundException('No model found for the given auto_item.');
-            }
-
-            $errData[] = "{$autoItemModel::getTable()}.id={$autoItemModel->id}";
-
-            $attribute = $this->attributeFactory->createFromModels($autoItemModel, $listModel);
-            $this->attributeResolver->store($attribute, $request);
-            $this->entityCacheTags->tagWith($autoItemModel);
-
-            /** @var ReaderPageMetaEvent $pageMetaEvent $pageMetaEvent */
-            $pageMetaEvent = $this->eventDispatcher->dispatch(new ReaderPageMetaEvent(
-                contentModel: $contentModel,
-                displayModel: $autoItemModel,
-                list: $list,
-            ));
-            $pageMeta = $pageMetaEvent->pageMeta;
-        }
-        catch (FlareException $e)
+        if ($e = $resolution->failure)
         {
             // A failed list (a broken filter element or fixed value) arrives here as a FilterException: membership
             // cannot be decided, so the reader answers 5xx, never 404 or the entry.
-            $this->logger->error(\sprintf('%s (%s)', $e->getMessage(), \implode(', ', $errData)),
-                ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e]);
+            $this->logger->error(
+                \sprintf(
+                    '%s (tl_content.id=%s, %s)',
+                    $e->getMessage(),
+                    $contentModel->id,
+                    $resolution->list->source ?? 'list not built',
+                ),
+                ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e],
+            );
 
             throw new InternalServerErrorHttpException($e->getMessage(), $e);
         }
 
+        if (!$entry = $resolution->entry) {
+            throw $this->createNotFoundException('No entry found for the given auto_item.');
+        }
+
+        \assert(
+            $resolution->list && $resolution->intent && $resolution->engine && $resolution->view,
+            'A resolution with an entry holds everything built on the way.',
+        );
+
+        $this->entryTagger->tag($entry);
+
         $event = $this->eventDispatcher->dispatch(
             new ReaderRenderEvent(
                 contentModel: $contentModel,
-                intent: $validationIntent,
-                displayModel: $autoItemModel,
-                list: $list,
-                pageMeta: $pageMeta,
+                intent: $resolution->intent,
+                entry: $entry,
+                list: $resolution->list,
                 template: $template,
             )
         );
 
         $template = $event->getTemplate();
         $data = $template->getData();
-        $data['flare'] = $engine;
-        $data['flare_reader'] = $validationView;
-        $data['model'] = $autoItemModel;
+        $data['flare'] = $resolution->engine;
+        $data['flare_reader'] = $resolution->view;
+        $data['entry'] = $entry;
         $data['content_model'] = $contentModel;
         $data['headline'] = Str::normalizeHeadline($contentModel->headline ?: null);
         $template->setData($data);
 
-        $this->applyPageMeta($event->pageMeta);
+        $this->applyPageMeta($resolution->getPageMeta());
 
         try
         {
@@ -196,8 +135,12 @@ final class ReaderController extends AbstractContentElementController
         }
     }
 
-    public function applyPageMeta(ReaderPageMeta $pageMeta, ?HtmlHeadBag $htmlHeadBag = null): void
+    public function applyPageMeta(?ReaderPageMeta $pageMeta, ?HtmlHeadBag $htmlHeadBag = null): void
     {
+        if (!$pageMeta) {
+            return;
+        }
+
         $htmlHeadBag ??= $this->responseContextAccessor->getResponseContext()?->get(HtmlHeadBag::class);
 
         if (!$htmlHeadBag) {

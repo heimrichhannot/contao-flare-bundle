@@ -6,12 +6,13 @@ namespace HeimrichHannot\FlareBundle\Engine\Projector;
 
 use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
+use HeimrichHannot\FlareBundle\Engine\ListEntry\EntryCollector;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
+use HeimrichHannot\FlareBundle\List\Entry\EntryLookupInterface;
 use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Reader\BackLink;
-use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
 
 /**
  * @implements ProjectorInterface<ValidationView>
@@ -27,24 +28,20 @@ class ValidationProjector extends AbstractProjector
     {
         \assert($intent instanceof ValidationIntent, '$intent must be an instance of ValidationIntent');
 
-        $readerUrlConfig = $intent->createReaderUrlConfig();
-        $autoItemField = $readerUrlConfig->autoItemField ?? $intent->autoItemField;
-
         $loader = $this->createLoader(new ValidationLoaderConfig(
             list: $list,
             intent: $intent,
-            autoItemField: $autoItemField,
+            autoItemField: $intent->autoItemField,
         ));
 
+        $entryCollectorFactory = $this->getEntryCollectorFactory();
+        $readerUrlConfig = $intent->createReaderUrlConfig();
         $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($readerUrlConfig);
+        $collector = $entryCollectorFactory->create($list, $intent, $readerUrlGenerator);
+        $lookup = $entryCollectorFactory->createLookup($list, $intent, $readerUrlGenerator);
+        $backLink = $intent->createBackLink();
 
-        return $this->createView(
-            loader: $loader,
-            readerUrlGenerator: $readerUrlGenerator,
-            table: $list->dc,
-            autoItemField: $autoItemField,
-            backLink: $intent->createBackLink(),
-        );
+        return $this->createView(loader: $loader, collector: $collector, lookup: $lookup, backLink: $backLink);
     }
 
     protected function createLoader(ValidationLoaderConfig $config): ValidationLoaderInterface
@@ -53,17 +50,15 @@ class ValidationProjector extends AbstractProjector
     }
 
     protected function createView(
-        ValidationLoaderInterface   $loader,
-        ReaderUrlGeneratorInterface $readerUrlGenerator,
-        string                      $table,
-        string                      $autoItemField,
-        ?BackLink                   $backLink = null,
+        ValidationLoaderInterface $loader,
+        EntryCollector            $collector,
+        EntryLookupInterface      $lookup,
+        ?BackLink                 $backLink = null,
     ): ValidationView {
         return new ValidationView(
             loader: $loader,
-            readerUrlGenerator: $readerUrlGenerator,
-            table: $table,
-            autoItemField: $autoItemField,
+            collector: $collector,
+            lookup: $lookup,
             backLink: $backLink,
         );
     }

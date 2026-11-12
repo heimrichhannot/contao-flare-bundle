@@ -33,8 +33,12 @@ ContentElement Controller
       → Intent (Interactive / Validation / Aggregation) — src/Engine/Intent/
         → Loader (src/Engine/Loader/) + Mods (src/Engine/Mod/)
           → Projector (Interactive / Validation / Aggregation / Export) — orchestrates query + filter execution
-            → View (formats data for Twig template)
+            → View (entries for Twig: src/List/Entry/)
 ```
+
+The reader and the breadcrumb take this path through `Contao\Reader\ReaderResolver`, once per request and auto-item;
+the views hand out `Entry` objects, never Contao models (a model is made only at the Contao boundary,
+`Contao\ListEntry\EntryModelFactory`).
 
 Filter execution inside the projector: the `FormHarness` decodes submitted form data per filter control into value
 objects; `ListQueryDirector` (`src/Query/Executor/`) picks each filter's value (with a control: the form's value;
@@ -42,15 +46,18 @@ without: the fixed `FilterCompound::$value`), creates the `FilterEffect` via
 `FilterEffectFactory::create(ElementContext, ?value)` (the element's `buildEffect($builder, $context, $value)` adds
 predicates) and runs each predicate into a `FilterConditionsBuilder`. A
 filter whose element cannot be built (with or without a control) — required element config is required by the
-element's schema —, a stored control that cannot be resolved or whose config is broken, a control that cannot build
-its form (`Form/Factory/FilterFormBuilderFactory`: a `buildForm()` failure, a `FlareException` from a `FilterControlBuildFormEvent`
-listener, an alias that is no valid form name), a broken fixed value, a `FlareException` from a `FilterCollectedEvent`
-listener, or two published filters sharing an alias fail the whole list (`list.failed` in the view, HTTP 500 in the
-reader); an unreadable initial value only drops the value (warning). These failures win over an invalid submission,
-which shows no entries and runs no COUNT. `abort()` means only "legitimately matches nothing". Failures are
-recorded as `FilterFailure`s (`src/List/`) on the `ListCompound`. A controlled filter that fails with a non-null value
-is retried once with value null: success drops only the value (warning); if the retry fails too (or the value was
-already null) the element config is broken and the list fails closed. `\Error`s escape unwrapped.
+element's schema —, a stored control that cannot be resolved or whose config is broken, a controlled filter whose
+alias is no valid form name, a broken fixed value, a `FlareException` from a `FilterCollectedEvent` listener, or two
+published filters sharing an alias fail the whole list: `Contao\Factory\FilterCollector` records them as
+`FilterFailure`s (`src/List/`) on `ListCompound::$failures`, and a list with failures is never queried
+(`list.failed` in the view, HTTP 500 in the reader). The failures only the form harness detects
+(`Form/Factory/FilterFormBuilderFactory`) — a control's `buildForm()` throws, or a `FilterControlBuildFormEvent`
+listener throws a `FlareException` — fail the list view only (`list.failed`); the reader builds no form, so they do
+not affect it. An unreadable initial value only drops the value (warning). These failures win over an invalid
+submission, which shows no entries and runs no COUNT. `abort()` means only "legitimately matches nothing".
+A controlled filter that fails with a non-null value is retried once with value null: success drops only the value
+(warning); if the retry fails too (or the value was already null) the element config is broken and the list fails
+closed. `\Error`s escape unwrapped.
 `UndefinedConfigKeyError` (an `\Error`, thrown when a component reads a config key its schema does not define) is a
 programming error: never retried, never degraded into a skipped filter or a failed list — it fails the request. So is a
 filter value of the wrong class (`ValueClassMismatchError`, an `\Error` thrown by `FilterCompound`'s constructor, so by
@@ -67,9 +74,10 @@ other exceptions in `src/Exception/` are thrown by the framework only; userland 
 (element `buildEffect()`, control `buildForm()`/`hydrate()`/`decode()`) catches any `\Exception` and normalizes it
 with `FilterException::wrap()`; a non-`FilterException` is unexpected: logged as an error. Value providers are
 treated alike (`Contao\Factory\FilterCompoundFactory` wraps their exceptions; a non-`FilterException` `FlareException`,
-a wiring error, passes unwrapped). A control's `buildForm()` failure fails the list (error, rethrown by the failed view
-in debug mode); a `hydrate()` failure mounts the filter without its initial value (warning; an unexpected exception is
-rethrown in debug mode); a `decode()` failure drops the value and puts a form error on a submitted field.
+a wiring error, passes unwrapped). A control's `buildForm()` failure fails the list view (error, rethrown by the failed
+view in debug mode; the reader is unaffected); a `hydrate()` failure mounts the filter without its initial value
+(warning; an unexpected exception is rethrown in debug mode); a `decode()` failure drops the value and puts a form
+error on a submitted field.
 
 Note: Intents and Projectors/Views are separate axes — (Export Intent/Projector/View are currently not implemented).
 
@@ -85,6 +93,26 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   because it is assembled from bound components — driver and filter compounds — ready to run), `ListCompoundBuilder`
   (build lifecycle: driver's `buildList()` hook → `ListDriverBuildListEvent` → config assembly → schema resolution),
   `BaseListOptions` (framework-owned base schema for tl_flare_list columns)
+- `src/List/Entry/` — the list's runtime data, Contao-free (as `Filter\Value\` is the filter's): `Entry` (one row
+  as delivered, `EntryMeta $meta`, attachments; `__get()` resolves the reserved `to` (the reader URL from the
+  collection's linker), then a row column, an attachment of the entry, one of its collection, else
+  `UndefinedEntryKeyError`; `row` and `meta` are declared properties, so a column named `to`/`row`/`meta` stays
+  reachable as `entry.row.<name>`; `__isset()` is true for a null column), `EntryMeta` (`?ModelRef $modelRef` =
+  table + id, set for every DC-table row; new metadata goes here, never into the reserved names), `EntryCollection`
+  (`IteratorAggregate` + `Countable`, a list, not keyed by id; `forTable()` throws `MissingEntryIdError` for a row
+  without `id`; `column()`; two-phase `attach($name, $load)`: phase 1 once per collection on the first read, its
+  picker per entry; `seal()` after the entries event) and the ports `EntryLookupInterface` (`lookup(mixed)`: an id →
+  `?Entry`, a list of ids → `EntryCollection`) and `EntryTaggerInterface`. Collisions (reserved name, column,
+  attached twice, entry vs. collection) and any `attach()` after sealing throw `\Error`s
+- `src/Engine/ListEntry/` — `EntryCollector` (rows → `EntryCollection::forTable($list->dc)` with the reader linker →
+  `ListDriverEntriesEvent`, only for a non-empty collection → seal) and `EntryLookup` (member entries by id by the
+  reader's rules — fixed filter values, no form values — in one query without pagination, in the given order,
+  duplicates collapsed, memoized per id list; each result is its own sealed collection with its own entries event;
+  members are cache-tagged; `lookup([])` queries nothing; an id is a positive int or its canonical string;
+  `null`/`''`/`0`/`'0'` count as no id, anything else throws `InvalidLookupIdError`). Neither is a service: `Engine/Factory/EntryCollectorFactory`
+  creates both (the lookup as a `LazyEntryLookup`, built on its first call). The views use them lazily: `InteractiveView::getEntries()` (`flare_list.entries`),
+  `ValidationView::getEntryByAutoItem()` (memoized, misses too) and `ValidationView::lookup()`
+  (`flare_reader.lookup()`); a listener gets the lookup only as the second argument of phase 1
 - `src/Filter/` — `FilterCompound` DTO (`ElementBinding` = element + type + element config `elm_*` + value class,
   optional `ControlBinding` = control + type + control config `ctl_*`, `?ValueInterface $value`); each config is an
   immutable `ComponentConfig` (`src/Config/`, `get()` throws `UndefinedConfigKeyError` for an undefined key), elements
@@ -138,18 +166,45 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   through `fingerprint()` (`ValueObjectContainmentTest` enforces this by reflection). Deliberately not services
   (excluded in `config/services.yaml`)
 - `src/Contao/` — the Contao-specific backend code. DTOs / domain classes sit directly in `Contao/` (`BackendModule`,
-  `DcaContext`, `CollectedFilters`; also directly in `Inspection/` and `PtableInference/`), Symfony services in
-  subfolders (`config/services.yaml` has its own `Contao` block; `DataContainer/Builder` is the one excluded
-  subfolder): `DataContainer/` (table classes `ContentContainer`/`FilterContainer`/`ListContainer`,
+  `DcaContext`, `CollectedFilters`, `ReaderResolution`; also directly in `Inspection/` and `PtableInference/`),
+  Symfony services in subfolders (`config/services.yaml` has its own `Contao` block; `DataContainer/Builder` is the
+  one excluded subfolder): `DataContainer/` (table classes `ContentContainer`/`FilterContainer`/`ListContainer`,
   `BackendElementContextFactory`, the DCA `Builder/`), `Inspection/` (see the inspector above), `Hook/` (Contao hooks,
-  named `*Hook`), `Callback/` (DCA callbacks per table), `PtableInference/` (parent-table inference) and `Factory/`.
+  named `*Hook`), `Callback/` (DCA callbacks per table), `PtableInference/` (parent-table inference), `ListEntry/` and
+  `Reader/` (both below) and `Factory/`.
   All processing of `FilterModel` into `FilterCompound` lives here: `Factory/FilterCompoundFactory::create(FilterModel)`
   (on top of the model-free core `FilterCompoundFactory`, owning value providers and the stored-value failure
   semantics), `Factory/FilterCollector` (a list's published filter rows) and
   `Factory/ListCompoundBuilderFactory::create(ListModel)`. Exception, until their own refactor: `ListCompound`,
   `ListCompoundBuilder`, `ListCompoundFactory` and `BaseListOptions` still take a `ListModel`. Hooks and callbacks of
   optional integrations stay in `src/Integration/`
-- `src/Reader/` — reader/detail-page URL generation (`ReaderUrlGenerator`)
+- `src/Contao/ListEntry/` — entries at the Contao boundary: `EntryModelFactory::create(Entry): ?Model` (the one place
+  an entry becomes a model, memoized per entry: the registry's instance for its record, else a new model from the row
+  restricted to the table's columns — never registered, `save()` throws (`preventSaving()`); `null` without a model
+  class; `MissingModelRefError` without `modelRef`; for Contao APIs that need
+  a model, e.g. the News/Events schema.org listeners), `EntryRelationResolver` (`flare_related(entry, column)`: the
+  DCA relation like `Model::getRelated()`, memoized per entry and column, no membership check;
+  `UndefinedRelationError` for a column without relation) and `EntryCacheTagger` (`EntryTaggerInterface`:
+  `contao.db.<table>.<id>` response tags; no-op without FOS's response tagger)
+- `src/Contao/Reader/` + `Contao/ReaderResolution` — the request-scoped reader. `ReaderResolver` (`ResetInterface`)
+  is the only path from a reader element and the auto-item to its entry (list → intent → engine → view → entry),
+  memoized per `tl_content.id` + auto-item; a `FlareException` (also an `IntentException` for an intent that violates
+  its constraints) is stored as the resolution's `failure` (anything else propagates, unmemoized); without an
+  auto-item nothing is built or queried. Only the stored value itself finds the entry (`ValidationLoader` compares the
+  fetched value strictly: no numeric casts, collations or trailing spaces of the database → 404). `resolve(ContentModel)` for
+  `ReaderController` (failure → 5xx, no entry → 404), `resolveForPage()` for `Contao/Hook/BreadcrumbHook` (no
+  resolution, a failure or no entry → items unchanged; an unexpected exception is logged, rethrown in debug mode; the
+  title is escaped without insert tags). The cache lives in the service, not in request attributes (a
+  fragment's sub-request never hands them back). `ReaderElementFinder` (discovery: the single visible top-level
+  `flare_reader` element in the page's visible articles; the page from the main request's `pageModel`, else 4.13's
+  `$GLOBALS['objPage']`; none or several → no reader; preview mode not honored) and `AutoItemReader`
+  (`Input::get('auto_item', false, true)`: input-encoded, not marked as used — `ReaderController` marks it; the
+  resolver reads it once per request). `ReaderResolution`: list, intent, engine, view, `?Entry`,
+  `?FlareException $failure`, and `getPageMeta()` (dispatches `ReaderPageMetaEvent` once, so the breadcrumb title
+  equals the `<title>`)
+- `src/Reader/` — reader/detail-page URL generation (`ReaderUrlGenerator::generate(Entry)`: the auto-item field of
+  `entry.row`, the stored value with Contao's input encoding reverted; only the router percent-encodes), `BackLink`,
+  `ReaderPageMeta`. No request attribute any more: the reader's state lives in `Contao\Reader\ReaderResolver`
 - `src/Integration/` — optional integrations (Codefog Tags, Terminal42 ChangeLanguage), wired via `config/integrations/*.yaml`
 - `src/EventListener/NamedDispatch/` — re-dispatches base events under dynamic names (see Event system below)
 
@@ -180,7 +235,12 @@ concrete `DcaBuilder` is created and applied to `$GLOBALS['TL_DCA']` by the `loa
 `flare.list_driver.{type}.transformers` (`ListDriverConfigureTransformersEvent`),
 `flare.filter_element.{type}.dca` (`FilterElementBuildDcaEvent`), `flare.filter_control.{type}.dca`
 (`FilterControlBuildDcaEvent`, builder scoped to the control segment), `flare.list_driver.{type}.dca`
-(`ListDriverBuildDcaEvent`), etc., implemented by the listeners in `src/EventListener/NamedDispatch/`). All events
+(`ListDriverBuildDcaEvent`), `flare.list_driver.{type}.entries` (`ListDriverEntriesEvent`: once per non-empty entry
+collection — a list page, a reader's entry, a lookup's members — before it is sealed; `{type}` is
+`ListCompound::$type`; `$event->attach($name, $load)` proxies the collection's two-phase `attach()` and hands phase 1
+the list's `EntryLookupInterface`), etc., implemented by the listeners in `src/EventListener/NamedDispatch/`). The
+reader events (`ReaderPageMetaEvent`, `ReaderRenderEvent`, `ReaderSchemaOrgEvent`) and `ReaderUrlGeneratedEvent`
+carry an `Entry $entry`, no model; the page meta changes only in `ReaderPageMetaEvent`. All events
 are in `src/Event/`. Naming: a hook event is `{Component}{Hook}Event` after the hook it follows (`buildForm()` →
 `FilterControlBuildFormEvent`); the named event is `flare.{component}.{type}.{suffix}`, where `{type}` is always
 that component's registered type and the suffix is short (`dca`, `transformers`) unless it would be unclear

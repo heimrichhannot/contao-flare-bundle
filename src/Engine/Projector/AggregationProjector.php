@@ -25,10 +25,11 @@ class AggregationProjector extends AbstractProjector
     {
         \assert($intent instanceof AggregationIntent, '$intent must be an instance of AggregationIntent');
 
+        $filterValues = $intent->getFilterValues();
         $loader = $this->createLoader(new AggregationLoaderConfig(
             list: $list,
             intent: $intent,
-            filterValues: $intent->getFilterValues(),
+            filterValues: $filterValues,
         ));
 
         return $this->createView($loader);

@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Twig\Runtime;
 
+use Contao\ContentModel;
 use Contao\Controller;
-use Contao\FilesModel;
+use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\FrontendTemplate;
 use Contao\Model;
 use Contao\Model\Collection;
-use Contao\StringUtil;
+use HeimrichHannot\FlareBundle\Contao\ListEntry\EntryRelationResolver;
 use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Event\ReaderSchemaOrgEvent;
+use HeimrichHannot\FlareBundle\Exception\MissingModelRefError;
+use HeimrichHannot\FlareBundle\Exception\UndefinedRelationError;
+use HeimrichHannot\FlareBundle\List\Entry\Entry;
 use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
 use HeimrichHannot\FlareBundle\Util\CallableWrapper;
@@ -23,8 +27,10 @@ use Twig\Extension\RuntimeExtensionInterface;
 readonly class FlareRuntime implements RuntimeExtensionInterface
 {
     public function __construct(
+        private ContaoFramework          $framework,
         private EventDispatcherInterface $eventDispatcher,
         private ProjectorRegistry        $projectorRegistry,
+        private EntryRelationResolver    $relationResolver,
     ) {}
 
     public function project(ListCompound $list, IntentInterface $intent): ViewInterface
@@ -32,22 +38,30 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
         return $this->projectorRegistry->getProjectorFor($list, $intent)->project($list, $intent);
     }
 
-    public function getTlContent(Model $model): ?callable
+    /**
+     * The content elements of the entry's record as a lazy callable.
+     *
+     * @throws MissingModelRefError for an entry without a modelRef
+     */
+    public function getTlContent(Entry $entry): ?callable
     {
-        $table = $model->getTable();
-        $id = $model->id;
+        $ref = $entry->meta->modelRef ?? throw new MissingModelRefError();
 
-        $text = self::once(static function () use ($table, $id): string {
-            if (!$elm = Model::getClassFromTable('tl_content')::findPublishedByPidAndTable($id, $table))
-            {
+        $framework = $this->framework;
+
+        $text = self::once(static function () use ($framework, $ref): string {
+            $elm = $framework->getAdapter(ContentModel::class)->findPublishedByPidAndTable($ref->id, $ref->table);
+
+            if (!$elm) {
                 return '';
             }
 
+            $controller = $framework->getAdapter(Controller::class);
             $text = '';
 
             while ($elm->next())
             {
-                $text .= Controller::getContentElement($elm->current());
+                $text .= $controller->getContentElement($elm->current());
             }
 
             return $text;
@@ -56,10 +70,22 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
         return new CallableWrapper($text);
     }
 
-    public function getEnclosure(Model|array $entity, ?string $field = null): array
+    /**
+     * The Contao relation of an entry's column, like `Model::getRelated()`: a model for a to-one, a collection for
+     * a to-many relation.
+     *
+     * @throws MissingModelRefError for an entry without a modelRef
+     * @throws UndefinedRelationError for a column without relation
+     */
+    public function getRelated(Entry $entry, string $column): Model|Collection|null
     {
-        if ($entity instanceof Model) {
-            $entity = $entity->row();
+        return $this->relationResolver->resolve($entry, $column);
+    }
+
+    public function getEnclosure(Entry|array $entity, ?string $field = null): array
+    {
+        if ($entity instanceof Entry) {
+            $entity = $entity->row;
         }
 
         $template = new FrontendTemplate();
@@ -70,56 +96,32 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
     }
 
     /**
-     * @deprecated Will be replaced in 0.2 with a solution using the virtual file system.
+     * Without arguments, the reader's `entry` and the list of its `flare` engine are taken from the context; a
+     * list loop's `entry` is no reader entry, so the context only counts when it holds `flare_reader`.
      */
-    public function getEnclosureFiles(Model|array|string|null $enclosed): array
+    public function getSchemaOrg(array $context, ?Entry $entry = null, ?ListCompound $list = null): ?array
     {
-        if ($enclosed instanceof Model) {
-            $enclosed = $enclosed->enclosure ?: null;
+        $inReader = isset($context['flare_reader']);
+
+        if (!$entry && $inReader) {
+            $entry = $context['entry'] ?? null;
         }
 
-        if (\is_string($enclosed)) {
-            $enclosed = StringUtil::deserialize($enclosed, true);
-        }
-
-        if (!$enclosed || !\is_array($enclosed)) {
-            return [];
-        }
-
-        /** @var array $enclosure */
-        $enclosure = $enclosed;
-
-        $files = FilesModel::findMultipleByUuids(\array_values($enclosure));
-
-        if ($files instanceof Collection) {
-            return $files->fetchAll();
-        }
-
-        if (\is_array($files)) {
-            return $files;
-        }
-
-        return [];
-    }
-
-    public function getSchemaOrg(array $context, ?Model $model = null, ?ListCompound $list = null): ?array
-    {
-        $model ??= $context['model'] ?? null;
-        if (!$model instanceof Model) {
+        if (!$entry instanceof Entry) {
             return null;
         }
 
-        if (!$list)
+        if (!$list && $inReader)
         {
             $engine = $context['flare'] ?? null;
-            if (!$engine instanceof Engine) {
-                return null;
-            }
-
-            $list = $engine->getList();
+            $list = $engine instanceof Engine ? $engine->getList() : null;
         }
 
-        $event = $this->eventDispatcher->dispatch(new ReaderSchemaOrgEvent($list, $model));
+        if (!$list) {
+            return null;
+        }
+
+        $event = $this->eventDispatcher->dispatch(new ReaderSchemaOrgEvent($list, $entry));
 
         return $event->data;
     }

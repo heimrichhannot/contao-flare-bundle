@@ -85,9 +85,10 @@ final class InspectedRows
             return null;
         }
 
-        $id = \substr($source, \strlen($prefix));
+        $suffix = \substr($source, \strlen($prefix));
+        $id = \filter_var($suffix, \FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
 
-        return \ctype_digit($id) && $this->has((int) $id) ? (int) $id : null;
+        return $id !== false && $this->has($id) ? $id : null;
     }
 
     public function block(string $alias): void

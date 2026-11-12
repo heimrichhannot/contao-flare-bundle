@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Reader;
 
-use Contao\Model;
+use HeimrichHannot\FlareBundle\List\Entry\Entry;
 
 interface ReaderUrlGeneratorInterface
 {
-    public function generate(Model $model): ?string;
+    /**
+     * The reader URL of $entry, or null without one (e.g. an empty auto-item value).
+     */
+    public function generate(Entry $entry): ?string;
 }

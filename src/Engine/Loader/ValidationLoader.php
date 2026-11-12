@@ -4,90 +4,34 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Loader;
 
-use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
+use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\Query\QueryBuilder;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\SimpleEquationFilterElement;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterCompoundFactory;
 use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
-use HeimrichHannot\FlareBundle\Util\EntryCache;
+use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 
 readonly class ValidationLoader implements ValidationLoaderInterface
 {
-    protected EntryCache $entryCache;
-
     public function __construct(
         private ValidationLoaderConfig $config,
         private FilterCompoundFactory  $filterCompoundFactory,
         private ListQueryDirector      $listQueryDirector,
-    ) {
-        $this->entryCache = new EntryCache($this->config->list->dc);
-    }
-
-    public function getEntryCache(): EntryCache
-    {
-        return $this->entryCache;
-    }
-
-    /**
-     * @throws FlareException
-     */
-    public function fetchEntryById(int $id): ?array
-    {
-        if ($this->entryCache->has($id))
-        {
-            return $this->entryCache->get($id);
-        }
-
-        try
-        {
-            $idDefinition = $this->filterCompoundFactory->create(
-                element: SimpleEquationFilterElement::TYPE,
-                alias: '_.id',
-                config: [
-                    'left' => 'id',
-                    'operator' => SqlEquationOperator::EQUALS,
-                    'right' => $id,
-                ],
-            );
-
-            $list = $this->config->list->withFilter($idDefinition);
-
-            $entry = $this->executeQuery($list, $this->config->intent);
-
-            $this->entryCache->add('id:' . $id, $entry);
-
-            if (($autoItemField = $this->config->autoItemField)
-                && ($autoItem = $entry[$autoItemField] ?? null))
-            {
-                $this->entryCache->add('autoItem:' . $autoItem, $entry);
-            }
-
-            return $entry;
-        }
-        catch (FlareException $e)
-        {
-            throw $e;
-        }
-        catch (\Exception $e)
-        {
-            throw new FlareException($e->getMessage(), $e->getCode(), $e, method: __METHOD__);
-        }
-    }
+    ) {}
 
     /**
      * @throws FlareException
      */
     public function fetchEntryByAutoItem(string $autoItem): ?array
     {
-        if (!$this->config->autoItemField || !$autoItem) {
+        // '0' is an auto-item like any other: the reader URL generator links it.
+        if (!$this->config->autoItemField || $autoItem === '') {
             return null;
-        }
-
-        if ($entry = $this->entryCache->get('autoItem:' . $autoItem)) {
-            return $entry;
         }
 
         try
@@ -102,17 +46,23 @@ readonly class ValidationLoader implements ValidationLoaderInterface
                 ],
             );
 
-            $list = $this->config->list->withFilter($autoItemDefinition);
+            $qb = $this->createQueryBuilder($this->config->list->withFilter($autoItemDefinition));
 
-            $entry = $this->executeQuery($list, $this->config->intent);
-
-            $this->entryCache->add('autoItem:' . $autoItem, $entry);
-
-            if ($id = $entry['id'] ?? null) {
-                $this->entryCache->add('id:' . $id, $entry);
+            if (!$qb) {
+                return null;
             }
 
-            return $entry;
+            $result = $qb->executeQuery();
+            $row = $result->fetchAssociative();
+            $result->free();
+
+            // The database compares by its own rules: a numeric cast (MySQL: `12abc` = 12), a case-insensitive
+            // collation, trailing spaces. Only the stored value itself, the canonical auto-item, finds the entry.
+            if ($row === false || (string) ($row[$this->config->autoItemField] ?? '') !== $autoItem) {
+                return null;
+            }
+
+            return $row;
         }
         catch (FlareException $e)
         {
@@ -125,26 +75,49 @@ readonly class ValidationLoader implements ValidationLoaderInterface
     }
 
     /**
-     * @throws \Exception
+     * @param list<int> $ids
+     * @return list<array<string, mixed>>
+     *
+     * @throws FlareException
      */
-    private function executeQuery(ListCompound $list, ValidationIntent $intent): array
+    public function fetchEntriesByIds(array $ids): array
     {
-        $qb = $this->listQueryDirector->createQueryBuilder(new ListQueryConfig(
-            list: $list,
-            intent: $intent,
-            filterValues: $intent->getFilterValues(),
-        ));
+        try
+        {
+            $qb = $this->createQueryBuilder($this->config->list);
 
-        if (!$qb) {
-            return [];
+            if (!$qb) {
+                return [];
+            }
+
+            $qb->andWhere($qb->expr()->in(TableAliasRegistry::ALIAS_MAIN . '.id', ':flare_lookup_ids'))
+                ->setParameter('flare_lookup_ids', $ids, ArrayParameterType::INTEGER)
+                ->setFirstResult(0)
+                ->setMaxResults(null);
+
+            return $qb->executeQuery()->fetchAllAssociative();
         }
+        catch (FlareException $e)
+        {
+            throw $e;
+        }
+        catch (\Exception $e)
+        {
+            throw new FlareException($e->getMessage(), $e->getCode(), $e, method: __METHOD__);
+        }
+    }
 
-        $result = $qb->executeQuery();
-
-        $entry = $result->fetchAssociative();
-
-        $result->free();
-
-        return $entry ?: [];
+    /**
+     * The query of $list by the reader's rules: the intent's filter values, no form values; null if a filter aborts.
+     *
+     * @throws FlareException|FilterException
+     */
+    private function createQueryBuilder(ListCompound $list): ?QueryBuilder
+    {
+        return $this->listQueryDirector->createQueryBuilder(new ListQueryConfig(
+            list: $list,
+            intent: $this->config->intent,
+            filterValues: $this->config->intent->getFilterValues(),
+        ));
     }
 }

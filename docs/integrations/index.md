@@ -22,8 +22,10 @@ Adds the **Events** list type (`flare_events`) for `tl_calendar_events`, joining
 the archive table. Like the News type, it adds a `published` filter by default. On top of the
 regular list behavior, the calendar integration provides:
 
-- An event-aware interactive view (`InteractiveEventsView`) whose `getEntriesGrouped()` groups
-  entries by date, expanding multi-day and recurring events onto each date they occur.
+- An event-aware interactive view (`InteractiveEventsView`) whose `getEntriesGrouped()` returns the
+  page's [entries](../templating.mdx#entries) grouped by date (an array of `Entry` lists keyed by
+  the date), expanding multi-day and recurring events onto each date they occur: such an event is
+  one entry per occurrence, so entries of one page may share an `id`.
 - The **Calendar time window** filter element (`flare_calendar_current`) for filtering events by
   a date range that respects recurring events.
 - Reader page-meta support for event detail pages.

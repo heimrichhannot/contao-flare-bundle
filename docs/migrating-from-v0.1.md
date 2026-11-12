@@ -162,12 +162,14 @@ Backend changes in the filter form:
   fallback in validation.
 - **Failed lists.** A broken filter element (with or without a control, including a missing required setting such
   as the target field), a stored control that no longer exists (e.g. of an uninstalled bundle) or whose config is
-  broken, a control that cannot build its form field, a broken fixed value, or two
-  published filters sharing an alias make the list *fail* instead of silently dropping or replacing the filter: the list view renders the `list.failed` message (HTTP 200), and a reader of such a list
-  answers 500. **Rename v0.1 aliases (`formAlias`) of filters with a control that contain a dot or start with a
-  hyphen:** an alias names the filter's form field and must be a valid form name (letters a–z, digits, `_`, `-` and
-  `:`, not starting with `-` or `:`); such a filter now fails its list, and the backend no longer saves such an
-  alias. A controlled filter that fails with a value is retried once without it: if that works only the value is dropped (warning logged); if it fails too, the element config is broken and the list fails closed like a fixed filter. Custom
+  broken, a broken fixed value, or two published filters sharing an alias make the list *fail* instead of silently
+  dropping or replacing the filter: the list view renders the `list.failed` message (HTTP 200), and a reader of such
+  a list answers 500. A control that cannot build its form field — its `buildForm()` throws, or a
+  `FilterControlBuildFormEvent` listener throws a `FlareException` — fails the list view the same way, but not the
+  reader, which builds no form. **Rename v0.1 aliases (`formAlias`) of filters with a control that contain a dot or
+  start with a hyphen:** an alias names the filter's form field and must be a valid form name (letters a–z, digits,
+  `_`, `-` and `:`, not starting with `-` or `:`); such a filter now fails its list — the list view and its reader,
+  which answers 500 —, and the backend no longer saves such an alias. A controlled filter that fails with a value is retried once without it: if that works only the value is dropped (warning logged); if it fails too, the element config is broken and the list fails closed like a fixed filter. Custom
   list templates that replace `flare_listview` should check `flare_list.failed`. An unreadable initial value
   only drops the value; the control stays. The backend marks each filter issue on the filter's row, edit form
   and above the filter list: programming error (bug), duplicate alias (copy-x), broken (bone-fracture) and

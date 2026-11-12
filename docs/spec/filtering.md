@@ -158,7 +158,8 @@ Failures follow the two scopes of a filter: the element config, a stored control
 | A filter's stored **control** cannot be built — its `control` names no control registered for the element's value class (e.g. one of an uninstalled bundle), or its control config is broken | **Fail closed:** the editor chose the control, so the filter must not apply without it; error logged |
 | A controlled filter's **initial value** is unreadable (any `FilterException` from the value provider) | **Fail open:** the control is kept, the value dropped; warning logged |
 | A **controlled filter fails at query time with a non-null value** | Retried **once with value `null`**. Success: only the value is dropped (warning). Failure, or the value was already `null`: the element config is broken and bounds the whole list — fail closed |
-| A control **cannot build its form** — `buildForm()` throws, a `FilterControlBuildFormEvent` listener throws a `FlareException`, or the filter's alias is no valid form name | **Fail closed:** the list fails; the form still renders the other filters; error logged |
+| A control **cannot build its form** — `buildForm()` throws, or a `FilterControlBuildFormEvent` listener throws a `FlareException` | **Fail closed in the list view:** the list fails; the form still renders the other filters; error logged. **The reader is unaffected:** it builds no form and renders its entry |
+| A controlled filter's **alias is no valid form name** (letters a–z, digits, `_`, `-` and `:`, not starting with `-` or `:`) | **Fail closed:** recorded as a list failure when the filter is created; the list fails, also in the reader (500); error logged |
 | A control's **`hydrate()`** throws | **Fail open:** the filter is mounted without its initial value; warning logged |
 | A control's **`decode()`** throws | The filter contributes no value. A **submitted** field gets an "invalid value" form error, so the form is invalid like any other invalid input and the list renders empty; a failed **initial** value is only dropped |
 
@@ -176,7 +177,9 @@ A **failed list is not an empty list:**
 - **List view:** the view exposes `flare_list.failed`; the template renders the translated `list.failed`
   message ("the list could not be created") instead of entries, empty-result text and pagination. The HTTP
   status stays **200**; the filter form may still render.
-- **Reader:** membership cannot be decided, so the entry is not rendered and the reader answers **500**.
+- **Reader:** membership cannot be decided, so the entry is not rendered and the reader answers **500**. This holds
+  for every failure recorded while the list was built; a control that cannot build its form fails only the list view,
+  because the reader builds no form.
 - **Debug mode** rethrows the exception.
 
 `AbortFilteringException` keeps meaning "this filter legitimately matches nothing".

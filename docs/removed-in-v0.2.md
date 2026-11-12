@@ -68,6 +68,22 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
   string/model forms of `::add()` — `add()` takes a `ChoiceObjectInterface` (`ContaoModelChoice`, `ValueChoice`)
 - The `flare.choices_builder` attribute on mounted filter form fields
 - `BoolBinaryChoices::NULL_FALSE` — migrated to `TRUE_FALSE`
+- `Engine\View\HandlesModelsTrait` and `Engine\View\LinksToReaderTrait` — the views hand out
+  [entries](./templating.mdx#entries) (`List\Entry\Entry`), no Contao models:
+
+  | Removed | Replacement |
+  |---|---|
+  | `InteractiveView::getModels()`, `InteractiveView::getModel($id)` | the entries of `InteractiveView::getEntries()`; a model only where a Contao API needs one, through `Contao\ListEntry\EntryModelFactory` (see [Enriching Entries](./dev/entries.md#8-contao-apis-that-need-a-model)) |
+  | `ValidationView::getModel($id)`, `ValidationView::getEntry($id)` | `ValidationView::lookup($id)` (membership in the list, by the reader's rules) |
+  | `ValidationView::getModelByAutoItem($autoItem)` | `ValidationView::getEntryByAutoItem($autoItem)`, which now returns an `Entry` |
+  | `InteractiveView::to()`, `ValidationView::to()` | `Entry::to()` of an entry, or of a lookup's result |
+
+- `Reader\ReaderRequestAttribute`, `Reader\Factory\ReaderRequestAttributeFactory` and
+  `Reader\Resolver\ReaderRequestAttributeResolver` — the reader's state lives in the request-scoped
+  `Contao\Reader\ReaderResolver`, shared by the reader and the breadcrumb
+- `Util\EntryCache`
+- `ValidationLoader::fetchEntryById()` (also on `ValidationLoaderInterface`) — `fetchEntriesByIds()` loads members
+  by id
 
 ## Contracts
 
@@ -97,6 +113,11 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - `FilterElementBuildingEvent` and `FilterElementBuiltEvent` (v0.2 development only) — and with them
   `FilterElementInvokingEvent` / `FilterElementInvokedEvent` have **no successor**: use `ListDriverBuildListEvent`
   (`flare.list_driver.{type}.build_list`), a programmatic `FilterCompound::$value`, or a custom filter element
+- The `Model` properties of the reader events — `ReaderPageMetaEvent::$displayModel`,
+  `ReaderRenderEvent::$displayModel`, `ReaderSchemaOrgEvent::$model` — and `ReaderUrlGeneratedEvent::$model`:
+  each event carries the `Entry` as `$entry` (see [Events](./dev/events.md#5-reader-lifecycle))
+- `ReaderRenderEvent::$pageMeta` — change the page metadata in `ReaderPageMetaEvent`, which is dispatched once, also
+  for the breadcrumb
 
 ### Named event aliases
 
@@ -119,6 +140,17 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 
 - `flare_enclosure_files()` — deprecated since v0.1, removed in v0.2; a replacement based on the virtual
   file system is planned for a future release
+- Contao models in list and reader templates (see [Templating / Entries](./templating.mdx#entries)):
+
+  | Removed | Replacement |
+  |---|---|
+  | `flare_list.to(id)` | `entry.to` |
+  | `flare_list.models`, `flare_list.model(id)` | the entries of `flare_list.entries`; related records via `flare_related(entry, column)` |
+  | `flare_reader.to(id)` | `flare_reader.lookup(id).to` |
+  | the reader template variable `model` | `entry` |
+
+- `flare_content()`, `flare_enclosure()` and `flare_schema_org()` take an entry instead of a model
+  (`flare_enclosure()` still accepts a row array)
 
 ## Translations
 
@@ -135,6 +167,11 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
   reader answers 500.
 - `ListCompound::withFilter()` and `ListCompoundBuilder::addFilter()` throw a `FlareException` on a duplicate alias
   (`addFilter()` also on a taken key) instead of replacing the filter.
+- `flare_list.entries` (`InteractiveView::getEntries()`) is a collection of `Entry` objects instead of an array of
+  rows; `ReaderUrlGeneratorInterface::generate()` takes an `Entry`. Reader URLs are percent-encoded by the router
+  only, and `ReaderUrlGeneratedEvent::$autoItem` is the decoded URL text.
+- Reader and breadcrumb no longer take a record from Contao's model registry: an entry outside the list's filters
+  answers 404, even when the record was loaded earlier in the request.
 - An archive filter (`flare_archive`) **without a control** is restricted by its `value` only. The element ignores
   `whitelist_parents`, `group_whitelist_parents` and `use_whitelist_for_options_only` then — also when they are
   passed to `FilterCompoundFactory::create()` — and without a value the filter restricts nothing. Code that built an

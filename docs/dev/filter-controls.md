@@ -169,7 +169,7 @@ that port. Ports take an `ElementContext`, so the element reads its own config w
 
 ```php
 // A port the control requires: throws a FilterException naming the control, the port and the element,
-// so the control cannot build its form and the list fails (fail closed).
+// so the control cannot build its form and the list view fails (fail closed).
 $context->element(ChoiceSourceContract::class)->buildChoices($choices, $context->forElement());
 
 // A port the control can do without: null if the element does not implement it.
@@ -241,11 +241,13 @@ The former element events `FilterElementBuildingEvent` / `FilterElementBuiltEven
 
 - **Build time, control side.** A stored `control` that is unknown or not registered for the element's value
   class, or a broken control config, fails the list (**fail closed**): the editor chose the control, so the filter
-  must not apply without it. An unreadable initial value only drops the value (warning logged).
-- **Form time.** A control that cannot build its form fails the list (**fail closed**, error logged; the form still
-  renders the other filters): its `buildForm()` throws, a `FilterControlBuildFormEvent` listener throws a
-  `FlareException`, or the filter's alias is no valid form name (letters a–z, digits, `_`, `-` and `:`, not starting
-  with `-` or `:`). A listener that cancels the event is no failure: the filter is simply not mounted. If
+  must not apply without it. So does an alias that is no valid form name (letters a–z, digits, `_`, `-` and `:`, not
+  starting with `-` or `:`): it names the control's form field. These failures are recorded when the filter is
+  created, so they fail the reader too (500). An unreadable initial value only drops the value (warning logged).
+- **Form time.** A control that cannot build its form fails the list view (**fail closed**, error logged; the form
+  still renders the other filters): its `buildForm()` throws, or a `FilterControlBuildFormEvent` listener throws a
+  `FlareException`. The reader builds no form, so it is unaffected and renders its entry. A listener that cancels the
+  event is no failure: the filter is simply not mounted. If
   `hydrate()` throws, the filter is mounted without its initial value: a `FilterException` is logged as a warning,
   any other exception as an error, and in debug mode it is rethrown instead.
 - **Build time, element side.** An unknown element type or a broken element config fails the list

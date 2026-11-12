@@ -16,7 +16,7 @@ The v0.2 docs already describe these APIs as removed — the code still ships th
 
 ## Pending code removals
 
-- [ ] **`flare_enclosure_files` Twig function** — remove:
+- [x] **`flare_enclosure_files` Twig function** — remove:
   - the `@deprecated` runtime method `FlareRuntime::getEnclosureFiles()` (`src/Twig/Runtime/FlareRuntime.php`)
   - its registration in `FlareExtension::getFunctions()` (`src/Twig/Extension/FlareExtension.php`)
 - [ ] **`PtableInferrer` deprecated members** (`src/InferPtable/PtableInferrer.php`) — three `@deprecated`

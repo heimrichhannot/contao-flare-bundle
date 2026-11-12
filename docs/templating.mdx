@@ -101,12 +101,10 @@ from that view.
 
 {% block list %}
     {% for entry in flare_list.entries %}
-        {% set href = flare_list.to(entry.id) %}
-
         <article>
             <h3>
-                {% if href %}
-                    <a href="{{ href }}">{{ entry.headline ?? entry.title ?? '' }}</a>
+                {% if entry.to %}
+                    <a href="{{ entry.to }}">{{ entry.headline ?? entry.title ?? '' }}</a>
                 {% else %}
                     {{ entry.headline ?? entry.title ?? '' }}
                 {% endif %}
@@ -135,43 +133,58 @@ The list content element injects these template variables:
 After creating the view with `flare.createView`, you typically work with:
 
 - `flare_list.form`: the Symfony form object
-- `flare_list.entries`: the current result set
-- `flare_list.models`: the current result set as Contao models
+- `flare_list.entries`: the entries of the current page (see [Entries](#entries))
 - `flare_list.paginator`: the paginator
-- `flare_list.count`: the total result count
-- `flare_list.to(id)`: the reader URL for an entry, if configured
-- `flare_list.model(id)`: the `Contao\Model` instance for a specific entry
+- `flare_list.count`: the total result count (for the pagination); `flare_list.entries|length` is the page's count
+- `flare_list.failed`: whether the list could not be created (see [Block Structure](#list-template))
 
-### Entries and Models
+### Entries
 
-In list templates, `flare_list.entries` yields associative arrays for the current result set.
+`flare_list.entries` is a collection of entries — one `Entry` per row of the current page, in order. It is loaded on
+first access. `is empty`, `|length` and `loop.last` work on it, and you can loop over it as often as you like.
 
-If you need access to the full model collection directly, use `flare_list.models`:
+An entry gives you the row's columns by name: `entry.headline` is the `headline` column. A column whose value is
+`null` is no error, also not in debug mode. Values that [event listeners](dev/entries.md) attach to the entries
+(e.g. `entry.archive`) read the same way.
+
+Three names are reserved and never read from the row:
+
+| Name | Value |
+|---|---|
+| `entry.to` | The reader URL of the entry, or `null` — without a configured reader page, or when the entry's auto-item value is empty. |
+| `entry.row` | The row as an array: `entry.row.<column>`. Use it for a column named `to`, `row` or `meta`, and to iterate the columns — an entry itself is not iterable. |
+| `entry.meta` | Metadata. `entry.meta.modelRef.table` and `entry.meta.modelRef.id` name the database record of the entry (`entry.meta.modelRef` is `null` for entries that do not come from a table). |
 
 ```twig
-{% for model in flare_list.models %}
-    <h3>{{ model.headline ?? model.title ?? '' }}</h3>
-{% endfor %}
-```
+{% if flare_list.entries is empty %}
+    <p>No entries found.</p>
+{% else %}
+    <p>{{ flare_list.entries|length }} of {{ flare_list.count }} entries</p>
+{% endif %}
 
-If you need models only occasionally, you can still iterate over `flare_list.entries` and resolve a specific model from
-the current entry:
-
-```twig
 {% for entry in flare_list.entries %}
-    {% set model = flare_list.model(entry.id) %}
-    <h3>{{ model.headline ?? entry.headline ?? '' }}</h3>
+    <article>
+        <h3><a href="{{ entry.to }}">{{ entry.headline }}</a></h3>
+        {# a news list: the title of the entry's archive #}
+        <p>{{ flare_related(entry, 'pid').title }}</p>
+        <dl>
+            {% for column, value in entry.row %}
+                <dt>{{ column }}</dt><dd>{{ value }}</dd>
+            {% endfor %}
+        </dl>
+    </article>
+    {% if not loop.last %}<hr>{% endif %}
 {% endfor %}
 ```
 
-Under the hood, `flare_list.model(id)` may resolve each model from the cache or from the database individually,
-while `flare_list.models` resolves all models at once. In any case, models are registered from the raw result set (i.e.
-`flare_list.entries`) and cached for later use, eliminating unnecessary database queries.
+A name that is neither a column nor an attachment follows Twig's rules: it renders nothing, or raises a Twig error in
+debug mode (`strict_variables`). Use `entry.subtitle ?? ''` or `entry.subtitle is defined` for columns that not every
+row has.
 
-:::note
-- Use `flare_list.entries` when the raw result data is sufficient.
-- If you only need models occasionally throughout the loop, using `flare_list.model(entry.id)` is perfectly fine.
-- If you need models throughout the whole loop, `flare_list.models` is the better choice than resolving each model individually.
+:::note[No models in templates]
+Entries replace the Contao models that list and reader templates received before (see
+[Removed in v0.2](removed-in-v0.2.md#twig)). Related records come from [`flare_related()`](#twig-helpers), content
+elements from `flare_content(entry)`, anything else from an [entries listener](dev/entries.md).
 :::
 
 ### Customizing the Filter Form
@@ -231,7 +244,7 @@ in the Contao templates directory.
 
 ## Reader Templating
 
-The reader content element renders a single model. Its default template extends the same base template as the list
+The reader content element renders a single entry. Its default template extends the same base template as the list
 view, but works with reader-specific variables.
 
 ```twig title="contao/templates/content_element/flare_reader/my_variant.html.twig"
@@ -239,13 +252,15 @@ view, but works with reader-specific variables.
 
 {% block content %}
     <article>
-        <h1>{{ model.headline ?? model.title ?? '' }}</h1>
+        <h1>{{ entry.headline ?? entry.title ?? '' }}</h1>
 
-        {% if model.teaser %}
+        {% if entry.teaser ?? false %}
             <div>
-                {{ model.teaser|raw }}
+                {{ entry.teaser|raw }}
             </div>
         {% endif %}
+
+        {{ flare_content(entry) }}
     </article>
 {% endblock %}
 ```
@@ -256,13 +271,14 @@ The reader content element injects these variables:
 
 - `flare`: the `Engine`
 - `flare_reader`: the pre-defined `ValidationView` created from `flare`
-- `model`: the resolved `Contao\Model` for the current reader item
+- `entry`: the `Entry` of the current reader item, read like an entry in a list (see [Entries](#entries));
+  `entry.to` is its canonical reader URL
 - `content_model`: the `tl_content` model of the current content element
 - `headline`: the normalized Contao headline data
 - `comments`: optional comments data when the comments integration attaches it
 
-The reader template can also use `flare_reader.to(id)` if you need to generate reader links from within the validation
-view, i.e., linking to other entries of the same list. `flare_reader.backLink` exposes the link back to the configured
+The reader template can also link to other entries of the same list with
+[`flare_reader.lookup()`](#linking-other-entries). `flare_reader.backLink` exposes the link back to the configured
 list view page (see [Back-to-List Button](#back-to-list-button)).
 
 :::note
@@ -271,6 +287,62 @@ Instead of a `flare_list` variable, you can use `flare_reader` directly.
 
 In a `ValidationView`, no Symfony form is available for filtering, meaning you _cannot_ use `flare_reader.form` or
 similar.
+:::
+
+### Linking Other Entries
+
+`flare_reader.lookup()` returns other entries of the list by id — e.g. editorially linked entries:
+
+```twig
+{% for linked in flare_reader.lookup([12, 15, 18]) %}
+    <a href="{{ linked.to }}">{{ linked.headline }}</a>
+{% endfor %}
+
+{% if entry.related_id %}
+    {% set related = flare_reader.lookup(entry.related_id) %}
+    {% if related %}<a href="{{ related.to }}">{{ related.headline }}</a>{% endif %}
+{% endif %}
+```
+
+- **One id** returns the entry or `null`; **a list of ids** returns a collection of the found entries in the given
+  order (duplicates count once). An empty list returns an empty collection without a query.
+- **Membership in this list.** Only entries of *this* list are returned, by the reader's rules: the list's filters
+  with their fixed values, never the submitted form values. A linked entry is therefore shown by the reader on the
+  jump-to page only if that reader uses the same list.
+- **Ids only.** Pass ids of the list's own table (the `id` column) as numbers or numeric strings — not the id of a
+  parent record (`entry.pid` of a news entry is an archive id: use [`flare_related()`](#twig-helpers)). Anything
+  else throws an error, including the serialized array a picker field stores: deserialize it first (in PHP with
+  `StringUtil::deserialize()`, in Twig with Contao's `deserialize` filter where your Contao version provides it).
+- **Entries like any other.** The results have `.to` and the values [listeners](dev/entries.md) attach.
+  `flare_reader.lookup(entry.id)` returns a different object than `entry`. Repeating a lookup with the same ids on
+  the same view runs no second query.
+- **Cache tags.** Each found entry tags the response (`contao.db.<table>.<id>`), so the page is invalidated when a
+  linked entry changes.
+
+### Reader URLs
+
+`entry.to` is the entry's reader URL: the reader page with the entry's value of the list's auto-item field. The URL
+carries the value as text (Contao's input encoding of the stored value reverted), percent-encoded once by the router,
+and leads the reader back to the same entry — also for values with spaces, Unicode, quotes, `#`, `%` and `&`.
+
+:::caution[Known limits]
+An auto-item value that contains `/` or a literal `%2F` cannot make the round trip: Symfony's router keeps `%2F` as a
+path separator, and Contao splits the URL parameters at `/`. On Contao 4.13, neither can a `%` followed by a letter
+that `sprintf()` interprets (`%s`, `%d`, `%b`, …), which Contao 4.13's legacy URL handling decodes. Such a link ends in
+a 404, never in another entry — keep these characters out of aliases.
+:::
+
+### Breadcrumb
+
+On a reader page, the last item of Contao's breadcrumb shows the entry's page title — the same title as the page's
+`<title>` (both come from the `ReaderPageMetaEvent`, see [Events](dev/events.md#readerpagemetaevent)). The breadcrumb
+finds the reader by itself: the page must contain exactly one visible **Detail reader** element at the top level of
+its visible articles. With none or several, without an auto-item, when no entry matches or when the list fails, the
+breadcrumb stays unchanged.
+
+:::note
+The breadcrumb does not honor Contao's preview mode: a reader element or article that is visible only in the preview
+is not found there.
 :::
 
 ### Back-to-List Button
@@ -296,8 +368,8 @@ link in the browser:
    replaced with the full referrer URL, so the list view's filter and pagination query parameters are preserved.
    The qualifying list view URL is also remembered per browser tab (`sessionStorage`).
 2. When the visitor navigates **from one reader page to another** — e.g. via "similar entries" links generated with
-   `flare_reader.to(id)` — the referrer no longer qualifies, and the remembered list view URL is restored instead,
-   keeping the original filter and pagination state.
+   `flare_reader.lookup(id).to` — the referrer no longer qualifies, and the remembered list view URL is restored
+   instead, keeping the original filter and pagination state.
 3. Without JavaScript or `sessionStorage`, the link simply points to the configured list view page.
 
 :::note
@@ -520,15 +592,30 @@ Resulting in an exception like this:
 
 Flare currently registers these Twig functions (see the [Twig functions reference](reference/twig.md)):
 
-- `flare_content(model)` for rendering the content elements belonging to the model.
-- `flare_enclosure(model|entry_row, string field = "enclosure")` for retreiving file enclosure data as you would with
+- `flare_content(entry)` for rendering the published content elements of the entry's record (`ptable` and `pid` taken
+  from `entry.meta.modelRef`). An entry without `entry.meta.modelRef` throws an error.
+- `flare_enclosure(entry|array, string field = "enclosure")` for retrieving file enclosure data as you would with
   ```php
   \Contao\Controller::addEnclosuresToTemplate(...)
   ```
+  For an entry, it reads `entry.row`.
 - `flare_project(list, intent)` for running a projection directly from a template: returns the view
   for the given `ListCompound` and intent, without going through a content element's engine.
-- `flare_schema_org(?model = null)` (uses model from context if not provided): prints the JSON-LD schema markup for the given model in a reader context.
-  The data can be influenced using the `ReaderSchemaOrgEvent`.
+- `flare_related(entry, column)` for the record a column refers to, by the relation the table's DCA defines
+  (`foreignKey` + `relation`), with the same result as Contao's `Model::getRelated()`: a model for a to-one relation,
+  a model collection for a to-many relation, or `null`. Example: `flare_related(entry, 'pid').title` is the title of a
+  news entry's archive. It returns the raw relation, without a membership check — also into the list's own table;
+  when you need membership in the list or a reader link, use `flare_reader.lookup()`. It throws an error for an entry
+  without `entry.meta.modelRef`, for a column without a relation and for a table without a model class.
+- `flare_schema_org(entry = null, list = null)` returns the schema.org (JSON-LD) data of an entry. In a reader
+  template, without arguments, it uses the reader's `entry` and the list of `flare`; elsewhere pass both
+  (`flare_schema_org(entry, flare.list)`). The data can be influenced using the `ReaderSchemaOrgEvent`.
+
+In reader templates, the view adds:
+
+- `flare_reader.lookup(id)` / `flare_reader.lookup([ids])` for other entries of the list — membership in *this* list,
+  so the reader on the jump-to page must use the same list; ids only, deserialize stored lists first. See
+  [Linking Other Entries](#linking-other-entries).
 
 ## Comments Integration
 

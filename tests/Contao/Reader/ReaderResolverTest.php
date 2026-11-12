@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Contao\Reader;
 
 use Contao\Model\Registry;
+use Contao\PageModel;
 use Contao\TestCase\ContaoTestCase;
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Contao\Reader\ReaderResolver;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
@@ -48,6 +50,8 @@ final class ReaderResolverTest extends ContaoTestCase
     /** @var list<TestModelFixture> */
     private array $registered = [];
 
+    private ?PageModel $readerPage = null;
+
     /** @var array<string, class-string>|null */
     private ?array $models = null;
 
@@ -72,6 +76,11 @@ final class ReaderResolverTest extends ContaoTestCase
         }
 
         $this->registered = [];
+
+        if ($this->readerPage !== null) {
+            $registry->unregister($this->readerPage);
+            $this->readerPage = null;
+        }
 
         if ($this->models === null) {
             unset($GLOBALS['TL_MODELS']);
@@ -107,6 +116,7 @@ final class ReaderResolverTest extends ContaoTestCase
         $resolution = $resolver->resolve($this->content());
         self::assertNull($resolution->entry);
         self::assertNull($resolution->failure);
+        self::assertSame($autoItemField, $resolution->intent?->autoItemField, 'The lookup used the expected field.');
     }
 
     /**
@@ -233,6 +243,36 @@ final class ReaderResolverTest extends ContaoTestCase
         self::assertNull($resolver->resolveForPage());
         self::assertNull($resolver->resolve($this->content())->entry);
         self::assertSame([0, 0], [$this->queries, $this->builds]);
+        self::assertSame(1, $this->autoItemReads, 'The missing auto-item is memoized too.');
+    }
+
+    /**
+     * The entry links to the reader page of the element with its auto-item: the linker the projector wires from the
+     * intent's reader URL config. The mocked PageModel::getAbsoluteUrl() is deprecated since Contao 5.3 (the only URL
+     * API on 4.13): its mock triggers that deprecation.
+     *
+     * @group legacy
+     */
+    public function testTheResolvedEntryLinksToTheReaderPage(): void
+    {
+        // LazyPage finds the reader page through PageModel::findByPk(), which asks the registry first.
+        $GLOBALS['TL_MODELS']['tl_page'] = PageModel::class;
+        $page = $this->mockClassWithProperties(PageModel::class, ['id' => 9], ['getTable', 'getPk']);
+        $page->method('getAbsoluteUrl')->willReturnCallback(
+            static fn (string $path): string => 'https://example.org/reader' . $path,
+        );
+        Registry::getInstance()->register($page);
+        $this->readerPage = $page;
+
+        $content = new ContentModelFixture(
+            ['id' => 5, ContentContainer::FIELD_JUMP_TO_READER => 9],
+            new ListModelFixture(['id' => 0, 'type' => 'test_list']),
+        );
+
+        $entry = $this->resolver(autoItem: 'visible')->resolve($content)->entry;
+
+        self::assertNotNull($entry);
+        self::assertSame('https://example.org/reader/visible', $entry->to);
     }
 
     public function testResetEmptiesTheMemoAndTheAutoItem(): void

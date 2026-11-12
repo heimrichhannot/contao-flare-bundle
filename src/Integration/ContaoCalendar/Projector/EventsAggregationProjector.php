@@ -30,9 +30,8 @@ class EventsAggregationProjector extends AggregationProjector
 
     protected function createLoader(AggregationLoaderConfig $config): AggregationLoaderInterface
     {
-        return new EventsAggregationLoader(
-            config: $config,
-            listQueryDirector: $this->getListQueryDirector(),
-        );
+        $listQueryDirector = $this->getListQueryDirector();
+
+        return new EventsAggregationLoader(config: $config, listQueryDirector: $listQueryDirector);
     }
 }

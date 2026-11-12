@@ -59,7 +59,8 @@ class InteractiveProjector extends AbstractProjector
         $filterValues = $harness->decode();
 
         $entryCollectorFactory = $this->getEntryCollectorFactory();
-        $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($intent->createReaderUrlConfig());
+        $readerUrlConfig = $intent->createReaderUrlConfig();
+        $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($readerUrlConfig);
 
         // The links out of the list lead to the reader: lookups follow its rules, not the submitted form. The reader
         // intent has the list's reader page and auto-item field, so the lookup shares the list's URL generator.
@@ -67,7 +68,8 @@ class InteractiveProjector extends AbstractProjector
         $lookup = $entryCollectorFactory->createLookup($list, $readerIntent, $readerUrlGenerator);
 
         // The failures known without building conditions win over an invalid submission.
-        $failures = \array_merge($list->failures, $harness->getFailures());
+        $harnessFailures = $harness->getFailures();
+        $failures = \array_merge($list->failures, $harnessFailures);
 
         if ($failures !== [])
         {
@@ -79,11 +81,15 @@ class InteractiveProjector extends AbstractProjector
         // An invalid submission shows no entries and is not counted.
         if ($form->isSubmitted() && !$form->isValid())
         {
+            $pageParam = $this->getPageParam($form, $intent);
+            $paginator = $this->paginatorFactory->createEmpty(pageParam: $pageParam);
+            $collector = $entryCollectorFactory->create($list, $intent, $readerUrlGenerator);
+
             return $this->createView(
                 loader: new InteractiveEmptyLoader(),
                 form: $form,
-                paginator: $this->paginatorFactory->createEmpty(pageParam: $this->getPageParam($form, $intent)),
-                collector: $entryCollectorFactory->create($list, $intent, $readerUrlGenerator),
+                paginator: $paginator,
+                collector: $collector,
                 lookup: $lookup,
                 totalItems: 0,
             );
@@ -108,12 +114,14 @@ class InteractiveProjector extends AbstractProjector
             intent: $intent,
             filterValues: $filterValues,
         ));
+        // after the intent override: the collector hands the paginated intent on
+        $collector = $entryCollectorFactory->create($list, $intent, $readerUrlGenerator);
 
         return $this->createView(
             loader: $loader,
             form: $form,
             paginator: $paginator,
-            collector: $entryCollectorFactory->create($list, $intent, $readerUrlGenerator),
+            collector: $collector,
             lookup: $lookup,
             totalItems: $totalItems,
         );
@@ -133,21 +141,27 @@ class InteractiveProjector extends AbstractProjector
         ReaderUrlGeneratorInterface $readerUrlGenerator,
         EntryLookupInterface        $lookup,
     ): InteractiveView {
-        $this->getLogger()->error(\sprintf(
+        $exceptionMessage = $e->getMessage();
+        $message = \sprintf(
             '[FLARE] The list %s could not be created: %s',
             $list->source ?? 'inlined',
-            $e->getMessage(),
-        ), ['method' => __METHOD__, 'exception' => $e]);
+            $exceptionMessage,
+        );
+        $this->getLogger()->error($message, ['method' => __METHOD__, 'exception' => $e]);
 
         if ($this->isDebug()) {
             throw $e;
         }
 
+        $pageParam = $this->getPageParam($form, $intent);
+        $paginator = $this->paginatorFactory->createEmpty(pageParam: $pageParam);
+        $collector = $this->getEntryCollectorFactory()->create($list, $intent, $readerUrlGenerator);
+
         return $this->createView(
             loader: new InteractiveEmptyLoader(),
             form: $form,
-            paginator: $this->paginatorFactory->createEmpty(pageParam: $this->getPageParam($form, $intent)),
-            collector: $this->getEntryCollectorFactory()->create($list, $intent, $readerUrlGenerator),
+            paginator: $paginator,
+            collector: $collector,
             lookup: $lookup,
             totalItems: 0,
             failed: true,
@@ -196,7 +210,8 @@ class InteractiveProjector extends AbstractProjector
     {
         $harness = $this->formHarnessFactory->create($list, $intent);
 
-        $harness->getForm()->handleRequest($this->getCurrentRequest());
+        $request = $this->getCurrentRequest();
+        $harness->getForm()->handleRequest($request);
 
         return $harness;
     }
@@ -231,10 +246,9 @@ class InteractiveProjector extends AbstractProjector
             return $this->paginatorFactory->createEmpty(pageParam: $pageParam);
         }
 
-        return $this->paginatorFactory->create(
-            config: $intent->getPaginatorConfig()->with(totalItems: $totalItems),
-            pageParam: $pageParam,
-        );
+        $config = $intent->getPaginatorConfig()->with(totalItems: $totalItems);
+
+        return $this->paginatorFactory->create(config: $config, pageParam: $pageParam);
     }
 
     protected function getPageParam(FormInterface $form, PaginatedIntentInterface $intent): string

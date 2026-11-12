@@ -35,14 +35,13 @@ class ValidationProjector extends AbstractProjector
         ));
 
         $entryCollectorFactory = $this->getEntryCollectorFactory();
-        $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($intent->createReaderUrlConfig());
+        $readerUrlConfig = $intent->createReaderUrlConfig();
+        $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($readerUrlConfig);
+        $collector = $entryCollectorFactory->create($list, $intent, $readerUrlGenerator);
+        $lookup = $entryCollectorFactory->createLookup($list, $intent, $readerUrlGenerator);
+        $backLink = $intent->createBackLink();
 
-        return $this->createView(
-            loader: $loader,
-            collector: $entryCollectorFactory->create($list, $intent, $readerUrlGenerator),
-            lookup: $entryCollectorFactory->createLookup($list, $intent, $readerUrlGenerator),
-            backLink: $intent->createBackLink(),
-        );
+        return $this->createView(loader: $loader, collector: $collector, lookup: $lookup, backLink: $backLink);
     }
 
     protected function createLoader(ValidationLoaderConfig $config): ValidationLoaderInterface

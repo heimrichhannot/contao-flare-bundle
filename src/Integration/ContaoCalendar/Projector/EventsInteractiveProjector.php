@@ -35,10 +35,9 @@ class EventsInteractiveProjector extends InteractiveProjector
 
     protected function createLoader(InteractiveLoaderConfig $config): InteractiveLoaderInterface
     {
-        return new EventsInteractiveLoader(
-            config: $config,
-            listQueryDirector: $this->getListQueryDirector(),
-        );
+        $listQueryDirector = $this->getListQueryDirector();
+
+        return new EventsInteractiveLoader(config: $config, listQueryDirector: $listQueryDirector);
     }
 
     protected function createView(

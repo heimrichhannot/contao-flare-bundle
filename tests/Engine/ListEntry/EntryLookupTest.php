@@ -81,10 +81,7 @@ final class EntryLookupTest extends TestCase
         yield 'non-numeric in a list' => [['1', 'x']];
         yield 'decimal string' => ['1.5'];
         yield 'float' => [1.5];
-        yield 'null' => [null];
-        yield 'empty string' => [''];
         yield 'bool' => [true];
-        yield 'null in a list' => [[null]];
         yield 'trailing newline' => ["1\n"];
     }
 
@@ -111,8 +108,36 @@ final class EntryLookupTest extends TestCase
     public static function provideInvalidTwigIds(): iterable
     {
         yield 'bool' => [true];
-        yield 'null' => [null];
         yield 'serialized' => ['a:1:{i:0;s:1:"1";}'];
+    }
+
+    /**
+     * `null` and `''` are how Contao stores an empty relation: no id, not an error.
+     */
+    public function testEmptyValuesCountAsNoId(): void
+    {
+        $lookup = $this->lookup();
+
+        self::assertNull($lookup->lookup(null));
+        self::assertNull($lookup->lookup(''));
+        self::assertSame(0, $this->queries);
+
+        self::assertSame([], self::ids($lookup->lookup([null, ''])));
+        self::assertSame(0, $this->queries);
+
+        self::assertSame([2, 1], self::ids($lookup->lookup([null, 2, '', '1'])));
+        self::assertSame(1, $this->queries);
+    }
+
+    public function testEmptyValuesCountAsNoIdThroughTwig(): void
+    {
+        $twig = new Environment(
+            new ArrayLoader(['t' => '{{ l.lookup(v) is null ? "none" : "found" }}']),
+            ['strict_variables' => true],
+        );
+
+        self::assertSame('none', $twig->render('t', ['l' => $this->lookup(), 'v' => null]));
+        self::assertSame('none', $twig->render('t', ['l' => $this->lookup(), 'v' => '']));
     }
 
     public function testEmptyLookupQueriesNothing(): void

@@ -273,8 +273,10 @@ button), and the `EntryLookup` handed to a listener's phase 1. Both reach the sa
 
 - **Input:** an `int`, a numeric string (row values arrive as strings), or a list of those — ids of the list's own
   table (the `id` column), not of a parent table (`entry.pid` of a news entry is an archive id and belongs to
-  `flare_related()`). Anything else — e.g. a serialized blob from a picker field — throws an `\Error` subclass whose
-  message says to deserialize first. Duplicate ids collapse to their first occurrence.
+  `flare_related()`). `null` and `''` — how Contao stores an empty relation — count as no id (alone → `null`, in a
+  list skipped), so stored data never fails the request. Anything else — e.g. a serialized blob from a picker
+  field — throws an `\Error` subclass whose message says to deserialize first. Duplicate ids collapse to their
+  first occurrence.
 - **Membership by the reader's rules:** the list's filters with their fixed values, no submitted form values — the
   links lead to the reader. In the list view, a lookup can therefore return entries the current form filter hides;
   that is correct. It proves membership in *this* list: "the reader shows every linked entry" holds when the reader

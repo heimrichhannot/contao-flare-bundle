@@ -37,7 +37,7 @@ final class EntryLookup implements EntryLookupInterface
         $ids = self::normalize($single ? [$ids] : $ids);
 
         if ($ids === []) {
-            return $this->collector->collect([], $this);
+            return $single ? null : $this->collector->collect([], $this);
         }
 
         $key = \implode(',', $ids);
@@ -47,7 +47,8 @@ final class EntryLookup implements EntryLookupInterface
     }
 
     /**
-     * Validates before anything is coerced: Twig passes `true` or `null` as they are.
+     * Validates before anything is coerced: Twig passes `true` or `null` as they are. `null` and `''` are how Contao
+     * stores an empty relation: no id, skipped.
      *
      * @param array<mixed> $ids
      * @return list<int> the ids as ints, duplicates collapsed to their first occurrence
@@ -59,6 +60,10 @@ final class EntryLookup implements EntryLookupInterface
         $normalized = [];
 
         foreach ($ids as $id) {
+            if ($id === null || $id === '') {
+                continue;
+            }
+
             if (!\is_int($id) && !(\is_string($id) && \preg_match('/^\d+$/D', $id) === 1)) {
                 throw new InvalidLookupIdError($id);
             }

@@ -146,7 +146,7 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
   |---|---|
   | `flare_list.to(id)` | `entry.to` |
   | `flare_list.models`, `flare_list.model(id)` | the entries of `flare_list.entries`; related records via `flare_related(entry, column)` |
-  | `flare_reader.to(id)` | `flare_reader.lookup(id).to` |
+  | `flare_reader.to(id)` | `flare_reader.lookup(id).to ?? null` — `lookup()` returns `null` for an id outside the list, and reading `.to` on `null` fails in debug mode (`strict_variables`) |
   | the reader template variable `model` | `entry` |
 
 - `flare_content()`, `flare_enclosure()` and `flare_schema_org()` take an entry instead of a model

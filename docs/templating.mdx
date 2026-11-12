@@ -177,6 +177,10 @@ Three names are reserved and never read from the row:
 {% endfor %}
 ```
 
+In a list loop, `flare_related()` costs one query per distinct related record (N+1). A
+[listener that attaches the related records in phase 1](dev/entries.md#2-a-related-record-to-one) loads them for the
+whole collection in one query.
+
 A name that is neither a column nor an attachment follows Twig's rules: it renders nothing, or raises a Twig error in
 debug mode (`strict_variables`). Use `entry.subtitle ?? ''` or `entry.subtitle is defined` for columns that not every
 row has.
@@ -368,8 +372,8 @@ link in the browser:
    replaced with the full referrer URL, so the list view's filter and pagination query parameters are preserved.
    The qualifying list view URL is also remembered per browser tab (`sessionStorage`).
 2. When the visitor navigates **from one reader page to another** — e.g. via "similar entries" links generated with
-   `flare_reader.lookup(id).to` — the referrer no longer qualifies, and the remembered list view URL is restored
-   instead, keeping the original filter and pagination state.
+   `flare_reader.lookup(id).to ?? null` (`null` for an id outside the list) — the referrer no longer qualifies, and
+   the remembered list view URL is restored instead, keeping the original filter and pagination state.
 3. Without JavaScript or `sessionStorage`, the link simply points to the configured list view page.
 
 :::note
@@ -605,8 +609,9 @@ Flare currently registers these Twig functions (see the [Twig functions referenc
   (`foreignKey` + `relation`), with the same result as Contao's `Model::getRelated()`: a model for a to-one relation,
   a model collection for a to-many relation, or `null`. Example: `flare_related(entry, 'pid').title` is the title of a
   news entry's archive. It returns the raw relation, without a membership check — also into the list's own table;
-  when you need membership in the list or a reader link, use `flare_reader.lookup()`. It throws an error for an entry
-  without `entry.meta.modelRef`, for a column without a relation and for a table without a model class.
+  when you need membership in the list or a reader link, use `flare_reader.lookup()` in a reader template; in a list,
+  use the lookup a [listener's phase 1](dev/entries.md#4-computed-similarity) receives. It throws an error for an
+  entry without `entry.meta.modelRef`, for a column without a relation and for a table without a model class.
 - `flare_schema_org(entry = null, list = null)` returns the schema.org (JSON-LD) data of an entry. In a reader
   template, without arguments, it uses the reader's `entry` and the list of `flare`; elsewhere pass both
   (`flare_schema_org(entry, flare.list)`). The data can be influenced using the `ReaderSchemaOrgEvent`.

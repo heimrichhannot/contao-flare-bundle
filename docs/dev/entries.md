@@ -207,8 +207,10 @@ public function __invoke(ListDriverEntriesEvent $event): void
 ```
 
 `Entry::attach($name, $value)` takes a value, or a `\Closure(Entry): mixed` that runs once on the first read and is
-memoized. A `\Closure` always means "lazy": to attach a closure as the value itself, wrap it in another closure. The
-same collision rules apply as for the collection.
+memoized. A `\Closure` always means "lazy": to attach a closure as the value itself, wrap it in another closure. Its
+collision rules concern this entry only: it throws an `EntryNameCollisionError` for a reserved name (`to`, `row`,
+`meta`), a column of the entry's own row, a name already attached to this entry and a name its collection attaches.
+The same name can therefore be attached to every entry, as `isNew` above.
 
 ## 6. Related Records Without a Listener: `flare_related()`
 
@@ -221,8 +223,8 @@ For a relation the table's DCA defines, `flare_related(entry, column)` returns t
 
 It returns the **raw relation**: there is no membership check, for any target table — the list's own table included
 (e.g. a parent record in a tree table), since a reader may need records of its table that are not in its list. When
-you need a member of the list or a reader link, use the lookup: `flare_reader.lookup()` in a template, the lookup of
-phase 1 in a listener.
+you need a member of the list or a reader link, use the lookup: `flare_reader.lookup()` in a reader template; in a
+list, use the lookup a listener's phase 1 receives.
 
 ## 7. Cache Tags for Loaded Data
 

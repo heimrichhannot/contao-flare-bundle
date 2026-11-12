@@ -94,7 +94,7 @@ The reader events carry the reader's `Entry` as `entry` — no Contao model; if 
 Dispatched once per reader element and auto-item, when the page metadata of its entry is first needed: by the
 breadcrumb, which renders before the reader on most pages, else by the reader. Breadcrumb title and `<title>` are
 therefore the same.
-- **Use Case:** Overriding SEO tags (title, description, image, canonical URL, robots) based on the displayed entry.
+- **Use Case:** Overriding SEO tags (title, description, canonical URL, robots) based on the displayed entry.
 - **Class:** `HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent`
 - **Properties:** `contentModel` (readonly `ContentModel`, the reader element), `entry` (readonly `Entry`), `list`
   (readonly `ListCompound`), `pageMeta` (`ReaderPageMeta` — change it or assign another)

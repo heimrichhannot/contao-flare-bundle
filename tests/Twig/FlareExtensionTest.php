@@ -18,4 +18,12 @@ class FlareExtensionTest extends TestCase
         self::assertNotContains('flare_enclosure_files', $names);
         self::assertContains('flare_enclosure', $names);
     }
+
+    public function testRelatedIsRegistered(): void
+    {
+        $functions = (new FlareExtension())->getFunctions();
+        $names = \array_map(static fn (TwigFunction $f): string => $f->getName(), $functions);
+
+        self::assertContains('flare_related', $names);
+    }
 }

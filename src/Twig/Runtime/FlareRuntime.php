@@ -8,11 +8,15 @@ use Contao\ContentModel;
 use Contao\Controller;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\FrontendTemplate;
+use Contao\Model;
+use Contao\Model\Collection;
+use HeimrichHannot\FlareBundle\Contao\ListEntry\EntryRelationResolver;
 use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Engine\View\ViewInterface;
 use HeimrichHannot\FlareBundle\Event\ReaderSchemaOrgEvent;
 use HeimrichHannot\FlareBundle\Exception\MissingModelRefError;
+use HeimrichHannot\FlareBundle\Exception\UndefinedRelationError;
 use HeimrichHannot\FlareBundle\List\Entry\Entry;
 use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Registry\ProjectorRegistry;
@@ -26,6 +30,7 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
         private ContaoFramework          $framework,
         private EventDispatcherInterface $eventDispatcher,
         private ProjectorRegistry        $projectorRegistry,
+        private EntryRelationResolver    $relationResolver,
     ) {}
 
     public function project(ListCompound $list, IntentInterface $intent): ViewInterface
@@ -63,6 +68,18 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
         });
 
         return new CallableWrapper($text);
+    }
+
+    /**
+     * The Contao relation of an entry's column, like `Model::getRelated()`: a model for a to-one, a collection for
+     * a to-many relation.
+     *
+     * @throws MissingModelRefError for an entry without a modelRef
+     * @throws UndefinedRelationError for a column without relation
+     */
+    public function getRelated(Entry $entry, string $column): Model|Collection|null
+    {
+        return $this->relationResolver->resolve($entry, $column);
     }
 
     public function getEnclosure(Entry|array $entity, ?string $field = null): array

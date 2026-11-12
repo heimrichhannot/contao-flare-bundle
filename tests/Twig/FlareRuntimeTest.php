@@ -6,6 +6,8 @@ namespace HeimrichHannot\FlareBundle\Tests\Twig;
 
 use Contao\ContentModel;
 use Contao\TestCase\ContaoTestCase;
+use HeimrichHannot\FlareBundle\Contao\ListEntry\EntryModelFactory;
+use HeimrichHannot\FlareBundle\Contao\ListEntry\EntryRelationResolver;
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
@@ -36,10 +38,13 @@ class FlareRuntimeTest extends ContaoTestCase
      */
     private function runtime(array $adapters = []): FlareRuntime
     {
+        $framework = $this->mockContaoFramework($adapters);
+
         return new FlareRuntime(
-            $this->mockContaoFramework($adapters),
+            $framework,
             $this->dispatcher,
             new ProjectorRegistry([]),
+            new EntryRelationResolver($framework, new EntryModelFactory($framework)),
         );
     }
 

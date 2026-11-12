@@ -28,6 +28,7 @@ use HeimrichHannot\FlareBundle\Contao\Inspection\Inspector\FilterInspector;
 use HeimrichHannot\FlareBundle\Contao\Inspection\ListInspection;
 use HeimrichHannot\FlareBundle\Contao\Inspection\Reporter\FilterIssueReporter;
 use HeimrichHannot\FlareBundle\Contao\ListEntry\EntryCacheTagger;
+use HeimrichHannot\FlareBundle\Contao\ListEntry\EntryModelFactory;
 use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrable;
 use HeimrichHannot\FlareBundle\Engine\Factory\EntryCollectorFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\AggregationIntent;
@@ -104,6 +105,7 @@ final class ServicesConfigTest extends TestCase
             AggregationIntentFactory::class,
             EntryCacheTagger::class,
             EntryCollectorFactory::class,
+            EntryModelFactory::class,
         ] as $class) {
             yield $class => [$class];
         }

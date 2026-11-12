@@ -40,7 +40,7 @@ class ValidationProjector extends AbstractProjector
         return $this->createView(
             loader: $loader,
             collector: $entryCollectorFactory->create($list, $intent, $readerUrlGenerator),
-            lookup: $entryCollectorFactory->createLookup($list, $intent),
+            lookup: $entryCollectorFactory->createLookup($list, $intent, $readerUrlGenerator),
             backLink: $intent->createBackLink(),
         );
     }

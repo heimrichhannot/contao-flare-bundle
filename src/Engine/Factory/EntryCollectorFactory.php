@@ -8,6 +8,7 @@ use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Engine\ListEntry\EntryCollector;
 use HeimrichHannot\FlareBundle\Engine\ListEntry\EntryLookup;
+use HeimrichHannot\FlareBundle\Engine\ListEntry\LazyEntryLookup;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderConfig;
 use HeimrichHannot\FlareBundle\List\Entry\EntryLookupInterface;
 use HeimrichHannot\FlareBundle\List\Entry\EntryTaggerInterface;
@@ -42,17 +43,23 @@ final readonly class EntryCollectorFactory
 
     /**
      * Membership by the reader's rules: a validation loader for $list and $intent with the reader's auto-item field,
-     * the reader URL generator of $intent, a collector for $intent.
+     * the reader URL generator of $intent (or the given one, built for the same reader page and auto-item field), a
+     * collector for $intent. Built lazily, on the first lookup.
      */
-    public function createLookup(ListCompound $list, ValidationIntent $intent): EntryLookupInterface
-    {
-        $loader = $this->loaderFactory->createValidationLoader(new ValidationLoaderConfig(
-            list: $list,
-            intent: $intent,
-            autoItemField: $intent->autoItemField,
-        ));
-        $readerUrlGenerator = $this->readerUrlGeneratorFactory->create($intent->createReaderUrlConfig());
+    public function createLookup(
+        ListCompound                 $list,
+        ValidationIntent             $intent,
+        ?ReaderUrlGeneratorInterface $readerUrlGenerator = null,
+    ): EntryLookupInterface {
+        return new LazyEntryLookup(function () use ($list, $intent, $readerUrlGenerator): EntryLookup {
+            $loader = $this->loaderFactory->createValidationLoader(new ValidationLoaderConfig(
+                list: $list,
+                intent: $intent,
+                autoItemField: $intent->autoItemField,
+            ));
+            $readerUrlGenerator ??= $this->readerUrlGeneratorFactory->create($intent->createReaderUrlConfig());
 
-        return new EntryLookup($loader, $this->create($list, $intent, $readerUrlGenerator), $this->entryTagger);
+            return new EntryLookup($loader, $this->create($list, $intent, $readerUrlGenerator), $this->entryTagger);
+        });
     }
 }

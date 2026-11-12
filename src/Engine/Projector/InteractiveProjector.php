@@ -61,9 +61,10 @@ class InteractiveProjector extends AbstractProjector
         $entryCollectorFactory = $this->getEntryCollectorFactory();
         $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($intent->createReaderUrlConfig());
 
-        // The links out of the list lead to the reader: lookups follow its rules, not the submitted form.
+        // The links out of the list lead to the reader: lookups follow its rules, not the submitted form. The reader
+        // intent has the list's reader page and auto-item field, so the lookup shares the list's URL generator.
         $readerIntent = $this->validationIntentFactory->createFromIntent($intent);
-        $lookup = $entryCollectorFactory->createLookup($list, $readerIntent);
+        $lookup = $entryCollectorFactory->createLookup($list, $readerIntent, $readerUrlGenerator);
 
         // The failures known without building conditions win over an invalid submission.
         $failures = \array_merge($list->failures, $harness->getFailures());

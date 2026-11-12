@@ -145,6 +145,10 @@ final class EntryCollection implements \IteratorAggregate, \Countable
         $this->loaders[$name] = $load;
     }
 
+    /**
+     * @internal only the collector seals, after the entries event; a listener that seals early makes the `attach()` of
+     *     every later listener throw
+     */
     public function seal(): void
     {
         $this->sealed = true;

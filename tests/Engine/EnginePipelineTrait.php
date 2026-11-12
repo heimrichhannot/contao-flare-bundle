@@ -117,10 +117,12 @@ trait EnginePipelineTrait
     protected function createConnection(array $rows): Connection
     {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
-        $connection->executeStatement(
-            "CREATE TABLE tl_test (id INTEGER PRIMARY KEY, pid INTEGER DEFAULT 0, alias TEXT DEFAULT '',"
-            . " title TEXT DEFAULT '', published INTEGER DEFAULT 0)",
-        );
+        $connection->executeStatement(<<<'SQL'
+            CREATE TABLE tl_test (
+                id INTEGER PRIMARY KEY, pid INTEGER DEFAULT 0, alias TEXT DEFAULT '', title TEXT DEFAULT '',
+                published INTEGER DEFAULT 0
+            )
+            SQL);
 
         foreach ($rows as $row) {
             $connection->insert('tl_test', $row);
@@ -139,15 +141,19 @@ trait EnginePipelineTrait
      */
     protected function createReaderTables(Connection $connection, array $articles, array $elements): void
     {
-        $connection->executeStatement(
-            "CREATE TABLE tl_article (id INTEGER PRIMARY KEY, pid INTEGER DEFAULT 0, sorting INTEGER DEFAULT 0,"
-            . " published INTEGER DEFAULT 1, start DEFAULT '', stop DEFAULT '')",
-        );
-        $connection->executeStatement(
-            "CREATE TABLE tl_content (id INTEGER PRIMARY KEY, pid INTEGER DEFAULT 0, ptable TEXT DEFAULT 'tl_article',"
-            . " type TEXT DEFAULT 'flare_reader', sorting INTEGER DEFAULT 0, invisible INTEGER DEFAULT 0,"
-            . " start DEFAULT '', stop DEFAULT '', tstamp INTEGER DEFAULT 1)",
-        );
+        $connection->executeStatement(<<<'SQL'
+            CREATE TABLE tl_article (
+                id INTEGER PRIMARY KEY, pid INTEGER DEFAULT 0, sorting INTEGER DEFAULT 0, published INTEGER DEFAULT 1,
+                start DEFAULT '', stop DEFAULT ''
+            )
+            SQL);
+        $connection->executeStatement(<<<'SQL'
+            CREATE TABLE tl_content (
+                id INTEGER PRIMARY KEY, pid INTEGER DEFAULT 0, ptable TEXT DEFAULT 'tl_article',
+                type TEXT DEFAULT 'flare_reader', sorting INTEGER DEFAULT 0, invisible INTEGER DEFAULT 0,
+                start DEFAULT '', stop DEFAULT '', tstamp INTEGER DEFAULT 1
+            )
+            SQL);
 
         foreach ($articles as $row) {
             $connection->insert('tl_article', $row);
@@ -339,11 +345,14 @@ trait EnginePipelineTrait
             return $value;
         });
 
-        $contentModels = $this->mockAdapter(['findByPk']);
-        $contentModels->method('findByPk')->willReturn($content);
-        $articleModels = $this->mockAdapter(['findByPk']);
-        $articleModels->method('findByPk')->willReturnCallback(
-            fn (int $id) => $this->mockClassWithProperties(ArticleModel::class, ['id' => $id]),
+        $contentModels = $this->mockAdapter(['findMultipleByIds']);
+        $contentModels->method('findMultipleByIds')->willReturn($content === null ? null : [$content]);
+        $articleModels = $this->mockAdapter(['findMultipleByIds']);
+        $articleModels->method('findMultipleByIds')->willReturnCallback(
+            fn (array $ids) => \array_map(
+                fn (int $id) => $this->mockClassWithProperties(ArticleModel::class, ['id' => $id]),
+                $ids,
+            ),
         );
 
         $framework = $this->mockContaoFramework([

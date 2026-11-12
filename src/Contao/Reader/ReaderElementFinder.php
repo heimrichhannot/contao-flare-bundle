@@ -9,6 +9,7 @@ use Contao\ContentModel;
 use Contao\Controller;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Date;
+use Contao\Model;
 use Contao\PageModel;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Controller\ContentElement\ReaderController;
@@ -39,42 +40,83 @@ final readonly class ReaderElementFinder
 
         // Written like ContentModel::findPublishedByPidAndTable(). Contao 4.13 stores article content with an empty
         // ptable.
-        $rows = $this->connection->fetchAllAssociative(
-            'SELECT c.id AS content_id, a.id AS article_id'
-            . ' FROM tl_content c INNER JOIN tl_article a ON a.id = c.pid'
-            . ' WHERE a.pid = :page AND c.type = :type AND c.ptable IN (:ptable, \'\')'
-            . ' AND a.published = 1 AND (a.start = \'\' OR a.start <= :time) AND (a.stop = \'\' OR a.stop > :time)'
-            . ' AND c.invisible = 0 AND c.tstamp != 0'
-            . ' AND (c.start = \'\' OR c.start <= :time) AND (c.stop = \'\' OR c.stop > :time)'
-            . ' ORDER BY a.sorting, c.sorting',
-            [
-                'page' => $pageId,
-                'type' => ReaderController::TYPE,
-                'ptable' => ArticleModel::getTable(),
-                'time' => $time,
-            ],
-        );
+        $sql = <<<'SQL'
+            SELECT c.id AS content_id, a.id AS article_id
+              FROM tl_content c
+             INNER JOIN tl_article a ON a.id = c.pid
+             WHERE a.pid = :page AND c.type = :type AND c.ptable IN (:ptable, '')
+               AND a.published = 1 AND (a.start = '' OR a.start <= :time) AND (a.stop = '' OR a.stop > :time)
+               AND c.invisible = 0 AND c.tstamp != 0
+               AND (c.start = '' OR c.start <= :time) AND (c.stop = '' OR c.stop > :time)
+             ORDER BY a.sorting, c.sorting
+            SQL;
+        $params = [
+            'page' => $pageId,
+            'type' => ReaderController::TYPE,
+            'ptable' => ArticleModel::getTable(),
+            'time' => $time,
+        ];
+        $rows = $this->connection->fetchAllAssociative($sql, $params);
+
+        if ($rows === []) {
+            return null;
+        }
+
+        // Models, not rows: Controller::isVisibleElement() and its hook take models. One query per table at most, the
+        // registry's instances where they exist.
+        $contentAdapter = $this->framework->getAdapter(ContentModel::class);
+        $articleAdapter = $this->framework->getAdapter(ArticleModel::class);
+        $elementIds = \array_map(\intval(...), \array_column($rows, 'content_id'));
+        $articleIds = \array_values(\array_unique(\array_map(\intval(...), \array_column($rows, 'article_id'))));
+        $elementModels = $contentAdapter->findMultipleByIds($elementIds);
+        $articleModels = $articleAdapter->findMultipleByIds($articleIds);
+        $elements = self::byId($elementModels);
+        $articles = self::byId($articleModels);
 
         $controller = $this->framework->getAdapter(Controller::class);
-        $contentModels = $this->framework->getAdapter(ContentModel::class);
-        $articleModels = $this->framework->getAdapter(ArticleModel::class);
-
-        $found = [];
+        $visibleArticles = [];
+        $found = null;
 
         foreach ($rows as $row) {
-            $element = $contentModels->findByPk((int) $row['content_id']);
-            $article = $articleModels->findByPk((int) $row['article_id']);
+            $articleId = (int) $row['article_id'];
+            $element = $elements[(int) $row['content_id']] ?? null;
+            $article = $articles[$articleId] ?? null;
 
             if (!$element || !$article) {
                 continue;
             }
 
-            if ($controller->isVisibleElement($element) && $controller->isVisibleElement($article)) {
-                $found[] = $element;
+            $visibleArticles[$articleId] ??= (bool) $controller->isVisibleElement($article);
+
+            if (!$visibleArticles[$articleId] || !$controller->isVisibleElement($element)) {
+                continue;
             }
+
+            if ($found !== null) {
+                // a second visible reader: none is the page's reader
+                return null;
+            }
+
+            $found = $element;
         }
 
-        return \count($found) === 1 ? $found[0] : null;
+        return $found;
+    }
+
+    /**
+     * @template T of Model
+     * @param iterable<T>|null $models
+     * @return array<int, T>
+     */
+    private static function byId(?iterable $models): array
+    {
+        $byId = [];
+
+        foreach ($models ?? [] as $model) {
+            $byId[(int) $model->id] = $model;
+        }
+
+        return $byId;
     }
 
     /**
@@ -89,8 +131,12 @@ final readonly class ReaderElementFinder
             return (int) $page->id;
         }
 
-        if (\is_int($page) || (\is_string($page) && \ctype_digit($page))) {
-            return (int) $page;
+        if (\is_int($page) || \is_string($page)) {
+            $id = \filter_var($page, \FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+            if ($id !== false) {
+                return $id;
+            }
         }
 
         $objPage = $GLOBALS['objPage'] ?? null;

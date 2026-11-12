@@ -13,6 +13,7 @@ use HeimrichHannot\FlareBundle\Contao\Reader\ReaderResolver;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Exception\IntentException;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\ControlContext;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
@@ -32,6 +33,7 @@ use HeimrichHannot\FlareBundle\Tests\Fixture\ContentModelFixture;
 use HeimrichHannot\FlareBundle\Tests\Fixture\ListModelFixture;
 use HeimrichHannot\FlareBundle\Tests\Fixture\TestModelFixture;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 /**
  * Resolves the reader element 5 of a list on `tl_test` through the real pipeline and an SQLite table.
@@ -184,6 +186,24 @@ final class ReaderResolverTest extends ContaoTestCase
 
         self::assertSame($first, $resolver->resolve($this->content()));
         self::assertSame(1, $this->builds);
+    }
+
+    public function testAnInvalidIntentFailsTheReaderAndIsMemoized(): void
+    {
+        $content = new ContentModelFixture(
+            ['id' => 5, ContentContainer::FIELD_JUMP_TO_READER => -1],
+            new ListModelFixture(['id' => 0, 'type' => 'test_list']),
+        );
+        $resolver = $this->resolver(autoItem: 'visible');
+
+        $first = $resolver->resolve($content);
+        self::assertInstanceOf(IntentException::class, $first->failure);
+        self::assertStringContainsString('jumpToReaderPageId', $first->failure->getMessage());
+        self::assertInstanceOf(ValidationFailedException::class, $first->failure->getPrevious());
+        self::assertNull($first->entry);
+
+        self::assertSame($first, $resolver->resolve($content));
+        self::assertSame([1, 0], [$this->builds, $this->queries]);
     }
 
     public function testAReaderWithoutAListFails(): void

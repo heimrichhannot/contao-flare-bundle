@@ -8,8 +8,8 @@ use Contao\ContentModel;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
 use HeimrichHannot\FlareBundle\Engine\Intent\InteractiveIntent;
 use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
+use HeimrichHannot\FlareBundle\Exception\IntentException;
 use HeimrichHannot\FlareBundle\List\ListCompound;
-use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 readonly class ValidationIntentFactory
@@ -18,6 +18,9 @@ readonly class ValidationIntentFactory
         private ValidatorInterface $validator,
     ) {}
 
+    /**
+     * @throws IntentException
+     */
     public function createFromContent(ContentModel $contentModel, ListCompound $list): ValidationIntent
     {
         $jumpToReaderPageId = (int) ($contentModel->{ContentContainer::FIELD_JUMP_TO_READER}
@@ -36,7 +39,7 @@ readonly class ValidationIntentFactory
         $violations = $this->validator->validate($intent);
 
         if ($violations->count()) {
-            throw new ValidationFailedException($intent, $violations);
+            throw IntentException::fromViolations($intent, $violations, __METHOD__);
         }
 
         return $intent;

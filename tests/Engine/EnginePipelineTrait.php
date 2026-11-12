@@ -85,7 +85,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Csrf\CsrfTokenManager;
-use Symfony\Component\Validator\ConstraintViolationList;
+use Symfony\Component\Validator\Validation;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -295,7 +295,7 @@ trait EnginePipelineTrait
 
     /**
      * A ReaderResolver over the real list builder (stored list driver 'test_list' on 'tl_test'), the real
-     * ValidationIntentFactory (its validator finds no violations) and EngineFactory over
+     * ValidationIntentFactory (with a real validator) and EngineFactory over
      * {@see createProjectorRegistry()}. Every list built gets $filters and $failures and counts in $builds. The
      * auto-item comes from a mocked Input adapter, each read counts in $autoItemReads. The ReaderElementFinder runs
      * over $connection with page 7 on the main request, one article and the reader element 5, which the ContentModel
@@ -360,8 +360,7 @@ trait EnginePipelineTrait
         $requestStack = new RequestStack();
         $requestStack->push($request);
 
-        $validator = $this->createMock(ValidatorInterface::class);
-        $validator->method('validate')->willReturn(new ConstraintViolationList());
+        $validator = Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator();
 
         return new ReaderResolver(
             autoItemReader: new AutoItemReader($framework),

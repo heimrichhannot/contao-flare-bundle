@@ -188,9 +188,9 @@ final readonly class SimilarNewsListener
 The lookup is the one behind `flare_reader.lookup()` (see
 [Templating / Linking Other Entries](../templating.mdx#linking-other-entries)):
 
-- It takes ids of the list's own table — an int, a numeric string or a list of those — and returns, for a list, an
+- It takes ids of the list's own table — a positive int, its string (no sign or leading zeros) or a list of those — and returns, for a list, an
   `EntryCollection` of the members only, in the given order; for one id the entry or `null`. An empty list returns an
-  empty collection without a query. `null` and `''` — an empty relation field — count as no id: alone they return
+  empty collection without a query. `null`, `''` and `0` — an empty relation field — count as no id: alone they return
   `null`, in a list they are skipped.
 - Membership follows the reader's rules: the list's filters with their fixed values, never submitted form values. A
   lookup in a list view can therefore return entries the current form filter hides — the links lead to the reader.

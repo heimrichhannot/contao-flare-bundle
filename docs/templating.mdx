@@ -307,12 +307,12 @@ similar.
 ```
 
 - **One id** returns the entry or `null`; **a list of ids** returns a collection of the found entries in the given
-  order (duplicates count once). An empty list returns an empty collection without a query. An empty field (`null`
-  or `''`) counts as no id: alone it returns `null`, in a list it is skipped — no guard needed.
+  order (duplicates count once). An empty list returns an empty collection without a query. An empty field (`null`,
+  `''` or `0`) counts as no id: alone it returns `null`, in a list it is skipped — no guard needed.
 - **Membership in this list.** Only entries of *this* list are returned, by the reader's rules: the list's filters
   with their fixed values, never the submitted form values. A linked entry is therefore shown by the reader on the
   jump-to page only if that reader uses the same list.
-- **Ids only.** Pass ids of the list's own table (the `id` column) as numbers or numeric strings — not the id of a
+- **Ids only.** Pass ids of the list's own table (the `id` column) as positive numbers or their strings — not the id of a
   parent record (`entry.pid` of a news entry is an archive id: use [`flare_related()`](#twig-helpers)). Anything
   else throws an error, including the serialized array a picker field stores: deserialize it first (in PHP with
   `StringUtil::deserialize()`, in Twig with Contao's `deserialize` filter where your Contao version provides it).

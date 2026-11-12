@@ -13,8 +13,8 @@ final class InvalidLookupIdError extends \Error
     public function __construct(public readonly mixed $id)
     {
         parent::__construct(\sprintf(
-            'Cannot look up %s: a lookup takes ids of the list\'s own table, as an int, a numeric string or a list'
-            . ' of those. Deserialize a stored value first.',
+            'Cannot look up %s: a lookup takes ids of the list\'s own table, as a positive int, its string without'
+            . ' sign or leading zeros, or a list of those. Deserialize a stored value first.',
             self::describe($id),
         ));
     }

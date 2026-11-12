@@ -83,6 +83,13 @@ final class EntryLookupTest extends TestCase
         yield 'float' => [1.5];
         yield 'bool' => [true];
         yield 'trailing newline' => ["1\n"];
+        yield 'leading zero' => ['012'];
+        yield 'plus sign' => ['+1'];
+        yield 'leading space' => [' 1'];
+        yield 'negative int' => [-1];
+        yield 'negative string' => ['-1'];
+        yield 'overflowing string' => ['99999999999999999999'];
+        yield 'leading zero in a list' => [[1, '02']];
     }
 
     /**
@@ -112,7 +119,7 @@ final class EntryLookupTest extends TestCase
     }
 
     /**
-     * `null` and `''` are how Contao stores an empty relation: no id, not an error.
+     * `null`, `''` and `0` are how Contao stores an empty relation: no id, not an error.
      */
     public function testEmptyValuesCountAsNoId(): void
     {
@@ -120,12 +127,14 @@ final class EntryLookupTest extends TestCase
 
         self::assertNull($lookup->lookup(null));
         self::assertNull($lookup->lookup(''));
+        self::assertNull($lookup->lookup(0));
+        self::assertNull($lookup->lookup('0'));
         self::assertSame(0, $this->queries);
 
-        self::assertSame([], self::ids($lookup->lookup([null, ''])));
+        self::assertSame([], self::ids($lookup->lookup([null, '', 0, '0'])));
         self::assertSame(0, $this->queries);
 
-        self::assertSame([2, 1], self::ids($lookup->lookup([null, 2, '', '1'])));
+        self::assertSame([2, 1], self::ids($lookup->lookup([null, 2, '', 0, '1', '0'])));
         self::assertSame(1, $this->queries);
     }
 
@@ -138,6 +147,7 @@ final class EntryLookupTest extends TestCase
 
         self::assertSame('none', $twig->render('t', ['l' => $this->lookup(), 'v' => null]));
         self::assertSame('none', $twig->render('t', ['l' => $this->lookup(), 'v' => '']));
+        self::assertSame('none', $twig->render('t', ['l' => $this->lookup(), 'v' => 0]));
     }
 
     public function testEmptyLookupQueriesNothing(): void

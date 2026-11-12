@@ -108,8 +108,8 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `ListDriverEntriesEvent`, only for a non-empty collection → seal) and `EntryLookup` (member entries by id by the
   reader's rules — fixed filter values, no form values — in one query without pagination, in the given order,
   duplicates collapsed, memoized per id list; each result is its own sealed collection with its own entries event;
-  members are cache-tagged; `lookup([])` queries nothing; `null`/`''` count as no id, anything else invalid throws
-  `InvalidLookupIdError`). Neither is a service: `Engine/Factory/EntryCollectorFactory`
+  members are cache-tagged; `lookup([])` queries nothing; an id is a positive int or its canonical string;
+  `null`/`''`/`0`/`'0'` count as no id, anything else throws `InvalidLookupIdError`). Neither is a service: `Engine/Factory/EntryCollectorFactory`
   creates both (the lookup as a `LazyEntryLookup`, built on its first call). The views use them lazily: `InteractiveView::getEntries()` (`flare_list.entries`),
   `ValidationView::getEntryByAutoItem()` (memoized, misses too) and `ValidationView::lookup()`
   (`flare_reader.lookup()`); a listener gets the lookup only as the second argument of phase 1

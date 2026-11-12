@@ -271,10 +271,10 @@ final readonly class ModelRef
 `flare_reader.lookup(id)` / `flare_reader.lookup([ids])` in templates (e.g. editorially linked entries, the back
 button), and the `EntryLookup` handed to a listener's phase 1. Both reach the same service with the same semantics.
 
-- **Input:** an `int`, a numeric string (row values arrive as strings), or a list of those — ids of the list's own
-  table (the `id` column), not of a parent table (`entry.pid` of a news entry is an archive id and belongs to
-  `flare_related()`). `null` and `''` — how Contao stores an empty relation — count as no id (alone → `null`, in a
-  list skipped), so stored data never fails the request. Anything else — e.g. a serialized blob from a picker
+- **Input:** a positive `int`, its canonical string (row values arrive as strings; no sign, whitespace or leading
+  zeros), or a list of those — ids of the list's own table (the `id` column), not of a parent table (`entry.pid` of
+  a news entry is an archive id and belongs to `flare_related()`). `null`, `''` and `0`/`'0'` — how Contao stores an
+  empty relation — count as no id (alone → `null`, in a list skipped), so stored data never fails the request. Anything else — e.g. a serialized blob from a picker
   field — throws an `\Error` subclass whose message says to deserialize first. Duplicate ids collapse to their
   first occurrence.
 - **Membership by the reader's rules:** the list's filters with their fixed values, no submitted form values — the

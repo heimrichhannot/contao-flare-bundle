@@ -47,8 +47,9 @@ final class EntryLookup implements EntryLookupInterface
     }
 
     /**
-     * Validates before anything is coerced: Twig passes `true` or `null` as they are. `null` and `''` are how Contao
-     * stores an empty relation: no id, skipped.
+     * Validates before anything is coerced: Twig passes `true` or `null` as they are. `null`, `''` and `0` are how
+     * Contao stores an empty relation: no id, skipped. An id is a positive int or its canonical string (no sign,
+     * whitespace or leading zeros).
      *
      * @param array<mixed> $ids
      * @return list<int> the ids as ints, duplicates collapsed to their first occurrence
@@ -60,11 +61,18 @@ final class EntryLookup implements EntryLookupInterface
         $normalized = [];
 
         foreach ($ids as $id) {
-            if ($id === null || $id === '') {
+            if ($id === null || $id === '' || $id === 0 || $id === '0') {
                 continue;
             }
 
-            if (!\is_int($id) && !(\is_string($id) && \preg_match('/^\d+$/D', $id) === 1)) {
+            $valid = match (true) {
+                \is_int($id) => $id > 0,
+                \is_string($id) => \filter_var($id, \FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) !== false
+                    && $id === (string) (int) $id,
+                default => false,
+            };
+
+            if (!$valid) {
                 throw new InvalidLookupIdError($id);
             }
 

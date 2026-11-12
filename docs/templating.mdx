@@ -302,14 +302,13 @@ similar.
     <a href="{{ linked.to }}">{{ linked.headline }}</a>
 {% endfor %}
 
-{% if entry.related_id %}
-    {% set related = flare_reader.lookup(entry.related_id) %}
-    {% if related %}<a href="{{ related.to }}">{{ related.headline }}</a>{% endif %}
-{% endif %}
+{% set related = flare_reader.lookup(entry.related_id) %}
+{% if related %}<a href="{{ related.to }}">{{ related.headline }}</a>{% endif %}
 ```
 
 - **One id** returns the entry or `null`; **a list of ids** returns a collection of the found entries in the given
-  order (duplicates count once). An empty list returns an empty collection without a query.
+  order (duplicates count once). An empty list returns an empty collection without a query. An empty field (`null`
+  or `''`) counts as no id: alone it returns `null`, in a list it is skipped — no guard needed.
 - **Membership in this list.** Only entries of *this* list are returned, by the reader's rules: the list's filters
   with their fixed values, never the submitted form values. A linked entry is therefore shown by the reader on the
   jump-to page only if that reader uses the same list.

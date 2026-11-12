@@ -76,6 +76,11 @@ final readonly class NewsArchiveListener
   only when something reads `archive` on one of the collection's entries; a template that never reads it costs no
   query. It receives the collection (and the list's lookup as a second argument, see below) and returns the picker.
 - **Phase 2**, the picker, maps one entry to its value. It runs on the first read per entry; the value is memoized.
+- A phase 1 that throws runs again on the next read; nothing of the failed load is kept.
+- **Never read the name being loaded.** A phase 1 that reads its own name on another entry of the collection throws
+  a `RecursiveEntryLoadError`. On the entry being read — in phase 1, in the picker or in a lazy closure of
+  `Entry::attach()` — PHP does not call `__get()` again for the same object and name: the read only emits an
+  "Undefined property" warning and yields `null`, and that `null` is memoized as the value.
 - `$entries->column('pid')` returns the distinct, non-empty values of a column across the collection; rows without
   that column are skipped.
 - In PHP, `$entry->pid` reads the `pid` column (columns, then attachments, as in Twig; an unknown name throws an
@@ -184,7 +189,8 @@ The lookup is the one behind `flare_reader.lookup()` (see
 
 - It takes ids of the list's own table — an int, a numeric string or a list of those — and returns, for a list, an
   `EntryCollection` of the members only, in the given order; for one id the entry or `null`. An empty list returns an
-  empty collection without a query.
+  empty collection without a query. `null` and `''` — an empty relation field — count as no id: alone they return
+  `null`, in a list they are skipped.
 - Membership follows the reader's rules: the list's filters with their fixed values, never submitted form values. A
   lookup in a list view can therefore return entries the current form filter hides — the links lead to the reader.
 - Its result is a sealed collection of its own: its entries link to the reader (`.to`), its members tag the response
@@ -206,8 +212,8 @@ public function __invoke(ListDriverEntriesEvent $event): void
 }
 ```
 
-`Entry::attach($name, $value)` takes a value, or a `\Closure(Entry): mixed` that runs once on the first read and is
-memoized. A `\Closure` always means "lazy": to attach a closure as the value itself, wrap it in another closure. Its
+`Entry::attach($name, $value)` takes a value, or a `\Closure(Entry): mixed` that runs on the first read and is
+memoized once it returns; a closure that throws runs again on the next read. A `\Closure` always means "lazy": to attach a closure as the value itself, wrap it in another closure. Its
 collision rules concern this entry only: it throws an `EntryNameCollisionError` for a reserved name (`to`, `row`,
 `meta`), a column of the entry's own row, a name already attached to this entry and a name its collection attaches.
 The same name can therefore be attached to every entry, as `isNew` above.

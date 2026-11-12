@@ -14,7 +14,7 @@ In reader templates, the view `flare_reader` adds:
 
 | Method | Description |
 |---|---|
-| `flare_reader.lookup(id)` / `flare_reader.lookup([ids])` | Other entries of the list by id: one id → the entry or `null`, a list → a collection of the found entries in the given order. Membership in *this* list, by the reader's rules (fixed filter values, no form values) — the reader on the jump-to page must use the same list. Ids of the list's own table only: deserialize stored lists first. See [Templating](../templating.mdx#linking-other-entries). |
+| `flare_reader.lookup(id)` / `flare_reader.lookup([ids])` | Other entries of the list by id: one id → the entry or `null`, a list → a collection of the found entries in the given order. Membership in *this* list, by the reader's rules (fixed filter values, no form values) — the reader on the jump-to page must use the same list. Ids of the list's own table only: deserialize stored lists first; an empty field (`null`, `''`) counts as no id. See [Templating](../templating.mdx#linking-other-entries). |
 
 ## Debugging: Symfony Profiler
 

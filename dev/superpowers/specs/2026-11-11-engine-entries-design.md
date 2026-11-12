@@ -331,14 +331,18 @@ In `src/Contao/` (e.g. `Contao/Factory/`). `create(Entry $entry): ?Model`:
 |---|---|
 | no `meta.modelRef` | `\Error` subclass — the caller had to check |
 | no model class registered for `modelRef.table` | `null` |
-| otherwise | the registry's instance for that id if there is one, else a new model from the row (Contao's constructor registers it) |
+| otherwise | memoized per entry: the registry's instance for that id if there is one, else a new model from the row — built without registering it (`setRow()`, not the constructor) and `preventSaving(false)`, so it never enters the registry or its alias index and `save()` throws |
 
 - **The row is restricted to the table's own columns** before a model is built. List rows can carry extra keys
   (`_flare_event_group`, join selects); a `x__y` key makes Contao's `Model::__construct()` treat it as a joined
   relation and throw ("Incomplete relation").
 - Reusing the registry instance is safe now: the list's query has already confirmed membership, and Contao's
-  identity map stays consistent (`getRelated()`, other modules see the same instance). The rule for mapped rows comes
-  with the query refactor (non-goal).
+  identity map stays consistent (`getRelated()`, other modules see the same instance). A model built from the list's
+  row is never registered: a row the query mapped (a same-named join column, an overlay) would otherwise become the
+  record's canonical instance, and a later `findByPk()` or `findByIdOrAlias()` would return the mapped values. The
+  memo is checked before the registry, so an entry keeps its model even if the record is registered later. Which of
+  the two a caller gets still depends on the order within the request; the rule for mapped rows comes with the query
+  refactor (non-goal).
 - Used only where a Contao API requires a model: the News/Events schema.org listeners
   (`News::getSchemaOrgData()`, `Events::getSchemaOrgData()`); userland listeners may use it too.
 
@@ -465,8 +469,9 @@ suite. Therefore:
   breadcrumb path does not mark `auto_item` as used.
 - Reader URL round trip: `entry.to` → the router's matching → the resolver's auto-item → the same entry, for a value
   with a space, Unicode, a quote, `#`, `%` and `&`.
-- Boundary service: returns the registry instance when present, creates and registers otherwise (with extra row keys
-  such as `_flare_event_group` and `a__b` stripped), `null` without a model class, throws without `modelRef`.
+- Boundary service: returns the registry instance when present, else a new model that is not registered and cannot be
+  saved (with extra row keys such as `_flare_event_group` and `a__b` stripped); memoized per entry before the
+  registry, one model per entry object; `null` without a model class, throws without `modelRef`.
 - Lookup: three member ids in → three entries out, in the given order; a non-member is missing / `null`; duplicates
   collapse; a list of ids runs one query; form values do not affect membership; a serialized string throws; the
   result's entries have `.to`, run the entries event and are tagged.

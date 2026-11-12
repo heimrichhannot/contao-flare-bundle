@@ -19,6 +19,8 @@ class EntryModelFactoryTest extends ContaoTestCase
 {
     private int $instancesCreated = 0;
 
+    private ?Model $registered = null;
+
     public function testWithoutModelRefThrows(): void
     {
         $this->expectException(MissingModelRefError::class);
@@ -40,24 +42,53 @@ class EntryModelFactoryTest extends ContaoTestCase
         self::assertNull($this->factory(class: \stdClass::class)->create($this->entry()));
     }
 
-    public function testReturnsTheRegistryInstance(): void
+    public function testReturnsTheRegistryInstanceAndKeepsIt(): void
     {
-        $registered = new TestModelFixture(['id' => 5]);
+        $factory = $this->factory(registered: $registered = new TestModelFixture(['id' => 5]));
+        $entry = $this->entry();
 
-        self::assertSame($registered, $this->factory(registered: $registered)->create($this->entry()));
+        self::assertSame($registered, $factory->create($entry));
+
+        $this->registered = null;
+        self::assertSame($registered, $factory->create($entry));
         self::assertSame(0, $this->instancesCreated);
     }
 
-    public function testCreatesAndRegistersAModelFromTheTableColumnsOnly(): void
+    public function testCreatesADetachedModelFromTheTableColumnsOnly(): void
     {
-        $factory = $this->factory();
-        $entry = $this->entry(['id' => 5, 'title' => 'T', '_flare_event_group' => 'x', 'a__b' => 1]);
+        $model = $this->factory()->create(
+            $this->entry(['id' => 5, 'title' => 'T', '_flare_event_group' => 'x', 'a__b' => 1]),
+        );
 
-        $model = $factory->create($entry);
         self::assertInstanceOf(TestModelFixture::class, $model);
         self::assertSame(['id' => 5, 'title' => 'T'], $model->row());
-        self::assertSame($model, $factory->create($entry));
+        self::assertFalse(Registry::getInstance()->isRegistered($model), 'The list\'s row never enters the registry.');
         self::assertSame(1, $this->instancesCreated);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('detached');
+        $model->save();
+    }
+
+    public function testTheModelIsKeptPerEntryEvenWhenTheRecordIsRegisteredLater(): void
+    {
+        $factory = $this->factory();
+        $entry = $this->entry();
+        $created = $factory->create($entry);
+
+        $this->registered = new TestModelFixture(['id' => 5]);
+
+        self::assertSame($created, $factory->create($entry));
+        self::assertSame(1, $this->instancesCreated);
+    }
+
+    public function testEachEntryOfTheSameRecordGetsItsOwnModel(): void
+    {
+        // the rows may differ, e.g. a list page's entry and a lookup's
+        $factory = $this->factory();
+
+        self::assertNotSame($factory->create($this->entry()), $factory->create($this->entry()));
+        self::assertSame(2, $this->instancesCreated);
     }
 
     public function testTheIdSurvivesATableWithoutSqlFields(): void
@@ -79,7 +110,8 @@ class EntryModelFactoryTest extends ContaoTestCase
     }
 
     /**
-     * @param ?class-string $registered
+     * The registry returns $registered — or what the test sets on `$this->registered` later.
+     *
      * @param array<string, mixed> $fields
      */
     private function factory(
@@ -89,7 +121,7 @@ class EntryModelFactoryTest extends ContaoTestCase
         array $fields = ['id' => [], 'title' => []],
     ): EntryModelFactory {
         $this->instancesCreated = 0;
-        $store = [];
+        $this->registered = $registered;
 
         $modelAdapter = $this->mockAdapter(['getClassFromTable']);
         if ($classLookupThrows) {
@@ -99,11 +131,7 @@ class EntryModelFactoryTest extends ContaoTestCase
         }
 
         $registry = $this->createMock(Registry::class);
-        $registry->method('fetch')->willReturnCallback(
-            static function (string $table, $id) use ($registered, &$store): ?Model {
-                return $store[$table . '.' . $id] ?? $registered;
-            },
-        );
+        $registry->method('fetch')->willReturnCallback(fn (): ?Model => $this->registered);
         $registryAdapter = $this->mockAdapter(['getInstance']);
         $registryAdapter->method('getInstance')->willReturn($registry);
 
@@ -121,12 +149,11 @@ class EntryModelFactoryTest extends ContaoTestCase
             },
         );
         $framework->method('createInstance')->willReturnCallback(
-            function (string $class, array $args) use (&$store): TestModelFixture {
+            function (string $class, array $args = []): TestModelFixture {
+                self::assertSame([], $args, 'A model built with a row registers itself.');
                 ++$this->instancesCreated;
-                $model = new TestModelFixture($args[0]);
-                $store['tl_test.' . $args[0]['id']] = $model;
 
-                return $model;
+                return new TestModelFixture();
             },
         );
 

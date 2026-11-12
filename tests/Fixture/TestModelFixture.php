@@ -31,4 +31,12 @@ class TestModelFixture extends Model
     public function onUnregister(Registry $registry): void
     {
     }
+
+    /**
+     * No cast: Contao's version reads the column types through the container.
+     */
+    public static function convertToPhpValue(string $strKey, mixed $varValue): mixed
+    {
+        return $varValue;
+    }
 }

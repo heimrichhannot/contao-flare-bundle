@@ -179,8 +179,9 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `ListCompoundBuilder`, `ListCompoundFactory` and `BaseListOptions` still take a `ListModel`. Hooks and callbacks of
   optional integrations stay in `src/Integration/`
 - `src/Contao/ListEntry/` — entries at the Contao boundary: `EntryModelFactory::create(Entry): ?Model` (the one place
-  an entry becomes a model: the registry's instance for its record, else a new model from the row restricted to the
-  table's columns; `null` without a model class; `MissingModelRefError` without `modelRef`; for Contao APIs that need
+  an entry becomes a model, memoized per entry: the registry's instance for its record, else a new model from the row
+  restricted to the table's columns — never registered, `save()` throws (`preventSaving()`); `null` without a model
+  class; `MissingModelRefError` without `modelRef`; for Contao APIs that need
   a model, e.g. the News/Events schema.org listeners), `EntryRelationResolver` (`flare_related(entry, column)`: the
   DCA relation like `Model::getRelated()`, memoized per entry and column, no membership check;
   `UndefinedRelationError` for a column without relation) and `EntryCacheTagger` (`EntryTaggerInterface`:

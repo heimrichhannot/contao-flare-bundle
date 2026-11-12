@@ -156,6 +156,13 @@ user) — every point must be expressible by a driver after this refactor:
   dependency). PHP ^8.2.
 - Migrations never delete or drop (memory `migrations-never-delete`).
 - Testable through public API (memory `testable-without-private-access`).
+- Every row of an Entries query on a DC table carries the main table's `id` (today `main.id AS id`, appended last by
+  `ListExecutionContextFactory`). The entries engine (PR #54) relies on it: `EntryCollection::forTable()` throws
+  `MissingEntryIdError` for a row without one, but `EntryLookup::fetch()` indexes the fetched rows by `(int) $row['id']`
+  *before* that check, so a row without `id` is silently a lookup miss (or an undefined-key warning). Only a
+  `ModifyListQueryStructEvent` listener replacing the select can cause that today; PR #54 deliberately left it as is
+  because this refactor removes the event. The new query build must guarantee the `id` column for every Entries
+  projection (no hook may drop it); if any hook still can, the lookup must check before indexing.
 
 ## Design
 

@@ -32,7 +32,8 @@ the reader and lookups) and `entries` (the `EntryCollection`).
 
 After the event, the collection and its entries are **sealed**: attach values inside the listener only — any
 `attach()` afterwards throws a `SealedEntriesError`. Templates and the breadcrumb therefore see one fixed set of
-values.
+values. Sealing is the framework's job: never call `seal()` in a listener — every later listener's `attach()` would
+throw.
 
 ## 2. A Related Record (To-One)
 

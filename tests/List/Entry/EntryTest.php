@@ -90,6 +90,30 @@ class EntryTest extends TestCase
         self::assertSame(1, $calls);
     }
 
+    public function testALazyValueThatThrowsRunsAgainOnTheNextRead(): void
+    {
+        $calls = 0;
+        $entry = self::entries([['id' => 1]])->first();
+        $entry->attach('flaky', static function () use (&$calls): string {
+            if (++$calls === 1) {
+                throw new \RuntimeException('down');
+            }
+            return 'up';
+        });
+
+        try {
+            $entry->flaky;
+            self::fail('The first load must throw.');
+        } catch (\RuntimeException $exception) {
+            self::assertSame('down', $exception->getMessage());
+        }
+
+        self::assertTrue(isset($entry->flaky));
+        self::assertSame('up', $entry->flaky);
+        self::assertSame('up', $entry->flaky);
+        self::assertSame(2, $calls);
+    }
+
     public function testPlainValueIsReadable(): void
     {
         $entry = self::entries([['id' => 1]])->first();

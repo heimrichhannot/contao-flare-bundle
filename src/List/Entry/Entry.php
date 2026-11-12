@@ -51,7 +51,10 @@ final class Entry
         return $this->link;
     }
 
-    /** A value, or a `\Closure(Entry): mixed` that runs once on the first access. */
+    /**
+     * A value, or a `\Closure(Entry): mixed` that runs on the first access and is memoized once it returns; a closure
+     * that throws runs again on the next read.
+     */
     public function attach(string $name, mixed $value): void
     {
         if ($this->collection?->isSealed()) {
@@ -93,10 +96,10 @@ final class Entry
         }
 
         if ($this->ownsAttachment($name)) {
+            // removed only once it succeeded: a closure that throws runs again on the next read
             if (isset($this->lazy[$name])) {
-                $load = $this->lazy[$name];
+                $this->values[$name] = ($this->lazy[$name])($this);
                 unset($this->lazy[$name]);
-                $this->values[$name] = $load($this);
             }
 
             return $this->values[$name];

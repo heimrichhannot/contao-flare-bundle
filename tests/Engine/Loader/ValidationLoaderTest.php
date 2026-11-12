@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Engine\Loader;
 
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\DriverManager;
 use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoader;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderConfig;
@@ -30,17 +32,56 @@ final class ValidationLoaderTest extends TestCase
     }
 
     /**
-     * A loader with the auto-item field `alias` over a list on `tl_test` with $rows.
+     * The database matches more than the stored value — SQLite casts a numeric string for an INTEGER column like MySQL
+     * does — but only the canonical auto-item finds the entry: no duplicate URLs.
+     *
+     * @dataProvider provideNonCanonicalIds
+     */
+    public function testANonCanonicalIdIsAMiss(string $autoItem): void
+    {
+        $loader = $this->loader([['id' => 12, 'alias' => 'a']], 'id');
+
+        self::assertSame(12, (int) ($loader->fetchEntryByAutoItem('12')['id'] ?? 0));
+        self::assertNull($loader->fetchEntryByAutoItem($autoItem));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function provideNonCanonicalIds(): iterable
+    {
+        yield 'a leading zero' => ['012'];
+        yield 'a decimal' => ['12.0'];
+        yield 'an exponent' => ['1.2e1'];
+    }
+
+    public function testAnAliasInAnotherCaseIsAMiss(): void
+    {
+        // a case-insensitive column, like MySQL's default collations
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $connection->executeStatement(
+            'CREATE TABLE tl_test (id INTEGER PRIMARY KEY, alias TEXT COLLATE NOCASE, published INTEGER DEFAULT 0)',
+        );
+        $connection->insert('tl_test', ['id' => 1, 'alias' => 'visible']);
+
+        $loader = $this->loader([], connection: $connection);
+
+        self::assertSame(1, (int) ($loader->fetchEntryByAutoItem('visible')['id'] ?? 0));
+        self::assertNull($loader->fetchEntryByAutoItem('VISIBLE'));
+    }
+
+    /**
+     * A loader with the auto-item field $field over a list on `tl_test` with $rows.
      *
      * @param list<array<string, mixed>> $rows
      */
-    private function loader(array $rows): ValidationLoader
+    private function loader(array $rows, string $field = 'alias', ?Connection $connection = null): ValidationLoader
     {
-        return $this->createLoaderFactory($this->createConnection($rows), new EventDispatcher())
+        return $this->createLoaderFactory($connection ?? $this->createConnection($rows), new EventDispatcher())
             ->createValidationLoader(new ValidationLoaderConfig(
                 list: $this->createList(),
-                intent: new ValidationIntent(autoItemField: 'alias'),
-                autoItemField: 'alias',
+                intent: new ValidationIntent(autoItemField: $field),
+                autoItemField: $field,
             ));
     }
 }

@@ -56,7 +56,13 @@ readonly class ValidationLoader implements ValidationLoaderInterface
             $row = $result->fetchAssociative();
             $result->free();
 
-            return $row === false ? null : $row;
+            // The database compares by its own rules: a numeric cast (MySQL: `12abc` = 12), a case-insensitive
+            // collation, trailing spaces. Only the stored value itself, the canonical auto-item, finds the entry.
+            if ($row === false || (string) ($row[$this->config->autoItemField] ?? '') !== $autoItem) {
+                return null;
+            }
+
+            return $row;
         }
         catch (FlareException $e)
         {

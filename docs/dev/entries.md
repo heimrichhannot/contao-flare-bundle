@@ -262,8 +262,9 @@ tagging. Tagging inside phase 1 tags exactly the pages that read the value.
 Templates and listeners work with the row; Contao models are made only where a Contao API requires one, e.g.
 `News::getSchemaOrgData()`. `HeimrichHannot\FlareBundle\Contao\ListEntry\EntryModelFactory` is the one place an entry
 becomes a model: `create(Entry $entry): ?Model` returns the instance Contao's model registry holds for the entry's
-record, else a new model built from the entry's row (restricted to the table's columns; Contao registers it). It
-returns `null` for a table without a model class and throws a `MissingModelRefError` for an entry without
+record, else a new model built from the entry's row (restricted to the table's columns). Such a model is not
+registered — a later `findByPk()` loads the record from the database — and cannot be saved (`save()` throws). The
+model is memoized per entry and shared by all callers. It returns `null` for a table without a model class and throws a `MissingModelRefError` for an entry without
 `meta->modelRef` — check the table first. The bundled News schema.org listener does it like this (shortened):
 
 ```php

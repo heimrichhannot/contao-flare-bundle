@@ -36,6 +36,21 @@ final class ReaderUrlGeneratorTest extends TestCase
         self::assertSame([$entry, 'my-alias'], [$this->seen?->entry, $this->seen?->autoItem]);
     }
 
+    /**
+     * @group legacy
+     */
+    public function testPassesTheRevertedValueToTheRouter(): void
+    {
+        $page = $this->createMock(PageModel::class);
+        $page->method('getAbsoluteUrl')->with('/a#b')->willReturn('https://example.org/reader/a%23b');
+        $entry = (new EntryCollection([['id' => 1, 'alias' => 'a&#35;b']]))->first();
+        self::assertNotNull($entry);
+
+        $this->generator($page)->generate($entry);
+
+        self::assertSame('a#b', $this->seen?->autoItem);
+    }
+
     public function testEmptyAutoItemHasNoLink(): void
     {
         $page = $this->createMock(PageModel::class);

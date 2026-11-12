@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Reader;
 
+use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Event\ReaderUrlGeneratedEvent;
 use HeimrichHannot\FlareBundle\List\Entry\Entry;
-use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 readonly class ReaderUrlGenerator implements ReaderUrlGeneratorInterface
@@ -27,7 +27,9 @@ readonly class ReaderUrlGenerator implements ReaderUrlGeneratorInterface
             return null;
         }
 
-        $url = $this->config->readerPage->getAbsoluteUrl('/' . Str::urlEncodePath($autoItem));
+        // The stored value is Contao-input-encoded; the URL text is its inverse, and the router percent-encodes it.
+        $autoItem = StringUtil::revertInputEncoding($autoItem);
+        $url = $this->config->readerPage->getAbsoluteUrl('/' . $autoItem);
 
         $event = $this->eventDispatcher->dispatch(
             new ReaderUrlGeneratedEvent(

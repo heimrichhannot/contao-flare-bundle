@@ -35,6 +35,10 @@ use HeimrichHannot\FlareBundle\Engine\Intent\Factory\InteractiveIntentFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\Factory\ValidationIntentFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\InteractiveIntent;
 use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
+use HeimrichHannot\FlareBundle\List\Entry\Entry;
+use HeimrichHannot\FlareBundle\List\Entry\EntryCollection;
+use HeimrichHannot\FlareBundle\List\Entry\EntryMeta;
+use HeimrichHannot\FlareBundle\List\Entry\ModelRef;
 use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrer;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\FileLocator;
@@ -116,6 +120,10 @@ final class ServicesConfigTest extends TestCase
             ValidationIntent::class,
             AggregationIntent::class,
             ConfigurationIntent::class,
+            Entry::class,
+            EntryMeta::class,
+            ModelRef::class,
+            EntryCollection::class,
         ] as $class) {
             yield $class => [$class];
         }

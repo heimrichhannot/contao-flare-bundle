@@ -13,6 +13,7 @@ services:
             - ../src/{Config,Contao,ContaoManager,Contract,DependencyInjection,Dto,Engine,Event,Integration,Model,Trait,Util}
             - ../src/{Filter,Form,List,Paginator,Query,Sort}/*.php
             - ../src/Filter/Value
+            - ../src/List/Entry
 
     HeimrichHannot\FlareBundle\Contao\:
         resource: ../src/Contao

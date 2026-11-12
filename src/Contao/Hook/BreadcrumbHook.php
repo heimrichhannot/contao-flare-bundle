@@ -5,35 +5,50 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Contao\Hook;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
+use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\Module;
 use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Contao\Reader\ReaderResolver;
 use HeimrichHannot\FlareBundle\Util\Env;
+use Psr\Log\LoggerInterface;
 
 /**
  * Titles the last breadcrumb item after the entry of the page's reader, with the reader's page meta title. Leaves the
  * items unchanged without a reader, an auto-item, an entry or a title, and when the list failed. Contao's template
- * echoes `link` raw, so the title goes in HTML-escaped like Contao's own items (existing entities stay as they are).
+ * echoes `link` raw, so the title goes in HTML-escaped and without insert tags like Contao's own items (existing
+ * entities stay as they are). An unexpected exception (a failed list is no exception here, the resolver keeps it) is
+ * logged and leaves the items unchanged; in debug mode it is rethrown.
  */
 #[AsHook('generateBreadcrumb')]
 readonly class BreadcrumbHook
 {
     public function __construct(
-        private ReaderResolver $readerResolver,
+        private ReaderResolver  $readerResolver,
+        private LoggerInterface $logger,
+        private bool            $debug = false,
     ) {}
 
+    /**
+     * @throws \Exception in debug mode, an unexpected exception while resolving the reader
+     */
     public function __invoke(array $items, Module $module): array
     {
-        $title = null;
-
         try
         {
             $title = $this->readerResolver->resolveForPage()?->getPageMeta()?->getTitle();
         }
-        // @mago-expect lint:no-empty-catch-clause Intentionally ignored to not break the breadcrumb
-        catch (\Exception)
+        catch (\Exception $e)
         {
-            // ignore
+            if ($this->debug) {
+                throw $e;
+            }
+
+            $this->logger->error(
+                \sprintf('The breadcrumb could not resolve the reader: %s', $e->getMessage()),
+                ['contao' => new ContaoContext(__METHOD__, ContaoContext::ERROR), 'exception' => $e],
+            );
+
+            return $items;
         }
 
         if ($title === null || $title === '' || $items === []) {
@@ -47,7 +62,7 @@ readonly class BreadcrumbHook
         }
 
         $last = \count($items) - 1;
-        $escaped = StringUtil::specialchars($title);
+        $escaped = StringUtil::specialchars($title, true);
         $items[$last]['title'] = $escaped;
         $items[$last]['link'] = $escaped;
 

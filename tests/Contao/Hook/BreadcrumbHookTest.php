@@ -13,6 +13,7 @@ use HeimrichHannot\FlareBundle\Tests\Engine\EnginePipelineTrait;
 use HeimrichHannot\FlareBundle\Tests\Filter\Element\StubsContaoDcaTrait;
 use HeimrichHannot\FlareBundle\Tests\Fixture\ContentModelFixture;
 use HeimrichHannot\FlareBundle\Tests\Fixture\ListModelFixture;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 /**
@@ -44,8 +45,8 @@ final class BreadcrumbHookTest extends ContaoTestCase
     }
 
     /**
-     * Contao's template echoes `link` raw, so the title goes in HTML-escaped like Contao's own items, without
-     * double-encoding the entities of an already encoded title.
+     * Contao's template echoes `link` raw, so the title goes in HTML-escaped and without insert tags like Contao's own
+     * items, without double-encoding the entities of an already encoded title.
      *
      * @dataProvider provideEscapedTitles
      */
@@ -64,6 +65,25 @@ final class BreadcrumbHookTest extends ContaoTestCase
         yield 'a tag' => ['<img src=x onerror=alert(1)>', '&lt;img src=x onerror=alert(1)&gt;'];
         yield 'an ampersand and quotes' => ['Tom & "Jerry"', 'Tom &amp; &quot;Jerry&quot;'];
         yield 'an already encoded title' => ['Tom &amp; Jerry &lt;3', 'Tom &amp; Jerry &lt;3'];
+        yield 'insert tags' => ['A {{date::Y}} B {{ins{{nested}}}}', 'A  B '];
+    }
+
+    public function testAnUnexpectedExceptionIsLoggedAndLeavesTheItemsUnchanged(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('error')->with(self::stringContains('listener down'));
+
+        $hook = $this->hook('visible', logger: $logger, failingListener: true);
+
+        self::assertSame(self::ITEMS, $hook(self::ITEMS, $this->createMock(Module::class)));
+    }
+
+    public function testAnUnexpectedExceptionIsRethrownInDebugMode(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('listener down');
+
+        $this->hook('visible', debug: true, failingListener: true)(self::ITEMS, $this->createMock(Module::class));
     }
 
     /**
@@ -97,11 +117,20 @@ final class BreadcrumbHookTest extends ContaoTestCase
         bool    $hasReader = true,
         bool    $failed = false,
         string  $title = 'T',
+        ?LoggerInterface $logger = null,
+        bool    $debug = false,
+        bool    $failingListener = false,
     ): BreadcrumbHook {
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(
             ReaderPageMetaEvent::class,
-            static fn (ReaderPageMetaEvent $event) => $event->pageMeta->setTitle($title),
+            static function (ReaderPageMetaEvent $event) use ($title, $failingListener): void {
+                if ($failingListener) {
+                    throw new \RuntimeException('listener down');
+                }
+
+                $event->pageMeta->setTitle($title);
+            },
         );
 
         $connection = $this->createConnection([
@@ -118,6 +147,6 @@ final class BreadcrumbHookTest extends ContaoTestCase
             filters: [self::publishedOnly()],
             failures: $failed ? [new FilterFailure('tl_flare_filter.3', 'broken')] : [],
             content: $hasReader ? $content : null,
-        ));
+        ), $logger ?? $this->createMock(LoggerInterface::class), $debug);
     }
 }

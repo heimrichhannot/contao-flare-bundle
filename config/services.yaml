@@ -40,6 +40,10 @@ services:
         arguments:
             $debug: '%kernel.debug%'
 
+    HeimrichHannot\FlareBundle\Contao\Hook\BreadcrumbHook:
+        arguments:
+            $debug: '%kernel.debug%'
+
     HeimrichHannot\FlareBundle\List\Entry\EntryTaggerInterface: '@HeimrichHannot\FlareBundle\Contao\ListEntry\EntryCacheTagger'
 
     # Util classes registered as twig globals must be defined as services

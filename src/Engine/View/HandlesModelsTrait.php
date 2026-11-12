@@ -46,41 +46,4 @@ trait HandlesModelsTrait
 
         return $model;
     }
-
-    /**
-     * @throws FlareException
-     */
-    public function createModelsFromEntries(string $table, array $entries): array
-    {
-        $modelClass = Model::getClassFromTable($table);
-        if (!\class_exists($modelClass)) {
-            throw new FlareException(\sprintf('Model class does not exist: "%s"', $modelClass), method: __METHOD__);
-        }
-
-        $registry = Model\Registry::getInstance();
-        $models = [];
-
-        foreach ($entries as $entry)
-        {
-            if (!$id = $entry['id'] ?? null) {
-                throw new FlareException('Entry does not have an ID.', method: __METHOD__);
-            }
-
-            if (!$model = $registry->fetch($table, $id))
-                // Contao native model cache
-            {
-                $model = new $modelClass($entry);
-
-                if (!$model instanceof Model) {
-                    throw new FlareException('Invalid model instance.', method: __METHOD__);
-                }
-
-                $registry->register($model);
-            }
-
-            $models[$id] = $model;
-        }
-
-        return $models;
-    }
 }

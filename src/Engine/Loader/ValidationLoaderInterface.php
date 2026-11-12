@@ -8,8 +8,13 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 
 interface ValidationLoaderInterface
 {
-    public function fetchEntryById(int $id): ?array;
-
+    /**
+     * The member row whose auto-item field holds $autoItem, by the reader's rules.
+     *
+     * @return array<string, mixed>|null the row, or null on a miss
+     *
+     * @throws FlareException
+     */
     public function fetchEntryByAutoItem(string $autoItem): ?array;
 
     /**

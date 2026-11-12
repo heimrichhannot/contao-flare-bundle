@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Engine\Intent\Factory;
 
 use Contao\ContentModel;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\ContentContainer;
+use HeimrichHannot\FlareBundle\Engine\Intent\InteractiveIntent;
 use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\List\ListCompound;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
@@ -39,5 +40,16 @@ readonly class ValidationIntentFactory
         }
 
         return $intent;
+    }
+
+    /**
+     * The reader's rules for links out of a list: its reader page and auto-item field, no filter values.
+     */
+    public function createFromIntent(InteractiveIntent $intent): ValidationIntent
+    {
+        return new ValidationIntent(
+            jumpToReaderPageId: $intent->jumpToReaderPageId,
+            autoItemField: $intent->autoItemField,
+        );
     }
 }

@@ -11,7 +11,6 @@ use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
 use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Reader\BackLink;
-use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
 
 /**
  * @implements ProjectorInterface<ValidationView>
@@ -27,22 +26,16 @@ class ValidationProjector extends AbstractProjector
     {
         \assert($intent instanceof ValidationIntent, '$intent must be an instance of ValidationIntent');
 
-        $readerUrlConfig = $intent->createReaderUrlConfig();
-        $autoItemField = $readerUrlConfig->autoItemField ?? $intent->autoItemField;
-
         $loader = $this->createLoader(new ValidationLoaderConfig(
             list: $list,
             intent: $intent,
-            autoItemField: $autoItemField,
+            autoItemField: $intent->autoItemField,
         ));
-
-        $readerUrlGenerator = $this->getReaderUrlGeneratorFactory()->create($readerUrlConfig);
 
         return $this->createView(
             loader: $loader,
-            readerUrlGenerator: $readerUrlGenerator,
             table: $list->dc,
-            autoItemField: $autoItemField,
+            autoItemField: $intent->autoItemField,
             backLink: $intent->createBackLink(),
         );
     }
@@ -53,15 +46,13 @@ class ValidationProjector extends AbstractProjector
     }
 
     protected function createView(
-        ValidationLoaderInterface   $loader,
-        ReaderUrlGeneratorInterface $readerUrlGenerator,
-        string                      $table,
-        string                      $autoItemField,
-        ?BackLink                   $backLink = null,
+        ValidationLoaderInterface $loader,
+        string                    $table,
+        string                    $autoItemField,
+        ?BackLink                 $backLink = null,
     ): ValidationView {
         return new ValidationView(
             loader: $loader,
-            readerUrlGenerator: $readerUrlGenerator,
             table: $table,
             autoItemField: $autoItemField,
             backLink: $backLink,

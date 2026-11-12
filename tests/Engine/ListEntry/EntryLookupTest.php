@@ -13,8 +13,8 @@ use HeimrichHannot\FlareBundle\Exception\InvalidLookupIdError;
 use HeimrichHannot\FlareBundle\List\Entry\Entry;
 use HeimrichHannot\FlareBundle\List\Entry\EntryCollection;
 use HeimrichHannot\FlareBundle\List\Entry\EntryLookupInterface;
-use HeimrichHannot\FlareBundle\List\Entry\EntryTaggerInterface;
 use HeimrichHannot\FlareBundle\Tests\Engine\EnginePipelineTrait;
+use HeimrichHannot\FlareBundle\Tests\Fixture\SpyTagger;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Twig\Environment;
@@ -227,22 +227,5 @@ final class EntryLookupTest extends TestCase
         self::assertInstanceOf(EntryCollection::class, $entries);
 
         return \array_map(static fn (Entry $e): int => (int) $e->row['id'], \iterator_to_array($entries));
-    }
-}
-
-/**
- * Records "<table>.<id>" of every tagged entry.
- */
-final class SpyTagger implements EntryTaggerInterface
-{
-    /** @var list<string> */
-    public array $tagged = [];
-
-    public function tag(Entry ...$entries): void
-    {
-        foreach ($entries as $entry) {
-            $ref = $entry->meta->modelRef;
-            $this->tagged[] = $ref !== null ? $ref->table . '.' . $ref->id : '(no model)';
-        }
     }
 }

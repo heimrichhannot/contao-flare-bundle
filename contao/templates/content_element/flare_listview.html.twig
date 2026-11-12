@@ -41,12 +41,11 @@
                 {% if app.debug %}
                     {% for entry in flare_list.entries %}
                         <details>
-                            <summary>#{{ entry.id }} <a href="{{ flare_list.to(entry.id) }}">{{ (entry.title ?? entry.email ?? entry.alias ?? null) ?: ('to reader <' ~ loop.index ~ '>') }}</a></summary>
+                            <summary>#{{ entry.row.id ?? '' }} <a href="{{ entry.to }}">{{ (entry.row.title ?? entry.row.email ?? entry.row.alias ?? null) ?: ('to reader <' ~ loop.index ~ '>') }}</a></summary>
                             <div style="width: 100%; max-height: max(30vh, 150px); overflow: auto auto; background: #def; margin-bottom: .5rem">
-                                {% set model = flare_list.model(entry.id) %}
                                 <dl style="display: grid; grid-template-columns: max-content auto; gap: .125rem 1rem; font-family: monospace; padding: .5rem 1rem 3rem; font-size: .9em;">
-                                    <strong style="grid-column: 1 / -1; margin-bottom: .25rem">{{ model.table }}</strong>
-                                    {% for key, field in entry -%}
+                                    <strong style="grid-column: 1 / -1; margin-bottom: .25rem">{{ entry.meta.modelRef.table ?? '' }}</strong>
+                                    {% for key, field in entry.row -%}
                                         {% if key not in ['password'] -%}
                                             <dt>{{ key }}</dt><dd>{{ field|default('-') }}</dd>
                                         {% endif %}

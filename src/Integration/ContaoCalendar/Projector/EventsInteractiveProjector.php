@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Integration\ContaoCalendar\Projector;
 
 use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Engine\Intent\InteractiveIntent;
+use HeimrichHannot\FlareBundle\Engine\ListEntry\EntryCollector;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderConfig;
 use HeimrichHannot\FlareBundle\Engine\Loader\InteractiveLoaderInterface;
 use HeimrichHannot\FlareBundle\Engine\Projector\InteractiveProjector;
@@ -13,9 +14,9 @@ use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\GroupsEntriesTrait;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\ListDriver\EventsListDriver;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\Loader\EventsInteractiveLoader;
 use HeimrichHannot\FlareBundle\Integration\ContaoCalendar\View\InteractiveEventsView;
+use HeimrichHannot\FlareBundle\List\Entry\EntryLookupInterface;
 use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Paginator\Paginator;
-use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
 use Symfony\Component\Form\FormInterface;
 
 class EventsInteractiveProjector extends InteractiveProjector
@@ -41,20 +42,20 @@ class EventsInteractiveProjector extends InteractiveProjector
     }
 
     protected function createView(
-        InteractiveLoaderInterface  $loader,
-        FormInterface               $form,
-        Paginator                   $paginator,
-        ReaderUrlGeneratorInterface $readerUrlGenerator,
-        string                      $table,
-        int                         $totalItems,
-        bool                        $failed = false,
+        InteractiveLoaderInterface $loader,
+        FormInterface              $form,
+        Paginator                  $paginator,
+        EntryCollector             $collector,
+        EntryLookupInterface       $lookup,
+        int                        $totalItems,
+        bool                       $failed = false,
     ): InteractiveEventsView {
         return new InteractiveEventsView(
             loader: $loader,
             form: $form,
             paginator: $paginator,
-            readerUrlGenerator: $readerUrlGenerator,
-            table: $table,
+            collector: $collector,
+            lookup: $lookup,
             totalItems: $totalItems,
             failed: $failed,
         );

@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Reader;
 
-use Contao\Model;
 use HeimrichHannot\FlareBundle\Event\ReaderUrlGeneratedEvent;
-use HeimrichHannot\FlareBundle\Util\CallbackHelper;
+use HeimrichHannot\FlareBundle\List\Entry\Entry;
 use HeimrichHannot\FlareBundle\Util\Str;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -17,9 +16,14 @@ readonly class ReaderUrlGenerator implements ReaderUrlGeneratorInterface
         private ReaderUrlConfig          $config,
     ) {}
 
-    public function generate(Model $model): ?string
+    /**
+     * Reads the auto-item value from the entry's row; an empty value has no link.
+     */
+    public function generate(Entry $entry): ?string
     {
-        if (!$autoItem = (string) CallbackHelper::tryGetProperty($model, $this->config->autoItemField)) {
+        $autoItem = (string) ($entry->row[$this->config->autoItemField] ?? '');
+
+        if ($autoItem === '') {
             return null;
         }
 
@@ -27,7 +31,7 @@ readonly class ReaderUrlGenerator implements ReaderUrlGeneratorInterface
 
         $event = $this->eventDispatcher->dispatch(
             new ReaderUrlGeneratedEvent(
-                model: $model,
+                entry: $entry,
                 autoItem: $autoItem,
                 page: $this->config->readerPage,
                 url: $url,

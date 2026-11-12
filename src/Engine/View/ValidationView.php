@@ -6,23 +6,21 @@ namespace HeimrichHannot\FlareBundle\Engine\View;
 
 use Contao\Model;
 use HeimrichHannot\FlareBundle\Engine\Loader\ValidationLoaderInterface;
+use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Reader\BackLink;
-use HeimrichHannot\FlareBundle\Reader\ReaderUrlGeneratorInterface;
 
 class ValidationView implements ViewInterface
 {
     use HandlesModelsTrait;
-    use LinksToReaderTrait;
 
-    private array $entriesById;
-    private array $entriesByAutoItem;
+    /** @var array<string, ?array<string, mixed>> the loaded rows, misses as null */
+    private array $entriesByAutoItem = [];
 
     public function __construct(
-        private readonly ValidationLoaderInterface   $loader,
-        private readonly ReaderUrlGeneratorInterface $readerUrlGenerator,
-        private readonly string                      $table,
-        private readonly string                      $autoItemField,
-        private readonly ?BackLink                   $backLink = null,
+        private readonly ValidationLoaderInterface $loader,
+        private readonly string                    $table,
+        private readonly string                    $autoItemField,
+        private readonly ?BackLink                 $backLink = null,
     ) {}
 
     public function getBackLink(): ?BackLink
@@ -30,33 +28,25 @@ class ValidationView implements ViewInterface
         return $this->backLink;
     }
 
-    public function getEntry(int $id): ?array
-    {
-        return $this->entriesById[$id] ??= $this->loader->fetchEntryById($id);
-    }
-
+    /**
+     * @return array<string, mixed>|null the member row, or null on a miss
+     *
+     * @throws FlareException
+     */
     public function getEntryByAutoItem(string $autoItem): ?array
     {
-        return $this->entriesByAutoItem[$autoItem] ??= $this->loader->fetchEntryByAutoItem($autoItem);
+        if (!\array_key_exists($autoItem, $this->entriesByAutoItem)) {
+            $this->entriesByAutoItem[$autoItem] = $this->loader->fetchEntryByAutoItem($autoItem);
+        }
+
+        return $this->entriesByAutoItem[$autoItem];
     }
 
-    public function getModel(int $id): ?Model
-    {
-        return $this->fetchModel($this->table, $id, $this->getEntry(...));
-    }
-
+    /**
+     * @throws FlareException
+     */
     public function getModelByAutoItem(string $autoItem): ?Model
     {
         return $this->fetchModel($this->table, $autoItem, $this->getEntryByAutoItem(...), $this->autoItemField);
-    }
-
-    protected function getReaderModel(int $id): ?Model
-    {
-        return $this->getModel($id);
-    }
-
-    protected function getReaderUrlGenerator(): ReaderUrlGeneratorInterface
-    {
-        return $this->readerUrlGenerator;
     }
 }

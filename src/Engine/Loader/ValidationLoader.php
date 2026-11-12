@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Engine\Loader;
 
+use Doctrine\DBAL\ArrayParameterType;
 use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -12,6 +13,7 @@ use HeimrichHannot\FlareBundle\Filter\Factory\FilterCompoundFactory;
 use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Query\Executor\ListQueryDirector;
 use HeimrichHannot\FlareBundle\Query\ListQueryConfig;
+use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Util\EntryCache;
 
 readonly class ValidationLoader implements ValidationLoaderInterface
@@ -113,6 +115,43 @@ readonly class ValidationLoader implements ValidationLoaderInterface
             }
 
             return $entry;
+        }
+        catch (FlareException $e)
+        {
+            throw $e;
+        }
+        catch (\Exception $e)
+        {
+            throw new FlareException($e->getMessage(), $e->getCode(), $e, method: __METHOD__);
+        }
+    }
+
+    /**
+     * @param list<int> $ids
+     * @return list<array<string, mixed>>
+     *
+     * @throws FlareException
+     */
+    public function fetchEntriesByIds(array $ids): array
+    {
+        try
+        {
+            $qb = $this->listQueryDirector->createQueryBuilder(new ListQueryConfig(
+                list: $this->config->list,
+                intent: $this->config->intent,
+                filterValues: $this->config->intent->getFilterValues(),
+            ));
+
+            if (!$qb) {
+                return [];
+            }
+
+            $qb->andWhere($qb->expr()->in(TableAliasRegistry::ALIAS_MAIN . '.id', ':flare_lookup_ids'))
+                ->setParameter('flare_lookup_ids', $ids, ArrayParameterType::INTEGER)
+                ->setFirstResult(0)
+                ->setMaxResults(null);
+
+            return $qb->executeQuery()->fetchAllAssociative();
         }
         catch (FlareException $e)
         {

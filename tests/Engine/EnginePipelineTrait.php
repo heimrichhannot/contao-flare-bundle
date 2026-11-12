@@ -98,6 +98,35 @@ trait EnginePipelineTrait
     }
 
     /**
+     * SQLite in memory with the reader discovery tables `tl_article` and `tl_content`, filled with the given rows.
+     * Defaults: articles published, `start`/`stop` `''`; elements of type `flare_reader`, visible, `tstamp` 1,
+     * `ptable` `tl_article`.
+     *
+     * @param list<array<string, mixed>> $articles
+     * @param list<array<string, mixed>> $elements
+     */
+    protected function createReaderTables(Connection $connection, array $articles, array $elements): void
+    {
+        $connection->executeStatement(
+            "CREATE TABLE tl_article (id INTEGER PRIMARY KEY, pid INTEGER DEFAULT 0, sorting INTEGER DEFAULT 0,"
+            . " published INTEGER DEFAULT 1, start DEFAULT '', stop DEFAULT '')",
+        );
+        $connection->executeStatement(
+            "CREATE TABLE tl_content (id INTEGER PRIMARY KEY, pid INTEGER DEFAULT 0, ptable TEXT DEFAULT 'tl_article',"
+            . " type TEXT DEFAULT 'flare_reader', sorting INTEGER DEFAULT 0, invisible INTEGER DEFAULT 0,"
+            . " start DEFAULT '', stop DEFAULT '', tstamp INTEGER DEFAULT 1)",
+        );
+
+        foreach ($articles as $row) {
+            $connection->insert('tl_article', $row);
+        }
+
+        foreach ($elements as $row) {
+            $connection->insert('tl_content', $row);
+        }
+    }
+
+    /**
      * The real director over $connection, one per dispatcher: the first call registers the bundle's query modifier
      * listeners with the priorities of their {@see AsEventListener} attributes, and the query counter, on
      * $dispatcher; later calls with the same dispatcher return that director. One connection per dispatcher.

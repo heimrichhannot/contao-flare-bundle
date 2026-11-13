@@ -1,8 +1,13 @@
 # Design: query architecture — list drivers own their query building blocks
 
 Status: agreed in conversation 2026-11-04, builder-checked and independently reviewed twice, awaiting the user's
-review. Branch: `v0.2-query` off `v0.2` (the unreleased major version; breaking changes are fine, no BC shims, no
-`class_alias`) — Claude's call.
+review. Rebased onto `v0.2` after PR #54 (entries instead of models in the engine views) on 2026-11-13 and revised in
+conversation the same day: an explicit column list replaces `main.*` and the column mapping (§3), the list alone
+defines its entries (§2), lookups by ids and the expansion follow PR #54. A small follow-up to PR #54 goes first on
+`v0.2` and is assumed here: no entry becomes a Contao model any more (`EntryModelFactory` removed; the schema.org
+listeners and `flare_related()` use Contao's finders) and the reader's auto-item lookup drops its `LIMIT 1`. Branch:
+`v0.2-query` off `v0.2` (the unreleased major version; breaking changes are fine, no BC shims, no `class_alias`) —
+Claude's call.
 
 ## Intent
 
@@ -38,6 +43,13 @@ What the user wants instead, and why:
   today's to-many joins (Codefog tags) need `GROUP BY main.id` against duplicates, which clashes with computed
   columns under `ONLY_FULL_GROUP_BY`, and make two tag filters of one list share one joined row
   (`tags.id IN (A…) AND tags.id IN (B…)` — almost always empty).
+- **Every key of a row is defined** (user, 2026-11-13): the projection is an explicit list "row key → SQL
+  expression", pre-filled with the columns of the list's table; the driver and integrations redefine single columns
+  (`IFNULL(…)`, an inner SELECT, a fixed value) or add keys. Whether a key comes from the table itself, from an
+  expression or from a join makes no difference. `main.*` goes, and so does every link between the query and Contao
+  models: rows become entries (PR #54), nothing else.
+- **The list defines its entries, the intent their presentation** (user, 2026-11-13): an intent decides how a list is
+  executed and embedded — the order and the section shown —, never what constitutes the list's entities.
 - **The architecture must carry what is known to come**, without being rebuilt:
   - a DC_Multilingual driver (legacy in `src/Integration/Terminal42Languages/`, full v0.0.x integration on branch
     `support/0.0.34`: `src/EventListener/Integration/Terminal42ChangelanguageListener.php`,
@@ -67,15 +79,16 @@ user) — every point must be expressible by a driver after this refactor:
 1. A **table catalog** per list: every alias the list's query can use, with its table, its join, its cardinality and
    its flags, declared value-free by the driver and extended by integrations through one event. It replaces
    `ListExecutionContext` / `TableAliasRegistry` as the source of truth, in the frontend and in the backend.
-2. A **driver query hook**, called once per list × intent × filter values, that contributes the driver's building
-   blocks: projection, identity, base conditions and the values of its join parameters. Entries and Count
-   are both derived from it.
+2. A **driver query hook**, called once per query build, that contributes the driver's per-query building blocks:
+   base conditions and the values of its parameters. Entries and Count are both derived from it.
 3. **One row per entry**: only outer-joinable (single-valued up to `main`) aliases are joined into the outer query; conditions on multiplying
    aliases are compiled per filter into correlated `EXISTS` subqueries (user's decision).
-4. A **column mapping** declared by the driver: a column of an alias may stand for an SQL expression
-   (`main.title` ⇒ `IFNULL(translation.title, main.title)`), applied wherever the list query resolves a column.
-5. **Join parameters**: a join condition may contain named parameters; whoever declares a join fills its parameters
-   when the query is built — the driver in its hook, an integration through an event. The driver need not know.
+4. An explicit **column list**: every key of a row has one definition, pre-filled with the columns of the list's
+   table and redefined or extended by the driver and by integrations (`main.title` ⇒
+   `IFNULL(translation.title, main.title)`); a definition applies wherever the list query resolves the column —
+   projection, identity, filters, sorting.
+5. **Parameters**: a join condition or a column definition may contain named parameters; whoever declares them fills
+   them when the query is built — the driver in its hook, an integration through an event. The driver need not know.
 6. **Targeting for every element**, applied by `FilterConditionsBuilder::column()`; multi-alias predicates via
    `column($col, for: $alias)`; bundled elements follow their target's table.
 7. **Framework assembly** in a fixed order, without listener priorities; **Count counts the Entries query** (wrapping),
@@ -115,8 +128,12 @@ user) — every point must be expressible by a driver after this refactor:
   `dev/superpowers/ideas/2026-11-04-events-expansion-window.md` (user's decision).
 - Offering columns of aliases other than `main` in the `sortSettings` backend widget (it stays `main`-only as today);
   the sort-key resolution supports any single-valued catalog alias already (Claude's call).
-- Integrations contributing anything but aliases, joins and the values of their own join parameters (user's
-  decision: "vorderhand nur Aliasse und Joins"). No projection, conditions, mapping or ordering by events.
+- Integrations contributing anything but aliases, joins, column definitions and the values of their own parameters
+  (user's decisions: "vorderhand nur Aliasse und Joins" on 2026-11-04, column definitions added on 2026-11-13). No
+  conditions or ordering by events.
+- The follow-up to PR #54 (removing `EntryModelFactory`, native model lookups in the schema.org listeners and
+  `flare_related()`, the auto-item lookup without `LIMIT 1`): its own PR on `v0.2` before this one (user's
+  decision).
 - Changing `FilterConditionsBuilder`'s condition API, the predicates' SQL, the filter failure semantics
   (`FilterFailure`, retry with `null`, `abort()`), or the engine's projector/view layering.
 - The `ListModel` exception (`ListCompound`, `ListCompoundBuilder`, `ListCompoundFactory`, `BaseListOptions` keep
@@ -131,6 +148,8 @@ user) — every point must be expressible by a driver after this refactor:
 - Raw, unbound runtime values in SQL (the legacy language interpolation).
 - Entries and Count computed from different rows — through joins activated for one of them only, inputs that reach
   only one of them, or a driver shaping them differently.
+- A whole list that depends on the intent — a driver block, a join or a column definition read from it. An intent
+  only narrows the list to a section.
 - Duplicate entries from related rows, and grouping as the means against them.
 - A sort order (later: chosen by a visitor) that changes which rows are entries.
 - BC shims or deprecated aliases for the removed events/contracts.
@@ -156,13 +175,13 @@ user) — every point must be expressible by a driver after this refactor:
   dependency). PHP ^8.2.
 - Migrations never delete or drop (memory `migrations-never-delete`).
 - Testable through public API (memory `testable-without-private-access`).
-- Every row of an Entries query on a DC table carries the main table's `id` (today `main.id AS id`, appended last by
-  `ListExecutionContextFactory`). The entries engine (PR #54) relies on it: `EntryCollection::forTable()` throws
-  `MissingEntryIdError` for a row without one, but `EntryLookup::fetch()` indexes the fetched rows by `(int) $row['id']`
-  *before* that check, so a row without `id` is silently a lookup miss (or an undefined-key warning). Only a
-  `ModifyListQueryStructEvent` listener replacing the select can cause that today; PR #54 deliberately left it as is
-  because this refactor removes the event. The new query build must guarantee the `id` column for every Entries
-  projection (no hook may drop it); if any hook still can, the lookup must check before indexing.
+- Every row of an Entries query on a DC table carries the entry's identity as `id` (today `main.id AS id`, appended
+  last by `ListExecutionContextFactory`). The entries engine (PR #54) relies on it: `EntryCollection::forTable()`
+  throws `MissingEntryIdError` for a row without one, and `EntryLookup::fetch()` indexes the fetched rows by
+  `(int) $row['id']` *before* that check, so a row without `id` would silently be a lookup miss. The new build
+  guarantees the column: `id` is a key of the column list of `main` and cannot be removed (§3), so the lookup needs
+  no check of its own. `meta.modelRef` no longer follows `row['id']`: it names the physical `main` record (§3), and
+  the lookup indexes by it (§2).
 
 ## Design
 
@@ -171,30 +190,33 @@ user) — every point must be expressible by a driver after this refactor:
 ```
 ListCompoundBuilder::build()                              — once per list (frontend and backend)
   driver buildList() → ListDriverBuildListEvent → config → schema       (unchanged)
-  driver buildTableCatalog(TableCatalogBuilder, …)          — value-free declaration
-  → ListDriverBuildTableCatalogEvent                        — integrations add aliases + joins (+ their params)
+  driver buildTableCatalog(TableCatalogBuilder, …)          — value-free: aliases, joins, column definitions
+  → ListDriverBuildTableCatalogEvent                        — integrations add aliases, joins, column definitions
   ⇒ ListCompound::$tables (immutable TableCatalog)
   every filter's target (and declared for: aliases) checked against the catalog → FilterFailure if unknown
 
-ListQueryDirector — per list × intent × filter values
+ListQueryDirector — per list × filter values (the intent adds only order and section)
   1. fail if the list recorded failures                     (unchanged)
-  2. driver buildQuery(ListQueryBuilder, ListQueryContext)  — building blocks, once; no purpose in the context
-     → ListDriverBuildQueryEvent                            — integrations fill their join parameters
+  2. driver buildQuery(ListQueryBuilder, ListQueryContext)  — base conditions, parameter values; once, no intent
+     → ListDriverBuildQueryEvent                            — integrations fill their parameters
   3. filters → FilterInvoker → invocation results (effect, conditions per alias, used aliases)
-     backstop: every alias used is in the catalog (filters added later via withFilter(), overrides) → FilterException
+     backstop: every alias used is in the catalog (filters added later via withFilter(), overrides) → \Error
   4. WHERE = base conditions ∧ per filter: its propositions on outer-joinable aliases
                                         ∧ one correlated EXISTS (…) per connected to-many component it used
-  5. outer joins (outer-joinable only): mandatory ∪ used by filters, EXISTS anchors, mapping, projection, identity,
-     base conditions — closed over from-alias and `requires`, topologically sorted;
-     every parameter of an active join (outer or inside an EXISTS) must be bound
-  6. Entries: projection + identity AS id, WHERE, no grouping, ORDER BY sort keys (joins used only
-     by sort keys added as LEFT) + main.id tie-breaker, paging
+                                        (∧ physical main.id IN (:ids) for a lookup by ids)
+  5. outer joins (outer-joinable only): mandatory ∪ used by filters, EXISTS anchors, the definitions they resolve,
+     identity, base conditions — closed over from-alias and `requires`, topologically sorted;
+     every parameter of an active join or a used definition (outer or inside an EXISTS) must be bound
+  6. Entries: the column list of main (schema columns through their definitions + added keys; `id` = identity),
+     WHERE, no grouping, ORDER BY sort keys + main.id tie-breaker, paging (none for the reader's queries);
+     joins used only by projected definitions or by sort keys added as LEFT
      Count:   SELECT COUNT(*) FROM (SELECT 1 <Entries' FROM, outer joins, WHERE; no ORDER BY/LIMIT/OFFSET,
-              no sort-only joins>) t
-  7. → Doctrine QueryBuilder
+              no projection-only or sort-only joins>) t
+  7. → Doctrine QueryBuilder → rows → EntryCollector (PR #54); meta.modelRef from the physical main.id
 
 Expanding drivers (§2a): Entries fetched once per request without paging and with ORDER BY main.id → driver expands
-rows → framework paginates and counts the expanded entries in PHP.
+the rows into occurrence rows → framework paginates and counts them in PHP; the page goes through EntryCollector
+like any page.
 ```
 
 Steps 3–7 are framework code in one place, in this order. Which internal structs carry the intermediate state
@@ -207,7 +229,7 @@ the declared parameter names of the join condition; its **cardinality** relative
 (at most one row per row of its from-alias: News/Events archives, the multilingual translation, the Codefog tags table
 relative to the relation table) or *multiplying* (the Codefog relation table relative to `main`); the flags
 *mandatory* (always joined; outer-joinable aliases only) vs. *on demand*, and *hidden* (not offered to editors as a
-target or sort column, still usable by code — the Codefog relation table); the alias' column mapping (§3). `main` is
+target or sort column, still usable by code — the Codefog relation table); the alias' column definitions (§3). `main` is
 always present and is the list's data container (`ListCompound::$dc`). Cardinality is declared by whoever declares the
 alias; the framework trusts it.
 
@@ -221,9 +243,10 @@ outer query. "Multiplying alias" in the rest of this document means *to-many* in
 and dc — the exact context type is the builder's call, it must not need an intent). It replaces
 `buildTableRegistry()`. Then `ListDriverBuildTableCatalogEvent` (named dispatch
 `flare.list_driver.{type}.table_catalog` — suffix is the builder's call within the naming rule) lets integrations add
-aliases and joins, with parameters and cardinality, for any list (Codefog: any list whose table has a tags field). The
-event's builder exposes alias/join declaration only — no mapping, no removal of other contributions. Duplicate aliases
-and a mandatory multiplying alias are programming errors.
+aliases and joins, with parameters and cardinality, and column definitions (§3), for any list (Codefog: any list whose
+table has a tags field). The event's builder exposes declaration only — no removal or replacement of another
+contribution. Duplicate aliases, a second definition of a column and a mandatory multiplying alias are programming
+errors.
 
 **Where it lives** (Claude's call): built once in the `ListCompound` build lifecycle, after the config is resolved,
 and carried immutably as a property of the `ListCompound`. So every consumer that already holds the list — elements
@@ -271,17 +294,20 @@ EXISTS (SELECT 1 FROM tl_cfg_tag_news codefog_tags_news_join
   tags join keeps its LEFT type). This is an accepted change (goal 11, migration notes). Predicates that want other semantics ("title matches OR has tag",
   "has no tag X") will use an explicit builder helper (outlook, §7); the framework's automatic wrapping covers only
   propositions that place no subquery themselves.
-- Projection, identity, base conditions, mapping and sort keys may only reference outer-joinable aliases;
-  referencing a to-many one is a programming error (projection/mapping/base conditions, from driver code) or a
-  skipped key (sorting, fail-open).
+- Column definitions (and with them projection and identity), base conditions and sort keys may only reference
+  outer-joinable aliases in the outer query; referencing a to-many one is a programming error (definitions and base
+  conditions, from code) or a skipped key (sorting, fail-open). An inner SELECT inside a definition is the
+  definition's own business.
 - Since the outer query then has exactly one row per entry, there is **no grouping** at all in this PR (see §2).
 
 **Outer join activation** (one set, identical for Entries and Count): the mandatory aliases ∪ the outer-joinable
 target alias of every proposition (also when its SQL is empty — as `ConditionsModifierListener` does today; with INNER
 archive joins this decides whether orphan rows are entries) ∪ every outer-joinable alias resolved through
-`column(…, for:)` ∪ the anchors of every `EXISTS` ∪ the aliases referenced by used mapping expressions, the
-projection, the identity and base conditions. The closure follows each join's from-alias **and** its `requires`
-(`TableAliasRegistry::resolveActiveJoins()` follows both today). Sort keys do not add to this set (§6).
+`column(…, for:)` ∪ the anchors of every `EXISTS` ∪ the aliases referenced by the column definitions these resolve,
+by the identity and by base conditions. The closure follows each join's from-alias **and** its `requires`
+(`TableAliasRegistry::resolveActiveJoins()` follows both today). Neither sort keys (§6) nor the projection add to this
+set: an alias that only a projected definition references is joined as LEFT, even if declared INNER, in Entries and
+not at all in Count — showing a column never changes which rows are entries (user's decision, 2026-11-13).
 
 **Backend consumers** move to the catalog: `Contao/DcaContext::getExecutionContext()`/`getTables()`/
 `getTargetTable()`, `Contao/Hook/ElementDcaHook::createExecutionContext()`,
@@ -298,66 +324,95 @@ channel may stay or be replaced by catalog metadata — builder's call).
 
 ### 2. The driver query hook
 
-Per list × intent × filter values, the driver receives a collect-only builder and a context (working names
+Per query build, the driver receives a collect-only builder and a context (working names
 `buildQuery(ListQueryBuilderInterface $builder, ListQueryContext $context)`; *Context* in the project's sense — the
-pre-filled handover). The context carries the `ListCompound` and the `IntentInterface` — **no purpose**: the hook runs
-once, and the framework derives both Entries and Count from its result, so a driver cannot shape them differently
-(Claude's call after review; the legacy count-only `langPid = 0` is exactly that mistake). It replaces
+pre-filled handover). The context carries the `ListCompound` — **no purpose and no intent**: the hook runs once, and
+the framework derives Entries, Count and the reader's queries from its result, so a driver cannot shape them
+differently (Claude's call after review; the legacy count-only `langPid = 0` is exactly that mistake), and it cannot
+make the entries depend on the intent (the rule below; Claude's call). It replaces
 `buildBaseQuery()`; `BuildQueryContract` is replaced by a contract carrying both hooks (working name kept or renamed,
 builder's call), with no-op defaults in `AbstractListDriver`.
 
 **Purpose** (working name `QueryPurpose`, an enum) stays a framework-internal notion on `ListQueryConfig`: `Entries`
-(rows, sorted, paged) and `Count` (the number of entries). The reader's lookups by id/auto-item are `Entries` under a
-`ValidationIntent` (today: `ValidationLoader` adds a `SimpleEquationFilterElement` and a page size of 1). `onlyId` has
-no caller and is dropped (Claude's call). The name must not collide with *Intent*: the intent says what the list is
-rendered for, the purpose says what one query returns.
+(rows, sorted, paged) and `Count` (the number of entries). The reader's queries are `Entries` without paging under a
+`ValidationIntent`, in two shapes since PR #54: **by auto-item**, `ValidationLoader::fetchEntryByAutoItem()` adds a
+`SimpleEquationFilterElement` on the auto-item field through `withFilter()` and takes, among the rows the database's
+collation matches, the one whose value is strictly equal (the follow-up to PR #54 drops the `LIMIT 1` that could
+fetch the wrong one of two aliases differing only by case); **by ids**, `fetchEntriesByIds()` (behind `EntryLookup`:
+`flare_reader.lookup()`, phase 1 of the entries event) today appends `main.id IN (:flare_lookup_ids)` to the finished
+query builder and resets its paging. The id list becomes a framework-owned input of the query (working name
+`ListQueryConfig::$ids`), compiled in the assembly as a condition on the *physical* `main.id` with a framework-scoped
+parameter, and nothing modifies the Doctrine query builder after the assembly (Claude's call after PR #54). The ids a
+lookup gets are record references — stored relation values (`flare_reader.lookup(entry.related_id)`),
+`meta.modelRef.id` —, so they address the record, not a redefined `id`; `EntryLookup` indexes its rows by
+`meta.modelRef.id` accordingly (Claude's call after the builder check; the same value as `row['id']` unless the
+identity is redefined). Reader queries run without paging whatever the intent's paginator says: if the follow-up to
+PR #54 leaves `ValidationIntent` a `PaginatedIntentInterface` with a page size of 1, this PR removes that (builder's
+call how). `onlyId` has no caller and is dropped (Claude's call). The name must not collide with *Intent*: the intent
+says what the list is rendered for, the purpose says what one query returns.
 
 Each block has a framework default, so a driver that contributes nothing gets today's entries:
 
 | Block | Default | Who needs to change it |
 |---|---|---|
-| Projection | `main.*` | multilingual: explicit list with mapped columns |
-| Identity — the expression that is the entry's `id` | `main.id` through the column mapping | multilingual: `IFNULL(translation.id, main.id)` (falls out of the mapping) |
 | Base conditions (AND-ed with the filters; physical columns) | none | multilingual: `main.langPid = 0` |
-| Values of the driver's own join parameters | — | multilingual: `:lang` |
+| Values of the driver's own parameters (joins, column definitions) | — | multilingual: `:lang` |
+
+Projection and identity are no blocks of this hook: they follow from the column list (§3), which is declared
+value-free with the catalog.
 
 **No grouping block in this PR** (Claude's call after review): the outer query has one row per entry by construction,
 and a driver-chosen `GROUP BY` other than exactly `main.id` breaks the framework's own parts under
-`ONLY_FULL_GROUP_BY` (the default projection `main.*`, the `main.id` tie-breaker, the count's inner projection) —
+`ONLY_FULL_GROUP_BY` (the projected columns, the `main.id` tie-breaker, the count's inner projection) —
 MariaDB has no functional-dependency detection at all. Grouping returns with derivations in the next PR, together with
 the rules it needs; until then the public driver API does not offer it, so that PR does not inherit a broken contract.
 
-The framework always selects the identity `AS id` and never overrides the driver's identity (today's "re-ensure
-`main.id AS id`" silently would). Rows must carry mapped values under the plain column names (the legacy behavior);
-how the projection achieves that with `main.*` plus mapped columns is the builder's call. Removing today's
+The framework always selects the identity `AS id` and never overrides a redefined identity (today's "re-ensure
+`main.id AS id`" silently would). Rows carry the defined values under the plain column names (the legacy behavior),
+one select part per key (§3). Removing today's
 `GROUP BY main.id` changes no rows (no to-many join remains in the outer query); the order it implied on MySQL 5.7 and
 MariaDB is kept by the `main.id` tie-breaker (§6). It also fixes a latent error: `SELECT main.* … GROUP BY main.id`
 fails on MariaDB with `ONLY_FULL_GROUP_BY` today (migration notes).
 
-**Projection and the model registry.** The views turn rows into models and register them in Contao's
-`Model\Registry` (`Engine/View/HandlesModelsTrait::createModelsFromEntries()`, `fetchModel()`). The default
-projection yields complete `main` rows, as today. A driver projection that yields partial or mapped rows must not
-leave partial or translated models in the registry for the rest of the request — the contract documents this, and
-the views do not register rows of a non-default projection (Claude's call; the multilingual port decides how it
-builds its models). Mapped columns in `WHERE` (e.g. `IFNULL(…) = :alias`) cannot use indexes — a note for the port.
+**No Contao model in the query** (user's decision, 2026-11-13). Since PR #54 the rows become entries
+(`EntryCollector`), and after its follow-up no entry becomes a model: Contao APIs that need one load it through the
+finder of the table's model class by `meta.modelRef`. The query therefore owes nothing to the model registry — no
+complete `main` rows, no "projection status" of a row (the entries design had planned one). What it owes the entries
+is `meta.modelRef` (§3). Defined columns in `WHERE` (e.g. `IFNULL(…) = :alias`) cannot use indexes — a note for the
+port.
 
 **Count** (user's decision): `SELECT COUNT(*) FROM (SELECT 1 <the Entries query's FROM, outer joins and WHERE (incl.
 the EXISTS subqueries); no ORDER BY, LIMIT, OFFSET, no sort-only joins>) t`. One rule for every driver; when grouping
 and HAVING return with derivations, the inner projection adds exactly the expressions a HAVING references. Entries and
-Count always agree. The inner projection never uses `main.*`, the mapped identity or `main.id` (all would constrain
+Count always agree. The inner projection never uses the column list, the identity or `main.id` (all would constrain
 later grouping under `ONLY_FULL_GROUP_BY`). Parameters bind across the derived table (DBAL converts named parameters to
 positional ones, repeated names included). The cost is a derived table per count. The legacy "COUNT(DISTINCT main.id)
 and drop GROUP BY" special-casing goes.
 
-**Inputs that shape the query reach Count, too.** Today `Engine/Intent/Factory/AggregationIntentFactory::
-createFromIntent()` returns a bare `AggregationIntent`, which the interactive projector uses for its count — anything a
-driver reads from the intent (e.g. the multilingual display mode) would shape Entries but not Count. Today the entries
-also run under a different object (`$intent->with(paginatorConfig: …)`) than the count (a fresh `AggregationIntent`),
-so "once per list × intent × values" needs an explicit key: the interactive count must be derived from the same
-`buildQuery()` result as its entries, keyed by the list *as modified by engine mods* (`SimpleEquationMod` →
-`withFilter()`), the query-shaping inputs of the intent (not the paginator) and the filter values. How (the aggregation
-intent carrying its source intent, the interactive projector counting through the same query build) is the builder's
-call; the key must be stated in the plan. The expressibility test checks Entries-vs-Count equality.
+**The list defines the entries, the intent their presentation** (user's decision, 2026-11-13). An intent decides how
+a list is executed and embedded: the order, the section shown and what the output is for. It never decides what
+constitutes the list's entities. The entities are the **whole list** — what a `ValidationIntent` sees, which is
+interested in nothing else. An interactive or aggregation intent shows a **section** of it: a page, the visitor's
+filter values, and an element's non-limiting defaults (`flare_calendar_current` without `is_limited` drops its date
+window under a `ValidationIntent` — its code: "unlimited defaults only shape the initial display"). Whatever defines
+the whole list — a base condition, a join, a column definition, a display mode such as the multilingual "only
+translated entries" — is part of the list: its config, a filter the driver adds in `buildList()`, or, for one content
+element, a modification of that element's list the way engine mods make it (`SimpleEquationMod` → `withFilter()`).
+Consequences:
+
+- `buildQuery()` gets no intent (above), and neither do the catalog hooks. Filter elements keep theirs
+  (`ElementContext::$intent`, unchanged): they need it to tell the section from the whole list, and they only narrow.
+- Entries, Count and the lookup of an interactive list run on the same `ListCompound` (`InteractiveProjector` hands
+  one list to all three; the lookup's `ValidationIntent` from `ValidationIntentFactory::createFromIntent()` carries
+  only the reader page and the auto-item field). Entries and Count show the same section; the lookup and the reader
+  address the whole list (the reader's rules: fixed filter values, no visitor values, no display defaults).
+- The result of `buildQuery()` depends on nothing but the list, so one result serves every query on that list (the
+  reader's auto-item query runs on a list with one more filter, so it is a build of its own). The entries run under a
+  different intent object (`$intent->with(paginatorConfig: …)`) than the count (a fresh `AggregationIntent` from
+  `Engine/Intent/Factory/AggregationIntentFactory::createFromIntent()`); the interactive count must nevertheless come
+  from the same query build as its entries — the same list *as modified by engine mods*, the same filter values, the
+  same section. How (e.g. the interactive projector counting through the same query build) is the builder's call;
+  the plan must state it. The expressibility test checks Entries-vs-Count equality.
 
 **What the driver cannot do** (anti-goal): reorder or rewrite the filters' conditions, the `EXISTS` compilation, the
 ORDER BY, the joins' activation or the count; those are framework steps.
@@ -372,9 +427,10 @@ projectors. The user agreed to model it as a driver capability instead (replacin
 review showed would apply to every query of an Events list — a count returning rows to the generic
 `AggregationLoader`, a reader lookup losing its `LIMIT 1`):
 
-- A driver may implement an expansion contract (working name `ExpandsEntriesContract::expandEntries(array $rows,
-  ListQueryContext $context): array`). It returns the entries in their final order and may annotate them (as today's
-  `_flare_event_group`).
+- A driver may implement an expansion contract (working name `ExpandsRowsContract::expandRows(array $rows,
+  ListQueryContext $context): array`; since PR #54 *entry* names the `Entry` the collector makes from a row, so the
+  contract speaks of rows). It returns the occurrence rows in their final order and may annotate them in the row (as
+  today's `_flare_event_group`, which `InteractiveEventsView::getEntriesGrouped()` reads from `entry.row`).
 - For an expanding driver under an interactive or aggregation intent the framework runs Entries **once per request**
   without SQL paging and with `ORDER BY main.id` only (deterministic input for the expansion's stable sort; a stored,
   hidden `sortSettings` is ignored), expands the rows **once**, and serves both the count (the number of expanded
@@ -382,37 +438,73 @@ review showed would apply to every query of an Events list — a count returning
   the page all columns — one full fetch replaces both. Count therefore always returns a number, through the generic
   loaders.
 - The expansion runs eagerly inside the projector's guarded section (not lazily from Twig), so its failures become
-  `list.failed` (§9).
-- Under a `ValidationIntent` (reader lookups) nothing is expanded: a normal SQL query with its `LIMIT 1`.
+  `list.failed` (§9). The page of expanded rows then goes through `EntryCollector` like any page (lazily,
+  `flare_list.entries`): one `Entry` per occurrence, several with the same `meta.modelRef`, one entries event per page.
+  `EntryCollection` stays a flat list (PR #54: a nested occurrence iterator for Events comes later, on top of it).
+- Under a `ValidationIntent` (reader by auto-item, `EntryLookup` by ids) nothing is expanded: a normal SQL query, one
+  entry per record.
 - An expanding driver owns its order: no `sortSettings`, and in the next PR no Sortinator, for such lists.
 - `EventsListDriver` implements the contract with today's `GroupsEntriesTrait` logic. Removed:
   `EventsInteractiveLoader`, `EventsAggregationLoader`, `EventsAggregationProjector`, `DoNotPaginateModifierListener`,
-  `CountEventsModifierListener`, the `ContaoCalendar_*` attributes. `EventsInteractiveProjector` survives only if it is
-  still needed to create `InteractiveEventsView` (template grouping by `_flare_event_group`) — builder's call.
+  `CountEventsModifierListener`, the `ContaoCalendar_*` attributes. `EventsInteractiveProjector` keeps only
+  `createView()` for `InteractiveEventsView` (`getEntriesGrouped()`); its `createLoader()` goes (or the view is
+  created elsewhere — builder's call).
 - Where the generic paging/counting and the per-request reuse of expanded entries live (the engine loaders or a shared
   executor) is the builder's call; it must not be duplicated per driver. Expanding lists fetch all matching rows, as
   today.
 
-### 3. Column mapping
+### 3. The column list
 
-The driver may declare that a column of an alias stands for an SQL expression, e.g. for every translatable field
-`main.<f>` ⇒ `IFNULL(translation.<f>, main.<f>)`. Declared with the catalog (value-free; Claude's call — it depends
-only on the table's DCA, and the backend/inspector can see it), by the driver only. A mapping may reference only
-outer-joinable aliases.
+A column of an alias has a **definition**, an SQL expression; by default it is the column itself. The definitions of
+`main` form the **column list**: the projection, whose keys are the keys of `row`. `main.*` goes (user's decision,
+2026-11-13); the "column mapping" of the earlier drafts is the same thing seen from the filters. Definitions are
+declared with the catalog (value-free; Claude's call — they depend only on the table, and the backend/inspector can
+see them).
 
-- Applied wherever the **list query** resolves a column: `FilterConditionsBuilder::column()` (all filters, including
-  the reader's lookup filters — so the multilingual auto-item lookup hits the translated alias *and* keeps
-  untranslated entries, the reason the user chose mapping over retargeting), sort-key resolution, identity,
-  projection.
+- **Pre-filled from the schema.** The column list of `main` holds the columns its table has in the database, in the
+  table's order — read through DBAL's schema manager —, each defined as itself (`main.title` ⇒ `main.title`) unless
+  redefined, followed by the added keys. A driver that defines nothing gets the rows `main.*` returned. The catalog
+  stays value-free and runs no query: it stores only the definitions that deviate, for any alias. The schema is read
+  when a query needs the projection, once per table and request; any cache beyond the request is the builder's call
+  and must not survive a schema change. Other aliases need no schema: their columns are resolved by name as today,
+  through a definition where one exists. Sort keys keep their own, DCA-based notion of an alias' columns (§6, D15,
+  D34): a database column without a DCA field is a key of `row` but no sort key (Claude's call after the builder
+  check).
+- **Redefined and extended.** The driver (in `buildTableCatalog()`) and integrations (in the catalog event) may
+  redefine single columns and add keys the table does not have: `IFNULL(translation.<f>, main.<f>)` for a
+  translatable field, an inner SELECT, any other SQL expression, a fixed value, a column of a joined alias
+  (`main.archiveTitle` ⇒ `news_archive.title`). All are the same kind of entry; a key of `row` does not tell where
+  its value comes from (user: "volle Flexibilität bei der Fassung von späteren `row`-Inhalten").
+- **One definition per column** (Claude's call): on top of the schema default a column is defined at most once. A
+  second definition — two integrations, or an integration and the driver — is a programming error like a duplicate
+  alias, not "the last one wins": that would be the priority chain through the back door (anti-goal).
+- **Applied wherever the list query resolves a column** (user's decision, proposed by Claude): the projection, the
+  identity, `FilterConditionsBuilder::column()` (all filters, including the reader's auto-item filter — so the
+  multilingual auto-item lookup hits the translated alias *and* keeps untranslated entries, the reason the user chose
+  this over retargeting; the value the reader then compares strictly is the one it filtered on) and sort-key
+  resolution. A redefinition by an integration therefore also changes what the filters on that column match: what a
+  row shows is what the list filters and sorts by.
+- **`id`.** The definition of `main.id` is the entry's identity in `row`: the framework always selects it `AS id` and
+  never drops it; the column list cannot be built without it.
+- **`meta.modelRef` names the physical record** (user's decision, proposed by Claude): the table of `main` and the
+  *physical* `main.id`, whatever the identity is defined as — the id Contao's finders, child records
+  (`flare_content()`) and cache tags address. Under the multilingual definitions that is the fallback record, while
+  `row['id']` may be the translation's (§8) — which is why a lookup by ids restricts on the physical id and indexes
+  by the reference (§2). With the default identity both are the same value. When the identity is
+  redefined, the framework selects the physical id next to the row and hands it to `EntryCollector`; it is no key of
+  `row` (how it travels, also through an expansion, is the builder's call). `EntryCollection::forTable()` stops
+  deriving the reference from `row['id']`.
+- **What a definition may contain.** Definitions are authored by code, never by editors, and built through the
+  builder's helpers, never from stored strings: identifiers quoted, values bound — a fixed value is a parameter, not
+  a literal in the SQL. A definition may carry named parameters, declared and filled like join parameters (§4). It
+  declares the outer aliases it references (outer-joinable ones only); using the column activates them — as LEFT
+  joins if only the projection uses it (§1).
 - It does **not** apply to the raw table lookups elements make for choices and options
-  (`FieldValueChoiceFilterElement::buildChoices()`, `DcaSelectFieldFilterElement`): under a mapping driver their keys
-  come from physical values. Out of scope here; a note for the multilingual port.
-- A mapping expression declares the aliases it references; using a mapped column activates them.
-- The driver needs **physical** access next to it: its base condition `main.langPid = 0` and the mapping expressions
+  (`FieldValueChoiceFilterElement::buildChoices()`, `DcaSelectFieldFilterElement`): under redefined columns their
+  keys come from physical values. Out of scope here; a note for the multilingual port.
+- Code needs **physical** access next to it: the driver's base condition `main.langPid = 0` and the definitions
   themselves must address the real column. The builder offers an explicit way (e.g. a `physical()` helper or
-  `column(…, mapped: false)` — builder's call); elements get the mapped column by default.
-- Mapping expressions are authored by driver code, not by editors; they are built from quoted identifiers through
-  the builder's helpers, never from stored strings.
+  `column(…, physical: true)` — builder's call); elements get the defined column by default.
 
 ### 4. Join parameters
 
@@ -423,12 +515,16 @@ outer-joinable aliases.
   moves into several `EXISTS` subqueries binds the same value in each. The exact scheme is the builder's call.
 - Whoever declared a join fills its parameters per query: the driver in `buildQuery()`; an integration in
   `ListDriverBuildQueryEvent` (named dispatch `flare.list_driver.{type}.build_query`), dispatched by the framework
-  right after `buildQuery()`. Its builder exposes only setting values of join parameters (user's decision: the driver
-  need not know). Filling a parameter of a join one did not declare is not offered (builder's call how ownership is
-  enforced — at least by alias).
+  right after `buildQuery()`. Its builder exposes only setting values of the listener's own parameters (user's
+  decision: the driver need not know). Filling a parameter of a join one did not declare is not offered (builder's
+  call how ownership is enforced — at least by alias).
 - A declared parameter of an **active** join (outer or inside an `EXISTS`) that has no value at assembly time is a
   **programming error** (user confirmed): an `\Error` subclass, escaping unwrapped like `UndefinedConfigKeyError`,
   never a `FilterFailure`. Parameters of inactive joins need no value.
+- Column definitions (§3) carry named parameters under the same rules: declared with the definition, scoped so they
+  cannot collide, filled by whoever declared the definition (the driver in `buildQuery()`, an integration in
+  `ListDriverBuildQueryEvent`), and a parameter of a *used* definition without a value is the same programming
+  error. A definition that only the projection uses binds its parameters in Entries only (Count selects none).
 
 ### 5. Targeting
 
@@ -460,7 +556,8 @@ Confirmed by the user:
   (`Engine/Loader/ValidationLoader`, `Engine/Mod/SimpleEquationMod`). Such aliases come from code, so an unknown one
   is a **programming error** (`\Error`), not a `FilterException` — a `FilterException` would be retried with null for
   a controlled filter and only logged, i.e. fail open, contradicting D6.
-- `FilterConditionsBuilder::column($col)` resolves against the filter's target alias and applies the column mapping.
+- `FilterConditionsBuilder::column($col)` resolves against the filter's target alias and applies the column's
+  definition (§3).
 - A predicate that can or must address several aliases **declares that as an option** and uses
   `$builder->column($col, for: $alias)` (user's words). The element supplies the alias in the predicate options
   (from its config or its own knowledge, e.g. Codefog's relation alias).
@@ -516,7 +613,7 @@ Confirmed by the user:
 Abstraction (user: "man könnte die basic Spalten auch als SortHints betrachten"): a sort order is a sequence of
 **sort keys** with directions. A key comes from one of two sources:
 
-1. **columns of the catalog** (`alias.column`, resolved through `column()` — mapped) — this PR;
+1. **columns of the catalog** (`alias.column`, resolved through `column()`, i.e. through its definition) — this PR;
 2. **sort hints declared by filter elements** — the next PR.
 
 This PR:
@@ -537,7 +634,7 @@ This PR:
 
 **Resolvable keys** (Claude's call): the catalog does not store column lists. The columns of an alias are the DCA
 fields **with an `sql` definition** of its table (what the `sortSettings` widget offers today via
-`DcaHelper::getFieldOptions()`), plus the columns the driver's mapping declares for that alias. A column key is
+`DcaHelper::getFieldOptions()`), plus the columns defined for that alias (§3). A column key is
 resolvable when its alias is in the catalog and outer-joinable and its column is such a column. A skipped key is
 logged at warning level, so an order change (e.g. a stored key on a database column without a DCA field, which sorts
 today) is visible. `FilterConditionsBuilder::column()` does **not** check column existence
@@ -563,8 +660,8 @@ So the next PR can add sort hints, derivations and the Sortinator without rebuil
   derivation grouped by its key is single-valued and can be joined into the outer query; otherwise it belongs into an
   `EXISTS` like a multiplying path.
 - **Projection open to effects**: a column computed by a derivation (e.g. showing the score) will need a way into the
-  projection; the projection step must be able to accept columns from invocation results later. The Count wrapper
-  keeps the columns a HAVING references.
+  column list of `main`; it must be able to accept keys from invocation results later. The Count wrapper keeps the
+  columns a HAVING references.
 - **Explicit subqueries for predicates**: a helper on the conditions builder (e.g. `$builder->exists($alias, fn
   (FilterConditionsBuilder $sub) => …)` and a `notExists()` counterpart) lets a predicate place its own subquery —
   "title matches OR has tag X", "has no tag X", `IS NULL` semantics. Propositions that place their own subquery are
@@ -588,15 +685,28 @@ So the next PR can add sort hints, derivations and the Sortinator without rebuil
 Not built; it is the yardstick for the interfaces (and for the test fixture driver):
 
 - catalog: alias `translation` on the same table, LEFT JOIN `main.id = translation.<langPid> AND
-  translation.<language> = :lang`, single-valued, *mandatory*; column mapping for `id`, the language/pid columns and
-  every translatable field;
+  translation.<language> = :lang`, single-valued, *mandatory*; column definitions for `id`, the language/pid columns
+  and every translatable field (`IFNULL(translation.<f>, main.<f>)`); the other columns keep their schema default;
 - `buildQuery()`: `:lang` from the current language (in the fallback language the join finds no row and every
   `IFNULL` falls back to `main` — so the catalog stays static and a `translation` target always exists); base
-  condition `main.langPid = 0` (physical); no grouping (none exists); projection of regular fields plus mapped fields;
-  a content-element display mode ("localized": only translated entries) as a base condition on
-  `translation.<langPid>` — read from the intent, and reaching Count as well (§2);
+  condition `main.langPid = 0` (physical); no grouping (none exists);
+- the display mode ("localized": only translated entries) restricts on `translation.<langPid>` and comes from the
+  list — its config, or for one content element a modification of that element's list —, never from the intent
+  (§2); so Entries, Count, the lookup and the reader apply it alike. Whether the driver adds it as a filter in
+  `buildList()` or as a base condition is the port's call;
 - a Codefog tags filter on such a list works unchanged: it becomes an `EXISTS` and adds no rows;
-- reader lookup by auto-item: nothing to do — the lookup filter's `column('alias')` is mapped;
+- reader by auto-item: nothing to do — the auto-item filter's `column('alias')` resolves to the definition, the
+  strict comparison in `ValidationLoader` compares the defined value, and `ReaderUrlGenerator` reads the auto-item
+  from `entry.row`, the defined value too: the translated alias round-trips;
+- lookup by ids (`flare_reader.lookup()`, phase 1 of the entries event): by the physical `main.id`, the fallback
+  record's id — the value stored relations and `meta.modelRef` hold (§2);
+- `meta.modelRef` is the fallback record (§3) — the id DC_Multilingual's own finders take: a model class using its
+  `MultilingualTrait` overrides `buildFindQuery()`, searches among the fallback rows and returns the record
+  translated for the current language, so a listener that loads `Model::getClassFromTable($ref->table)::
+  findById($ref->id)` gets the translated model natively (read from DC_Multilingual's `master` and Contao 5.3 on
+  2026-11-13). Notes for the port: a multilingual list may sit on any table, `tl_news` included, so the bundled
+  listeners keyed on `modelRef.table` fire there too; whether `flare_content()` and the cache tags of
+  `EntryCacheTagger` (`contao.db.<table>.<id>`) are right with the fallback record alone is the port's to check;
 - the Changelanguage "same entry in language X" query is out of scope (it may later run the list's query with another
   `:lang`; nothing here may preclude that).
 
@@ -607,13 +717,18 @@ Not built; it is the yardstick for the interfaces (and for the test fixture driv
   reader: HTTP 500). Backend option callbacks that build the list without a try/catch today (e.g.
   `FlareFilter/FieldsOptionsCallbacks::getFieldOptions_fieldGeneric()` / `getOptions_targetAlias()`) get one, so a
   broken catalog does not crash every filter edit form.
-- `buildQuery()`, `ListDriverBuildQueryEvent` listeners and `expandEntries()` run per request: a `FlareException` from
+- `buildQuery()`, `ListDriverBuildQueryEvent` listeners and `expandRows()` run per request: a `FlareException` from
   them is a **list-level failure** and must end in `list.failed` (reader: HTTP 500) like a failed filter — not escape
   to `ListViewController`'s error response. Today `InteractiveProjector` catches only `FilterException` around the
-  count (`InteractiveProjector.php:84-91`); either these failures are wrapped as a list-level `FilterException` or
+  count (`InteractiveProjector.php:103`); either these failures are wrapped as a list-level `FilterException` or
   the projector's guard is widened (builder's call). For expanding drivers the expansion runs inside that guard (§2a).
-- Programming errors — duplicate aliases, a mandatory multiplying alias, an unbound parameter of an active join, a
-  mapping or driver block referencing an unknown or to-many alias, an unknown alias used by a filter at query time
+  The reader and the breadcrumb need no new guard: `ValidationLoader` wraps every `\Exception` into a
+  `FlareException`, which `Contao/Reader/ReaderResolver` stores as the resolution's failure (reader: 5xx; breadcrumb:
+  items unchanged). From a lookup (`flare_reader.lookup()`, a phase-1 loader) the `FlareException` reaches its
+  caller, as PR #54 defines for lookups.
+- Programming errors — duplicate aliases, a second definition of a column, a mandatory multiplying alias, an unbound
+  parameter of an active join or of a used column definition, a column definition or driver block referencing an
+  unknown or to-many alias, an unknown alias used by a filter at query time
   (backstop, §5) — are `\Error`s and escape unwrapped (the
   request fails), consistent with `UndefinedConfigKeyError`. Since they come from code, they are acceptable in the
   backend too.
@@ -624,10 +739,13 @@ Not built; it is the yardstick for the interfaces (and for the test fixture driv
 Removed: `Event/ModifyListQueryStructEvent`, `Event/QueryBaseInitializedEvent`, `EventListener/QueryStructModifier/*`,
 `Integration/ContaoCalendar/EventListener/{DoNotPaginate,CountEvents}ModifierListener`,
 `Integration/ContaoCalendar/Loader/*`, `Integration/ContaoCalendar/Projector/EventsAggregationProjector` (and
-`EventsInteractiveProjector` unless needed for the view, §2a), `Query/ListExecutionContext`,
-`Query/Factory/ListExecutionContextFactory`, `ListQueryConfig::$attributes`, `$isCounting`, `$onlyId` (replaced by
-`$purpose`), `Contract/ListDriver/BuildQueryContract` in its current form, `AsFilterElement::$isTargeted` (and its
-pass-through in `DependencyInjection/Compiler/RegisterFilterElementsPass`), `FilterCompound::$targetingForced` (and
+`EventsInteractiveProjector`'s `createLoader()`, §2a), `Query/ListExecutionContext`,
+`Query/Factory/ListExecutionContextFactory`, the post-build `andWhere()` and paging reset in
+`ValidationLoader::fetchEntriesByIds()` (replaced by the id input, §2), the `main.*` select, the `ModelRef` derived
+from `row['id']` in `EntryCollection::forTable()` (§3), `ListQueryConfig::$attributes`, `$isCounting`, `$onlyId`
+(replaced by `$purpose`), `Contract/ListDriver/BuildQueryContract` in its current form,
+`AsFilterElement::$isTargeted` (and its pass-through in
+`DependencyInjection/Compiler/RegisterFilterElementsPass`), `FilterCompound::$targetingForced` (and
 the `$targetingForced` parameter of `Filter/Factory/FilterCompoundFactory`, its part of `FilterCompound::fingerprint()`),
 the targeting stopgap; tests follow (incl. `tests/Registry/FilterElementRegistryTest.php`,
 `tests/Contao/Inspection/BuildsFilterInspectorTrait.php`). `FilterCompound::fingerprint()` uses the *effective*
@@ -637,37 +755,41 @@ differ between lists of equal config (builder's call). Whether `SqlQueryStruct`,
 `TableAliasRegistry`, `QueryBuilderFactory`, `FilterQueryBuilderFactory` survive as internals, are renamed or are
 replaced is the builder's call (the nomenclature spec only said they keep their names *there*).
 
-Documentation: `AGENTS.md` (architecture flow, the "query events … left as they are until the query architecture is
-reworked" sentence, Notable subsystems, Query safety, Event system); the docs worktree (`docs/`, branch `docs/main`,
-committed separately): `docs/docs/spec/query-struct.md`, `spec/filtering.md`, `spec/projection.md`,
-`dev/contracts/build-query-contract.md`, `dev/events.md`, `dev/list-types/index.md`, `migrating-from-v0.1.md` —
+Documentation: `AGENTS.md` (the Intent line of the vocabulary — it decides order and section, never the entries —,
+architecture flow, the "query events … left as they are until the query architecture is reworked" sentence, Notable
+subsystems — incl. `EntryMeta` (`modelRef` = the physical record), `EntryCollection::forTable()`, `ValidationLoader`
+and `EntryLookup` —, Query safety, Event system); the docs worktree (`docs/`, branch `docs/main`, committed
+separately): `docs/docs/spec/query-struct.md`, `spec/filtering.md`, `spec/projection.md`,
+`dev/contracts/build-query-contract.md`, `dev/events.md`, `dev/list-types/index.md`, `dev/entries.md` and
+`templating.mdx` (`entry.meta.modelRef`, the keys of `entry.row`), `removed-in-v0.2.md`, `migrating-from-v0.1.md` —
 describing the step from v0.1 to the final v0.2. The migration notes cover: the accepted behavior changes of goal 11,
 the stale-target reset (and the window before `contao:migrate`), and a replacement for each former use of the removed
 events by userland code — conditions → a programmatic filter via `ListDriverBuildListEvent`; joins → the catalog
-event; projection and order → a driver (subclass); grouping → no longer possible until derivations.
+event; projection → column definitions (driver or catalog event); order → a driver (subclass); grouping → no longer
+possible until derivations.
 
 ## Decisions
 
 | # | Decision | By |
 |---|---|---|
 | D1 | Driver provides building blocks, the framework assembles in a fixed order (no priority chain) | user |
-| D2 | Integrations contribute by event, for now only aliases and joins | user |
+| D2 | Integrations contribute by event: aliases and joins, since 2026-11-13 also column definitions (D37); no conditions or ordering | user |
 | D3 | A join's declarer fills its parameters when the query is built; integrations through a build-time event, without the driver knowing | user |
 | D4 | Unfilled parameter of an active join = programming error; parameter names scoped per join alias | user (proposed by Claude) |
 | D5 | Every element targetable (any catalog alias, default `main`), `column()` applies it, `column($col, for: $alias)` for multi-alias predicates declared as an option | user |
 | D6 | Opt-out for elements that address aliases themselves; unknown alias = broken filter (fail closed, inspector); used aliases activate joins | user (proposed by Claude) |
-| D7 | Column mapping by the driver is supported | user |
+| D7 | A column may stand for an SQL expression wherever the list query resolves it (agreed as the driver's "column mapping"; since 2026-11-13 the column list, D37) | user |
 | D8 | DC_Multilingual only made possible, ported later | user |
 | D9 | Sort hints and Sortinator prepared here, built in the next PR; columns are one source of sort keys; unresolvable keys skipped (fail-open); Sortinator restricted to list-allowed keys | user |
 | D10 | Hint declaration via a value-free contract, realization in `buildEffect()` | Claude's proposal, answered to the user's question; final in the next PR |
-| D11 | Catalog built once into the `ListCompound`; column mapping declared with the catalog | Claude |
-| D12 | `buildQuery()` once per list × intent × values, no purpose in its context; Entries and Count derived; purposes `Entries`/`Count` internal; reader lookups are `Entries` under `ValidationIntent`; `onlyId` dropped | Claude (after review) |
+| D11 | Catalog built once into the `ListCompound`; column definitions declared with the catalog | Claude |
+| D12 | `buildQuery()` once per query build, no purpose and no intent in its context; Entries and Count derived; purposes `Entries`/`Count` internal; reader queries are `Entries` without paging under `ValidationIntent`, by auto-item and by ids (D35); `onlyId` dropped | Claude (after review; no intent: follows D40) |
 | D13 | `sortSettings` widget stays `main`-only | Claude |
 | D14 | Branch `v0.2-query` | Claude |
-| D15 | Columns of an alias = DCA fields of its table + mapped columns, not stored in the catalog; sort keys checked against them (single-valued aliases only), filter columns not; resolvable ≠ allowed | Claude (after review) |
+| D15 | Sort-key columns of an alias = DCA fields of its table + defined columns, not stored in the catalog; sort keys checked against them (single-valued aliases only), filter columns not; resolvable ≠ allowed | Claude (after review) |
 | D16 | Count wraps the Entries query (`SELECT COUNT(*) FROM (SELECT 1 …) t`) | user (inner projection: Claude after review) |
 | D17 | Bundled elements that read the list's table follow their target's table; only fixed-column elements opt out | user |
-| D18 | Run-once migration resets stale `targetAlias` of formerly untargeted types to `main`; its marker is created by the migration with `'0'` | user (marker: Claude after review) |
+| D18 | Run-once migration resets stale `targetAlias` of formerly untargeted types to `main`, guarded by a marker (D31) | user (marker: Claude after review) |
 | D19 | Events modelled as an expanding driver (occurrences paged and counted generically in PHP, fetched and expanded once per request); Events loaders/projectors and the per-purpose deviations go | user (once per request: Claude after review) |
 | D20 | The date-window bug of the expansion is a follow-up idea, not fixed here | user |
 | D21 | Join cardinality in the catalog; one outer join activation set for both purposes | Claude (after review) |
@@ -677,30 +799,44 @@ event; projection and order → a driver (subclass); grouping → no longer poss
 | D25 | To-many aliases never in the outer query; per filter one correlated `EXISTS` per connected component, whole propositions, no renaming, anchors activated, joins below the root keep their declared type; existential semantics (`IS NULL` on to-many accepted change) | user (details: Claude after review; join types: user after 4th review) |
 | D26 | Sort-only joins become LEFT; Count ignores sort keys; `main.id` tie-breaker | Claude (after review) |
 | D27 | Opt-out elements always target `main`, stored value ignored | Claude (after review) |
-| D28 | New-hook failures are list-level failures (`list.failed`); views do not register models from non-default projections | Claude (after review) |
+| D28 | New-hook failures are list-level failures (`list.failed`; reader and breadcrumb through `ReaderResolver`'s failure); the query owes nothing to Contao models — no projection status | Claude (after review; models: user, 2026-11-13) |
 | D29 | Effective cardinality: outer-joinable only if single-valued all the way to `main` | Claude (after 3rd review) |
 | D30 | No grouping block in the public driver API in this PR | Claude (after 3rd review) |
 | D31 | Migration resets a frozen list of bundled formerly untargeted types; marker is a DCA field default `'0'`, set to `'1'` on every backend save and by the migration | Claude (after 3rd review) |
 | D32 | `PublishedFilterElement` opts out (always `main`) | Claude (after 3rd review) |
 | D33 | One per-filter alias validator shared by build and inspector; query-time backstop is an `\Error` | Claude (after 3rd review) |
 | D34 | Resolvable sort columns need an `sql` definition; skipped keys logged as warnings | Claude (after 3rd review) |
+| D35 | A lookup by ids is a framework-owned query input, compiled as a condition on the physical `main.id`, without paging, and indexed by `meta.modelRef.id`; nothing modifies the query builder after the assembly | Claude (after PR #54 and the builder check) |
+| D36 | The expansion contract speaks of rows (`expandRows()`); occurrences become entries through `EntryCollector`, the collection stays flat | Claude (after PR #54; flat collection: user in the entries design) |
+| D37 | An explicit column list replaces `main.*`: pre-filled from the schema, single definitions redefined or added by the driver and by integrations with any SQL; a definition applies to projection, identity, filters and sorting | user (2026-11-13; applies everywhere: proposed by Claude) |
+| D38 | One definition per column on top of the schema default; a second one is a programming error | Claude |
+| D39 | Joins used only by the projection become LEFT and are absent from Count | user (proposed by Claude) |
+| D40 | The list defines its entries (the whole list, what a `ValidationIntent` sees); the intent decides only order, section and embedding. `buildQuery()` and the catalog hooks get no intent; filter elements keep theirs to tell the section from the whole list | user (2026-11-13; no intent in the context, elements unchanged: Claude) |
+| D41 | `meta.modelRef` names the physical `main` record, independent of the identity | user (proposed by Claude) |
+| D42 | The follow-up to PR #54 (no entry becomes a model, auto-item lookup without `LIMIT 1`) is its own PR before this one | user |
 
 ## Left to the builder
 
 Final names (in the user's naming style), the exact builder interfaces and their methods, the internal structs, the
-parameter-scoping scheme, the alias renaming inside `EXISTS`, the opt-out mechanism, the physical-column API, the
-sort-key format, how ownership of join parameters is enforced, how config-derived `for:` aliases are declared, where
-expanded entries are paged, counted and reused, how the interactive count shares the entries' query build (the key
-must be stated in the plan: list as modified by engine mods, query-shaping intent inputs, filter values), how
-new-hook failures reach `list.failed`, the order of commits. Anything marked "builder's call" above.
+parameter-scoping scheme, the opt-out mechanism, the physical-column API, how column definitions and fixed values are
+written, where the schema's columns are read and memoized, how the physical id reaches `meta.modelRef`, the sort-key
+format, how ownership of parameters is enforced, how config-derived `for:` aliases are declared, where expanded
+entries are paged, counted and reused, how the interactive count shares the entries' query build (the key must be
+stated in the plan: list as modified by engine mods, filter values), how new-hook failures reach `list.failed`, the
+order of commits. Anything marked "builder's call" above.
 
 ## Testing
 
 - **Before the refactor**: capture today's generated SQL and parameters for a matrix of the bundled lists (generic
   DC, News with and without an archive filter, Events with a current-events filter, a Codefog tags filter, sorted and
-  unsorted, Entries and Count) as reference snapshots. They document the old shape; the new SQL may differ.
+  unsorted, Entries and Count) as reference snapshots, and, where SQLite can express it, today's ids, counts and order
+  through the in-memory SQLite pipeline of PR #54 (`tests/Engine/EnginePipelineTrait.php`) as executable tests that
+  stay green afterwards (except the accepted changes of goal 11). They document the old shape; the new SQL may differ.
 - Unit tests through public API for: catalog declaration (driver + event, duplicates, cardinality, mandatory
-  multiplying rejected, hidden/mandatory), column mapping and physical access, join parameter scoping (incl. inside
+  multiplying rejected, hidden/mandatory), the column list (schema pre-fill in the table's order, a redefined column,
+  an added key, a fixed value bound as a parameter, a second definition → `\Error`, `id` never dropped, one
+  definition seen by projection, filter and sort key) and physical access, `meta.modelRef` from the physical id under
+  a redefined identity, parameter scoping of joins and definitions (incl. inside
   `EXISTS` and the derived count table) and the unbound-parameter `\Error`, the `EXISTS` compilation (one per filter
   and connected component, whole propositions, two tag filters ANDed, relation-only conditions keep dangling relation
   rows, declared join types kept below the root (a proposition over the relation and an optional descendant keeps
@@ -710,24 +846,36 @@ new-hook failures reach `list.failed`, the order of commits. Anything marked "bu
   `for:`, eager validation → `FilterFailure`, query-time backstop for `withFilter()`-added filters, opt-out ignores a
   stored target, outer join activation incl. empty-SQL propositions, from-alias and `requires` closure, identical
   activation for Entries and Count), table-bound elements offering and computing choices from their target's table
-  (incl. the parent relation for non-`main` targets), the stale-target migration (column absent → created with `'0'`
-  and processed; runs once; leaves later edits alone; formerly targeted types untouched), Count wrapping, sort-only
-  joins as LEFT, the `main.id` tie-breaker, entry expansion (fetched and expanded once, paged and counted over
-  expanded entries, no expansion under `ValidationIntent`, failure → `list.failed`), sort-key resolution and fail-open
-  skipping (incl. multiplying aliases), identity never overridden.
+  (incl. the parent relation for non-`main` targets), the stale-target migration (rows with marker `'0'` processed
+  and marked; runs once; leaves later edits and rows saved in the backend alone; formerly targeted types untouched),
+  Count wrapping, projection-only and sort-only joins as LEFT (and absent from Count), the `main.id` tie-breaker,
+  the lookup by ids (restricted on the physical `main.id`, indexed by `meta.modelRef.id`, no paging), entry
+  expansion (fetched and expanded once, paged and counted over expanded rows, no expansion under `ValidationIntent`,
+  failure → `list.failed`), sort-key resolution and fail-open skipping (incl. multiplying aliases), identity never
+  overridden.
 - Generated SQL for the bundled drivers: generic DC (no `GROUP BY`), News (archive join only when used), Events
   (expansion query without paging, `ORDER BY main.id`), a Codefog tags filter (an `EXISTS` over relation and tags
   table, no outer join).
 - **Expressibility proof**: a test fixture driver (in `tests/Fixture/`) that does what §8 describes — mandatory
-  parameterized single-valued join, mapping, physical base condition, mapped identity, intent-driven base condition —
-  plus a fixture integration that adds a parameterized join and fills it through the build event, plus a tags-like
-  multiplying path. It must not need anything outside the public API. It asserts that Entries and Count are built from
-  the same driver result and rows.
-- **Manual acceptance** (CI has no database; the repo's `docker-compose.yml` has no database service): run the
-  reference matrix against MySQL 8 and MariaDB with sample data, with `ONLY_FULL_GROUP_BY` on, and compare ids,
-  counts and order before/after (expected differences: goal 11); check duplicate column names from `main.*` plus
-  mapped columns and array parameters inside `EXISTS` and the derived count table. A small scripted local matrix for
-  this is worth adding to the plan (builder's call).
+  parameterized single-valued join, redefined columns, physical base condition, redefined identity, a display mode
+  taken from the list — plus a fixture integration that adds a parameterized join and a column definition and fills
+  their parameters through the build event, plus a tags-like multiplying path. It must not need anything outside the
+  public API. It asserts that Entries and Count are built from the same driver result and agree, that the lookup and
+  the reader find exactly the whole list, that a lookup by ids finds an entry by its fallback id and the reader by
+  its translated alias (round trip through `ReaderUrlGenerator`), and that `meta.modelRef` names the fallback record.
+- **The SQLite pipeline follows**: `EnginePipelineTrait` registers the five `QueryStructModifier` listeners by hand and
+  counts queries through a `ModifyListQueryStructEvent` listener; both go. It builds the new assembly instead and
+  counts executed statements on the connection (e.g. a DBAL middleware); `EntryLookupTest`, `ReaderResolverTest` and
+  `BreadcrumbHookTest` assert query counts with it. The behavior checks of this PR run on it, too: the column list
+  from the schema, the `EXISTS` compilation (two tag filters ANDed), Count = Entries, projection-only and sort-only
+  LEFT joins, the tie-breaker, the lookup by ids under a redefined identity.
+- **Manual acceptance** (CI has no MySQL or MariaDB; SQLite cannot check `ONLY_FULL_GROUP_BY`, collations or
+  MariaDB's behavior): run the reference matrix against MySQL 8 and MariaDB with sample data, with
+  `ONLY_FULL_GROUP_BY` on, and compare ids, counts and order before/after (expected differences: goal 11); check the
+  explicit column list against a table with many columns and array parameters inside `EXISTS` and the derived count
+  table. A small scripted local matrix for this is worth adding to the plan (builder's call).
 - Existing tests follow (`ListQueryDirectorTest`, `FilterInvokerTest`, `FilterEffectFactoryTest`, `FormulaBuilderTest`,
   `CodefogTagsChoiceFilterElementTest`, `FieldsOptionsCallbacksTest`, `ElementDcaHookTest`,
-  `InteractiveProjectorTest`, `FilterCompoundTest`); `make test` and `make phpstan` green; Mago runs in CI only.
+  `InteractiveProjectorTest`, `FilterCompoundTest`, and from PR #54 `ValidationLoaderTest`, `EntryLookupTest`,
+  `InteractiveViewTest`, `ReaderResolverTest`, `BreadcrumbHookTest`, `ReaderControllerTest`); `make test` and
+  `make phpstan` green; Mago runs in CI only.

@@ -5,9 +5,10 @@ review. Rebased onto `v0.2` after PR #54 (entries instead of models in the engin
 conversation the same day: an explicit column list replaces `main.*` and the column mapping (§3), the list alone
 defines its entries (§2), lookups by ids and the expansion follow PR #54. A small follow-up to PR #54 goes first on
 `v0.2` and is assumed here: no entry becomes a Contao model any more (`EntryModelFactory` removed; the schema.org
-listeners and `flare_related()` use Contao's finders) and the reader's auto-item lookup drops its `LIMIT 1`. Branch:
-`v0.2-query` off `v0.2` (the unreleased major version; breaking changes are fine, no BC shims, no `class_alias`) —
-Claude's call.
+listeners and `flare_related()` use Contao's finders) and the reader's auto-item lookup drops its `LIMIT 1`. So is
+the exclusive-filters PR (`2026-11-13-exclusive-filters-design.md`): filters that apply to the list view only, the
+reader and the lookup on the whole list, no intent in the filter contexts. Branch: `v0.2-query` off `v0.2` (the
+unreleased major version; breaking changes are fine, no BC shims, no `class_alias`) — Claude's call.
 
 ## Intent
 
@@ -392,20 +393,20 @@ and drop GROUP BY" special-casing goes.
 **The list defines the entries, the intent their presentation** (user's decision, 2026-11-13). An intent decides how
 a list is executed and embedded: the order, the section shown and what the output is for. It never decides what
 constitutes the list's entities. The entities are the **whole list** — what a `ValidationIntent` sees, which is
-interested in nothing else. An interactive or aggregation intent shows a **section** of it: a page, the visitor's
-filter values, and an element's non-limiting defaults (`flare_calendar_current` without `is_limited` drops its date
-window under a `ValidationIntent` — its code: "unlimited defaults only shape the initial display"). Whatever defines
+interested in nothing else. An interactive or aggregation intent shows a **section** of it: a page and the visitor's
+filter values. Where a list view shows fewer entries than its reader finds (events: only what is coming), that is no
+matter of the intent either: such filters are configured as exclusive to the list view, and the reader and the lookup
+are handed the whole list, a different `ListCompound` (`2026-11-13-exclusive-filters-design.md`). Whatever defines
 the whole list — a base condition, a join, a column definition, a display mode such as the multilingual "only
 translated entries" — is part of the list: its config, a filter the driver adds in `buildList()`, or, for one content
 element, a modification of that element's list the way engine mods make it (`SimpleEquationMod` → `withFilter()`).
 Consequences:
 
-- `buildQuery()` gets no intent (above), and neither do the catalog hooks. Filter elements keep theirs
-  (`ElementContext::$intent`, unchanged): they need it to tell the section from the whole list, and they only narrow.
-- Entries, Count and the lookup of an interactive list run on the same `ListCompound` (`InteractiveProjector` hands
-  one list to all three; the lookup's `ValidationIntent` from `ValidationIntentFactory::createFromIntent()` carries
-  only the reader page and the auto-item field). Entries and Count show the same section; the lookup and the reader
-  address the whole list (the reader's rules: fixed filter values, no visitor values, no display defaults).
+- `buildQuery()` gets no intent (above), and neither do the catalog hooks nor — after the exclusive-filters PR — the
+  filter elements and controls (`ElementContext`, `ControlContext`).
+- Entries and Count of an interactive list run on the same `ListCompound` and show the same section. Its lookup and
+  the reader run on the whole list (`ListCompound::whole()`, exclusive-filters design) under a `ValidationIntent`
+  that carries only the reader page and the auto-item field: fixed filter values, no visitor values.
 - The result of `buildQuery()` depends on nothing but the list, so one result serves every query on that list (the
   reader's auto-item query runs on a list with one more filter, so it is a build of its own). The entries run under a
   different intent object (`$intent->with(paginatorConfig: …)`) than the count (a fresh `AggregationIntent` from
@@ -466,10 +467,8 @@ see them).
   redefined, followed by the added keys. A driver that defines nothing gets the rows `main.*` returned. The catalog
   stays value-free and runs no query: it stores only the definitions that deviate, for any alias. The schema is read
   when a query needs the projection, once per table and request; any cache beyond the request is the builder's call
-  and must not survive a schema change. Other aliases need no schema: their columns are resolved by name as today,
-  through a definition where one exists. Sort keys keep their own, DCA-based notion of an alias' columns (§6, D15,
-  D34): a database column without a DCA field is a key of `row` but no sort key (Claude's call after the builder
-  check).
+  and must not survive a schema change. Another alias needs its schema only when a sort key names it (§6); filters
+  resolve its columns by name as today, through a definition where one exists.
 - **Redefined and extended.** The driver (in `buildTableCatalog()`) and integrations (in the catalog event) may
   redefine single columns and add keys the table does not have: `IFNULL(translation.<f>, main.<f>)` for a
   translatable field, an inner SELECT, any other SQL expression, a fixed value, a column of a joined alias
@@ -632,13 +631,16 @@ This PR:
 - keeps the stored `sortSettings` format readable; the key format must leave room for a hint namespace without a
   migration (e.g. column keys never contain a character a hint key uses — builder's call).
 
-**Resolvable keys** (Claude's call): the catalog does not store column lists. The columns of an alias are the DCA
-fields **with an `sql` definition** of its table (what the `sortSettings` widget offers today via
-`DcaHelper::getFieldOptions()`), plus the columns defined for that alias (§3). A column key is
-resolvable when its alias is in the catalog and outer-joinable and its column is such a column. A skipped key is
-logged at warning level, so an order change (e.g. a stored key on a database column without a DCA field, which sorts
-today) is visible. `FilterConditionsBuilder::column()` does **not** check column existence
-(unchanged behavior: an unknown column is an SQL error, as today); it checks only the SQL name and the alias.
+**Resolvable keys** (user's decision, 2026-11-13; it replaces the DCA-based rule of the third review): a column key
+is resolvable when its alias is in the catalog and outer-joinable and its column is a column of that alias — one its
+table has in the database schema, or one defined for the alias (§3). For `main` these are exactly the keys of the
+column list, added keys included, so what a row holds can be sorted by (`ORDER BY score, news_archive.title`). For a
+joined alias the schema of its table is read like `main`'s, once per table and request, and only when a sort key
+names it. A stored key on a database column without a DCA field keeps sorting, as today. The `sortSettings` widget is
+unchanged (the DCA fields of `main`, via `DcaHelper::getFieldOptions()`); a DCA field without a database column is
+skipped instead of failing the list. A skipped key is logged at warning level. `FilterConditionsBuilder::column()`
+does **not** check column existence (unchanged behavior: an unknown column is an SQL error, as today); it checks only
+the SQL name and the alias.
 
 **Resolvable is not allowed.** What a visitor may choose (the Sortinator, next PR) is a separate, list-configured set
 — a whitelist plus the default sort — never "every resolvable key": that would open an ordering side channel on
@@ -786,7 +788,7 @@ possible until derivations.
 | D12 | `buildQuery()` once per query build, no purpose and no intent in its context; Entries and Count derived; purposes `Entries`/`Count` internal; reader queries are `Entries` without paging under `ValidationIntent`, by auto-item and by ids (D35); `onlyId` dropped | Claude (after review; no intent: follows D40) |
 | D13 | `sortSettings` widget stays `main`-only | Claude |
 | D14 | Branch `v0.2-query` | Claude |
-| D15 | Sort-key columns of an alias = DCA fields of its table + defined columns, not stored in the catalog; sort keys checked against them (single-valued aliases only), filter columns not; resolvable ≠ allowed | Claude (after review) |
+| D15 | Sort-key columns of an alias = the columns its table has in the schema + defined columns, not stored in the catalog; sort keys checked against them (single-valued aliases only), filter columns not; resolvable ≠ allowed | Claude (after review); schema instead of DCA fields: user, 2026-11-13 |
 | D16 | Count wraps the Entries query (`SELECT COUNT(*) FROM (SELECT 1 …) t`) | user (inner projection: Claude after review) |
 | D17 | Bundled elements that read the list's table follow their target's table; only fixed-column elements opt out | user |
 | D18 | Run-once migration resets stale `targetAlias` of formerly untargeted types to `main`, guarded by a marker (D31) | user (marker: Claude after review) |
@@ -805,13 +807,13 @@ possible until derivations.
 | D31 | Migration resets a frozen list of bundled formerly untargeted types; marker is a DCA field default `'0'`, set to `'1'` on every backend save and by the migration | Claude (after 3rd review) |
 | D32 | `PublishedFilterElement` opts out (always `main`) | Claude (after 3rd review) |
 | D33 | One per-filter alias validator shared by build and inspector; query-time backstop is an `\Error` | Claude (after 3rd review) |
-| D34 | Resolvable sort columns need an `sql` definition; skipped keys logged as warnings | Claude (after 3rd review) |
+| D34 | Skipped sort keys are logged as warnings (the `sql`-definition rule of the third review is replaced by the schema, D15) | Claude (after 3rd review); user, 2026-11-13 |
 | D35 | A lookup by ids is a framework-owned query input, compiled as a condition on the physical `main.id`, without paging, and indexed by `meta.modelRef.id`; nothing modifies the query builder after the assembly | Claude (after PR #54 and the builder check) |
 | D36 | The expansion contract speaks of rows (`expandRows()`); occurrences become entries through `EntryCollector`, the collection stays flat | Claude (after PR #54; flat collection: user in the entries design) |
 | D37 | An explicit column list replaces `main.*`: pre-filled from the schema, single definitions redefined or added by the driver and by integrations with any SQL; a definition applies to projection, identity, filters and sorting | user (2026-11-13; applies everywhere: proposed by Claude) |
 | D38 | One definition per column on top of the schema default; a second one is a programming error | Claude |
 | D39 | Joins used only by the projection become LEFT and are absent from Count | user (proposed by Claude) |
-| D40 | The list defines its entries (the whole list, what a `ValidationIntent` sees); the intent decides only order, section and embedding. `buildQuery()` and the catalog hooks get no intent; filter elements keep theirs to tell the section from the whole list | user (2026-11-13; no intent in the context, elements unchanged: Claude) |
+| D40 | The list defines its entries (the whole list, what a `ValidationIntent` sees); the intent decides only order, section and embedding. `buildQuery()` and the catalog hooks get no intent, and after the exclusive-filters PR neither do the filter contexts | user (2026-11-13; no intent in the driver's context: Claude) |
 | D41 | `meta.modelRef` names the physical `main` record, independent of the identity | user (proposed by Claude) |
 | D42 | The follow-up to PR #54 (no entry becomes a model, auto-item lookup without `LIMIT 1`) is its own PR before this one | user |
 

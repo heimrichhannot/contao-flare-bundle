@@ -328,7 +328,8 @@ What the finder hands you is Contao's, not Flare's:
 - **The finder's lifecycle applies.** A core model is registered when it is loaded and can be saved. A model of
   DC_Multilingual is detached: it is not registered and cannot be saved, and every call queries again.
 - **One query per call**, unless the registry holds the record. For the bundled schema.org listeners that is one
-  query more on a reader page: `flare_schema_org()` is the reader's function, with one entry per request.
+  query more on a reader page, where `flare_schema_org()` belongs. Called with an entry and a list elsewhere, it
+  costs that query for each entry it is called with.
 - **`null` for a deleted record**, unless the registry still holds an instance of it.
 
 ## 9. Request Context

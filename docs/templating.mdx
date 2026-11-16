@@ -177,7 +177,8 @@ Three names are reserved and never read from the row:
 {% endfor %}
 ```
 
-In a list loop, `flare_related()` costs one query per distinct related record (N+1). A
+In a list loop, `flare_related()` costs queries per entry (N+1): one per distinct related record for a to-one
+relation, one per entry for a to-many relation. A
 [listener that attaches the related records in phase 1](dev/entries.md#2-a-related-record-to-one) loads them for the
 whole collection in one query.
 

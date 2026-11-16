@@ -191,8 +191,10 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   is the only path from a reader element and the auto-item to its entry (list → intent → engine → view → entry),
   memoized per `tl_content.id` + auto-item; a `FlareException` (also an `IntentException` for an intent that violates
   its constraints) is stored as the resolution's `failure` (anything else propagates, unmemoized); without an
-  auto-item nothing is built or queried. Only the stored value itself finds the entry (`ValidationLoader` compares the
-  fetched value strictly: no numeric casts, collations or trailing spaces of the database → 404). `resolve(ContentModel)` for
+  auto-item nothing is built or queried. Only the stored value itself finds the entry: `ValidationLoader` reads
+  every row the database matches (no LIMIT, ordered by the list's order and then `main.id`) and takes the first
+  strictly equal one — numeric casts, collations and trailing spaces of the database never pick another row; of
+  strictly equal rows the lowest id wins; none → 404. `resolve(ContentModel)` for
   `ReaderController` (failure → 5xx, no entry → 404), `resolveForPage()` for `Contao/Hook/BreadcrumbHook` (no
   resolution, a failure or no entry → items unchanged; an unexpected exception is logged, rethrown in debug mode; the
   title is escaped without insert tags). The cache lives in the service, not in request attributes (a

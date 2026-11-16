@@ -6,12 +6,12 @@ namespace HeimrichHannot\FlareBundle\Contao\ListEntry;
 
 use Contao\CoreBundle\Framework\Adapter;
 use Contao\CoreBundle\Framework\ContaoFramework;
-use Contao\Database;
 use Contao\DcaExtractor;
 use Contao\FilesModel;
 use Contao\Model;
 use Contao\Model\Collection;
 use Contao\StringUtil;
+use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Exception\MissingModelRefError;
 use HeimrichHannot\FlareBundle\Exception\UndefinedRelationError;
 use HeimrichHannot\FlareBundle\List\Entry\Entry;
@@ -31,6 +31,7 @@ final readonly class EntryRelationResolver
 
     public function __construct(
         private ContaoFramework $framework,
+        private Connection      $connection,
     ) {
         $this->resolved = new \WeakMap();
     }
@@ -104,8 +105,7 @@ final readonly class EntryRelationResolver
             return $this->framework->getAdapter(FilesModel::class)->findMultipleByUuids($values);
         }
 
-        $quoted = $this->framework->getAdapter(Database::class)->quoteIdentifier($relation['field']);
-        $field = $relation['table'] . '.' . $quoted;
+        $field = $relation['table'] . '.' . $this->connection->quoteIdentifier($relation['field']);
         $placeholders = \implode(',', \array_fill(0, \count($values), '?'));
 
         return $finder->findBy(

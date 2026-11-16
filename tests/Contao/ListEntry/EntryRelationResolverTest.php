@@ -6,12 +6,12 @@ namespace HeimrichHannot\FlareBundle\Tests\Contao\ListEntry;
 
 use Contao\CoreBundle\Framework\Adapter;
 use Contao\CoreBundle\Framework\ContaoFramework;
-use Contao\Database;
 use Contao\DcaExtractor;
 use Contao\FilesModel;
 use Contao\Model;
 use Contao\Model\Collection;
 use Contao\TestCase\ContaoTestCase;
+use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contao\ListEntry\EntryRelationResolver;
 use HeimrichHannot\FlareBundle\Exception\MissingModelRefError;
 use HeimrichHannot\FlareBundle\Exception\UndefinedRelationError;
@@ -47,8 +47,8 @@ class EntryRelationResolverTest extends ContaoTestCase
     /** `FilesModel::findMultipleByUuids()` */
     private Adapter&MockObject $files;
 
-    /** `Database::quoteIdentifier()` */
-    private Adapter&MockObject $database;
+    /** The connection that quotes the target field */
+    private Connection&MockObject $connection;
 
     protected function setUp(): void
     {
@@ -57,8 +57,8 @@ class EntryRelationResolverTest extends ContaoTestCase
         $this->models = $this->mockAdapter(['getClassFromTable']);
         $this->finder = $this->mockAdapter(['findOneBy', 'findBy']);
         $this->files = $this->mockAdapter(['findMultipleByUuids']);
-        $this->database = $this->mockAdapter(['quoteIdentifier']);
-        $this->database->method('quoteIdentifier')->willReturnCallback(static fn (string $f): string => "`{$f}`");
+        $this->connection = $this->createMock(Connection::class);
+        $this->connection->method('quoteIdentifier')->willReturnCallback(static fn (string $f): string => "`{$f}`");
     }
 
     /**
@@ -142,7 +142,7 @@ class EntryRelationResolverTest extends ContaoTestCase
     {
         $collection = new Collection([new TestModelFixture(['id' => 5])], 'tl_test');
         $this->classes();
-        $this->database->expects(self::once())->method('quoteIdentifier')->with(self::identicalTo('order'));
+        $this->connection->expects(self::once())->method('quoteIdentifier')->with(self::identicalTo('order'));
         $this->finder
             ->expects(self::once())
             ->method('findBy')
@@ -396,11 +396,10 @@ class EntryRelationResolverTest extends ContaoTestCase
                 Model::class => $this->models,
                 TestModelFixture::class => $this->finder,
                 FilesModel::class => $this->files,
-                Database::class => $this->database,
                 DcaExtractor::class => $extractors,
             },
         );
 
-        return new EntryRelationResolver($framework);
+        return new EntryRelationResolver($framework, $this->connection);
     }
 }

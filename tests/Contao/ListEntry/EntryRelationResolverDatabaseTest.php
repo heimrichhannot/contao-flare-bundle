@@ -104,7 +104,7 @@ class EntryRelationResolverDatabaseTest extends ContaoTestCase
         $framework = $this->createMock(ContaoFramework::class);
         $framework->method('getAdapter')->willReturnCallback(static fn (string $class): Adapter => new Adapter($class));
 
-        $this->resolver = new EntryRelationResolver($framework);
+        $this->resolver = new EntryRelationResolver($framework, $this->connection);
     }
 
     protected function tearDown(): void

@@ -119,6 +119,9 @@ class EntryRelationResolverDatabaseTest extends ContaoTestCase
 
     public function testToOneEqualsGetRelated(): void
     {
+        // data of this test alone: a Contao\Database left over from another test would not see it
+        $this->connection->update('tl_flare_rel_target', ['title' => 'to-one'], ['id' => 2]);
+
         $expected = RelationSourceModelFixture::findById(5)?->getRelated('pid');
         Registry::getInstance()->reset();
 
@@ -127,11 +130,14 @@ class EntryRelationResolverDatabaseTest extends ContaoTestCase
         self::assertInstanceOf(RelationTargetModelFixture::class, $expected);
         self::assertInstanceOf(RelationTargetModelFixture::class, $actual);
         self::assertSame($expected->row(), $actual->row());
-        self::assertSame('b', $actual->title);
+        self::assertSame('to-one', $actual->title);
     }
 
     public function testToManyEqualsGetRelatedInTheStoredOrder(): void
     {
+        // data of this test alone, as above
+        $this->connection->update('tl_flare_rel_target', ['title' => 'to-many'], ['id' => 3]);
+
         $expected = RelationSourceModelFixture::findById(5)?->getRelated('tags');
         Registry::getInstance()->reset();
 
@@ -144,6 +150,7 @@ class EntryRelationResolverDatabaseTest extends ContaoTestCase
 
         self::assertSame(self::rows($expected), $rows);
         self::assertSame([3, 1], \array_column($rows, 'id'));
+        self::assertSame(['to-many', 'a'], \array_column($rows, 'title'));
     }
 
     private function entry(): Entry

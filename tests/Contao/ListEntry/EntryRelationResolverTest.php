@@ -35,6 +35,7 @@ class EntryRelationResolverTest extends ContaoTestCase
         'image' => ['type' => 'belongsTo', 'table' => 'tl_nomodel', 'field' => 'id'],
         'odd' => ['type' => 'manyToMany', 'table' => 'tl_tag', 'field' => 'id'],
         'oddNoModel' => ['type' => 'manyToMany', 'table' => 'tl_nomodel', 'field' => 'id'],
+        'untyped' => ['table' => 'tl_tag', 'field' => 'id'],
     ];
 
     /** `Model::getClassFromTable()` */
@@ -243,8 +244,9 @@ class EntryRelationResolverTest extends ContaoTestCase
         $this->classes();
         $this->finder->expects(self::exactly(3))->method('findOneBy')->willReturn(null);
         $resolver = $this->resolver();
+        // two entries of one record: the memo belongs to the entry, not to the record
         $first = $this->entry(['id' => 5, 'pid' => 7, 'parent' => 2]);
-        $second = $this->entry(['id' => 6, 'pid' => 7, 'parent' => 2]);
+        $second = $this->entry(['id' => 5, 'pid' => 7, 'parent' => 2]);
 
         self::assertNull($resolver->resolve($first, 'pid'));
         self::assertNull($resolver->resolve($first, 'pid'));
@@ -302,6 +304,17 @@ class EntryRelationResolverTest extends ContaoTestCase
         $this->expectException(UndefinedRelationError::class);
         $this->expectExceptionMessage('The column "tl_test.odd" has the unsupported relation type "manyToMany".');
         $this->resolver()->resolve($this->entry(['id' => 5, 'odd' => 4]), 'odd');
+    }
+
+    public function testARelationWithoutTypeThrows(): void
+    {
+        $this->classes();
+        $this->finder->expects(self::never())->method('findOneBy');
+        $this->finder->expects(self::never())->method('findBy');
+
+        $this->expectException(UndefinedRelationError::class);
+        $this->expectExceptionMessage('The column "tl_test.untyped" has the unsupported relation type "".');
+        $this->resolver()->resolve($this->entry(['id' => 5, 'untyped' => 4]), 'untyped');
     }
 
     public function testTheRelatedClassIsCheckedBeforeTheType(): void

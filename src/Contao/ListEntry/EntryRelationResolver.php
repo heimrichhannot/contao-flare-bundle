@@ -75,13 +75,13 @@ final readonly class EntryRelationResolver
 
         $finder = $this->framework->getAdapter($this->relatedClass($relation['table'], $column, $table));
 
-        return match ($relation['type']) {
+        return match ($relation['type'] ?? null) {
             'hasOne', 'belongsTo' => $finder->findOneBy($relation['field'], $value),
             'hasMany', 'belongsToMany' => $this->findMany($relation, $value, $finder),
             default => throw new UndefinedRelationError(
                 $table,
                 $column,
-                \sprintf('has the unsupported relation type "%s"', $relation['type']),
+                \sprintf('has the unsupported relation type "%s"', $relation['type'] ?? ''),
             ),
         };
     }

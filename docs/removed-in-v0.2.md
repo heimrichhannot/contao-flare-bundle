@@ -73,7 +73,7 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 
   | Removed | Replacement |
   |---|---|
-  | `InteractiveView::getModels()`, `InteractiveView::getModel($id)` | the entries of `InteractiveView::getEntries()`; a model only where a Contao API needs one, through `Contao\ListEntry\EntryModelFactory` (see [Enriching Entries](./dev/entries.md#8-contao-apis-that-need-a-model)) |
+  | `InteractiveView::getModels()`, `InteractiveView::getModel($id)` | the entries of `InteractiveView::getEntries()`; a model only where a Contao API needs one, loaded by `meta.modelRef` through the table's finder: `Model::getClassFromTable($ref->table)::findById($ref->id)` (see [Enriching Entries](./dev/entries.md#8-contao-apis-that-need-a-model)) |
   | `ValidationView::getModel($id)`, `ValidationView::getEntry($id)` | `ValidationView::lookup($id)` (membership in the list, by the reader's rules) |
   | `ValidationView::getModelByAutoItem($autoItem)` | `ValidationView::getEntryByAutoItem($autoItem)`, which now returns an `Entry` |
   | `InteractiveView::to()`, `ValidationView::to()` | `Entry::to()` of an entry, or of a lookup's result |
@@ -82,6 +82,9 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
   `Reader\Resolver\ReaderRequestAttributeResolver` — the reader's state lives in the request-scoped
   `Contao\Reader\ReaderResolver`, shared by the reader and the breadcrumb
 - `Util\EntryCache`
+- `Contao\ListEntry\EntryModelFactory` (v0.2 development only) — no entry becomes a model: load the record
+  by `meta.modelRef` through the table's finder (see
+  [Enriching Entries](./dev/entries.md#8-contao-apis-that-need-a-model))
 - `ValidationLoader::fetchEntryById()` (also on `ValidationLoaderInterface`) — `fetchEntriesByIds()` loads members
   by id
 

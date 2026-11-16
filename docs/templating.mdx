@@ -153,7 +153,7 @@ Three names are reserved and never read from the row:
 |---|---|
 | `entry.to` | The reader URL of the entry, or `null` — without a configured reader page, or when the entry's auto-item value is empty. |
 | `entry.row` | The row as an array: `entry.row.<column>`. Use it for a column named `to`, `row` or `meta`, and to iterate the columns — an entry itself is not iterable. |
-| `entry.meta` | Metadata. `entry.meta.modelRef.table` and `entry.meta.modelRef.id` name the database record of the entry (`entry.meta.modelRef` is `null` for entries that do not come from a table). |
+| `entry.meta` | Metadata. `entry.meta.modelRef.table` and `entry.meta.modelRef.id` name the database record of the entry — the physical record of the list's main table (`entry.meta.modelRef` is `null` for entries that do not come from a table). |
 
 ```twig
 {% if flare_list.entries is empty %}
@@ -605,12 +605,15 @@ Flare currently registers these Twig functions (see the [Twig functions referenc
 - `flare_project(list, intent)` for running a projection directly from a template: returns the view
   for the given `ListCompound` and intent, without going through a content element's engine.
 - `flare_related(entry, column)` for the record a column refers to, by the relation the table's DCA defines
-  (`foreignKey` + `relation`), with the same result as Contao's `Model::getRelated()`: a model for a to-one relation,
-  a model collection for a to-many relation, or `null`. Example: `flare_related(entry, 'pid').title` is the title of a
-  news entry's archive. It returns the raw relation, without a membership check — also into the list's own table;
-  when you need membership in the list or a reader link, use `flare_reader.lookup()` in a reader template; in a list,
-  use the lookup a [listener's phase 1](dev/entries.md#4-computed-similarity) receives. It throws an error for an
-  entry without `entry.meta.modelRef`, for a column without a relation and for a table without a model class.
+  (`foreignKey` + `relation`), resolved from the entry's row (`entry.row`) the way Contao's `Model::getRelated()`
+  resolves it: a model for a to-one relation, a model collection for a to-many relation, or `null`. Example:
+  `flare_related(entry, 'pid').title` is the title of a news entry's archive. It returns the raw relation, without a
+  membership check — also into the list's own table; when you need membership in the list or a reader link, use
+  `flare_reader.lookup()` in a reader template; in a list, use the lookup a
+  [listener's phase 1](dev/entries.md#4-computed-similarity) receives. It throws an error for an entry without
+  `entry.meta.modelRef`, for a column without a relation, for a related table without a model class and for an
+  unsupported relation type (see
+  [the differences from `getRelated()`](dev/entries.md#6-related-records-without-a-listener-flare_related)).
 - `flare_schema_org(entry = null, list = null)` returns the schema.org (JSON-LD) data of an entry. In a reader
   template, without arguments, it uses the reader's `entry` and the list of `flare`; elsewhere pass both
   (`flare_schema_org(entry, flare.list)`). The data can be influenced using the `ReaderSchemaOrgEvent`.

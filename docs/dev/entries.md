@@ -85,8 +85,8 @@ final readonly class NewsArchiveListener
 - `$entries->column('pid')` returns the distinct, non-empty values of a column across the collection; rows without
   that column are skipped.
 - In PHP, `$entry->pid` reads the `pid` column (columns, then attachments, as in Twig; an unknown name throws an
-  `UndefinedEntryKeyError`); `$entry->row` is the row array, `$entry->meta->modelRef` the record (`table`, `id`) and
-  `$entry->to()` the reader URL.
+  `UndefinedEntryKeyError`); `$entry->row` is the row array, `$entry->meta->modelRef` the record (`table`, `id`) —
+  the physical record of the list's main table — and `$entry->to()` the reader URL.
 
 `ArrayParameterType` needs DBAL 3.6 or later; the examples on this page use it for brevity.
 
@@ -233,6 +233,25 @@ It returns the **raw relation**: there is no membership check, for any target ta
 you need a member of the list or a reader link, use the lookup: `flare_reader.lookup()` in a reader template; in a
 list, use the lookup a listener's phase 1 receives.
 
+`flare_related()` resolves the relation itself, the way `Model::getRelated()` resolves a lazy relation, but without a
+model of the entry: the relation comes from the DCA of the entry's table (`meta->modelRef->table`), the value from the
+entry's row (`entry.row`), the records from the finders of the related table's model class. The entry's own table
+needs no model class. An empty value (`null`, `''`, `0`, `'0'`, or a column the row does not have) returns `null`
+without a query. Where the result differs from calling `getRelated()` on the record's model, on purpose:
+
+- **No parent model is consulted.** The row decides: a model of the record that Contao's registry holds — with
+  another value in the column, a relation it has already loaded, or a class that overrides `getRelated()` — plays no
+  part.
+- **A serialized empty array** (`a:0:{}`) in a to-many column returns `null` without a query; Contao would query
+  for it.
+- **Errors instead of PHP's:** an `UndefinedRelationError` for a column without a relation, a related table without a
+  model class, and a relation without a type or of an unsupported type (Contao knows `hasOne`, `belongsTo`,
+  `hasMany` and `belongsToMany`).
+
+As in Contao, a to-many relation keeps the stored order through `FIND_IN_SET()` — which cannot order values that
+contain a comma — and a value listed twice yields its record once. The values are bound as query parameters; a
+to-many relation to `tl_files`.`uuid` goes through `FilesModel::findMultipleByUuids()`.
+
 ## 7. Cache Tags for Loaded Data
 
 The reader tags the response with its entry's record, and a lookup with its members'
@@ -259,43 +278,58 @@ tagging. Tagging inside phase 1 tags exactly the pages that read the value.
 
 ## 8. Contao APIs That Need a Model
 
-Templates and listeners work with the row; Contao models are made only where a Contao API requires one, e.g.
-`News::getSchemaOrgData()`. `HeimrichHannot\FlareBundle\Contao\ListEntry\EntryModelFactory` is the one place an entry
-becomes a model: `create(Entry $entry): ?Model` returns the instance Contao's model registry holds for the entry's
-record, else a new model built from the entry's row (restricted to the table's columns). Such a model is not
-registered — a later `findByPk()` loads the record from the database — and cannot be saved (`save()` throws). The
-model is memoized per entry and shared by all callers. It returns `null` for a table without a model class and throws a `MissingModelRefError` for an entry without
-`meta->modelRef` — check the table first. The bundled News schema.org listener does it like this (shortened):
+Templates and listeners work with the row; no entry becomes a Contao model. Where a Contao API requires one, e.g.
+`News::getSchemaOrgData()`, load the record by `meta->modelRef` through the finder of the table's model class:
+`Model::getClassFromTable($ref->table)::findById($ref->id)`, or the concrete class (`NewsModel::findById($ref->id)`).
+The table's own class matters where another bundle registers one — a multilingual model class, for example,
+translates the record. `meta->modelRef` is `null` for an entry that names no record of a DC table: check it (and its
+table) yourself before you call a finder. The bundled News schema.org listener does it like this:
 
 ```php
+use Contao\CoreBundle\Framework\ContaoFramework;
+use Contao\Model;
 use Contao\News;
 use Contao\NewsModel;
-use HeimrichHannot\FlareBundle\Contao\ListEntry\EntryModelFactory;
 use HeimrichHannot\FlareBundle\Event\ReaderSchemaOrgEvent;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 #[AsEventListener(priority: 200)]
 class NewsReaderSchemaOrgListener
 {
-    public function __construct(private EntryModelFactory $entryModelFactory) {}
+    public function __construct(private readonly ContaoFramework $framework) {}
 
     public function __invoke(ReaderSchemaOrgEvent $event): void
     {
-        if ($event->entry->meta->modelRef?->table !== NewsModel::getTable()) {
+        $ref = $event->entry->meta->modelRef;
+
+        if ($ref?->table !== NewsModel::getTable()) {
             return;
         }
 
-        $model = $this->entryModelFactory->create($event->entry);
+        $class = $this->framework->getAdapter(Model::class)->getClassFromTable($ref->table);
+        $model = $this->framework->getAdapter($class)->findById($ref->id);
 
-        if ($model instanceof NewsModel) {
-            $event->data = News::getSchemaOrgData($model);
+        if (!$model instanceof NewsModel) {
+            return;
         }
+
+        $event->data = $this->framework->getAdapter(News::class)->getSchemaOrgData($model);
     }
 }
 ```
 
-Reusing the registry's instance is safe: the list's query has already confirmed that the record is a member of the
-list.
+What the finder hands you is Contao's, not Flare's:
+
+- **The model is the database record.** Values a driver or listener mapped into the row, and columns of the row that
+  are not the table's (e.g. from a join), are not in it.
+- **Contao's model registry answers first.** A record that was already registered earlier in the request is returned
+  as it is, without a query — whichever class registered it. The list's query has already confirmed that the record
+  is a member of the list, so this is the same model any Contao module would get for it.
+- **The finder's lifecycle applies.** A core model is registered when it is loaded and can be saved. A model of
+  DC_Multilingual is detached: it is not registered and cannot be saved, and every call queries again.
+- **One query per call**, unless the registry holds the record. For the bundled schema.org listeners that is one
+  query more on a reader page: `flare_schema_org()` is the reader's function, with one entry per request.
+- **`null` for a deleted record**, unless the registry still holds an instance of it.
 
 ## 9. Request Context
 

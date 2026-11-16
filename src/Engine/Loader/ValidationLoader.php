@@ -52,9 +52,9 @@ readonly class ValidationLoader implements ValidationLoaderInterface
                 return null;
             }
 
-            // All rows the database matches, the list's order first, then the id: of strictly equal rows the
-            // lowest id wins. The reset also overrides any limit a query listener set; no cap — a cap would miss a
-            // strict match behind the collation matches.
+            // All rows the database matches, an order a driver or query listener set first, then the id: of
+            // strictly equal rows the lowest id wins unless such an order decides. The reset also overrides any
+            // limit a query listener set; no cap — a cap would miss a strict match behind the collation matches.
             $qb->setFirstResult(0)
                 ->setMaxResults(null)
                 ->addOrderBy(TableAliasRegistry::ALIAS_MAIN . '.id');

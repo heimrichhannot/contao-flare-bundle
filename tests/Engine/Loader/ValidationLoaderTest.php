@@ -152,6 +152,10 @@ final class ValidationLoaderTest extends TestCase
         yield 'id 1 first' => [[[1, 'x'], [2, 'x']]];
     }
 
+    /**
+     * A guard, green before the tie-breaker existed: the id is appended behind an order a query listener set, not
+     * put before it.
+     */
     public function testTheListsOrderGoesBeforeTheIdTieBreaker(): void
     {
         $connection = $this->collatedConnection('BINARY', []);

@@ -75,7 +75,8 @@ readonly class FlareRuntime implements RuntimeExtensionInterface
      * a to-many relation.
      *
      * @throws MissingModelRefError for an entry without a modelRef
-     * @throws UndefinedRelationError for a column without relation
+     * @throws UndefinedRelationError for a column without relation, a related table without a model class or an
+     *                                unknown relation type
      */
     public function getRelated(Entry $entry, string $column): Model|Collection|null
     {

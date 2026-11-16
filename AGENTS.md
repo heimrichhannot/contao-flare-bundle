@@ -182,9 +182,12 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   an entry becomes a model, memoized per entry: the registry's instance for its record, else a new model from the row
   restricted to the table's columns — never registered, `save()` throws (`preventSaving()`); `null` without a model
   class; `MissingModelRefError` without `modelRef`; for Contao APIs that need
-  a model, e.g. the News/Events schema.org listeners), `EntryRelationResolver` (`flare_related(entry, column)`: the
-  DCA relation like `Model::getRelated()`, memoized per entry and column, no membership check;
-  `UndefinedRelationError` for a column without relation) and `EntryCacheTagger` (`EntryTaggerInterface`:
+  a model, e.g. the News/Events schema.org listeners), `EntryRelationResolver`
+  (`flare_related(entry, column)`: Contao's lazy relation resolution without a model of the entry — relation from
+  `DcaExtractor`, value from `entry.row`, the related table's finders, to-many values bound as parameters,
+  `tl_files`.`uuid` through `FilesModel::findMultipleByUuids()`; memoized per entry and column, no membership check;
+  `UndefinedRelationError` for a column without relation, a related table without model class or an unknown
+  relation type) and `EntryCacheTagger` (`EntryTaggerInterface`:
   `contao.db.<table>.<id>` response tags; no-op without FOS's response tagger)
 - `src/Contao/Reader/` + `Contao/ReaderResolution` — the request-scoped reader. `ReaderResolver` (`ResetInterface`)
   is the only path from a reader element and the auto-item to its entry (list → intent → engine → view → entry),

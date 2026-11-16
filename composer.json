@@ -39,7 +39,9 @@
         "php-coveralls/php-coveralls": "^2.0",
         "symfony/phpunit-bridge": "^5.4 || ^6.0 || ^7.0",
         "phpstan/phpstan": "^1.10",
-        "phpstan/phpstan-symfony": "^1.2"
+        "phpstan/phpstan-symfony": "^1.2",
+        "contao/news-bundle": "^4.13 || ^5.0",
+        "contao/calendar-bundle": "^4.13 || ^5.0"
     },
     "suggest": {
         "codefog/tags-bundle": "FLARE integrates with Codefog Tags Bundle for tag-based filtering on any data container.",

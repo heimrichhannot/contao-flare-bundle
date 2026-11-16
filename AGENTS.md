@@ -37,8 +37,8 @@ ContentElement Controller
 ```
 
 The reader and the breadcrumb take this path through `Contao\Reader\ReaderResolver`, once per request and auto-item;
-the views hand out `Entry` objects, never Contao models (a model is made only at the Contao boundary,
-`Contao\ListEntry\EntryModelFactory`).
+the views hand out `Entry` objects, never Contao models; no entry becomes a model — Contao APIs that need one load it
+by `meta.modelRef` through the table's model class (`Model::getClassFromTable($ref->table)::findById($ref->id)`).
 
 Filter execution inside the projector: the `FormHarness` decodes submitted form data per filter control into value
 objects; `ListQueryDirector` (`src/Query/Executor/`) picks each filter's value (with a control: the form's value;
@@ -178,11 +178,9 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `Factory/ListCompoundBuilderFactory::create(ListModel)`. Exception, until their own refactor: `ListCompound`,
   `ListCompoundBuilder`, `ListCompoundFactory` and `BaseListOptions` still take a `ListModel`. Hooks and callbacks of
   optional integrations stay in `src/Integration/`
-- `src/Contao/ListEntry/` — entries at the Contao boundary: `EntryModelFactory::create(Entry): ?Model` (the one place
-  an entry becomes a model, memoized per entry: the registry's instance for its record, else a new model from the row
-  restricted to the table's columns — never registered, `save()` throws (`preventSaving()`); `null` without a model
-  class; `MissingModelRefError` without `modelRef`; for Contao APIs that need
-  a model, e.g. the News/Events schema.org listeners), `EntryRelationResolver`
+- `src/Contao/ListEntry/` — entries at the Contao boundary (`meta.modelRef` names the physical record of the list's
+  main table; the News/Events schema.org listeners load their model by it through the table's finder — one query
+  unless the registry holds the record): `EntryRelationResolver`
   (`flare_related(entry, column)`: Contao's lazy relation resolution without a model of the entry — relation from
   `DcaExtractor`, value from `entry.row`, the related table's finders, to-many values bound as parameters,
   `tl_files`.`uuid` through `FilesModel::findMultipleByUuids()`; memoized per entry and column, no membership check;

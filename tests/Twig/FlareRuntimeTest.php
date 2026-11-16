@@ -59,6 +59,7 @@ class FlareRuntimeTest extends ContaoTestCase
     public function testContentNeedsAModelRef(): void
     {
         $this->expectException(MissingModelRefError::class);
+        $this->expectExceptionMessage('names no record');
 
         $this->runtime()->getTlContent(new Entry(['id' => 1]));
     }

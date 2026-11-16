@@ -9,9 +9,11 @@ use HeimrichHannot\FlareBundle\Exception\FlareException;
 interface ValidationLoaderInterface
 {
     /**
-     * The member row whose auto-item field holds $autoItem, by the reader's rules.
+     * The member row whose auto-item field holds exactly $autoItem, by the reader's rules: all rows the database
+     * matches, without LIMIT/OFFSET, in any order a driver or query listener set and then by `main.id`; the first
+     * strictly equal one wins.
      *
-     * @return array<string, mixed>|null the row, or null on a miss
+     * @return array<string, mixed>|null the row, or null if no row is strictly equal
      *
      * @throws FlareException
      */

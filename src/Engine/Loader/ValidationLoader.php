@@ -52,17 +52,32 @@ readonly class ValidationLoader implements ValidationLoaderInterface
                 return null;
             }
 
-            $result = $qb->executeQuery();
-            $row = $result->fetchAssociative();
-            $result->free();
+            // All rows the database matches, an order a driver or query listener set first, then the id: of
+            // strictly equal rows the lowest id wins unless such an order decides. The reset also overrides any
+            // limit a query listener set; no cap — a cap would miss a strict match behind the collation matches.
+            $qb->setFirstResult(0)
+                ->setMaxResults(null)
+                ->addOrderBy(TableAliasRegistry::ALIAS_MAIN . '.id');
 
-            // The database compares by its own rules: a numeric cast (MySQL: `12abc` = 12), a case-insensitive
-            // collation, trailing spaces. Only the stored value itself, the canonical auto-item, finds the entry.
-            if ($row === false || (string) ($row[$this->config->autoItemField] ?? '') !== $autoItem) {
+            $field = $this->config->autoItemField;
+            $result = $qb->executeQuery();
+
+            try
+            {
+                // The database compares by its own rules: a numeric cast (MySQL: `12abc` = 12), a case-insensitive
+                // collation, trailing spaces. Only the stored value itself, the canonical auto-item, finds the entry.
+                while (($row = $result->fetchAssociative()) !== false) {
+                    if ((string) ($row[$field] ?? '') === $autoItem) {
+                        return $row;
+                    }
+                }
+
                 return null;
             }
-
-            return $row;
+            finally
+            {
+                $result->free();
+            }
         }
         catch (FlareException $e)
         {

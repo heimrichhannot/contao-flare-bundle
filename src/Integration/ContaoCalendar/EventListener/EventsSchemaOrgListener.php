@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Integration\ContaoCalendar\EventListener;
 
 use Contao\CalendarEventsModel;
+use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\Events;
-use HeimrichHannot\FlareBundle\Contao\ListEntry\EntryModelFactory;
+use Contao\Model;
 use HeimrichHannot\FlareBundle\Event\ReaderSchemaOrgEvent;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
@@ -14,21 +15,28 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 class EventsSchemaOrgListener
 {
     public function __construct(
-        private readonly EntryModelFactory $entryModelFactory,
+        private readonly ContaoFramework $framework,
     ) {}
 
+    /**
+     * Loads the record through the finder of the table's registered model class, so a multilingual model class
+     * translates it; a class that does not extend CalendarEventsModel yields no data.
+     */
     public function __invoke(ReaderSchemaOrgEvent $event): void
     {
-        if ($event->entry->meta->modelRef?->table !== CalendarEventsModel::getTable()) {
+        $ref = $event->entry->meta->modelRef;
+
+        if ($ref?->table !== CalendarEventsModel::getTable()) {
             return;
         }
 
-        $model = $this->entryModelFactory->create($event->entry);
+        $class = $this->framework->getAdapter(Model::class)->getClassFromTable($ref->table);
+        $model = $this->framework->getAdapter($class)->findById($ref->id);
 
         if (!$model instanceof CalendarEventsModel) {
             return;
         }
 
-        $event->data = Events::getSchemaOrgData($model);
+        $event->data = $this->framework->getAdapter(Events::class)->getSchemaOrgData($model);
     }
 }

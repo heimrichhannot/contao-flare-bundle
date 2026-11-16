@@ -37,8 +37,8 @@ ContentElement Controller
 ```
 
 The reader and the breadcrumb take this path through `Contao\Reader\ReaderResolver`, once per request and auto-item;
-the views hand out `Entry` objects, never Contao models (a model is made only at the Contao boundary,
-`Contao\ListEntry\EntryModelFactory`).
+the views hand out `Entry` objects, never Contao models; no entry becomes a model — Contao APIs that need one load it
+by `meta.modelRef` through the table's model class (`Model::getClassFromTable($ref->table)::findById($ref->id)`).
 
 Filter execution inside the projector: the `FormHarness` decodes submitted form data per filter control into value
 objects; `ListQueryDirector` (`src/Query/Executor/`) picks each filter's value (with a control: the form's value;
@@ -178,20 +178,24 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `Factory/ListCompoundBuilderFactory::create(ListModel)`. Exception, until their own refactor: `ListCompound`,
   `ListCompoundBuilder`, `ListCompoundFactory` and `BaseListOptions` still take a `ListModel`. Hooks and callbacks of
   optional integrations stay in `src/Integration/`
-- `src/Contao/ListEntry/` — entries at the Contao boundary: `EntryModelFactory::create(Entry): ?Model` (the one place
-  an entry becomes a model, memoized per entry: the registry's instance for its record, else a new model from the row
-  restricted to the table's columns — never registered, `save()` throws (`preventSaving()`); `null` without a model
-  class; `MissingModelRefError` without `modelRef`; for Contao APIs that need
-  a model, e.g. the News/Events schema.org listeners), `EntryRelationResolver` (`flare_related(entry, column)`: the
-  DCA relation like `Model::getRelated()`, memoized per entry and column, no membership check;
-  `UndefinedRelationError` for a column without relation) and `EntryCacheTagger` (`EntryTaggerInterface`:
+- `src/Contao/ListEntry/` — entries at the Contao boundary (`meta.modelRef` names the physical record of the list's
+  main table; the News/Events schema.org listeners load their model by it through the table's finder — one query
+  unless the registry holds the record): `EntryRelationResolver`
+  (`flare_related(entry, column)`: Contao's lazy relation resolution without a model of the entry — relation from
+  `DcaExtractor`, value from `entry.row`, the related table's finders, to-many values bound as parameters,
+  `tl_files`.`uuid` through `FilesModel::findMultipleByUuids()`; memoized per entry and column, no membership check;
+  `UndefinedRelationError` for a column without relation, a related table without model class or an unknown
+  relation type) and `EntryCacheTagger` (`EntryTaggerInterface`:
   `contao.db.<table>.<id>` response tags; no-op without FOS's response tagger)
 - `src/Contao/Reader/` + `Contao/ReaderResolution` — the request-scoped reader. `ReaderResolver` (`ResetInterface`)
   is the only path from a reader element and the auto-item to its entry (list → intent → engine → view → entry),
   memoized per `tl_content.id` + auto-item; a `FlareException` (also an `IntentException` for an intent that violates
   its constraints) is stored as the resolution's `failure` (anything else propagates, unmemoized); without an
-  auto-item nothing is built or queried. Only the stored value itself finds the entry (`ValidationLoader` compares the
-  fetched value strictly: no numeric casts, collations or trailing spaces of the database → 404). `resolve(ContentModel)` for
+  auto-item nothing is built or queried. Only the stored value itself finds the entry: `ValidationLoader` reads
+  every row the database matches (no LIMIT; ordered by any order a driver or query listener set, then `main.id` —
+  the list's configured sorting does not apply to the reader) and takes the first strictly equal one — numeric
+  casts, collations and trailing spaces of the database never pick another row; of strictly equal rows the lowest
+  id wins unless such an order decides; none → 404. `resolve(ContentModel)` for
   `ReaderController` (failure → 5xx, no entry → 404), `resolveForPage()` for `Contao/Hook/BreadcrumbHook` (no
   resolution, a failure or no entry → items unchanged; an unexpected exception is logged, rethrown in debug mode; the
   title is escaped without insert tags). The cache lives in the service, not in request attributes (a

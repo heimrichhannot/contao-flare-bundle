@@ -6,7 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Twig;
 
 use Contao\ContentModel;
 use Contao\TestCase\ContaoTestCase;
-use HeimrichHannot\FlareBundle\Contao\ListEntry\EntryModelFactory;
+use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contao\ListEntry\EntryRelationResolver;
 use HeimrichHannot\FlareBundle\Engine\Engine;
 use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
@@ -44,7 +44,7 @@ class FlareRuntimeTest extends ContaoTestCase
             $framework,
             $this->dispatcher,
             new ProjectorRegistry([]),
-            new EntryRelationResolver($framework, new EntryModelFactory($framework)),
+            new EntryRelationResolver($framework, $this->createStub(Connection::class)),
         );
     }
 
@@ -60,6 +60,7 @@ class FlareRuntimeTest extends ContaoTestCase
     public function testContentNeedsAModelRef(): void
     {
         $this->expectException(MissingModelRefError::class);
+        $this->expectExceptionMessage('names no record');
 
         $this->runtime()->getTlContent(new Entry(['id' => 1]));
     }

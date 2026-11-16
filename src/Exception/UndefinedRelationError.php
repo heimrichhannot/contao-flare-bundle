@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Exception;
 
 /**
- * A relation was requested that the table does not define, or for a table without a model class. This is a
- * programming error: the template asks for a column Contao knows no relation for.
+ * A relation was requested that the table does not define, or one to a related table without a model class, or an
+ * unknown relation type. This is a programming error: the template asks for a relation Contao cannot resolve.
  */
 final class UndefinedRelationError extends \Error
 {

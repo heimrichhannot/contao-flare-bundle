@@ -6,10 +6,10 @@
     "require": {
         "php": "^8.2",
         "ext-mbstring": "*",
-        "friendsofsymfony/http-cache-bundle": "^2.17 || ^3.0",
-        "contao/core-bundle": "^4.13 || ^5.0",
         "composer/semver": "^3.4",
+        "contao/core-bundle": "^4.13 || ^5.0",
         "doctrine/dbal": "^3.6 || ^4.0",
+        "friendsofsymfony/http-cache-bundle": "^2.17 || ^3.0",
         "mvo/contao-group-widget": "^1.5",
         "psr/log": "^1.0 || ^2.0 || ^3.0",
         "symfony/config": "^5.4 || ^6.0 || ^7.0",
@@ -32,14 +32,16 @@
         "twig/twig": "^3.13"
     },
     "require-dev": {
-        "contao/test-case": "^4.0 || ^5.0",
+        "contao/calendar-bundle": "^4.13 || ^5.0",
         "contao/manager-plugin": "^2.0",
+        "contao/news-bundle": "^4.13 || ^5.0",
+        "contao/test-case": "^4.0 || ^5.0",
         "heimrichhannot/contao-test-utilities-bundle": "^0.1",
-        "phpunit/phpunit": "^8.0 || ^9.0",
         "php-coveralls/php-coveralls": "^2.0",
-        "symfony/phpunit-bridge": "^5.4 || ^6.0 || ^7.0",
         "phpstan/phpstan": "^1.10",
-        "phpstan/phpstan-symfony": "^1.2"
+        "phpstan/phpstan-symfony": "^1.2",
+        "phpunit/phpunit": "^8.0 || ^9.0",
+        "symfony/phpunit-bridge": "^5.4 || ^6.0 || ^7.0"
     },
     "suggest": {
         "codefog/tags-bundle": "FLARE integrates with Codefog Tags Bundle for tag-based filtering on any data container.",

@@ -58,7 +58,10 @@ class EntryRelationResolverTest extends ContaoTestCase
         $this->finder = $this->mockAdapter(['findOneBy', 'findBy']);
         $this->files = $this->mockAdapter(['findMultipleByUuids']);
         $this->connection = $this->createMock(Connection::class);
-        $this->connection->method('quoteIdentifier')->willReturnCallback(static fn (string $f): string => "`{$f}`");
+        // like DBAL: each part of a qualified name is quoted
+        $this->connection->method('quoteIdentifier')->willReturnCallback(
+            static fn (string $name): string => '`' . \str_replace('.', '`.`', $name) . '`',
+        );
     }
 
     /**
@@ -105,7 +108,7 @@ class EntryRelationResolverTest extends ContaoTestCase
     public function testToManyFindsTheRecordsInTheStoredOrder(string $column, string $stored, array $values): void
     {
         $collection = new Collection([new TestModelFixture(['id' => 3])], 'tl_test');
-        $field = 'tl_tag.`id`';
+        $field = '`tl_tag`.`id`';
         $placeholders = \implode(',', \array_fill(0, \count($values), '?'));
         $this->classes();
         $this->finder
@@ -138,18 +141,18 @@ class EntryRelationResolverTest extends ContaoTestCase
         yield 'a quote and a backslash' => ['tags', \serialize(["o'k", 'a\\b']), ["o'k", 'a\\b']];
     }
 
-    public function testATargetFieldThatNeedsQuotingIsQuotedLikeContao(): void
+    public function testTheTargetFieldIsQuotedThroughTheConnection(): void
     {
         $collection = new Collection([new TestModelFixture(['id' => 5])], 'tl_test');
         $this->classes();
-        $this->connection->expects(self::once())->method('quoteIdentifier')->with(self::identicalTo('order'));
+        $this->connection->expects(self::once())->method('quoteIdentifier')->with(self::identicalTo('tl_tag.order'));
         $this->finder
             ->expects(self::once())
             ->method('findBy')
             ->with(
-                self::identicalTo(['tl_tag.`order` IN(?)']),
+                self::identicalTo(['`tl_tag`.`order` IN(?)']),
                 self::identicalTo(['5', '5']),
-                self::identicalTo(['order' => 'FIND_IN_SET(tl_tag.`order`, ?)']),
+                self::identicalTo(['order' => 'FIND_IN_SET(`tl_tag`.`order`, ?)']),
             )
             ->willReturn($collection);
 

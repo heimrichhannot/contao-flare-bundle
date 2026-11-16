@@ -105,7 +105,7 @@ final readonly class EntryRelationResolver
             return $this->framework->getAdapter(FilesModel::class)->findMultipleByUuids($values);
         }
 
-        $field = $relation['table'] . '.' . $this->connection->quoteIdentifier($relation['field']);
+        $field = $this->connection->quoteIdentifier(\sprintf('%s.%s', $relation['table'], $relation['field']));
         $placeholders = \implode(',', \array_fill(0, \count($values), '?'));
 
         return $finder->findBy(

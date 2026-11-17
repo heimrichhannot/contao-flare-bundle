@@ -1,11 +1,12 @@
 # Exclusive filters — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
+> superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** A filter row can apply exclusively to ticked outputs (today: the list view); the list view runs on
 `forOutput(Output::ListView)`, the reader and the lookup on `whole()`; `flare_calendar_current` follows one rule
 without `is_limited`; the contexts lose their intent; the inspector gets warnings from an event; a run-once migration
-keeps what existing calendar lists showed.
+keeps the calendar filters' leftover bounds, so no list becomes wider.
 
 **Architecture:** Bottom-up. First the setting on `FilterCompound` and the derivations on `ListCompound`, then its
 storage and the entry points that pick their list. Then the calendar element's pieces (`DateTimeHelper`,
@@ -16,7 +17,7 @@ and finally `AGENTS.md` and the docs worktree. Every task ends green.
 **Tech Stack:** PHP 8.2 (Docker), Contao 4.13/5 (the dev install resolves 5.3), Symfony 5.4–7, Doctrine DBAL ≥ 3.6,
 PHPUnit 9.6 with `contao/test-case`, SQLite for the pipeline tests, Twig, PHPStan level 5, Mago 1.47.4 (local binary).
 
-**Spec:** `dev/superpowers/specs/2026-11-13-exclusive-filters-design.md` is the authority on behavior. E1–E28 are
+**Spec:** `dev/superpowers/specs/2026-11-13-exclusive-filters-design.md` is the authority on behavior. E1–E30 are
 settled. This plan fixes the files, the order, the names the spec leaves to the builder, and the tests. Each task
 names the spec sections to read first.
 
@@ -74,7 +75,7 @@ names the spec sections to read first.
 | Exclusive filters created in code | the last parameter `?array $outputs = null` of the core `Filter\Factory\FilterCompoundFactory::create()`, and `FilterCompound::withOutputs()` |
 | `ListCompound` | `whole(): self`, `forOutput(Output $output): self` |
 | `DateTimeHelper` variant | `DateTimeHelper::toDateTimeImmutable(string $time_span_or_string_or_stamp): ?\DateTimeImmutable` |
-| Field builder | `DcaFieldBuilderInterface::makeDatim(): self`, `DcaFieldBuilderInterface::remove(string ...$paths): self` (dot paths into the definition, e.g. `'eval.rgxp'`); `Str::mergePalettes()` drops legends without fields |
+| Field builder | `DcaFieldBuilderInterface::makeDatim(): self`, `DcaFieldBuilderInterface::remove(string ...$paths): self` (dot paths into the definition, e.g. `'eval.rgxp'`); `Str::dropEmptyLegends(string $palette): string`, called by `DcaBuilder::apply()` only |
 | Issue kind and icon | `FilterIssueKind::Warning = 'warning'` (last case), `FilterIssueKind::defaultIcon(): string`, `FilterIssue::$icon` (`?string`) |
 | Event | `HeimrichHannot\FlareBundle\Event\FilterInspectionEvent` |
 | Bundled listener | `HeimrichHannot\FlareBundle\EventListener\Inspection\ExclusivePublishedFilterListener` |
@@ -180,6 +181,7 @@ Spec: §2 (derivations, failures, duplicate check), E6, E9, E23.
   - Delete the `fingerprint()` tests in `FilterCompoundTest` (the block at :142–211).
 
 - [ ] **Step 2: Run them to see them fail.** Run `make test tests/List/ListCompoundTest.php` → undefined method.
+  `testWithFilterAddsANonExclusiveFilter` fails only because `whole()` is undefined; it guards against a regression.
 
 - [ ] **Step 3: Implement.**
   - Write `whole()` and `forOutput()` with `\array_filter` (it keeps keys) and `withFilters()`. When the count is
@@ -296,13 +298,20 @@ Spec: §2 (entry-point table, "Where the lists are taken", event table), E1, E3,
       `@Contao/content_element/flare_listview.html.twig` with a minimal template, then
       `$controller($request, $content, 'main')`.
     - Pass a `ContentModelFixture` with a `ListModelFixture`, a frontend `ScopeMatcher`, mocks of
-      `SymfonyResponseTagger`, `KernelInterface` and `LoggerInterface`, and a real `InteractiveIntentFactory` with a
-      validator (`Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator()`).
-    - A `ListViewRenderEvent` listener records `$event->engine->getList()`.
+      `SymfonyResponseTagger`, `KernelInterface` and `LoggerInterface`, and a real `InteractiveIntentFactory` over
+      `new SortOrderSequenceFactory()` and a validator
+      (`Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator()`).
+    - A `ListViewRenderEvent` listener records `$event->engine->getList()` and `$event->engine->createView()`: the
+      minimal template never creates a view, and `getForm()` needs one.
     - `testTheListViewRunsOnItsOutputsList`:
-      - The filters are `a` (not exclusive), `b` (`[ListView]`) and `c` (`[]` with a `KeywordsFilterControl`).
+      - The filters are `a` (not exclusive), `b` (`[ListView]`) and `c` (`[]`, a `SearchKeywordsFilterElement`, whose
+        value class is `KeywordsValue`, with a `KeywordsFilterControl`).
       - The recorded list's `array_keys(filters)` is `['a', 'b']`.
-      - The view's `getForm()->has('c')` is false (the control outside the list view's list is not mounted).
+      - The recorded view's `getForm()->has('c')` is false (the control outside the list view's list is not
+        mounted).
+  - **Aliases:** give the exclusive `id != 1` filter its own alias (e.g. `not_first`), never `published`:
+    `createList()` keys the filters by alias (`EnginePipelineTrait.php:442`) and would silently overwrite
+    `publishedOnly()`, and the reader's listener would record a duplicate alias.
 
 - [ ] **Step 2: Run them to see them fail.** Run each file with `make test <file>`. Expected to fail: the lookup
   test (`lookup(1)` is `null`), the reader and breadcrumb tests (no entry) and the controller test (`c` is in the
@@ -345,8 +354,9 @@ Spec: §4 ("The sides are dates, read once"), E16, E17.
 
 - [ ] **Step 2: Run them to see them fail.** Run `make test tests/Util/DateTimeHelperTest.php`.
 
-- [ ] **Step 3: Implement.** Return `null` for trimmed-empty text, else wrap `toTimestamp()` of the trimmed text:
-  `\DateTimeImmutable::createFromFormat('U', (string) $ts)->setTimezone(self::getTimeZone())`.
+- [ ] **Step 3: Implement.** Return `null` for trimmed-empty text and when `toTimestamp()` of the trimmed text is
+  `null`. Otherwise create `\DateTimeImmutable::createFromFormat('U', (string) $ts)`, return `null` if that is
+  `false`, and return it `->setTimezone(self::getTimeZone())`.
 
 - [ ] **Step 4: Run until it passes.** Run the file → `OK`.
 
@@ -355,12 +365,12 @@ Spec: §4 ("The sides are dates, read once"), E16, E17.
 
 ### Task 6: `DcaFieldBuilder::remove()` and `makeDatim()`, palettes without empty legends
 
-Spec: §4 (backend fields, the `makeDatim()` and key-removal bullets), E18, E19. The legend rule is the user's
-(2026-11-17, on the plan review): legends without fields are removed.
+Spec: §1 (the legend sentence), §4 (backend fields, the `makeDatim()` and key-removal bullets), E18, E19, E30.
 
 **Files:**
 - Modify: `src/Contao/DataContainer/Builder/DcaFieldBuilderInterface.php`
-- Modify: `src/Contao/DataContainer/Builder/DcaFieldBuilder.php`, `src/Util/Str.php` (`mergePalettes()`)
+- Modify: `src/Contao/DataContainer/Builder/DcaFieldBuilder.php`, `src/Contao/DataContainer/Builder/DcaBuilder.php`
+  (`apply()`), `src/Util/Str.php` (new `dropEmptyLegends()`; `mergePalettes()` unchanged)
 - Test: `tests/Contao/DataContainer/Builder/DcaFieldBuilderTest.php`, `tests/Util/StrTest.php`,
   `tests/Contao/DataContainer/Builder/DcaBuilderTest.php`
 
@@ -375,10 +385,13 @@ Spec: §4 (backend fields, the `makeDatim()` and key-removal bullets), E18, E19.
     - Scope: the keys of the definition and of `eval()`/`merge()` only. The label, the options and the callbacks
       have their own setters, which `applyTo()` applies after the removal; `remove()` does not touch what they set.
       The docblock says so.
-  - `Str::mergePalettes(?string ...$palettes): string` also drops every legend without fields: a `;`-group whose
-    items (split at `,`, trimmed) are all legends (`{…}`) is left out. `DcaBuilder::apply()` and the table's
-    `default` palette compose through it, so a type that removes `alias` and `exclusive` from the suffix leaves no
-    bare `{expert_legend:hide}`.
+  - `Str::dropEmptyLegends(string $palette): string` drops every legend without fields: a `;`-group whose items
+    (split at `,`, trimmed, empty items ignored) are all legends (`{…}`) is left out. A group without a legend stays.
+  - `DcaBuilder::apply()` writes `Str::dropEmptyLegends(Str::mergePalettes(...))` as the type's palette, and nothing
+    else calls it: `mergePalettes()` keeps empty legends, so a palette manipulator that runs before the
+    `loadDataContainer` hook can still add fields under them (`{advanced_legend:hide}` in `tl_flare_list`'s suffix,
+    `contao/dca/tl_flare_list.php:318`, stays in the table's `default` palette). A type that removes `alias` and
+    `exclusive` from the filter suffix leaves no bare `{expert_legend:hide}`.
   - `makeDatim(): self`.
     - It sets `eval` `rgxp => 'datim'` and `datepicker => true`.
     - In `applyTo()` it appends ` wizard` to `eval.tl_class` unless that class already contains `wizard`.
@@ -400,25 +413,31 @@ Spec: §4 (backend fields, the `makeDatim()` and key-removal bullets), E18, E19.
     - Base: `['eval' => ['tl_class' => 'w50']]`.
     - Afterwards `rgxp` is `'datim'`, `datepicker` is `true` and `tl_class` is `'w50 wizard'`.
     - A second `applyTo()` on a definition that already has `wizard` adds no second one.
+    - On a definition without `tl_class`, `tl_class` is `'wizard'` (no leading space).
   - `testMakeDatimShowsAStoredExpressionAsItsTimestamp`:
     - The single load callback maps `'today'` to `(string) strtotime('today')`.
     - It maps `'1600432000'` to `'1600432000'`, `''` to `''` and `'   '` to `''`.
-  - In `StrTest`, `testMergePalettesDropsLegendsWithoutFields`:
-    `Str::mergePalettes('{a_legend},x;{b_legend}', '{c_legend:hide};{d_legend},y')` is
-    `'{a_legend},x;{d_legend},y'`, and a group without a legend (`'title,type'`) stays.
-  - In `DcaBuilderTest`, `testASuffixWithoutFieldsLeavesNoLegend`: a suffix callable that removes `alias` and
-    `exclusive` from `'{expert_legend:hide},alias,exclusive;{publish_legend},published'` gives a palette ending in
-    `'{publish_legend},published'` without `expert_legend`.
+  - In `StrTest`:
+    - `testDropEmptyLegends`: `Str::dropEmptyLegends('{a_legend},x;{b_legend};{c_legend:hide};{d_legend},y')` is
+      `'{a_legend},x;{d_legend},y'`, and a group without a legend (`'title,type'`) stays.
+    - `testMergePalettesKeepsLegendsWithoutFields`: `Str::mergePalettes('{a_legend},x', '{b_legend:hide}')` is
+      `'{a_legend},x;{b_legend:hide}'` (it passes today: a regression guard).
+  - In `DcaBuilderTest`:
+    - `testASuffixWithoutFieldsLeavesNoLegend`: a suffix callable that removes `alias` and `exclusive` from
+      `'{expert_legend:hide},alias,exclusive;{publish_legend},published'` gives a palette ending in
+      `'{publish_legend},published'` without `expert_legend`.
+    - `testALegendFilledBeforeApplyStays`: the table's `__suffix__` is `'{advanced_legend:hide},extra'` (as a
+      palette manipulator would leave it) → the applied palette keeps `{advanced_legend:hide},extra`.
 
 - [ ] **Step 2: Run them to see them fail.** Run `make test` once per test file named under Files.
 
-- [ ] **Step 3: Implement.** Add both methods to the interface with docblocks, implement them as described, and
-  extend `mergePalettes()` (docblock: legends without fields are dropped).
+- [ ] **Step 3: Implement.** Add both methods to the interface with docblocks, implement them as described, add
+  `dropEmptyLegends()` and call it in `DcaBuilder::apply()` (docblock: why only there).
 
 - [ ] **Step 4: Run until it passes.** Run the three files, then the full `make test` → `OK`.
 
 - [ ] **Step 5: Commit.** Run the full checks, then `git commit -m "feat(dca): remove field keys, make a date-time
-  input, drop legends without fields"`.
+  input, drop empty legends when a palette is applied"`.
 
 ### Task 7: `flare_calendar_current` with one rule
 
@@ -433,6 +452,8 @@ Spec: §4 completely, E7, E16–E18, E20, E27.
   - Delete the field `elm_isLimited`. The column stays: Contao offers to drop it among the manual deletes.
 - Modify: `contao/languages/{de,en}/tl_flare_filter.php` (drop `date_limits_legend` and `elm_isLimited`), the model's
   `@property` for `elm_isLimited`
+- Modify: `src/Config/ComponentConfig.php` (:26): the docblock says resolved values are "scalars, arrays, and enums
+  only"; add immutable value objects such as `\DateTimeImmutable`
 - Test: `tests/Filter/Element/CalendarCurrentFilterElementTest.php`
 
 **Interfaces:**
@@ -537,12 +558,18 @@ Spec: §5, E8, E24.
 - Produces: `new ElementContext(ListCompound $list, FilterCompound $filter)` and `new ControlContext(ListCompound $list,
   FilterCompound $filter)`. The class docblocks say "the list and the filter".
 
-- [ ] **Step 1: Remove the parameter and the class.** `make phpstan` then lists every call site still passing an
-  intent (expected: errors at the call sites listed under Files).
+- [ ] **Step 1: Remove the parameter and the class.** `make phpstan` then lists the `src/` call sites still passing
+  an intent. It analyses `src/` only; `make test` finds the test call sites (PHP accepts extra positional arguments
+  silently, so search for them too).
 
-- [ ] **Step 2: Fix every call site and test** until `make phpstan` prints `[OK] No errors` and
-  `grep -rnE 'ConfigurationIntent|context->intent|intent: \$context' src tests` finds nothing. `FormHarness`,
-  `ListQueryConfig`, the loaders and `Engine` keep their intent.
+- [ ] **Step 2: Fix every call site and test** until `make phpstan` prints `[OK] No errors` and these find nothing:
+  - `grep -rnE 'ConfigurationIntent|context->intent|intent: \$context|intent: \$intent|intent: new' src tests`
+    (named arguments such as `FilterControlBuildFormListenerTest.php:76`);
+  - the callers of `buildFilterEffect(` and `buildElementContext(` that still pass an intent positionally: once the
+    helper loses `$intent`, that argument would shift into the next parameter (`grep -rn
+    'buildFilterEffect(\|buildElementContext(' tests` and read each call with four or more arguments).
+
+  `FormHarness`, `ListQueryConfig`, the loaders and `Engine` keep their intent.
 
 - [ ] **Step 3: Run the suite.** `make test` → `OK`. The count is the earlier one minus the deleted tests.
 
@@ -565,7 +592,8 @@ Spec: §3 (everything but the event), E5, E14 (the kind), E15.
   `badge-exclamation-point`, `opacity` (`{name}.html.twig`).
 - Modify `translations/flare.{de,en}.yaml`.
 - Tests: `tests/Contao/Inspection/{FilterIssueTest,InspectedRowsTest,FilterInspectorTest,FilterIssueReporterTest}.php`,
-  `tests/Contao/Callback/FlareFilter/ListCallbacksTest.php`
+  `tests/Contao/Callback/FlareFilter/ListCallbacksTest.php`, and the helper
+  `tests/Contao/Inspection/BuildsFilterInspectorTrait.php` (`recordMessages()` mocks and records `addInfo` too)
 
 **Interfaces:**
 - Consumes: `FilterCompound::$outputs` (Task 1).
@@ -632,14 +660,16 @@ Spec: §3 (everything but the event), E5, E14 (the kind), E15.
       only unknown keys (Review Focus 1), gives one `Ineffective` issue with the translated key.
     - `testAnExclusiveFilterWithAnOutputIsFine`.
     - `testARowlessFilterWithTwoIssuesOfOneKindCountsOnce`: a filter the driver adds, whose conditions and whose
-      control's form both fail → `count(FilterIssueKind::Broken)` is `1`.
-  - `FilterIssueReporterTest`:
-    - `testRowNoticesListEveryIssueWithItsIcon`.
-    - `testAnUnknownIconFallsBackToTheKindsDefault`.
-    - `testWarningsAreInfoMessagesAndCountedInTheOverview`: `addInfo` is recorded, with the `list.info.warnings`
-      text.
+      control's form both fail → `count(FilterIssueKind::Broken)` is `1`. It passes today (one issue per kind is
+      kept): a regression guard for the dedupe this task keeps.
+  - `FilterIssueReporterTest` (only what the inspector can produce at this commit; warnings and custom icons have no
+    producer before Task 10's event, and the reporter takes the `final` `FilterInspector`, so they are tested there):
+    - `testRowNoticesListEveryIssueWithItsIcon`: a broken row and an ineffective one (an exclusive filter without
+      output) → each notice has its kind's default icon.
     - `testIneffectiveStaysANewMessage`.
     - `testEveryIconHasItsPartial`: for each `ICONS` name, `templates/backend/filter_icon/{name}.html.twig` exists.
+    - Update `testRowNoticesAreKeyedByIssueKind` (:132–141), which asserts the old keyed shape (`['broken' => …]`),
+      to the list shape, and rename it `testRowNoticesAreAList`.
   - `ListCallbacksTest`: it mocks `Environment::render()` today (:37), so render for real in the new test: a Twig
     `Environment` over a `FilesystemLoader` with `templates/` under the namespace `HeimrichHannotFlare` and Symfony's
     `TranslationExtension` over an `IdentityTranslator`. Two notices → the row's HTML contains two `<title>`
@@ -664,7 +694,7 @@ Spec: §3 ("Warnings, from an event" bullet 2), E13, E14.
 - Create: `src/Event/FilterInspectionEvent.php`
 - Create: `src/EventListener/Inspection/ExclusivePublishedFilterListener.php`
 - Modify: `src/Contao/Inspection/Inspector/FilterInspector.php`, `translations/flare.{de,en}.yaml`
-- Test: `tests/Contao/Inspection/FilterInspectorTest.php`,
+- Test: `tests/Contao/Inspection/FilterInspectorTest.php`, `tests/Contao/Inspection/FilterIssueReporterTest.php`,
   `tests/EventListener/Inspection/ExclusivePublishedFilterListenerTest.php`
 
 **Interfaces:**
@@ -676,8 +706,11 @@ Spec: §3 ("Warnings, from an event" bullet 2), E13, E14.
     - `addWarning(string $message, ?string $icon = null): void` takes an already translated message.
     - `getWarnings(): list<array{message: string, icon: ?string}>`.
   - **Dispatch in `FilterInspector::inspectModels()`:** after `checkFilters()`, once per saved row in sorting order.
-    - The event gets the built list (`null` if it could not be built) and the row's built filter
-      (`$rows->getFilters()[$id] ?? null`).
+    - The event gets the built list (`null` if it could not be built) and the row's effective filter: the compound
+      of the built list that belongs to the row, found as `checkFilters()` maps them (`spl_object_id`, else
+      `$rows->idOf($filter->source)`, `FilterInspector.php:225–240`), so a `ListDriverBuildListEvent` listener's
+      replacement is what listeners see; for a row the list does not have, `$rows->getFilters()[$id] ?? null`.
+      Build the row → compound map once and share it with `checkFilters()`.
     - Each warning becomes `addIssue($id, FilterIssueKind::Warning, $message, $icon)`.
     - A listener's `\Exception` becomes a `ProgrammingError` issue on the row (`self::reason($e)`). Its `\Error` goes
       through `caught()`.
@@ -685,7 +718,8 @@ Spec: §3 ("Warnings, from an event" bullet 2), E13, E14.
   - **`#[AsEventListener] final readonly class ExclusivePublishedFilterListener`** (constructor
     `TranslatorInterface`, `__invoke(FilterInspectionEvent): void`). It warns when all of these hold:
     - `$event->filter?->element->component instanceof PublishedFilterElement`;
-    - `$event->filter->isExclusive()`;
+    - `$event->filter->isExclusive()` and `$event->filter->outputs !== []` (exclusive to no output, the filter is
+      already ineffective, spec §3);
     - `$event->list !== null`;
     - no filter of `$event->list->filters` is a non-exclusive `PublishedFilterElement`.
 
@@ -703,22 +737,33 @@ Spec: §3 ("Warnings, from an event" bullet 2), E13, E14.
       - A driver whose `buildList()` throws → `list` is `null` for every row.
     - `testTheEventCarriesTheIssuesFoundSoFar`: a broken row's event has its `Broken` issue.
     - `testRowlessFiltersGetNoEvent`: a filter the driver adds → no extra event.
+    - `testTheEventCarriesTheFilterAsTheListHasIt`: a `ListDriverBuildListEvent` listener replaces the row's
+      non-exclusive publication filter with `withOutputs([Output::ListView])` → the event's `filter` is that
+      replacement (`assertSame`).
     - `testWarningsLandOnTheRowFormAndOverview`: a listener adds two warnings with icons → `forRow()` has two
       `Warning` issues with their icons, and `count(Warning)` is `1`.
     - `testAListenerExceptionIsAProgrammingError`.
+  - `FilterIssueReporterTest` (moved here from Task 9; a test listener on the inspector's dispatcher produces the
+    warnings):
+    - `testAnUnknownIconFallsBackToTheKindsDefault`: a warning with icon `no-such-icon` → its notice has
+      `badge-exclamation-point`.
+    - `testAWarningKeepsItsOwnIcon`: icon `opacity` → the notice has `opacity`.
+    - `testWarningsAreInfoMessagesAndCountedInTheOverview`: `addInfo` is recorded, with the `list.info.warnings`
+      text.
   - `ExclusivePublishedFilterListenerTest`:
     - `testWarnsForAnExclusivePublishedFilterWithoutANonExclusiveOne`: the message is the translated key and the
       icon is `opacity`.
     - `testSilentWithANonExclusivePublishedFilter`.
     - `testSilentForANonExclusivePublishedFilter`.
+    - `testSilentForAnExclusiveFilterWithoutOutput`.
     - `testSilentForOtherElements`.
     - `testSilentWithoutAList`.
 
-- [ ] **Step 2: Run them to see them fail.** Run both files.
+- [ ] **Step 2: Run them to see them fail.** Run the three files.
 
 - [ ] **Step 3: Implement** as described under Interfaces.
 
-- [ ] **Step 4: Run until it passes.** Run both files, then the full `make test` → `OK`. Add the listener to
+- [ ] **Step 4: Run until it passes.** Run the three files, then the full `make test` → `OK`. Add the listener to
   `ServicesConfigTest::provideServices()` and the event to `provideNonServices()`.
 
 - [ ] **Step 5: Commit.** Run the full checks, then `git commit -m "feat(inspection): dispatch an inspection event per
@@ -726,151 +771,118 @@ Spec: §3 ("Warnings, from an event" bullet 2), E13, E14.
 
 ### Task 11: `RetireCalendarLimitMigration`
 
-Spec: §6 completely, E10, E12, E21, E25, E26, E28.
+Spec: §6 completely, E10, E12, E25, E26, E28, E29.
 
 **Files:**
 - Create: `src/Migration/RetireCalendarLimitMigration.php`
 - Create: `tests/Migration/RetireCalendarLimitMigrationTest.php`
-- Create: `tests/Migration/FakeFilterTableTrait.php`: the fake `Connection` and schema manager of
-  `BackfillFilterValuesMigrationTest` (rows, columns, `update()` applied to the rows, recorded statements, an
-  `ALTER … ADD` that adds the column with its default, `SET DEFAULT`), moved out of that test so both migration
-  tests and the sequence test run on one table. `BackfillFilterValuesMigrationTest` uses the trait; its tests stay
-  unchanged.
+- Create: `tests/Migration/FakeFilterTableTrait.php`, moved out of `BackfillFilterValuesMigrationTest` (:742–862) and
+  generalized, so both migration tests and the sequence test run on one table:
+  - rows, columns, `update()` applied to the rows, recorded statements, and the `ContaoFramework`/`Controller` mocks
+    the real backfill needs, as today;
+  - marker-agnostic: `fetchAllAssociative()` serves `SELECT * FROM tl_flare_filter WHERE {marker} = '0' ORDER BY id`
+    for any marker column (match `/WHERE (\w+) = '0' ORDER BY id$/`); `executeStatement()` serves
+    `ALTER TABLE tl_flare_filter ADD {marker} CHAR(1) NOT NULL DEFAULT '0'` (adds the column, existing rows `'0'`) and
+    `ALTER TABLE tl_flare_filter ALTER {marker} SET DEFAULT '1'` for any marker; each marker column keeps its own
+    default for rows added later;
+  - `fetchOne()` serves the backfill's marker-less probe (`control <> '' OR value <> ''`) only, as today;
+  - any other statement fails the test;
+  - `addRow()` defaults cover both migrations: the backfill's columns, plus `elm_isLimited`, `elm_configureStart`,
+    `elm_configureStop`, `elm_startAt`, `elm_stopAt` (all `''`).
+
+  `BackfillFilterValuesMigrationTest` uses the trait; its tests stay unchanged and pass before the new tests are
+  written.
 - Modify: `tests/DependencyInjection/ServicesConfigTest.php` (the migration in `provideServices()`)
 
 **Interfaces:**
-- Consumes:
-  - `BackfillFilterValuesMigration` (constructor-injected; `shouldRun()`).
-  - `DateRangeValueProvider` (constructor-injected; `provide($row['value'], new CalendarCurrentFilterElement())`).
-  - `DateTimeHelper::toTimestamp()`, `Output::ListView`.
+- Consumes: `BackfillFilterValuesMigration` (constructor-injected; `shouldRun()`), `DateTimeHelper::toTimestamp()`.
 - Produces: `getName()`, `shouldRun()`, `run()`.
 
 `shouldRun()` decides in this order:
 
 1. No table → false.
-2. Any of the columns `type`, `control`, `value`, `exclusive`, `outputs`, `elm_isLimited`, `elm_configureStart`,
-   `elm_configureStop`, `elm_startAt`, `elm_stopAt` missing (compare lowercased) → false. This waits for the renames
-   and the schema update, and fails closed without `elm_isLimited`.
+2. Any of the columns `type`, `control`, `value`, `elm_configureStart`, `elm_configureStop`, `elm_startAt`,
+   `elm_stopAt` missing (compare lowercased) → false. This waits for the renames and the backfill's columns.
+   `elm_isLimited` is not required (spec §6, Order).
 3. `$this->backfill->shouldRun()` → false: the migration waits.
 4. The marker is missing → true.
-5. Otherwise → whether any row has `calendarLimitRetired = '0'`.
+5. Otherwise → whether `fetchPendingRows()` (below) returns any row.
 
 `run()`:
 1. Add the marker if it is missing: `ALTER TABLE tl_flare_filter ADD calendarLimitRetired CHAR(1) NOT NULL DEFAULT '0'`.
 2. Always run `ALTER TABLE tl_flare_filter ALTER calendarLimitRetired SET DEFAULT '1'`.
-3. For each pending row of type `flare_calendar_current` (`ORDER BY id`), write
-   `update($changes + ['calendarLimitRetired' => '1'], ['id' => …])` in one statement.
-4. Then mark every remaining pending row done.
-5. Result: `"{$name} ({$n} filters updated)"`, plus `", {$k} with an unreadable initial value kept as bounds"` when
-   `$k > 0` (the row-3 exception below).
+3. `fetchPendingRows()`: `SELECT * FROM tl_flare_filter WHERE calendarLimitRetired = '0' ORDER BY id`. For each row of
+   type `flare_calendar_current` (filtered in PHP), write `update($changes + ['calendarLimitRetired' => '1'],
+   ['id' => …])` in one statement, also when `$changes` is empty.
+4. Then mark every remaining pending row done: `update(['calendarLimitRetired' => '1'], ['calendarLimitRetired' =>
+   '0'])`.
+5. Result: `"{$name} ({$n} filters updated, {$k} calendar filters with a control or a fixed value now stay within
+   their period: check them)"`, where `$n` counts rows with changes and `$k` counts the rows to check (below).
 
-`computeChanges(array $row): array<string, string>`. A side's text is readable when, trimmed, it is non-empty and
-`DateTimeHelper::toTimestamp()` is non-null. The stored value has three states, which must not be mixed up:
-
-- **unreadable:** `provide()` throws a `FilterException` (`UnreadableValueException` extends it);
-- **none:** `provide()` returns `null` (an empty column, `serialize([])`, `serialize([null, null])`, `['', '']`);
-- **a value:** `provide()` returns a `DateRangeValue`.
-
-A side of the stored value is *set* when its raw entry (`StringUtil::deserialize($value, true)`, padded to two) is an
-int, or a string that is non-empty after trimming; `null` and `''` are open sides.
-
-```text
-sides: start = (elm_configureStart, elm_startAt, value index 0), stop = (elm_configureStop, elm_stopAt, value index 1)
-1. pre-step, every row of the type: for each side whose configure is '' and whose trimmed text is
-   non-empty, non-numeric and readable: changes[configure] = 'str' (and treat the side as configured below)
-2. elm_isLimited truthy                                  -> return changes            (row 1)
-3. state = unreadable | none | value (above)
-   no control and state = value                          -> return changes            (row 4)
-4. changes += [exclusive => '1', outputs => serialize(['list_view'])]
-   no control                                            -> return changes            (row 2; unreadable = none)
-5. control (row 3):
-   state = unreadable                                    -> count it, return changes  (exception, see below)
-   expressions = the raw entries, open sides as null    ([null, null] for state none)
-   for each configured side:
-       text readable:   expressions[i] = text unless that side is set   (a side the stored value sets wins)
-                        changes[configure] = ''                         (switched off: no bound remains)
-       text empty:      changes[configure] = ''          (B1: an open side stays open; left on, a time-span mode
-                                                          would write its expression on the next backend save)
-       text unreadable: nothing                          (stays on as a failing bound, E28)
-   a side moved -> changes[value] = serialize(expressions)   (the DateRangeValueProvider format: a list of two)
-```
-
-**Row-3 exception, a non-empty unreadable stored value** (not covered by the spec; Claude's call, named to the user with
-the plan): the row becomes exclusive but keeps its value and its configured sides, which stay bounds instead of
-becoming a movable preselection. The data is kept as it is. Only v0.2-dev rows can have it, because calendar rows
-from v0.1 never stored a value. Nothing in the backend shows it: the factory only logs the dropped initial value.
-So the result message counts these rows, and the migration notes (Task 13) name the case.
+Per calendar row:
+- **Changes:** for each side (`elm_configureStart`/`elm_startAt`, `elm_configureStop`/`elm_stopAt`) whose
+  `configure` is `''` and whose trimmed text is non-empty, non-numeric and readable (`DateTimeHelper::toTimestamp()`
+  non-null): `changes[configure] = 'str'`. Nothing else is written: no `exclusive`, `outputs`, `control` or `value`.
+- **To check:** `elm_isLimited` is falsy or the column is missing, and the row has a non-empty `control` or a stored
+  value with a set side. A side is set when its raw entry (`StringUtil::deserialize($value, true)`, padded to two)
+  is an int, or a string that is non-empty after trimming. No value provider is involved.
 
 Class docblock, after the backfill's:
-- the baseline (v0.1);
-- the order (renames, backfill);
+- the baseline (v0.1) and the one rule that makes moving anything unnecessary (spec §6, E29);
+- the order (renames, backfill) and why it waits for the backfill (the count needs `control` and `value`);
 - the marker and why it is not D31;
-- that saves between the schema update and the migration are not guarded;
-- that dropping the marker alone while `elm_isLimited` stays would rerun it, while the schema diff proposes dropping
-  both together;
-- the three states of the stored value and the row-3 exception.
+- that saves between the schema update and the migration, and a rerun after the marker is dropped by hand, are not
+  guarded.
 
 - [ ] **Step 1: Write the failing tests** (rows as arrays, asserting `rowUpdates()` like the backfill test):
-  - **The four rows of the spec's table:**
-    - `testLimitedRowsStayUnchanged`.
-    - `testUnlimitedRowsWithoutControlOrValueBecomeExclusive`.
-    - `testUnlimitedRowsWithAControlMoveTheirSidesIntoTheValue`.
-    - `testUnlimitedRowsWithAReadableFixedValueStayNotExclusive`.
-  - **The five examples under the spec's third row**, one test each, with the exact stored value
-    (`serialize(['today', null])`, `serialize(['last monday', '+1 month'])`, and so on) and the `configure` columns:
-    - `testExampleTodayAndEmptyStop`.
-    - `testExampleReadableLeftoverIsSwitchedOnAndMoved`.
-    - `testExampleNumericLeftoverStaysOff`.
-    - `testExampleStoredToWins`.
-    - `testExampleUnreadableStartStaysABound`: `next blursday` stays `str` and the value gets only `to = today`.
-  - **The three states of the stored value in row 3:**
-    - `testAnEmptyRangeCountsAsNoValue`: with a control, `serialize([])` and `serialize([null, null])` → the sides
-      move into the value (`serialize(['today', null])`) and are switched off.
-    - `testAnEmptyStringSideIsOpen`: `serialize(['', 'tomorrow'])` with start mode `today` → the value becomes
-      `serialize(['today', 'tomorrow'])`.
-    - `testRowThreeWithAnUnreadableValueKeepsValueAndSides`: `value = 'garbage'` with a control → `exclusive` and
-      `outputs` are set, `value`, `elm_configureStart` and `elm_startAt` are untouched, and the result message
-      counts one such row.
-  - **Pre-step and edge cases:**
-    - `testAnEmptyConfiguredSideIsSwitchedOffAndMovesNothing` (B1): row 3, start mode `today` with an empty
-      `elm_startAt` → `elm_configureStart` becomes `''`, and the value gets no `from`.
-    - `testAReadableLeftoverIsSwitchedOnInEveryRow`, including a limited row and a span-key leftover `this_week`.
-    - `testAnUnreadableLeftoverStaysOff`.
-    - `testANumericLeftoverStaysOff` (`20260101`, `0900`).
-    - `testAMalformedStoredValueCountsAsNone`: without a control, `value = 'garbage'` → exclusive, value untouched.
+  - **The switch-on step:**
+    - `testAReadableLeftoverIsSwitchedOn`: start mode `''` with `elm_startAt = 'last monday'` →
+      `elm_configureStart = 'str'`; the stop side untouched.
+    - `testAReadableLeftoverIsSwitchedOnWhateverTheLimit`: the same with `elm_isLimited` `'1'` and `''`, and a span-key
+      leftover `this_week`.
+    - `testAnUnreadableLeftoverStaysOff` (`next blursday`).
+    - `testANumericLeftoverStaysOff` (`1767225600`, `20260101`, `0900`).
+    - `testAConfiguredSideIsLeftAlone`: mode `today` with an empty text, and mode `str` with unreadable text → no
+      change.
+    - `testNothingElseIsWritten`: a row with a control, a stored value and a leftover → the update holds only
+      `elm_configureStart` and the marker (`assertSame` on the update's keys).
+  - **The count:**
+    - `testTheResultCountsTheRowsToCheck`: unlimited with a control, unlimited without control but with
+      `serialize(['today', null])`, limited with a control, unlimited with neither, unlimited with
+      `serialize([null, ''])` → the message names 2 rows to check.
+    - `testWithoutElmIsLimitedEveryRowWithAControlOrValueIsCounted`: the column is absent → `shouldRun()` is true,
+      a leftover is still switched on, and every row with a control or a set value counts.
   - **Order, marker and repeats:**
     - `testShouldRunWaitsForTheBackfill`.
-    - `testShouldRunWaitsForTheRenamedColumns` (`isLimited` instead of `elm_isLimited`).
-    - `testShouldRunWaitsForTheNewColumns` (no `exclusive`).
-    - `testShouldRunIsFalseWithoutElmIsLimited`.
+    - `testShouldRunWaitsForTheRenamedColumns` (`configureStart` instead of `elm_configureStart`).
+    - `testShouldRunWaitsForControlAndValue` (no `value` column).
     - `testRunAddsTheMarkerAndDefaultsItToDone` (the two exact `ALTER` statements).
     - `testOtherTypesAreMarkedDone`.
     - `testShouldRunGoesQuietAfterARun`.
     - `testRowsCreatedAfterwardsAreNeverPending`: the default is `'1'` after a run.
     - `testEveryRowIsUpdatedInOneStatementWithItsMarker`.
-  - **The update from v0.1 in one `contao:migrate`** (spec, Testing):
-    `testAV01RowIsBackfilledFirstAndThenRetired`.
+  - **The update from v0.1 in one `contao:migrate`** (spec, Testing): `testAV01RowIsBackfilledFirstAndThenChecked`.
     - Setup: one fake table, the real `BackfillFilterValuesMigration` (over the same fake) injected into the new
       migration, and a v0.1 calendar row: `intrinsic = '0'`, `control = ''`, `elm_isLimited = '0'`,
-      `elm_configureStart = 'today'`, `elm_startAt = 'today'`.
+      `elm_configureStart = ''`, `elm_startAt = 'today'`.
     - The new migration's `shouldRun()` is false while the backfill's is true.
     - After the backfill's `run()`, the row has `control = 'flare_date_range'`, and the new migration's `shouldRun()`
       is true.
-    - After its `run()`, the row has `exclusive = '1'`, `outputs = serialize(['list_view'])`,
-      `value = serialize(['today', null])` and `elm_configureStart = ''`: row 3, not row 2.
+    - After its `run()`, the row has `elm_configureStart = 'str'`, its `control` and `value` are what the backfill
+      wrote, and the message names 1 row to check.
 
 - [ ] **Step 2: Run them to see them fail.** Run `make test tests/Migration/RetireCalendarLimitMigrationTest.php`.
 
-- [ ] **Step 3: Implement** as described above. Write the type literal `'flare_calendar_current'` and the output key
-  `'list_view'` frozen in the migration, as the backfill does.
+- [ ] **Step 3: Implement** as described above. Write the type literal `'flare_calendar_current'` frozen in the
+  migration, as the backfill does.
 
 - [ ] **Step 4: Run until it passes.** Run the file, `tests/Migration/BackfillFilterValuesMigrationTest.php` and
   `tests/DependencyInjection/ServicesConfigTest.php`, then the full `make test` → `OK`. The bundle has no
   `bin/console`; the migration is registered as a service through `ServicesConfigTest`, and Contao tags it by its
   parent class `AbstractMigration`, as it does the backfill.
 
-- [ ] **Step 5: Commit.** Run the full checks, then `git commit -m "feat(migration): retire the calendar filter's
-  is_limited"`.
+- [ ] **Step 5: Commit.** Run the full checks, then `git commit -m "feat(migration): keep the calendar filter's
+  leftover bounds when is_limited goes"`.
 
 ### Task 12: `AGENTS.md`
 
@@ -910,12 +922,13 @@ the numbers are from 2026-11-17).
   - `hasFilterInstance()` counting exclusive filters;
   - the default published filter and the warning;
   - the events' lists;
-  - `makeDatim()`/`remove()` (its scope: definition keys, not label, options or callbacks) and palettes dropping
-    legends without fields (`dev/dca-builder.md`);
+  - `makeDatim()`/`remove()` (its scope: definition keys, not label, options or callbacks) and `DcaBuilder::apply()`
+    dropping legends without fields, `mergePalettes()` keeping them (`dev/dca-builder.md`);
   - the lookup and `flare_schema_org()`;
   - the removed APIs in `removed-in-v0.2.md`;
-  - in `migrating-from-v0.1.md`, the accepted changes of §6 (the wider reader of rows 2 and 3 first), and the
-    row-3 exception of Task 11 (an unreadable initial value keeps the period as bounds).
+  - in `migrating-from-v0.1.md`, the accepted changes of §6 (the narrower lists of `is_limited` off first), the
+    migration's count of filters to check, and the recipe for the old behavior (a control with the sides switched
+    off and the period as stored value; a filter exclusive to the list view);
 
 - [ ] **Step 2: Build the docs.** `make docs-setup` only creates a missing worktree and installs nothing. If
   `docs/node_modules` is missing, run `npm --prefix docs ci`; then `npm --prefix docs run build`. Expected: no broken

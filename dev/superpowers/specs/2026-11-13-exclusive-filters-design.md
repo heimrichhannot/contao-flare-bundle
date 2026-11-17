@@ -5,7 +5,9 @@ updated where the code had moved; E1–E12 unchanged. Extended on 2026-11-17 aft
 (the inspection event and warnings, §3; how the calendar filter reads its period and its backend fields, §4; migration
 row 3, §6; `ListCompound::hash()`, §2, and `ConfigurationIntent`, §5, removed), and after a second review (Opus,
 Astra) with E25–E28 (the migration's baseline, order and marker, empty and inverted periods, unreadable text in the
-migration). Its own PR on `v0.2` (branch
+migration). After a third review (2026-11-18), §6 was simplified (E29: no row becomes exclusive, nothing moves into
+the stored value; E21 superseded) and legends without fields are dropped when a palette is applied (E30). Its own PR
+on `v0.2` (branch
 `v0.2-exclusive-filters`): after #55, before the query architecture refactor (`2026-11-04-query-architecture-design.md`,
 on branch `v0.2-query`, not yet on `v0.2`), which assumes it (its D40).
 
@@ -41,7 +43,7 @@ What the user wants instead:
 3. `flare_calendar_current` with one rule and without `is_limited`: the configured period is always a bound of that
    filter, the stored value is the preselection.
 4. `ElementContext` and `ControlContext` without an intent.
-5. Existing lists behave as before; the exceptions are named under Migration.
+5. No existing list becomes wider; the exceptions, and the lists that become narrower, are named under Migration.
 
 ## Non-goals
 
@@ -101,7 +103,10 @@ it does not remove. No bundled filter element or control calls it (the one bundl
 `tl_flare_list`). Hiding a field does not clear it: the factory reads the stored columns whatever the palette shows,
 as `FilterModel::generateFormName()` reads `alias`. A filter of such a type keeps a setting stored earlier (e.g.
 before a change of its type) without the editor seeing it; that is the type author's choice and needs no guard
-(user). Prefixes and suffixes are reworked later anyway.
+(user). Prefixes and suffixes are reworked later anyway. A legend left without fields, such as a bare
+`{expert_legend:hide}`, is dropped when `DcaBuilder::apply()` writes the palette into the DCA, and only there (user,
+2026-11-18): `Str::mergePalettes()` keeps it, so a palette manipulator that runs before the hook can still add fields
+under a legend a palette declares empty (e.g. `{advanced_legend:hide}` in `tl_flare_list`'s suffix).
 
 - a checkbox (working name `exclusive`; label "Apply exclusively" / „Exklusiv anwenden“), off by default, opening
 - a checkbox list (working name `outputs`) of the outputs. Today one option: the list view. The field stores the
@@ -203,11 +208,14 @@ user (2026-11-17).
 - An event dispatched by `FilterInspector` once per inspected filter row (working name `FilterInspectionEvent`),
   after the framework's own checks, for every saved row, also one whose compound could not be built. It carries the
   filter row, the list (`null` when the list cannot be built), the filter compound (`null` when it could not be
-  built), the issues found so far, and `addWarning(string $message, ?string $icon = null)`. Filters without a row
-  (added by a driver or a listener) get no event: there is no row to show a warning on. Listeners add warnings for any
-  reason; the bundle ships the one above: a `PublishedFilterElement` filter exclusive to an output, with no
-  non-exclusive `PublishedFilterElement` filter in the list, for any list type (without the default, the reader has
-  none either); icon `opacity`. The message is translated by the listener (`flare` domain).
+  built; the one in the built list when the list has the row's filter, so that a `ListDriverBuildListEvent` listener's
+  replacement is what listeners see, else the one built for the row alone), the issues found so far, and
+  `addWarning(string $message, ?string $icon = null)`. Filters without a row (added by a driver or a listener) get no
+  event: there is no row to show a warning on. Listeners add warnings for any reason; the bundle ships the one above:
+  a `PublishedFilterElement` filter exclusive to an output (exclusive to none, it is already reported as ineffective
+  and gets no warning), with no non-exclusive `PublishedFilterElement` filter in the list, for any list type
+  (without the default, the reader has none either); icon `opacity`. The message is translated by the listener
+  (`flare` domain).
 - **An issue names its icon.** `FilterIssue` gets an optional lucide icon name. Without one, or with a name the bundle
   has no icon for, the kind's default applies: `badge-exclamation-point` for warnings, and the icons the row template
   has today for the other kinds (bug, copy-x, bone-fracture, engine). Whether those defaults change is discussed
@@ -323,90 +331,81 @@ itself keeps its intent (form name, action), and so do `ListQueryConfig` and the
 
 ### 6. Migration
 
-A run-once migration for the rows of type `flare_calendar_current`, so that the list view shows what it showed. v0.2
-is unreleased, so the rows it meets come from v0.1 (user): the baseline is v0.1's element, which has no intent branch,
+A run-once migration for the rows of type `flare_calendar_current`, so that no list becomes wider than it was. v0.2 is
+unreleased, so the rows it meets come from v0.1 (user): the baseline is v0.1's element, which has no intent branch,
 so its period bounds the reader as well as the list view. The `v0.2` development state differs only in the reader
-column (the `ValidationIntent` branch of `buildEffect()` drops the window there); the table names both.
+(the `ValidationIntent` branch of `buildEffect()` drops the window there when `is_limited` is off).
 
-| `is_limited` | Control | Today (v0.1; v0.2-dev where it differs) | After |
+**No row becomes exclusive, and no control or value is touched** (user, after the third review, 2026-11-18). §4's one
+rule is v0.1's `is_limited` behavior made permanent: the configured period bounds every list, a value only narrows
+within it. Applied to every row as it is, it never widens a list; where `is_limited` was off, it can narrow one, and
+the editor checks those filters after the update:
+
+| `is_limited` | Control / stored value | Today (v0.1; v0.2-dev where it differs) | After |
 |---|---|---|---|
-| on | with or without | the period bounds list view and reader; a value narrows within | unchanged row, not exclusive |
-| off | none, no stored value | the period bounds list view and reader (v0.2-dev: the list view only) | exclusive to the list view, period unchanged |
-| off | with a control | list view: the period is a default the visitor's value replaces side by side; reader: the period bounds (v0.2-dev: unbounded) | exclusive to the list view; the period's set sides move into the stored value (rule below), and `configure_start`/`configure_stop` are switched off so no bound remains |
-| off | none, with a stored value | the value replaces the period side by side, in list view and reader (v0.2-dev: in the reader the value alone bounds) | left not exclusive: the value was a bound of the reader and must stay one (Claude's call: a reader a fixed value bounded is not widened) |
+| on | with or without | the period bounds list view and reader; a value narrows within | unchanged |
+| off | none, no stored value | the period bounds list view and reader (v0.2-dev: the list view only) | unchanged from v0.1 (v0.2-dev: the reader is bounded again) |
+| off | with a control | list view: the period is a default the visitor's value replaces side by side; reader: the period bounds (v0.2-dev: unbounded) | the period bounds list view and reader; the visitor narrows within it, and the date inputs are limited to it. What the list shows before the visitor changes anything stays the same |
+| off | none, with a stored value | the value replaces the period side by side, in list view and reader (v0.2-dev: in the reader the value alone bounds) | the value narrows within the period, in list view and reader; the list can become narrower, or empty where they do not overlap (`abort()`, §4) |
 
-"With a stored value" means a value `DateRangeValueProvider` reads to a non-null `DateRangeValue`; a malformed or
-unreadable `value` column counts as none and is left as it is (the factory drops it at runtime with a warning today and
-after).
+An editor who wants the old behavior of the last two rows back configures it with §1 and §4 (the notes give the
+recipe): the period as a movable preselection is a filter with a control, its sides switched off and the period as its
+stored value; a list-view period the reader ignores is a filter exclusive to the list view.
 
-Before that, for every row of the type: a side whose `configure_*` is blank but whose `start_at`/`stop_at` holds a
-non-numeric expression `DateTimeHelper` can read gets `configure_*` switched on (`str`), so the backend shows the bound
-that applies today and the new rule keeps applying it. A leftover it cannot read stays switched off (user): today
-`strtotime()` returns false for it and the side is open, so switching it on would fail a list that works (§4, fail
-closed). A numeric leftover stays switched off too and so stops applying (§4: the transformer ignores a switched-off
-side). Most numbers are timestamps `strtotime()` does not read or misreads as a date in the year 2000 on the current
-day (as a stop: an empty list), but some it reads as a working date or time — `20260101` as 1 January 2026, `0900` as
-today 09:00 — and those bounds go; the list can become wider (accepted, below).
+The migration's one change, for every row of the type: a side whose `configure_*` is blank but whose
+`start_at`/`stop_at` holds a non-numeric expression `DateTimeHelper` can read gets `configure_*` switched on (`str`),
+so the backend shows the bound that applies today and the new rule keeps applying it. A leftover it cannot read stays
+switched off (user): today `strtotime()` returns false for it and the side is open, so switching it on would fail a
+list that works (§4, fail closed). A numeric leftover stays switched off too and so stops applying (§4: the
+transformer ignores a switched-off side). Most numbers are timestamps `strtotime()` does not read or misreads as a
+date in the year 2000 on the current day (as a stop: an empty list), but some it reads as a working date or time —
+`20260101` as 1 January 2026, `0900` as today 09:00 — and those bounds go; the list can become wider (accepted,
+below).
 
-The third row moves only the sides that took part today, which after the step above are exactly the sides whose
-`configure_*` is set (user, after the review): such a side's stored text becomes that side of the stored value
-(`from` for the start, `to` for the stop), unless the stored value already sets that side — then the stored value
-wins. A side whose `configure_*` is blank moves nothing, also not a numeric leftover. A configured side whose text is
-empty is open and moves nothing (§4). A configured side whose text `DateTimeHelper` cannot read is not moved and stays
-switched on (user): moved, `DateRangeValueProvider` would reject the whole value and the factory drop it with a
-warning, the readable other side with it, leaving the list view unbounded; left as a bound, it fails the list and the
-inspector shows the filter as broken (§4), so the editor sees it. Examples:
+Nothing in the backend marks the filters whose meaning changed, so the migration's result message counts them: the
+rows of the type with `is_limited` off (or without the column) and a control or a stored value with a set side.
 
-| Start side | Stop side | Stored value afterwards |
-|---|---|---|
-| mode `today` | blank, field empty | `from = today`; `to` untouched |
-| mode `str`, `last monday` | blank, leftover `+1 month` | the step above switches the stop on: `from = last monday`, `to = +1 month` |
-| mode `today` | blank, leftover `1767225600` | `from = today`; the number stays off |
-| mode `today` | mode `str`, but the stored value already has a `to` | `from = today`; the stored `to` stays |
-| mode `str`, `next blursday` | mode `today` | `to = today`; the start stays switched on with its text, and the list fails until the editor fixes it |
+Accepted changes, named in the migration notes (confirmed by the user, 2026-11-17 and 2026-11-18):
 
-Accepted changes, named in the migration notes (all confirmed by the user, 2026-11-17):
-
-- coming from v0.1, rows 2 and 3 no longer bound the reader, the lookup and the breadcrumb: an entry outside the period
-  is found by its URL again (user). From v0.2-dev nothing changes there;
+- `is_limited` off, with a control: the period becomes a bound the visitor cannot leave, and it limits the control's
+  date inputs; the initial display is unchanged;
+- `is_limited` off, no control, with a stored value: the value narrows within the period instead of replacing it;
+- from v0.2-dev, `is_limited` off: the reader, the lookup and the breadcrumb are bounded by the period again, as in
+  v0.1;
 - a side in `date` mode (an absolute date) starts to apply as configured — the fix of §4. Where the date was ignored,
-  or misread as a start in the year 2000, the lists that have it become narrower, the "unchanged" rows included;
-  where it was misread as a stop in the year 2000 and emptied the list, the list shows entries again. In the third row
-  the date becomes the working preselection;
+  or misread as a start in the year 2000, the lists that have it become narrower; where it was misread as a stop in
+  the year 2000 and emptied the list, the list shows entries again;
 - a numeric leftover of a switched-off side stops applying (see above): where it emptied the list as a misread stop,
   the list shows entries again; where `strtotime()` read it as a working date or time, that bound goes;
 - a configured side with text `DateTimeHelper` cannot read fails the list instead of being ignored (§4); the
-  inspector shows such filters as broken after the update — including a third-row side the migration leaves in place;
+  inspector shows such filters as broken after the update;
 - `is_limited` on, with a control: a side the pre-step switches on now also limits the control's date inputs
-  (`getDateBounds()` honors `configure_*`); it already bounded the entries, so only the form changes;
-- off + control: the form now shows the preselection in its date inputs (before, the default window applied
-  invisibly), and a side the visitor empties is open instead of falling back to the default. The bundled control
-  renders date inputs without a time (`DateRangeFilterControl`, `DateType`): a moved side with a time of day (a
-  `date`-mode timestamp, `today 16:30`) shows its date only, and a form submitted unchanged sends that date at 00:00,
-  so the window can shift by the time of day without the visitor touching it;
-- off + no control + stored value: the configured period now bounds list view and reader too — the list can only
-  become narrower. The inspector does not flag this; the notes tell the editor to split the filter in two.
+  (`getDateBounds()` honors `configure_*`); it already bounded the entries, so only the form changes.
 
 **Order.** On an update from v0.1, the rows get their v0.2 meaning from other migrations first:
 `RenameFilterColumnsMigration` renames the element columns (`elm_isLimited`, `elm_configureStart`,
 `elm_configureStop`, `elm_startAt`, `elm_stopAt`), and `BackfillFilterValuesMigration` assigns the control
-(`flare_date_range` for a calendar row that was not intrinsic) and the value. The classification depends on both, and
-Contao orders migrations of equal priority by class name, so the order is stated, not left to the names: the migration
-runs only once the renamed columns, `control`, `value` and the new columns of §1 exist, and while
-`BackfillFilterValuesMigration::shouldRun()` is true it waits (`contao:migrate` checks again after each pass). Without
-`elm_isLimited` (dropped by hand) it fails closed, as the backfill does without `intrinsic`.
+(`flare_date_range` for a calendar row that was not intrinsic) and the value. The switch-on step needs only the renamed
+columns; the count needs the control and the value. Contao orders migrations of equal priority by class name, so the
+order is stated, not left to the names: the migration runs only once the renamed period columns, `control` and
+`value` exist, and while `BackfillFilterValuesMigration::shouldRun()` is true it waits (`contao:migrate` checks again
+after each pass). It does not need `elm_isLimited`: without it (dropped by hand) it still switches the leftovers on
+and counts every row with a control or a stored value.
 
-**Marker.** The migration must handle each row exactly once and never touch a row created or saved after the update;
+**Marker.** The migration must handle each row exactly once and never touch a row created or saved after the update:
+run again, it would switch on a side an editor has switched off since (the save callback does not clear the text).
 `is_limited` stays in the database and cannot serve as the marker. It follows `BackfillFilterValuesMigration`'s pattern
 (Claude's call after the second review, confirmed by the user): its own migration-managed column, not part of the
 DCA; the rows existing when it is added start pending (`'0'`), the column default then becomes `'1'`, so rows created
 afterwards are never pending; a row's changes and its marker are written in one statement, so an interrupted run never
 processes a row twice. Rows of other types are marked done in the same run. An editor does not save filters between
 the schema update and the migration (user), so the window in which a row could be saved while still pending is not
-guarded. The query design's D31 pattern (a DCA field defaulting to `'0'`, set on backend saves) is not used: a row
-created outside a backend save would start pending and be rewritten. Like `BackfillFilterValuesMigration`, the
-migration works through the DBAL `Connection`, not `Contao\Database`, and its SQL runs on MySQL and MariaDB; it never
-drops or deletes.
+guarded. Dropping the marker column by hand makes the migration run again; that is not guarded either (user,
+2026-11-18): the backfill's guard keys on data its run leaves behind, and this migration leaves none it could tell from
+an editor's own setting. The query design's D31 pattern (a DCA field defaulting to `'0'`, set on backend saves) is not
+used: a row created outside a backend save would start pending and be rewritten. Like
+`BackfillFilterValuesMigration`, the migration works through the DBAL `Connection`, not `Contao\Database`, and its SQL
+runs on MySQL and MariaDB; it never drops or deletes.
 
 ### 7. Documentation
 
@@ -433,7 +432,7 @@ The docs worktree (`docs/`, branch `docs/main`, committed separately), page by p
 | `dev/entries.md` | the lookup's membership (:163, :195) |
 | `integrations/index.md` | the calendar filter's description (:29) |
 | `removed-in-v0.2.md` | `is_limited`, the contexts' `$intent`, `ConfigurationIntent`, `ListCompound::hash()`, `FilterCompound::fingerprint()`; "by the reader's rules" (:77); "bound the whole list" (:167), unless exclusive |
-| `migrating-from-v0.1.md` | `#[AsFilterInvoker]` (:41) says to branch on `$context->intent`: now the exclusive setting; "only fixed values … bound the whole list" (:160), unless exclusive; the issue kinds (:175–176) get the warning; the accepted changes of §6, the wider reader of rows 2 and 3 first |
+| `migrating-from-v0.1.md` | `#[AsFilterInvoker]` (:41) says to branch on `$context->intent`: now the exclusive setting; "only fixed values … bound the whole list" (:160), unless exclusive; the issue kinds (:175–176) get the warning; the accepted changes of §6, the narrower lists of `is_limited` off first, with the recipe for the old behavior |
 
 Translations in `contao/languages/{de,en}/tl_flare_filter.php` and the `flare` domain (the expert fields of §1, the
 warning of §3, the save callback's message of §4).
@@ -451,7 +450,7 @@ warning of §3, the save callback's message of §4).
 | E7 | One element type `flare_calendar_current`; configured period = bound, stored value = preselection; `is_limited` goes | user |
 | E8 | `ElementContext` and `ControlContext` lose the intent | user |
 | E9 | Failures fail the list in every output | Claude |
-| E10 | The migration keeps what the list view showed; the whole list changes only by the accepted changes of §6 (from v0.1 the reader widens for rows 2 and 3, E25) | Claude (reworded after the second review) |
+| E10 | The migration widens no list; lists change only by the accepted changes of §6 | Claude (reworded after the second and the third review) |
 | E11 | Own PR on `v0.2` before the query refactor | Claude |
 | E12 | Absolute dates of the configured period are read (today they are not applied); readable leftover bounds of switched-off sides are made visible by the migration instead of dropped | Claude (after the builder check) |
 | E13 | A default filter a driver skips because an exclusive filter of its type exists is intended; the editor gets a warning, not an error | user |
@@ -462,20 +461,22 @@ warning of §3, the save callback's message of §4).
 | E18 | The backend keeps the `date` / `str` / time-span modes; the fields are plain text, `makeDatim()` on the field builder turns the `date` side into Contao's date-time input | user |
 | E19 | `DcaFieldBuilder` can remove keys | user |
 | E20 | A side is a point in time (a stop of `today` excludes later today), and switching `str` → `date` fixes the expression's date: both intended, as today | user |
-| E21 | Migration row 3 moves only the sides whose `configure_*` is set after the pre-step; a side the stored value sets wins | user (after the review) |
+| E21 | ~~Migration row 3 moves only the sides whose `configure_*` is set after the pre-step; a side the stored value sets wins~~ Superseded by E29 | user (after the review) |
 | E22 | Events keep their shape and carry the list of their entry point (§2 table); `with*()` keep `$outputs`; a type that replaces the palette suffix hides the setting (stored values still apply), unguarded | Claude (after the review), confirmed by the user |
 | E23 | `ListCompound::hash()` and `FilterCompound::fingerprint()` go (dead since #49); `ValueInterface::fingerprint()` stays | user |
 | E24 | `ConfigurationIntent` goes with the contexts' `$intent` | user |
-| E25 | The migration's baseline is v0.1 (v0.2 is unreleased); rows 2 and 3 widen the reader, accepted | user |
-| E26 | The migration waits for the column renames and `BackfillFilterValuesMigration`; its marker is its own migration-managed column (the backfill's pattern), not D31; saves between schema update and migration are not guarded | Claude (after the second review), confirmed by the user; the window: user |
+| E25 | The migration's baseline is v0.1 (v0.2 is unreleased) | user |
+| E26 | The migration waits for the column renames and `BackfillFilterValuesMigration`; its marker is its own migration-managed column (the backfill's pattern), not D31; saves between schema update and migration, and a rerun after the marker is dropped by hand, are not guarded | Claude (after the second review), confirmed by the user; the window and the rerun: user |
 | E27 | An empty configured side is open; an empty intersection of bound and value matches nothing (`abort()`) | user |
-| E28 | The migration switches on only readable leftovers, does not move unreadable text into the value (it stays a failing bound), and counts only a readable stored value; numeric leftovers go, also the ones read as dates | user |
+| E28 | The migration switches on only readable leftovers; numeric leftovers go, also the ones read as dates | user |
+| E29 | The migration makes no row exclusive and touches no control or value: §4's rule applied to every row widens no list; where `is_limited` was off it can narrow one, the result message counts those filters, and the notes give the recipe for the old behavior | user (proposed after the third review), 2026-11-18 |
+| E30 | Legends without fields are dropped only when `DcaBuilder::apply()` writes a palette; `Str::mergePalettes()` keeps them | user, 2026-11-18 |
 
 ## Left to the builder
 
 Final names (`exclusive`, `outputs`, `Output`, `whole()`, `forOutput()` are working names), the storage format of
 the output list, where the enum lives, the name of the migration's marker column, how code marks a filter exclusive
-(§2), how the inspector words the new reason, the order of commits. From E13–E28: the event's name, the name of the
+(§2), how the inspector words the new reason, the order of commits. From E13–E30: the event's name, the name of the
 `DateTimeHelper` variant, the key-removal method.
 
 ## Testing
@@ -502,10 +503,12 @@ the output list, where the enum lives, the name of the migration's marker column
   land on the row, the form and the overview; the bundled listener warns for an exclusive `PublishedFilterElement`
   without a non-exclusive one and not otherwise; a row keeps several issues of one kind (two warnings), the overview
   counts the filter once; icon fallback for an unknown name; exclusive without a (known) output is ineffective.
-- The migration: the four rows of the table above (row 3 with the examples under it, an unreadable configured side
-  left in place, an empty one moving nothing), a readable leftover switched on, an unreadable one and a numeric one
-  left off, a malformed stored value counted as none, waiting while the backfill would run (an update from v0.1 in one
-  `contao:migrate`), failing closed without `elm_isLimited`, run once, rows created afterwards never pending.
+- The migration: a readable leftover switched on (on every row of the type, `is_limited` on or off), an unreadable
+  one and a numeric one left off, controls, values, `exclusive` and `outputs` untouched; the count of the result
+  message (a control, a stored value with a set side, `is_limited` on not counted, without `elm_isLimited` every such
+  row); waiting while the backfill would run (an update from v0.1 in one `contao:migrate`), run once, rows created
+  afterwards never pending.
+- `DcaBuilder::apply()` drops a legend left without fields; `Str::mergePalettes()` keeps it.
 - The migration's tests mock the DBAL `Connection`, as `BackfillFilterValuesMigrationTest` does.
 - Types are pinned with `identicalTo()` / `assertSame()` where a test checks what a list or value is.
 - Tests of the removed code go: `ListCompoundTest`'s `hash()` tests, `FilterCompoundTest`'s `fingerprint()` tests,

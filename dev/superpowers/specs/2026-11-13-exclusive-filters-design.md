@@ -1,8 +1,11 @@
 # Design: exclusive filters — a filter that narrows an output, not the whole list
 
-Status: agreed in conversation 2026-11-13, awaiting the user's review. Its own PR on `v0.2`, before the query
-architecture refactor (`2026-11-04-query-architecture-design.md`), which assumes it (its D40). Independent of the
-follow-up to PR #54. Branch name and order relative to that follow-up — Claude's call.
+Status: approved by the user 2026-11-13. Checked against `v0.2` at `680d4add` (PR #55 merged) on 2026-11-16 and
+updated where the code had moved; E1–E12 unchanged. Extended on 2026-11-17 after the review with E13–E24
+(the inspection event and warnings, §3; how the calendar filter reads its period and its backend fields, §4; migration
+row 3, §6; `ListCompound::hash()`, §2, and `ConfigurationIntent`, §5, removed). Its own PR on `v0.2` (branch
+`v0.2-exclusive-filters`): after #55, before the query architecture refactor (`2026-11-04-query-architecture-design.md`,
+on branch `v0.2-query`, not yet on `v0.2`), which assumes it (its D40).
 
 ## Intent
 
@@ -88,7 +91,13 @@ The user chose the first, in the form "apply exclusively" + outputs.
 
 ### 1. The setting
 
-Two fields on `tl_flare_filter`, in the palette suffix under the expert legend, for every filter type:
+Two fields on `tl_flare_filter`, in the palette suffix (`__suffix__`, `{expert_legend:hide},alias`) under the expert
+legend, for every filter type. A type can change the suffix with `DcaBuilderInterface::suffix()` — from an element's
+`buildDca()`, or a control's, which `ControlDcaBuilder` forwards to the same builder: a string replaces it, and so
+drops the two fields together with `alias`; a callable transforms it and keeps whatever it does not remove. No
+bundled filter element or control calls it (the one bundled caller, `EventsListDriver`, works on `tl_flare_list`). A
+type that replaces the suffix therefore makes its filters non-exclusive, as it already makes them alias-less; that is
+the type author's choice and needs no guard.
 
 - a checkbox (working name `exclusive`; label "Apply exclusively" / „Exklusiv anwenden“), off by default, opening
 - a checkbox list (working name `outputs`) of the outputs. Today one option: the list view. The field stores the
@@ -107,8 +116,8 @@ count are no outputs.
 
 ### 2. Two lists from one compound
 
-`FilterCompound` carries the setting (working name `$outputs`: `null` = not exclusive, else the list of outputs); it
-is part of `fingerprint()`. `Contao/Factory/FilterCompoundFactory::create(FilterModel)` reads it; a filter created in
+`FilterCompound` carries the setting (working name `$outputs`: `null` = not exclusive, else the list of outputs).
+`Contao/Factory/FilterCompoundFactory::create(FilterModel)` reads it; a filter created in
 code (`Filter/Factory/FilterCompoundFactory`, engine mods' `withFilter()`) is not exclusive unless it says so.
 
 `ListCompound` keeps every published filter, as today, and derives (working names):
@@ -116,27 +125,85 @@ code (`Filter/Factory/FilterCompoundFactory`, engine mods' `withFilter()`) is no
 - `whole()` — the list without its exclusive filters;
 - `forOutput(Output $output)` — the list without the filters exclusive to other outputs.
 
-Both return a `ListCompound` and keep everything else: config, catalog (query design), `$failures`. A list with
+Both return a `ListCompound` and keep everything else: config, `$failures` (and the catalog, once the query design
+adds it). A list with
 failures is not queried in any output, also when the failed filter is exclusive to another one (Claude's call: fail
 closed, one rule). The duplicate-alias check stays over all published filters.
+
+`ListCompound::hash()` goes, and with it `FilterCompound::fingerprint()`, which exists only for it (user). Their last
+consumer, an in-request memo in `ArchiveFilterElement`, went with #49; since then only `ListCompoundTest` calls
+`hash()`, and the docs still claim the engine and the projector use it. So `$outputs` needs no place in a hash.
+`ValueInterface::fingerprint()` stays: it is how a value object expresses its identity (`ValueObjectContainmentTest`).
+The query design on `v0.2-query` mentions both (its `fingerprint()`/`hash()` sentence on the effective target) and
+drops them when it is rebased onto this PR.
 
 Who asks for which list — the entry points, not the intent:
 
 | Entry point | List |
 |---|---|
 | `ListViewController` (entries, count, form) | `forOutput(Output::ListView)` |
-| the list view's lookup (`InteractiveProjector` → `EntryCollectorFactory::createLookup()`) | `whole()` of the list it runs on, engine mods included |
-| `Contao/Reader/ReaderResolver` (reader, breadcrumb; `ReaderResolution::$list`) | `whole()` |
-| backend: `FilterInspector`, option callbacks, `ElementDcaHook` | the full compound, as today |
+| the list view's lookup (`InteractiveProjector::project()` → `EntryCollectorFactory::createLookup()`) | `whole()` of the list it runs on, engine mods included |
+| `Contao/Reader/ReaderResolver` (reader, breadcrumb, `Terminal42Languages/EventListener/ChangelanguageListener`; `ReaderResolution::$list`) | `whole()` |
+| backend: `FilterInspector`, `FieldsOptionsCallbacks`, `ElementDcaHook` | the full compound, as today |
 | a list handed to `FlareRuntime::project()` from Twig or code | as given |
 
+Where the lists are taken: `ListViewController` and `ReaderResolver` each build the compound
+(`ListCompoundBuilderFactory::create()->build()`) and hand the derived list to `EngineFactory::createEngine()`.
+`InteractiveProjector::project()` uses its list for the form harness, the count (`createAggregationView()`) and the
+entries, and today hands the same list to `createLookup()`; that call gets `$list->whole()` instead.
+`ValidationProjector` already runs on the whole list and keeps handing it to both loader and lookup. `whole()` of
+`forOutput(Output::ListView)` equals `whole()` of the full compound, so the lookup sees the same list as the reader;
+filters an engine mod adds (`SimpleEquationMod` via `withFilter()`) and the auto-item filter `ValidationLoader` adds
+are not exclusive and stay in both.
+
+The reader path since #55: `ValidationLoader::fetchEntryByAutoItem()` reads every row of the whole list the database
+matches (no LIMIT, ordered behind any driver or listener order by `main.id`) and takes the first strictly equal one;
+`fetchEntriesByIds()` serves the lookup on the same list. Neither changes here; they are handed the whole list.
+
 A control of a filter that is not part of the list view's list is not mounted (the form harness works on that list).
+Events and hooks see the list of their entry point; none of them changes shape:
+
+| Event | List it carries |
+|---|---|
+| `ListDriverEntriesEvent::$list` | the list view's list on a list page; the whole list for the reader's entry and a lookup's members |
+| `ReaderPageMetaEvent::$list`, `ReaderRenderEvent::$list` (both `ReaderResolution::$list`) | the whole list |
+| `ReaderSchemaOrgEvent::$list` | in a reader template without arguments the reader engine's list, so the whole list; a list passed to `flare_schema_org()` as given (`flare.list` in a list template: the list view's list) |
+| `ListViewRenderEvent` (carries the `Engine`, no list) | `$engine->getList()`: the list view's list |
+| `FormHarnessBuildEvent::$list` | the list view's list |
+| `QueryBaseInitializedEvent::$list`, `ModifyListQueryStructEvent` (`ListQueryConfig::$list`) | the list being queried: the list view's list for entries and count, the whole list for the reader and a lookup; in the backend (`ListExecutionContextFactory` from `ElementDcaHook`, `FieldsOptionsCallbacks`, the Codefog tags element) the full compound |
+
+`FilterCompound`'s `withValue()`, `withControl()` and `withTargetAlias()` build a new instance field by field; each
+carries `$outputs` over, so a filter keeps its setting when the factory or a mod adds a value or a target.
 
 ### 3. The inspector
 
 `Contao/Inspection/Inspector/FilterInspector` reports a filter that is exclusive without an output as *ineffective*
 (`FilterIssueKind::Ineffective`), with its own translated reason — a framework check next to the element's
 `IneffectiveFilterContract`. Everything else is inspected as today, for every saved row.
+
+**Warnings, from an event.** Some setups are valid and meant, but worth a hint. The case that raised it: the News and
+Events drivers add a default `PublishedFilterElement` filter in `buildList()` only when the list has none
+(`ListCompoundBuilder::hasFilterInstance()`, which counts exclusive filters too). A published filter exclusive to the
+list view therefore leaves the reader and the lookup without one: they find unpublished entries. That is intended
+(user): the default filter is a setup aid against showing what one would rather not, and an editor who overrules it,
+exclusivity included, may. The editor is told, not stopped. The points below are the user's or confirmed by the
+user (2026-11-17).
+
+- A fifth kind `FilterIssueKind::Warning` (the name is the user's). It never fails a list and never counts as broken.
+- An event dispatched by `FilterInspector` once per inspected filter (working name `FilterInspectionEvent`), after the
+  framework's own checks. It carries the list, the filter row, the filter compound where one could be built, the
+  issues found so far, and `addWarning(string $message, ?string $icon = null)`. Listeners add warnings for any reason;
+  the bundle ships the one above (a published filter exclusive to an output, with no non-exclusive one beside it; icon
+  `opacity`). The message is translated by the listener (`flare` domain).
+- **An issue names its icon.** `FilterIssue` gets an optional lucide icon name. Without one, or with a name the bundle
+  has no icon for, the kind's default applies: `badge-exclamation-point` for warnings, and the icons the row template
+  has today for the other kinds (bug, copy-x, bone-fracture, engine). Whether those defaults change is discussed
+  before the PR merges (open questions). The icons become one Twig partial per name instead of inline per kind.
+- **A row keeps all its issues.** `FilterIssueReporter::getRowNotices()` today keeps one notice per kind; it keeps
+  every issue instead, each with its own icon and reason as tooltip. Warnings are drawn yellow at the notice opacity,
+  like the engine icon. In the edit form a warning is a `Message::addInfo()`-level hint; ineffective stays
+  `Message::addNew()` and the other kinds `addError()`, as today (user). In the list's filter overview warnings are a
+  count of their own.
 
 ### 4. `flare_calendar_current`
 
@@ -147,18 +214,57 @@ One rule, for every list the filter is part of (user's decision):
   non-empty `start_at`/`stop_at` — also a leftover of a side the editor switched off (the save callback does not
   clear it, the subpalette hides it); only `getDateBounds()` honors the switch. The migration (§6) keeps such
   leftovers bounding.
-- **Every stored form of a side is read.** The sides are read with `DateTimeHelper::toTimestamp()`, like the value
-  provider does: a time-span key, a `strtotime()` string or a timestamp. Today both `buildEffect()` and
-  `getDateBounds()` use `strtotime()`, which does not read the bare timestamp the `date` mode stores (`rgxp =>
-  datim`): an absolute date is not applied, or lands far in the future and empties the list. That is fixed here
-  (Claude's call after the builder check).
+- **The sides are dates, read once.** The options `start_at` and `stop_at` become `?\DateTimeImmutable` (user). The
+  transformer (`transformFilterModel()`) converts the stored text and is the only place that reads `configure_start` and
+  `configure_stop`: an unconfigured side becomes `null`. `configure_*` leaves the options schema; the DCA fields stay.
+  For a configured side it reads `elm_startAt`/`elm_stopAt` alone, in every mode: in `date` mode the timestamp Contao
+  stored, in `str` mode the editor's expression, in a time-span mode the expression the save callback wrote there
+  (`DateTimeHelper::spanToTimeString()`, unchanged). One reader serves all modes (user), so that a value left from
+  another mode still means what it meant — e.g. a timestamp kept after switching `date` → `str`: a number is a
+  timestamp, anything else goes through `strtotime()`. The conversion goes through `DateTimeHelper` (a variant of
+  `toTimestamp()` returning `\DateTimeImmutable` in Contao's time zone). Today both `buildEffect()` and
+  `getDateBounds()` use `strtotime()`, which misreads the bare timestamp the `date` mode stores (`rgxp => datim`):
+  `1600432000` becomes 16:00:43 on today's month and day in the year 2000, a bound that moves daily; other timestamps
+  are not read at all. That is fixed here (Claude's call after the builder check). Relative expressions resolve when the
+  compound is built, so once per request (`SourceTransformer` memoizes the transformer map, not its results).
+- **Unreadable text fails closed** (user). A configured side whose text `DateTimeHelper` cannot read makes the
+  transformer throw a `FilterException`, so the list fails (§2: in every output) and the inspector shows the filter
+  as broken. A save callback on `elm_startAt`/`elm_stopAt` rejects such text with a translated message through the
+  same helper, as `DateRangeValueProvider::normalizeExpressions()` does for the value, so it rarely gets stored.
 - **The value narrows within it.** A `from` earlier than the start or a `to` later than the stop is ignored on that
   side — today's `is_limited` behavior, always.
-- **The preselection is the filter's stored value** — the control's initial value (`hydrate()`), with relative
-  expressions such as `today` (`DateRangeValueProvider`). The visitor moves it freely within the bound.
+- **The filter's stored value** (the `value` column, a `DateRangeValue`, relative expressions such as `today` allowed,
+  `DateRangeValueProvider`) has two roles, as for every filter (user):
+  - with a control it is the preselection: the form's initial value (`hydrate()`); the visitor moves it freely within
+    the bound, and the reader never sees it;
+  - without a control it is a fixed narrowing within the bound, in every list the filter is part of — the reader too,
+    unless the filter is exclusive.
+- **A side is a point in time, not a day.** `today` is today 00:00; as a stop it excludes an event starting later
+  today (`CalendarCurrentPredicate`: `startTime <= stop`). That is intended (user) and stays: an editor who wants
+  today included writes `tomorrow` or `today 23:59`.
 - `getDateBounds()` returns the configured period, so the date inputs are limited whenever a bound is configured.
 - `is_limited` goes: from the schema, the transformer, the palette and the translations. The column stays in the
   database.
+
+**The backend fields keep their three modes** (user): `elm_configureStart`/`elm_configureStop` offer `date` (a date
+picker; Contao stores a timestamp), `str` (a text input for a `strtotime()` expression such as "last week thursday")
+and the time-span keys (the save callback writes the span's expression into the side, no input shown). What changes is
+how the date picker comes about:
+
+- `elm_startAt` and `elm_stopAt` are plain text inputs in `contao/dca/tl_flare_filter.php` (no `rgxp`, no
+  `datepicker`, no `wizard` class). The calendar element is their only user.
+- `DcaFieldBuilderInterface` gets `makeDatim()` (user): it sets `rgxp => datim`, `datepicker` and the `wizard` class,
+  and adds a load callback that shows a stored expression as its timestamp (through `DateTimeHelper`), so any element
+  can turn a text field into Contao's date-time input. The calendar element calls it in `buildDca()` for a side whose
+  stored mode is `date` (`DcaContext::$filterModel`); the mode field submits on change, so the stored mode is the one
+  shown. Switching a side from `str` to `date` therefore shows the expression as the timestamp it means at that
+  moment, and the next save stores that fixed date — accepted (user), as today.
+- `FieldsLoadAndSaveCallbacks::onLoadField_startStopAt()` goes: its `date` branch is `makeDatim()`'s load callback, its
+  other branch (removing `rgxp` and `datepicker`) is no longer needed.
+- `DcaFieldBuilder` can remove keys (user: their absence is a bug). `eval()` and `merge()` only merge, so today a key
+  can be set to `null`, never removed; `applyTo()` then writes the merged array. The method name and whether it covers
+  `eval` keys only or any path are the builder's call. The calendar element does not need it any more; it is fixed
+  here because it was found here.
 
 The two purposes are then two settings, and where both are wanted with different periods, two filter rows of the same
 type:
@@ -172,10 +278,22 @@ type:
 
 ### 5. Contexts without an intent
 
-`ElementContext` and `ControlContext` lose `$intent` (list × filter remains). Call sites: `ListQueryDirector`,
-`Form/Factory/FormHarnessFactory`, `FilterInspector`, `Contao/DataContainer/BackendElementContextFactory`,
-`ControlContext::forElement()`. `ConfigurationIntent` goes if nothing else needs it (builder's call). The form
-harness itself keeps its intent (form name, action).
+`ElementContext` and `ControlContext` lose `$intent` (list × filter remains). Call sites: `ListQueryDirector`
+(`invokeFilters()`), `Form/Factory/FormHarnessFactory`, `FilterInspector` (twice), `Contao/DataContainer/
+BackendElementContextFactory`, `ControlContext::forElement()`. The only reader of `$context->intent` in `src/` is
+`CalendarCurrentFilterElement::buildEffect()` (§4); in `tests/`, `ArchiveFilterElementTest`, `FilterInvokerTest` and
+`ControlContextTest` read it. In `src/`, `ConfigurationIntent` is constructed only for these contexts
+(`FilterInspector`, `BackendElementContextFactory`), so it goes with them (user). It came with #49 as
+`ConfigurationContext` (`2026-10-14-filter-forms-design.md` §6.4, its decision 21) to fill the then mandatory third
+member of the triple for the backend, which evaluates filters without an engine run; no projector serves it and
+nothing branches on it, so without `$intent` it has no purpose. The tests that use it: as
+the contexts' intent, `BuildsFilterEffectsTrait`, `Control/BuildsControlContextsTrait`, `ControlContextTest`,
+`ElementContextTest`, `FilterEffectFactoryTest` (also `testConfigurationIntentHasItsOwnType()`),
+`Element/CalendarCurrentFilterElementTest`, `Element/DcaSelectFieldFilterElementTest`,
+`ValueProvider/ChoiceValueProviderTest`, `Form/FilterFormBuilderFactoryTest`, `Form/FormHarnessTest`; as an `Engine`'s
+intent, `Twig/FlareRuntimeTest` (needs another intent then); and `DependencyInjection/ServicesConfigTest` lists the
+class. The form harness itself keeps its intent (form name, action), and so do `ListQueryConfig` and the loaders
+(paging, filter values).
 
 ### 6. Migration
 
@@ -186,18 +304,37 @@ behavior and its replacement:
 |---|---|---|---|
 | on | with or without | the period bounds list view and reader; a value narrows within | unchanged row, not exclusive |
 | off | none, no stored value | the period bounds the list view only | exclusive to the list view, period unchanged |
-| off | with a control | the period is a default the visitor's value replaces side by side; the reader is unbounded | exclusive to the list view; the period moves into the stored value (a side the stored value already sets wins), and `configure_start`/`configure_stop` are switched off so no bound remains |
+| off | with a control | the period is a default the visitor's value replaces side by side; the reader is unbounded | exclusive to the list view; the period's set sides move into the stored value (rule below), and `configure_start`/`configure_stop` are switched off so no bound remains |
 | off | none, with a stored value | list view: the value replaces the period side by side; reader: the value alone bounds | left not exclusive: the value was a bound of the reader and must stay one (Claude's call: never widen the whole list) |
 
 Before that, for every row of the type: a side whose `configure_*` is blank but whose `start_at`/`stop_at` holds a
 non-numeric expression gets `configure_*` switched on (`str`), so the backend shows the bound that applies today and
-the new rule keeps applying it. A numeric leftover of a blank side stays switched off: it did not bound.
+the new rule keeps applying it. A numeric leftover of a blank side stays switched off and so stops applying (§4: the
+transformer ignores a switched-off side): `strtotime()` either did not read it or misread it as a date in the year
+2000 on the current day (as a start no bound in practice, as a stop an empty list), so no working bound is lost.
 
-Accepted changes, named in the migration notes:
+The third row moves only the sides that took part today, which after the step above are exactly the sides whose
+`configure_*` is set (user, after the review): such a side's stored text becomes that side of the stored value
+(`from` for the start, `to` for the stop), unless the stored value already sets that side — then the stored value
+wins. A side whose `configure_*` is blank moves nothing, also not a numeric leftover. Examples:
+
+| Start side | Stop side | Stored value afterwards |
+|---|---|---|
+| mode `today` | blank, field empty | `from = today`; `to` untouched |
+| mode `str`, `last monday` | blank, leftover `+1 month` | the step above switches the stop on: `from = last monday`, `to = +1 month` |
+| mode `today` | blank, leftover `1767225600` | `from = today`; the number stays off |
+| mode `today` | mode `str`, but the stored value already has a `to` | `from = today`; the stored `to` stays |
+
+Accepted changes, named in the migration notes (all confirmed by the user, 2026-11-17):
 
 - a side in `date` mode (an absolute date) starts to bound as configured — the fix of §4. It narrows the lists that
   have one, the "unchanged" rows included; in the third row the date becomes the working preselection;
-
+- a numeric leftover of a switched-off side stops applying (see above); where it emptied the list as a misread stop,
+  the list shows entries again;
+- a configured side with text `DateTimeHelper` cannot read fails the list instead of being ignored (§4); the
+  inspector shows such filters as broken after the update;
+- `is_limited` on, with a control: a side the pre-step switches on now also limits the control's date inputs
+  (`getDateBounds()` honors `configure_*`); it already bounded the entries, so only the form changes;
 - off + control: the form now shows the preselection in its date inputs (before, the default window applied
   invisibly), and a side the visitor empties is open instead of falling back to the default;
 - off + no control + stored value: the configured period now bounds list view and reader too — the list can only
@@ -206,15 +343,39 @@ Accepted changes, named in the migration notes:
 The migration must run exactly once per row and never touch a row an editor saved after the update; `is_limited`
 stays in the database and cannot serve as the marker once editors save rows. The marker follows the pattern the
 query design fixes for its own migration (a DCA field with default `'0'`, set on every backend save and by the
-migration) or `BackfillFilterValuesMigration`'s — builder's call, the property is what counts.
+migration; its D31, on branch `v0.2-query`) or `BackfillFilterValuesMigration`'s (the migration-managed column
+`legacyBackfilled`) — builder's call, the property is what counts. Like `BackfillFilterValuesMigration`, it works
+through the DBAL `Connection`, not `Contao\Database`.
 
 ### 7. Documentation
 
-`AGENTS.md`: the filter subsystem (`FilterCompound`, `ElementContext`/`ControlContext` "list × filter", the reader's
-rules now "the whole list"), the migration list. The docs worktree (`docs/`, branch `docs/main`, committed
-separately): the filter pages (the expert setting, the calendar filter), `templating.mdx` (the lookup and the reader
-address the whole list), `removed-in-v0.2.md` (`is_limited`, the contexts' `$intent`), `migrating-from-v0.1.md` (the
-accepted changes). Translations in `contao/languages/{de,en}/tl_flare_filter.php` and the `flare` domain.
+`AGENTS.md`: the filter subsystem (`FilterCompound`, `ElementContext`/`ControlContext` "list × filter" instead of
+"list × filter × intent"), the vocabulary's intents without `ConfigurationIntent` (:24), the passages #55 rewrote —
+`src/Engine/ListEntry/` (`EntryLookup`: "by the reader's rules") and `src/Contao/Reader/` (`ReaderResolver`,
+`ValidationLoader`) — now on "the whole list", the list view's list from `forOutput()`, the inspector's issue kinds and
+its event, and the migration list.
+
+The docs worktree (`docs/`, branch `docs/main`, committed separately), page by page:
+
+| Page | What changes |
+|---|---|
+| `reference/filter-elements.md` | the expert setting; the calendar filter's one rule, `is_limited` gone |
+| `dev/filter-elements/index.md` | the context table lists `$context->intent` (:105); the inspector's warning and event |
+| `dev/filter-controls.md` | says the same about `$context->intent` (:92) |
+| `spec/filtering.md` | the two-stage context "list × filter × intent" (:23); `fingerprint()` / `hash()` gone (:72–73) |
+| `spec/compounds.md` | `whole()` / `forOutput()`; `hasFilterInstance()` (:36, :44) counts exclusive filters too; §5 "Persistence & Hashing" (:86–90) goes with `hash()` |
+| `dev/list-types/index.md` | the default published filter (:102–126): skipped also for an exclusive one, with the warning of §3 |
+| `dev/events.md` | which list each event carries (§2); the inspection event |
+| `dev/dca-builder.md` | `makeDatim()` and the key removal |
+| `templating.mdx` | the lookup's membership "by the reader's rules" (:313): the whole list; `flare_schema_org()` (:620): which list it gets |
+| `reference/twig.md` | `flare_reader.lookup()` "by the reader's rules" (:17); `flare_schema_org()` (:11) as above |
+| `dev/entries.md` | the lookup's membership (:163, :195) |
+| `integrations/index.md` | the calendar filter's description (:29) |
+| `removed-in-v0.2.md` | `is_limited`, the contexts' `$intent`, `ConfigurationIntent`, `ListCompound::hash()`, `FilterCompound::fingerprint()`; "by the reader's rules" (:77) |
+| `migrating-from-v0.1.md` | `#[AsFilterInvoker]` (:41) says to branch on `$context->intent`: now the exclusive setting; the accepted changes of §6 |
+
+Translations in `contao/languages/{de,en}/tl_flare_filter.php` and the `flare` domain (the expert fields of §1, the
+warning of §3, the save callback's message of §4).
 
 ## Decisions
 
@@ -232,25 +393,60 @@ accepted changes). Translations in `contao/languages/{de,en}/tl_flare_filter.php
 | E10 | Migration never widens the whole list; the two accepted changes above | Claude |
 | E11 | Own PR on `v0.2` before the query refactor | Claude |
 | E12 | Absolute dates of the configured period are read (today they are not applied); leftover bounds of switched-off sides are made visible by the migration instead of dropped | Claude (after the builder check) |
+| E13 | A default filter a driver skips because an exclusive filter of its type exists is intended; the editor gets a warning, not an error | user |
+| E14 | A fifth issue kind `Warning`, added by listeners of one inspection event per filter; the bundle's own warning is one such listener | user |
+| E15 | An issue names its lucide icon; unknown or none falls back to the kind's default (`badge-exclamation-point` for warnings); a row shows all its issues | user |
+| E16 | `start_at`/`stop_at` are `?\DateTimeImmutable` options; the transformer reads only the value fields, with one reader for every mode, and alone honors `configure_*`, which leaves the schema | user |
+| E17 | Unreadable period text fails closed; a save callback rejects it; both through `DateTimeHelper` | user |
+| E18 | The backend keeps the `date` / `str` / time-span modes; the fields are plain text, `makeDatim()` on the field builder turns the `date` side into Contao's date-time input | user |
+| E19 | `DcaFieldBuilder` can remove keys | user |
+| E20 | A side is a point in time (a stop of `today` excludes later today), and switching `str` → `date` fixes the expression's date: both intended, as today | user |
+| E21 | Migration row 3 moves only the sides whose `configure_*` is set after the pre-step; a side the stored value sets wins | user (after the review) |
+| E22 | Events keep their shape and carry the list of their entry point (§2 table); `with*()` keep `$outputs`; a type that replaces the palette suffix drops the setting, unguarded | Claude (after the review), confirmed by the user |
+| E23 | `ListCompound::hash()` and `FilterCompound::fingerprint()` go (dead since #49); `ValueInterface::fingerprint()` stays | user |
+| E24 | `ConfigurationIntent` goes with the contexts' `$intent` | user |
 
 ## Left to the builder
 
 Final names (`exclusive`, `outputs`, `Output`, `whole()`, `forOutput()` are working names), the storage format of
-the output list, where the enum lives, the marker of the migration, whether `ConfigurationIntent` goes, how the
-inspector words the new reason, the order of commits.
+the output list, where the enum lives, the marker of the migration, how the
+inspector words the new reason, the order of commits. From E13–E24: the event's name and payload beyond the above,
+the name of the `DateTimeHelper` variant, the key-removal method.
 
 ## Testing
 
-- `FilterCompound`: the setting, its part in `fingerprint()`; `ListCompound::whole()` / `forOutput()` (exclusive
-  filters dropped or kept, failures and config kept, filters added by `withFilter()` not exclusive).
+- `FilterCompound`: the setting, `withValue()`/`withControl()`/`withTargetAlias()`
+  keeping it; `ListCompound::whole()` / `forOutput()` (exclusive filters dropped or kept, failures and config kept,
+  filters added by `withFilter()` not exclusive).
 - `Contao/Factory/FilterCompoundFactory` and `FilterCollector`: the stored fields, exclusive without outputs.
-- Through the SQLite pipeline of PR #54 (`tests/Engine/EnginePipelineTrait.php`): a list with a filter exclusive to
-  the list view — entries and count apply it, the lookup and the reader find an entry it excludes, the breadcrumb
-  too; a control of a filter outside the list view's list is not mounted.
-- `CalendarCurrentFilterElement`: bound and value under the one rule, unconfigured sides open, a side as time-span
-  key, expression and bare timestamp, the same conditions whatever the caller; `getDateBounds()`.
-- The migration: the four rows of the table above, a leftover side switched on, a numeric leftover left off, run
-  once, a row saved in the backend afterwards left alone.
+- Through the SQLite pipeline of PR #54 (`tests/Engine/EnginePipelineTrait.php`; `createReaderResolver()` builds
+  the stored list with filters injected by a `ListDriverBuildListEvent` listener, so those filters carry the
+  setting): a list with a filter exclusive to the list view — entries and count apply it, the lookup and the reader
+  (by auto-item, through #55's strict match) find an entry it excludes, the breadcrumb (`BreadcrumbHookTest`) too; a
+  control of a filter outside the list view's list is not mounted.
+- `CalendarCurrentFilterElement`: bound and value under the one rule, unconfigured sides open, the same conditions
+  whatever the caller; `getDateBounds()`. Its transformer: a side holding a time-span's expression, an editor's
+  expression and a bare timestamp (`1600432000` among them) gives the expected `\DateTimeImmutable`, a switched-off
+  side `null`, unreadable text a `FilterException`. The save callback rejects unreadable text; `buildDca()` calls
+  `makeDatim()` only for a `date` side.
+- `DcaFieldBuilder`: `makeDatim()` (eval keys and load callback) and the key removal, through `applyTo()`.
+- `FilterInspector` / `FilterIssueReporter`: the event is dispatched per filter and its warnings land on the row, the
+  form and the overview; the bundled listener warns for an exclusive published filter without a non-exclusive one and
+  not otherwise; a row keeps several issues of one kind; icon fallback for an unknown name.
+- The migration: the four rows of the table above (row 3 with the examples under it), a leftover side switched on,
+  a numeric leftover left off, run once, a row saved in the backend afterwards left alone.
 - `FilterInspector`: exclusive without output is ineffective.
-- Existing tests follow (the contexts' constructors in 26 places across `src/` and `tests/`); `make test` and
-  `make phpstan` green; Mago runs in CI only.
+- The migration's tests mock the DBAL `Connection`, as `BackfillFilterValuesMigrationTest` does.
+- Types are pinned with `identicalTo()` / `assertSame()` where a test checks what a list or value is.
+- Tests of the removed code go: `ListCompoundTest`'s `hash()` tests, `FilterCompoundTest`'s `fingerprint()` tests,
+  `FilterEffectFactoryTest::testConfigurationIntentHasItsOwnType()`; `FlareRuntimeTest` takes another intent.
+- Existing tests follow (the contexts' constructors in 26 places: 6 in `src/`, 20 in `tests/`); `make test` (923
+  tests at `680d4add`) and `make phpstan` green; Mago runs in CI only.
+
+## Open questions
+
+The check against `680d4add` raised none: #55 changed how the reader finds its row and how models are loaded, not
+which list the reader and the lookup are handed, so E1–E12 hold as decided.
+
+- The default icons per issue kind (§3): kept as they are for now; whether they change is decided before the PR merges
+  (user).

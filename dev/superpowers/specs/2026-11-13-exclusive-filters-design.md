@@ -398,14 +398,15 @@ runs only once the renamed columns, `control`, `value` and the new columns of §
 
 **Marker.** The migration must handle each row exactly once and never touch a row created or saved after the update;
 `is_limited` stays in the database and cannot serve as the marker. It follows `BackfillFilterValuesMigration`'s pattern
-(Claude's call after the second review): its own migration-managed column, not part of the DCA; the rows existing
-when it is added start pending (`'0'`), the column default then becomes `'1'`, so rows created afterwards are never
-pending; a row's changes and its marker are written in one statement, so an interrupted run never processes a row
-twice. Rows of other types are marked done in the same run. An editor does not save filters between the schema
-update and the migration (user), so the window in which a row could be saved while still pending is not guarded. The
-query design's D31 pattern (a DCA field defaulting to `'0'`, set on backend saves) is not used: a row created outside
-a backend save would start pending and be rewritten. Like `BackfillFilterValuesMigration`, the migration works through
-the DBAL `Connection`, not `Contao\Database`, and its SQL runs on MySQL and MariaDB; it never drops or deletes.
+(Claude's call after the second review, confirmed by the user): its own migration-managed column, not part of the
+DCA; the rows existing when it is added start pending (`'0'`), the column default then becomes `'1'`, so rows created
+afterwards are never pending; a row's changes and its marker are written in one statement, so an interrupted run never
+processes a row twice. Rows of other types are marked done in the same run. An editor does not save filters between
+the schema update and the migration (user), so the window in which a row could be saved while still pending is not
+guarded. The query design's D31 pattern (a DCA field defaulting to `'0'`, set on backend saves) is not used: a row
+created outside a backend save would start pending and be rewritten. Like `BackfillFilterValuesMigration`, the
+migration works through the DBAL `Connection`, not `Contao\Database`, and its SQL runs on MySQL and MariaDB; it never
+drops or deletes.
 
 ### 7. Documentation
 
@@ -466,7 +467,7 @@ warning of §3, the save callback's message of §4).
 | E23 | `ListCompound::hash()` and `FilterCompound::fingerprint()` go (dead since #49); `ValueInterface::fingerprint()` stays | user |
 | E24 | `ConfigurationIntent` goes with the contexts' `$intent` | user |
 | E25 | The migration's baseline is v0.1 (v0.2 is unreleased); rows 2 and 3 widen the reader, accepted | user |
-| E26 | The migration waits for the column renames and `BackfillFilterValuesMigration`; its marker is its own migration-managed column (the backfill's pattern), not D31; saves between schema update and migration are not guarded | Claude (after the second review); the window: user |
+| E26 | The migration waits for the column renames and `BackfillFilterValuesMigration`; its marker is its own migration-managed column (the backfill's pattern), not D31; saves between schema update and migration are not guarded | Claude (after the second review), confirmed by the user; the window: user |
 | E27 | An empty configured side is open; an empty intersection of bound and value matches nothing (`abort()`) | user |
 | E28 | The migration switches on only readable leftovers, does not move unreadable text into the value (it stays a failing bound), and counts only a readable stored value; numeric leftovers go, also the ones read as dates | user |
 

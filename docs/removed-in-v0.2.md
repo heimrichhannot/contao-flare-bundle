@@ -146,7 +146,8 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
   `formAlias` → `alias` (`contao:migrate`)
 - `tl_flare_filter.elm_isLimited` (v0.1: `isLimited`), the calendar filter's *Limit the date selection* (field
   definition removed; the column remains until deletes are run manually, as does the `calendarLimitRetired` marker
-  column) — its behavior is now the calendar filter's only rule; see
+  column) — its behavior is now the calendar filter's only rule, and a filter that had it off is now exclusive to
+  the list view; see
   [The calendar filter's period](./migrating-from-v0.1.md#the-calendar-filters-period)
 
 ## Twig
@@ -176,8 +177,9 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 - Bool filters with a control no longer restrict reader pages: only fixed values and the elements' own config
   bound the whole list — of filters that are not
   [exclusive](./reference/filter-elements.md#apply-exclusively); an exclusive filter bounds only its outputs.
-- The calendar filter (`flare_calendar_current`) is always bounded by its configured period, in the list view and
-  the reader; a value narrows within it instead of replacing it (see
+- The calendar filter (`flare_calendar_current`) is bounded by its configured period in every list it applies to;
+  a value narrows within it instead of replacing it. A filter that had *Limit the date selection* off is made
+  exclusive to the list view by the migration, so the reader keeps ignoring it, as in v0.1 (see
   [The calendar filter's period](./migrating-from-v0.1.md#the-calendar-filters-period)).
 - A list with a broken filter element (with or without a control), a broken fixed value, or two published
   filters sharing an alias now renders `list.failed` (HTTP 200) instead of an empty or unfiltered result; its

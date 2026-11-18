@@ -140,12 +140,17 @@ The migrations:
     becomes the custom empty-option label).
 - `RetireCalendarLimitMigration` retires the calendar filter's *Limit the date selection* (`elm_isLimited`), **once
   per row** (tracked in the migration-managed marker column `calendarLimitRetired`). It waits until the columns are
-  renamed and the backfill has run, and runs only while `elm_isLimited` exists. Its one change: a side of the period
-  whose mode is blank but whose date text v0.1 applied — a non-numeric text plain `strtotime()` reads — is switched
-  on as *Date string (PHP)*, so the backend shows the bound that applies. An unreadable, a numeric and a time-span
-  leftover (e.g. `this_week`, which v0.1 could not read) stay switched off. It changes no control and no value and
-  makes no filter exclusive. Its result message counts the filters to check: "… N calendar filters with a control
-  or a fixed value now stay within their period: check them". See
+  renamed, the backfill has run and the schema update has added `exclusive` and `outputs`, and runs only while
+  `elm_isLimited` exists. Its changes, for the calendar filters only:
+  - A filter that had *Limit the date selection* **off** becomes **exclusive to the list view** (`exclusive` on,
+    `outputs` = list view), so the reader, the breadcrumb and the lookup keep ignoring it, as in v0.1. Every
+    intrinsic calendar filter of v0.1 is among them: its palette never showed the checkbox.
+  - A side of the period whose mode is blank but whose date text v0.1 applied — a non-numeric text plain
+    `strtotime()` reads — is switched on as *Date string (PHP)*, so the backend shows the bound that applies. An
+    unreadable, a numeric and a time-span leftover (e.g. `this_week`, which v0.1 could not read) stay switched off.
+
+  It changes no control and no value. Its result message counts the filters to check: "… N calendar filters with a
+  control or a fixed value now stay within their period: check them". See
   [The calendar filter's period](#the-calendar-filters-period).
 
 **Migrations never delete.** `contao:migrate` is run **without** deletes (`--with-deletes` off, the default).
@@ -168,7 +173,9 @@ Backend changes in the filter form:
 - The calendar filter's *Limit the date selection* (`is_limited`) is gone (see
   [The calendar filter's period](#the-calendar-filters-period)).
 - Every filter has the new expert setting [**Apply exclusively**](./reference/filter-elements.md#apply-exclusively)
-  with its **Outputs** (today: *List view*). Off by default; the migrations switch it on for no filter.
+  with its **Outputs** (today: *List view*). Off by default; the migration switches it on, with *List view*, for
+  the calendar filters that had *Limit the date selection* off (see
+  [The calendar filter's period](#the-calendar-filters-period)).
 
 ## Behaviour Changes
 
@@ -195,18 +202,31 @@ Backend changes in the filter form:
 ### The calendar filter's period
 
 In v0.1 the calendar filter (`flare_calendar_current`) mixed two purposes behind *Limit the date selection*
-(`is_limited`): a hard bound the entries must lie in, and a preselection the visitor could leave. v0.2 has one rule,
-v0.1's behavior with `is_limited` on, for every filter: the configured period bounds the list view and the reader,
-and a value only narrows within it (see [Calendar time window](./reference/filter-elements.md#calendar-time-window)).
-No list becomes wider than in v0.1 except as listed below; where `is_limited` was off, a list can become **narrower**.
-The migration's result message counts those filters — check them after the update:
+(`is_limited`): a hard bound the entries must lie in, and a preselection the visitor could leave. Its period always
+bounded the list view, but the reader only with `is_limited` on: with it off, the filter skipped itself in the
+reader, so the reader and the breadcrumb ignored it. Intrinsic calendar filters never showed the checkbox, so they
+all had it off.
 
-- **`is_limited` off, with a control:** the period becomes a bound the visitor cannot leave, and it limits the
-  control's date inputs. What the list shows before the visitor changes anything stays the same.
-- **`is_limited` off, no control, with a stored value:** the value narrows within the period instead of replacing
-  it, in the list view and the reader. The list can become narrower, or empty where value and period do not overlap.
-- **From a v0.2 development version, `is_limited` off:** the reader, the lookup and the breadcrumb are bounded by the
-  period again, as in v0.1.
+v0.2 has one rule, v0.1's behavior with `is_limited` on: the configured period bounds every list the filter applies
+to, and a value only narrows within it (see
+[Calendar time window](./reference/filter-elements.md#calendar-time-window)). To keep v0.1's reader, the migration
+makes every calendar filter that had `is_limited` off
+[exclusive to the list view](./reference/filter-elements.md#apply-exclusively): after the update its edit form shows
+**Apply exclusively** ticked, with **List view** under *Outputs*, in the expert settings. The reader, the breadcrumb
+and the lookup ignore such a filter, as in v0.1; the list view follows the one rule. A filter that had `is_limited` on
+stays not exclusive and keeps bounding the list view and the reader.
+
+No list view becomes wider than in v0.1 and no reader narrower, except as listed under the other changes below.
+Where `is_limited` was off, the list view can become **narrower**:
+
+- **`is_limited` off, with a control:** in the list view the period becomes a bound the visitor cannot leave, and it
+  limits the control's date inputs. What the list view shows before the visitor changes anything stays the same.
+- **`is_limited` off, no control, with a stored value:** in the list view the value narrows within the period
+  instead of replacing it. The list view can become narrower, or empty where value and period do not overlap.
+
+The migration's result message counts exactly these filters — the calendar filters that had `is_limited` off and
+have a control, or a stored value with at least one side set: "… N calendar filters with a control or a fixed value
+now stay within their period: check them". Check them after the update.
 
 The other changes:
 
@@ -221,14 +241,18 @@ The other changes:
 - **`is_limited` on, with a control:** a side the migration switches on now also limits the control's date inputs;
   it already bounded the entries, so only the form changes.
 
-To get the old behavior of a narrowed filter back, configure it:
+For a filter that had `is_limited` off, the migration has already done the reader's half: the filter is exclusive
+to the list view, so the reader is as in v0.1. To get the old list-view behavior of a narrowed filter back too,
+configure it:
 
-- **The period as a preselection the visitor can leave:** a filter with a control, both sides of its period switched
-  off, and the period as its stored value (the control's initial value; relative expressions such as `today` are
-  allowed).
-- **A period of the list view the reader ignores:** the filter
-  [applies exclusively](./reference/filter-elements.md#apply-exclusively) to the list view. Where the reader still
-  needs a wider bound, add a second calendar filter that is not exclusive.
+- **The period as a preselection the visitor can leave:** keep the filter with its control and exclusive to the list
+  view, switch both sides of its period off and store the period as its value (the control's initial value; relative
+  expressions such as `today` are allowed).
+- **A fixed value that replaces the period:** switch off each side of the period the stored value sets, so the value
+  alone bounds that side of the list view.
+
+Where the reader should be bounded too, untick **Apply exclusively**, or add a second calendar filter that is not
+exclusive with the wider bound.
 
 ## Engine Contexts → Intents
 

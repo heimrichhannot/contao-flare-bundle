@@ -76,7 +76,8 @@ The two purposes of a period are two settings — where both are wanted with dif
 | a hard bound and a narrower section in the list view | two: one not exclusive, one exclusive to the list view |
 | a preselection the visitor can move | one with a control; its value is the preselection |
 
-The v0.1 setting *Limit the date selection* (`is_limited`) is gone: its behavior is now the rule. See
+The v0.1 setting *Limit the date selection* (`is_limited`) is gone: its behavior is now the rule. A filter that had
+it off — the reader ignored it in v0.1 — is made exclusive to the list view by the migration. See
 [Migrating from v0.1](../migrating-from-v0.1.md#the-calendar-filters-period).
 
 ## Integration filter elements

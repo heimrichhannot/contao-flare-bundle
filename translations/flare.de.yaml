@@ -54,6 +54,8 @@ filter:
         ineffective:
             archive_without_value: "Dieser Filter hat weder Bedienelement noch Wert und schränkt daher nichts ein. Wählen Sie die anzuzeigenden Archive als Wert oder wählen Sie ein Bedienelement."
             exclusive_without_output: "Dieser Filter wird exklusiv angewendet, aber in keiner Ausgabe, und schränkt daher nichts ein. Wählen Sie eine Ausgabe oder schalten Sie \"Exklusiv anwenden\" aus."
+        warning:
+            exclusive_published: "Dieser Veröffentlicht-Filter wird exklusiv angewendet, daher zeigen der Detailleser und der Lookup auch unveröffentlichte Einträge. Fügen Sie einen nicht exklusiven Veröffentlicht-Filter hinzu, wenn sie das nicht sollen."
 
 errors:
     choices_not_loaded: "Die Filteroptionen konnten nicht geladen werden; prüfen Sie die Listenkonfiguration."

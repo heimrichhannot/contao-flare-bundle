@@ -43,7 +43,9 @@ use HeimrichHannot\FlareBundle\Engine\Intent\InteractiveIntent;
 use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Engine\ListEntry\EntryCollector;
 use HeimrichHannot\FlareBundle\Engine\ListEntry\EntryLookup;
+use HeimrichHannot\FlareBundle\Event\FilterInspectionEvent;
 use HeimrichHannot\FlareBundle\Event\ListDriverEntriesEvent;
+use HeimrichHannot\FlareBundle\EventListener\Inspection\ExclusivePublishedFilterListener;
 use HeimrichHannot\FlareBundle\List\Entry\Entry;
 use HeimrichHannot\FlareBundle\List\Entry\EntryCollection;
 use HeimrichHannot\FlareBundle\List\Entry\EntryMeta;
@@ -92,6 +94,7 @@ final class ServicesConfigTest extends TestCase
         foreach ([
             FilterInspector::class,
             FilterIssueReporter::class,
+            ExclusivePublishedFilterListener::class,
             BackendElementContextFactory::class,
             ListContainer::class,
             FilterContainer::class,
@@ -142,6 +145,7 @@ final class ServicesConfigTest extends TestCase
             EntryCollector::class,
             EntryLookup::class,
             ListDriverEntriesEvent::class,
+            FilterInspectionEvent::class,
             ReaderResolution::class,
         ] as $class) {
             yield $class => [$class];

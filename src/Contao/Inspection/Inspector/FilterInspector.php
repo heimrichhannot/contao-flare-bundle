@@ -11,6 +11,7 @@ use HeimrichHannot\FlareBundle\Contao\Inspection\InspectedRows;
 use HeimrichHannot\FlareBundle\Contao\Inspection\ListInspection;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
+use HeimrichHannot\FlareBundle\Event\FilterInspectionEvent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -34,7 +35,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * Finds the issues of a list's filters for the backend's filter list, filter overview and filter edit form, of five
  * kinds ({@see FilterIssueKind}): every saved filter row is inspected, published or not, and keeps every issue found,
  * also several of one kind; only published rows and filters without a row (added by the list driver or a listener)
- * count toward the overview messages, once per kind.
+ * count toward the overview messages, once per kind. After its own checks, it dispatches a {@see FilterInspectionEvent}
+ * per saved row, whose listeners add warnings.
  *
  * Outside debug mode, an \Error thrown while building or checking a filter is caught, logged as critical and reported
  * as a programming error, so the editor can still reach the filter; in debug mode it escapes. This is the only place
@@ -112,7 +114,12 @@ final class FilterInspector implements ResetInterface
         }
 
         $this->markDuplicates($rows);
-        $this->checkFilters($this->buildList($buildList, $rows), $rows);
+
+        $list = $this->buildList($buildList, $rows);
+        $listFilters = $this->mapToRows($list, $rows);
+
+        $this->checkFilters($list, $listFilters, $rows);
+        $this->dispatchInspections($list, $listFilters, $rows);
 
         return $rows->toInspection();
     }
@@ -214,15 +221,13 @@ final class FilterInspector implements ResetInterface
     }
 
     /**
-     * Checks every filter of the list — its rows and the filters the driver or a listener added — and the rows that
-     * are not part of it (unpublished rows, later duplicates), with the list as theirs. Without a list, only whether
-     * each built row is effective.
+     * Each filter of the list with the row it belongs to: the row whose built filter it is (a FilterCollectedEvent
+     * listener may have replaced it without a source), else the row its source names, else none (a filter the driver
+     * or a listener added).
      *
-     * A filter of the list belongs to a row if it is the row's built filter (a FilterCollectedEvent listener may
-     * have replaced it without a source), else if its source names the row. A row keeps every issue its checks find;
-     * a filter without a row reports each kind once, as {@see InspectedRows::addIssue()} only counts it.
+     * @return list<array{FilterCompound, int|null}>
      */
-    private function checkFilters(?ListCompound $list, InspectedRows $rows): void
+    private function mapToRows(?ListCompound $list, InspectedRows $rows): array
     {
         $rowOf = [];
 
@@ -230,15 +235,34 @@ final class FilterInspector implements ResetInterface
             $rowOf[\spl_object_id($filter)] = $id;
         }
 
+        $mapped = [];
+
+        foreach ($list->filters ?? [] as $filter) {
+            $mapped[] = [$filter, $rowOf[\spl_object_id($filter)] ?? $rows->idOf($filter->source)];
+        }
+
+        return $mapped;
+    }
+
+    /**
+     * Checks every filter of the list — its rows and the filters the driver or a listener added — and the rows that
+     * are not part of it (unpublished rows, later duplicates), with the list as theirs. Without a list, only whether
+     * each built row is effective.
+     *
+     * A row keeps every issue its checks find; a filter without a row reports each kind once, as {@see
+     * InspectedRows::addIssue()} only counts it.
+     *
+     * @param list<array{FilterCompound, int|null}> $listFilters The list's filters with their rows ({@see
+     *   mapToRows()}).
+     */
+    private function checkFilters(?ListCompound $list, array $listFilters, InspectedRows $rows): void
+    {
         /** @var list<array{FilterCompound, int|null}> $filters Each filter to check with its row id. */
-        $filters = [];
+        $filters = $listFilters;
         $inList = [];
 
-        foreach ($list->filters ?? [] as $filter)
+        foreach ($listFilters as [, $id])
         {
-            $id = $rowOf[\spl_object_id($filter)] ?? $rows->idOf($filter->source);
-            $filters[] = [$filter, $id];
-
             if ($id !== null) {
                 $inList[$id] = true;
             }
@@ -285,6 +309,59 @@ final class FilterInspector implements ResetInterface
                 }
 
                 $rows->addIssue($id, $kind, $reason);
+            }
+        }
+    }
+
+    /**
+     * Dispatches a {@see FilterInspectionEvent} for every saved row, in sorting order, with the row's filter as the
+     * list has it, else as built for the row alone, and adds each warning to the row. A listener's \Exception is a
+     * programming error on the row; its \Error is caught outside debug mode only.
+     *
+     * @param list<array{FilterCompound, int|null}> $listFilters The list's filters with their rows ({@see
+     *   mapToRows()}).
+     */
+    private function dispatchInspections(?ListCompound $list, array $listFilters, InspectedRows $rows): void
+    {
+        $filterOf = [];
+
+        foreach ($listFilters as [$filter, $id])
+        {
+            if ($id !== null) {
+                $filterOf[$id] ??= $filter;
+            }
+        }
+
+        $built = $rows->getFilters();
+
+        foreach ($rows->getModels() as $id => $model)
+        {
+            $event = new FilterInspectionEvent(
+                model: $model,
+                list: $list,
+                filter: $filterOf[$id] ?? $built[$id] ?? null,
+                issues: $rows->issuesOf($id),
+            );
+
+            try
+            {
+                $this->eventDispatcher->dispatch($event);
+            }
+            catch (\Exception $e)
+            {
+                $rows->addIssue($id, FilterIssueKind::ProgrammingError, self::reason($e));
+            }
+            catch (\Error $e)
+            {
+                $rows->addIssue(
+                    $id,
+                    FilterIssueKind::ProgrammingError,
+                    $this->caught($e, "the inspection of filter {$model::getTable()}.{$id}"),
+                );
+            }
+
+            foreach ($event->getWarnings() as $warning) {
+                $rows->addIssue($id, FilterIssueKind::Warning, $warning['message'], $warning['icon']);
             }
         }
     }

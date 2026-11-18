@@ -11,12 +11,15 @@ use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssueKind;
 use HeimrichHannot\FlareBundle\Contao\Inspection\ListInspection;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
+use HeimrichHannot\FlareBundle\Event\FilterInspectionEvent;
+use HeimrichHannot\FlareBundle\Event\ListDriverBuildListEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\ListCompound;
+use HeimrichHannot\FlareBundle\List\Output;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub\OkElement;
 use HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub\ThrowingElement;
@@ -30,9 +33,13 @@ final class FilterInspectorTest extends ContaoTestCase
 
     private EventDispatcher $dispatcher;
 
+    /** @var list<FilterInspectionEvent> See {@see recordInspectionEvents()}. */
+    private array $events = [];
+
     protected function setUp(): void
     {
         $this->dispatcher = new EventDispatcher();
+        $this->events = [];
     }
 
     public function testHealthyRowsHaveNoIssues(): void
@@ -514,10 +521,184 @@ final class FilterInspectorTest extends ContaoTestCase
         $inspector->inspect(self::listModel(5));
     }
 
+    public function testTheEventIsDispatchedOncePerSavedRow(): void
+    {
+        $this->recordInspectionEvents();
+        $models = [
+            self::filterModel(3, 'ok', 'a'),
+            self::filterModel(1, 'ok', 'b', published: false),
+            self::filterModel(2, 'ok', 'c'),
+        ];
+
+        $this->inspect($models);
+
+        self::assertCount(3, $this->events);
+
+        foreach ($models as $i => $model) {
+            self::assertSame($model, $this->events[$i]->model);
+        }
+    }
+
+    public function testTheEventCarriesNullsWhenNothingCouldBeBuilt(): void
+    {
+        $this->recordInspectionEvents();
+
+        $this->inspect([self::filterModel(1, 'gone', 'a'), self::filterModel(2, 'ok', 'b')]);
+
+        self::assertNull($this->events[0]->filter);
+        self::assertNotNull($this->events[0]->list);
+        self::assertNotNull($this->events[1]->filter);
+
+        $this->events = [];
+
+        $this->inspect(
+            [self::filterModel(1, 'ok', 'a'), self::filterModel(2, 'ok', 'b')],
+            static fn (): ListCompound => throw new FlareException('No list driver found for type "gone"'),
+        );
+
+        self::assertCount(2, $this->events);
+
+        foreach ($this->events as $event)
+        {
+            self::assertNull($event->list);
+            self::assertNotNull($event->filter, 'the row\'s own filter without a list');
+        }
+    }
+
+    public function testTheEventCarriesTheIssuesFoundSoFar(): void
+    {
+        $this->recordInspectionEvents();
+
+        $this->inspect([self::filterModel(1, 'throws', 'a'), self::filterModel(2, 'ok', 'b')]);
+
+        self::assertSame([FilterIssueKind::Broken], \array_map(
+            static fn (FilterIssue $issue): FilterIssueKind => $issue->kind,
+            $this->events[0]->issues,
+        ));
+        self::assertSame('broken', $this->events[0]->issues[0]->reason);
+        self::assertSame([], $this->events[1]->issues);
+    }
+
+    public function testRowlessFiltersGetNoEvent(): void
+    {
+        $this->recordInspectionEvents();
+
+        $inline = new FilterCompound(
+            element: new ElementBinding(new OkElement(), 'ok', new ComponentConfig(), null),
+            alias: 'inline',
+        );
+
+        $this->inspect(
+            [self::filterModel(1, 'ok', 'a')],
+            static fn (array $filters): ListCompound => self::list($filters + ['inline' => $inline]),
+        );
+
+        self::assertCount(1, $this->events);
+        self::assertSame('a', $this->events[0]->filter?->alias);
+    }
+
+    public function testTheEventCarriesTheFilterAsTheListHasIt(): void
+    {
+        $replacement = null;
+
+        $this->dispatcher->addListener(
+            ListDriverBuildListEvent::class,
+            static function (ListDriverBuildListEvent $event) use (&$replacement): void {
+                $filter = $event->builder->getFilter('a');
+                self::assertNotNull($filter);
+
+                $replacement = $filter->withOutputs([Output::ListView]);
+                $event->builder->removeFilter('a')->addFilter($replacement, 'a');
+            },
+        );
+
+        $this->recordInspectionEvents();
+
+        $filters = $this->mockConfiguredAdapter(['findBy' => [self::filterModel(1, 'ok', 'a')]]);
+
+        $this->createFilterInspector($this->mockContaoFramework([FilterModel::class => $filters]), $this->dispatcher)
+            ->inspect(self::listModel(5));
+
+        self::assertCount(1, $this->events);
+        self::assertNotNull($replacement);
+        self::assertSame($replacement, $this->events[0]->filter);
+        self::assertSame($replacement, $this->events[0]->list?->filters['a']);
+    }
+
+    public function testWarningsLandOnTheRowFormAndOverview(): void
+    {
+        $this->dispatcher->addListener(
+            FilterInspectionEvent::class,
+            static function (FilterInspectionEvent $event): void {
+                if ($event->model->id === 1)
+                {
+                    $event->addWarning('first hint', 'opacity');
+                    $event->addWarning('second hint', 'eye');
+                }
+            },
+        );
+
+        $inspection = $this->inspect([self::filterModel(1, 'ok', 'a'), self::filterModel(2, 'ok', 'b')]);
+
+        self::assertEquals([
+            new FilterIssue(FilterIssueKind::Warning, 'first hint', true, 'opacity'),
+            new FilterIssue(FilterIssueKind::Warning, 'second hint', true, 'eye'),
+        ], $inspection->forRow(1));
+        self::assertSame([], $inspection->forRow(2));
+        self::assertSame(1, $inspection->count(FilterIssueKind::Warning));
+    }
+
+    public function testAListenerExceptionIsAProgrammingError(): void
+    {
+        $this->dispatcher->addListener(
+            FilterInspectionEvent::class,
+            static function (FilterInspectionEvent $event): void {
+                if ($event->model->id === 1) {
+                    throw new \RuntimeException('A bug in the inspection listener.');
+                }
+            },
+        );
+
+        $inspection = $this->inspect([self::filterModel(1, 'ok', 'a'), self::filterModel(2, 'ok', 'b')]);
+
+        self::assertSame([FilterIssueKind::ProgrammingError], self::kinds($inspection, 1));
+        self::assertSame('A bug in the inspection listener.', $inspection->forRow(1)[0]->reason);
+        self::assertSame([], $inspection->forRow(2));
+    }
+
+    public function testAListenerErrorIsAProgrammingErrorOutsideDebugMode(): void
+    {
+        $this->dispatcher->addListener(FilterInspectionEvent::class, static function (): void {
+            throw new \Error('inspection bug');
+        });
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('critical');
+
+        $inspection = $this->inspect([self::filterModel(1, 'ok', 'a')], logger: $logger);
+
+        self::assertSame([FilterIssueKind::ProgrammingError], self::kinds($inspection, 1));
+        self::assertSame('inspection bug', $inspection->forRow(1)[0]->reason);
+
+        $this->expectException(\Error::class);
+
+        $this->inspect([self::filterModel(1, 'ok', 'a')], debug: true);
+    }
+
     private function dropSources(): void
     {
         $this->dispatcher->addListener(FilterCollectedEvent::class, static function (FilterCollectedEvent $event): void {
             $event->filter = new FilterCompound(element: $event->filter->element, alias: $event->filter->alias);
+        });
+    }
+
+    /**
+     * Records every FilterInspectionEvent dispatched from now on in {@see $events}, in order.
+     */
+    private function recordInspectionEvents(): void
+    {
+        $this->dispatcher->addListener(FilterInspectionEvent::class, function (FilterInspectionEvent $event): void {
+            $this->events[] = $event;
         });
     }
 

@@ -55,7 +55,7 @@ filter:
             archive_without_value: "This filter has no control and no value, so it restricts nothing. Select the archives to show as its value, or select a control."
             exclusive_without_output: "This filter applies exclusively, but to no output, so it restricts nothing. Tick an output or switch off \"Apply exclusively\"."
         warning:
-            exclusive_published: "This publication filter applies exclusively, so the reader and the lookup show unpublished entries too. Add a publication filter that is not exclusive if they should not."
+            exclusive_published: "This publication filter applies exclusively, so the reader and links to entries show unpublished entries too. Add a publication filter that is not exclusive if they should not."
 
 errors:
     choices_not_loaded: "The filter choices could not be loaded; check the list configuration."

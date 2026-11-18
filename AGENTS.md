@@ -111,7 +111,7 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 - `src/Engine/ListEntry/` — `EntryCollector` (rows → `EntryCollection::forTable($list->dc)` with the reader linker →
   `ListDriverEntriesEvent`, only for a non-empty collection → seal) and `EntryLookup` (member entries by id on
   the whole list (`ListCompound::whole()`: without the filters exclusive to an output), fixed filter values, no
-  form values — in one query without pagination, in the given order,
+  form values), in one query without pagination, in the given order,
   duplicates collapsed, memoized per id list; each result is its own sealed collection with its own entries event;
   members are cache-tagged; `lookup([])` queries nothing; an id is a positive int or its canonical string;
   `null`/`''`/`0`/`'0'` count as no id, anything else throws `InvalidLookupIdError`). Neither is a service: `Engine/Factory/EntryCollectorFactory`
@@ -159,7 +159,8 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   After its checks it dispatches a `FilterInspectionEvent` once per saved row (model, built list or null, the row's
   effective filter or null, the issues so far; `addWarning($message, ?$icon)`; a listener's `\Exception` becomes a
   programming-error issue) — the bundled `EventListener\Inspection\ExclusivePublishedFilterListener` warns for a
-  published exclusive filter. `Inspection/Reporter/FilterIssueReporter` shows
+  publication filter (`PublishedFilterElement`) that is exclusive to an output while the list has no non-exclusive
+  publication filter. `Inspection/Reporter/FilterIssueReporter` shows
   them on the filter row (icon), the edit form and the list's filter overview (counts of published filters only). It inspects every saved row, builds
   the list the way the runtime does, and catches `\Error` outside debug mode only (logged as critical)
 - `src/Filter/ValueProvider/` — one `ValueProviderInterface` service per value class (`provide()` turns the

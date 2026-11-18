@@ -130,4 +130,28 @@ class DateTimeHelper
             self::toTimestamp($time_span_or_string_or_stamp)
         );
     }
+
+    /**
+     * Read a time span key, a timestamp or a time expression as a date in the configured time zone.
+     *
+     * Unlike {@see toTimestamp()}, the epoch is readable; only blank or unreadable text gives null.
+     */
+    public static function toDateTimeImmutable(string $time_span_or_string_or_stamp): ?\DateTimeImmutable
+    {
+        $text = \trim($time_span_or_string_or_stamp);
+
+        if ($text === '') {
+            return null;
+        }
+
+        $timestamp = \is_numeric($text) ? (int) $text : \strtotime(self::spanToTimeString($text) ?? $text);
+
+        if ($timestamp === false) {
+            return null;
+        }
+
+        $dt = \DateTimeImmutable::createFromFormat('U', (string) $timestamp);
+
+        return $dt === false ? null : $dt->setTimezone(self::getTimeZone());
+    }
 }

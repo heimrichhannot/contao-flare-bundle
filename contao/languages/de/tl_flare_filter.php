@@ -21,6 +21,13 @@ $lang['published'] = ['Veröffentlicht', 'Ob der Filter aktiv ist.'];
 ###> expert_legend ###
 $lang['expert_legend'] = 'Experten-Einstellungen';
 $lang['alias'] = ['Formularfeld-Alias', 'Geben Sie einen Alias für das Formularfeld dieses Filters ein.'];
+$lang['exclusive'] = [
+    'Exklusiv anwenden',
+    'Diesen Filter nur in den unten gewählten Ausgaben anwenden, nicht auf die ganze Liste '
+        . '(der Reader findet, was er ausschließt).',
+];
+$lang['outputs'] = ['Ausgaben', ''];
+$lang['output'] = ['list_view' => 'Listenansicht'];
 ###< expert_legend ###
 
 ###> filter_legend ###

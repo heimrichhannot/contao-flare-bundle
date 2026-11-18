@@ -15,6 +15,8 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string|null $value
  * @property string      $targetAlias
  * @property string      $alias
+ * @property bool        $exclusive
+ * @property string|null $outputs
  * @property bool        $published
  * @property bool        $elm_usePublished
  * @property string      $elm_fieldPublished

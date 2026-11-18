@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Contao\Factory;
 
+use Contao\StringUtil;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\UnreadableValueException;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterCompoundFactory as CoreFilterCompoundFactory;
 use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\List\Output;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
 use Psr\Log\LoggerInterface;
@@ -54,6 +56,7 @@ final readonly class FilterCompoundFactory
             targetAlias: $model->getFilterTargetAlias() ?: null,
             configSource: $model,
             source: $source,
+            outputs: self::readOutputs($model),
         );
 
         if (!$withValue) {
@@ -63,6 +66,31 @@ final readonly class FilterCompoundFactory
         return $filter->withValue($control === null
             ? $this->provideValue($filter, $model)
             : $this->provideInitialValue($filter, $model));
+    }
+
+    /**
+     * The outputs a stored exclusive filter applies to: null for a filter that is not exclusive, otherwise the stored
+     * keys the {@see Output} enum knows, unique, in stored order. Unknown keys (garbage, or an output of a later
+     * version) are ignored, so a filter left with none applies nowhere, never everywhere.
+     *
+     * @return list<Output>|null
+     */
+    private static function readOutputs(FilterModel $model): ?array
+    {
+        if (!(bool) $model->exclusive) {
+            return null;
+        }
+
+        $outputs = [];
+
+        foreach (StringUtil::deserialize($model->outputs, true) as $key)
+        {
+            if (\is_string($key) && $output = Output::tryFrom($key)) {
+                $outputs[$output->value] = $output;
+            }
+        }
+
+        return \array_values($outputs);
     }
 
     /**

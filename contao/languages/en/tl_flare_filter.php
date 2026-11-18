@@ -21,6 +21,12 @@ $lang['published'] = ['Published', 'Whether the filter is active.'];
 ###> expert_legend ###
 $lang['expert_legend'] = 'Expert Settings';
 $lang['alias'] = ['Form field alias', 'Enter an alias for this filter’s form field.'];
+$lang['exclusive'] = [
+    'Apply exclusively',
+    'Apply this filter only to the outputs ticked below, not to the whole list (the reader finds what it excludes).',
+];
+$lang['outputs'] = ['Outputs', ''];
+$lang['output'] = ['list_view' => 'List view'];
 ###< expert_legend ###
 
 ###> filter_legend ###

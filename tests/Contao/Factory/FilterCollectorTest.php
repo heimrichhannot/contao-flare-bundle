@@ -22,6 +22,7 @@ use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Exception\ValueClassMismatchError;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
+use HeimrichHannot\FlareBundle\List\Output;
 use HeimrichHannot\FlareBundle\Tests\List\StubFilterElement;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
@@ -233,6 +234,26 @@ final class FilterCollectorTest extends TestCase
         self::assertNull($collected->failures[0]->exception);
         self::assertCount(1, $this->logs);
         self::assertSame('error', $this->logs[0][0]);
+    }
+
+    public function testCollectedFiltersCarryTheirOutputs(): void
+    {
+        $exclusive = self::model(FilterModel::class, [
+            'id' => 1,
+            'type' => 'stub',
+            'control' => '',
+            'published' => '1',
+            'exclusive' => '1',
+            'outputs' => \serialize(['list_view']),
+        ]);
+
+        $collected = $this->collector()->collectFromModels(
+            [$exclusive, self::filterModel(2, 'stub')],
+            self::listModel(),
+        );
+
+        self::assertSame([Output::ListView], $collected->filters[1]->outputs);
+        self::assertNull($collected->filters[2]->outputs);
     }
 
     public function testUnpublishedFiltersAreSkipped(): void

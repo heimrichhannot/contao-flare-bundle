@@ -25,6 +25,11 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 final readonly class FilterIssueReporter
 {
+    /**
+     * The lucide icons a row notice can show, one partial each in `templates/backend/filter_icon/`.
+     */
+    public const ICONS = ['bug', 'copy-x', 'bone-fracture', 'engine', 'badge-exclamation-point', 'opacity'];
+
     public function __construct(
         private FilterInspector     $filterInspector,
         private ContaoFramework     $framework,
@@ -68,6 +73,7 @@ final readonly class FilterIssueReporter
                 FilterIssueKind::DuplicateAlias => 'list.info.duplicate_filter_alias',
                 FilterIssueKind::Broken => 'list.info.broken_filters',
                 FilterIssueKind::Ineffective => 'list.info.ineffective_filters',
+                FilterIssueKind::Warning => 'list.info.warnings',
             };
 
             $this->addMessage($kind, $this->translator->trans($id, $parameters, 'flare'));
@@ -91,11 +97,12 @@ final readonly class FilterIssueReporter
     }
 
     /**
-     * The text of each of the filter row's issues, by issue kind value; unescaped (the template escapes it).
+     * Each of the filter row's issues, ordered by kind: its kind value, its icon (its own if the bundle has it, else
+     * the kind's default) and its text, unescaped (the template escapes it).
      *
      * @param array<string, mixed> $row
      *
-     * @return array<string, string>
+     * @return list<array{kind: string, icon: string, text: string}>
      */
     public function getRowNotices(array $row): array
     {
@@ -105,27 +112,30 @@ final readonly class FilterIssueReporter
 
         $notices = [];
 
-        foreach ($this->filterInspector->inspect($listModel)->forRow((int) ($row['id'] ?? 0)) as $issue) {
-            $notices[$issue->kind->value] = $issue->describe($this->translator);
+        foreach ($this->filterInspector->inspect($listModel)->forRow((int) ($row['id'] ?? 0)) as $issue)
+        {
+            $notices[] = [
+                'kind' => $issue->kind->value,
+                'icon' => \in_array($issue->icon, self::ICONS, true) ? $issue->icon : $issue->kind->defaultIcon(),
+                'text' => $issue->describe($this->translator),
+            ];
         }
 
         return $notices;
     }
 
     /**
-     * Contao renders messages raw; the caller escapes what it passes.
+     * A warning is a hint (info), an ineffective filter needs attention (new), any other issue is an error. Contao
+     * renders messages raw; the caller escapes what it passes.
      */
     private function addMessage(FilterIssueKind $kind, string $message): void
     {
         $messages = $this->framework->getAdapter(Message::class);
 
-        if ($kind === FilterIssueKind::Ineffective)
-        {
-            $messages->addNew($message);
-
-            return;
-        }
-
-        $messages->addError($message);
+        match ($kind) {
+            FilterIssueKind::Warning => $messages->addInfo($message),
+            FilterIssueKind::Ineffective => $messages->addNew($message),
+            default => $messages->addError($message),
+        };
     }
 }

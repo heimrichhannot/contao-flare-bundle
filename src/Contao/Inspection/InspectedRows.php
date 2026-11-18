@@ -21,7 +21,7 @@ final class InspectedRows
     /** @var array<int, FilterCompound> The built filter of each row that could be built. */
     private array $filters = [];
 
-    /** @var array<int, array<string, FilterIssue>> By row id and kind value; the first issue of a kind wins. */
+    /** @var array<int, list<FilterIssue>> By row id, in the order found; every issue, an equal one once. */
     private array $issues = [];
 
     /** @var array<string, int> Issues of filters without a row, by kind value. */
@@ -33,6 +33,14 @@ final class InspectedRows
     public function add(FilterModel $model): void
     {
         $this->models[(int) $model->id] = $model;
+    }
+
+    /**
+     * @return array<int, FilterModel> The list's filter rows, by tl_flare_filter id, in sorting order.
+     */
+    public function getModels(): array
+    {
+        return $this->models;
     }
 
     public function setFilter(int $id, FilterCompound $filter): void
@@ -59,9 +67,14 @@ final class InspectedRows
     }
 
     /**
-     * @param int|null $id The row id; null for a filter without a row of this list, whose issue only counts.
+     * Adds an issue to the row; a row keeps every issue, but one equal in kind, reason and icon to an issue it already
+     * has only once (the collector's failure and the condition check can report the same text).
+     *
+     * @param int|null $id The row id; null for a filter without a row of this list, whose issue only counts: each
+     *   call counts one filter.
+     * @param string|null $icon See {@see FilterIssue::$icon}.
      */
-    public function addIssue(?int $id, FilterIssueKind $kind, string $reason): void
+    public function addIssue(?int $id, FilterIssueKind $kind, string $reason, ?string $icon = null): void
     {
         if ($id === null)
         {
@@ -70,7 +83,22 @@ final class InspectedRows
             return;
         }
 
-        $this->issues[$id][$kind->value] ??= new FilterIssue($kind, $reason, $this->isPublished($id));
+        foreach ($this->issues[$id] ?? [] as $issue)
+        {
+            if ($issue->kind === $kind && $issue->reason === $reason && $issue->icon === $icon) {
+                return;
+            }
+        }
+
+        $this->issues[$id][] = new FilterIssue($kind, $reason, $this->isPublished($id), $icon);
+    }
+
+    /**
+     * @return list<FilterIssue> The row's issues found so far, in the order found.
+     */
+    public function issuesOf(int $id): array
+    {
+        return $this->issues[$id] ?? [];
     }
 
     /**
@@ -123,6 +151,9 @@ final class InspectedRows
         return \array_filter($groups, static fn (array $ids): bool => \count($ids) > 1);
     }
 
+    /**
+     * Each row's issues ordered by kind, in the order found within a kind; a published row counts once per kind.
+     */
     public function toInspection(): ListInspection
     {
         $rows = [];
@@ -132,11 +163,16 @@ final class InspectedRows
         {
             foreach (FilterIssueKind::cases() as $kind)
             {
-                if (!isset($issues[$kind->value])) {
+                $ofKind = \array_values(\array_filter(
+                    $issues,
+                    static fn (FilterIssue $issue): bool => $issue->kind === $kind,
+                ));
+
+                if ($ofKind === []) {
                     continue;
                 }
 
-                $rows[$id][] = $issues[$kind->value];
+                $rows[$id] = [...($rows[$id] ?? []), ...$ofKind];
 
                 if ($this->isPublished($id)) {
                     $counts[$kind->value] = ($counts[$kind->value] ?? 0) + 1;

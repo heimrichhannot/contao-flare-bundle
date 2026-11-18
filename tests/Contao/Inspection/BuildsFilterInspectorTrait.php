@@ -210,15 +210,15 @@ trait BuildsFilterInspectorTrait
     }
 
     /**
-     * A Message adapter recording each addError() and addNew() as [method, message].
+     * A Message adapter recording each addError(), addNew() and addInfo() as [method, message].
      *
      * @param list<array{string, string}> $recorded
      */
     private function recordMessages(array &$recorded): Adapter
     {
-        $adapter = $this->mockAdapter(['addError', 'addNew']);
+        $adapter = $this->mockAdapter(['addError', 'addNew', 'addInfo']);
 
-        foreach (['addError', 'addNew'] as $method)
+        foreach (['addError', 'addNew', 'addInfo'] as $method)
         {
             $adapter->method($method)->willReturnCallback(static function (string $message) use (&$recorded, $method): void {
                 $recorded[] = [$method, $message];

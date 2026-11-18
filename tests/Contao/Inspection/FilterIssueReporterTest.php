@@ -129,7 +129,20 @@ final class FilterIssueReporterTest extends ContaoTestCase
         self::assertSame([], $this->recorded);
     }
 
-    public function testRowNoticesAreKeyedByIssueKind(): void
+    public function testIneffectiveStaysANewMessage(): void
+    {
+        $row = self::filterModel(1, 'ok', 'a', row: ['exclusive' => '1', 'outputs' => '']);
+
+        $this->reporter([$row], Request::create(self::OVERVIEW))->reportOverview(self::listModel(5));
+        $this->reporter([$row], Request::create(self::EDIT))->reportFilter(self::listModel(5), $row);
+
+        self::assertSame([
+            ['addNew', 'list.info.ineffective_filters %count%=1'],
+            ['addNew', 'filter.info.ineffective.exclusive_without_output'],
+        ], $this->recorded);
+    }
+
+    public function testRowNoticesAreAList(): void
     {
         $notices = $this->reporter(
             [self::filterModel(1, 'throws', 'a')],
@@ -137,7 +150,30 @@ final class FilterIssueReporterTest extends ContaoTestCase
             lists: $this->listAdapter(),
         )->getRowNotices(['id' => 1, 'pid' => 5]);
 
-        self::assertSame(['broken' => 'filter.info.broken.published %reason%=broken'], $notices);
+        self::assertSame([
+            ['kind' => 'broken', 'icon' => 'bone-fracture', 'text' => 'filter.info.broken.published %reason%=broken'],
+        ], $notices);
+    }
+
+    public function testRowNoticesListEveryIssueWithItsIcon(): void
+    {
+        $notices = $this->reporter(
+            [self::filterModel(1, 'throws', 'a', row: ['exclusive' => '1', 'outputs' => ''])],
+            Request::create(self::OVERVIEW),
+            lists: $this->listAdapter(),
+        )->getRowNotices(['id' => 1, 'pid' => 5]);
+
+        self::assertSame([
+            ['kind' => 'broken', 'icon' => 'bone-fracture', 'text' => 'filter.info.broken.published %reason%=broken'],
+            ['kind' => 'ineffective', 'icon' => 'engine', 'text' => 'filter.info.ineffective.exclusive_without_output'],
+        ], $notices);
+    }
+
+    public function testEveryIconHasItsPartial(): void
+    {
+        foreach (FilterIssueReporter::ICONS as $icon) {
+            self::assertFileExists(__DIR__ . "/../../../templates/backend/filter_icon/{$icon}.html.twig");
+        }
     }
 
     public function testARowWithoutItsListHasNoNotices(): void

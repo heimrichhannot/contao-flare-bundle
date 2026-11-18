@@ -46,6 +46,28 @@ final class FilterIssueTest extends TestCase
         self::assertSame('This filter breaks the list: x', self::describe(FilterIssueKind::Broken, 'x', true));
     }
 
+    public function testAWarningDescribesItselfAsGiven(): void
+    {
+        self::assertSame('Mind the reader.', self::describe(FilterIssueKind::Warning, 'Mind the reader.', false));
+    }
+
+    public function testTheIconDefaultsPerKind(): void
+    {
+        self::assertSame(
+            [
+                'programming_error' => 'bug',
+                'duplicate_alias' => 'copy-x',
+                'broken' => 'bone-fracture',
+                'ineffective' => 'engine',
+                'warning' => 'badge-exclamation-point',
+            ],
+            \array_combine(
+                \array_map(static fn (FilterIssueKind $kind): string => $kind->value, FilterIssueKind::cases()),
+                \array_map(static fn (FilterIssueKind $kind): string => $kind->defaultIcon(), FilterIssueKind::cases()),
+            ),
+        );
+    }
+
     private static function describe(FilterIssueKind $kind, string $reason, bool $published): string
     {
         $translator = new Translator('en');

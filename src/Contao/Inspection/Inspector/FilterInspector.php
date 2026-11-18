@@ -31,9 +31,10 @@ use Symfony\Contracts\Service\ResetInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Finds the issues of a list's filters for the backend's filter list, filter overview and filter edit form
- * ({@see FilterIssueKind}): every saved filter row is inspected, published or not; only published rows and filters
- * without a row (added by the list driver or a listener) count toward the overview messages.
+ * Finds the issues of a list's filters for the backend's filter list, filter overview and filter edit form, of five
+ * kinds ({@see FilterIssueKind}): every saved filter row is inspected, published or not, and keeps every issue found,
+ * also several of one kind; only published rows and filters without a row (added by the list driver or a listener)
+ * count toward the overview messages, once per kind.
  *
  * Outside debug mode, an \Error thrown while building or checking a filter is caught, logged as critical and reported
  * as a programming error, so the editor can still reach the filter; in debug mode it escapes. This is the only place
@@ -218,7 +219,8 @@ final class FilterInspector implements ResetInterface
      * each built row is effective.
      *
      * A filter of the list belongs to a row if it is the row's built filter (a FilterCollectedEvent listener may
-     * have replaced it without a source), else if its source names the row.
+     * have replaced it without a source), else if its source names the row. A row keeps every issue its checks find;
+     * a filter without a row reports each kind once, as {@see InspectedRows::addIssue()} only counts it.
      */
     private function checkFilters(?ListCompound $list, InspectedRows $rows): void
     {
@@ -255,22 +257,33 @@ final class FilterInspector implements ResetInterface
 
         foreach ($filters as [$filter, $id])
         {
-            $found = [];
-
             $checks = [
                 $list ? $this->checkConditions($list, $filter) : null,
                 $list && $filter->control !== null ? $this->checkForm($list, $filter) : null,
                 $this->checkEffect($filter),
+                $this->checkExclusive($filter),
             ];
+
+            /** @var array<string, true> $found The kinds a filter without a row has reported. */
+            $found = [];
 
             foreach ($checks as $issue)
             {
-                if ($issue !== null) {
-                    $found[$issue[0]->value] ??= $issue;
+                if ($issue === null) {
+                    continue;
                 }
-            }
 
-            foreach ($found as [$kind, $reason]) {
+                [$kind, $reason] = $issue;
+
+                if ($id === null)
+                {
+                    if (isset($found[$kind->value])) {
+                        continue;
+                    }
+
+                    $found[$kind->value] = true;
+                }
+
                 $rows->addIssue($id, $kind, $reason);
             }
         }
@@ -363,6 +376,23 @@ final class FilterInspector implements ResetInterface
         }
 
         return $reason === null ? null : [FilterIssueKind::Ineffective, $reason];
+    }
+
+    /**
+     * A filter exclusive to no output applies nowhere ({@see FilterCompound::$outputs}): it restricts nothing.
+     *
+     * @return array{FilterIssueKind, string}|null
+     */
+    private function checkExclusive(FilterCompound $filter): ?array
+    {
+        if ($filter->outputs !== []) {
+            return null;
+        }
+
+        return [
+            FilterIssueKind::Ineffective,
+            $this->translator->trans('filter.info.ineffective.exclusive_without_output', [], 'flare'),
+        ];
     }
 
     /**

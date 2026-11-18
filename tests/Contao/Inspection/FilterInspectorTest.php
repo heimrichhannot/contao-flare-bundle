@@ -12,6 +12,7 @@ use HeimrichHannot\FlareBundle\Contao\Inspection\ListInspection;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
+use HeimrichHannot\FlareBundle\Filter\ControlBinding;
 use HeimrichHannot\FlareBundle\Filter\ElementBinding;
 use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
@@ -19,6 +20,7 @@ use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub\OkElement;
 use HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub\ThrowingElement;
+use HeimrichHannot\FlareBundle\Tests\Contao\Inspection\Stub\UnbuildableControl;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
@@ -303,6 +305,55 @@ final class FilterInspectorTest extends ContaoTestCase
         $inline = new FilterCompound(
             element: new ElementBinding(new ThrowingElement(), 'throws', new ComponentConfig(), null),
             alias: 'inline',
+        );
+
+        $inspection = $this->inspect(
+            [self::filterModel(1, 'ok', 'a')],
+            static fn (array $filters): ListCompound => self::list($filters + ['inline' => $inline]),
+        );
+
+        self::assertSame([], $inspection->rows);
+        self::assertSame(1, $inspection->count(FilterIssueKind::Broken));
+    }
+
+    /**
+     * @dataProvider provideOutputsOfNowhere
+     */
+    public function testAnExclusiveFilterWithoutOutputIsIneffective(string $outputs): void
+    {
+        $inspection = $this->inspect([
+            self::filterModel(1, 'ok', 'a', row: ['exclusive' => '1', 'outputs' => $outputs]),
+        ]);
+
+        self::assertSame([FilterIssueKind::Ineffective], self::kinds($inspection, 1));
+        self::assertSame('filter.info.ineffective.exclusive_without_output', $inspection->forRow(1)[0]->reason);
+        self::assertSame(1, $inspection->count(FilterIssueKind::Ineffective));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function provideOutputsOfNowhere(): iterable
+    {
+        yield 'no output' => [''];
+        yield 'only unknown outputs' => [\serialize(['sitemap', 'gone'])];
+    }
+
+    public function testAnExclusiveFilterWithAnOutputIsFine(): void
+    {
+        $inspection = $this->inspect([
+            self::filterModel(1, 'ok', 'a', row: ['exclusive' => '1', 'outputs' => \serialize(['list_view'])]),
+        ]);
+
+        self::assertEquals(new ListInspection(), $inspection);
+    }
+
+    public function testARowlessFilterWithTwoIssuesOfOneKindCountsOnce(): void
+    {
+        $inline = new FilterCompound(
+            element: new ElementBinding(new ThrowingElement(), 'throws', new ComponentConfig(), null),
+            alias: 'inline',
+            control: new ControlBinding(new UnbuildableControl(), 'unbuildable', new ComponentConfig()),
         );
 
         $inspection = $this->inspect(

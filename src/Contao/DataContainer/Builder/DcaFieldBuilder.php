@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Contao\DataContainer\Builder;
 
 use Contao\DataContainer;
+use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 
 /**
  * Fluent per-type tweaks for a single DCA field definition. Only applied while a record
@@ -13,6 +14,13 @@ use Contao\DataContainer;
 final class DcaFieldBuilder implements DcaFieldBuilderInterface
 {
     private array $definition = [];
+
+    /**
+     * @var list<list<string>> dot paths split into their keys
+     */
+    private array $removals = [];
+
+    private bool $datim = false;
 
     /**
      * @var array{0: string, 1: string}|null
@@ -59,6 +67,56 @@ final class DcaFieldBuilder implements DcaFieldBuilderInterface
     }
 
     /**
+     * Removes keys from the field definition, given as dot paths (`'eval.rgxp'`, `'wizard'`). The base definition
+     * loses them before the builder's own definition is merged in, and a pending `eval()`/`merge()` value for the
+     * path is dropped too, so a later `eval()` or `merge()` sets the key again.
+     *
+     * Only keys of the definition and of `eval()`/`merge()` are in scope. The label, the options and the callbacks
+     * have their own setters, which are applied after the removal; `remove()` does not touch what they set.
+     */
+    public function remove(string ...$paths): self
+    {
+        foreach ($paths as $path)
+        {
+            $keys = \explode('.', $path);
+            $this->removals[] = $keys;
+            self::unsetPath($this->definition, $keys);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Turns the field into a date-time input (`rgxp` datim, date picker). A stored expression such as `today` is
+     * shown as its timestamp, which is what the picker widget reads.
+     */
+    public function makeDatim(): self
+    {
+        if ($this->datim) {
+            return $this;
+        }
+
+        $this->datim = true;
+        $this->eval(['rgxp' => 'datim', 'datepicker' => true]);
+
+        return $this->load(static function (mixed $value): mixed {
+            if (!\is_string($value)) {
+                return $value;
+            }
+
+            if (\trim($value) === '') {
+                return '';
+            }
+
+            if (\is_numeric($value)) {
+                return $value;
+            }
+
+            return (string) (DateTimeHelper::toDateTimeImmutable($value)?->getTimestamp() ?? '');
+        });
+    }
+
+    /**
      * Replaces the label rather than merging it: Contao sets a default label as a reference into
      * `$GLOBALS['TL_LANG']`, which a merge would extend or write through.
      */
@@ -102,7 +160,20 @@ final class DcaFieldBuilder implements DcaFieldBuilderInterface
      */
     public function applyTo(array &$definition): void
     {
+        foreach ($this->removals as $keys) {
+            self::unsetPath($definition, $keys);
+        }
+
         $definition = self::deepMerge($definition, $this->definition);
+
+        if ($this->datim)
+        {
+            $classes = (string) ($definition['eval']['tl_class'] ?? '');
+
+            if (!\in_array('wizard', \preg_split('/\s+/', $classes, -1, \PREG_SPLIT_NO_EMPTY), true)) {
+                $definition['eval']['tl_class'] = \trim($classes . ' wizard');
+            }
+        }
 
         if ($this->label !== null)
         {
@@ -133,6 +204,23 @@ final class DcaFieldBuilder implements DcaFieldBuilderInterface
         {
             $definition['save_callback'] ??= [];
             $definition['save_callback'][] = static fn (mixed $value, ?DataContainer $dc = null): mixed => $save($value, $dc);
+        }
+    }
+
+    /**
+     * @param list<string> $keys
+     */
+    private static function unsetPath(array &$array, array $keys): void
+    {
+        $key = \array_shift($keys);
+
+        if ($keys === []) {
+            unset($array[$key]);
+            return;
+        }
+
+        if (\is_array($array[$key] ?? null)) {
+            self::unsetPath($array[$key], $keys);
         }
     }
 

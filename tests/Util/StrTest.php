@@ -18,4 +18,18 @@ class StrTest extends TestCase
     {
         self::assertSame('{a},b;{c},d', Str::mergePalettes('{a},b;', '', ';,', '{c},d'));
     }
+
+    public function testDropEmptyLegends(): void
+    {
+        self::assertSame(
+            '{a_legend},x;{d_legend},y',
+            Str::dropEmptyLegends('{a_legend},x;{b_legend};{c_legend:hide};{d_legend},y'),
+        );
+        self::assertSame('title,type;{a_legend},x', Str::dropEmptyLegends('title,type;{a_legend},x'));
+    }
+
+    public function testMergePalettesKeepsLegendsWithoutFields(): void
+    {
+        self::assertSame('{a_legend},x;{b_legend:hide}', Str::mergePalettes('{a_legend},x', '{b_legend:hide}'));
+    }
 }

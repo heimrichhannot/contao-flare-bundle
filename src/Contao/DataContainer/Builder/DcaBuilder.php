@@ -131,7 +131,11 @@ final class DcaBuilder implements DcaBuilderInterface
             $prefix = self::resolveAffix($this->prefix, (string) ($dca['palettes']['__prefix__'] ?? ''));
             $suffix = self::resolveAffix($this->suffix, (string) ($dca['palettes']['__suffix__'] ?? ''));
 
-            $dca['palettes'][$type] = Str::mergePalettes($prefix, $this->palette, $this->controlPalette, $suffix);
+            // Empty legends are dropped here only: a palette manipulator that runs before the loadDataContainer
+            // hook may still add fields under them, so the table's own palettes keep them.
+            $dca['palettes'][$type] = Str::dropEmptyLegends(
+                Str::mergePalettes($prefix, $this->palette, $this->controlPalette, $suffix),
+            );
         }
 
         foreach ($this->selectors as $selector => $subpalettes)

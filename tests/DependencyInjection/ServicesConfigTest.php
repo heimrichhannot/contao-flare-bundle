@@ -51,6 +51,7 @@ use HeimrichHannot\FlareBundle\List\Entry\EntryCollection;
 use HeimrichHannot\FlareBundle\List\Entry\EntryMeta;
 use HeimrichHannot\FlareBundle\List\Entry\EntryTaggerInterface;
 use HeimrichHannot\FlareBundle\List\Entry\ModelRef;
+use HeimrichHannot\FlareBundle\Migration\RetireCalendarLimitMigration;
 use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrer;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\FileLocator;
@@ -115,6 +116,7 @@ final class ServicesConfigTest extends TestCase
             ReaderElementFinder::class,
             AutoItemReader::class,
             ReaderResolver::class,
+            RetireCalendarLimitMigration::class,
         ] as $class) {
             yield $class => [$class];
         }

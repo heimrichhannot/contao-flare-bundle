@@ -4,21 +4,12 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Migration;
 
-use Contao\Controller;
-use Contao\CoreBundle\Framework\Adapter;
-use Contao\CoreBundle\Framework\ContaoFramework;
-use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Schema\AbstractSchemaManager;
-use Doctrine\DBAL\Schema\Column;
-use Doctrine\DBAL\Schema\Table;
-use Doctrine\DBAL\Types\Type;
-use Doctrine\DBAL\Types\Types;
 use HeimrichHannot\FlareBundle\Migration\BackfillFilterValuesMigration;
 use PHPUnit\Framework\TestCase;
 
 final class BackfillFilterValuesMigrationTest extends TestCase
 {
-    private const TABLE = 'tl_flare_filter';
+    use FakeFilterTableTrait;
 
     private const COLUMNS = [
         'id', 'type', 'intrinsic', 'boolMode', 'preselect', 'prefill', 'control', 'value', 'ctl_boolBinaryChoices',
@@ -29,36 +20,10 @@ final class BackfillFilterValuesMigrationTest extends TestCase
 
     private const MARKER = 'legacyBackfilled';
 
-    /** @var list<string>|null The table's columns, or null if the table does not exist. */
-    private ?array $columns = self::COLUMNS;
-
-    /** The marker column's current default. */
-    private string $markerDefault = '0';
-
-    /** @var array<int, array<string, mixed>> The table's rows by id; `update()` calls are applied to them. */
-    private array $rows = [];
-
-    /** @var list<array{array<string, mixed>, array<string, mixed>}> The recorded `update()` calls: data, criteria. */
-    private array $updates = [];
-
-    /** @var list<string> The recorded `executeStatement()` calls. */
-    private array $statements = [];
-
-    /** @var array<int, array<string, mixed>> The `tl_flare_list` rows by id. */
-    private array $lists = [];
-
-    /** @var list<string> The data containers loaded through the framework. */
-    private array $loadedDcas = [];
-
     protected function setUp(): void
     {
-        $this->columns = self::COLUMNS;
-        $this->markerDefault = '0';
-        $this->rows = [];
-        $this->updates = [];
-        $this->statements = [];
+        $this->setUpFakeTable(self::COLUMNS);
         $this->lists = [1 => ['id' => '1', 'type' => 'flare_generic_dc', 'dc' => 'tl_news']];
-        $this->loadedDcas = [];
         $GLOBALS['TL_DCA'] = ['tl_news' => ['config' => ['ptable' => 'tl_news_archive']]];
     }
 
@@ -96,7 +61,7 @@ final class BackfillFilterValuesMigrationTest extends TestCase
     {
         // Interrupted between the ADD and the default switch: the column still defaults to '0'.
         $this->columns[] = self::MARKER;
-        $this->markerDefault = '0';
+        $this->markerDefaults[self::MARKER] = '0';
         $this->addRow(1, 'flare_archive', ['intrinsic' => '0', self::MARKER => '1', 'control' => 'flare_choice']);
         $this->addRow(2, 'flare_archive', ['intrinsic' => '0', self::MARKER => '0']);
 
@@ -109,7 +74,7 @@ final class BackfillFilterValuesMigrationTest extends TestCase
             $this->statements,
             'no second ADD, but the default is switched',
         );
-        self::assertSame('1', $this->markerDefault);
+        self::assertSame('1', $this->markerDefaults[self::MARKER]);
         self::assertSame([[['control' => 'flare_choice', self::MARKER => '1'], ['id' => 2]]], $this->rowUpdates());
         self::assertFalse($this->migration()->shouldRun());
     }
@@ -734,147 +699,8 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         }
     }
 
-    /**
-     * Adds a row; once the marker column exists, the row gets the column's current default.
-     *
-     * @param array<string, mixed> $values
-     */
-    private function addRow(int $id, string $type, array $values): void
-    {
-        $row = [
-            'id' => (string) $id,
-            'pid' => '1',
-            'type' => $type,
-            'intrinsic' => '0',
-            'boolMode' => '',
-            'preselect' => null,
-            'prefill' => null,
-            'control' => '',
-            'value' => null,
-            'ctl_boolBinaryChoices' => '',
-            'ctl_isMandatory' => '0',
-            'ctl_isMultiple' => '0',
-            'ctl_isExpanded' => '0',
-            'ctl_hasEmptyOption' => '0',
-            'ctl_formatEmptyOption' => '',
-            'ctl_formatEmptyOptionCustom' => '',
-            'ctl_placeholder' => '',
-            'elm_whitelistParents' => null,
-            'elm_groupWhitelistParents' => null,
-            'title' => '',
-            'ctl_label' => '',
-        ];
-
-        if (\in_array(self::MARKER, $this->columns ?? [], true)) {
-            $row[self::MARKER] = $this->markerDefault;
-        }
-
-        $this->rows[$id] = \array_merge($row, $values);
-    }
-
-    /**
-     * The per-row `update()` calls.
-     *
-     * @return list<array{array<string, mixed>, array<string, mixed>}>
-     */
-    private function rowUpdates(): array
-    {
-        return \array_values(\array_filter(
-            $this->updates,
-            static fn (array $update): bool => isset($update[1]['id']),
-        ));
-    }
-
-    /**
-     * A migration over a fake `tl_flare_filter`: `$this->columns` is its schema, `$this->rows` its content.
-     */
     private function migration(): BackfillFilterValuesMigration
     {
-        $schemaManager = $this->createMock(AbstractSchemaManager::class);
-        $schemaManager->method('tablesExist')->with([self::TABLE])->willReturnCallback(
-            fn (): bool => $this->columns !== null,
-        );
-        $schemaManager->method('introspectTable')->with(self::TABLE)->willReturnCallback(
-            fn (): Table => new Table(self::TABLE, \array_map(
-                static fn (string $name): Column => new Column($name, Type::getType(Types::STRING)),
-                $this->columns ?? [],
-            )),
-        );
-
-        $connection = $this->createMock(Connection::class);
-        $connection->method('createSchemaManager')->willReturn($schemaManager);
-        $connection->method('fetchAllAssociative')->willReturnCallback(function (string $sql): array {
-            self::assertSame("SELECT * FROM tl_flare_filter WHERE legacyBackfilled = '0' ORDER BY id", $sql);
-
-            return \array_values(\array_filter(
-                $this->rows,
-                static fn (array $row): bool => $row[self::MARKER] === '0',
-            ));
-        });
-        $connection->method('update')->willReturnCallback(function (string $table, array $data, array $criteria): int {
-            self::assertSame(self::TABLE, $table);
-
-            $this->updates[] = [$data, $criteria];
-            $affected = 0;
-
-            foreach ($this->rows as $id => $row)
-            {
-                if (\array_intersect_key($row, $criteria) == $criteria) {
-                    $this->rows[$id] = \array_merge($row, $data);
-                    ++$affected;
-                }
-            }
-
-            return $affected;
-        });
-        $connection->method('fetchOne')->willReturnCallback(function (string $sql): int|false {
-            self::assertSame("SELECT 1 FROM tl_flare_filter WHERE control <> '' OR value <> '' LIMIT 1", $sql);
-
-            foreach ($this->rows as $row)
-            {
-                if ($row['control'] !== '' || ($row['value'] !== null && $row['value'] !== '')) {
-                    return 1;
-                }
-            }
-
-            return false;
-        });
-        $connection->method('fetchAssociative')->willReturnCallback(function (string $sql, array $params): array|false {
-            self::assertSame('SELECT * FROM tl_flare_list WHERE id = ?', $sql);
-
-            return $this->lists[$params[0]] ?? false;
-        });
-        $connection->method('executeStatement')->willReturnCallback(function (string $sql): int {
-            $this->statements[] = $sql;
-
-            if ($sql === "ALTER TABLE tl_flare_filter ADD legacyBackfilled CHAR(1) NOT NULL DEFAULT '0'") {
-                $this->columns[] = self::MARKER;
-
-                foreach ($this->rows as $id => $row) {
-                    $this->rows[$id][self::MARKER] = '0';
-                }
-            }
-            elseif ($sql === "ALTER TABLE tl_flare_filter ALTER legacyBackfilled SET DEFAULT '1'") {
-                $this->markerDefault = '1';
-            }
-            else {
-                self::fail('Unexpected statement: ' . $sql);
-            }
-
-            return 0;
-        });
-
-        $controller = $this->getMockBuilder(Adapter::class)
-            ->disableOriginalConstructor()
-            ->addMethods(['loadDataContainer'])
-            ->getMock();
-        $controller->method('loadDataContainer')->willReturnCallback(function (string $table): void {
-            $this->loadedDcas[] = $table;
-        });
-
-        $framework = $this->createMock(ContaoFramework::class);
-        $framework->method('getAdapter')->with(Controller::class)->willReturn($controller);
-
-        return new BackfillFilterValuesMigration($connection, $framework);
+        return new BackfillFilterValuesMigration($this->fakeConnection(), $this->fakeFramework());
     }
 }

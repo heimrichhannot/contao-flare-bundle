@@ -98,6 +98,8 @@ trait FakeFilterTableTrait
             'elm_configureStop' => '',
             'elm_startAt' => '',
             'elm_stopAt' => '',
+            'exclusive' => '0',
+            'outputs' => null,
         ];
 
         foreach ($this->columns ?? [] as $column)

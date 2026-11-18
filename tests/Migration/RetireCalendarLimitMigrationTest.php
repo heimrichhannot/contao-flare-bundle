@@ -12,17 +12,21 @@ final class RetireCalendarLimitMigrationTest extends TestCase
 {
     use FakeFilterTableTrait;
 
-    /** The backfill's columns and the calendar element's period columns. */
+    /** The backfill's columns, the calendar element's period columns and the exclusive setting. */
     private const COLUMNS = [
         'id', 'type', 'intrinsic', 'boolMode', 'preselect', 'prefill', 'control', 'value', 'ctl_boolBinaryChoices',
         'ctl_isMandatory', 'ctl_isMultiple', 'ctl_isExpanded', 'ctl_hasEmptyOption', 'ctl_formatEmptyOption',
         'ctl_formatEmptyOptionCustom', 'ctl_placeholder', 'elm_whitelistParents', 'elm_groupWhitelistParents',
         'title', 'ctl_label', 'elm_isLimited', 'elm_configureStart', 'elm_configureStop', 'elm_startAt', 'elm_stopAt',
+        'exclusive', 'outputs',
     ];
 
     private const MARKER = 'calendarLimitRetired';
 
     private const CALENDAR = 'flare_calendar_current';
+
+    /** What an unlimited row gets: exclusive to the list view. */
+    private const LIST_VIEW_ONLY = ['exclusive' => '1', 'outputs' => 'a:1:{i:0;s:9:"list_view";}'];
 
     /** Whether the injected backfill reports pending rows. */
     private bool $backfillPending = false;
@@ -39,7 +43,10 @@ final class RetireCalendarLimitMigrationTest extends TestCase
 
         $this->migration()->run();
 
-        self::assertSame([[['elm_configureStart' => 'str', self::MARKER => '1'], ['id' => 1]]], $this->rowUpdates());
+        self::assertSame(
+            [[['elm_configureStart' => 'str'] + self::LIST_VIEW_ONLY + [self::MARKER => '1'], ['id' => 1]]],
+            $this->rowUpdates(),
+        );
         self::assertSame('str', $this->rows[1]['elm_configureStart']);
         self::assertSame('', $this->rows[1]['elm_configureStop'], 'the stop side is untouched');
         self::assertSame('', $this->rows[1]['elm_stopAt']);
@@ -54,7 +61,7 @@ final class RetireCalendarLimitMigrationTest extends TestCase
 
         self::assertSame([
             [['elm_configureStop' => 'str', self::MARKER => '1'], ['id' => 1]],
-            [['elm_configureStop' => 'str', self::MARKER => '1'], ['id' => 2]],
+            [['elm_configureStop' => 'str'] + self::LIST_VIEW_ONLY + [self::MARKER => '1'], ['id' => 2]],
         ], $this->rowUpdates());
     }
 
@@ -65,7 +72,7 @@ final class RetireCalendarLimitMigrationTest extends TestCase
 
         $this->migration()->run();
 
-        self::assertSame([[[self::MARKER => '1'], ['id' => 1]]], $this->rowUpdates());
+        self::assertSame([[self::LIST_VIEW_ONLY + [self::MARKER => '1'], ['id' => 1]]], $this->rowUpdates());
         self::assertSame('', $this->rows[1]['elm_configureStart']);
     }
 
@@ -75,7 +82,7 @@ final class RetireCalendarLimitMigrationTest extends TestCase
 
         $this->migration()->run();
 
-        self::assertSame([[[self::MARKER => '1'], ['id' => 1]]], $this->rowUpdates());
+        self::assertSame([[self::LIST_VIEW_ONLY + [self::MARKER => '1'], ['id' => 1]]], $this->rowUpdates());
     }
 
     public function testANumericLeftoverStaysOff(): void
@@ -87,9 +94,9 @@ final class RetireCalendarLimitMigrationTest extends TestCase
         $this->migration()->run();
 
         self::assertSame([
-            [[self::MARKER => '1'], ['id' => 1]],
-            [[self::MARKER => '1'], ['id' => 2]],
-            [[self::MARKER => '1'], ['id' => 3]],
+            [self::LIST_VIEW_ONLY + [self::MARKER => '1'], ['id' => 1]],
+            [self::LIST_VIEW_ONLY + [self::MARKER => '1'], ['id' => 2]],
+            [self::LIST_VIEW_ONLY + [self::MARKER => '1'], ['id' => 3]],
         ], $this->rowUpdates());
     }
 
@@ -101,8 +108,8 @@ final class RetireCalendarLimitMigrationTest extends TestCase
         $this->migration()->run();
 
         self::assertSame([
-            [[self::MARKER => '1'], ['id' => 1]],
-            [[self::MARKER => '1'], ['id' => 2]],
+            [self::LIST_VIEW_ONLY + [self::MARKER => '1'], ['id' => 1]],
+            [self::LIST_VIEW_ONLY + [self::MARKER => '1'], ['id' => 2]],
         ], $this->rowUpdates());
         self::assertSame('today', $this->rows[1]['elm_configureStart']);
         self::assertSame('str', $this->rows[2]['elm_configureStart']);
@@ -112,6 +119,7 @@ final class RetireCalendarLimitMigrationTest extends TestCase
     {
         $value = \serialize(['today', null]);
         $this->addRow(1, self::CALENDAR, [
+            'elm_isLimited' => '1',
             'control' => 'flare_date_range',
             'value' => $value,
             'elm_startAt' => 'last monday',
@@ -127,6 +135,35 @@ final class RetireCalendarLimitMigrationTest extends TestCase
         self::assertSame($value, $this->rows[1]['value']);
     }
 
+    public function testAnUnlimitedRowBecomesExclusiveToTheListView(): void
+    {
+        $value = \serialize(['today', null]);
+        $this->addRow(1, self::CALENDAR, [
+            'elm_isLimited' => '',
+            'control' => 'flare_date_range',
+            'value' => $value,
+        ]);
+
+        $this->migration()->run();
+
+        self::assertSame([[self::LIST_VIEW_ONLY + [self::MARKER => '1'], ['id' => 1]]], $this->rowUpdates());
+        self::assertSame('1', $this->rows[1]['exclusive']);
+        self::assertSame(\serialize(['list_view']), $this->rows[1]['outputs']);
+        self::assertSame('flare_date_range', $this->rows[1]['control']);
+        self::assertSame($value, $this->rows[1]['value']);
+    }
+
+    public function testALimitedRowStaysNonExclusive(): void
+    {
+        $this->addRow(1, self::CALENDAR, ['elm_isLimited' => '1', 'control' => 'flare_date_range']);
+
+        $this->migration()->run();
+
+        self::assertSame([[[self::MARKER => '1'], ['id' => 1]]], $this->rowUpdates());
+        self::assertSame('0', $this->rows[1]['exclusive']);
+        self::assertNull($this->rows[1]['outputs']);
+    }
+
     public function testTheResultCountsTheRowsToCheck(): void
     {
         $this->addRow(1, self::CALENDAR, ['elm_isLimited' => '', 'control' => 'flare_date_range']);
@@ -140,7 +177,7 @@ final class RetireCalendarLimitMigrationTest extends TestCase
 
         self::assertTrue($result->isSuccessful());
         self::assertSame(
-            $migration->getName() . ' (0 filters updated, 2 calendar filters with a control or a fixed value now stay'
+            $migration->getName() . ' (4 filters updated, 2 calendar filters with a control or a fixed value now stay'
                 . ' within their period: check them)',
             $result->getMessage(),
         );
@@ -154,7 +191,7 @@ final class RetireCalendarLimitMigrationTest extends TestCase
         $migration = $this->migration();
 
         self::assertSame(
-            $migration->getName() . ' (0 filters updated, 1 calendar filters with a control or a fixed value now stay'
+            $migration->getName() . ' (2 filters updated, 1 calendar filters with a control or a fixed value now stay'
                 . ' within their period: check them)',
             $migration->run()->getMessage(),
         );
@@ -166,6 +203,22 @@ final class RetireCalendarLimitMigrationTest extends TestCase
         $this->addRow(1, self::CALENDAR, ['elm_startAt' => 'last monday']);
 
         self::assertFalse($this->migration()->shouldRun());
+    }
+
+    public function testShouldRunWaitsForTheExclusiveSetting(): void
+    {
+        $this->addRow(1, self::CALENDAR, ['elm_startAt' => 'last monday']);
+
+        foreach (['exclusive', 'outputs'] as $target)
+        {
+            $this->columns = \array_values(\array_diff(self::COLUMNS, [$target]));
+
+            self::assertFalse($this->migration()->shouldRun(), $target);
+        }
+
+        $this->columns = self::COLUMNS;
+
+        self::assertTrue($this->migration()->shouldRun());
     }
 
     public function testShouldRunWaitsForTheBackfill(): void
@@ -340,8 +393,13 @@ final class RetireCalendarLimitMigrationTest extends TestCase
         $this->migration()->run();
 
         self::assertSame([
-            [['elm_configureStart' => 'str', 'elm_configureStop' => 'str', self::MARKER => '1'], ['id' => 1]],
-            [[self::MARKER => '1'], ['id' => 2]],
+            [
+                ['elm_configureStart' => 'str', 'elm_configureStop' => 'str']
+                    + self::LIST_VIEW_ONLY
+                    + [self::MARKER => '1'],
+                ['id' => 1],
+            ],
+            [self::LIST_VIEW_ONLY + [self::MARKER => '1'], ['id' => 2]],
             [[self::MARKER => '1'], [self::MARKER => '0']],
         ], $this->updates);
     }
@@ -376,6 +434,8 @@ final class RetireCalendarLimitMigrationTest extends TestCase
         $result = $migration->run();
 
         self::assertSame('str', $this->rows[1]['elm_configureStart']);
+        self::assertSame('1', $this->rows[1]['exclusive']);
+        self::assertSame(\serialize(['list_view']), $this->rows[1]['outputs']);
         self::assertSame($backfilled['control'], $this->rows[1]['control']);
         self::assertSame($backfilled['value'], $this->rows[1]['value']);
         self::assertSame(

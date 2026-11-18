@@ -144,7 +144,7 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
   column) — replaced by `control` and `value`; see [Database & Backend](./migrating-from-v0.1.md#database--backend)
 - All other `tl_flare_filter` columns keep their data under new names: `elm_*` / `ctl_*` prefixes and
   `formAlias` → `alias` (`contao:migrate`)
-- `tl_flare_filter.elm_isLimited` (v0.1: `isLimited`), the calendar filter's *Limit the date selection* (field
+- `tl_flare_filter.elm_isLimited` (v0.1: `isLimited`), the calendar filter's *Restricted selection* (field
   definition removed; the column remains until deletes are run manually, as does the `calendarLimitRetired` marker
   column) — its behavior is now the calendar filter's only rule, and a filter that had it off is now exclusive to
   the list view; see
@@ -178,7 +178,7 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
   bound the whole list — of filters that are not
   [exclusive](./reference/filter-elements.md#apply-exclusively); an exclusive filter bounds only its outputs.
 - The calendar filter (`flare_calendar_current`) is bounded by its configured period in every list it applies to;
-  a value narrows within it instead of replacing it. A filter that had *Limit the date selection* off is made
+  a value narrows within it instead of replacing it. A filter that had *Restricted selection* off is made
   exclusive to the list view by the migration, so the reader keeps ignoring it, as in v0.1 (see
   [The calendar filter's period](./migrating-from-v0.1.md#the-calendar-filters-period)).
 - A list with a broken filter element (with or without a control), a broken fixed value, or two published

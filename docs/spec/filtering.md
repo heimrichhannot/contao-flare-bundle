@@ -59,8 +59,8 @@ Constructor properties:
 | `outputs` | `null`: the filter is **not exclusive** and bounds the whole list. A list of `List\Output` cases: the filter [applies exclusively](../reference/filter-elements.md#apply-exclusively) to those outputs; `[]` = nowhere. Stored as the `exclusive` and `outputs` columns; keys the `Output` enum does not know are ignored |
 
 Both configs are a `ComponentConfig` (`HeimrichHannot\FlareBundle\Config\ComponentConfig`): immutable, holding
-scalars, arrays and enums only. `get('key')` returns a value — `null` for an option defined without default and
-not set — and throws `UndefinedConfigKeyError` (an `\Error`) for a key the component's schema does not define;
+scalars, arrays, enums and immutable value objects (such as `\DateTimeImmutable`).
+`get('key')` returns a value — `null` for an option defined without default and not set — and throws `UndefinedConfigKeyError` (an `\Error`) for a key the component's schema does not define;
 `has('key')` and `all()` complete it. Inside a hook, `$context->get('key')` is the short way to the own config.
 
 Because `FilterCompound` is immutable, all modification happens through withers that return a new instance:

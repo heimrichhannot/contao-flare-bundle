@@ -138,11 +138,13 @@ The migrations:
   - `ctl_hasEmptyOption` / `ctl_formatEmptyOption(Custom)` / `ctl_placeholder`: derived so choice widgets look
     the same as before (single-selects get an empty option unless expanded and mandatory; an old placeholder
     becomes the custom empty-option label).
-- `RetireCalendarLimitMigration` retires the calendar filter's *Limit the date selection* (`elm_isLimited`), **once
-  per row** (tracked in the migration-managed marker column `calendarLimitRetired`). It waits until the columns are
-  renamed, the backfill has run and the schema update has added `exclusive` and `outputs`, and runs only while
+- `RetireCalendarLimitMigration` retires the calendar filter's v0.1 setting *Restricted selection*
+  (`elm_isLimited`; „Eingeschränkte Auswahl“ in German), found in v0.1 under the "Form Settings"
+  („Formular-Einstellungen“) legend, **once per row** (tracked in the migration-managed marker column
+  `calendarLimitRetired`). It waits until the columns are renamed, the backfill has run and the schema update has
+  added `exclusive` and `outputs`, and runs only while
   `elm_isLimited` exists. Its changes, for the calendar filters only:
-  - A filter that had *Limit the date selection* **off** becomes **exclusive to the list view** (`exclusive` on,
+  - A filter that had *Restricted selection* **off** becomes **exclusive to the list view** (`exclusive` on,
     `outputs` = list view), so the reader, the breadcrumb and the lookup keep ignoring it, as in v0.1. Every
     intrinsic calendar filter of v0.1 is among them: its palette never showed the checkbox.
   - A side of the period whose mode is blank but whose date text v0.1 applied — a non-numeric text plain
@@ -170,11 +172,11 @@ Backend changes in the filter form:
   `value` is the initial value).
 - `boolMode` and the `preselect` / `prefill` fields are gone; a bool filter offers both bool controls and swaps
   the palette on change.
-- The calendar filter's *Limit the date selection* (`is_limited`) is gone (see
+- The calendar filter's *Restricted selection* (`is_limited`) is gone (see
   [The calendar filter's period](#the-calendar-filters-period)).
 - Every filter has the new expert setting [**Apply exclusively**](./reference/filter-elements.md#apply-exclusively)
   with its **Outputs** (today: *List view*). Off by default; the migration switches it on, with *List view*, for
-  the calendar filters that had *Limit the date selection* off (see
+  the calendar filters that had *Restricted selection* off (see
   [The calendar filter's period](#the-calendar-filters-period)).
 
 ## Behaviour Changes
@@ -201,7 +203,7 @@ Backend changes in the filter form:
 
 ### The calendar filter's period
 
-In v0.1 the calendar filter (`flare_calendar_current`) mixed two purposes behind *Limit the date selection*
+In v0.1 the calendar filter (`flare_calendar_current`) mixed two purposes behind *Restricted selection*
 (`is_limited`): a hard bound the entries must lie in, and a preselection the visitor could leave. Its period always
 bounded the list view, but the reader only with `is_limited` on: with it off, the filter skipped itself in the
 reader, so the reader and the breadcrumb ignored it. Intrinsic calendar filters never showed the checkbox, so they
@@ -230,9 +232,11 @@ now stay within their period: check them". Check them after the update.
 
 The other changes:
 
-- **A side in the mode *Set custom date*** (an absolute date) applies as configured. v0.1 ignored the date, or misread
-  the stored timestamp as a time in the year 2000 on the current day: lists with such a start become narrower; where
-  it was misread as an end and emptied the list, the list shows entries again.
+- **A side in the mode *Set custom date*** (an absolute date) applies as configured, in the list view, where the
+  filter is exclusive by the migration. v0.1 ignored the date, or misread the stored timestamp as a time in the
+  year 2000 on the current day. A side v0.1 ignored narrows the list, whether it is a start or an end; one misread
+  as a start in 2000 narrows it too; where it was misread as an end in 2000 and emptied the list, the list shows
+  entries again.
 - **A numeric leftover of a switched-off side** stops applying: where it emptied the list as a misread end, the list
   shows entries again; where `strtotime()` read it as a working date or time (`20260101`, `0900`), that bound goes
   and the list can become wider.

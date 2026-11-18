@@ -62,11 +62,6 @@ $lang['elm_stopAt'] = ['End date', 'Please enter an end date.'];
 $lang['elm_hasExtendedEvents'] = ['Extend events', 'Show all events within the time range, even if they start earlier and overlap the range.'];
 ###< date_legend ###
 
-###> date_limits_legend ###
-$lang['date_limits_legend'] = 'Date limits';
-$lang['elm_isLimited'] = ['Limit the date selection', 'Limit the date selection in the form to the configured start and stop date.'];
-###< date_limits_legend ###
-
 ###> archive_legend ###
 $lang['archive_legend'] = 'Archive Settings';
 $lang['elm_whitelistParents'] = ['Parent whitelist', 'Please choose the archives that are allowed for this filter.'];

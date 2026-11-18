@@ -10,7 +10,7 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilderInterface;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
+use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
 use HeimrichHannot\FlareBundle\Filter\Predicate\CalendarCurrentPredicate;
@@ -20,6 +20,10 @@ use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
+/**
+ * Bounds the list by the configured period (`start_at`/`stop_at`, null for an open side); a value narrows within
+ * that bound, and an empty intersection of both matches nothing.
+ */
 #[AsFilterElement(type: self::TYPE, value: DateRangeValue::class)]
 class CalendarCurrentFilterElement extends AbstractFilterElement implements DateBoundsContract
 {
@@ -27,22 +31,23 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->define('is_limited')->default(false)->allowedTypes('bool');
-        $resolver->define('configure_start')->default(null)->allowedTypes('string', 'null');
-        $resolver->define('configure_stop')->default(null)->allowedTypes('string', 'null');
-        $resolver->define('start_at')->default(null)->allowedTypes('string', 'null');
-        $resolver->define('stop_at')->default(null)->allowedTypes('string', 'null');
+        $resolver->define('start_at')->default(null)->allowedTypes(\DateTimeImmutable::class, 'null');
+        $resolver->define('stop_at')->default(null)->allowedTypes(\DateTimeImmutable::class, 'null');
         $resolver->define('has_extended_events')->default(false)->allowedTypes('bool');
     }
 
+    /**
+     * A side applies only where its mode (`elm_configureStart`/`elm_configureStop`) is set. Its text is read alike
+     * in every mode: a timestamp from the `date` mode, an expression from the `str` mode or the one a time span's
+     * save callback wrote.
+     *
+     * @throws FilterException If a configured side holds unreadable text.
+     */
     protected function transformFilterModel(ConfigBuilder $config, FilterModel $model): void
     {
         $config
-            ->set('is_limited', (bool) $model->elm_isLimited)
-            ->set('configure_start', $model->elm_configureStart ?: null)
-            ->set('configure_stop', $model->elm_configureStop ?: null)
-            ->set('start_at', $model->elm_startAt ?: null)
-            ->set('stop_at', $model->elm_stopAt ?: null)
+            ->set('start_at', $this->readSide($model->elm_configureStart, $model->elm_startAt))
+            ->set('stop_at', $this->readSide($model->elm_configureStop, $model->elm_stopAt))
             ->set('has_extended_events', (bool) $model->elm_hasExtendedEvents);
     }
 
@@ -53,33 +58,19 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
     ): void {
         $value = $this->expectValue($value, DateRangeValue::class);
 
-        $start = \strtotime((string) $context->get('start_at')) ?: 0;
-        $stop = \strtotime((string) $context->get('stop_at')) ?: DateTimeHelper::maxTimestamp();
+        $start = $context->get('start_at')?->getTimestamp() ?? 0;
+        $stop = $context->get('stop_at')?->getTimestamp() ?? DateTimeHelper::maxTimestamp();
 
-        if (!$context->get('is_limited') && $context->intent instanceof ValidationIntent)
-        {
-            // Unlimited defaults only shape the initial display; the whole list is bounded by a fixed
-            // value alone (controlled filters have none here).
-            if ($value === null) {
-                return;
-            }
-
-            $start = 0;
-            $stop = DateTimeHelper::maxTimestamp();
+        if (($from = $value?->from?->getTimestamp()) !== null && $from > $start) {
+            $start = $from;
         }
 
-        if (($from = $value?->from?->getTimestamp()) !== null)
-        {
-            if (!$context->get('is_limited') || $from >= $start) {
-                $start = $from;
-            }
+        if (($to = $value?->to?->getTimestamp()) !== null && $to < $stop) {
+            $stop = $to;
         }
 
-        if (($to = $value?->to?->getTimestamp()) !== null)
-        {
-            if (!$context->get('is_limited') || $to <= $stop) {
-                $stop = $to;
-            }
+        if ($start > $stop) {
+            $builder->abort();
         }
 
         $builder->addPredicate(CalendarCurrentPredicate::class, [
@@ -91,7 +82,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
 
     public function getDateBounds(ElementContext $context): DateBounds
     {
-        return $this->resolveFormLimits($context);
+        return new DateBounds($context->get('start_at'), $context->get('stop_at'));
     }
 
     public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
@@ -99,37 +90,59 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
         $builder->palette(
             '{date_start_legend},elm_configureStart,elm_hasExtendedEvents;'
             . '{date_stop_legend},elm_configureStop;'
-            . '{date_limits_legend},elm_isLimited;'
         );
+
+        $modes = [
+            'elm_startAt' => $context->filterModel?->elm_configureStart,
+            'elm_stopAt' => $context->filterModel?->elm_configureStop,
+        ];
+
+        foreach ($modes as $field => $mode)
+        {
+            $fieldBuilder = $builder->field($field);
+
+            if ($mode === 'date') {
+                $fieldBuilder->makeDatim();
+            }
+
+            $fieldBuilder->save($this->rejectUnreadableText(...));
+        }
     }
 
     /**
-     * Resolves the form's lower and upper date limits from the canonical config, replicating
-     * the former handleFormTypeOptions() logic (from_min/to_min and from_max/to_max).
+     * @throws \RuntimeException If the text is unreadable; Contao shows the message at the field.
      */
-    private function resolveFormLimits(ElementContext $context): DateBounds
+    private function rejectUnreadableText(mixed $value): mixed
     {
-        if (!$context->get('is_limited')) {
-            return new DateBounds();
+        $text = \trim((string) $value);
+
+        if ($text !== '' && DateTimeHelper::toDateTimeImmutable($text) === null) {
+            throw new \RuntimeException($this->invalidMessage($text));
         }
 
-        $min = null;
-        $max = null;
+        return $value;
+    }
 
-        if ($context->get('configure_start')
-            && $context->get('start_at')
-            && ($startAt = \strtotime($context->get('start_at'))))
-        {
-            $min = DateTimeHelper::timestampToDateTime($startAt);
+    /**
+     * @throws FilterException If the side is configured and its text is unreadable.
+     */
+    private function readSide(mixed $mode, mixed $text): ?\DateTimeImmutable
+    {
+        if ((string) $mode === '') {
+            return null;
         }
 
-        if ($context->get('configure_stop')
-            && $context->get('stop_at')
-            && ($stopAt = \strtotime($context->get('stop_at'))))
-        {
-            $max = DateTimeHelper::timestampToDateTime($stopAt);
+        $text = \trim((string) $text);
+
+        if ($text === '') {
+            return null;
         }
 
-        return new DateBounds($min, $max);
+        return DateTimeHelper::toDateTimeImmutable($text) ?? throw new FilterException($this->invalidMessage($text));
+    }
+
+    private function invalidMessage(string $text): string
+    {
+        return $this->trans('filter.value.date_range.invalid', ['%expression%' => $text]);
     }
 }

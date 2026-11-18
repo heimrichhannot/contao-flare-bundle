@@ -36,7 +36,6 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string      $elm_configureStop
  * @property string      $elm_stopAt
  * @property bool        $elm_hasExtendedEvents
- * @property bool        $elm_isLimited
  * @property string      $elm_whitelistParents
  * @property string      $elm_groupWhitelistParents
  * @property bool        $elm_useWhitelistForOptionsOnly

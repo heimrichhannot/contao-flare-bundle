@@ -381,9 +381,7 @@ $dca['fields'] = [
         'eval' => [
             'mandatory' => false,
             'maxlength' => 255,
-            'rgxp' => 'datim',
-            'datepicker' => true,
-            'tl_class' => 'w50 wizard',
+            'tl_class' => 'w50',
         ],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
@@ -411,9 +409,7 @@ $dca['fields'] = [
         'eval' => [
             'mandatory' => false,
             'maxlength' => 255,
-            'rgxp' => 'datim',
-            'datepicker' => true,
-            'tl_class' => 'w50 wizard',
+            'tl_class' => 'w50',
         ],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
@@ -426,19 +422,6 @@ $dca['fields'] = [
         'inputType' => 'checkbox',
         'eval' => [
             'tl_class' => 'cbx w50 clr'
-        ],
-        'sql' => ['type' => 'boolean', 'default' => false],
-    ],
-    'elm_isLimited' => [
-        'exclude' => true,
-        'toggle' => true,
-        'filter' => false,
-        'default' => false,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
-        'inputType' => 'checkbox',
-        'eval' => [
-            'submitOnChange' => false,
-            'tl_class' => 'cbx w50'
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],

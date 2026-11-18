@@ -63,11 +63,6 @@ $lang['elm_stopAt'] = ['Enddatum', 'Bitte geben Sie ein Enddatum ein.'];
 $lang['elm_hasExtendedEvents'] = ['Veranstaltungen erweitern', 'Alle Veranstaltungen im Zeitraum zeigen, auch wenn sie davor beginnen und den Zeitraum überlagern.'];
 ###< date_legend ###
 
-###> date_limits_legend ###
-$lang['date_limits_legend'] = 'Datumsgrenzen';
-$lang['elm_isLimited'] = ['Datumsauswahl begrenzen', 'Die Datumsauswahl im Formular auf das konfigurierte Start- und Enddatum begrenzen.'];
-###< date_limits_legend ###
-
 ###> archive_legend ###
 $lang['archive_legend'] = 'Archiv-Einstellungen';
 $lang['elm_whitelistParents'] = ['Eltern-Whitelist', 'Bitte wählen Sie die Archive aus, die für diesen Filter zulässig sind.'];

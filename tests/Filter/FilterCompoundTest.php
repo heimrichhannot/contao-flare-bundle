@@ -17,12 +17,13 @@ use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\List\Output;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Tests\List\StubFilterElement;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-final class FilterTest extends TestCase
+final class FilterCompoundTest extends TestCase
 {
     private static function filter(): FilterCompound
     {
@@ -249,5 +250,36 @@ final class FilterTest extends TestCase
         $this->expectException(ValueClassMismatchError::class);
 
         self::filterFor(BoolValue::class, new KeywordsValue('x'));
+    }
+
+    public function testIsNotExclusiveByDefault(): void
+    {
+        $filter = self::filter();
+
+        self::assertNull($filter->outputs);
+        self::assertFalse($filter->isExclusive());
+        self::assertTrue($filter->appliesTo(Output::ListView));
+    }
+
+    public function testExclusiveAppliesOnlyToItsOutputs(): void
+    {
+        $listView = self::filter()->withOutputs([Output::ListView]);
+
+        self::assertTrue($listView->isExclusive());
+        self::assertTrue($listView->appliesTo(Output::ListView));
+
+        $nowhere = self::filter()->withOutputs([]);
+
+        self::assertTrue($nowhere->isExclusive());
+        self::assertFalse($nowhere->appliesTo(Output::ListView));
+    }
+
+    public function testWithMethodsKeepTheOutputs(): void
+    {
+        $filter = self::filter()->withOutputs([Output::ListView]);
+
+        self::assertSame([Output::ListView], $filter->withValue(null)->outputs);
+        self::assertSame([Output::ListView], $filter->withControl(null)->outputs);
+        self::assertSame([Output::ListView], $filter->withTargetAlias('t')->outputs);
     }
 }

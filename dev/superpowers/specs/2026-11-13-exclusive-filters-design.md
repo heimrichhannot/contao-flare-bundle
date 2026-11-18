@@ -6,10 +6,10 @@ updated where the code had moved; E1–E12 unchanged. Extended on 2026-11-17 aft
 row 3, §6; `ListCompound::hash()`, §2, and `ConfigurationIntent`, §5, removed), and after a second review (Opus,
 Astra) with E25–E28 (the migration's baseline, order and marker, empty and inverted periods, unreadable text in the
 migration). After a third review (2026-11-18), §6 was simplified (E29: no row becomes exclusive, nothing moves into
-the stored value; E21 superseded) and legends without fields are dropped when a palette is applied (E30). Its own PR
-on `v0.2` (branch
-`v0.2-exclusive-filters`): after #55, before the query architecture refactor (`2026-11-04-query-architecture-design.md`,
-on branch `v0.2-query`, not yet on `v0.2`), which assumes it (its D40).
+the stored value; E21 superseded) and legends without fields are dropped when a palette is applied (E30). A fourth
+review (2026-11-18) tied the migration to `elm_isLimited` (E26) and reads leftovers as v0.1 did (E28). Its own PR on
+`v0.2` (branch `v0.2-exclusive-filters`): after #55, before the query architecture refactor
+(`2026-11-04-query-architecture-design.md`, on branch `v0.2-query`, not yet on `v0.2`), which assumes it (its D40).
 
 ## Intent
 
@@ -353,8 +353,10 @@ recipe): the period as a movable preselection is a filter with a control, its si
 stored value; a list-view period the reader ignores is a filter exclusive to the list view.
 
 The migration's one change, for every row of the type: a side whose `configure_*` is blank but whose
-`start_at`/`stop_at` holds a non-numeric expression `DateTimeHelper` can read gets `configure_*` switched on (`str`),
-so the backend shows the bound that applies today and the new rule keeps applying it. A leftover it cannot read stays
+`start_at`/`stop_at` holds a non-numeric expression `strtotime()` can read gets `configure_*` switched on (`str`),
+so the backend shows the bound that applies today and the new rule keeps applying it. The check reads the text as v0.1
+did, with plain `strtotime()`: a time-span key such as `this_week` it cannot read, so that side is open today and
+stays switched off, though `DateTimeHelper` would read it. A leftover it cannot read stays
 switched off (user): today `strtotime()` returns false for it and the side is open, so switching it on would fail a
 list that works (§4, fail closed). A numeric leftover stays switched off too and so stops applying (§4: the
 transformer ignores a switched-off side). Most numbers are timestamps `strtotime()` does not read or misreads as a
@@ -363,7 +365,7 @@ date in the year 2000 on the current day (as a stop: an empty list), but some it
 below).
 
 Nothing in the backend marks the filters whose meaning changed, so the migration's result message counts them: the
-rows of the type with `is_limited` off (or without the column) and a control or a stored value with a set side.
+rows of the type with `is_limited` off and a control or a stored value with a set side.
 
 Accepted changes, named in the migration notes (confirmed by the user, 2026-11-17 and 2026-11-18):
 
@@ -389,8 +391,8 @@ Accepted changes, named in the migration notes (confirmed by the user, 2026-11-1
 columns; the count needs the control and the value. Contao orders migrations of equal priority by class name, so the
 order is stated, not left to the names: the migration runs only once the renamed period columns, `control` and
 `value` exist, and while `BackfillFilterValuesMigration::shouldRun()` is true it waits (`contao:migrate` checks again
-after each pass). It does not need `elm_isLimited`: without it (dropped by hand) it still switches the leftovers on
-and counts every row with a control or a stored value.
+after each pass). It also requires `elm_isLimited`, which only a database that had the v0.1 calendar element has: a
+fresh install never runs it, and once the manual deletes drop the column it stays quiet (Marker, below).
 
 **Marker.** The migration must handle each row exactly once and never touch a row created or saved after the update:
 run again, it would switch on a side an editor has switched off since (the save callback does not clear the text).
@@ -400,12 +402,14 @@ DCA; the rows existing when it is added start pending (`'0'`), the column defaul
 afterwards are never pending; a row's changes and its marker are written in one statement, so an interrupted run never
 processes a row twice. Rows of other types are marked done in the same run. An editor does not save filters between
 the schema update and the migration (user), so the window in which a row could be saved while still pending is not
-guarded. Dropping the marker column by hand makes the migration run again; that is not guarded either (user,
-2026-11-18): the backfill's guard keys on data its run leaves behind, and this migration leaves none it could tell from
-an editor's own setting. The query design's D31 pattern (a DCA field defaulting to `'0'`, set on backend saves) is not
-used: a row created outside a backend save would start pending and be rewritten. Like
-`BackfillFilterValuesMigration`, the migration works through the DBAL `Connection`, not `Contao\Database`, and its SQL
-runs on MySQL and MariaDB; it never drops or deletes.
+guarded. The marker is not part of the DCA, so the schema diff offers to drop it among the manual deletes, together
+with `elm_isLimited`; `contao:migrate --with-deletes` runs the migrations again after the schema diff, and without a
+guard the migration would start over then and switch on the sides editors have switched off since. Requiring
+`elm_isLimited` is that guard (fourth review, user, 2026-11-18), as `intrinsic` is the backfill's. The deletes run
+only after all migrations have run (user), so dropping `elm_isLimited` first never skips the switch-on. The query
+design's D31 pattern (a DCA field defaulting to `'0'`, set on backend saves) is not used: a row created outside a
+backend save would start pending and be rewritten. Like `BackfillFilterValuesMigration`, the migration works through
+the DBAL `Connection`, not `Contao\Database`, and its SQL runs on MySQL and MariaDB; it never drops or deletes.
 
 ### 7. Documentation
 
@@ -466,9 +470,9 @@ warning of §3, the save callback's message of §4).
 | E23 | `ListCompound::hash()` and `FilterCompound::fingerprint()` go (dead since #49); `ValueInterface::fingerprint()` stays | user |
 | E24 | `ConfigurationIntent` goes with the contexts' `$intent` | user |
 | E25 | The migration's baseline is v0.1 (v0.2 is unreleased) | user |
-| E26 | The migration waits for the column renames and `BackfillFilterValuesMigration`; its marker is its own migration-managed column (the backfill's pattern), not D31; saves between schema update and migration, and a rerun after the marker is dropped by hand, are not guarded | Claude (after the second review), confirmed by the user; the window and the rerun: user |
+| E26 | The migration waits for the column renames and `BackfillFilterValuesMigration`; its marker is its own migration-managed column (the backfill's pattern), not D31; it requires `elm_isLimited`, so the delete run that drops the marker leaves it quiet; saves between schema update and migration are not guarded | Claude (after the second review), confirmed by the user; the window: user; `elm_isLimited` required: user, after the fourth review |
 | E27 | An empty configured side is open; an empty intersection of bound and value matches nothing (`abort()`) | user |
-| E28 | The migration switches on only readable leftovers; numeric leftovers go, also the ones read as dates | user |
+| E28 | The migration switches on only leftovers v0.1 could read (plain `strtotime()`, no time-span keys); numeric leftovers go, also the ones read as dates | user |
 | E29 | The migration makes no row exclusive and touches no control or value: §4's rule applied to every row widens no list; where `is_limited` was off it can narrow one, the result message counts those filters, and the notes give the recipe for the old behavior | user (proposed after the third review), 2026-11-18 |
 | E30 | Legends without fields are dropped only when `DcaBuilder::apply()` writes a palette; `Str::mergePalettes()` keeps them | user, 2026-11-18 |
 
@@ -505,9 +509,9 @@ the output list, where the enum lives, the name of the migration's marker column
   counts the filter once; icon fallback for an unknown name; exclusive without a (known) output is ineffective.
 - The migration: a readable leftover switched on (on every row of the type, `is_limited` on or off), an unreadable
   one and a numeric one left off, controls, values, `exclusive` and `outputs` untouched; the count of the result
-  message (a control, a stored value with a set side, `is_limited` on not counted, without `elm_isLimited` every such
-  row); waiting while the backfill would run (an update from v0.1 in one `contao:migrate`), run once, rows created
-  afterwards never pending.
+  message (a control, a stored value with a set side, `is_limited` on not counted); quiet without `elm_isLimited`
+  (after the manual deletes); waiting while the backfill would run (an update from v0.1 in one `contao:migrate`), run
+  once, rows created afterwards never pending.
 - `DcaBuilder::apply()` drops a legend left without fields; `Str::mergePalettes()` keeps it.
 - The migration's tests mock the DBAL `Connection`, as `BackfillFilterValuesMigrationTest` does.
 - Types are pinned with `identicalTo()` / `assertSame()` where a test checks what a list or value is.

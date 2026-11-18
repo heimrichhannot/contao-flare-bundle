@@ -168,7 +168,8 @@ Spec: §2 (derivations, failures, duplicate check), E6, E9, E23.
   - `testForOutputKeepsTheFiltersOfThatOutput`: on the same list, `array_keys(forOutput(Output::ListView)->filters)`
     is `['a', 'b']`.
   - `testDerivedListsKeepFailuresAndConfig`:
-    - The list has a failure and config `['x' => 1]`.
+    - The list has a failure, config `['x' => 1]` and the filters of the first test, so both derivations build a new
+      list: assert `assertNotSame($list, $list->whole())` and the same for `forOutput(Output::ListView)` first.
     - `whole()->failures` and `forOutput(...)->failures` are `assertSame` to the original's.
     - Their `config` is `['x' => 1]`.
   - `testDerivedListsKeepNumericKeys` (Review Focus 2): with filters keyed `7` (exclusive `[]`) and `9` (not
@@ -286,7 +287,9 @@ Spec: §2 (entry-point table, "Where the lists are taken", event table), E1, E3,
     - `createReaderResolver(..., autoItem: 'visible', filters: [publishedOnly(), excl])`.
     - `resolve($content)->entry?->row['id']` is `1`.
     - `->list->filters` lacks the exclusive alias.
-  - **`BreadcrumbHookTest`:** the same setup (`autoItem: 'visible'`); the breadcrumb gets row 1's title.
+  - **`BreadcrumbHookTest`:** the same setup (`autoItem: 'visible'`). Give the `hook()` helper a `filters`
+    parameter, defaulting to `[self::publishedOnly()]` (it hard-codes them today, `:115–153`). The last item gets the
+    title `'T'`: the test's `ReaderPageMetaEvent` listener sets it once an entry is found (the rows have no title).
   - **New `ListViewControllerTest` (`ContaoTestCase`, `EnginePipelineTrait`):**
     - Build `ListViewController` over the trait's `EngineFactory` (as `createReaderResolver()` builds it) and
       `createListCompoundBuilderFactory()`; the stored list's filters come from a `ListDriverBuildListEvent`
@@ -336,7 +339,8 @@ Spec: §4 ("The sides are dates, read once"), E16, E17.
 **Interfaces:**
 - Produces: `toDateTimeImmutable(string): ?\DateTimeImmutable`.
   - It reads as `toTimestamp()` does: a time-span key, else a number as a timestamp, else the text through
-    `strtotime()`.
+    `strtotime()`. It reads the text itself, not through `toTimestamp()`, whose `?: null` turns the epoch (`'@0'`,
+    `strtotime()` returns `0`) into "unreadable"; only `false` is unreadable.
   - The result is in `getTimeZone()`.
   - It reads the trimmed text. Text that is empty after trimming gives `null` (Review Focus 3: `strtotime('   ')`
     is the current time), and so does unreadable text.
@@ -348,13 +352,15 @@ Spec: §4 ("The sides are dates, read once"), E16, E17.
     `new \DateTimeImmutable('monday this week', DateTimeHelper::getTimeZone())`.
   - `testAnExpressionIsReadThroughStrtotime`: `'2026-01-01'` gives `strtotime('2026-01-01')`.
   - `testUnreadableTextIsNull`: `'next blursday'` gives `null`.
+  - `testTheEpochIsReadable`: `'0'` and `'@0'` give the timestamp `0`.
   - `testBlankTextIsNull` (Review Focus 3): `''` and `'   '` give `null`.
   - `testSurroundingWhitespaceIsIgnored`: `' 1600432000 '` gives `1600432000`.
   - `testTheResultIsInContaosTimeZone`: `getTimezone()->getName()` === `DateTimeHelper::getTimeZone()->getName()`.
 
 - [ ] **Step 2: Run them to see them fail.** Run `make test tests/Util/DateTimeHelperTest.php`.
 
-- [ ] **Step 3: Implement.** Return `null` for trimmed-empty text and when `toTimestamp()` of the trimmed text is
+- [ ] **Step 3: Implement.** Return `null` for trimmed-empty text. A time-span key becomes its expression
+  (`spanToTimeString()`); numeric text is the timestamp; any other text goes through `strtotime()`, and `false` gives
   `null`. Otherwise create `\DateTimeImmutable::createFromFormat('U', (string) $ts)`, return `null` if that is
   `false`, and return it `->setTimezone(self::getTimeZone())`.
 
@@ -375,7 +381,7 @@ Spec: §1 (the legend sentence), §4 (backend fields, the `makeDatim()` and key-
   `tests/Contao/DataContainer/Builder/DcaBuilderTest.php`
 
 **Interfaces:**
-- Consumes: `DateTimeHelper::toTimestamp()`.
+- Consumes: `DateTimeHelper::toDateTimeImmutable()` (Task 5).
 - Produces:
   - `remove(string ...$paths): self`.
     - Each path is a dot path into the field definition (`'eval.rgxp'`, `'wizard'`).
@@ -396,8 +402,8 @@ Spec: §1 (the legend sentence), §4 (backend fields, the `makeDatim()` and key-
     - It sets `eval` `rgxp => 'datim'` and `datepicker => true`.
     - In `applyTo()` it appends ` wizard` to `eval.tl_class` unless that class already contains `wizard`.
     - It adds one load callback that shows a stored expression as its timestamp: a non-empty, non-numeric string
-      becomes `(string) (DateTimeHelper::toTimestamp($value) ?? '')`; a string that is empty after trimming becomes
-      `''` (Review Focus 3); any other value passes unchanged.
+      becomes `(string) (DateTimeHelper::toDateTimeImmutable($value)?->getTimestamp() ?? '')`; a string that is
+      empty after trimming becomes `''` (Review Focus 3); any other value passes unchanged.
 
 - [ ] **Step 1: Write the failing tests** (through `applyTo()`):
   - `testRemoveDropsKeysOfTheBaseDefinition`:
@@ -511,7 +517,8 @@ Spec: §4 completely, E7, E16–E18, E20, E27.
     - `testAnUnconfiguredSideIsOpen`: `elm_configureStop = ''` with `elm_stopAt = '+1 month'` gives `stop_at` `null`.
     - `testAnEmptyOrBlankConfiguredSideIsOpen` (Review Focus 3): `''` and `'   '` give `null`.
     - `testUnreadableTextFailsClosed`: `'str'` with `'next blursday'` → `FilterException`.
-  - Test `buildDca`:
+  - Test `buildDca` (set `$GLOBALS['TL_DCA']['tl_flare_filter']` up first and unset it in `tearDown()`:
+    `DcaBuilder::apply()` returns early without it, `DcaBuilder.php:121–123`):
     - `testDateSidesGetTheDateTimeInput`: with `elm_configureStart = 'date'` and `elm_configureStop = 'str'`, after
       `apply()` the field `elm_startAt` has `eval.rgxp` `'datim'` and `elm_stopAt` has no `rgxp`.
     - `testTheSaveCallbackRejectsUnreadableText`: the save callback on `elm_startAt` throws `\RuntimeException` for
@@ -562,14 +569,16 @@ Spec: §5, E8, E24.
   an intent. It analyses `src/` only; `make test` finds the test call sites (PHP accepts extra positional arguments
   silently, so search for them too).
 
-- [ ] **Step 2: Fix every call site and test** until `make phpstan` prints `[OK] No errors` and these find nothing:
-  - `grep -rnE 'ConfigurationIntent|context->intent|intent: \$context|intent: \$intent|intent: new' src tests`
-    (named arguments such as `FilterControlBuildFormListenerTest.php:76`);
+- [ ] **Step 2: Fix every call site and test** until `make phpstan` prints `[OK] No errors`, these find nothing:
+  - `grep -rnE 'ConfigurationIntent|context->intent|intent: \$context' src tests`;
   - the callers of `buildFilterEffect(` and `buildElementContext(` that still pass an intent positionally: once the
     helper loses `$intent`, that argument would shift into the next parameter (`grep -rn
     'buildFilterEffect(\|buildElementContext(' tests` and read each call with four or more arguments).
 
-  `FormHarness`, `ListQueryConfig`, the loaders and `Engine` keep their intent.
+  and every hit of `grep -rnE 'intent: \$intent|intent: new' src tests` is read by hand: none may construct an
+  `ElementContext` or `ControlContext` (such as `FilterControlBuildFormListenerTest.php:76`). The other hits stay:
+  `FormHarness`, `ListQueryConfig`, the loaders, the projectors, `Engine`, `EngineFactory`, `EntryCollectorFactory`
+  and `ReaderResolver` keep their intent.
 
 - [ ] **Step 3: Run the suite.** `make test` → `OK`. The count is the earlier one minus the deleted tests.
 
@@ -681,7 +690,9 @@ Spec: §3 (everything but the event), E5, E14 (the kind), E15.
 - [ ] **Step 3: Implement** as described under Interfaces. Update the docblocks of `FilterIssueKind`, `ListInspection`
   and `FilterInspector`: five kinds, several issues per row.
 
-- [ ] **Step 4: Run until it passes.** Run the files, then the full `make test` → `OK`.
+- [ ] **Step 4: Run until it passes.** Run the files, then the full `make test` → `OK`. A row whose checks fail in
+  two ways now keeps both issues (E15): where an existing test of `FilterInspectorTest` or `FilterIssueReporterTest`
+  asserts a single issue for such a row, update the assertion to both issues and name the test in the commit body.
 
 - [ ] **Step 5: Commit.** Run the full checks, then `git commit -m "feat(inspection): warnings, icons per issue and
   every issue of a row"`.
@@ -737,9 +748,10 @@ Spec: §3 ("Warnings, from an event" bullet 2), E13, E14.
       - A driver whose `buildList()` throws → `list` is `null` for every row.
     - `testTheEventCarriesTheIssuesFoundSoFar`: a broken row's event has its `Broken` issue.
     - `testRowlessFiltersGetNoEvent`: a filter the driver adds → no extra event.
-    - `testTheEventCarriesTheFilterAsTheListHasIt`: a `ListDriverBuildListEvent` listener replaces the row's
-      non-exclusive publication filter with `withOutputs([Output::ListView])` → the event's `filter` is that
-      replacement (`assertSame`).
+    - `testTheEventCarriesTheFilterAsTheListHasIt`: a `ListDriverBuildListEvent` listener replaces a row's filter
+      (a type the inspector's test registry has, such as `ok`; it has no `PublishedFilterElement`,
+      `BuildsFilterInspectorTrait.php:101–119`) with its `withOutputs([Output::ListView])` → the event's `filter`
+      is that replacement (`assertSame`).
     - `testWarningsLandOnTheRowFormAndOverview`: a listener adds two warnings with icons → `forRow()` has two
       `Warning` issues with their icons, and `count(Warning)` is `1`.
     - `testAListenerExceptionIsAProgrammingError`.
@@ -786,6 +798,8 @@ Spec: §6 completely, E10, E12, E25, E26, E28, E29.
     `ALTER TABLE tl_flare_filter ALTER {marker} SET DEFAULT '1'` for any marker; each marker column keeps its own
     default for rows added later;
   - `fetchOne()` serves the backfill's marker-less probe (`control <> '' OR value <> ''`) only, as today;
+  - `fetchAssociative()` serves the backfill's `tl_flare_list` lookup, as today
+    (`BackfillFilterValuesMigrationTest.php:842–846`);
   - any other statement fails the test;
   - `addRow()` defaults cover both migrations: the backfill's columns, plus `elm_isLimited`, `elm_configureStart`,
     `elm_configureStop`, `elm_startAt`, `elm_stopAt` (all `''`).
@@ -795,15 +809,16 @@ Spec: §6 completely, E10, E12, E25, E26, E28, E29.
 - Modify: `tests/DependencyInjection/ServicesConfigTest.php` (the migration in `provideServices()`)
 
 **Interfaces:**
-- Consumes: `BackfillFilterValuesMigration` (constructor-injected; `shouldRun()`), `DateTimeHelper::toTimestamp()`.
+- Consumes: `BackfillFilterValuesMigration` (constructor-injected; `shouldRun()`).
 - Produces: `getName()`, `shouldRun()`, `run()`.
 
 `shouldRun()` decides in this order:
 
 1. No table → false.
-2. Any of the columns `type`, `control`, `value`, `elm_configureStart`, `elm_configureStop`, `elm_startAt`,
-   `elm_stopAt` missing (compare lowercased) → false. This waits for the renames and the backfill's columns.
-   `elm_isLimited` is not required (spec §6, Order).
+2. Any of the columns `type`, `control`, `value`, `elm_isLimited`, `elm_configureStart`, `elm_configureStop`,
+   `elm_startAt`, `elm_stopAt` missing (compare lowercased) → false. This waits for the renames and the backfill's
+   columns, and keeps the migration quiet once the manual deletes have dropped `elm_isLimited` and the marker:
+   `contao:migrate --with-deletes` runs the migrations again after the schema diff (spec §6, Marker).
 3. `$this->backfill->shouldRun()` → false: the migration waits.
 4. The marker is missing → true.
 5. Otherwise → whether `fetchPendingRows()` (below) returns any row.
@@ -821,25 +836,26 @@ Spec: §6 completely, E10, E12, E25, E26, E28, E29.
 
 Per calendar row:
 - **Changes:** for each side (`elm_configureStart`/`elm_startAt`, `elm_configureStop`/`elm_stopAt`) whose
-  `configure` is `''` and whose trimmed text is non-empty, non-numeric and readable (`DateTimeHelper::toTimestamp()`
-  non-null): `changes[configure] = 'str'`. Nothing else is written: no `exclusive`, `outputs`, `control` or `value`.
-- **To check:** `elm_isLimited` is falsy or the column is missing, and the row has a non-empty `control` or a stored
-  value with a set side. A side is set when its raw entry (`StringUtil::deserialize($value, true)`, padded to two)
-  is an int, or a string that is non-empty after trimming. No value provider is involved.
+  `configure` is `''` and whose trimmed text is non-empty, non-numeric and readable as v0.1 read it (plain
+  `strtotime()` is not `false`; no time-span keys, spec §6, E28): `changes[configure] = 'str'`. Nothing else is
+  written: no `exclusive`, `outputs`, `control` or `value`.
+- **To check:** `elm_isLimited` is falsy, and the row has a non-empty `control` or a stored value with a set side.
+  A side is set when its raw entry (`StringUtil::deserialize($value, true)`, padded to two) is an int, or a string
+  that is non-empty after trimming. No value provider is involved.
 
 Class docblock, after the backfill's:
 - the baseline (v0.1) and the one rule that makes moving anything unnecessary (spec §6, E29);
 - the order (renames, backfill) and why it waits for the backfill (the count needs `control` and `value`);
 - the marker and why it is not D31;
-- that saves between the schema update and the migration, and a rerun after the marker is dropped by hand, are not
-  guarded.
+- why it requires `elm_isLimited` (the delete run drops the marker and runs the migrations again);
+- that saves between the schema update and the migration are not guarded.
 
 - [ ] **Step 1: Write the failing tests** (rows as arrays, asserting `rowUpdates()` like the backfill test):
   - **The switch-on step:**
     - `testAReadableLeftoverIsSwitchedOn`: start mode `''` with `elm_startAt = 'last monday'` →
       `elm_configureStart = 'str'`; the stop side untouched.
-    - `testAReadableLeftoverIsSwitchedOnWhateverTheLimit`: the same with `elm_isLimited` `'1'` and `''`, and a span-key
-      leftover `this_week`.
+    - `testAReadableLeftoverIsSwitchedOnWhateverTheLimit`: the same with `elm_isLimited` `'1'` and `''`.
+    - `testATimeSpanKeyLeftoverStaysOff`: `this_week`, which v0.1's `strtotime()` could not read.
     - `testAnUnreadableLeftoverStaysOff` (`next blursday`).
     - `testANumericLeftoverStaysOff` (`1767225600`, `20260101`, `0900`).
     - `testAConfiguredSideIsLeftAlone`: mode `today` with an empty text, and mode `str` with unreadable text → no
@@ -850,8 +866,7 @@ Class docblock, after the backfill's:
     - `testTheResultCountsTheRowsToCheck`: unlimited with a control, unlimited without control but with
       `serialize(['today', null])`, limited with a control, unlimited with neither, unlimited with
       `serialize([null, ''])` → the message names 2 rows to check.
-    - `testWithoutElmIsLimitedEveryRowWithAControlOrValueIsCounted`: the column is absent → `shouldRun()` is true,
-      a leftover is still switched on, and every row with a control or a set value counts.
+    - `testShouldRunIsFalseWithoutElmIsLimited`: the column is absent, the marker too → `shouldRun()` is false.
   - **Order, marker and repeats:**
     - `testShouldRunWaitsForTheBackfill`.
     - `testShouldRunWaitsForTheRenamedColumns` (`configureStart` instead of `elm_configureStart`).
@@ -859,6 +874,8 @@ Class docblock, after the backfill's:
     - `testRunAddsTheMarkerAndDefaultsItToDone` (the two exact `ALTER` statements).
     - `testOtherTypesAreMarkedDone`.
     - `testShouldRunGoesQuietAfterARun`.
+    - `testTheDeleteRunLeavesItQuiet`: after a run, drop the marker and `elm_isLimited` from the fake (the schema
+      diff's deletes) and switch a side off → `shouldRun()` is false.
     - `testRowsCreatedAfterwardsAreNeverPending`: the default is `'1'` after a run.
     - `testEveryRowIsUpdatedInOneStatementWithItsMarker`.
   - **The update from v0.1 in one `contao:migrate`** (spec, Testing): `testAV01RowIsBackfilledFirstAndThenChecked`.

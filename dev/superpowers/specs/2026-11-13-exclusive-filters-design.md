@@ -1,15 +1,16 @@
 # Design: exclusive filters — a filter that narrows an output, not the whole list
 
-Status: approved by the user 2026-11-13. Checked against `v0.2` at `680d4add` (PR #55 merged) on 2026-11-16 and
-updated where the code had moved; E1–E12 unchanged. Extended on 2026-11-17 after the review with E13–E24
-(the inspection event and warnings, §3; how the calendar filter reads its period and its backend fields, §4; migration
-row 3, §6; `ListCompound::hash()`, §2, and `ConfigurationIntent`, §5, removed), and after a second review (Opus,
-Astra) with E25–E28 (the migration's baseline, order and marker, empty and inverted periods, unreadable text in the
-migration). After a third review (2026-11-18), §6 was simplified (E29: no row becomes exclusive, nothing moves into
-the stored value; E21 superseded) and legends without fields are dropped when a palette is applied (E30). A fourth
-review (2026-11-18) tied the migration to `elm_isLimited` (E26) and reads leftovers as v0.1 did (E28). Its own PR on
-`v0.2` (branch `v0.2-exclusive-filters`): after #55, before the query architecture refactor
-(`2026-11-04-query-architecture-design.md`, on branch `v0.2-query`, not yet on `v0.2`), which assumes it (its D40).
+Status: approved by the user 2026-11-13. Checked against `v0.2` at `680d4add` (PR #55 merged) on 2026-11-16 and updated
+where the code had moved; E1–E12 unchanged. Extended on 2026-11-17 after the review with E13–E24 (the inspection event
+and warnings, §3; how the calendar filter reads its period and its backend fields, §4; migration row 3, §6;
+`ListCompound::hash()`, §2, and `ConfigurationIntent`, §5, removed), and after a second review (Opus, Astra) with
+E25–E28 (the migration's baseline, order and marker, empty and inverted periods, unreadable text in the migration).
+After a third review (2026-11-18), §6 was simplified (E29: nothing moves into the stored value; E21 superseded; amended
+by E31 during implementation: a row with `is_limited` off becomes exclusive to the list view) and legends without fields
+are dropped when a palette is applied (E30). A fourth review (2026-11-18) tied the migration to `elm_isLimited` (E26)
+and reads leftovers as v0.1 did (E28). Its own PR on `v0.2` (branch `v0.2-exclusive-filters`): after #55, before the
+query architecture refactor (`2026-11-04-query-architecture-design.md`, on branch `v0.2-query`, not yet on `v0.2`),
+which assumes it (its D40).
 
 ## Intent
 
@@ -331,28 +332,35 @@ itself keeps its intent (form name, action), and so do `ListQueryConfig` and the
 
 ### 6. Migration
 
-A run-once migration for the rows of type `flare_calendar_current`, so that no list becomes wider than it was. v0.2 is
-unreleased, so the rows it meets come from v0.1 (user): the baseline is v0.1's element, which has no intent branch,
-so its period bounds the reader as well as the list view. The `v0.2` development state differs only in the reader
-(the `ValidationIntent` branch of `buildEffect()` drops the window there when `is_limited` is off).
+A run-once migration for the rows of type `flare_calendar_current`, so that no list becomes wider than it was and no
+reader narrower. v0.2 is unreleased, so the rows it meets come from v0.1 (user): the baseline is v0.1's element. Its
+period bounds the list view; the reader it bounds only where `is_limited` is on. With `is_limited` off, v0.1's
+`onInvoking()` listener skipped the filter for a `ValidationContext`, so the reader and the breadcrumb ignored it
+(E31: the earlier premise that v0.1's period bounded the reader in every case was wrong, found while the docs were
+written). The palette offered the checkbox only without `intrinsic`, so every intrinsic calendar filter of v0.1 has it
+off. The `v0.2` development state behaves the same (the `ValidationIntent` branch of `buildEffect()` drops the window
+in the reader when `is_limited` is off).
 
-**No row becomes exclusive, and no control or value is touched** (user, after the third review, 2026-11-18). §4's one
-rule is v0.1's `is_limited` behavior made permanent: the configured period bounds every list, a value only narrows
-within it. Applied to every row as it is, it never widens a list; where `is_limited` was off, it can narrow one, and
-the editor checks those filters after the update:
+**A row with `is_limited` off becomes exclusive to the list view; no control or value is touched** (user, E29 after
+the third review, amended by E31, 2026-11-18). §4's one rule is v0.1's `is_limited` behavior made permanent: the
+configured period bounds every list the filter applies to, a value only narrows within it. Where `is_limited` was off,
+the exclusive setting keeps the filter out of the whole list, so the reader, the breadcrumb and the lookup stay as
+v0.1's reader was; the list view gets the one rule, which never widens it but can narrow it, and the editor checks
+those filters after the update:
 
-| `is_limited` | Control / stored value | Today (v0.1; v0.2-dev where it differs) | After |
+| `is_limited` | Control / stored value | Today (v0.1 and v0.2-dev) | After |
 |---|---|---|---|
 | on | with or without | the period bounds list view and reader; a value narrows within | unchanged |
-| off | none, no stored value | the period bounds list view and reader (v0.2-dev: the list view only) | unchanged from v0.1 (v0.2-dev: the reader is bounded again) |
-| off | with a control | list view: the period is a default the visitor's value replaces side by side; reader: the period bounds (v0.2-dev: unbounded) | the period bounds list view and reader; the visitor narrows within it, and the date inputs are limited to it. What the list shows before the visitor changes anything stays the same |
-| off | none, with a stored value | the value replaces the period side by side, in list view and reader (v0.2-dev: in the reader the value alone bounds) | the value narrows within the period, in list view and reader; the list can become narrower, or empty where they do not overlap (`abort()`, §4) |
+| off | none, no stored value | the period bounds the list view; the reader ignores the filter | unchanged: exclusive to the list view |
+| off | with a control | list view: the period is a default the visitor's value replaces side by side; the reader ignores the filter | exclusive to the list view; there the period bounds, the visitor narrows within it, and the date inputs are limited to it. What the list shows before the visitor changes anything stays the same; the reader is unchanged |
+| off | none, with a stored value | list view: the value replaces the period side by side; the reader ignores the filter | exclusive to the list view; there the value narrows within the period, and the list view can become narrower, or empty where they do not overlap (`abort()`, §4); the reader is unchanged |
 
-An editor who wants the old behavior of the last two rows back configures it with §1 and §4 (the notes give the
-recipe): the period as a movable preselection is a filter with a control, its sides switched off and the period as its
-stored value; a list-view period the reader ignores is a filter exclusive to the list view.
+An editor who wants the old list-view behavior of the last two rows back configures it with §1 and §4 (the notes give
+the recipe): the period as a movable preselection is a filter with a control, its sides switched off and the period
+as its stored value, still exclusive to the list view.
 
-The migration's one change, for every row of the type: a side whose `configure_*` is blank but whose
+The migration's changes, for every row of the type: a row with `is_limited` off gets `exclusive` on and `outputs` set
+to the list view (`serialize(['list_view'])`, E31); and a side whose `configure_*` is blank but whose
 `start_at`/`stop_at` holds a non-numeric expression `strtotime()` can read gets `configure_*` switched on (`str`),
 so the backend shows the bound that applies today and the new rule keeps applying it. The check reads the text as v0.1
 did, with plain `strtotime()`: a time-span key such as `this_week` it cannot read, so that side is open today and
@@ -369,11 +377,13 @@ rows of the type with `is_limited` off and a control or a stored value with a se
 
 Accepted changes, named in the migration notes (confirmed by the user, 2026-11-17 and 2026-11-18):
 
-- `is_limited` off, with a control: the period becomes a bound the visitor cannot leave, and it limits the control's
-  date inputs; the initial display is unchanged;
-- `is_limited` off, no control, with a stored value: the value narrows within the period instead of replacing it;
-- from v0.2-dev, `is_limited` off: the reader, the lookup and the breadcrumb are bounded by the period again, as in
-  v0.1;
+- `is_limited` off, with a control: in the list view the period becomes a bound the visitor cannot leave, and it
+  limits the control's date inputs; the initial display is unchanged;
+- `is_limited` off, no control, with a stored value: in the list view the value narrows within the period instead of
+  replacing it;
+- `is_limited` off: the filter is exclusive to the list view, so a filter added to the list later applies there too,
+  while the reader, the breadcrumb and the lookup keep ignoring it (as v0.1's reader did); the editor sees the setting
+  in the expert legend;
 - a side in `date` mode (an absolute date) starts to apply as configured — the fix of §4. Where the date was ignored,
   or misread as a start in the year 2000, the lists that have it become narrower; where it was misread as a stop in
   the year 2000 and emptied the list, the list shows entries again;
@@ -385,14 +395,15 @@ Accepted changes, named in the migration notes (confirmed by the user, 2026-11-1
   (`getDateBounds()` honors `configure_*`); it already bounded the entries, so only the form changes.
 
 **Order.** On an update from v0.1, the rows get their v0.2 meaning from other migrations first:
-`RenameFilterColumnsMigration` renames the element columns (`elm_isLimited`, `elm_configureStart`,
-`elm_configureStop`, `elm_startAt`, `elm_stopAt`), and `BackfillFilterValuesMigration` assigns the control
-(`flare_date_range` for a calendar row that was not intrinsic) and the value. The switch-on step needs only the renamed
-columns; the count needs the control and the value. Contao orders migrations of equal priority by class name, so the
-order is stated, not left to the names: the migration runs only once the renamed period columns, `control` and
-`value` exist, and while `BackfillFilterValuesMigration::shouldRun()` is true it waits (`contao:migrate` checks again
-after each pass). It also requires `elm_isLimited`, which only a database that had the v0.1 calendar element has: a
-fresh install never runs it, and once the manual deletes drop the column it stays quiet (Marker, below).
+`RenameFilterColumnsMigration` renames the element columns (`elm_isLimited`, `elm_configureStart`, `elm_configureStop`,
+`elm_startAt`, `elm_stopAt`), and `BackfillFilterValuesMigration` assigns the control (`flare_date_range` for a calendar
+row that was not intrinsic) and the value. The switch-on step needs only the renamed columns; the count needs the
+control and the value; the exclusive step needs `exclusive` and `outputs`, which the schema update adds. Contao orders
+migrations of equal priority by class name, so the order is stated, not left to the names: the migration runs only once
+the renamed period columns, `control`, `value`, `exclusive` and `outputs` exist, and while
+`BackfillFilterValuesMigration::shouldRun()` is true it waits (`contao:migrate` checks again after each pass). It also
+requires `elm_isLimited`, which only a database that had the v0.1 calendar element has: a fresh install never runs it,
+and once the manual deletes drop the column it stays quiet (Marker, below).
 
 **Marker.** The migration must handle each row exactly once and never touch a row created or saved after the update:
 run again, it would switch on a side an editor has switched off since (the save callback does not clear the text).
@@ -473,8 +484,9 @@ warning of §3, the save callback's message of §4).
 | E26 | The migration waits for the column renames and `BackfillFilterValuesMigration`; its marker is its own migration-managed column (the backfill's pattern), not D31; it requires `elm_isLimited`, so the delete run that drops the marker leaves it quiet; saves between schema update and migration are not guarded | Claude (after the second review), confirmed by the user; the window: user; `elm_isLimited` required: user, after the fourth review |
 | E27 | An empty configured side is open; an empty intersection of bound and value matches nothing (`abort()`) | user |
 | E28 | The migration switches on only leftovers v0.1 could read (plain `strtotime()`, no time-span keys); numeric leftovers go, also the ones read as dates | user |
-| E29 | The migration makes no row exclusive and touches no control or value: §4's rule applied to every row widens no list; where `is_limited` was off it can narrow one, the result message counts those filters, and the notes give the recipe for the old behavior | user (proposed after the third review), 2026-11-18 |
+| E29 | (Amended by E31.) The migration touches no control or value: §4's rule applied to every row widens no list; where `is_limited` was off it can narrow one, the result message counts those filters, and the notes give the recipe for the old behavior | user (proposed after the third review), 2026-11-18 |
 | E30 | Legends without fields are dropped only when `DcaBuilder::apply()` writes a palette; `Str::mergePalettes()` keeps them | user, 2026-11-18 |
+| E31 | v0.1's reader ignored a calendar filter with `is_limited` off (its `onInvoking()` listener skipped it for a `ValidationContext`; intrinsic rows always had it off), so the migration makes every such row exclusive to the list view: the reader, breadcrumb and lookup stay as in v0.1, the list view gets the one rule | user, 2026-11-18 (found in the docs review during implementation) |
 
 ## Left to the builder
 
@@ -508,7 +520,8 @@ the output list, where the enum lives, the name of the migration's marker column
   without a non-exclusive one and not otherwise; a row keeps several issues of one kind (two warnings), the overview
   counts the filter once; icon fallback for an unknown name; exclusive without a (known) output is ineffective.
 - The migration: a readable leftover switched on (on every row of the type, `is_limited` on or off), an unreadable
-  one and a numeric one left off, controls, values, `exclusive` and `outputs` untouched; the count of the result
+  one and a numeric one left off; `exclusive` on and `outputs` the list view exactly for the rows with `is_limited`
+off; controls and values untouched; the count of the result
   message (a control, a stored value with a set side, `is_limited` on not counted); quiet without `elm_isLimited`
   (after the manual deletes); waiting while the backfill would run (an update from v0.1 in one `contao:migrate`), run
   once, rows created afterwards never pending.

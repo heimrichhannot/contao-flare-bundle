@@ -17,7 +17,7 @@ and finally `AGENTS.md` and the docs worktree. Every task ends green.
 **Tech Stack:** PHP 8.2 (Docker), Contao 4.13/5 (the dev install resolves 5.3), Symfony 5.4–7, Doctrine DBAL ≥ 3.6,
 PHPUnit 9.6 with `contao/test-case`, SQLite for the pipeline tests, Twig, PHPStan level 5, Mago 1.47.4 (local binary).
 
-**Spec:** `dev/superpowers/specs/2026-11-13-exclusive-filters-design.md` is the authority on behavior. E1–E30 are
+**Spec:** `dev/superpowers/specs/2026-11-13-exclusive-filters-design.md` is the authority on behavior. E1–E31 are
 settled. This plan fixes the files, the order, the names the spec leaves to the builder, and the tests. Each task
 names the spec sections to read first.
 
@@ -783,7 +783,7 @@ Spec: §3 ("Warnings, from an event" bullet 2), E13, E14.
 
 ### Task 11: `RetireCalendarLimitMigration`
 
-Spec: §6 completely, E10, E12, E25, E26, E28, E29.
+Spec: §6 completely, E10, E12, E25, E26, E28, E29, E31.
 
 **Files:**
 - Create: `src/Migration/RetireCalendarLimitMigration.php`
@@ -815,10 +815,11 @@ Spec: §6 completely, E10, E12, E25, E26, E28, E29.
 `shouldRun()` decides in this order:
 
 1. No table → false.
-2. Any of the columns `type`, `control`, `value`, `elm_isLimited`, `elm_configureStart`, `elm_configureStop`,
-   `elm_startAt`, `elm_stopAt` missing (compare lowercased) → false. This waits for the renames and the backfill's
-   columns, and keeps the migration quiet once the manual deletes have dropped `elm_isLimited` and the marker:
-   `contao:migrate --with-deletes` runs the migrations again after the schema diff (spec §6, Marker).
+2. Any of the columns `type`, `control`, `value`, `exclusive`, `outputs`, `elm_isLimited`, `elm_configureStart`,
+   `elm_configureStop`, `elm_startAt`, `elm_stopAt` missing (compare lowercased) → false. This waits for the renames,
+   the backfill's columns and the schema update's `exclusive`/`outputs`, and keeps the migration quiet once the
+   manual deletes have dropped `elm_isLimited` and the marker: `contao:migrate --with-deletes` runs the migrations
+   again after the schema diff (spec §6, Marker).
 3. `$this->backfill->shouldRun()` → false: the migration waits.
 4. The marker is missing → true.
 5. Otherwise → whether `fetchPendingRows()` (below) returns any row.
@@ -837,8 +838,9 @@ Spec: §6 completely, E10, E12, E25, E26, E28, E29.
 Per calendar row:
 - **Changes:** for each side (`elm_configureStart`/`elm_startAt`, `elm_configureStop`/`elm_stopAt`) whose
   `configure` is `''` and whose trimmed text is non-empty, non-numeric and readable as v0.1 read it (plain
-  `strtotime()` is not `false`; no time-span keys, spec §6, E28): `changes[configure] = 'str'`. Nothing else is
-  written: no `exclusive`, `outputs`, `control` or `value`.
+  `strtotime()` is not `false`; no time-span keys, spec §6, E28): `changes[configure] = 'str'`. A row whose
+  `elm_isLimited` is falsy also gets `changes['exclusive'] = '1'` and `changes['outputs'] = serialize(['list_view'])`
+  (spec §6, E31: v0.1's reader ignored such a filter). Nothing else is written: no `control` or `value`.
 - **To check:** `elm_isLimited` is falsy, and the row has a non-empty `control` or a stored value with a set side.
   A side is set when its raw entry (`StringUtil::deserialize($value, true)`, padded to two) is an int, or a string
   that is non-empty after trimming. No value provider is involved.
@@ -860,8 +862,12 @@ Class docblock, after the backfill's:
     - `testANumericLeftoverStaysOff` (`1767225600`, `20260101`, `0900`).
     - `testAConfiguredSideIsLeftAlone`: mode `today` with an empty text, and mode `str` with unreadable text → no
       change.
-    - `testNothingElseIsWritten`: a row with a control, a stored value and a leftover → the update holds only
-      `elm_configureStart` and the marker (`assertSame` on the update's keys).
+    - `testNothingElseIsWritten`: a row with `elm_isLimited` `'1'`, a control, a stored value and a leftover → the
+      update holds only `elm_configureStart` and the marker (`assertSame` on the update's keys).
+  - **The exclusive step (E31):**
+    - `testAnUnlimitedRowBecomesExclusiveToTheListView`: `elm_isLimited` `''` → `exclusive` `'1'`, `outputs`
+      `serialize(['list_view'])`; its control and value untouched.
+    - `testALimitedRowStaysNonExclusive`: `elm_isLimited` `'1'` → no `exclusive` or `outputs` in the update.
   - **The count:**
     - `testTheResultCountsTheRowsToCheck`: unlimited with a control, unlimited without control but with
       `serialize(['today', null])`, limited with a control, unlimited with neither, unlimited with
@@ -885,8 +891,8 @@ Class docblock, after the backfill's:
     - The new migration's `shouldRun()` is false while the backfill's is true.
     - After the backfill's `run()`, the row has `control = 'flare_date_range'`, and the new migration's `shouldRun()`
       is true.
-    - After its `run()`, the row has `elm_configureStart = 'str'`, its `control` and `value` are what the backfill
-      wrote, and the message names 1 row to check.
+    - After its `run()`, the row has `elm_configureStart = 'str'`, `exclusive = '1'`, `outputs` the list view, its
+      `control` and `value` are what the backfill wrote, and the message names 1 row to check.
 
 - [ ] **Step 2: Run them to see them fail.** Run `make test tests/Migration/RetireCalendarLimitMigrationTest.php`.
 

@@ -132,6 +132,11 @@ class RetireCalendarLimitMigration extends AbstractMigration
 
         foreach ($this->fetchPendingRows() as $row)
         {
+            // Rows of other types have nothing to retire; the update below marks them done.
+            if ((string) ($row['type'] ?? '') !== self::TYPE) {
+                continue;
+            }
+
             // The marker is set in the same statement, so an interrupted run never processes a row twice.
             $changes = self::computeChanges($row);
             $this->connection->update(self::TABLE, $changes + [self::MARKER => '1'], ['id' => (int) $row['id']]);
@@ -178,21 +183,17 @@ class RetireCalendarLimitMigration extends AbstractMigration
     }
 
     /**
-     * The calendar rows not yet handled; other types have nothing to retire.
+     * The rows not yet handled, of every type: a row of another type left pending by an interrupted run must still be
+     * marked done, or a later change of its type would turn it into a calendar row to retire.
      *
      * @return list<array<string, mixed>>
      */
     private function fetchPendingRows(): array
     {
-        $rows = $this->connection->fetchAllAssociative(\sprintf(
+        return $this->connection->fetchAllAssociative(\sprintf(
             "SELECT * FROM %s WHERE %s = '0' ORDER BY id",
             self::TABLE,
             self::MARKER,
-        ));
-
-        return \array_values(\array_filter(
-            $rows,
-            static fn (array $row): bool => (string) ($row['type'] ?? '') === self::TYPE,
         ));
     }
 

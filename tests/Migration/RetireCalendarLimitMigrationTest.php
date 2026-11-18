@@ -259,6 +259,28 @@ final class RetireCalendarLimitMigrationTest extends TestCase
         self::assertFalse($this->migration()->shouldRun());
     }
 
+    public function testRunResumesAnInterruptionBeforeOtherTypesAreMarkedDone(): void
+    {
+        // Interrupted after the per-row loop: the calendar row is done, the row of another type is still pending.
+        $this->columns[] = self::MARKER;
+        $this->markerDefaults[self::MARKER] = '1';
+        $this->addRow(1, self::CALENDAR, [
+            self::MARKER => '1',
+            'elm_configureStart' => 'str',
+            'elm_startAt' => 'today',
+        ]);
+        $this->addRow(2, 'flare_published', [self::MARKER => '0', 'elm_startAt' => 'last monday']);
+
+        self::assertTrue($this->migration()->shouldRun());
+
+        $this->migration()->run();
+
+        self::assertSame([], $this->rowUpdates());
+        self::assertSame('1', $this->rows[2][self::MARKER]);
+        self::assertSame('', $this->rows[2]['elm_configureStart']);
+        self::assertFalse($this->migration()->shouldRun());
+    }
+
     public function testShouldRunGoesQuietAfterARun(): void
     {
         $this->addRow(1, self::CALENDAR, ['elm_startAt' => 'last monday']);

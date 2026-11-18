@@ -93,8 +93,9 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   because it is assembled from bound components — driver and filter compounds — ready to run), `ListCompoundBuilder`
   (build lifecycle: driver's `buildList()` hook → `ListDriverBuildListEvent` → config assembly → schema resolution),
   `BaseListOptions` (framework-owned base schema for tl_flare_list columns), `Output` (enum of the places a list
-  is rendered for; `ListView = 'list_view'`). `ListCompound::forOutput(Output)` drops the filters exclusive to
-  other outputs (alias keys kept), `whole()` keeps every filter; the list view (`ListViewController`) runs on
+  is rendered for; `ListView = 'list_view'`). `ListCompound::forOutput(Output)` keeps the filters that apply to
+  the output (the non-exclusive ones and those exclusive to it; alias keys kept), `whole()` only the non-exclusive
+  ones, leaving out every filter exclusive to an output; the list view (`ListViewController`) runs on
   `forOutput(Output::ListView)`, the reader, the breadcrumb and the lookup on `whole()`
 - `src/List/Entry/` — the list's runtime data, Contao-free (as `Filter\Value\` is the filter's): `Entry` (one row
   as delivered, `EntryMeta $meta`, attachments; `__get()` resolves the reserved `to` (the reader URL from the
@@ -109,8 +110,8 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   attached twice, entry vs. collection) and any `attach()` after sealing throw `\Error`s
 - `src/Engine/ListEntry/` — `EntryCollector` (rows → `EntryCollection::forTable($list->dc)` with the reader linker →
   `ListDriverEntriesEvent`, only for a non-empty collection → seal) and `EntryLookup` (member entries by id on
-  the whole list (`ListCompound::whole()`: exclusive filters included), fixed filter values, no form values — in one
-  query without pagination, in the given order,
+  the whole list (`ListCompound::whole()`: without the filters exclusive to an output), fixed filter values, no
+  form values — in one query without pagination, in the given order,
   duplicates collapsed, memoized per id list; each result is its own sealed collection with its own entries event;
   members are cache-tagged; `lookup([])` queries nothing; an id is a positive int or its canonical string;
   `null`/`''`/`0`/`'0'` count as no id, anything else throws `InvalidLookupIdError`). Neither is a service: `Engine/Factory/EntryCollectorFactory`

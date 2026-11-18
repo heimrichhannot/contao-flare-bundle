@@ -9,8 +9,6 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
 /**
  * The kind of a filter issue the backend reports ({@see Inspector\FilterInspector}); five kinds, of which a row may
  * have several issues each. The case order is the order of the overview messages and of a row's issues and icons.
- *
- * @internal
  */
 enum FilterIssueKind: string
 {

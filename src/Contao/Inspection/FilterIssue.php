@@ -8,8 +8,6 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * One issue of a stored filter, as the backend reports it on the filter's row and edit form.
- *
- * @internal
  */
 final readonly class FilterIssue
 {

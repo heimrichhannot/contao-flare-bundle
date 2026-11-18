@@ -128,25 +128,4 @@ final readonly class FilterCompound
     {
         return $this->outputs === null || \in_array($output, $this->outputs, true);
     }
-
-    /**
-     * Representation for in-request hashing/caching.
-     *
-     * @return array<string, mixed>
-     */
-    public function fingerprint(): array
-    {
-        return [
-            'element' => $this->element->component::class,
-            'type' => $this->element->type,
-            'alias' => $this->alias,
-            'config' => $this->element->config->all(),
-            'control' => $this->control !== null ? $this->control->component::class : null,
-            'controlConfig' => $this->control?->config->all() ?? [],
-            'controlType' => $this->control?->type,
-            'value' => $this->value?->fingerprint(),
-            'targetAlias' => $this->targetAlias,
-            'targetingForced' => $this->targetingForced,
-        ];
-    }
 }

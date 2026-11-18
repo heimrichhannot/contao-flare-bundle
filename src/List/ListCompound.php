@@ -147,16 +147,34 @@ final readonly class ListCompound
         );
     }
 
-    public function hash(): string
+    /**
+     * The list without its exclusive filters: what applies when no output is named.
+     *
+     * Keeps config, source and failures; a list with failures fails in every derivation.
+     */
+    public function whole(): self
     {
-        return \sha1(\serialize([
-            \get_class($this->driver),
-            $this->type,
-            $this->dc,
-            $this->source,
-            $this->config,
-            \array_map(static fn (FilterCompound $filter): array => $filter->fingerprint(), $this->filters),
-            \array_map(static fn (FilterFailure $f): array => [$f->source, $f->message], $this->failures),
-        ]));
+        return $this->keepingFilters(static fn (FilterCompound $filter): bool => !$filter->isExclusive());
+    }
+
+    /**
+     * The list with the filters that apply to the output.
+     *
+     * Keeps config, source and failures; a list with failures fails in every derivation.
+     */
+    public function forOutput(Output $output): self
+    {
+        return $this->keepingFilters(static fn (FilterCompound $filter): bool => $filter->appliesTo($output));
+    }
+
+    /**
+     * @param \Closure(FilterCompound): bool $keep
+     */
+    private function keepingFilters(\Closure $keep): self
+    {
+        // array_filter keeps the keys, which numeric aliases (row ids) depend on.
+        $filters = \array_filter($this->filters, $keep);
+
+        return \count($filters) === \count($this->filters) ? $this : $this->withFilters($filters);
     }
 }

@@ -46,6 +46,8 @@ class InteractiveProjector extends AbstractProjector
     }
 
     /**
+     * The lookup runs on the whole list ({@see ListCompound::whole()}), like the reader.
+     *
      * @throws FilterException In debug mode, if the list has failed.
      * @throws FlareException
      */
@@ -65,7 +67,7 @@ class InteractiveProjector extends AbstractProjector
         // The links out of the list lead to the reader: lookups follow its rules, not the submitted form. The reader
         // intent has the list's reader page and auto-item field, so the lookup shares the list's URL generator.
         $readerIntent = $this->validationIntentFactory->createFromIntent($intent);
-        $lookup = $entryCollectorFactory->createLookup($list, $readerIntent, $readerUrlGenerator);
+        $lookup = $entryCollectorFactory->createLookup($list->whole(), $readerIntent, $readerUrlGenerator);
 
         // The failures known without building conditions win over an invalid submission.
         $harnessFailures = $harness->getFailures();

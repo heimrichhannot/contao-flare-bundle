@@ -29,6 +29,7 @@ use HeimrichHannot\FlareBundle\List\Entry\EntryLookupInterface;
 use HeimrichHannot\FlareBundle\List\Entry\ModelRef;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
 use HeimrichHannot\FlareBundle\List\ListCompound;
+use HeimrichHannot\FlareBundle\List\Output;
 use HeimrichHannot\FlareBundle\Paginator\PaginatorConfig;
 use HeimrichHannot\FlareBundle\Tests\Engine\EnginePipelineTrait;
 use PHPUnit\Framework\TestCase;
@@ -119,6 +120,63 @@ final class InteractiveViewTest extends TestCase
         $entries = $view->getEntries();
         self::assertSame([2], self::ids($entries));
         self::assertSame(1, (int) $entries->first()?->other->row['id']);
+    }
+
+    public function testAFilterExclusiveToTheListViewBoundsEntriesAndCount(): void
+    {
+        $view = $this->project(new EventDispatcher(), $this->createList(self::publishedOnly(), self::notFirst()));
+
+        self::assertNotContains(1, self::ids($view->getEntries()));
+        self::assertSame(2, $view->getCount(), 'The three published rows but the first.');
+    }
+
+    public function testTheLookupIgnoresFiltersExclusiveToTheListView(): void
+    {
+        $found = $this->lookupInPhaseOne($this->createList(self::publishedOnly(), self::notFirst()), 1);
+
+        self::assertSame(1, $found?->row['id']);
+    }
+
+    public function testTheLookupKeepsAFilterAnEngineModAdded(): void
+    {
+        // as SimpleEquationMod adds its filter: through withFilter(), not exclusive
+        $list = $this->createList(self::publishedOnly(), self::notFirst())
+            ->withFilter(self::idOtherThan(2, 'not_second'));
+
+        self::assertNull($this->lookupInPhaseOne($list, 2));
+    }
+
+    /**
+     * The filter `id != 1`, exclusive to the list view.
+     */
+    private static function notFirst(): FilterCompound
+    {
+        return self::idOtherThan(1, 'not_first')->withOutputs([Output::ListView]);
+    }
+
+    /**
+     * Projects $list and returns what the lookup finds for $id in phase 1 of an attachment of the page's entries.
+     */
+    private function lookupInPhaseOne(ListCompound $list, int $id): ?Entry
+    {
+        $dispatcher = new EventDispatcher();
+        $dispatcher->addListener(
+            ListDriverEntriesEvent::class,
+            static function (ListDriverEntriesEvent $e) use ($id): void {
+                $e->attach('other', static function (EntryCollection $all, EntryLookupInterface $lookup) use (
+                    $id,
+                ): \Closure {
+                    $other = $lookup->lookup($id);
+
+                    return static fn (Entry $entry): ?Entry => $other;
+                });
+            },
+        );
+
+        $first = $this->project($dispatcher, $list)->getEntries()->first();
+        self::assertNotNull($first, 'Precondition: the page has entries.');
+
+        return $first->other;
     }
 
     private function countingDispatcher(): EventDispatcher

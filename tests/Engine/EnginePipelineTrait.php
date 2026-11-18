@@ -463,6 +463,24 @@ trait EnginePipelineTrait
     }
 
     /**
+     * A fixed filter `id != $id` under $alias, not exclusive.
+     */
+    protected static function idOtherThan(int $id, string $alias): FilterCompound
+    {
+        $element = new SimpleEquationFilterElement();
+        $config = (new FilterOptionsResolver(new SchemaResolver()))->resolve($element, [
+            'left' => 'id',
+            'operator' => SqlEquationOperator::NOT_EQUALS,
+            'right' => $id,
+        ]);
+
+        return new FilterCompound(
+            element: new ElementBinding($element, SimpleEquationFilterElement::TYPE, $config, null),
+            alias: $alias,
+        );
+    }
+
+    /**
      * The element types the pipeline knows, registered with their attribute as the compiler pass does.
      */
     private function createPipelineElementRegistry(): FilterElementRegistry

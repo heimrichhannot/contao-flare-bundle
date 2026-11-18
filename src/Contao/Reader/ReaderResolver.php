@@ -103,7 +103,7 @@ final class ReaderResolver implements ResetInterface
 
         try
         {
-            $list = $this->listFactory->create($this->getListModel($reader))->build();
+            $list = $this->listFactory->create($this->getListModel($reader))->build()->whole();
             $intent = $this->validationIntentFactory->createFromContent(contentModel: $reader, list: $list);
             $engine = $this->engineFactory->createEngine($intent, $list);
             $view = $engine->createView();

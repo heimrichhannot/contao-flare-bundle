@@ -27,6 +27,7 @@ use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
 use HeimrichHannot\FlareBundle\List\Entry\ModelRef;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
+use HeimrichHannot\FlareBundle\List\Output;
 use HeimrichHannot\FlareBundle\Tests\Engine\EnginePipelineTrait;
 use HeimrichHannot\FlareBundle\Tests\Filter\Element\StubsContaoDcaTrait;
 use HeimrichHannot\FlareBundle\Tests\Fixture\ContentModelFixture;
@@ -151,6 +152,18 @@ final class ReaderResolverTest extends ContaoTestCase
         self::assertNull($resolution->failure);
         self::assertNotNull($resolution->view);
         self::assertSame($resolution->list, $resolution->engine?->getList());
+    }
+
+    public function testTheReaderFindsAnEntryAFilterExclusiveToTheListViewExcludes(): void
+    {
+        $notFirst = self::idOtherThan(1, 'not_first')->withOutputs([Output::ListView]);
+
+        $resolution = $this->resolver(autoItem: 'visible', filters: [self::publishedOnly(), $notFirst])
+            ->resolve($this->content());
+
+        self::assertSame(1, $resolution->entry?->row['id']);
+        self::assertNotNull($resolution->list);
+        self::assertArrayNotHasKey('not_first', $resolution->list->filters);
     }
 
     public function testAControlThatCannotBuildItsFormDoesNotFailTheReader(): void

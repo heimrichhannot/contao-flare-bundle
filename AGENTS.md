@@ -108,9 +108,9 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `?Entry`, a list of ids → `EntryCollection`) and `EntryTaggerInterface`. Collisions (reserved name, column,
   attached twice, entry vs. collection) and any `attach()` after sealing throw `\Error`s
 - `src/Engine/ListEntry/` — `EntryCollector` (rows → `EntryCollection::forTable($list->dc)` with the reader linker →
-  `ListDriverEntriesEvent`, only for a non-empty collection → seal) and `EntryLookup` (member entries by id by the
-  reader's rules — the whole list (`ListCompound::whole()`: exclusive filters included), fixed filter values, no
-  form values — in one query without pagination, in the given order,
+  `ListDriverEntriesEvent`, only for a non-empty collection → seal) and `EntryLookup` (member entries by id on
+  the whole list (`ListCompound::whole()`: exclusive filters included), fixed filter values, no form values — in one
+  query without pagination, in the given order,
   duplicates collapsed, memoized per id list; each result is its own sealed collection with its own entries event;
   members are cache-tagged; `lookup([])` queries nothing; an id is a positive int or its canonical string;
   `null`/`''`/`0`/`'0'` count as no id, anything else throws `InvalidLookupIdError`). Neither is a service: `Engine/Factory/EntryCollectorFactory`
@@ -167,7 +167,10 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 - `src/Migration/` — `RenameFilterColumnsMigration` (`elm_`/`ctl_` renames), `BackfillFilterValuesMigration`
   (run-once per row via the migration-managed `legacyBackfilled` marker column), `RenameContentListColumnMigration`,
   `RetireCalendarLimitMigration` (marker `calendarLimitRetired`; waits for the renames and the backfill; retires
-  `flare_calendar_current`'s `is_limited`: readable leftovers switch the period on, filters to check are reported).
+  `flare_calendar_current`'s `is_limited`: readable leftovers switch the period on, filters to check are
+  reported; a row with `elm_isLimited` off also becomes exclusive to the list view — `exclusive = '1'`,
+  `outputs = serialize(['list_view'])` — because v0.1's reader ignored such a filter; requires the `exclusive` and
+  `outputs` columns).
   Migrations never delete; legacy columns stay until deletes are run manually
 - `src/Config/` — `ConfigBuilder` (fluent canonical-config accumulator; no cast helpers — transformers cast
   declaratively off the typed model), `TransformerMap` (source class → transformer, what

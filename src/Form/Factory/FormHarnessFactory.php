@@ -83,7 +83,7 @@ final readonly class FormHarnessFactory
                 continue;
             }
 
-            $context = new ControlContext($list, $filter, $intent);
+            $context = new ControlContext($list, $filter);
 
             try
             {

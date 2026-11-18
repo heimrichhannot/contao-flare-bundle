@@ -6,7 +6,6 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
-use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
@@ -26,11 +25,6 @@ use PHPUnit\Framework\TestCase;
 final class FilterEffectFactoryTest extends TestCase
 {
     use BuildsFilterEffectsTrait;
-
-    public function testConfigurationIntentHasItsOwnType(): void
-    {
-        self::assertSame('configuration', ConfigurationIntent::getIntentType());
-    }
 
     public function testHandsTheValueToTheElement(): void
     {
@@ -88,7 +82,6 @@ final class FilterEffectFactoryTest extends TestCase
                 targetAlias: $alias,
                 targetingForced: $forced,
             ),
-            intent: new ConfigurationIntent(),
         );
 
         $effect = $this->createFilterEffectFactory($registry)->create($context, null);

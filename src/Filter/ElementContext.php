@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
-use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\List\ListCompound;
 
 /**
- * The value-free situation a filter element hook runs in: the list, the filter, and the intent.
+ * The value-free situation a filter element hook runs in: the list and the filter.
  * {@see get()} reads the element's own config.
  *
  * @api
@@ -17,9 +16,8 @@ use HeimrichHannot\FlareBundle\List\ListCompound;
 final readonly class ElementContext
 {
     public function __construct(
-        public ListCompound    $list,
-        public FilterCompound  $filter,
-        public IntentInterface $intent,
+        public ListCompound   $list,
+        public FilterCompound $filter,
     ) {}
 
     /**

@@ -109,7 +109,6 @@ final class FilterInvokerTest extends TestCase
         return new ElementContext(
             list: $context->list,
             filter: new FilterCompound(element: $context->filter->element, alias: 'test', source: 'tl_flare_filter.9'),
-            intent: $context->intent,
         );
     }
 }

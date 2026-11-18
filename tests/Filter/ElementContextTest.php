@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
-use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
@@ -37,7 +36,6 @@ final class ElementContextTest extends TestCase
                     'label' => 'control',
                 ])),
             ),
-            intent: new ConfigurationIntent(),
         );
     }
 

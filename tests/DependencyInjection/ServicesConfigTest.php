@@ -36,7 +36,6 @@ use HeimrichHannot\FlareBundle\Contao\Reader\ReaderResolver;
 use HeimrichHannot\FlareBundle\Contao\ReaderResolution;
 use HeimrichHannot\FlareBundle\Engine\Factory\EntryCollectorFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\AggregationIntent;
-use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Engine\Intent\Factory\AggregationIntentFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\Factory\InteractiveIntentFactory;
 use HeimrichHannot\FlareBundle\Engine\Intent\Factory\ValidationIntentFactory;
@@ -136,7 +135,6 @@ final class ServicesConfigTest extends TestCase
             InteractiveIntent::class,
             ValidationIntent::class,
             AggregationIntent::class,
-            ConfigurationIntent::class,
             Entry::class,
             EntryMeta::class,
             ModelRef::class,

@@ -9,7 +9,7 @@ use Contao\TestCase\ContaoTestCase;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contao\ListEntry\EntryRelationResolver;
 use HeimrichHannot\FlareBundle\Engine\Engine;
-use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
+use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Engine\View\ValidationView;
 use HeimrichHannot\FlareBundle\Event\ReaderSchemaOrgEvent;
 use HeimrichHannot\FlareBundle\Exception\MissingModelRefError;
@@ -102,7 +102,7 @@ class FlareRuntimeTest extends ContaoTestCase
         $engine = new Engine(
             new EngineModRegistry([]),
             new ProjectorRegistry([]),
-            new ConfigurationIntent(),
+            new ValidationIntent(),
             $list,
         );
         $context = ['entry' => $entry, 'flare' => $engine];

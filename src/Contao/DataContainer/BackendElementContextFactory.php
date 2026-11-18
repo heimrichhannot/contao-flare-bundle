@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Contao\DataContainer;
 
 use HeimrichHannot\FlareBundle\Contao\Factory\FilterCompoundFactory;
-use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -36,7 +35,6 @@ final readonly class BackendElementContextFactory
             return new ElementContext(
                 list: $getList(),
                 filter: $this->filterCompoundFactory->create($filterModel, withValue: false),
-                intent: new ConfigurationIntent(),
             );
         }
         catch (\Exception) {}

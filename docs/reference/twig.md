@@ -8,13 +8,13 @@ Flare registers the following Twig functions (see also [Templating](../templatin
 | `flare_enclosure(entry\|array, field = "enclosure")` | Retrieves file enclosure data, like `Contao\Controller::addEnclosuresToTemplate()`; reads `entry.row` for an entry. |
 | `flare_project(list, intent)` | Runs a projection directly: returns the view for the given [`ListCompound`](../spec/compounds.md) and intent. |
 | `flare_related(entry, column)` | The record a column refers to, by the relation in the table's DCA (`foreignKey` + `relation`), resolved from the entry's row like `Model::getRelated()`: a model (to-one), a model collection (to-many) or `null`; memoized per entry and column. Returns the raw relation without a membership check — for membership or a reader link, use `flare_reader.lookup()` in a reader template; in a list, use the lookup a [listener's phase 1](../dev/entries.md#4-computed-similarity) receives. Throws without `entry.meta.modelRef`, for a column without a relation, for a related table without a model class and for an unsupported relation type. |
-| `flare_schema_org(entry = null, list = null)` | Returns the schema.org (JSON-LD) data of an entry. Without arguments, only in a reader template: the reader's `entry` and the list of `flare`. Influence the data via `ReaderSchemaOrgEvent`. |
+| `flare_schema_org(entry = null, list = null)` | Returns the schema.org (JSON-LD) data of an entry. Without arguments, only in a reader template: the reader's `entry` and the list of `flare` (the whole list); a passed list is used as given (`flare.list` in a list template: the list view's list). Influence the data via `ReaderSchemaOrgEvent`. |
 
 In reader templates, the view `flare_reader` adds:
 
 | Method | Description |
 |---|---|
-| `flare_reader.lookup(id)` / `flare_reader.lookup([ids])` | Other entries of the list by id: one id → the entry or `null`, a list → a collection of the found entries in the given order. Membership in *this* list, by the reader's rules (fixed filter values, no form values) — the reader on the jump-to page must use the same list. Ids of the list's own table only: deserialize stored lists first; an empty field (`null`, `''`, `0`) counts as no id. See [Templating](../templating.mdx#linking-other-entries). |
+| `flare_reader.lookup(id)` / `flare_reader.lookup([ids])` | Other entries of the list by id: one id → the entry or `null`, a list → a collection of the found entries in the given order. Membership in *this* list, by the reader's rules (the whole list: filters that are not [exclusive](./filter-elements.md#apply-exclusively), fixed filter values, no form values) — the reader on the jump-to page must use the same list. Ids of the list's own table only: deserialize stored lists first; an empty field (`null`, `''`, `0`) counts as no id. See [Templating](../templating.mdx#linking-other-entries). |
 
 ## Debugging: Symfony Profiler
 

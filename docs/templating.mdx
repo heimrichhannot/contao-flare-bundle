@@ -310,9 +310,10 @@ similar.
 - **One id** returns the entry or `null`; **a list of ids** returns a collection of the found entries in the given
   order (duplicates count once). An empty list returns an empty collection without a query. An empty field (`null`,
   `''` or `0`) counts as no id: alone it returns `null`, in a list it is skipped — no guard needed.
-- **Membership in this list.** Only entries of *this* list are returned, by the reader's rules: the list's filters
-  with their fixed values, never the submitted form values. A linked entry is therefore shown by the reader on the
-  jump-to page only if that reader uses the same list.
+- **Membership in this list.** Only entries of *this* list are returned, by the reader's rules: the whole list —
+  the filters that are not [exclusive](reference/filter-elements.md#apply-exclusively) — with their fixed values,
+  never the submitted form values. A linked entry is therefore shown by the reader on the jump-to page only if that
+  reader uses the same list.
 - **Ids only.** Pass ids of the list's own table (the `id` column) as positive numbers or their strings — not the id of a
   parent record (`entry.pid` of a news entry is an archive id: use [`flare_related()`](#twig-helpers)). Anything
   else throws an error, including the serialized array a picker field stores: deserialize it first (in PHP with
@@ -616,8 +617,10 @@ Flare currently registers these Twig functions (see the [Twig functions referenc
   unsupported relation type (see
   [the differences from `getRelated()`](dev/entries.md#6-related-records-without-a-listener-flare_related)).
 - `flare_schema_org(entry = null, list = null)` returns the schema.org (JSON-LD) data of an entry. In a reader
-  template, without arguments, it uses the reader's `entry` and the list of `flare`; elsewhere pass both
-  (`flare_schema_org(entry, flare.list)`). The data can be influenced using the `ReaderSchemaOrgEvent`.
+  template, without arguments, it uses the reader's `entry` and the list of `flare` — the whole list, without the
+  filters exclusive to the list view; elsewhere pass both (`flare_schema_org(entry, flare.list)`; in a list template
+  that is the list view's list). The data can be influenced using the `ReaderSchemaOrgEvent`, which gets the list
+  used.
 
 In reader templates, the view adds:
 

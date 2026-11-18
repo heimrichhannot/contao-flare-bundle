@@ -74,7 +74,7 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
   | Removed | Replacement |
   |---|---|
   | `InteractiveView::getModels()`, `InteractiveView::getModel($id)` | the entries of `InteractiveView::getEntries()`; a model only where a Contao API needs one, loaded by `meta.modelRef` through the table's finder: `Model::getClassFromTable($ref->table)::findById($ref->id)` (see [Enriching Entries](./dev/entries.md#8-contao-apis-that-need-a-model)) |
-  | `ValidationView::getModel($id)`, `ValidationView::getEntry($id)` | `ValidationView::lookup($id)` (membership in the list, by the reader's rules) |
+  | `ValidationView::getModel($id)`, `ValidationView::getEntry($id)` | `ValidationView::lookup($id)` (membership in the whole list, by the reader's rules) |
   | `ValidationView::getModelByAutoItem($autoItem)` | `ValidationView::getEntryByAutoItem($autoItem)`, which now returns an `Entry` |
   | `InteractiveView::to()`, `ValidationView::to()` | `Entry::to()` of an entry, or of a lookup's result |
 
@@ -87,6 +87,12 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
   [Enriching Entries](./dev/entries.md#8-contao-apis-that-need-a-model))
 - `ValidationLoader::fetchEntryById()` (also on `ValidationLoaderInterface`) — `fetchEntriesByIds()` loads members
   by id
+- `ElementContext::$intent` and `ControlContext::$intent` (v0.2 development only) — no element or control sees the
+  intent; where the list view and the reader should differ, the filter
+  [applies exclusively](./reference/filter-elements.md#apply-exclusively) to the list view
+- `Engine\Intent\ConfigurationIntent` (v0.2 development only) — it existed only as the backend contexts' intent
+- `ListCompound::hash()` (v0.1: `ListSpecification::hash()`) and `FilterCompound::fingerprint()` (v0.1:
+  `FilterDefinition::hash()`) — no successor. Value objects keep `ValueInterface::fingerprint()`
 
 ## Contracts
 
@@ -138,6 +144,10 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
   column) — replaced by `control` and `value`; see [Database & Backend](./migrating-from-v0.1.md#database--backend)
 - All other `tl_flare_filter` columns keep their data under new names: `elm_*` / `ctl_*` prefixes and
   `formAlias` → `alias` (`contao:migrate`)
+- `tl_flare_filter.elm_isLimited` (v0.1: `isLimited`), the calendar filter's *Limit the date selection* (field
+  definition removed; the column remains until deletes are run manually, as does the `calendarLimitRetired` marker
+  column) — its behavior is now the calendar filter's only rule; see
+  [The calendar filter's period](./migrating-from-v0.1.md#the-calendar-filters-period)
 
 ## Twig
 
@@ -164,7 +174,11 @@ Exhaustive list of APIs deleted in v0.2. For how to replace them, see
 ## Behavioral notes
 
 - Bool filters with a control no longer restrict reader pages: only fixed values and the elements' own config
-  bound the whole list.
+  bound the whole list — of filters that are not
+  [exclusive](./reference/filter-elements.md#apply-exclusively); an exclusive filter bounds only its outputs.
+- The calendar filter (`flare_calendar_current`) is always bounded by its configured period, in the list view and
+  the reader; a value narrows within it instead of replacing it (see
+  [The calendar filter's period](./migrating-from-v0.1.md#the-calendar-filters-period)).
 - A list with a broken filter element (with or without a control), a broken fixed value, or two published
   filters sharing an alias now renders `list.failed` (HTTP 200) instead of an empty or unfiltered result; its
   reader answers 500.

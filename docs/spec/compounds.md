@@ -33,6 +33,8 @@ public function withFilter(FilterCompound $filter, ?string $key = null): self;
 public function withoutFilter(string $key): self;
 public function withFilters(array $filters): self;
 public function withConfig(array $config): self;
+public function whole(): self;
+public function forOutput(Output $output): self;
 public function hasFilterInstance(string $class): bool;
 ```
 
@@ -42,7 +44,15 @@ public function hasFilterInstance(string $class): bool;
   this is how a manual filter overrides a database-driven filter sharing the same key (e.g. the default
   `published` filter that the News list driver adds).
 - **Checking for element classes:** `hasFilterInstance(BooleanFilterElement::class)` checks whether any
-  filter's element is an instance of the given class or interface.
+  filter's element is an instance of the given class or interface — exclusive filters count too, on the list and on
+  the builder.
+- **Deriving the list of an output:** `whole()` returns the list without its
+  [exclusive](../reference/filter-elements.md#apply-exclusively) filters — what the reader, the breadcrumb and the
+  lookup run on; `forOutput(Output::ListView)` the list without the filters exclusive to other outputs — what the
+  list view runs on, its count and form included (`HeimrichHannot\FlareBundle\List\Output`). Both keep config,
+  source and failures (a list with failures fails in every derivation) and the filters' keys, numeric aliases
+  included; when no filter is dropped, the list itself is returned. The duplicate-alias check covers all published
+  filters.
 
 ## 3. Building a List (`ListCompoundBuilder`)
 
@@ -82,9 +92,5 @@ Key points at the list level:
 - **`targetAlias`**: The SQL table alias the filter should target. Defaults to `null`, which resolves to
   `main` when the filter is executed. Use `withTargetAlias(string $alias)` to pin a filter to a specific
   alias — it returns a **new** instance, since `FilterCompound` is immutable.
-
-## 5. Persistence & Hashing
-
-`ListCompound::hash()` produces a stable hash from the list's type, data container, source, config, and each
-filter's `FilterCompound::fingerprint()`. The `Engine` and `Projector` use it to determine if the configuration has
-changed, which is crucial for caching and identifying unique list states (e.g., for pagination parameters).
+- **`outputs`**: `null` for a filter that bounds the whole list, else the outputs it applies to exclusively
+  (`withOutputs()`); see [`whole()` / `forOutput()`](#2-the-listcompound).

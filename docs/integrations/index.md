@@ -27,7 +27,10 @@ regular list behavior, the calendar integration provides:
   the date), expanding multi-day and recurring events onto each date they occur: such an event is
   one entry per occurrence, so entries of one page may share an `id`.
 - The **Calendar time window** filter element (`flare_calendar_current`) for filtering events by
-  a date range that respects recurring events.
+  a date range that respects recurring events: the configured period bounds the list, a value narrows within it.
+  To bound only the list view — upcoming events, while the reader still finds past ones — make the filter
+  [apply exclusively](../reference/filter-elements.md#apply-exclusively) to the list view (see
+  [Calendar time window](../reference/filter-elements.md#calendar-time-window)).
 - Reader page-meta support for event detail pages.
 
 ## Contao Comments

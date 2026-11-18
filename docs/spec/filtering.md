@@ -20,7 +20,7 @@ As of v0.2, FLARE's filtering is built from four decoupled concepts:
   stateless query-fragment builders — the only components that write SQL conditions.
   See [Predicates](../dev/predicates.md).
 
-A filter is applied in **two stages**: a value-free, role-typed context (list × filter × intent) is what
+A filter is applied in **two stages**: a value-free, role-typed context (list × filter, no intent) is what
 hooks receive before a value exists — an `ElementContext` for the element's `buildEffect()` and its ports, a
 `ControlContext` for the control; `$context->get('key')` reads the calling component's own config. The
 `FilterEffect` is the element's product for one invocation, built once a value is known.
@@ -56,6 +56,7 @@ Constructor properties:
 | `targetAlias` | Table alias the filter's conditions apply to |
 | `targetingForced` | Whether the target alias applies even if the element is not marked as targeted |
 | `source` | Provenance for error messages, e.g. `tl_flare_filter.42` |
+| `outputs` | `null`: the filter is **not exclusive** and bounds the whole list. A list of `List\Output` cases: the filter [applies exclusively](../reference/filter-elements.md#apply-exclusively) to those outputs; `[]` = nowhere. Stored as the `exclusive` and `outputs` columns; keys the `Output` enum does not know are ignored |
 
 Both configs are a `ComponentConfig` (`HeimrichHannot\FlareBundle\Config\ComponentConfig`): immutable, holding
 scalars, arrays and enums only. `get('key')` returns a value — `null` for an option defined without default and
@@ -63,14 +64,15 @@ not set — and throws `UndefinedConfigKeyError` (an `\Error`) for a key the com
 `has('key')` and `all()` complete it. Inside a hook, `$context->get('key')` is the short way to the own config.
 
 Because `FilterCompound` is immutable, all modification happens through withers that return a new instance:
-`withValue()`, `withControl(?ControlBinding)`, `withTargetAlias(?string, bool $forced = true)`.
+`withValue()`, `withControl(?ControlBinding)`, `withTargetAlias(?string, bool $forced = true)`,
+`withOutputs(?array)`; each keeps the other members, `$outputs` included. `isExclusive()` and
+`appliesTo(Output)` read the setting.
 
 Filters are created without a database row through the `FilterCompoundFactory` service — which resolves registered
 element aliases and control names to their services — or by constructing a `FilterCompound` directly around an inline
 element instance; see
 [Programmatic Filters](../dev/filter-elements/index.md#9-programmatic-filters-without-a-backend-record).
-`FilterCompound::fingerprint()` returns a representation (element class, configs, control class and the value's
-`fingerprint()`) used by `ListCompound::hash()` for in-request caching.
+A filter created in code is not exclusive unless `create(outputs: ...)` or `withOutputs()` says so.
 
 **Fixed vs. initial value.** The `control` column of a filter record decides the role of its value:
 
@@ -78,6 +80,23 @@ element instance; see
 |---|---|---|---|
 | blank (intrinsic) | fixed value | restricted | restricted |
 | a control | initial value | pre-filtered, user can change it | not applied |
+
+This holds for a filter that is not exclusive; a filter exclusive to the list view restricts only the list view, and
+the whole list ignores it.
+
+**Two lists from one compound.** The `ListCompound` keeps every published filter and derives the list an entry
+point runs on: `whole()` drops the exclusive filters, `forOutput(Output $output)` the filters exclusive to other
+outputs. Both keep config, source, failures and the filters' keys.
+
+| Entry point | List |
+|---|---|
+| the list view (`ListViewController`: entries, count, form) | `forOutput(Output::ListView)` |
+| the list view's lookup (phase 1 of an entries listener) | `whole()` of the list it runs on, filters of engine mods included |
+| the reader, the breadcrumb, `flare_reader.lookup()` (`ReaderResolver`) | `whole()` |
+| the backend (inspection, option callbacks, DCA hook) | the full compound |
+| a list passed to `flare_project()` / `FlareRuntime::project()` | as given |
+
+No step decides by the intent's type which filters apply.
 
 ## 2. Collection
 
@@ -147,7 +166,9 @@ programmatic filter can force one with `FilterCompound::withTargetAlias('my_alia
 ## 6. Failure Handling
 
 Failures follow the two scopes of a filter: the element config, a stored control and a fixed value bound the
-**whole list**; an initial value and a control's form field only bound the **initial display**.
+**whole list** (an exclusive filter's: its outputs); an initial value and a control's form field only bound the
+**initial display**. A failure recorded while the list was built fails it in every output, also when the failed
+filter is exclusive to another one.
 
 | What fails | Behaviour |
 |---|---|
@@ -192,10 +213,12 @@ list's filter overview, a message on its edit form, and a count above the overvi
 | Programming error | bug (red) | building or checking the filter throws an `\Error`; caught (and logged as critical) outside debug mode only, in debug mode it escapes |
 | Duplicate alias | copy-x (red) | the filter shares its alias with other filters, see below |
 | Broken | bone-fracture (red) | the filter cannot be created, or its conditions cannot be built with its default value (the fixed value without a control, `null` with one) |
-| Ineffective | engine (yellow) | the element explains why the filter restricts nothing (`IneffectiveFilterContract`) |
+| Ineffective | engine (yellow) | the element explains why the filter restricts nothing (`IneffectiveFilterContract`), or the filter is exclusive to no output |
+| Warning | badge-exclamation-point (yellow), or the icon its listener names | a `FilterInspectionEvent` listener adds a hint on a valid setup; the bundle warns for a `flare_published` filter exclusive to an output when no publication filter of the list is not exclusive. Never fails the list; a hint on the edit form, a count of its own above the overview |
 
-Every saved filter is inspected, published or not; an unpublished filter's icon is muted and its issues never count
-above the overview, which counts published filters and those added by the list driver. Duplicate aliases: two or
+Every saved filter is inspected, published or not; a row keeps every issue found, each with its icon. An unpublished
+filter's icons are muted and its issues never count above the overview, which counts published filters (once per
+kind) and those added by the list driver. Duplicate aliases: two or
 more published filters sharing an alias block the list, and all filters of that alias are marked; with one published
 filter only the unpublished ones are marked (they would block the list once published); with none, none is.
 Failures are recorded on the `ListCompound` as `FilterFailure` objects (source, message, exception).

@@ -140,6 +140,13 @@ class MyCustomListDriver extends AbstractListDriver
 }
 ```
 
+`hasFilterInstance()` counts every filter added so far, [exclusive](../../reference/filter-elements.md#apply-exclusively)
+ones included. So the default is skipped also when the editor's only publication filter applies exclusively to the
+list view — the reader and the lookup then have none and find unpublished entries too. That is intended: the default
+is a setup aid, and an editor may overrule it. The backend tells the editor with a warning on that filter (see
+[the backend issues](../../spec/filtering.md#6-failure-handling)). The News and Events
+drivers behave the same.
+
 Besides `addFilter()`/`removeFilter()`, the builder exposes `set(key, value)` for canonical config
 overrides (they win over the base translation and the driver's transformers) and read access to the
 driver (`getDriver()`), the stored model (`getModel()`), the pre-resolution data container hint

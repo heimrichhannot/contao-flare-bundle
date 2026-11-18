@@ -88,8 +88,10 @@ All three receive the value-free `ControlContext` (`HeimrichHannot\FlareBundle\F
 counterpart of the [`ElementContext`](./filter-elements/index.md#the-elementcontext-and-the-filtereffect):
 `$context->get('key')` reads the control's **own** resolved config (a key the schema does not define throws
 `UndefinedConfigKeyError`), `$context->element()` is the element, and `$context->forElement()`
-returns the `ElementContext` to hand to the element's [capability ports](#3-capability-ports). `$context->list`,
-`$context->filter` and `$context->intent` are available as on the element side.
+returns the `ElementContext` to hand to the element's [capability ports](#3-capability-ports). `$context->list` and
+`$context->filter` are available as on the element side; there is no intent. In the frontend, `$context->list` is
+the list view's list (the form harness's): a filter that is not part of it — exclusive to another output, or to
+none — is not mounted. The backend's inspection works on the full list, exclusive filters included.
 
 A control owns its own config and its own slice of the backend palette, through the same optional contracts as
 elements — `OptionsContract` (`configureOptions()`), `TransformerContract` (`configureTransformers()`) and
@@ -251,8 +253,10 @@ The former element events `FilterElementBuildingEvent` / `FilterElementBuiltEven
   `hydrate()` throws, the filter is mounted without its initial value: a `FilterException` is logged as a warning,
   any other exception as an error, and in debug mode it is rethrown instead.
 - **Build time, element side.** An unknown element type or a broken element config fails the list
-  (**fail closed**) — also for a filter *with* a control, because the element config bounds the whole list. So
-  does an unreadable fixed value of a filter without a control.
+  (**fail closed**) — also for a filter *with* a control, because the element config bounds the whole list (or,
+  for a filter that [applies exclusively](../reference/filter-elements.md#apply-exclusively), its outputs). So
+  does an unreadable fixed value of a filter without a control. A failure recorded at build time fails the list in
+  every output, also when the filter is exclusive to another one.
 - **Query time.** If a controlled filter fails with a non-null value, it is retried once with value `null`.
   Success drops only the value (warning); if the retry fails too, or the value was already `null`, the element
   config is broken and the list fails closed. `\Error`s escape unwrapped.

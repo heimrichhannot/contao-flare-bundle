@@ -6,6 +6,22 @@ sidebar_position: 7
 
 Flare provides several events to hook into the list and reader lifecycle.
 
+**Which list an event carries.** A filter can [apply exclusively](../reference/filter-elements.md#apply-exclusively)
+to an output, so the list view and the reader run on different lists of one configuration: the list view on
+`ListCompound::forOutput(Output::ListView)`, the reader, the breadcrumb and the lookup on `ListCompound::whole()`
+(the list without its exclusive filters). An event carries the list of its entry point; none changes its shape:
+
+| Event | The list it carries |
+|---|---|
+| `ListDriverBuildListEvent` | the builder before any derivation: every published filter, exclusive ones included |
+| `QueryBaseInitializedEvent::$list`, `ModifyListQueryStructEvent` (`$config->list`) | the list being queried: the list view's list for entries and count, the whole list for the reader and a lookup; in the backend (DCA hook, option callbacks) the full list; the Codefog tags element fires it with the list its context carries |
+| `ListDriverEntriesEvent::$list` | the list view's list on a list page; the whole list for the reader's entry and a lookup's members |
+| `ListViewRenderEvent` (`$engine->getList()`) | the list view's list |
+| `FormHarnessBuildEvent::$list`, `FilterControlBuildFormEvent` (`$context->list`) | the list view's list |
+| `ReaderPageMetaEvent::$list`, `ReaderRenderEvent::$list` | the whole list |
+| `ReaderSchemaOrgEvent::$list` | in a reader template without arguments, the whole list; a list passed to `flare_schema_org()` as given (`flare.list` in a list template: the list view's list) |
+| `FilterInspectionEvent::$list` | the full list as the runtime builds it, exclusive filters included |
+
 ## 1. Query Modification
 
 ### `ModifyListQueryStructEvent`
@@ -169,7 +185,29 @@ Dispatched after the selected filter control's `buildDca()` ran, before `FilterE
   `context` (readonly `DcaContext`; `context->type` is the *element* type), `type` (readonly `string`, the
   control type)
 
-## 8. Other Events
+## 8. Backend Filter Inspection
+
+### `FilterInspectionEvent`
+Dispatched by the backend's filter inspection once per saved filter row of a list, published or not, in sorting
+order, after the framework's own checks — also for a row whose filter could not be built, and when the list cannot be
+built. Filters without a row (added by a list driver or a listener) get no event.
+- **Use Case:** Warning editors about a valid setup that may not do what they expect. A warning never fails a list;
+  the filter row shows it with its icon, the edit form as a hint, and the list's filter overview counts it.
+- **Class:** `HeimrichHannot\FlareBundle\Event\FilterInspectionEvent`
+- **Properties:** `model` (readonly `FilterModel`, the row), `list` (readonly `?ListCompound`, `null` if the list
+  cannot be built), `filter` (readonly `?FilterCompound`: the row's filter as the list has it, so a
+  `ListDriverBuildListEvent` listener's replacement is what you see, else as built for the row alone; `null` if it
+  could not be built), `issues` (readonly `list<FilterIssue>`, the row's issues found so far)
+- **API:** `addWarning(string $message, ?string $icon = null)` — the message is shown as given (translate it), the
+  icon is a lucide icon name; `null` or a name the bundle has no icon for shows `badge-exclamation-point`.
+  `getWarnings()`
+- An `\Exception` thrown by a listener is reported as a programming error on the row.
+
+The bundle's own listener warns for a `flare_published` filter exclusive to an output when the list has no
+publication filter that is not exclusive: the reader and the lookup then show unpublished entries. See
+[Custom Filter Elements](./filter-elements/index.md#7-choice-and-date-elements-capability-ports).
+
+## 9. Other Events
 
 ### `ReaderUrlGeneratedEvent`
 Dispatched when the URL to a reader (details) page is generated for an entry — once per entry, on the first read of
@@ -182,7 +220,7 @@ Dispatched when the URL to a reader (details) page is generated for an entry —
 decoded and **never percent-encoded** — percent-encoding is the router's job. A listener that builds another URL from
 it passes it to the router as is; encoding it again would break the round trip back to the entry.
 
-## 9. Named Events (Aliased Dispatch)
+## 10. Named Events (Aliased Dispatch)
 
 Several events are re-dispatched under a dynamic name after the base event, so listeners can target
 one specific filter element type, form, or list type without checking inside a generic listener. The event

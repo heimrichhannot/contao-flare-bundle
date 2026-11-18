@@ -38,7 +38,7 @@ For the exhaustive list of deleted APIs, see [Removed in v0.2](./removed-in-v0.2
 | `#[AsFilterElement(type:, formType:, palette:, method:, isTargeted:)]` | `#[AsFilterElement(type:, isTargeted:, value:)]` — palette moves into `buildDca()`, the form type into a [filter control](./dev/filter-controls.md), the invoked method is always `buildEffect()`; `value:` names the value class the element consumes (none = always intrinsic) |
 | — | `#[AsFilterControl(type:)]` — registers a [filter control](./dev/filter-controls.md); new in v0.2 |
 | `#[AsListType(type:, dataContainer:, palette:)]` | `#[AsListDriver(type:, dataContainer:)]` — renamed; palette moves into `buildDca()`; `dataContainer` is only a backend default for new records |
-| `#[AsFilterInvoker]` | Removed — branch on `$context->intent` inside `buildEffect()` or a control hook |
+| `#[AsFilterInvoker]` | Removed — an element builds the same conditions whatever the list is rendered for; its context has no intent. Where the list view and the reader should differ, the filter [applies exclusively](./reference/filter-elements.md#apply-exclusively) to the list view (an expert setting on the filter, or `outputs:` / `withOutputs()` in code) |
 | `#[AsFilterCallback]`, `#[AsListCallback]`, `#[AsFlareCallback]` | Removed — use [`buildDca()` / the DCA events](./dev/dca-builder.md) |
 
 ## Translations
@@ -107,7 +107,7 @@ removed: a control keeps its choices to itself and a value is read back through 
 ## Database & Backend
 
 v0.2 renames the `tl_flare_filter` columns and replaces several settings. **Run `contao:migrate`** after
-updating; two migrations ship with the bundle.
+updating; the migrations below ship with the bundle.
 
 :::warning Run the migrations without deletes
 
@@ -138,14 +138,25 @@ The migrations:
   - `ctl_hasEmptyOption` / `ctl_formatEmptyOption(Custom)` / `ctl_placeholder`: derived so choice widgets look
     the same as before (single-selects get an empty option unless expanded and mandatory; an old placeholder
     becomes the custom empty-option label).
+- `RetireCalendarLimitMigration` retires the calendar filter's *Limit the date selection* (`elm_isLimited`), **once
+  per row** (tracked in the migration-managed marker column `calendarLimitRetired`). It waits until the columns are
+  renamed and the backfill has run, and runs only while `elm_isLimited` exists. Its one change: a side of the period
+  whose mode is blank but whose date text v0.1 applied — a non-numeric text plain `strtotime()` reads — is switched
+  on as *Date string (PHP)*, so the backend shows the bound that applies. An unreadable, a numeric and a time-span
+  leftover (e.g. `this_week`, which v0.1 could not read) stay switched off. It changes no control and no value and
+  makes no filter exclusive. Its result message counts the filters to check: "… N calendar filters with a control
+  or a fixed value now stay within their period: check them". See
+  [The calendar filter's period](#the-calendar-filters-period).
 
 **Migrations never delete.** `contao:migrate` is run **without** deletes (`--with-deletes` off, the default).
 The legacy columns **`intrinsic`**, **`boolMode`**, **`preselect`** and **`prefill`**, and the
 **`legacyBackfilled`** marker, remain in the table until you run the proposed DROPs manually
 (`contao:migrate --with-deletes`) — do that only after you tested the migrated site, never before the backfill
 has run, because the deletes destroy its source data. Drop `legacyBackfilled` together with the other legacy
-columns, never on its own: the backfill uses it to remember that it has run. On **MariaDB** the old index names may remain as
-duplicates of the renamed ones until the deletes have been run; this is harmless.
+columns, never on its own: the backfill uses it to remember that it has run. The same holds for
+**`elm_isLimited`** and the **`calendarLimitRetired`** marker: drop them together, after the migrations have run.
+On **MariaDB** the old index names may remain as duplicates of the renamed ones until the deletes have been run;
+this is harmless.
 
 Backend changes in the filter form:
 
@@ -154,12 +165,17 @@ Backend changes in the filter form:
   `value` is the initial value).
 - `boolMode` and the `preselect` / `prefill` fields are gone; a bool filter offers both bool controls and swaps
   the palette on change.
+- The calendar filter's *Limit the date selection* (`is_limited`) is gone (see
+  [The calendar filter's period](#the-calendar-filters-period)).
+- Every filter has the new expert setting [**Apply exclusively**](./reference/filter-elements.md#apply-exclusively)
+  with its **Outputs** (today: *List view*). Off by default; the migrations switch it on for no filter.
 
 ## Behaviour Changes
 
-- **Reader pages.** Only fixed values and the elements' own config bound the *whole list*. A bool (or any)
-  filter *with* a control no longer restricts reader pages — before, a bool `preselect` also acted as a
-  fallback in validation.
+- **Reader pages.** Only fixed values and the elements' own config bound the *whole list* — of filters that are
+  not [exclusive](./reference/filter-elements.md#apply-exclusively); a filter exclusive to the list view does not
+  bound the reader. A bool (or any) filter *with* a control no longer restricts reader pages — before, a bool
+  `preselect` also acted as a fallback in validation.
 - **Failed lists.** A broken filter element (with or without a control, including a missing required setting such
   as the target field), a stored control that no longer exists (e.g. of an uninstalled bundle) or whose config is
   broken, a broken fixed value, or two published filters sharing an alias make the list *fail* instead of silently
@@ -172,8 +188,47 @@ Backend changes in the filter form:
   which answers 500 —, and the backend no longer saves such an alias. A controlled filter that fails with a value is retried once without it: if that works only the value is dropped (warning logged); if it fails too, the element config is broken and the list fails closed like a fixed filter. Custom
   list templates that replace `flare_listview` should check `flare_list.failed`. An unreadable initial value
   only drops the value; the control stays. The backend marks each filter issue on the filter's row, edit form
-  and above the filter list: programming error (bug), duplicate alias (copy-x), broken (bone-fracture) and
-  ineffective (engine).
+  and above the filter list: programming error (bug), duplicate alias (copy-x), broken (bone-fracture),
+  ineffective (engine) and warning (badge-exclamation-point, or the icon its listener names) — a hint that never
+  fails the list, e.g. for a publication filter that applies exclusively, so the reader shows unpublished entries.
+
+### The calendar filter's period
+
+In v0.1 the calendar filter (`flare_calendar_current`) mixed two purposes behind *Limit the date selection*
+(`is_limited`): a hard bound the entries must lie in, and a preselection the visitor could leave. v0.2 has one rule,
+v0.1's behavior with `is_limited` on, for every filter: the configured period bounds the list view and the reader,
+and a value only narrows within it (see [Calendar time window](./reference/filter-elements.md#calendar-time-window)).
+No list becomes wider than in v0.1 except as listed below; where `is_limited` was off, a list can become **narrower**.
+The migration's result message counts those filters — check them after the update:
+
+- **`is_limited` off, with a control:** the period becomes a bound the visitor cannot leave, and it limits the
+  control's date inputs. What the list shows before the visitor changes anything stays the same.
+- **`is_limited` off, no control, with a stored value:** the value narrows within the period instead of replacing
+  it, in the list view and the reader. The list can become narrower, or empty where value and period do not overlap.
+- **From a v0.2 development version, `is_limited` off:** the reader, the lookup and the breadcrumb are bounded by the
+  period again, as in v0.1.
+
+The other changes:
+
+- **A side in the mode *Set custom date*** (an absolute date) applies as configured. v0.1 ignored the date, or misread
+  the stored timestamp as a time in the year 2000 on the current day: lists with such a start become narrower; where
+  it was misread as an end and emptied the list, the list shows entries again.
+- **A numeric leftover of a switched-off side** stops applying: where it emptied the list as a misread end, the list
+  shows entries again; where `strtotime()` read it as a working date or time (`20260101`, `0900`), that bound goes
+  and the list can become wider.
+- **A configured side with unreadable text** fails the list instead of being ignored; the backend marks such filters
+  as broken and rejects unreadable text on save.
+- **`is_limited` on, with a control:** a side the migration switches on now also limits the control's date inputs;
+  it already bounded the entries, so only the form changes.
+
+To get the old behavior of a narrowed filter back, configure it:
+
+- **The period as a preselection the visitor can leave:** a filter with a control, both sides of its period switched
+  off, and the period as its stored value (the control's initial value; relative expressions such as `today` are
+  allowed).
+- **A period of the list view the reader ignores:** the filter
+  [applies exclusively](./reference/filter-elements.md#apply-exclusively) to the list view. Where the reader still
+  needs a wider bound, add a second calendar filter that is not exclusive.
 
 ## Engine Contexts → Intents
 

@@ -12,7 +12,9 @@
   backend configuration. Parent-table (`ptable`) relationships are inferred automatically where
   possible.
 - **News** (`flare_news`) joins `tl_news_archive` and adds a `published` filter by default; adding
-  your own published filter replaces the default one.
+  your own published filter replaces the default one — also one that
+  [applies exclusively](./filter-elements.md#apply-exclusively), which leaves the reader without one (the backend
+  warns).
 - **Events** (`flare_events`) is only available when `contao/calendar-bundle` is installed. It
   joins `tl_calendar` and also adds a default `published` filter. See
   [Integrations / Contao Calendar](../integrations/index.md#contao-calendar).

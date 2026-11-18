@@ -102,7 +102,10 @@ A filter is applied in two stages:
    | `$context->has('key')` | Whether the element's own config holds a value for the key |
    | `$context->list` | The [`ListCompound`](../../spec/compounds.md) the filter belongs to, e.g. `$context->list->dc` |
    | `$context->filter` | The [`FilterCompound` value object](../../spec/filtering.md#1-the-filtercompound-value-object), e.g. `$context->filter->control?->config->get('label')` to read the control's config |
-   | `$context->intent` | The intent (`IntentInterface`) — interactive, validation, aggregation, or configuration (the backend) |
+
+   The context has no intent: an element produces the same conditions whatever the list is rendered for. Where the
+   list view and the reader differ, the editor configures it on the filter — it
+   [applies exclusively](../../reference/filter-elements.md#apply-exclusively) to the list view —, not the element.
 
 2. **`FilterEffect`** is the element's *product* for one invocation: the formula of predicates the element
    produced for a given value. Elements contribute to it through the `FilterEffectBuilderInterface` in
@@ -289,6 +292,43 @@ editor sees is the exception's: translate the message of a `FilterException` you
 backend, outside debug mode, the filter is marked with a bug icon and the error is logged as critical, so editors can
 still reach the filter; the frontend request fails as before.
 
+A filter that is exclusive to no output is marked as ineffective by the framework itself. A row keeps every issue
+found, each with its own icon.
+
+**Warnings.** Some setups are valid and meant, but worth a hint. After its own checks the inspector dispatches a
+`FilterInspectionEvent` (`HeimrichHannot\FlareBundle\Event\`) once per saved filter row of the list, published or
+not, in sorting order — also for a row whose filter could not be built. It carries the row (`$model`), the list as
+the runtime builds it (`$list`, `null` if it cannot be built), the row's filter (`$filter`: the one in the list if
+the list has it, so a `ListDriverBuildListEvent` listener's replacement is what you see; else the one built for the
+row alone; `null` if it could not be built) and the issues found so far (`$issues`, a list of `FilterIssue`).
+`addWarning(string $message, ?string $icon = null)` adds a warning: the message is shown as is (translate it
+yourself), the icon a lucide icon name the bundle has a partial for (`bug`, `copy-x`, `bone-fracture`, `engine`,
+`badge-exclamation-point`, `opacity`); `null` or any other name shows the warning's default
+(`badge-exclamation-point`). A warning never fails a list; the filter row shows it, the edit form shows it as a
+hint and the list's filter overview counts it. Filters without a row (added by a driver or a listener) get no event.
+An `\Exception` thrown by a listener is reported as a programming error on the row.
+
+```php
+use HeimrichHannot\FlareBundle\Event\FilterInspectionEvent;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
+
+#[AsEventListener]
+final class FixedBoolFilterListener
+{
+    public function __invoke(FilterInspectionEvent $event): void
+    {
+        if ($event->filter?->element->type === 'flare_bool' && $event->filter->control === null) {
+            $event->addWarning('This filter has a fixed value: visitors cannot change it.');
+        }
+    }
+}
+```
+
+The bundle ships one warning: a `flare_published` filter exclusive to an output while the list has no publication
+filter that is not exclusive — the reader and the lookup then show unpublished entries (see
+[the default published filter](../list-types/index.md#4-build-lifecycle-buildlist)). `FilterIssue` and
+`FilterIssueKind` (`HeimrichHannot\FlareBundle\Contao\Inspection\`) are public API.
+
 ## 8. Intrinsic and Initial Values
 
 There is no `intrinsic` checkbox any more. The **`control`** field of a filter record decides:
@@ -298,11 +338,16 @@ There is no `intrinsic` checkbox any more. The **`control`** field of a filter r
 | blank (**intrinsic**) | the **fixed value** | restricted | restricted |
 | a control | the **initial value** | pre-filtered, the user can change it | **not applied** |
 
+The table is for a filter that is not exclusive. A filter that
+[applies exclusively](../../reference/filter-elements.md#apply-exclusively) bounds only its outputs — today the list
+view —, its element config and fixed value included; the whole list ignores it.
+
 Elements without a value class (`value: null`), e.g. `flare_published`, `flare_belongsToRelation`,
 `flare_simpleEquation`, are always intrinsic: they never have a control and `buildEffect()` receives `null`.
 
 Only fixed values and the elements' own config (e.g. a whitelist) bound the **whole list** — everything the
-user can reach through controls. A bool filter with a control therefore no longer restricts reader pages.
+user can reach through controls —, and only those of filters that are not exclusive. A bool filter with a control
+therefore no longer restricts reader pages.
 
 `flare_archive` shows the difference most clearly. **Without a control** its `value` is the restriction: the
 editor picks it from **all** parent records (every record of the static ptable, or of every table the dynamic
@@ -353,8 +398,13 @@ example under [Consuming Predicates](../predicates.md#4-consuming-predicates)). 
 events.
 
 The `config` array must satisfy the element's `configureOptions()` schema — no DCA row or transformer is
-involved. Use the `with*()` methods (`withValue()`, `withControl()`, `withTargetAlias()`) to derive variants —
-`FilterCompound` is immutable, so they return new instances.
+involved. Use the `with*()` methods (`withValue()`, `withControl()`, `withTargetAlias()`, `withOutputs()`) to derive
+variants — `FilterCompound` is immutable, so they return new instances.
+
+A programmatic filter is not exclusive unless you say so: pass `outputs: [Output::ListView]`
+(`HeimrichHannot\FlareBundle\List\Output`) to `create()`, or call `withOutputs([Output::ListView])`; `null` makes
+it not exclusive again, `[]` exclusive to no output (it applies nowhere). See
+[Apply exclusively](../../reference/filter-elements.md#apply-exclusively).
 
 Add programmatic filters to a list while it is being built — from a list driver's `buildList()` hook or a
 [`ListDriverBuildListEvent`](../events.md) listener via `ListCompoundBuilder::addFilter()` — or derive a new list from an
@@ -362,8 +412,8 @@ existing one via `ListCompound::withFilter()`. Both **throw a `FlareException` o
 `addFilter()` also on a taken key); a filter is never silently replaced — remove it first with
 `removeFilter()` / `withoutFilter()`. See [Custom List Drivers](../list-types/index.md) for the build lifecycle.
 
-A broken element config — with or without a control — or a broken fixed value bounds the whole list, so it
-fails the list: the list view
+A broken element config — with or without a control — or a broken fixed value fails the list, in every output
+(also when the filter is exclusive to another one): the list view
 renders the translated `list.failed` message with HTTP 200 and the reader answers 500. A filter *with* a
 control that fails at query time with a value is retried once without it: if that succeeds only the value is
 dropped (warning logged); if the retry fails too, the element config is broken and the list fails closed. See

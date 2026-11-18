@@ -160,7 +160,7 @@ final readonly class SimilarNewsListener
                 [ArrayParameterType::INTEGER],
             );
 
-            // membership: only entries of this list, by the reader's rules, in one query
+            // membership: only entries of the whole list, by the reader's rules, in one query
             $members = $lookup->lookup($candidates);
 
             return static function (Entry $entry) use ($members): array {
@@ -192,8 +192,10 @@ The lookup is the one behind `flare_reader.lookup()` (see
   `EntryCollection` of the members only, in the given order; for one id the entry or `null`. An empty list returns an
   empty collection without a query. `null`, `''` and `0` — an empty relation field — count as no id: alone they return
   `null`, in a list they are skipped.
-- Membership follows the reader's rules: the list's filters with their fixed values, never submitted form values. A
-  lookup in a list view can therefore return entries the current form filter hides — the links lead to the reader.
+- Membership follows the reader's rules: the whole list — the list's filters that are not
+  [exclusive](../reference/filter-elements.md#apply-exclusively) — with their fixed values, never submitted form
+  values. A lookup in a list view can therefore return entries the current form filter or a filter exclusive to the
+  list view hides — the links lead to the reader. Filters an engine mod adds to the list view apply.
 - Its result is a sealed collection of its own: its entries link to the reader (`.to`), its members tag the response
   (`contao.db.<table>.<id>`), and it dispatches its own entries event, so the members carry the same attachments.
 - There is no `$event->lookup()`: the lookup exists only inside phase 1, which runs after the event. A lookup's own

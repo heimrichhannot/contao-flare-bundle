@@ -60,8 +60,11 @@ class RetireCalendarLimitMigration extends AbstractMigration
 
     private const MARKER = 'calendarLimitRetired';
 
-    /** The element type, frozen: the migration describes historical rows. */
-    private const TYPE = 'flare_calendar_current';
+    /**
+     * The element types, frozen: the migration describes historical rows. Both keys of the filter are
+     * recognized, because the rename migration may run before this one.
+     */
+    private const TYPES = ['flare_calendar_current', 'flare_time_window'];
 
     /** The list view output's key, frozen like the type. */
     private const LIST_VIEW = 'list_view';
@@ -148,7 +151,7 @@ class RetireCalendarLimitMigration extends AbstractMigration
         foreach ($this->fetchPendingRows() as $row)
         {
             // Rows of other types have nothing to retire; the update below marks them done.
-            if ((string) ($row['type'] ?? '') !== self::TYPE) {
+            if (!\in_array((string) ($row['type'] ?? ''), self::TYPES, true)) {
                 continue;
             }
 

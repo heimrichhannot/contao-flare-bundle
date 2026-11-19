@@ -50,6 +50,19 @@ final class CalendarColumnsMigrationTest extends TestCase
         self::assertSame(1, $this->rows[1]['elm_useRecurrence']);
     }
 
+    public function testATimeWindowRowGetsTheEventColumns(): void
+    {
+        $this->addRow(1, 'flare_time_window', ['elm_hasExtendedEvents' => '']);
+
+        $this->migration()->run();
+
+        self::assertSame(
+            [[self::EVENT_COLUMNS + ['elm_overlap' => 0, self::MARKER => '1'], ['id' => 1]]],
+            $this->rowUpdates(),
+        );
+        self::assertSame('startTime', $this->rows[1]['elm_periodStartField']);
+    }
+
     public function testExtendedEventsBecomeOverlap(): void
     {
         $this->addRow(1, self::CALENDAR, ['elm_hasExtendedEvents' => '1']);

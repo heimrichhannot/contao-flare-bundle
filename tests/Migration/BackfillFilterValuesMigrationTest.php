@@ -578,6 +578,19 @@ final class BackfillFilterValuesMigrationTest extends TestCase
         ], $this->rowUpdates());
     }
 
+    public function testATimeWindowRowGetsTheDateRangeControl(): void
+    {
+        $this->addRow(2, 'flare_time_window', ['intrinsic' => '0']);
+        $this->addRow(3, 'flare_time_window', ['intrinsic' => '1']);
+
+        $this->migration()->run();
+
+        self::assertSame([
+            [['control' => 'flare_date_range', self::MARKER => '1'], ['id' => 2]],
+            [[self::MARKER => '1'], ['id' => 3]],
+        ], $this->rowUpdates());
+    }
+
     public function testElementsWithoutAControlAreNeverPending(): void
     {
         $this->columns[] = self::MARKER;

@@ -36,8 +36,11 @@ class CalendarColumnsMigration extends AbstractMigration
 
     private const MARKER = 'calendarColumnsFilled';
 
-    /** The element type, frozen: the migration describes historical rows. */
-    private const TYPE = 'flare_calendar_current';
+    /**
+     * The element types, frozen: the migration describes historical rows. Both keys of the filter are
+     * recognized, because the rename migration may run before this one.
+     */
+    private const TYPES = ['flare_calendar_current', 'flare_time_window'];
 
     /** The picker columns and the event columns the predicate used to hard-code, frozen like the type. */
     private const PICKERS = [
@@ -112,7 +115,7 @@ class CalendarColumnsMigration extends AbstractMigration
         foreach ($this->fetchPendingRows() as $row)
         {
             // Rows of other types have nothing to fill; the update below marks them done.
-            if ((string) ($row['type'] ?? '') !== self::TYPE) {
+            if (!\in_array((string) ($row['type'] ?? ''), self::TYPES, true)) {
                 continue;
             }
 

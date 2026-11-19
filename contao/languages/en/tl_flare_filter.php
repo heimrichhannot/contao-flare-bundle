@@ -60,7 +60,14 @@ $lang['elm_configureStart'] = ['Configure start date', 'Please choose the config
 $lang['elm_startAt'] = ['Start date', 'Please enter a start date.'];
 $lang['elm_configureStop'] = ['Configure end date', 'Please choose the configuration for the end date.'];
 $lang['elm_stopAt'] = ['End date', 'Please enter an end date.'];
-$lang['elm_hasExtendedEvents'] = ['Extend events', 'Show all events within the time range, even if they start earlier and overlap the range.'];
+$lang['date_columns_legend'] = 'Date columns';
+$lang['elm_periodStartField'] = ['Start column', 'The column holding the start as a Unix timestamp.'];
+$lang['elm_periodStopField'] = ['End column', 'The column holding the end as a Unix timestamp. Leave empty if entries are points in time; an entry ending before it starts is never shown.'];
+$lang['elm_overlap'] = ['Overlap', 'Also match entries that end within the period or span it, not only those that start within it.'];
+$lang['elm_useRecurrence'] = ['Consider recurrence', 'Also match recurring entries whose series reaches into the period, by Contao\'s recurrence model.'];
+$lang['elm_recurringField'] = ['Recurring column', 'The column marking an entry as recurring.'];
+$lang['elm_recurrencesField'] = ['Recurrences column', 'The column holding the number of recurrences (0 = unlimited).'];
+$lang['elm_repeatEndField'] = ['Repeat end column', 'The column holding the end of the last recurrence as a Unix timestamp.'];
 ###< date_legend ###
 
 ###> archive_legend ###

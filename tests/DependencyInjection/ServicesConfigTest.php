@@ -7,6 +7,7 @@ namespace HeimrichHannot\FlareBundle\Tests\DependencyInjection;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use HeimrichHannot\FlareBundle\Contao\BackendModule;
+use HeimrichHannot\FlareBundle\Contao\Callback\FlareFilter\CalendarColumnsCallbacks;
 use HeimrichHannot\FlareBundle\Contao\Callback\FlareFilter\FieldsOptionsCallbacks;
 use HeimrichHannot\FlareBundle\Contao\Callback\FlareList\ConfigOnSubmitCallback;
 use HeimrichHannot\FlareBundle\Contao\Callback\FlareList\FieldsOptionsCallbacks as ListFieldsOptionsCallbacks;
@@ -14,6 +15,7 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementContextFactory
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\ControlDcaBuilder;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterContainer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterListTableResolver;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Contao\CollectedFilters;
@@ -99,11 +101,13 @@ final class ServicesConfigTest extends TestCase
             BackendElementContextFactory::class,
             ListContainer::class,
             FilterContainer::class,
+            FilterListTableResolver::class,
             ElementDcaHook::class,
             BreadcrumbHook::class,
             FormNameRegexpHook::class,
             ConfigOnSubmitCallback::class,
             FieldsOptionsCallbacks::class,
+            CalendarColumnsCallbacks::class,
             FilterCompoundFactory::class,
             FilterCollector::class,
             ListCompoundBuilderFactory::class,

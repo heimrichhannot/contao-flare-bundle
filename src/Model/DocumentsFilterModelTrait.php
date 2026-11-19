@@ -35,7 +35,6 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string      $elm_startAt
  * @property string      $elm_configureStop
  * @property string      $elm_stopAt
- * @property bool        $elm_hasExtendedEvents
  * @property string      $elm_periodStartField
  * @property string      $elm_periodStopField
  * @property bool        $elm_overlap

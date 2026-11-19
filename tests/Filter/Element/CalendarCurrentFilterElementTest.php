@@ -395,13 +395,38 @@ final class CalendarCurrentFilterElementTest extends TestCase
         self::assertArrayNotHasKey('rgxp', $fields['elm_stopAt']['eval']);
     }
 
-    public function testThePaletteHasNoLimitLegend(): void
+    public function testThePaletteListsTheColumnPickers(): void
     {
         $this->applyDca([]);
 
         self::assertSame(
-            '{date_start_legend},elm_configureStart,elm_hasExtendedEvents;{date_stop_legend},elm_configureStop',
+            '{date_start_legend},elm_configureStart;{date_stop_legend},elm_configureStop;'
+            . '{date_columns_legend},elm_periodStartField,elm_periodStopField,elm_useRecurrence',
             $GLOBALS['TL_DCA']['tl_flare_filter']['palettes'][CalendarCurrentFilterElement::TYPE],
+        );
+    }
+
+    public function testOverlapAppearsWithAnEndColumn(): void
+    {
+        $this->applyDca(['elm_periodStopField' => 'endTime']);
+
+        self::assertSame(
+            '{date_start_legend},elm_configureStart;{date_stop_legend},elm_configureStop;'
+            . '{date_columns_legend},elm_periodStartField,elm_periodStopField,elm_overlap,elm_useRecurrence',
+            $GLOBALS['TL_DCA']['tl_flare_filter']['palettes'][CalendarCurrentFilterElement::TYPE],
+        );
+    }
+
+    public function testRecurrencePickersAreItsSubpalette(): void
+    {
+        $this->applyDca([]);
+
+        $dca = $GLOBALS['TL_DCA']['tl_flare_filter'];
+
+        self::assertContains('elm_useRecurrence', $dca['palettes']['__selector__'] ?? []);
+        self::assertSame(
+            'elm_recurringField,elm_recurrencesField,elm_repeatEndField',
+            $dca['subpalettes']['elm_useRecurrence'] ?? null,
         );
     }
 

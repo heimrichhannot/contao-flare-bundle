@@ -128,10 +128,15 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
 
     public function buildDca(DcaBuilderInterface $builder, DcaContext $context): void
     {
+        $overlap = (string) $context->filterModel?->elm_periodStopField !== '' ? ',elm_overlap' : '';
+
         $builder->palette(
-            '{date_start_legend},elm_configureStart,elm_hasExtendedEvents;'
+            '{date_start_legend},elm_configureStart;'
             . '{date_stop_legend},elm_configureStop;'
+            . "{date_columns_legend},elm_periodStartField,elm_periodStopField{$overlap},elm_useRecurrence;"
         );
+
+        $builder->selector('elm_useRecurrence', 'elm_recurringField,elm_recurrencesField,elm_repeatEndField');
 
         $modes = [
             'elm_startAt' => $context->filterModel?->elm_configureStart,

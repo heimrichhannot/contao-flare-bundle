@@ -12,9 +12,12 @@ use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBounds;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Element\CalendarCurrentFilterElement;
+use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\Predicate\CalendarCurrentPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
+use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\Filter\Proposition;
 use HeimrichHannot\FlareBundle\Tests\Filter\BuildsFilterEffectsTrait;
 use HeimrichHannot\FlareBundle\Tests\Fixture\FilterModelFixture;
 use HeimrichHannot\FlareBundle\Tests\Fixture\ListModelFixture;
@@ -24,12 +27,51 @@ use PHPUnit\Framework\TestCase;
 final class CalendarCurrentFilterElementTest extends TestCase
 {
     use BuildsFilterEffectsTrait;
+    use StubsContaoDcaTrait;
 
     private const BASE = [
         'start_at' => null,
         'stop_at' => null,
-        'has_extended_events' => false,
+        'start_field' => 'startTime',
+        'stop_field' => null,
+        'overlap' => false,
+        'use_recurrence' => false,
+        'recurring_field' => null,
+        'recurrences_field' => null,
+        'repeat_end_field' => null,
     ];
+
+    private const COLUMN_KEYS = [
+        'start_field',
+        'stop_field',
+        'overlap',
+        'use_recurrence',
+        'recurring_field',
+        'recurrences_field',
+        'repeat_end_field',
+    ];
+
+    private const RECURRENCE = [
+        'use_recurrence' => true,
+        'recurring_field' => 'recurring',
+        'recurrences_field' => 'recurrences',
+        'repeat_end_field' => 'repeatEnd',
+    ];
+
+    protected function setUp(): void
+    {
+        $this->stubDca('tl_test', ['fields' => [
+            'startTime' => ['sql' => 'bigint(20) NULL'],
+            'endTime' => ['sql' => 'bigint(20) NULL'],
+            'recurring' => ['sql' => ['type' => 'boolean']],
+            'recurrences' => ['sql' => 'smallint(5) unsigned NOT NULL default 0'],
+            'repeatEnd' => ['sql' => 'int(10) unsigned NOT NULL default 0'],
+            'startStr' => ['sql' => 'varchar(10) NULL'],
+            'day' => ['sql' => 'date NULL'],
+            'begins' => ['sql' => ['type' => 'integer', 'name' => 'physical']],
+            'virtual' => ['inputType' => 'text'],
+        ]]);
+    }
 
     protected function tearDown(): void
     {
@@ -52,27 +94,136 @@ final class CalendarCurrentFilterElementTest extends TestCase
         self::assertSame([0, DateTimeHelper::maxTimestamp()], $this->range(self::BASE, null));
     }
 
-    /**
-     * @dataProvider provideExtendedEvents
-     */
-    public function testAnEmptyIntersectionAborts(bool $extendedEvents): void
+    public function testAnEmptyIntersectionAborts(): void
     {
         $this->expectException(AbortFilteringException::class);
 
         $this->buildFilterEffect(
             new CalendarCurrentFilterElement(),
-            ['stop_at' => self::time(1000), 'has_extended_events' => $extendedEvents] + self::BASE,
+            ['stop_at' => self::time(1000)] + self::BASE,
             DateRangeValue::tryFrom(2000, null),
         );
     }
 
-    /**
-     * @return iterable<string, array{bool}>
-     */
-    public static function provideExtendedEvents(): iterable
+    public function testAnInvertedPeriodIsBroken(): void
     {
-        yield 'with extended events' => [true];
-        yield 'without extended events' => [false];
+        $this->assertBroken('errors.calendar.inverted_period', self::bound(2000, 1000));
+    }
+
+    public function testChecksRunBeforeAnEmptyIntersectionAborts(): void
+    {
+        $this->assertBroken(
+            'errors.calendar.unknown_column',
+            ['start_field' => 'nope'] + self::bound(1000, 2000),
+            DateRangeValue::tryFrom(3000, null),
+        );
+    }
+
+    public function testThePredicateGetsTheColumns(): void
+    {
+        $config = ['stop_field' => 'endTime', 'overlap' => true] + self::RECURRENCE + self::BASE;
+        $proposition = $this->proposition($config);
+
+        self::assertSame('main', $proposition->targetAlias);
+        self::assertSame([
+            'start_field' => 'startTime',
+            'stop_field' => 'endTime',
+            'overlap' => true,
+            'recurring_field' => 'recurring',
+            'recurrences_field' => 'recurrences',
+            'repeat_end_field' => 'repeatEnd',
+            'cast_fields' => [],
+        ], self::pick($proposition->options, [
+            'start_field',
+            'stop_field',
+            'overlap',
+            'recurring_field',
+            'recurrences_field',
+            'repeat_end_field',
+            'cast_fields',
+        ]));
+    }
+
+    public function testThePredicateRunsOnTheMainTable(): void
+    {
+        $element = new CalendarCurrentFilterElement();
+        $context = $this->buildElementContext($element, self::BASE);
+        $context = new ElementContext(list: $context->list, filter: $context->filter->withTargetAlias('archive'));
+
+        $propositions = $this->createFilterEffectFactory()->create($context, null)->formula->propositions;
+
+        self::assertCount(1, $propositions);
+        self::assertSame('main', $propositions[0]->targetAlias);
+    }
+
+    public function testThePhysicalNameIsChecked(): void
+    {
+        $options = $this->proposition(['start_field' => 'physical'] + self::BASE)->options;
+
+        self::assertSame('physical', $options['start_field']);
+
+        $this->assertBroken('errors.calendar.unknown_column', ['start_field' => 'begins'] + self::BASE);
+    }
+
+    public function testOverlapIsOnlyPassedWithAnEndColumn(): void
+    {
+        $options = $this->proposition(['overlap' => true] + self::BASE)->options;
+
+        self::assertFalse($options['overlap']);
+        self::assertNull($options['stop_field']);
+    }
+
+    public function testRecurrenceIsOnlyPassedWhenSwitchedOn(): void
+    {
+        $options = $this->proposition([
+            'use_recurrence' => false,
+            'recurring_field' => 'nope',
+            'recurrences_field' => 'nope',
+            'repeat_end_field' => 'nope',
+        ] + self::BASE)->options;
+
+        self::assertNull($options['recurring_field']);
+        self::assertNull($options['recurrences_field']);
+        self::assertNull($options['repeat_end_field']);
+    }
+
+    public function testOtherColumnsAreCast(): void
+    {
+        $options = $this->proposition(['start_field' => 'startStr'] + self::BASE)->options;
+
+        self::assertSame(['startStr'], $options['cast_fields']);
+    }
+
+    public function testAnEmptyStartIsBroken(): void
+    {
+        $this->assertBroken('errors.calendar.no_column', ['start_field' => null] + self::BASE);
+    }
+
+    /**
+     * @dataProvider provideUnknownColumns
+     */
+    public function testAnUnknownColumnIsBroken(string $column): void
+    {
+        $this->assertBroken('errors.calendar.unknown_column', ['start_field' => $column] + self::BASE);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function provideUnknownColumns(): iterable
+    {
+        yield 'not in the DCA' => ['nope'];
+        yield 'without sql' => ['virtual'];
+    }
+
+    public function testADateColumnIsBroken(): void
+    {
+        $this->assertBroken('errors.calendar.date_column', ['start_field' => 'day'] + self::BASE);
+    }
+
+    public function testRecurrenceWithAMissingColumnIsBroken(): void
+    {
+        $this->assertBroken('errors.calendar.no_column', ['repeat_end_field' => null] + self::RECURRENCE + self::BASE);
     }
 
     public function testTouchingBoundsDoNotAbort(): void
@@ -167,6 +318,49 @@ final class CalendarCurrentFilterElementTest extends TestCase
         $this->transform(['elm_configureStart' => 'str', 'elm_startAt' => 'next blursday']);
     }
 
+    public function testTheTransformReadsTheColumns(): void
+    {
+        $config = $this->transform([
+            'elm_periodStartField' => 'startTime',
+            'elm_periodStopField' => 'endTime',
+            'elm_overlap' => '1',
+            'elm_useRecurrence' => '1',
+            'elm_recurringField' => 'recurring',
+            'elm_recurrencesField' => 'recurrences',
+            'elm_repeatEndField' => 'repeatEnd',
+        ]);
+
+        self::assertSame([
+            'start_field' => 'startTime',
+            'stop_field' => 'endTime',
+            'overlap' => true,
+            'use_recurrence' => true,
+            'recurring_field' => 'recurring',
+            'recurrences_field' => 'recurrences',
+            'repeat_end_field' => 'repeatEnd',
+        ], self::pick($config, self::COLUMN_KEYS));
+
+        $config = $this->transform([
+            'elm_periodStartField' => '',
+            'elm_periodStopField' => '',
+            'elm_overlap' => '',
+            'elm_useRecurrence' => '',
+            'elm_recurringField' => '',
+            'elm_recurrencesField' => '',
+            'elm_repeatEndField' => '',
+        ]);
+
+        self::assertSame([
+            'start_field' => null,
+            'stop_field' => null,
+            'overlap' => false,
+            'use_recurrence' => false,
+            'recurring_field' => null,
+            'recurrences_field' => null,
+            'repeat_end_field' => null,
+        ], self::pick($config, self::COLUMN_KEYS));
+    }
+
     public function testTheTransformSatisfiesTheSchema(): void
     {
         $element = new CalendarCurrentFilterElement();
@@ -174,14 +368,21 @@ final class CalendarCurrentFilterElementTest extends TestCase
         $config = $this->transform([
             'elm_configureStart' => 'str',
             'elm_startAt' => '2026-01-01',
-            'elm_hasExtendedEvents' => '1',
+            'elm_periodStartField' => 'startTime',
+            'elm_periodStopField' => 'endTime',
+            'elm_overlap' => '1',
+            'elm_useRecurrence' => '',
         ]);
 
         $context = $this->buildElementContext($element, $config);
 
         self::assertSame(\strtotime('2026-01-01'), $context->get('start_at')?->getTimestamp());
         self::assertNull($context->get('stop_at'));
-        self::assertTrue($context->get('has_extended_events'));
+        self::assertSame('startTime', $context->get('start_field'));
+        self::assertSame('endTime', $context->get('stop_field'));
+        self::assertTrue($context->get('overlap'));
+        self::assertFalse($context->get('use_recurrence'));
+        self::assertNull($context->get('recurring_field'));
     }
 
     public function testDateSidesGetTheDateTimeInput(): void
@@ -231,6 +432,16 @@ final class CalendarCurrentFilterElementTest extends TestCase
      */
     private function range(array $config, ?DateRangeValue $value): array
     {
+        $proposition = $this->proposition($config, $value);
+
+        return [$proposition->options['start'], $proposition->options['stop']];
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function proposition(array $config, ?DateRangeValue $value = null): Proposition
+    {
         $propositions = $this->buildFilterEffect(new CalendarCurrentFilterElement(), $config, $value)
             ->formula
             ->propositions;
@@ -238,7 +449,38 @@ final class CalendarCurrentFilterElementTest extends TestCase
         self::assertCount(1, $propositions);
         self::assertSame(CalendarCurrentPredicate::class, $propositions[0]->predicateClass);
 
-        return [$propositions[0]->options['start'], $propositions[0]->options['stop']];
+        return $propositions[0];
+    }
+
+    /**
+     * @param array<string, mixed> $values
+     * @param list<string> $keys
+     * @return array<string, mixed> The values of the keys, in the order of the keys.
+     */
+    private static function pick(array $values, array $keys): array
+    {
+        $picked = [];
+
+        foreach ($keys as $key)
+        {
+            self::assertArrayHasKey($key, $values);
+            $picked[$key] = $values[$key];
+        }
+
+        return $picked;
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function assertBroken(string $message, array $config, ?ValueInterface $value = null): void
+    {
+        try {
+            $this->buildFilterEffect(new CalendarCurrentFilterElement(), $config, $value);
+            self::fail('The filter must be broken');
+        } catch (FilterException $e) {
+            self::assertSame($message, $e->getMessage());
+        }
     }
 
     /**

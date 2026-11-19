@@ -17,12 +17,21 @@ use HeimrichHannot\FlareBundle\Filter\Predicate\CalendarCurrentPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
+use HeimrichHannot\FlareBundle\Util\DcaHelper;
+use HeimrichHannot\FlareBundle\Util\SqlColumn;
+use HeimrichHannot\FlareBundle\Util\SqlColumnKind;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
  * Bounds the list by the configured period (`start_at`/`stop_at`, null for an open side); a value narrows within
  * that bound, and an empty intersection of both matches nothing.
+ *
+ * The entries' dates are read from the columns the editor picks (physical names of the list's table, Unix
+ * timestamps): the start (`start_field`), optionally the end (`stop_field`, then `overlap`) and, with
+ * `use_recurrence`, the recurrence columns. A picked column the table does not have, an SQL date column, an empty
+ * required picker or a configured period whose end lies before its start breaks the filter.
  */
 #[AsFilterElement(type: self::TYPE, value: DateRangeValue::class)]
 class CalendarCurrentFilterElement extends AbstractFilterElement implements DateBoundsContract
@@ -33,7 +42,13 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
     {
         $resolver->define('start_at')->default(null)->allowedTypes(\DateTimeImmutable::class, 'null');
         $resolver->define('stop_at')->default(null)->allowedTypes(\DateTimeImmutable::class, 'null');
-        $resolver->define('has_extended_events')->default(false)->allowedTypes('bool');
+
+        foreach (['start_field', 'stop_field', 'recurring_field', 'recurrences_field', 'repeat_end_field'] as $key) {
+            $resolver->define($key)->default(null)->allowedTypes('string', 'null');
+        }
+
+        $resolver->define('overlap')->default(false)->allowedTypes('bool');
+        $resolver->define('use_recurrence')->default(false)->allowedTypes('bool');
     }
 
     /**
@@ -48,9 +63,18 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
         $config
             ->set('start_at', $this->readSide($model->elm_configureStart, $model->elm_startAt))
             ->set('stop_at', $this->readSide($model->elm_configureStop, $model->elm_stopAt))
-            ->set('has_extended_events', (bool) $model->elm_hasExtendedEvents);
+            ->set('start_field', $model->elm_periodStartField ?: null)
+            ->set('stop_field', $model->elm_periodStopField ?: null)
+            ->set('overlap', (bool) $model->elm_overlap)
+            ->set('use_recurrence', (bool) $model->elm_useRecurrence)
+            ->set('recurring_field', $model->elm_recurringField ?: null)
+            ->set('recurrences_field', $model->elm_recurrencesField ?: null)
+            ->set('repeat_end_field', $model->elm_repeatEndField ?: null);
     }
 
+    /**
+     * @throws FilterException If a picked column is missing or unusable, or the configured period is inverted.
+     */
     public function buildEffect(
         FilterEffectBuilderInterface $builder,
         ElementContext               $context,
@@ -58,8 +82,15 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
     ): void {
         $value = $this->expectValue($value, DateRangeValue::class);
 
-        $start = $context->get('start_at')?->getTimestamp() ?? 0;
-        $stop = $context->get('stop_at')?->getTimestamp() ?? DateTimeHelper::maxTimestamp();
+        $columns = $this->checkColumns($context);
+
+        $startAt = $context->get('start_at');
+        $stopAt = $context->get('stop_at');
+
+        $this->checkPeriod($startAt, $stopAt);
+
+        $start = $startAt?->getTimestamp() ?? 0;
+        $stop = $stopAt?->getTimestamp() ?? DateTimeHelper::maxTimestamp();
 
         if (($from = $value?->from?->getTimestamp()) !== null && $from > $start) {
             $start = $from;
@@ -73,11 +104,21 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
             $builder->abort();
         }
 
-        $builder->addPredicate(CalendarCurrentPredicate::class, [
+        $options = [
             'start' => $start,
             'stop' => $stop,
-            'has_extended_events' => $context->get('has_extended_events'),
-        ]);
+            ...\array_map(static fn (SqlColumn $column): string => $column->name, $columns),
+            'cast_fields' => \array_values(\array_map(
+                static fn (SqlColumn $column): string => $column->name,
+                \array_filter($columns, static fn (SqlColumn $column): bool => $column->kind === SqlColumnKind::Other),
+            )),
+        ];
+
+        if (isset($columns['stop_field'])) {
+            $options['overlap'] = $context->get('overlap');
+        }
+
+        $builder->addPredicate(CalendarCurrentPredicate::class, $options, TableAliasRegistry::ALIAS_MAIN);
     }
 
     public function getDateBounds(ElementContext $context): DateBounds
@@ -139,6 +180,91 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
         }
 
         return DateTimeHelper::toDateTimeImmutable($text) ?? throw new FilterException($this->invalidMessage($text));
+    }
+
+    /**
+     * Checks every column the config uses: the start, the end if one is picked, the recurrence columns if recurrence
+     * is switched on.
+     *
+     * @return array<string, SqlColumn> The columns by their config key.
+     *
+     * @throws FilterException If a column is not picked or cannot be used.
+     */
+    private function checkColumns(ElementContext $context): array
+    {
+        $roles = ['start_field' => 'start'];
+
+        if ((string) $context->get('stop_field') !== '') {
+            $roles['stop_field'] = 'stop';
+        }
+
+        if ($context->get('use_recurrence'))
+        {
+            $roles['recurring_field'] = 'recurring';
+            $roles['recurrences_field'] = 'recurrences';
+            $roles['repeat_end_field'] = 'repeat_end';
+        }
+
+        $columns = [];
+
+        foreach ($roles as $key => $role) {
+            $columns[$key] = $this->checkColumn($context->list->dc, $context->get($key), $role);
+        }
+
+        return $columns;
+    }
+
+    /**
+     * The picked column as a timestamp column of the list's table.
+     *
+     * @param string $role The column's role, for the message: `start`, `stop`, `recurring`, `recurrences` or
+     *   `repeat_end`.
+     *
+     * @throws FilterException If no column is picked, the table has no such column or it is an SQL date column.
+     */
+    private function checkColumn(?string $table, ?string $name, string $role): SqlColumn
+    {
+        $roleLabel = $this->trans("errors.calendar.role.{$role}");
+
+        if ($name === null || $name === '') {
+            throw new FilterException(
+                $this->trans('errors.calendar.no_column', ['%role%' => $roleLabel]),
+                method: __METHOD__,
+            );
+        }
+
+        $column = DcaHelper::getColumn($table, $name) ?? throw new FilterException(
+            $this->trans('errors.calendar.unknown_column', [
+                '%role%' => $roleLabel,
+                '%column%' => $name,
+                '%table%' => (string) $table,
+            ]),
+            method: __METHOD__,
+        );
+
+        if ($column->kind === SqlColumnKind::Date) {
+            throw new FilterException(
+                $this->trans('errors.calendar.date_column', ['%role%' => $roleLabel, '%column%' => $name]),
+                method: __METHOD__,
+            );
+        }
+
+        return $column;
+    }
+
+    /**
+     * @throws FilterException If both sides are configured and the end lies before the start.
+     */
+    private function checkPeriod(?\DateTimeImmutable $startAt, ?\DateTimeImmutable $stopAt): void
+    {
+        if ($startAt === null || $stopAt === null || $startAt <= $stopAt) {
+            return;
+        }
+
+        throw new FilterException($this->trans('errors.calendar.inverted_period', [
+            '%start%' => $startAt->format('Y-m-d H:i'),
+            '%stop%' => $stopAt->format('Y-m-d H:i'),
+        ]), method: __METHOD__);
     }
 
     private function invalidMessage(string $text): string

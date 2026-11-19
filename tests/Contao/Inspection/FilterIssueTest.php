@@ -63,7 +63,10 @@ final class FilterIssueTest extends TestCase
             ],
             \array_combine(
                 \array_map(static fn (FilterIssueKind $kind): string => $kind->value, FilterIssueKind::cases()),
-                \array_map(static fn (FilterIssueKind $kind): string => $kind->defaultIcon(), FilterIssueKind::cases()),
+                \array_map(
+                    static fn (FilterIssueKind $kind): string => $kind->defaultIcon()->value,
+                    FilterIssueKind::cases(),
+                ),
             ),
         );
     }

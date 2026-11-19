@@ -31,16 +31,16 @@ enum FilterIssueKind: string
     case Warning = 'warning';
 
     /**
-     * The lucide icon of an issue of this kind that names none, or one the bundle has no icon for.
+     * The icon of an issue of this kind that names none.
      */
-    public function defaultIcon(): string
+    public function defaultIcon(): FilterIssueIcon
     {
         return match ($this) {
-            self::ProgrammingError => 'bug',
-            self::DuplicateAlias => 'copy-x',
-            self::Broken => 'bone-fracture',
-            self::Ineffective => 'engine',
-            self::Warning => 'badge-exclamation-point',
+            self::ProgrammingError => FilterIssueIcon::Bug,
+            self::DuplicateAlias => FilterIssueIcon::CopyX,
+            self::Broken => FilterIssueIcon::BoneFracture,
+            self::Ineffective => FilterIssueIcon::Engine,
+            self::Warning => FilterIssueIcon::BadgeExclamationPoint,
         };
     }
 }

@@ -7,6 +7,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Contao\Inspection;
 use Contao\CoreBundle\Framework\Adapter;
 use Contao\Message;
 use Contao\TestCase\ContaoTestCase;
+use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssueIcon;
 use HeimrichHannot\FlareBundle\Contao\Inspection\Reporter\FilterIssueReporter;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Event\FilterInspectionEvent;
@@ -170,9 +171,9 @@ final class FilterIssueReporterTest extends ContaoTestCase
         ], $notices);
     }
 
-    public function testAnUnknownIconFallsBackToTheKindsDefault(): void
+    public function testAWarningWithoutIconShowsTheKindsDefault(): void
     {
-        $this->warn('hint', 'no-such-icon');
+        $this->warn('hint', null);
 
         $notices = $this->reporter(
             [self::filterModel(1, 'ok', 'a')],
@@ -185,7 +186,7 @@ final class FilterIssueReporterTest extends ContaoTestCase
 
     public function testAWarningKeepsItsOwnIcon(): void
     {
-        $this->warn('hint', 'opacity');
+        $this->warn('hint', FilterIssueIcon::Opacity);
 
         $notices = $this->reporter(
             [self::filterModel(1, 'ok', 'a')],
@@ -198,7 +199,7 @@ final class FilterIssueReporterTest extends ContaoTestCase
 
     public function testWarningsAreInfoMessagesAndCountedInTheOverview(): void
     {
-        $this->warn('hint <b>', 'opacity');
+        $this->warn('hint <b>', FilterIssueIcon::Opacity);
         $row = self::filterModel(1, 'ok', 'a');
 
         $this->reporter([$row], Request::create(self::OVERVIEW))->reportOverview(self::listModel(5));
@@ -212,8 +213,8 @@ final class FilterIssueReporterTest extends ContaoTestCase
 
     public function testEveryIconHasItsPartial(): void
     {
-        foreach (FilterIssueReporter::ICONS as $icon) {
-            self::assertFileExists(__DIR__ . "/../../../templates/backend/filter_icon/{$icon}.html.twig");
+        foreach (FilterIssueIcon::cases() as $icon) {
+            self::assertFileExists(__DIR__ . "/../../../templates/backend/filter_icon/{$icon->value}.html.twig");
         }
     }
 
@@ -267,7 +268,7 @@ final class FilterIssueReporterTest extends ContaoTestCase
     /**
      * Adds a warning to every inspected row.
      */
-    private function warn(string $message, ?string $icon): void
+    private function warn(string $message, ?FilterIssueIcon $icon): void
     {
         $this->dispatcher->addListener(
             FilterInspectionEvent::class,

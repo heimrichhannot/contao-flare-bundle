@@ -155,7 +155,8 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   through the shared `Form/Factory/FilterFormBuilderFactory`), ineffective (also an exclusive filter bound to no
   output), warning;
   a row may carry several issues (an exact duplicate is kept once), each with its own icon
-  (`FilterIssueKind::defaultIcon()`, `FilterIssueReporter::ICONS`); `FilterIssue` / `FilterIssueKind` are public API.
+  (`FilterIssueIcon`, the one list of icons, one partial each; `FilterIssueKind::defaultIcon()`); `FilterIssue` /
+  `FilterIssueKind` / `FilterIssueIcon` are public API.
   After its checks it dispatches a `FilterInspectionEvent` once per saved row (model, built list or null, the row's
   effective filter or null, the issues so far; `addWarning($message, ?$icon)`; a listener's `\Exception` becomes a
   programming-error issue) — the bundled `EventListener\Inspection\ExclusivePublishedFilterListener` warns for a

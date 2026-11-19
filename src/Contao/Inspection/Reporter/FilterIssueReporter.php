@@ -25,11 +25,6 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 final readonly class FilterIssueReporter
 {
-    /**
-     * The lucide icons a row notice can show, one partial each in `templates/backend/filter_icon/`.
-     */
-    public const ICONS = ['bug', 'copy-x', 'bone-fracture', 'engine', 'badge-exclamation-point', 'opacity'];
-
     public function __construct(
         private FilterInspector     $filterInspector,
         private ContaoFramework     $framework,
@@ -97,8 +92,8 @@ final readonly class FilterIssueReporter
     }
 
     /**
-     * Each of the filter row's issues, ordered by kind: its kind value, its icon (its own if the bundle has it, else
-     * the kind's default) and its text, unescaped (the template escapes it).
+     * Each of the filter row's issues, ordered by kind: its kind value, its icon's name (its own, else the kind's
+     * default) and its text, unescaped (the template escapes it).
      *
      * @param array<string, mixed> $row
      *
@@ -116,7 +111,7 @@ final readonly class FilterIssueReporter
         {
             $notices[] = [
                 'kind' => $issue->kind->value,
-                'icon' => \in_array($issue->icon, self::ICONS, true) ? $issue->icon : $issue->kind->defaultIcon(),
+                'icon' => ($issue->icon ?? $issue->kind->defaultIcon())->value,
                 'text' => $issue->describe($this->translator),
             ];
         }

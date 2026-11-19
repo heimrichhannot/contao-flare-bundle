@@ -72,9 +72,14 @@ final class InspectedRows
      *
      * @param int|null $id The row id; null for a filter without a row of this list, whose issue only counts: each
      *   call counts one filter.
-     * @param string|null $icon See {@see FilterIssue::$icon}.
+     * @param FilterIssueIcon|null $icon See {@see FilterIssue::$icon}.
      */
-    public function addIssue(?int $id, FilterIssueKind $kind, string $reason, ?string $icon = null): void
+    public function addIssue(
+        ?int $id,
+        FilterIssueKind $kind,
+        string $reason,
+        ?FilterIssueIcon $icon = null,
+    ): void
     {
         if ($id === null)
         {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\EventListener\Inspection;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
+use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssueIcon;
 use HeimrichHannot\FlareBundle\Event\FilterInspectionEvent;
 use HeimrichHannot\FlareBundle\EventListener\Inspection\ExclusivePublishedFilterListener;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
@@ -29,7 +30,7 @@ final class ExclusivePublishedFilterListenerTest extends TestCase
         $event = $this->dispatch($filter, self::list($filter, $other));
 
         self::assertSame(
-            [['message' => 'translated filter.info.warning.exclusive_published', 'icon' => 'opacity']],
+            [['message' => 'translated filter.info.warning.exclusive_published', 'icon' => FilterIssueIcon::Opacity]],
             $event->getWarnings(),
         );
     }

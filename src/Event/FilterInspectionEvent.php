@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Event;
 
 use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssue;
-use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssueIcon;
 use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -21,7 +20,7 @@ use Symfony\Contracts\EventDispatcher\Event;
  */
 final class FilterInspectionEvent extends Event
 {
-    /** @var list<array{message: string, icon: ?FilterIssueIcon}> */
+    /** @var list<array{message: string, icon: ?string}> */
     private array $warnings = [];
 
     /**
@@ -43,15 +42,16 @@ final class FilterInspectionEvent extends Event
      * Adds a warning to the row.
      *
      * @param string $message The already translated message; shown as the row's tooltip and on the edit form.
-     * @param FilterIssueIcon|null $icon The icon to show the warning with; null shows the warning's default.
+     * @param string|null $icon The name of the lucide icon to show the warning with; null, or a name without a
+     *   partial in `templates/backend/filter_icon/`, shows the warning's default icon.
      */
-    public function addWarning(string $message, ?FilterIssueIcon $icon = null): void
+    public function addWarning(string $message, ?string $icon = null): void
     {
         $this->warnings[] = ['message' => $message, 'icon' => $icon];
     }
 
     /**
-     * @return list<array{message: string, icon: ?FilterIssueIcon}> The warnings added, in the order added.
+     * @return list<array{message: string, icon: ?string}> The warnings added, in the order added.
      */
     public function getWarnings(): array
     {

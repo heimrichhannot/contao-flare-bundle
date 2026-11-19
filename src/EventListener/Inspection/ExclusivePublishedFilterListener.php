@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\EventListener\Inspection;
 
-use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssueIcon;
 use HeimrichHannot\FlareBundle\Event\FilterInspectionEvent;
 use HeimrichHannot\FlareBundle\Filter\Element\PublishedFilterElement;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
@@ -45,7 +44,7 @@ final readonly class ExclusivePublishedFilterListener
 
         $event->addWarning(
             $this->translator->trans('filter.info.warning.exclusive_published', [], 'flare'),
-            FilterIssueIcon::Opacity,
+            'opacity',
         );
     }
 }

@@ -29,18 +29,4 @@ enum FilterIssueKind: string
 
     /** A hint on a valid setup that may not do what the editor expects; never fails a list. */
     case Warning = 'warning';
-
-    /**
-     * The icon of an issue of this kind that names none.
-     */
-    public function defaultIcon(): FilterIssueIcon
-    {
-        return match ($this) {
-            self::ProgrammingError => FilterIssueIcon::Bug,
-            self::DuplicateAlias => FilterIssueIcon::CopyX,
-            self::Broken => FilterIssueIcon::BoneFracture,
-            self::Ineffective => FilterIssueIcon::Engine,
-            self::Warning => FilterIssueIcon::BadgeExclamationPoint,
-        };
-    }
 }

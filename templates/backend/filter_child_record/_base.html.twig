@@ -9,6 +9,14 @@
     ineffective: '#e0a800',
     warning: '#e0a800',
 } %}
+{# The default icon of each kind; an issue that names an icon without a partial in filter_icon/ shows it too. #}
+{% set notice_icons = {
+    programming_error: 'bug',
+    duplicate_alias: 'copy-x',
+    broken: 'bone-fracture',
+    ineffective: 'engine',
+    warning: 'badge-exclamation-point',
+} %}
 
 <div class="cte_type {{ is_published ? 'published' : 'unpublished' }}" style="margin-bottom: .5rem">[{{ type_label }}]</div>
 {# Muted: the control icon and alias of a filter without control; the notices of an unpublished filter (styles.css). #}
@@ -40,7 +48,13 @@
     </div>
     {% for notice in notices %}
         <span style="color: {{ notice_colors[notice.kind] }}; opacity: var(--flare-filter-notice-opacity)">
-            {% include '@HeimrichHannotFlare/backend/filter_icon/' ~ notice.icon ~ '.html.twig'
+            {% set icon_dir = '@HeimrichHannotFlare/backend/filter_icon/' %}
+            {% set default_icon = notice_icons[notice.kind] %}
+            {# Only a plain name: a path would reach other templates of the namespace. #}
+            {% set icon = notice.icon is not null and notice.icon matches '/^[a-z0-9-]+$/'
+                ? notice.icon
+                : default_icon %}
+            {% include [icon_dir ~ icon ~ '.html.twig', icon_dir ~ default_icon ~ '.html.twig']
                 with {title: notice.text} only %}
         </span>
     {% endfor %}

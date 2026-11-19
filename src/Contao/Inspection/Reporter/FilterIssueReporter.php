@@ -92,12 +92,12 @@ final readonly class FilterIssueReporter
     }
 
     /**
-     * Each of the filter row's issues, ordered by kind: its kind value, its icon's name (its own, else the kind's
-     * default) and its text, unescaped (the template escapes it).
+     * Each of the filter row's issues, ordered by kind: its kind value, its own icon or null (the template falls back
+     * to the kind's default) and its text, unescaped (the template escapes it).
      *
      * @param array<string, mixed> $row
      *
-     * @return list<array{kind: string, icon: string, text: string}>
+     * @return list<array{kind: string, icon: ?string, text: string}>
      */
     public function getRowNotices(array $row): array
     {
@@ -111,7 +111,7 @@ final readonly class FilterIssueReporter
         {
             $notices[] = [
                 'kind' => $issue->kind->value,
-                'icon' => ($issue->icon ?? $issue->kind->defaultIcon())->value,
+                'icon' => $issue->icon,
                 'text' => $issue->describe($this->translator),
             ];
         }

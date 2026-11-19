@@ -66,7 +66,7 @@ final class ListCallbacksTest extends ContaoTestCase
 
         self::assertIsArray($context);
         self::assertSame([
-            ['kind' => 'broken', 'icon' => 'bone-fracture', 'text' => 'filter.info.broken.published %reason%=broken'],
+            ['kind' => 'broken', 'icon' => null, 'text' => 'filter.info.broken.published %reason%=broken'],
         ], $context['notices']);
     }
 
@@ -82,18 +82,6 @@ final class ListCallbacksTest extends ContaoTestCase
             Message::class => $this->recordMessages($recorded),
         ]);
 
-        $loader = new FilesystemLoader();
-        $loader->addPath(__DIR__ . '/../../../../templates', 'HeimrichHannotFlare');
-
-        $twig = new Environment($loader, ['strict_variables' => true]);
-        $twig->addExtension(new TranslationExtension(new IdentityTranslator()));
-        $twig->addGlobal('flare_env', new class {
-            public function isContao57orHigher(): bool
-            {
-                return false;
-            }
-        });
-
         $requestStack = new RequestStack();
         $requestStack->push(Request::create('/contao?do=flare&table=tl_flare_filter&id=5'));
 
@@ -105,7 +93,7 @@ final class ListCallbacksTest extends ContaoTestCase
                 translator: self::echoTranslator(),
             ),
             translator: self::echoTranslator(),
-            twig: $twig,
+            twig: self::twig(),
         );
 
         $html = $callbacks->listLabelLabel([
@@ -121,6 +109,74 @@ final class ListCallbacksTest extends ContaoTestCase
         self::assertStringContainsString('<title>filter.info.ineffective.exclusive_without_output</title>', $html);
         self::assertSame(1, \substr_count($html, 'lucide-bone-fracture-icon'));
         self::assertSame(1, \substr_count($html, 'lucide-engine-icon'));
+    }
+
+    public function testANoticeWithoutIconShowsItsKindsDefault(): void
+    {
+        $html = self::renderNotices([
+            ['kind' => 'programming_error', 'icon' => null, 'text' => 'p'],
+            ['kind' => 'duplicate_alias', 'icon' => null, 'text' => 'd'],
+            ['kind' => 'broken', 'icon' => null, 'text' => 'b'],
+            ['kind' => 'ineffective', 'icon' => null, 'text' => 'i'],
+            ['kind' => 'warning', 'icon' => null, 'text' => 'w'],
+        ]);
+
+        foreach (['bug', 'copy-x', 'bone-fracture', 'engine', 'badge-exclamation-point'] as $icon) {
+            self::assertSame(1, \substr_count($html, "lucide-{$icon}-icon"), $icon);
+        }
+    }
+
+    public function testANoticeShowsItsOwnIcon(): void
+    {
+        $html = self::renderNotices([['kind' => 'warning', 'icon' => 'opacity', 'text' => 'w']]);
+
+        self::assertStringContainsString('lucide-opacity-icon', $html);
+        self::assertStringNotContainsString('lucide-badge-exclamation-point-icon', $html);
+    }
+
+    public function testAnIconWithoutPartialShowsTheKindsDefault(): void
+    {
+        $html = self::renderNotices([
+            ['kind' => 'warning', 'icon' => 'no-such-icon', 'text' => 'w'],
+            ['kind' => 'broken', 'icon' => '../filter_child_record', 'text' => 'b'],
+        ]);
+
+        self::assertSame(1, \substr_count($html, 'lucide-badge-exclamation-point-icon'));
+        self::assertSame(1, \substr_count($html, 'lucide-bone-fracture-icon'));
+    }
+
+    /**
+     * @param list<array{kind: string, icon: ?string, text: string}> $notices
+     */
+    private static function renderNotices(array $notices): string
+    {
+        return self::twig()->render('@HeimrichHannotFlare/backend/filter_child_record.html.twig', [
+            'row' => ['id' => 1],
+            'is_intrinsic' => false,
+            'is_published' => true,
+            'title' => 'title',
+            'type_label' => 'type',
+            'cut_label' => 'cut',
+            'filter_alias' => 'a',
+            'notices' => $notices,
+        ]);
+    }
+
+    private static function twig(): Environment
+    {
+        $loader = new FilesystemLoader();
+        $loader->addPath(__DIR__ . '/../../../../templates', 'HeimrichHannotFlare');
+
+        $twig = new Environment($loader, ['strict_variables' => true]);
+        $twig->addExtension(new TranslationExtension(new IdentityTranslator()));
+        $twig->addGlobal('flare_env', new class {
+            public function isContao57orHigher(): bool
+            {
+                return false;
+            }
+        });
+
+        return $twig;
     }
 
     private function listAdapter(): Adapter

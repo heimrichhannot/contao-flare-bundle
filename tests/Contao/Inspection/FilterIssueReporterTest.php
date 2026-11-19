@@ -7,7 +7,6 @@ namespace HeimrichHannot\FlareBundle\Tests\Contao\Inspection;
 use Contao\CoreBundle\Framework\Adapter;
 use Contao\Message;
 use Contao\TestCase\ContaoTestCase;
-use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssueIcon;
 use HeimrichHannot\FlareBundle\Contao\Inspection\Reporter\FilterIssueReporter;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
 use HeimrichHannot\FlareBundle\Event\FilterInspectionEvent;
@@ -153,7 +152,7 @@ final class FilterIssueReporterTest extends ContaoTestCase
         )->getRowNotices(['id' => 1, 'pid' => 5]);
 
         self::assertSame([
-            ['kind' => 'broken', 'icon' => 'bone-fracture', 'text' => 'filter.info.broken.published %reason%=broken'],
+            ['kind' => 'broken', 'icon' => null, 'text' => 'filter.info.broken.published %reason%=broken'],
         ], $notices);
     }
 
@@ -166,27 +165,14 @@ final class FilterIssueReporterTest extends ContaoTestCase
         )->getRowNotices(['id' => 1, 'pid' => 5]);
 
         self::assertSame([
-            ['kind' => 'broken', 'icon' => 'bone-fracture', 'text' => 'filter.info.broken.published %reason%=broken'],
-            ['kind' => 'ineffective', 'icon' => 'engine', 'text' => 'filter.info.ineffective.exclusive_without_output'],
+            ['kind' => 'broken', 'icon' => null, 'text' => 'filter.info.broken.published %reason%=broken'],
+            ['kind' => 'ineffective', 'icon' => null, 'text' => 'filter.info.ineffective.exclusive_without_output'],
         ], $notices);
-    }
-
-    public function testAWarningWithoutIconShowsTheKindsDefault(): void
-    {
-        $this->warn('hint', null);
-
-        $notices = $this->reporter(
-            [self::filterModel(1, 'ok', 'a')],
-            Request::create(self::OVERVIEW),
-            lists: $this->listAdapter(),
-        )->getRowNotices(['id' => 1, 'pid' => 5]);
-
-        self::assertSame([['kind' => 'warning', 'icon' => 'badge-exclamation-point', 'text' => 'hint']], $notices);
     }
 
     public function testAWarningKeepsItsOwnIcon(): void
     {
-        $this->warn('hint', FilterIssueIcon::Opacity);
+        $this->warn('hint', 'opacity');
 
         $notices = $this->reporter(
             [self::filterModel(1, 'ok', 'a')],
@@ -199,7 +185,7 @@ final class FilterIssueReporterTest extends ContaoTestCase
 
     public function testWarningsAreInfoMessagesAndCountedInTheOverview(): void
     {
-        $this->warn('hint <b>', FilterIssueIcon::Opacity);
+        $this->warn('hint <b>', 'opacity');
         $row = self::filterModel(1, 'ok', 'a');
 
         $this->reporter([$row], Request::create(self::OVERVIEW))->reportOverview(self::listModel(5));
@@ -209,13 +195,6 @@ final class FilterIssueReporterTest extends ContaoTestCase
             ['addInfo', 'list.info.warnings %count%=1'],
             ['addInfo', 'hint &lt;b&gt;'],
         ], $this->recorded);
-    }
-
-    public function testEveryIconHasItsPartial(): void
-    {
-        foreach (FilterIssueIcon::cases() as $icon) {
-            self::assertFileExists(__DIR__ . "/../../../templates/backend/filter_icon/{$icon->value}.html.twig");
-        }
     }
 
     public function testARowWithoutItsListHasNoNotices(): void
@@ -268,7 +247,7 @@ final class FilterIssueReporterTest extends ContaoTestCase
     /**
      * Adds a warning to every inspected row.
      */
-    private function warn(string $message, ?FilterIssueIcon $icon): void
+    private function warn(string $message, ?string $icon): void
     {
         $this->dispatcher->addListener(
             FilterInspectionEvent::class,

@@ -6,7 +6,6 @@ namespace HeimrichHannot\FlareBundle\Tests\Contao\Inspection;
 
 use Contao\TestCase\ContaoTestCase;
 use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssue;
-use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssueIcon;
 use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssueKind;
 use HeimrichHannot\FlareBundle\Contao\Inspection\InspectedRows;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -54,11 +53,11 @@ final class InspectedRowsTest extends ContaoTestCase
         $rows = new InspectedRows();
         $rows->add($this->row(1));
         $rows->addIssue(1, FilterIssueKind::Warning, 'first');
-        $rows->addIssue(1, FilterIssueKind::Warning, 'second', FilterIssueIcon::Opacity);
+        $rows->addIssue(1, FilterIssueKind::Warning, 'second', 'opacity');
 
         $expected = [
             new FilterIssue(FilterIssueKind::Warning, 'first', true),
-            new FilterIssue(FilterIssueKind::Warning, 'second', true, FilterIssueIcon::Opacity),
+            new FilterIssue(FilterIssueKind::Warning, 'second', true, 'opacity'),
         ];
 
         self::assertEquals($expected, $rows->issuesOf(1));
@@ -81,11 +80,11 @@ final class InspectedRowsTest extends ContaoTestCase
     {
         $rows = new InspectedRows();
         $rows->add($this->row(1));
-        $rows->addIssue(1, FilterIssueKind::Warning, 'hint', FilterIssueIcon::Opacity);
+        $rows->addIssue(1, FilterIssueKind::Warning, 'hint', 'opacity');
         $rows->addIssue(1, FilterIssueKind::Warning, 'hint');
 
         self::assertEquals([
-            new FilterIssue(FilterIssueKind::Warning, 'hint', true, FilterIssueIcon::Opacity),
+            new FilterIssue(FilterIssueKind::Warning, 'hint', true, 'opacity'),
             new FilterIssue(FilterIssueKind::Warning, 'hint', true),
         ], $rows->toInspection()->forRow(1));
     }

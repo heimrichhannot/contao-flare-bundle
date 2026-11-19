@@ -16,14 +16,15 @@ final readonly class FilterIssue
      *   already translated reason.
      * @param bool $published Whether the filter is published; an unpublished filter's issue only applies once
      *   it is published.
-     * @param FilterIssueIcon|null $icon The icon to show the issue with; null shows the kind's default
-     *   ({@see FilterIssueKind::defaultIcon()}).
+     * @param string|null $icon The name of the lucide icon to show the issue with (`a-z`, `0-9`, `-`); null, or a
+     *   name without a partial in `templates/backend/filter_icon/`, shows the kind's default (set in the row
+     *   template).
      */
     public function __construct(
-        public FilterIssueKind  $kind,
-        public string           $reason,
-        public bool             $published,
-        public ?FilterIssueIcon $icon = null,
+        public FilterIssueKind $kind,
+        public string          $reason,
+        public bool            $published,
+        public ?string         $icon = null,
     ) {}
 
     /**

@@ -7,7 +7,6 @@ namespace HeimrichHannot\FlareBundle\Tests\Contao\Inspection;
 use Contao\TestCase\ContaoTestCase;
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssue;
-use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssueIcon;
 use HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssueKind;
 use HeimrichHannot\FlareBundle\Contao\Inspection\ListInspection;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
@@ -633,8 +632,8 @@ final class FilterInspectorTest extends ContaoTestCase
             static function (FilterInspectionEvent $event): void {
                 if ($event->model->id === 1)
                 {
-                    $event->addWarning('first hint', FilterIssueIcon::Opacity);
-                    $event->addWarning('second hint', FilterIssueIcon::Engine);
+                    $event->addWarning('first hint', 'opacity');
+                    $event->addWarning('second hint', 'eye');
                 }
             },
         );
@@ -642,8 +641,8 @@ final class FilterInspectorTest extends ContaoTestCase
         $inspection = $this->inspect([self::filterModel(1, 'ok', 'a'), self::filterModel(2, 'ok', 'b')]);
 
         self::assertEquals([
-            new FilterIssue(FilterIssueKind::Warning, 'first hint', true, FilterIssueIcon::Opacity),
-            new FilterIssue(FilterIssueKind::Warning, 'second hint', true, FilterIssueIcon::Engine),
+            new FilterIssue(FilterIssueKind::Warning, 'first hint', true, 'opacity'),
+            new FilterIssue(FilterIssueKind::Warning, 'second hint', true, 'eye'),
         ], $inspection->forRow(1));
         self::assertSame([], $inspection->forRow(2));
         self::assertSame(1, $inspection->count(FilterIssueKind::Warning));

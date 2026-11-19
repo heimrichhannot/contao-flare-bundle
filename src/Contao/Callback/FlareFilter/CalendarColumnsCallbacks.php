@@ -100,8 +100,8 @@ final class CalendarColumnsCallbacks
 
     /**
      * Contao 4.13, which writes each field right after its save callbacks and has no `onbeforesubmit`: writes the
-     * prefill when the type becomes the calendar type — the type itself is written right after. Registered with the
-     * lowest priority, so that it runs after the type's other save callbacks.
+     * prefill when the type becomes the calendar type — the type itself is written right after. Registered with
+     * a low priority (-1000), so it runs after the DCA file's and other default-priority save callbacks.
      *
      * @throws DbalException
      */

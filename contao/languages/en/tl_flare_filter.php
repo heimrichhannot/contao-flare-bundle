@@ -1,5 +1,6 @@
 <?php
 
+use HeimrichHannot\FlareBundle\List\Output;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 
 $lang = &$GLOBALS['TL_LANG'][FilterModel::getTable()];
@@ -26,7 +27,7 @@ $lang['exclusive'] = [
     'Apply this filter only to the outputs ticked below, not to the whole list (the reader finds what it excludes).',
 ];
 $lang['outputs'] = ['Outputs', ''];
-$lang['output'] = ['list_view' => 'List view'];
+$lang['output'] = [Output::ListView->value => 'List view'];
 ###< expert_legend ###
 
 ###> filter_legend ###

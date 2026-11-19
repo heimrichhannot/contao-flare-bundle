@@ -1,5 +1,6 @@
 <?php
 
+use HeimrichHannot\FlareBundle\List\Output;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 
 $lang = &$GLOBALS['TL_LANG'][FilterModel::getTable()];
@@ -27,7 +28,7 @@ $lang['exclusive'] = [
         . '(der Reader findet, was er ausschließt).',
 ];
 $lang['outputs'] = ['Ausgaben', ''];
-$lang['output'] = ['list_view' => 'Listenansicht'];
+$lang['output'] = [Output::ListView->value => 'Listenansicht'];
 ###< expert_legend ###
 
 ###> filter_legend ###

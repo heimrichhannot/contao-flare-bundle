@@ -135,6 +135,101 @@ class DcaHelper
         return $options;
     }
 
+    /**
+     * Classifies a DCA field's `sql` definition by the kind of column it declares.
+     *
+     * A string, or an array's `columnDefinition`, is read by its leading declaration word; otherwise the
+     * array's Doctrine `type` decides.
+     *
+     * @return SqlColumnKind|null Null for an empty `sql`.
+     */
+    public static function classifySql(array|string|null $sql): ?SqlColumnKind
+    {
+        if (!$sql) {
+            return null;
+        }
+
+        if (\is_string($sql)) {
+            return static::classifySqlWord($sql);
+        }
+
+        $definition = $sql['columnDefinition'] ?? null;
+        if (\is_string($definition) && $definition !== '') {
+            return static::classifySqlWord($definition);
+        }
+
+        return match (\strtolower((string) ($sql['type'] ?? ''))) {
+            'smallint', 'integer', 'bigint', 'boolean' => SqlColumnKind::Integer,
+            'date', 'date_immutable', 'datetime', 'datetime_immutable', 'datetimetz', 'datetimetz_immutable',
+            'time', 'time_immutable' => SqlColumnKind::Date,
+            default => SqlColumnKind::Other,
+        };
+    }
+
+    protected static function classifySqlWord(string $definition): SqlColumnKind
+    {
+        if (!\preg_match('/^\s*([a-z]+)/i', $definition, $matches)) {
+            return SqlColumnKind::Other;
+        }
+
+        return match (\strtolower($matches[1])) {
+            'tinyint', 'smallint', 'mediumint', 'int', 'integer', 'bigint' => SqlColumnKind::Integer,
+            'date', 'datetime', 'timestamp', 'time', 'year' => SqlColumnKind::Date,
+            default => SqlColumnKind::Other,
+        };
+    }
+
+    /**
+     * The table's DCA fields that have a physical column (an `sql` definition and a plain column name).
+     *
+     * @return list<SqlColumn>
+     */
+    public static function getColumns(?string $table): array
+    {
+        if ($table === null || $table === '') {
+            return [];
+        }
+
+        Controller::loadDataContainer($table);
+
+        $columns = [];
+        foreach ($GLOBALS['TL_DCA'][$table]['fields'] ?? [] as $field => $definition)
+        {
+            $sql = $definition['sql'] ?? null;
+            if (!\is_array($sql) && !\is_string($sql)) {
+                continue;
+            }
+
+            if (!$kind = static::classifySql($sql)) {
+                continue;
+            }
+
+            $name = \is_array($sql) && \is_string($sql['name'] ?? null) ? $sql['name'] : (string) $field;
+            if (!\preg_match('/^[a-zA-Z0-9_]+$/', $name)) {
+                continue;
+            }
+
+            $columns[] = new SqlColumn($name, (string) $field, $kind);
+        }
+
+        return $columns;
+    }
+
+    /**
+     * The column whose physical name equals `$name`, case-insensitively.
+     */
+    public static function getColumn(?string $table, string $name): ?SqlColumn
+    {
+        foreach (static::getColumns($table) as $column)
+        {
+            if (\strcasecmp($column->name, $name) === 0) {
+                return $column;
+            }
+        }
+
+        return null;
+    }
+
     public static function testSQLType(array|string|null $sql, string $expectedType): bool
     {
         if (!$sql) {

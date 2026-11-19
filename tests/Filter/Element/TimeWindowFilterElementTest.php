@@ -11,9 +11,9 @@ use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBounds;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
-use HeimrichHannot\FlareBundle\Filter\Element\CalendarCurrentFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Element\TimeWindowFilterElement;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
-use HeimrichHannot\FlareBundle\Filter\Predicate\CalendarCurrentPredicate;
+use HeimrichHannot\FlareBundle\Filter\Predicate\TimeWindowPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
@@ -24,7 +24,7 @@ use HeimrichHannot\FlareBundle\Tests\Fixture\ListModelFixture;
 use HeimrichHannot\FlareBundle\Util\DateTimeHelper;
 use PHPUnit\Framework\TestCase;
 
-final class CalendarCurrentFilterElementTest extends TestCase
+final class TimeWindowFilterElementTest extends TestCase
 {
     use BuildsFilterEffectsTrait;
     use StubsContaoDcaTrait;
@@ -99,7 +99,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
         $this->expectException(AbortFilteringException::class);
 
         $this->buildFilterEffect(
-            new CalendarCurrentFilterElement(),
+            new TimeWindowFilterElement(),
             ['stop_at' => self::time(1000)] + self::BASE,
             DateRangeValue::tryFrom(2000, null),
         );
@@ -107,13 +107,13 @@ final class CalendarCurrentFilterElementTest extends TestCase
 
     public function testAnInvertedPeriodIsBroken(): void
     {
-        $this->assertBroken('errors.calendar.inverted_period', self::bound(2000, 1000));
+        $this->assertBroken('errors.time_window.inverted_period', self::bound(2000, 1000));
     }
 
     public function testChecksRunBeforeAnEmptyIntersectionAborts(): void
     {
         $this->assertBroken(
-            'errors.calendar.unknown_column',
+            'errors.time_window.unknown_column',
             ['start_field' => 'nope'] + self::bound(1000, 2000),
             DateRangeValue::tryFrom(3000, null),
         );
@@ -146,7 +146,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
 
     public function testThePredicateRunsOnTheMainTable(): void
     {
-        $element = new CalendarCurrentFilterElement();
+        $element = new TimeWindowFilterElement();
         $context = $this->buildElementContext($element, self::BASE);
         $context = new ElementContext(list: $context->list, filter: $context->filter->withTargetAlias('archive'));
 
@@ -162,7 +162,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
 
         self::assertSame('physical', $options['start_field']);
 
-        $this->assertBroken('errors.calendar.unknown_column', ['start_field' => 'begins'] + self::BASE);
+        $this->assertBroken('errors.time_window.unknown_column', ['start_field' => 'begins'] + self::BASE);
     }
 
     public function testOverlapIsOnlyPassedWithAnEndColumn(): void
@@ -196,7 +196,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
 
     public function testAnEmptyStartIsBroken(): void
     {
-        $this->assertBroken('errors.calendar.no_column', ['start_field' => null] + self::BASE);
+        $this->assertBroken('errors.time_window.no_column', ['start_field' => null] + self::BASE);
     }
 
     /**
@@ -204,7 +204,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
      */
     public function testAnUnknownColumnIsBroken(string $column): void
     {
-        $this->assertBroken('errors.calendar.unknown_column', ['start_field' => $column] + self::BASE);
+        $this->assertBroken('errors.time_window.unknown_column', ['start_field' => $column] + self::BASE);
     }
 
     /**
@@ -218,12 +218,12 @@ final class CalendarCurrentFilterElementTest extends TestCase
 
     public function testADateColumnIsBroken(): void
     {
-        $this->assertBroken('errors.calendar.date_column', ['start_field' => 'day'] + self::BASE);
+        $this->assertBroken('errors.time_window.date_column', ['start_field' => 'day'] + self::BASE);
     }
 
     public function testRecurrenceWithAMissingColumnIsBroken(): void
     {
-        $this->assertBroken('errors.calendar.no_column', ['repeat_end_field' => null] + self::RECURRENCE + self::BASE);
+        $this->assertBroken('errors.time_window.no_column', ['repeat_end_field' => null] + self::RECURRENCE + self::BASE);
     }
 
     public function testTouchingBoundsDoNotAbort(): void
@@ -235,12 +235,12 @@ final class CalendarCurrentFilterElementTest extends TestCase
     {
         $this->expectException(FilterException::class);
 
-        $this->buildFilterEffect(new CalendarCurrentFilterElement(), self::BASE, new BoolValue(true));
+        $this->buildFilterEffect(new TimeWindowFilterElement(), self::BASE, new BoolValue(true));
     }
 
     public function testDateBoundsAreTheConfiguredPeriod(): void
     {
-        $element = new CalendarCurrentFilterElement();
+        $element = new TimeWindowFilterElement();
 
         $bounds = $element->getDateBounds($this->buildElementContext($element, self::bound(1000, 2000)));
 
@@ -249,7 +249,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
 
     public function testNoBoundGivesOpenDateBounds(): void
     {
-        $element = new CalendarCurrentFilterElement();
+        $element = new TimeWindowFilterElement();
 
         self::assertEquals(new DateBounds(), $element->getDateBounds($this->buildElementContext($element, self::BASE)));
     }
@@ -363,7 +363,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
 
     public function testTheTransformSatisfiesTheSchema(): void
     {
-        $element = new CalendarCurrentFilterElement();
+        $element = new TimeWindowFilterElement();
 
         $config = $this->transform([
             'elm_configureStart' => 'str',
@@ -402,7 +402,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
         self::assertSame(
             '{date_start_legend},elm_configureStart;{date_stop_legend},elm_configureStop;'
             . '{date_columns_legend},elm_periodStartField,elm_periodStopField,elm_useRecurrence',
-            $GLOBALS['TL_DCA']['tl_flare_filter']['palettes'][CalendarCurrentFilterElement::TYPE],
+            $GLOBALS['TL_DCA']['tl_flare_filter']['palettes'][TimeWindowFilterElement::TYPE],
         );
     }
 
@@ -413,7 +413,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
         self::assertSame(
             '{date_start_legend},elm_configureStart;{date_stop_legend},elm_configureStop;'
             . '{date_columns_legend},elm_periodStartField,elm_periodStopField,elm_overlap,elm_useRecurrence',
-            $GLOBALS['TL_DCA']['tl_flare_filter']['palettes'][CalendarCurrentFilterElement::TYPE],
+            $GLOBALS['TL_DCA']['tl_flare_filter']['palettes'][TimeWindowFilterElement::TYPE],
         );
     }
 
@@ -467,12 +467,12 @@ final class CalendarCurrentFilterElementTest extends TestCase
      */
     private function proposition(array $config, ?DateRangeValue $value = null): Proposition
     {
-        $propositions = $this->buildFilterEffect(new CalendarCurrentFilterElement(), $config, $value)
+        $propositions = $this->buildFilterEffect(new TimeWindowFilterElement(), $config, $value)
             ->formula
             ->propositions;
 
         self::assertCount(1, $propositions);
-        self::assertSame(CalendarCurrentPredicate::class, $propositions[0]->predicateClass);
+        self::assertSame(TimeWindowPredicate::class, $propositions[0]->predicateClass);
 
         return $propositions[0];
     }
@@ -501,7 +501,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
     private function assertBroken(string $message, array $config, ?ValueInterface $value = null): void
     {
         try {
-            $this->buildFilterEffect(new CalendarCurrentFilterElement(), $config, $value);
+            $this->buildFilterEffect(new TimeWindowFilterElement(), $config, $value);
             self::fail('The filter must be broken');
         } catch (FilterException $e) {
             self::assertSame($message, $e->getMessage());
@@ -528,7 +528,7 @@ final class CalendarCurrentFilterElementTest extends TestCase
     private function transform(array $row): array
     {
         $transformers = new TransformerMap();
-        (new CalendarCurrentFilterElement())->configureTransformers($transformers);
+        (new TimeWindowFilterElement())->configureTransformers($transformers);
 
         $transformer = $transformers->find($model = new FilterModelFixture($row));
         self::assertNotNull($transformer);
@@ -553,14 +553,14 @@ final class CalendarCurrentFilterElementTest extends TestCase
 
         $builder = new DcaBuilder();
 
-        (new CalendarCurrentFilterElement())->buildDca($builder, new DcaContext(
+        (new TimeWindowFilterElement())->buildDca($builder, new DcaContext(
             table: 'tl_flare_filter',
-            type: CalendarCurrentFilterElement::TYPE,
+            type: TimeWindowFilterElement::TYPE,
             listModel: new ListModelFixture(['id' => 1, 'dc' => 'tl_calendar_events']),
             filterModel: new FilterModelFixture(['id' => 7, 'pid' => 1] + $row),
             executionContextFactory: static fn () => null,
         ));
 
-        $builder->apply('tl_flare_filter', CalendarCurrentFilterElement::TYPE);
+        $builder->apply('tl_flare_filter', TimeWindowFilterElement::TYPE);
     }
 }

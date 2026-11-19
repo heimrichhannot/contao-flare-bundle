@@ -7,13 +7,13 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter\Predicate;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
-use HeimrichHannot\FlareBundle\Filter\Predicate\CalendarCurrentPredicate;
+use HeimrichHannot\FlareBundle\Filter\Predicate\TimeWindowPredicate;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\OptionsResolver\Exception\InvalidOptionsException;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-final class CalendarCurrentPredicateTest extends TestCase
+final class TimeWindowPredicateTest extends TestCase
 {
     private const START_OK = '`main.startTime` IS NOT NULL AND `main.startTime` <> 0';
     private const END_OK = '(`main.endTime` IS NULL OR `main.endTime` = 0 OR `main.endTime` >= `main.startTime`)';
@@ -108,7 +108,7 @@ final class CalendarCurrentPredicateTest extends TestCase
     public function testPartialRecurrenceIsRejected(): void
     {
         $resolver = new OptionsResolver();
-        (new CalendarCurrentPredicate())->configureOptions($resolver);
+        (new TimeWindowPredicate())->configureOptions($resolver);
 
         $this->expectException(InvalidOptionsException::class);
 
@@ -131,7 +131,7 @@ final class CalendarCurrentPredicateTest extends TestCase
      */
     private function buildConditions(array $options): FilterConditionsBuilder
     {
-        $predicate = new CalendarCurrentPredicate();
+        $predicate = new TimeWindowPredicate();
 
         $resolver = new OptionsResolver();
         $predicate->configureOptions($resolver);

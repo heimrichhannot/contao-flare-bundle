@@ -7,23 +7,23 @@ namespace HeimrichHannot\FlareBundle\Tests\Contao\Callback\FlareFilter;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
 use Doctrine\DBAL\Connection;
-use HeimrichHannot\FlareBundle\Contao\Callback\FlareFilter\CalendarColumnsCallbacks;
+use HeimrichHannot\FlareBundle\Contao\Callback\FlareFilter\TimeWindowCallbacks;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterListTableResolver;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
-use HeimrichHannot\FlareBundle\Filter\Element\CalendarCurrentFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Element\TimeWindowFilterElement;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
 use HeimrichHannot\FlareBundle\Tests\Filter\Element\StubsContaoDcaTrait;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
-final class CalendarColumnsCallbacksTest extends TestCase
+final class TimeWindowCallbacksTest extends TestCase
 {
     use StubsContaoDcaTrait;
 
     private const FILTER_ID = 7;
-    private const CALENDAR = CalendarCurrentFilterElement::TYPE;
+    private const CALENDAR = TimeWindowFilterElement::TYPE;
 
     /** The prefill of a table with all five event columns. */
     private const EVENT_PREFILL = [
@@ -302,7 +302,7 @@ final class CalendarColumnsCallbacksTest extends TestCase
         string $table,
         string|false $storedType = 'flare_published',
         bool $contao5 = true,
-    ): CalendarColumnsCallbacks {
+    ): TimeWindowCallbacks {
         $this->connection = $this->createMock(Connection::class);
         $this->connection->method('fetchAssociative')->willReturnCallback(
             static fn (string $sql, array $params): array|false =>
@@ -328,7 +328,7 @@ final class CalendarColumnsCallbacksTest extends TestCase
             'stored',
         );
 
-        return new CalendarColumnsCallbacks(
+        return new TimeWindowCallbacks(
             $this->connection,
             new FilterListTableResolver($this->connection, $drivers),
             $contao5,
@@ -350,7 +350,7 @@ final class CalendarColumnsCallbacksTest extends TestCase
     {
         $targets = [];
 
-        $reflection = new \ReflectionMethod(CalendarColumnsCallbacks::class, $method);
+        $reflection = new \ReflectionMethod(TimeWindowCallbacks::class, $method);
 
         foreach ($reflection->getAttributes(AsCallback::class) as $attribute)
         {

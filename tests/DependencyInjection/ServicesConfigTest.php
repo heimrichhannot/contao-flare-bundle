@@ -7,7 +7,7 @@ namespace HeimrichHannot\FlareBundle\Tests\DependencyInjection;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use HeimrichHannot\FlareBundle\Contao\BackendModule;
-use HeimrichHannot\FlareBundle\Contao\Callback\FlareFilter\CalendarColumnsCallbacks;
+use HeimrichHannot\FlareBundle\Contao\Callback\FlareFilter\TimeWindowCallbacks;
 use HeimrichHannot\FlareBundle\Contao\Callback\FlareFilter\FieldsOptionsCallbacks;
 use HeimrichHannot\FlareBundle\Contao\Callback\FlareList\ConfigOnSubmitCallback;
 use HeimrichHannot\FlareBundle\Contao\Callback\FlareList\FieldsOptionsCallbacks as ListFieldsOptionsCallbacks;
@@ -108,7 +108,7 @@ final class ServicesConfigTest extends TestCase
             FormNameRegexpHook::class,
             ConfigOnSubmitCallback::class,
             FieldsOptionsCallbacks::class,
-            CalendarColumnsCallbacks::class,
+            TimeWindowCallbacks::class,
             FilterCompoundFactory::class,
             FilterCollector::class,
             ListCompoundBuilderFactory::class,

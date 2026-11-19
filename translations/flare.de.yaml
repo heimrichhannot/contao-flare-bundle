@@ -63,7 +63,7 @@ errors:
         no_parents: "Es sind keine Eltern-Archive in der Whitelist eingetragen, oder die Elterntabelle hat keine Model-Klasse."
         no_valid_parents: "Keines der Eltern-Archive in der Whitelist existiert."
         no_ptable: "Der Data-Container der Liste hat keine Elterntabelle und kann daher nicht nach Archiven gefiltert werden."
-    calendar:
+    time_window:
         no_column: "Für %role% ist keine Spalte ausgewählt."
         unknown_column: "Die für %role% ausgewählte Spalte „%column%“ gibt es in %table% nicht."
         date_column: "Die für %role% ausgewählte Spalte „%column%“ ist eine SQL-Datumsspalte; der Filter liest nur Unix-Zeitstempel."

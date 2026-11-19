@@ -7,13 +7,13 @@ return [
     Element\ArchiveFilterElement::TYPE => 'Archive',
     Element\BelongsToRelationFilterElement::TYPE => 'Relation: Belongs to',
     Element\BooleanFilterElement::TYPE => 'Boolean property value',
-    Element\CalendarCurrentFilterElement::TYPE => 'Time window',
     Element\DateRangeFilterElement::TYPE => 'Date range',
     Element\DcaSelectFieldFilterElement::TYPE => 'DCA field options selection',
     Element\FieldValueChoiceFilterElement::TYPE => 'DCA field value selection (beta)',
     Element\PublishedFilterElement::TYPE => 'Published',
     Element\SimpleEquationFilterElement::TYPE => 'Simple equation',
     Element\SearchKeywordsFilterElement::TYPE => 'Keyword search',
+    Element\TimeWindowFilterElement::TYPE => 'Time window',
 
     CodefogTagsChoiceFilterElement::TYPE => 'Tags [codefog/tags-bundle]',
 ];

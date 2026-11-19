@@ -13,7 +13,7 @@ use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsFilterElement;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\ElementContext;
 use HeimrichHannot\FlareBundle\Filter\FilterEffectBuilderInterface;
-use HeimrichHannot\FlareBundle\Filter\Predicate\CalendarCurrentPredicate;
+use HeimrichHannot\FlareBundle\Filter\Predicate\TimeWindowPredicate;
 use HeimrichHannot\FlareBundle\Filter\Value\DateRangeValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
@@ -34,9 +34,9 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  * required picker or a configured period whose end lies before its start breaks the filter.
  */
 #[AsFilterElement(type: self::TYPE, value: DateRangeValue::class)]
-class CalendarCurrentFilterElement extends AbstractFilterElement implements DateBoundsContract
+class TimeWindowFilterElement extends AbstractFilterElement implements DateBoundsContract
 {
-    public const TYPE = 'flare_calendar_current';
+    public const TYPE = 'flare_time_window';
 
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -118,7 +118,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
             $options['overlap'] = $context->get('overlap');
         }
 
-        $builder->addPredicate(CalendarCurrentPredicate::class, $options, TableAliasRegistry::ALIAS_MAIN);
+        $builder->addPredicate(TimeWindowPredicate::class, $options, TableAliasRegistry::ALIAS_MAIN);
     }
 
     public function getDateBounds(ElementContext $context): DateBounds
@@ -229,17 +229,17 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
      */
     private function checkColumn(?string $table, ?string $name, string $role): SqlColumn
     {
-        $roleLabel = $this->trans("errors.calendar.role.{$role}");
+        $roleLabel = $this->trans("errors.time_window.role.{$role}");
 
         if ($name === null || $name === '') {
             throw new FilterException(
-                $this->trans('errors.calendar.no_column', ['%role%' => $roleLabel]),
+                $this->trans('errors.time_window.no_column', ['%role%' => $roleLabel]),
                 method: __METHOD__,
             );
         }
 
         $column = DcaHelper::getColumn($table, $name) ?? throw new FilterException(
-            $this->trans('errors.calendar.unknown_column', [
+            $this->trans('errors.time_window.unknown_column', [
                 '%role%' => $roleLabel,
                 '%column%' => $name,
                 '%table%' => (string) $table,
@@ -249,7 +249,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
 
         if ($column->kind === SqlColumnKind::Date) {
             throw new FilterException(
-                $this->trans('errors.calendar.date_column', ['%role%' => $roleLabel, '%column%' => $name]),
+                $this->trans('errors.time_window.date_column', ['%role%' => $roleLabel, '%column%' => $name]),
                 method: __METHOD__,
             );
         }
@@ -266,7 +266,7 @@ class CalendarCurrentFilterElement extends AbstractFilterElement implements Date
             return;
         }
 
-        throw new FilterException($this->trans('errors.calendar.inverted_period', [
+        throw new FilterException($this->trans('errors.time_window.inverted_period', [
             '%start%' => $startAt->format('Y-m-d H:i'),
             '%stop%' => $stopAt->format('Y-m-d H:i'),
         ]), method: __METHOD__);

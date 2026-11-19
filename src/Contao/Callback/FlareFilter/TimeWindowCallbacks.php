@@ -10,18 +10,18 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterContainer;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterListTableResolver;
-use HeimrichHannot\FlareBundle\Filter\Element\CalendarCurrentFilterElement;
+use HeimrichHannot\FlareBundle\Filter\Element\TimeWindowFilterElement;
 use HeimrichHannot\FlareBundle\Util\DcaHelper;
 use HeimrichHannot\FlareBundle\Util\Env;
 use HeimrichHannot\FlareBundle\Util\SqlColumnKind;
 
 /**
- * The column pickers of the calendar filter ({@see CalendarCurrentFilterElement}): their options, and their one-time
- * prefill when a row becomes a calendar filter, written together with the type change.
+ * The column pickers of the time-window filter ({@see TimeWindowFilterElement}): their options, and their one-time
+ * prefill when a row becomes a time-window filter, written together with the type change.
  *
  * @internal For internal use only. Do not call this class or its methods directly.
  */
-final class CalendarColumnsCallbacks
+final class TimeWindowCallbacks
 {
     /** The event column each picker is prefilled with, by picker. */
     private const EVENT_COLUMNS = [
@@ -77,7 +77,7 @@ final class CalendarColumnsCallbacks
     }
 
     /**
-     * Contao 5: adds the prefill to the values a backend save is about to write when they make the row a calendar
+     * Contao 5: adds the prefill to the values a backend save is about to write when they make the row a time-window
      * filter. A value the request submitted wins over its prefill.
      *
      * @param array<string, mixed> $values
@@ -100,7 +100,7 @@ final class CalendarColumnsCallbacks
 
     /**
      * Contao 4.13, which writes each field right after its save callbacks and has no `onbeforesubmit`: writes the
-     * prefill when the type becomes the calendar type — the type itself is written right after. Registered with
+     * prefill when the type becomes the time-window type — the type itself is written right after. Registered with
      * a low priority (-1000), so it runs after the DCA file's and other default-priority save callbacks.
      *
      * @throws DbalException
@@ -120,19 +120,19 @@ final class CalendarColumnsCallbacks
     }
 
     /**
-     * Whether the row becomes a calendar filter: the new type is the calendar type and the stored one is not.
+     * Whether the row becomes a time-window filter: the new type is the time-window type and the stored one is not.
      *
      * @throws DbalException
      */
     private function needsPrefill(mixed $type, int $id): bool
     {
-        if ($type !== CalendarCurrentFilterElement::TYPE) {
+        if ($type !== TimeWindowFilterElement::TYPE) {
             return false;
         }
 
         $stored = $this->connection->fetchOne('SELECT type FROM tl_flare_filter WHERE id = ?', [$id]);
 
-        return $stored !== CalendarCurrentFilterElement::TYPE;
+        return $stored !== TimeWindowFilterElement::TYPE;
     }
 
     /**

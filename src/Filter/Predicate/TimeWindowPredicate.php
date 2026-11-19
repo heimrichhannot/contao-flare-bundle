@@ -17,7 +17,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  * approximation. A row with an empty start (`NULL`, `''`, `0`) never matches; an empty end is no end; with an end
  * column, a row whose end lies before its start never matches. The columns in `cast_fields` are read as numbers.
  */
-class CalendarCurrentPredicate extends AbstractPredicate
+class TimeWindowPredicate extends AbstractPredicate
 {
     public function configureOptions(OptionsResolver $resolver): void
     {

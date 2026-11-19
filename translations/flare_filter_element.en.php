@@ -7,7 +7,7 @@ return [
     Element\ArchiveFilterElement::TYPE => 'Archive',
     Element\BelongsToRelationFilterElement::TYPE => 'Relation: Belongs to',
     Element\BooleanFilterElement::TYPE => 'Boolean property value',
-    Element\CalendarCurrentFilterElement::TYPE => 'Calendar time window',
+    Element\CalendarCurrentFilterElement::TYPE => 'Time window',
     Element\DateRangeFilterElement::TYPE => 'Date range',
     Element\DcaSelectFieldFilterElement::TYPE => 'DCA field options selection',
     Element\FieldValueChoiceFilterElement::TYPE => 'DCA field value selection (beta)',

@@ -40,13 +40,15 @@ trait BuildsFilterListTableResolverTrait
      * `pid`). A list model gets the id 0 whatever its key: a list without id has no stored filters to collect (and
      * needs no database).
      *
-     * @param array<int, array<string, mixed>> $filters Filter rows by id.
-     * @param array<int, array<string, mixed>> $lists   List rows by id.
+     * @param array<int, array<string, mixed>> $filters    Filter rows by id.
+     * @param array<int, array<string, mixed>> $lists      List rows by id.
+     * @param EventDispatcher|null             $dispatcher The dispatcher the lists are built with, for listeners.
      */
     private function createFilterListTableResolver(
         array              $filters,
         array              $lists,
         ListDriverRegistry $drivers,
+        ?EventDispatcher   $dispatcher = null,
     ): FilterListTableResolver {
         $filterModels = $this->mockAdapter(['findByPk']);
         $filterModels->method('findByPk')->willReturnCallback(
@@ -67,7 +69,7 @@ trait BuildsFilterListTableResolverTrait
             ListModel::class => $listModels,
         ]);
 
-        $dispatcher = new EventDispatcher();
+        $dispatcher ??= new EventDispatcher();
         $driverResolver = new ListDriverResolver($drivers);
 
         $filterCompoundFactory = new FilterCompoundFactory(

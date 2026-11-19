@@ -7,6 +7,7 @@ namespace HeimrichHannot\FlareBundle\Tests\DependencyInjection;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\CoreBundle\DependencyInjection\Attribute\AsHook;
 use HeimrichHannot\FlareBundle\Contao\BackendModule;
+use HeimrichHannot\FlareBundle\Contao\Callback\FlareFilter\TimeWindowCallbacks;
 use HeimrichHannot\FlareBundle\Contao\Callback\FlareFilter\FieldsOptionsCallbacks;
 use HeimrichHannot\FlareBundle\Contao\Callback\FlareList\ConfigOnSubmitCallback;
 use HeimrichHannot\FlareBundle\Contao\Callback\FlareList\FieldsOptionsCallbacks as ListFieldsOptionsCallbacks;
@@ -14,6 +15,7 @@ use HeimrichHannot\FlareBundle\Contao\DataContainer\BackendElementContextFactory
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\ControlDcaBuilder;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterContainer;
+use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterListTableResolver;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\ListContainer;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Contao\CollectedFilters;
@@ -51,6 +53,8 @@ use HeimrichHannot\FlareBundle\List\Entry\EntryCollection;
 use HeimrichHannot\FlareBundle\List\Entry\EntryMeta;
 use HeimrichHannot\FlareBundle\List\Entry\EntryTaggerInterface;
 use HeimrichHannot\FlareBundle\List\Entry\ModelRef;
+use HeimrichHannot\FlareBundle\Migration\CalendarColumnsMigration;
+use HeimrichHannot\FlareBundle\Migration\RenameTimeWindowTypeMigration;
 use HeimrichHannot\FlareBundle\Migration\RetireCalendarLimitMigration;
 use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrer;
 use PHPUnit\Framework\TestCase;
@@ -99,11 +103,13 @@ final class ServicesConfigTest extends TestCase
             BackendElementContextFactory::class,
             ListContainer::class,
             FilterContainer::class,
+            FilterListTableResolver::class,
             ElementDcaHook::class,
             BreadcrumbHook::class,
             FormNameRegexpHook::class,
             ConfigOnSubmitCallback::class,
             FieldsOptionsCallbacks::class,
+            TimeWindowCallbacks::class,
             FilterCompoundFactory::class,
             FilterCollector::class,
             ListCompoundBuilderFactory::class,
@@ -117,6 +123,8 @@ final class ServicesConfigTest extends TestCase
             AutoItemReader::class,
             ReaderResolver::class,
             RetireCalendarLimitMigration::class,
+            CalendarColumnsMigration::class,
+            RenameTimeWindowTypeMigration::class,
         ] as $class) {
             yield $class => [$class];
         }

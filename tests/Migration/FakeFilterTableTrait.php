@@ -18,7 +18,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * A fake `tl_flare_filter` behind a mocked DBAL connection, shared by the migration tests: `$this->columns` is its
  * schema, `$this->rows` its content. It serves the statements of every migration-managed marker column alike, so
- * several migrations can run on one table.
+ * several migrations can run on one table, and the byte-exact type rename of `RenameTimeWindowTypeMigration`.
  *
  * @mixin TestCase
  */
@@ -41,6 +41,9 @@ trait FakeFilterTableTrait
     /** @var list<string> The recorded `executeStatement()` calls. */
     private array $statements = [];
 
+    /** @var list<array{string, list<mixed>}> The recorded `executeStatement()` calls with their parameters. */
+    private array $statementCalls = [];
+
     /** @var array<int, array<string, mixed>> The `tl_flare_list` rows by id. */
     private array $lists = [];
 
@@ -59,6 +62,7 @@ trait FakeFilterTableTrait
         $this->rows = [];
         $this->updates = [];
         $this->statements = [];
+        $this->statementCalls = [];
         $this->lists = [];
         $this->loadedDcas = [];
     }
@@ -100,6 +104,14 @@ trait FakeFilterTableTrait
             'elm_stopAt' => '',
             'exclusive' => '0',
             'outputs' => null,
+            'elm_hasExtendedEvents' => '',
+            'elm_periodStartField' => '',
+            'elm_periodStopField' => '',
+            'elm_recurringField' => '',
+            'elm_recurrencesField' => '',
+            'elm_repeatEndField' => '',
+            'elm_overlap' => 0,
+            'elm_useRecurrence' => 0,
         ];
 
         foreach ($this->columns ?? [] as $column)
@@ -169,7 +181,19 @@ trait FakeFilterTableTrait
 
             return $affected;
         });
-        $connection->method('fetchOne')->willReturnCallback(function (string $sql): int|false {
+        $connection->method('fetchOne')->willReturnCallback(function (string $sql, array $params = []): int|false {
+            if ($sql === 'SELECT 1 FROM tl_flare_filter WHERE CAST(type AS BINARY) = ? LIMIT 1')
+            {
+                foreach ($this->rows as $row)
+                {
+                    if ($row['type'] === $params[0]) {
+                        return 1;
+                    }
+                }
+
+                return false;
+            }
+
             self::assertSame("SELECT 1 FROM tl_flare_filter WHERE control <> '' OR value <> '' LIMIT 1", $sql);
 
             foreach ($this->rows as $row)
@@ -186,8 +210,24 @@ trait FakeFilterTableTrait
 
             return $this->lists[$params[0]] ?? false;
         });
-        $connection->method('executeStatement')->willReturnCallback(function (string $sql): int {
+        $connection->method('executeStatement')->willReturnCallback(function (string $sql, array $params = []): int {
             $this->statements[] = $sql;
+            $this->statementCalls[] = [$sql, $params];
+
+            if ($sql === 'UPDATE tl_flare_filter SET type = ? WHERE CAST(type AS BINARY) = ?')
+            {
+                $affected = 0;
+
+                foreach ($this->rows as $id => $row)
+                {
+                    if ($row['type'] === $params[1]) {
+                        $this->rows[$id]['type'] = $params[0];
+                        ++$affected;
+                    }
+                }
+
+                return $affected;
+            }
 
             $add = "/^ALTER TABLE tl_flare_filter ADD (\\w+) CHAR\\(1\\) NOT NULL DEFAULT '0'$/";
 

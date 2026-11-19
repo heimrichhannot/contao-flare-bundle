@@ -52,6 +52,19 @@ final class RetireCalendarLimitMigrationTest extends TestCase
         self::assertSame('', $this->rows[1]['elm_stopAt']);
     }
 
+    public function testATimeWindowRowIsRetiredToo(): void
+    {
+        $this->addRow(1, 'flare_time_window', ['elm_startAt' => 'last monday']);
+
+        $this->migration()->run();
+
+        self::assertSame(
+            [[['elm_configureStart' => 'str'] + self::LIST_VIEW_ONLY + [self::MARKER => '1'], ['id' => 1]]],
+            $this->rowUpdates(),
+        );
+        self::assertSame('str', $this->rows[1]['elm_configureStart']);
+    }
+
     public function testAReadableLeftoverIsSwitchedOnWhateverTheLimit(): void
     {
         $this->addRow(1, self::CALENDAR, ['elm_isLimited' => '1', 'elm_stopAt' => '+1 week']);

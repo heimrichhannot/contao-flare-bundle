@@ -63,6 +63,17 @@ errors:
         no_parents: "No parent archives are whitelisted, or the parent table has no model class."
         no_valid_parents: "None of the whitelisted parent archives exists."
         no_ptable: "The data container of the list has no parent table, so it cannot be filtered by archive."
+    time_window:
+        no_column: "No column is selected for the %role%."
+        unknown_column: "The column \"%column%\" selected for the %role% does not exist in %table%."
+        date_column: "The column \"%column%\" selected for the %role% is an SQL date column; the filter reads Unix timestamps only."
+        inverted_period: "The configured end of the period (%stop%) lies before its start (%start%)."
+        role:
+            start: "start"
+            stop: "end"
+            recurring: "recurring flag"
+            recurrences: "number of recurrences"
+            repeat_end: "repeat end"
     missing_model: 'List model or filter model not found.'
     missing_datacontainer: 'Please define a data container on the list model [ID %id%]'
 

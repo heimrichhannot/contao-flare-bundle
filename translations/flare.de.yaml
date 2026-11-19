@@ -63,6 +63,17 @@ errors:
         no_parents: "Es sind keine Eltern-Archive in der Whitelist eingetragen, oder die Elterntabelle hat keine Model-Klasse."
         no_valid_parents: "Keines der Eltern-Archive in der Whitelist existiert."
         no_ptable: "Der Data-Container der Liste hat keine Elterntabelle und kann daher nicht nach Archiven gefiltert werden."
+    time_window:
+        no_column: "Für %role% ist keine Spalte ausgewählt."
+        unknown_column: "Die für %role% ausgewählte Spalte „%column%“ gibt es in %table% nicht."
+        date_column: "Die für %role% ausgewählte Spalte „%column%“ ist eine SQL-Datumsspalte; der Filter liest nur Unix-Zeitstempel."
+        inverted_period: "Das konfigurierte Ende des Zeitraums (%stop%) liegt vor seinem Beginn (%start%)."
+        role:
+            start: "den Beginn"
+            stop: "das Ende"
+            recurring: "die Wiederholung"
+            recurrences: "die Anzahl der Wiederholungen"
+            repeat_end: "das Wiederholungsende"
     missing_model: 'Listen- oder Filtermodell nicht gefunden'
     missing_datacontainer: 'Bitte definieren Sie einen Data-Container für das Listenmodell [ID %id%]'
 

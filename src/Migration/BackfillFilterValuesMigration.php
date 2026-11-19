@@ -279,7 +279,7 @@ class BackfillFilterValuesMigration extends AbstractMigration
     {
         return match ($type) {
             'flare_archive', 'flare_fieldValueChoice', 'flare_dcaSelectField', 'cfg_tags_choice' => 'flare_choice',
-            'flare_dateRange', 'flare_calendar_current' => 'flare_date_range',
+            'flare_dateRange', 'flare_calendar_current', 'flare_time_window' => 'flare_date_range',
             'flare_search_keywords' => 'flare_keywords',
             'flare_bool' => $boolMode === 'ternary' ? 'flare_choice_bool' : 'flare_checkbox',
             default => null,

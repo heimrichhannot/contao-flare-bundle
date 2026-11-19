@@ -413,17 +413,85 @@ $dca['fields'] = [
         ],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
-    'elm_hasExtendedEvents' => [
+    // The calendar filter's column pickers store physical column names of the list's table.
+    'elm_periodStartField' => [
         'exclude' => true,
-        'toggle' => true,
-        'filter' => false,
-        'default' => false,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
+        'inputType' => 'select',
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'chosen' => true,
+            'alwaysSave' => true,
+            'tl_class' => 'w50 clr',
+        ],
+        'sql' => "varchar(64) NOT NULL default ''",
+    ],
+    'elm_periodStopField' => [
+        'exclude' => true,
+        'inputType' => 'select',
+        'eval' => [
+            'includeBlankOption' => true,
+            'chosen' => true,
+            'alwaysSave' => true,
+            'submitOnChange' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(64) NOT NULL default ''",
+    ],
+    'elm_overlap' => [
+        'exclude' => true,
         'inputType' => 'checkbox',
         'eval' => [
-            'tl_class' => 'cbx w50 clr'
+            'alwaysSave' => true,
+            'tl_class' => 'cbx w50',
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'elm_useRecurrence' => [
+        'exclude' => true,
+        'inputType' => 'checkbox',
+        'eval' => [
+            'alwaysSave' => true,
+            'submitOnChange' => true,
+            'tl_class' => 'cbx w50 clr',
+        ],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'elm_recurringField' => [
+        'exclude' => true,
+        'inputType' => 'select',
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'chosen' => true,
+            'alwaysSave' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(64) NOT NULL default ''",
+    ],
+    'elm_recurrencesField' => [
+        'exclude' => true,
+        'inputType' => 'select',
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'chosen' => true,
+            'alwaysSave' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(64) NOT NULL default ''",
+    ],
+    'elm_repeatEndField' => [
+        'exclude' => true,
+        'inputType' => 'select',
+        'eval' => [
+            'mandatory' => true,
+            'includeBlankOption' => true,
+            'chosen' => true,
+            'alwaysSave' => true,
+            'tl_class' => 'w50',
+        ],
+        'sql' => "varchar(64) NOT NULL default ''",
     ],
     'elm_whitelistParents' => [
         'inputType' => 'select',

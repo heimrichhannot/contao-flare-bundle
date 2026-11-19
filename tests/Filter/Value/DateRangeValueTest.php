@@ -68,9 +68,7 @@ final class DateRangeValueTest extends TestCase
     }
 
     /**
-     * `0` is the epoch, not "absent" — expressible because absence is `null`. This diverges on
-     * purpose from `CalendarCurrentFilterElement::mixedToDateTime()`, whose `if (!$input)` guard
-     * discards `0` and `'0'`.
+     * `0` is the epoch, not "absent" — expressible because absence is `null`.
      */
     public function testEpochIsAValueNotAnAbsence(): void
     {

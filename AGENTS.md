@@ -178,7 +178,11 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   backfill or the retire migration; fills every `flare_calendar_current` row's pickers with the event columns
   `startTime`/`endTime`/`recurring`/`recurrences`/`repeatEnd`, recurrence on, `elm_overlap` from
   `elm_hasExtendedEvents`; a row whose start picker is set is only marked; guard: stays quiet once the deletes
-  dropped `elm_hasExtendedEvents`, which run only after all migrations and schema updates).
+  dropped `elm_hasExtendedEvents`, which run only after all migrations and schema updates),
+  `RenameTimeWindowTypeMigration` (no marker; needs only `type`; renames `flare_calendar_current` rows to
+  `flare_time_window` in one `UPDATE`, byte-exact (`CAST(type AS BINARY) = ?`: a custom `Flare_Calendar_Current`
+  stays); runs while an old-key row exists, so a restored pre-upgrade version is renamed again; the backfill, retire
+  and columns migrations recognize both keys, so their order against the rename does not matter).
   Migrations never delete; legacy columns stay until deletes are run manually
 - `src/Config/` — `ConfigBuilder` (fluent canonical-config accumulator; no cast helpers — transformers cast
   declaratively off the typed model), `TransformerMap` (source class → transformer, what

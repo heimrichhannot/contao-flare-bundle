@@ -4,48 +4,49 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Contao\DataContainer;
 
-use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Exception as DbalException;
-use HeimrichHannot\FlareBundle\List\Factory\ListCompoundFactory;
-use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
+use Contao\CoreBundle\Framework\ContaoFramework;
+use HeimrichHannot\FlareBundle\Contao\Factory\ListCompoundBuilderFactory;
+use HeimrichHannot\FlareBundle\Model\FilterModel;
+use HeimrichHannot\FlareBundle\Model\ListModel;
 
 /**
- * The main table of a filter's list, as its list driver resolves it ({@see ListCompoundFactory}), from the stored
- * list row alone — without building the list.
+ * The main table of a filter's list as the runtime resolves it: the `dc` of the list built from its stored row
+ * ({@see ListCompoundBuilderFactory}), so a driver whose table depends on another config option gets the same table
+ * in the backend as on the frontend.
  *
  * @internal For internal use only. Do not call this class or its methods directly.
  */
 final readonly class FilterListTableResolver
 {
     public function __construct(
-        private Connection         $connection,
-        private ListDriverRegistry $drivers,
+        private ContaoFramework            $framework,
+        private ListCompoundBuilderFactory $listFactory,
     ) {}
 
     /**
-     * @return string|null Null for a missing filter row, list or driver, or a driver that resolves no table.
-     *
-     * @throws DbalException
+     * @return string|null Null for a missing filter row or list, or a list that cannot be built.
      */
     public function resolve(int $filterId): ?string
     {
-        $row = $this->connection->fetchAssociative(
-            'SELECT l.type, l.dc FROM tl_flare_filter f INNER JOIN tl_flare_list l ON l.id = f.pid WHERE f.id = ?',
-            [$filterId],
-        );
+        $filterModel = $this->framework->getAdapter(FilterModel::class)->findByPk($filterId);
 
-        if ($row === false) {
+        if (!$filterModel instanceof FilterModel) {
             return null;
         }
 
-        $type = (string) $row['type'];
+        $listModel = $this->framework->getAdapter(ListModel::class)->findByPk((int) $filterModel->pid);
 
-        if (!$driver = $this->drivers->getService($type)) {
+        if (!$listModel instanceof ListModel) {
             return null;
         }
 
-        $attributes = $this->drivers->getAttribute($type)->attributes ?? [];
-
-        return $driver->resolveDcTable($type, ['dc' => (string) $row['dc']], $attributes) ?: null;
+        try
+        {
+            return $this->listFactory->create($listModel)->build()->dc;
+        }
+        catch (\Exception)
+        {
+            return null;
+        }
     }
 }

@@ -63,13 +63,13 @@ class TimeWindowFilterElement extends AbstractFilterElement implements DateBound
         $config
             ->set('start_at', $this->readSide($model->elm_configureStart, $model->elm_startAt))
             ->set('stop_at', $this->readSide($model->elm_configureStop, $model->elm_stopAt))
-            ->set('start_field', $model->elm_periodStartField ?: null)
-            ->set('stop_field', $model->elm_periodStopField ?: null)
+            ->set('start_field', $this->readColumn($model->elm_periodStartField))
+            ->set('stop_field', $this->readColumn($model->elm_periodStopField))
             ->set('overlap', (bool) $model->elm_overlap)
             ->set('use_recurrence', (bool) $model->elm_useRecurrence)
-            ->set('recurring_field', $model->elm_recurringField ?: null)
-            ->set('recurrences_field', $model->elm_recurrencesField ?: null)
-            ->set('repeat_end_field', $model->elm_repeatEndField ?: null);
+            ->set('recurring_field', $this->readColumn($model->elm_recurringField))
+            ->set('recurrences_field', $this->readColumn($model->elm_recurrencesField))
+            ->set('repeat_end_field', $this->readColumn($model->elm_repeatEndField));
     }
 
     /**
@@ -167,6 +167,16 @@ class TimeWindowFilterElement extends AbstractFilterElement implements DateBound
         }
 
         return $value;
+    }
+
+    /**
+     * A picked column's physical name; only `null` and `''` count as no column, so a column named `0` stays.
+     */
+    private function readColumn(mixed $name): ?string
+    {
+        $name = (string) $name;
+
+        return $name !== '' ? $name : null;
     }
 
     /**

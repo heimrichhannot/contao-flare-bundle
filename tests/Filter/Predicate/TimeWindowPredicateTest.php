@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter\Predicate;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
+use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Query\Expression\ExpressionBuilder;
 use HeimrichHannot\FlareBundle\Filter\Predicate\TimeWindowPredicate;
 use HeimrichHannot\FlareBundle\Query\FilterConditionsBuilder;
@@ -15,18 +16,20 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 final class TimeWindowPredicateTest extends TestCase
 {
-    private const START_OK = '`main.startTime` IS NOT NULL AND `main.startTime` <> 0';
-    private const END_OK = '(`main.endTime` IS NULL OR `main.endTime` = 0 OR `main.endTime` >= `main.startTime`)';
-    private const OVERLAP = '`main.startTime` <= :stop AND CASE WHEN `main.endTime` IS NULL OR `main.endTime` = 0'
-        . ' THEN `main.startTime` ELSE `main.endTime` END >= :start';
-    private const RECURRENCE = '`main.recurring` IS NOT NULL AND `main.recurring` <> 0'
-        . ' AND `main.startTime` <= :stop AND (COALESCE(`main.recurrences`, 0) = 0'
-        . ' OR (`main.recurrences` > 0 AND `main.repeatEnd` >= :start))';
+    private const START_OK = '`main`.`startTime` IS NOT NULL AND `main`.`startTime` <> 0';
+    private const END_OK = '(`main`.`endTime` IS NULL OR `main`.`endTime` = 0'
+        . ' OR `main`.`endTime` >= `main`.`startTime`)';
+    private const OVERLAP = '`main`.`startTime` <= :stop'
+        . ' AND CASE WHEN `main`.`endTime` IS NULL OR `main`.`endTime` = 0'
+        . ' THEN `main`.`startTime` ELSE `main`.`endTime` END >= :start';
+    private const RECURRENCE = '`main`.`recurring` IS NOT NULL AND `main`.`recurring` <> 0'
+        . ' AND `main`.`startTime` <= :stop AND (COALESCE(`main`.`recurrences`, 0) = 0'
+        . ' OR (`main`.`recurrences` > 0 AND `main`.`repeatEnd` >= :start))';
 
     public function testTheStartLiesInThePeriod(): void
     {
         $this->assertCondition(
-            self::START_OK . ' AND ((`main.startTime` BETWEEN :start AND :stop))',
+            self::START_OK . ' AND ((`main`.`startTime` BETWEEN :start AND :stop))',
             ['start_field' => 'startTime'],
         );
     }
@@ -34,7 +37,7 @@ final class TimeWindowPredicateTest extends TestCase
     public function testAnEndBeforeTheStartNeverMatches(): void
     {
         $this->assertCondition(
-            self::START_OK . ' AND ' . self::END_OK . ' AND ((`main.startTime` BETWEEN :start AND :stop))',
+            self::START_OK . ' AND ' . self::END_OK . ' AND ((`main`.`startTime` BETWEEN :start AND :stop))',
             ['start_field' => 'startTime', 'stop_field' => 'endTime'],
         );
     }
@@ -50,7 +53,7 @@ final class TimeWindowPredicateTest extends TestCase
     public function testOverlapNeedsAnEndColumn(): void
     {
         $this->assertCondition(
-            self::START_OK . ' AND ((`main.startTime` BETWEEN :start AND :stop))',
+            self::START_OK . ' AND ((`main`.`startTime` BETWEEN :start AND :stop))',
             ['start_field' => 'startTime', 'overlap' => true],
         );
     }
@@ -58,7 +61,7 @@ final class TimeWindowPredicateTest extends TestCase
     public function testRecurrenceAddsContaosApproximation(): void
     {
         $this->assertCondition(
-            self::START_OK . ' AND ((`main.startTime` BETWEEN :start AND :stop) OR (' . self::RECURRENCE . '))',
+            self::START_OK . ' AND ((`main`.`startTime` BETWEEN :start AND :stop) OR (' . self::RECURRENCE . '))',
             [
                 'start_field' => 'startTime',
                 'recurring_field' => 'recurring',
@@ -85,8 +88,8 @@ final class TimeWindowPredicateTest extends TestCase
 
     public function testCastColumnsAreReadAsNumbers(): void
     {
-        $s = 'CAST(`main.s` AS SIGNED)';
-        $e = 'CAST(`main.e` AS SIGNED)';
+        $s = 'CAST(`main`.`s` AS SIGNED)';
+        $e = 'CAST(`main`.`e` AS SIGNED)';
 
         $this->assertCondition(
             "{$s} IS NOT NULL AND {$s} <> 0 AND ({$e} IS NULL OR {$e} = 0 OR {$e} >= {$s})"
@@ -146,7 +149,7 @@ final class TimeWindowPredicateTest extends TestCase
     {
         $connection = $this->createMock(Connection::class);
         $connection->method('createExpressionBuilder')->willReturn(new ExpressionBuilder($connection));
-        $connection->method('quoteIdentifier')->willReturnCallback(static fn (string $id): string => "`{$id}`");
+        $connection->method('quoteIdentifier')->willReturnCallback((new MySQLPlatform())->quoteIdentifier(...));
 
         return new FilterConditionsBuilder($connection, 'main');
     }

@@ -6,20 +6,21 @@ namespace HeimrichHannot\FlareBundle\Tests\Contao\Callback\FlareFilter;
 
 use Contao\CoreBundle\DependencyInjection\Attribute\AsCallback;
 use Contao\DataContainer;
+use Contao\TestCase\ContaoTestCase;
 use Doctrine\DBAL\Connection;
 use HeimrichHannot\FlareBundle\Contao\Callback\FlareFilter\TimeWindowCallbacks;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterContainer;
-use HeimrichHannot\FlareBundle\Contao\DataContainer\FilterListTableResolver;
 use HeimrichHannot\FlareBundle\DependencyInjection\Attribute\AsListDriver;
 use HeimrichHannot\FlareBundle\Filter\Element\TimeWindowFilterElement;
-use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
+use HeimrichHannot\FlareBundle\List\Driver\AbstractListDriver;
 use HeimrichHannot\FlareBundle\Registry\ListDriverRegistry;
+use HeimrichHannot\FlareBundle\Tests\Contao\DataContainer\BuildsFilterListTableResolverTrait;
 use HeimrichHannot\FlareBundle\Tests\Filter\Element\StubsContaoDcaTrait;
 use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
 
-final class TimeWindowCallbacksTest extends TestCase
+final class TimeWindowCallbacksTest extends ContaoTestCase
 {
+    use BuildsFilterListTableResolverTrait;
     use StubsContaoDcaTrait;
 
     private const FILTER_ID = 7;
@@ -51,6 +52,8 @@ final class TimeWindowCallbacksTest extends TestCase
 
     protected function setUp(): void
     {
+        parent::setUp();
+
         $this->stubDca('tl_test', ['fields' => [
             'startTime' => ['sql' => 'bigint(20) NULL'],
             'begins' => ['sql' => ['type' => 'integer', 'name' => 'physical']],
@@ -295,7 +298,8 @@ final class TimeWindowCallbacksTest extends TestCase
     }
 
     /**
-     * @param string       $table      The table the list driver resolves for the filter {@see self::FILTER_ID}.
+     * @param string       $table      The table of the list of the filter {@see self::FILTER_ID}; empty for a list
+     *   that cannot be built, as its driver resolves no table.
      * @param string|false $storedType The type the database holds for the filter, false for no row.
      */
     private function callbacks(
@@ -304,10 +308,6 @@ final class TimeWindowCallbacksTest extends TestCase
         bool $contao5 = true,
     ): TimeWindowCallbacks {
         $this->connection = $this->createMock(Connection::class);
-        $this->connection->method('fetchAssociative')->willReturnCallback(
-            static fn (string $sql, array $params): array|false =>
-                $params[0] === self::FILTER_ID ? ['type' => 'stored', 'dc' => $table] : false,
-        );
         $this->connection->method('fetchOne')->willReturnCallback(
             static function (string $sql, array $params) use ($storedType): mixed {
                 self::assertSame('SELECT type FROM tl_flare_filter WHERE id = ?', $sql);
@@ -318,19 +318,18 @@ final class TimeWindowCallbacksTest extends TestCase
         );
 
         $drivers = (new ListDriverRegistry())->add(
-            new class implements ListDriverInterface {
-                public function resolveDcTable(string $type, array $config, array $attributes): string
-                {
-                    return (string) ($config['dc'] ?? '');
-                }
-            },
+            new class extends AbstractListDriver {},
             new AsListDriver(type: 'stored'),
             'stored',
         );
 
         return new TimeWindowCallbacks(
             $this->connection,
-            new FilterListTableResolver($this->connection, $drivers),
+            $this->createFilterListTableResolver(
+                [self::FILTER_ID => ['pid' => 5]],
+                [5 => ['type' => 'stored', 'dc' => $table]],
+                $drivers,
+            ),
             $contao5,
         );
     }

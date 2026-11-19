@@ -369,6 +369,24 @@ final class TimeWindowFilterElementTest extends TestCase
         ], self::pick($config, self::COLUMN_KEYS));
     }
 
+    public function testTheTransformKeepsAColumnNamedZero(): void
+    {
+        $config = $this->transform([
+            'elm_periodStartField' => '0',
+            'elm_periodStopField' => '0',
+            'elm_useRecurrence' => '1',
+            'elm_recurringField' => '0',
+            'elm_recurrencesField' => '0',
+            'elm_repeatEndField' => '0',
+        ]);
+
+        self::assertSame('0', $config['start_field']);
+        self::assertSame('0', $config['stop_field']);
+        self::assertSame('0', $config['recurring_field']);
+        self::assertSame('0', $config['recurrences_field']);
+        self::assertSame('0', $config['repeat_end_field']);
+    }
+
     public function testTheTransformSatisfiesTheSchema(): void
     {
         $element = new TimeWindowFilterElement();

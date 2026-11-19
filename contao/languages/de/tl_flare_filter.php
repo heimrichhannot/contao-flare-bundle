@@ -61,14 +61,14 @@ $lang['elm_configureStart'] = ['Startdatum konfigurieren', 'Bitte wählen Sie di
 $lang['elm_startAt'] = ['Startdatum', 'Bitte geben Sie ein Startdatum ein.'];
 $lang['elm_configureStop'] = ['Enddatum konfigurieren', 'Bitte wählen Sie die Konfiguration für das Enddatum aus.'];
 $lang['elm_stopAt'] = ['Enddatum', 'Bitte geben Sie ein Enddatum ein.'];
-$lang['date_columns_legend'] = 'Datumsspalten';
-$lang['elm_periodStartField'] = ['Spalte Beginn', 'Die Spalte, die den Beginn als Unix-Zeitstempel enthält.'];
-$lang['elm_periodStopField'] = ['Spalte Ende', 'Die Spalte, die das Ende als Unix-Zeitstempel enthält. Leer lassen, wenn Einträge Zeitpunkte sind; ein Eintrag, der vor seinem Beginn endet, wird nie angezeigt.'];
+$lang['date_columns_legend'] = 'Datumsfelder';
+$lang['elm_periodStartField'] = ['Feld für den Beginn', 'Das Feld, das den Beginn als Unix-Zeitstempel enthält.'];
+$lang['elm_periodStopField'] = ['Feld für das Ende', 'Das Feld, das das Ende als Unix-Zeitstempel enthält. Leer lassen, wenn Einträge Zeitpunkte sind; ein Eintrag, der vor seinem Beginn endet, wird nie angezeigt.'];
 $lang['elm_overlap'] = ['Überlappung', 'Auch Einträge finden, die im Zeitraum enden oder ihn überspannen, nicht nur solche, die in ihm beginnen.'];
 $lang['elm_useRecurrence'] = ['Wiederholungen berücksichtigen', 'Auch wiederkehrende Einträge finden, deren Serie in den Zeitraum reicht (Wiederholungsmodell von Contao).'];
-$lang['elm_recurringField'] = ['Spalte Wiederholung', 'Die Spalte, die einen Eintrag als wiederkehrend kennzeichnet.'];
-$lang['elm_recurrencesField'] = ['Spalte Anzahl Wiederholungen', 'Die Spalte mit der Anzahl der Wiederholungen (0 = unbegrenzt).'];
-$lang['elm_repeatEndField'] = ['Spalte Wiederholungsende', 'Die Spalte, die das Ende der letzten Wiederholung als Unix-Zeitstempel enthält.'];
+$lang['elm_recurringField'] = ['Feld für die Wiederholung', 'Das Feld, das einen Eintrag als wiederkehrend kennzeichnet.'];
+$lang['elm_recurrencesField'] = ['Feld für die Anzahl der Wiederholungen', 'Das Feld mit der Anzahl der Wiederholungen (0 = unbegrenzt).'];
+$lang['elm_repeatEndField'] = ['Feld für das Wiederholungsende', 'Das Feld, das das Ende der letzten Wiederholung als Unix-Zeitstempel enthält.'];
 ###< date_legend ###
 
 ###> archive_legend ###

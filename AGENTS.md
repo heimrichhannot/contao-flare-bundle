@@ -170,12 +170,12 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 - `src/Migration/` — `RenameFilterColumnsMigration` (`elm_`/`ctl_` renames), `BackfillFilterValuesMigration`
   (run-once per row via the migration-managed `legacyBackfilled` marker column), `RenameContentListColumnMigration`,
   `RetireCalendarLimitMigration` (marker `calendarLimitRetired`; waits for the renames and the backfill; retires
-  `flare_calendar_current`'s `is_limited`: readable leftovers switch the period on, filters to check are
+  `is_limited` of the calendar filter (of either key): readable leftovers switch the period on, filters to check are
   reported; a row with `elm_isLimited` off also becomes exclusive to the list view — `exclusive = '1'`,
   `outputs = serialize(['list_view'])` — because v0.1's reader ignored such a filter; requires the `exclusive` and
   `outputs` columns), `CalendarColumnsMigration` (marker `calendarColumnsFilled`; waits for its columns —
   `elm_hasExtendedEvents` after the renames and the seven picker/switch columns of the schema update, not for the
-  backfill or the retire migration; fills every `flare_calendar_current` row's pickers with the event columns
+  backfill or the retire migration; fills every `flare_calendar_current` or `flare_time_window` row's pickers with the event columns
   `startTime`/`endTime`/`recurring`/`recurrences`/`repeatEnd`, recurrence on, `elm_overlap` from
   `elm_hasExtendedEvents`; a row whose start picker is set is only marked; guard: stays quiet once the deletes
   dropped `elm_hasExtendedEvents`, which run only after all migrations and schema updates),

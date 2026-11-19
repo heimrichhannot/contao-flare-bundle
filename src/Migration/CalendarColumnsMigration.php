@@ -10,10 +10,10 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Column;
 
 /**
- * Fills the column pickers of the `flare_calendar_current` filters of `tl_flare_filter` with the `tl_calendar_events`
- * columns the element's predicate used to hard-code, so a stored filter selects the same events as before: `startTime`
- * and `endTime` as the period, recurrence on with `recurring`, `recurrences` and `repeatEnd`, and `elm_overlap` from the
- * former `elm_hasExtendedEvents`.
+ * Fills the column pickers of the `flare_calendar_current` filters (of either key, as `flare_time_window` too) of
+ * `tl_flare_filter` with the `tl_calendar_events` columns the element's predicate used to hard-code, so a stored
+ * filter selects the same events as before: `startTime` and `endTime` as the period, recurrence on with `recurring`,
+ * `recurrences` and `repeatEnd`, and `elm_overlap` from the former `elm_hasExtendedEvents`.
  *
  * Each row is handled once, as in {@see RetireCalendarLimitMigration}: the migration manages its own marker column
  * `calendarColumnsFilled`, deliberately not part of the DCA. Existing rows start pending ('0'), the column default then

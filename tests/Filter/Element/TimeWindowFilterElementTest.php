@@ -78,6 +78,11 @@ final class TimeWindowFilterElementTest extends TestCase
         unset($GLOBALS['TL_DCA']['tl_flare_filter']);
     }
 
+    public function testTheTypeIsTheTimeWindow(): void
+    {
+        self::assertSame('flare_time_window', TimeWindowFilterElement::TYPE);
+    }
+
     public function testTheBoundAppliesWithoutAValue(): void
     {
         self::assertSame([1000, 2000], $this->range(self::bound(1000, 2000), null));
@@ -223,7 +228,10 @@ final class TimeWindowFilterElementTest extends TestCase
 
     public function testRecurrenceWithAMissingColumnIsBroken(): void
     {
-        $this->assertBroken('errors.time_window.no_column', ['repeat_end_field' => null] + self::RECURRENCE + self::BASE);
+        $this->assertBroken(
+            'errors.time_window.no_column',
+            ['repeat_end_field' => null] + self::RECURRENCE + self::BASE,
+        );
     }
 
     public function testTouchingBoundsDoNotAbort(): void

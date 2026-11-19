@@ -173,7 +173,12 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `flare_calendar_current`'s `is_limited`: readable leftovers switch the period on, filters to check are
   reported; a row with `elm_isLimited` off also becomes exclusive to the list view — `exclusive = '1'`,
   `outputs = serialize(['list_view'])` — because v0.1's reader ignored such a filter; requires the `exclusive` and
-  `outputs` columns).
+  `outputs` columns), `CalendarColumnsMigration` (marker `calendarColumnsFilled`; waits for its columns —
+  `elm_hasExtendedEvents` after the renames and the seven picker/switch columns of the schema update, not for the
+  backfill or the retire migration; fills every `flare_calendar_current` row's pickers with the event columns
+  `startTime`/`endTime`/`recurring`/`recurrences`/`repeatEnd`, recurrence on, `elm_overlap` from
+  `elm_hasExtendedEvents`; a row whose start picker is set is only marked; guard: stays quiet once the deletes
+  dropped `elm_hasExtendedEvents`, which run only after all migrations and schema updates).
   Migrations never delete; legacy columns stay until deletes are run manually
 - `src/Config/` — `ConfigBuilder` (fluent canonical-config accumulator; no cast helpers — transformers cast
   declaratively off the typed model), `TransformerMap` (source class → transformer, what

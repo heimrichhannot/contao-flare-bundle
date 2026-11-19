@@ -100,6 +100,14 @@ trait FakeFilterTableTrait
             'elm_stopAt' => '',
             'exclusive' => '0',
             'outputs' => null,
+            'elm_hasExtendedEvents' => '',
+            'elm_periodStartField' => '',
+            'elm_periodStopField' => '',
+            'elm_recurringField' => '',
+            'elm_recurrencesField' => '',
+            'elm_repeatEndField' => '',
+            'elm_overlap' => 0,
+            'elm_useRecurrence' => 0,
         ];
 
         foreach ($this->columns ?? [] as $column)

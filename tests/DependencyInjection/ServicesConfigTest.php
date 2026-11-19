@@ -53,6 +53,7 @@ use HeimrichHannot\FlareBundle\List\Entry\EntryCollection;
 use HeimrichHannot\FlareBundle\List\Entry\EntryMeta;
 use HeimrichHannot\FlareBundle\List\Entry\EntryTaggerInterface;
 use HeimrichHannot\FlareBundle\List\Entry\ModelRef;
+use HeimrichHannot\FlareBundle\Migration\CalendarColumnsMigration;
 use HeimrichHannot\FlareBundle\Migration\RetireCalendarLimitMigration;
 use HeimrichHannot\FlareBundle\Contao\PtableInference\PtableInferrer;
 use PHPUnit\Framework\TestCase;
@@ -121,6 +122,7 @@ final class ServicesConfigTest extends TestCase
             AutoItemReader::class,
             ReaderResolver::class,
             RetireCalendarLimitMigration::class,
+            CalendarColumnsMigration::class,
         ] as $class) {
             yield $class => [$class];
         }

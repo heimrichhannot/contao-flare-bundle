@@ -301,10 +301,12 @@ not, in sorting order — also for a row whose filter could not be built. It car
 the runtime builds it (`$list`, `null` if it cannot be built), the row's filter (`$filter`: the one in the list if
 the list has it, so a `ListDriverBuildListEvent` listener's replacement is what you see; else the one built for the
 row alone; `null` if it could not be built) and the issues found so far (`$issues`, a list of `FilterIssue`).
-`addWarning(string $message, ?FilterIssueIcon $icon = null)` adds a warning: the message is shown as is (translate
-it yourself), the icon one of the bundle's icons (`HeimrichHannot\FlareBundle\Contao\Inspection\FilterIssueIcon`:
-`Bug`, `CopyX`, `BoneFracture`, `Engine`, `BadgeExclamationPoint`, `Opacity`); `null` shows the warning's default
-(`BadgeExclamationPoint`). A warning never fails a list; the filter row shows it, the edit form shows it as a
+`addWarning(string $message, ?string $icon = null)` adds a warning: the message is shown as is (translate it
+yourself), the icon a lucide icon name (`a-z`, `0-9`, `-`) with a partial `backend/filter_icon/<name>.html.twig`
+in the `@HeimrichHannotFlare` namespace — the bundle ships `bug`, `copy-x`, `bone-fracture`, `engine`,
+`badge-exclamation-point` and `opacity`; add another as
+`templates/bundles/HeimrichHannotFlareBundle/backend/filter_icon/<name>.html.twig` (it gets `title`). `null` or a
+name without a partial shows the warning's default (`badge-exclamation-point`). A warning never fails a list; the filter row shows it, the edit form shows it as a
 hint and the list's filter overview counts it. Filters without a row (added by a driver or a listener) get no event.
 An `\Exception` thrown by a listener is reported as a programming error on the row.
 

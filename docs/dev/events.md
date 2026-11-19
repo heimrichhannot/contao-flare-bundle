@@ -198,9 +198,9 @@ built. Filters without a row (added by a list driver or a listener) get no event
   cannot be built), `filter` (readonly `?FilterCompound`: the row's filter as the list has it, so a
   `ListDriverBuildListEvent` listener's replacement is what you see, else as built for the row alone; `null` if it
   could not be built), `issues` (readonly `list<FilterIssue>`, the row's issues found so far)
-- **API:** `addWarning(string $message, ?FilterIssueIcon $icon = null)` — the message is shown as given (translate
-  it), the icon is one of the bundle's icons (`Contao\Inspection\FilterIssueIcon`); `null` shows
-  `BadgeExclamationPoint`.
+- **API:** `addWarning(string $message, ?string $icon = null)` — the message is shown as given (translate it), the
+  icon is a lucide icon name with a partial `@HeimrichHannotFlare/backend/filter_icon/<name>.html.twig`; `null` or
+  a name without one shows `badge-exclamation-point`.
   `getWarnings()`
 - An `\Exception` thrown by a listener is reported as a programming error on the row.
 

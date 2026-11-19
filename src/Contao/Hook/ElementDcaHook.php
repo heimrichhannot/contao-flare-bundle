@@ -34,9 +34,8 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  * {@see ListDriverBuildDcaEvent}, {@see FilterElementBuildDcaEvent} and {@see FilterControlBuildDcaEvent}
  * to the live DCA of the edited record.
  *
- * The actual configuration runs as an appended `onload_callback` so that service callbacks
- * with positive priorities (e.g. prefix manipulation) execute first — matching the timing
- * of the previous palette assembly.
+ * The hook applies the configuration itself ({@see DcaBuilder::apply()}) at `loadDataContainer` priority -100,
+ * so that hooks with higher priorities (e.g. prefix manipulation) run first.
  */
 #[AsHook('loadDataContainer', priority: -100)]
 final readonly class ElementDcaHook

@@ -6,8 +6,6 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter;
 
 use HeimrichHannot\FlareBundle\Config\SchemaResolver;
 use HeimrichHannot\FlareBundle\ConfigProvider;
-use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
-use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterEffectBuilderFactory;
 use HeimrichHannot\FlareBundle\Filter\Factory\FilterEffectFactory;
@@ -40,11 +38,10 @@ trait BuildsFilterEffectsTrait
         FilterElementInterface $element,
         array                  $config = [],
         ?ValueInterface        $value = null,
-        ?IntentInterface       $intent = null,
         string                 $dc = 'tl_test',
     ): FilterEffect {
         return $this->createFilterEffectFactory()->create(
-            $this->buildElementContext($element, $config, $intent, $dc),
+            $this->buildElementContext($element, $config, $dc),
             $value,
         );
     }
@@ -55,7 +52,6 @@ trait BuildsFilterEffectsTrait
     protected function buildElementContext(
         FilterElementInterface $element,
         array                  $config = [],
-        ?IntentInterface       $intent = null,
         string                 $dc = 'tl_test',
     ): ElementContext {
         $driver = new class implements ListDriverInterface {
@@ -76,7 +72,6 @@ trait BuildsFilterEffectsTrait
                 ),
                 alias: 'test',
             ),
-            intent: $intent ?? new ConfigurationIntent(),
         );
     }
 

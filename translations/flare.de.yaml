@@ -18,6 +18,7 @@ list:
         duplicate_filter_alias: "Ein doppelter Filter-Alias blockiert die Liste: %alias%. Vergeben Sie jedem veröffentlichten Filter einen eindeutigen Alias."
         broken_filters: "{1} Ein Filter verhindert, dass die Liste erstellt werden kann, bis er korrigiert ist; er ist in der Liste unten markiert.|]1,Inf[ %count% Filter verhindern, dass die Liste erstellt werden kann, bis sie korrigiert sind; sie sind in der Liste unten markiert."
         ineffective_filters: "{1} Ein Filter ist wirkungslos und muss überprüft werden; er ist in der Liste unten markiert.|]1,Inf[ %count% Filter sind wirkungslos und müssen überprüft werden; sie sind in der Liste unten markiert."
+        warnings: "{1} Zu einem Filter gibt es einen Hinweis; er ist in der Liste unten markiert.|]1,Inf[ Zu %count% Filtern gibt es Hinweise; sie sind in der Liste unten markiert."
 
 filter:
     value:
@@ -52,6 +53,9 @@ filter:
             unpublished: "Veröffentlicht würde dieser Filter verhindern, dass die Liste erstellt werden kann: %reason%"
         ineffective:
             archive_without_value: "Dieser Filter hat weder Bedienelement noch Wert und schränkt daher nichts ein. Wählen Sie die anzuzeigenden Archive als Wert oder wählen Sie ein Bedienelement."
+            exclusive_without_output: "Dieser Filter wird exklusiv angewendet, aber in keiner Ausgabe, und schränkt daher nichts ein. Wählen Sie eine Ausgabe oder schalten Sie \"Exklusiv anwenden\" aus."
+        warning:
+            exclusive_published: "Dieser Veröffentlicht-Filter wird exklusiv angewendet, daher zeigen der Detailleser und die Verweise auf Einträge auch unveröffentlichte Einträge. Fügen Sie einen nicht exklusiven Veröffentlicht-Filter hinzu, wenn sie das nicht sollen."
 
 errors:
     choices_not_loaded: "Die Filteroptionen konnten nicht geladen werden; prüfen Sie die Listenkonfiguration."

@@ -100,6 +100,33 @@ final readonly class Str
         return \implode(';', $palettes);
     }
 
+    /**
+     * Drops every legend without fields: a `;`-group whose items are all legends (`{...}`) is left out. A group
+     * without a legend stays.
+     */
+    public static function dropEmptyLegends(string $palette): string
+    {
+        $groups = [];
+
+        foreach (\explode(';', $palette) as $group)
+        {
+            $items = \array_filter(
+                \array_map('trim', \explode(',', $group)),
+                static fn (string $item): bool => $item !== '',
+            );
+
+            $fields = \array_filter($items, static fn (string $item): bool => !\str_starts_with($item, '{'));
+
+            if ($items !== [] && $fields === []) {
+                continue;
+            }
+
+            $groups[] = $group;
+        }
+
+        return \implode(';', $groups);
+    }
+
     public static function isValidSqlName(?string $db_or_col_name): bool
     {
         return $db_or_col_name && \preg_match('/^[A-Za-z_]\w*$/', $db_or_col_name);

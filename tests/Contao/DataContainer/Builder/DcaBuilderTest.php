@@ -104,6 +104,34 @@ class DcaBuilderTest extends TestCase
         );
     }
 
+    public function testASuffixWithoutFieldsLeavesNoLegend(): void
+    {
+        $GLOBALS['TL_DCA']['tl_test']['palettes']['__suffix__']
+            = '{expert_legend:hide},alias,exclusive;{publish_legend},published';
+
+        $dca = new DcaBuilder();
+        $dca->suffix(static fn (string $suffix): string => \str_replace(',alias,exclusive', '', $suffix));
+        $dca->apply('tl_test', 'x');
+
+        $palette = $GLOBALS['TL_DCA']['tl_test']['palettes']['x'];
+
+        self::assertStringEndsWith('{publish_legend},published', $palette);
+        self::assertStringNotContainsString('expert_legend', $palette);
+    }
+
+    public function testALegendFilledBeforeApplyStays(): void
+    {
+        $GLOBALS['TL_DCA']['tl_test']['palettes']['__suffix__'] = '{advanced_legend:hide},extra';
+
+        $dca = new DcaBuilder();
+        $dca->apply('tl_test', 'x');
+
+        self::assertStringContainsString(
+            '{advanced_legend:hide},extra',
+            $GLOBALS['TL_DCA']['tl_test']['palettes']['x'],
+        );
+    }
+
     public function testPublicInterfacesAreCollectOnly(): void
     {
         $names = static function (string $interface): array {

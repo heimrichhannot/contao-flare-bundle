@@ -18,6 +18,7 @@ use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
+use HeimrichHannot\FlareBundle\List\Output;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Registry\ValueProviderRegistry;
@@ -99,6 +100,59 @@ final class FilterCompoundFactoryTest extends TestCase
         self::assertCount(1, $this->logs);
         self::assertSame('warning', $this->logs[0][0]);
         self::assertStringContainsString('tl_flare_filter.7', $this->logs[0][1]);
+    }
+
+    public function testANonExclusiveRowHasNoOutputs(): void
+    {
+        $filter = $this->factory()->create(
+            self::model(['exclusive' => '', 'outputs' => \serialize(['list_view'])]),
+        );
+
+        self::assertNull($filter->outputs);
+    }
+
+    public function testAnExclusiveRowCarriesItsOutputs(): void
+    {
+        $filter = $this->factory()->create(
+            self::model(['exclusive' => '1', 'outputs' => \serialize(['list_view'])]),
+        );
+
+        self::assertSame([Output::ListView], $filter->outputs);
+    }
+
+    /**
+     * @return iterable<string, array{mixed}>
+     */
+    public static function provideEmptyOutputs(): iterable
+    {
+        yield 'null' => [null];
+        yield 'empty string' => [''];
+        yield 'empty list' => [\serialize([])];
+    }
+
+    /**
+     * @dataProvider provideEmptyOutputs
+     */
+    public function testAnExclusiveRowWithoutOutputsAppliesNowhere(mixed $outputs): void
+    {
+        $filter = $this->factory()->create(self::model(['exclusive' => '1', 'outputs' => $outputs]));
+
+        self::assertSame([], $filter->outputs);
+    }
+
+    public function testUnknownOutputKeysAreIgnored(): void
+    {
+        $mixed = $this->factory()->create(self::model([
+            'exclusive' => '1',
+            'outputs' => \serialize(['sitemap', 'list_view', 'list_view']),
+        ]));
+        $unknown = $this->factory()->create(self::model([
+            'exclusive' => '1',
+            'outputs' => \serialize(['sitemap']),
+        ]));
+
+        self::assertSame([Output::ListView], $mixed->outputs);
+        self::assertSame([], $unknown->outputs);
     }
 
     public function testControlledFilterModelWithAnInvalidFormNameIsRejected(): void

@@ -5,17 +5,19 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Contao\Inspection;
 
 /**
- * The issues of a list's filters ({@see Inspector\FilterInspector}).
+ * The issues of a list's filters ({@see Inspector\FilterInspector}), of five kinds ({@see FilterIssueKind}); a row
+ * may have several issues, also of one kind.
  *
  * @internal
  */
 final readonly class ListInspection
 {
     /**
-     * @param array<int, list<FilterIssue>> $rows The issues of each filter row, by its tl_flare_filter id;
-     *   unpublished rows included.
-     * @param array<string, int> $counts The number of filters with an issue, by {@see FilterIssueKind} value:
-     *   published rows and filters without a row (added by the list driver or a listener) only.
+     * @param array<int, list<FilterIssue>> $rows Every issue of each filter row, ordered by kind, by its
+     *   tl_flare_filter id; unpublished rows included.
+     * @param array<string, int> $counts The number of filters with at least one issue of a kind, by
+     *   {@see FilterIssueKind} value: published rows and filters without a row (added by the list driver or a
+     *   listener) only.
      * @param list<string> $blockingAliases The aliases shared by two or more published rows.
      */
     public function __construct(

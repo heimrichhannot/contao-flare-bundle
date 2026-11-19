@@ -10,7 +10,6 @@ use HeimrichHannot\FlareBundle\Config\TransformerMap;
 use HeimrichHannot\FlareBundle\Contao\DataContainer\Builder\DcaBuilder;
 use HeimrichHannot\FlareBundle\Contao\DcaContext;
 use HeimrichHannot\FlareBundle\Model\ListModel;
-use HeimrichHannot\FlareBundle\Engine\Intent\ValidationIntent;
 use HeimrichHannot\FlareBundle\Exception\AbortFilteringException;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\FilterControlInterface;
@@ -146,7 +145,6 @@ final class ArchiveFilterElementTest extends TestCase
             $this->createElement(),
             ['whitelist_parents' => [3, 5], 'use_whitelist_for_options_only' => true],
             new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 3)]),
-            new ValidationIntent(),
             'tl_news',
         );
 
@@ -195,7 +193,7 @@ final class ArchiveFilterElementTest extends TestCase
     {
         $this->expectException(FilterException::class);
 
-        $this->buildFilterEffect($this->createElement(), ['whitelist_parents' => [3]], null, null, 'tl_orphan');
+        $this->buildFilterEffect($this->createElement(), ['whitelist_parents' => [3]], null, 'tl_orphan');
     }
 
     public function testListWithoutPtableFailsWithoutControlToo(): void
@@ -203,7 +201,7 @@ final class ArchiveFilterElementTest extends TestCase
         $this->expectException(FilterException::class);
 
         $this->createFilterEffectFactory()->create(
-            $this->buildElementContext($this->createElement(), [], null, 'tl_orphan'),
+            $this->buildElementContext($this->createElement(), [], 'tl_orphan'),
             new ChoiceValue([ContaoModelChoice::ref('tl_news_archive', 5)]),
         );
     }
@@ -284,7 +282,7 @@ final class ArchiveFilterElementTest extends TestCase
     public function testWithoutControlChoicesAreAllRecordsOfThePtable(): void
     {
         $element = $this->recordingElement(['tl_news_archive' => [3, 5, 9]]);
-        $context = $this->buildElementContext($element, ['whitelist_parents' => [3]], null, 'tl_news');
+        $context = $this->buildElementContext($element, ['whitelist_parents' => [3]], 'tl_news');
 
         self::assertSame(
             ['tl_news_archive.3', 'tl_news_archive.5', 'tl_news_archive.9'],
@@ -302,7 +300,6 @@ final class ArchiveFilterElementTest extends TestCase
         $context = $this->buildElementContext(
             $element,
             ['group_whitelist_parents' => self::GROUPS],
-            null,
             'tl_content',
         );
 
@@ -318,8 +315,8 @@ final class ArchiveFilterElementTest extends TestCase
         $static = $this->recordingElement([]);
         $dynamic = $this->recordingElement([], []);
 
-        self::assertSame([], $this->choiceKeys($static, $this->buildElementContext($static, [], null, 'tl_news')));
-        self::assertSame([], $this->choiceKeys($dynamic, $this->buildElementContext($dynamic, [], null, 'tl_content')));
+        self::assertSame([], $this->choiceKeys($static, $this->buildElementContext($static, [], 'tl_news')));
+        self::assertSame([], $this->choiceKeys($dynamic, $this->buildElementContext($dynamic, [], 'tl_content')));
     }
 
     public function testWithControlChoicesStayTheWhitelist(): void
@@ -327,7 +324,7 @@ final class ArchiveFilterElementTest extends TestCase
         $element = $this->recordingElement(['tl_news_archive' => [3, 5, 9]]);
         $element->setTranslator(self::prefixingTranslator());
         $context = $this->controlled(
-            $this->buildElementContext($element, ['whitelist_parents' => [3]], null, 'tl_news'),
+            $this->buildElementContext($element, ['whitelist_parents' => [3]], 'tl_news'),
         );
 
         try
@@ -350,14 +347,14 @@ final class ArchiveFilterElementTest extends TestCase
         $this->expectException(FilterException::class);
         $this->expectExceptionMessage('flare: errors.archive.no_ptable');
 
-        $this->choiceKeys($element, $this->buildElementContext($element, [], null, 'tl_orphan'));
+        $this->choiceKeys($element, $this->buildElementContext($element, [], 'tl_orphan'));
     }
 
     public function testWithoutATranslatorTheMessageIsTheKey(): void
     {
         $this->expectExceptionMessage('errors.archive.no_ptable');
 
-        $this->buildFilterEffect($this->createElement(), [], null, null, 'tl_orphan');
+        $this->buildFilterEffect($this->createElement(), [], null, 'tl_orphan');
     }
 
     public function testDynamicParentTablesAreTheDistinctNonEmptyPtablesOfTheDataContainer(): void
@@ -487,7 +484,7 @@ final class ArchiveFilterElementTest extends TestCase
      */
     private function build(array $config, array $selected, string $dc, bool $controlled): FilterEffect
     {
-        $context = $this->buildElementContext($this->createElement(), $config, null, $dc);
+        $context = $this->buildElementContext($this->createElement(), $config, $dc);
 
         return $this->createFilterEffectFactory()->create(
             $controlled ? $this->controlled($context) : $context,
@@ -507,7 +504,6 @@ final class ArchiveFilterElementTest extends TestCase
                 'flare_choice',
                 new ComponentConfig(),
             )),
-            $context->intent,
         );
     }
 

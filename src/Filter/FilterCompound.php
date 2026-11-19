@@ -6,6 +6,7 @@ namespace HeimrichHannot\FlareBundle\Filter;
 
 use HeimrichHannot\FlareBundle\Exception\ValueClassMismatchError;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\List\Output;
 
 /**
  * Immutable runtime representation of a single filter within a list.
@@ -34,6 +35,8 @@ final readonly class FilterCompound
      * @param string|null $targetAlias Table alias the filter's conditions apply to.
      * @param bool $targetingForced Whether the target alias applies even if the element is not marked as targeted.
      * @param string|null $source Provenance for error messages, e.g. "tl_flare_filter.42".
+     * @param list<Output>|null $outputs `null`: the filter is not exclusive and applies to every output. A list: the
+     *   filter is exclusive and applies only to these outputs; an empty list means nowhere.
      *
      * @throws ValueClassMismatchError If the value does not match the element's value class — a programming error.
      *
@@ -47,6 +50,7 @@ final readonly class FilterCompound
         public ?string         $targetAlias = null,
         public bool            $targetingForced = false,
         public ?string         $source = null,
+        public ?array          $outputs = null,
     ) {
         if ($value !== null && ($element->valueClass === null || !$value instanceof $element->valueClass)) {
             throw new ValueClassMismatchError($value, $element->valueClass, $element->type, $source);
@@ -63,6 +67,7 @@ final readonly class FilterCompound
             targetAlias: $this->targetAlias,
             targetingForced: $this->targetingForced,
             source: $this->source,
+            outputs: $this->outputs,
         );
     }
 
@@ -76,6 +81,7 @@ final readonly class FilterCompound
             targetAlias: $this->targetAlias,
             targetingForced: $this->targetingForced,
             source: $this->source,
+            outputs: $this->outputs,
         );
     }
 
@@ -89,27 +95,37 @@ final readonly class FilterCompound
             targetAlias: $targetAlias,
             targetingForced: $targetAlias !== null && $forced,
             source: $this->source,
+            outputs: $this->outputs,
         );
     }
 
     /**
-     * Representation for in-request hashing/caching.
-     *
-     * @return array<string, mixed>
+     * @param list<Output>|null $outputs `null` makes the filter not exclusive; see {@see self::$outputs}.
      */
-    public function fingerprint(): array
+    public function withOutputs(?array $outputs): self
     {
-        return [
-            'element' => $this->element->component::class,
-            'type' => $this->element->type,
-            'alias' => $this->alias,
-            'config' => $this->element->config->all(),
-            'control' => $this->control !== null ? $this->control->component::class : null,
-            'controlConfig' => $this->control?->config->all() ?? [],
-            'controlType' => $this->control?->type,
-            'value' => $this->value?->fingerprint(),
-            'targetAlias' => $this->targetAlias,
-            'targetingForced' => $this->targetingForced,
-        ];
+        return new self(
+            element: $this->element,
+            alias: $this->alias,
+            control: $this->control,
+            value: $this->value,
+            targetAlias: $this->targetAlias,
+            targetingForced: $this->targetingForced,
+            source: $this->source,
+            outputs: $outputs,
+        );
+    }
+
+    public function isExclusive(): bool
+    {
+        return $this->outputs !== null;
+    }
+
+    /**
+     * Whether the filter applies to the output: always when not exclusive, else only when it is one of its outputs.
+     */
+    public function appliesTo(Output $output): bool
+    {
+        return $this->outputs === null || \in_array($output, $this->outputs, true);
     }
 }

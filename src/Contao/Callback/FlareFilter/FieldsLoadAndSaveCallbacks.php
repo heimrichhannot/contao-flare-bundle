@@ -87,39 +87,4 @@ readonly class FieldsLoadAndSaveCallbacks
         $model->{$field} = $timeString;
         $model->save();
     }
-
-    #[AsCallback(self::TABLE_NAME, 'fields.elm_startAt.load')]
-    #[AsCallback(self::TABLE_NAME, 'fields.elm_stopAt.load')]
-    public function onLoadField_startStopAt(string $value, DataContainer $dc): string
-    {
-        if (!isset($GLOBALS['TL_DCA'][self::TABLE_NAME]['fields'][$dc->field])) {
-            return $value;
-        }
-
-        $configuredBy = match ($dc->field) {
-            'elm_startAt' => 'elm_configureStart',
-            'elm_stopAt' => 'elm_configureStop',
-            default => null,
-        };
-
-        if (!$configuredBy || !$model = DcaHelper::modelOf($dc)) {
-            return $value;
-        }
-
-        $mode = $model->{$configuredBy} ?? 'date';
-
-        if ($mode === 'date') {
-            return (string) match (true) {
-                \is_numeric($value) => $value,
-                default => \strtotime($value) ?: ''
-            };
-        }
-
-        $eval = &$GLOBALS['TL_DCA'][self::TABLE_NAME]['fields'][$dc->field]['eval'];
-        unset($eval['rgxp']);
-        unset($eval['datepicker']);
-        $eval['tl_class'] = \str_replace('wizard', '', $eval['tl_class'] ?? '');
-
-        return $value;
-    }
 }

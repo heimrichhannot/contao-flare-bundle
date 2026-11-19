@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace HeimrichHannot\FlareBundle\Tests\EventListener\NamedDispatch;
 
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
-use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\EventListener\NamedDispatch\FilterControlBuildFormListener;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
@@ -59,13 +58,6 @@ final class FilterControlBuildFormListenerTest extends TestCase
             }
         };
 
-        $intent = new class implements IntentInterface {
-            public static function getIntentType(): string
-            {
-                return 'test';
-            }
-        };
-
         $list = new ListCompound(driver: $driver, type: 'test_list', dc: 'tl_test');
         $filter = new FilterCompound(
             element: new ElementBinding(new StubFilterElement(), 'b', new ComponentConfig(), null),
@@ -73,7 +65,7 @@ final class FilterControlBuildFormListenerTest extends TestCase
             control: new ControlBinding(new KeywordsFilterControl(), $controlType, new ComponentConfig()),
         );
 
-        $context = new ControlContext(list: $list, filter: $filter, intent: $intent);
+        $context = new ControlContext(list: $list, filter: $filter);
 
         $builder = new FilterFormBuilder('suche', null, new EventDispatcher(), Forms::createFormFactory());
 

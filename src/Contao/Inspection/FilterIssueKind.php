@@ -7,10 +7,8 @@ namespace HeimrichHannot\FlareBundle\Contao\Inspection;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\IneffectiveFilterContract;
 
 /**
- * The kind of a filter issue the backend reports ({@see Inspector\FilterInspector}). The case order is the order of the
- * overview messages and the row icons.
- *
- * @internal
+ * The kind of a filter issue the backend reports ({@see Inspector\FilterInspector}); five kinds, of which a row may
+ * have several issues each. The case order is the order of the overview messages and of a row's issues and icons.
  */
 enum FilterIssueKind: string
 {
@@ -23,6 +21,12 @@ enum FilterIssueKind: string
     /** The filter cannot be created, or its conditions cannot be built with its default value. */
     case Broken = 'broken';
 
-    /** The filter restricts nothing as configured ({@see IneffectiveFilterContract}). */
+    /**
+     * The filter restricts nothing as configured ({@see IneffectiveFilterContract}), or it is exclusive to no
+     * output.
+     */
     case Ineffective = 'ineffective';
+
+    /** A hint on a valid setup that may not do what the editor expects; never fails a list. */
+    case Warning = 'warning';
 }

@@ -5,6 +5,7 @@ use Contao\DC_Table;
 use HeimrichHannot\FlareBundle\Enum\BoolBinaryChoices;
 use HeimrichHannot\FlareBundle\Enum\SqlEquationOperator;
 use HeimrichHannot\FlareBundle\Contao\Hook\FormNameRegexpHook;
+use HeimrichHannot\FlareBundle\List\Output;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
 use HeimrichHannot\FlareBundle\Query\TableAliasRegistry;
@@ -158,6 +159,20 @@ $dca['fields'] = [
             'rgxp' => FormNameRegexpHook::RGXP,
         ],
         'sql' => ['type' => 'string', 'length' => 128, 'default' => '', 'notnull' => true],
+    ],
+    'exclusive' => [
+        'exclude' => true,
+        'inputType' => 'checkbox',
+        'eval' => ['submitOnChange' => true, 'tl_class' => 'clr'],
+        'sql' => ['type' => 'boolean', 'default' => false],
+    ],
+    'outputs' => [
+        'exclude' => true,
+        'inputType' => 'checkbox',
+        'options' => \array_column(Output::cases(), 'value'),
+        'reference' => &$GLOBALS['TL_LANG']['tl_flare_filter']['output'],
+        'eval' => ['multiple' => true, 'tl_class' => 'clr'],
+        'sql' => ['type' => 'blob', 'notnull' => false],
     ],
     'published' => [
         'exclude' => true,
@@ -366,9 +381,7 @@ $dca['fields'] = [
         'eval' => [
             'mandatory' => false,
             'maxlength' => 255,
-            'rgxp' => 'datim',
-            'datepicker' => true,
-            'tl_class' => 'w50 wizard',
+            'tl_class' => 'w50',
         ],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
@@ -396,9 +409,7 @@ $dca['fields'] = [
         'eval' => [
             'mandatory' => false,
             'maxlength' => 255,
-            'rgxp' => 'datim',
-            'datepicker' => true,
-            'tl_class' => 'w50 wizard',
+            'tl_class' => 'w50',
         ],
         'sql' => "varchar(255) NOT NULL default ''",
     ],
@@ -411,19 +422,6 @@ $dca['fields'] = [
         'inputType' => 'checkbox',
         'eval' => [
             'tl_class' => 'cbx w50 clr'
-        ],
-        'sql' => ['type' => 'boolean', 'default' => false],
-    ],
-    'elm_isLimited' => [
-        'exclude' => true,
-        'toggle' => true,
-        'filter' => false,
-        'default' => false,
-        'flag' => DataContainer::SORT_INITIAL_LETTER_DESC,
-        'inputType' => 'checkbox',
-        'eval' => [
-            'submitOnChange' => false,
-            'tl_class' => 'cbx w50'
         ],
         'sql' => ['type' => 'boolean', 'default' => false],
     ],
@@ -640,10 +638,10 @@ $dca['fields'] = [
 $dca['palettes'] = [
     '__selector__' => [
         'type', 'elm_usePublished', 'elm_useStart', 'elm_useStop', 'elm_whichPtable', 'elm_configureStart',
-        'elm_configureStop', 'ctl_formatLabel', 'ctl_formatEmptyOption',
+        'elm_configureStop', 'ctl_formatLabel', 'ctl_formatEmptyOption', 'exclusive',
     ],
     '__prefix__' => '{title_legend},title,type,control',
-    '__suffix__' => '{expert_legend:hide},alias;{publish_legend},published',
+    '__suffix__' => '{expert_legend:hide},alias,exclusive;{publish_legend},published',
 ];
 
 $dca['palettes']['default'] = Str::mergePalettes($dca['palettes']['__prefix__'], $dca['palettes']['__suffix__']);
@@ -661,4 +659,5 @@ $dca['subpalettes'] = [
     'elm_configureStop_date' => 'elm_stopAt',
     'ctl_formatLabel_custom' => 'ctl_formatLabelCustom',
     'ctl_formatEmptyOption_custom' => 'ctl_formatEmptyOptionCustom',
+    'exclusive' => 'outputs',
 ];

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Tests\Form;
 
-use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Event\FilterControlBuildFormEvent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\FlareException;
@@ -34,7 +33,7 @@ final class FilterFormBuilderFactoryTest extends TestCase
         $filter = $this->filter($alias, $control);
         $factory = new FilterFormBuilderFactory($this->eventDispatcher, Forms::createFormFactory());
 
-        return $factory->create(new ControlContext($this->list([$filter]), $filter, new ConfigurationIntent()));
+        return $factory->create(new ControlContext($this->list([$filter]), $filter));
     }
 
     private function failing(\Exception $e): FilterControlInterface

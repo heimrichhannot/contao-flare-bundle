@@ -15,6 +15,8 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string|null $value
  * @property string      $targetAlias
  * @property string      $alias
+ * @property bool        $exclusive
+ * @property string|null $outputs
  * @property bool        $published
  * @property bool        $elm_usePublished
  * @property string      $elm_fieldPublished
@@ -34,7 +36,6 @@ namespace HeimrichHannot\FlareBundle\Model;
  * @property string      $elm_configureStop
  * @property string      $elm_stopAt
  * @property bool        $elm_hasExtendedEvents
- * @property bool        $elm_isLimited
  * @property string      $elm_whitelistParents
  * @property string      $elm_groupWhitelistParents
  * @property bool        $elm_useWhitelistForOptionsOnly

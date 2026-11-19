@@ -16,6 +16,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterOptionsResolver;
 use HeimrichHannot\FlareBundle\Filter\Resolver\FilterTransformerResolver;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
+use HeimrichHannot\FlareBundle\List\Output;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
 use HeimrichHannot\FlareBundle\Util\Str;
@@ -46,6 +47,7 @@ final readonly class FilterCompoundFactory
      * @param object|null $configSource A stored source (e.g. a model) the element's and the control's transformers
      *   read their config from ({@see \HeimrichHannot\FlareBundle\Contract\TransformerContract}); `$config` and
      *   `$controlConfig` are merged on top, explicit keys win. Null runs no transformer.
+     * @param list<Output>|null $outputs `null`: not exclusive; a list: exclusive to these outputs, empty = nowhere.
      *
      * @throws FlareException If a control is given without an alias or with one that is no valid form name, the
      *   element or control cannot be resolved, a config does not satisfy its schema, or the control does not match
@@ -65,6 +67,7 @@ final readonly class FilterCompoundFactory
         bool                               $targetingForced = false,
         ?object                            $configSource = null,
         ?string                            $source = null,
+        ?array                             $outputs = null,
     ): FilterCompound {
         $type = $this->resolveType($element, $source);
 
@@ -122,6 +125,7 @@ final readonly class FilterCompoundFactory
             targetAlias: $targetAlias,
             targetingForced: $targetingForced,
             source: $source,
+            outputs: $outputs,
         );
     }
 

@@ -1,5 +1,6 @@
 <?php
 
+use HeimrichHannot\FlareBundle\List\Output;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 
 $lang = &$GLOBALS['TL_LANG'][FilterModel::getTable()];
@@ -21,6 +22,12 @@ $lang['published'] = ['Published', 'Whether the filter is active.'];
 ###> expert_legend ###
 $lang['expert_legend'] = 'Expert Settings';
 $lang['alias'] = ['Form field alias', 'Enter an alias for this filter’s form field.'];
+$lang['exclusive'] = [
+    'Apply exclusively',
+    'Apply this filter only to the outputs ticked below, not to the whole list (the reader finds what it excludes).',
+];
+$lang['outputs'] = ['Outputs', ''];
+$lang['output'] = [Output::ListView->value => 'List view'];
 ###< expert_legend ###
 
 ###> filter_legend ###
@@ -55,11 +62,6 @@ $lang['elm_configureStop'] = ['Configure end date', 'Please choose the configura
 $lang['elm_stopAt'] = ['End date', 'Please enter an end date.'];
 $lang['elm_hasExtendedEvents'] = ['Extend events', 'Show all events within the time range, even if they start earlier and overlap the range.'];
 ###< date_legend ###
-
-###> date_limits_legend ###
-$lang['date_limits_legend'] = 'Date limits';
-$lang['elm_isLimited'] = ['Limit the date selection', 'Limit the date selection in the form to the configured start and stop date.'];
-###< date_limits_legend ###
 
 ###> archive_legend ###
 $lang['archive_legend'] = 'Archive Settings';

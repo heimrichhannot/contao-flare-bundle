@@ -17,12 +17,13 @@ use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\List\Output;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Tests\List\StubFilterElement;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-final class FilterTest extends TestCase
+final class FilterCompoundTest extends TestCase
 {
     private static function filter(): FilterCompound
     {
@@ -139,77 +140,6 @@ final class FilterTest extends TestCase
         self::assertSame('app_control', $filter->withTargetAlias('translation')->control?->type);
     }
 
-    public function testFingerprintKeysAreUnchanged(): void
-    {
-        $fingerprint = self::filter()->fingerprint();
-
-        self::assertSame([
-            'element',
-            'type',
-            'alias',
-            'config',
-            'control',
-            'controlConfig',
-            'controlType',
-            'value',
-            'targetAlias',
-            'targetingForced',
-        ], \array_keys($fingerprint));
-        self::assertSame(['a' => 1], $fingerprint['config']);
-    }
-
-    public function testFingerprintReflectsIdentityAndContent(): void
-    {
-        $filter = self::filter();
-
-        $fingerprint = $filter->fingerprint();
-
-        self::assertSame([
-            'element' => StubFilterElement::class,
-            'type' => 'test',
-            'alias' => 'foo',
-            'config' => ['a' => 1],
-            'control' => null,
-            'controlConfig' => [],
-            'controlType' => null,
-            'value' => null,
-            'targetAlias' => null,
-            'targetingForced' => false,
-        ], $fingerprint);
-
-        $changedConfig = new FilterCompound(
-            element: new ElementBinding($filter->element->component, 'test', new ComponentConfig(['a' => 2]), BoolValue::class),
-            alias: 'foo',
-        );
-
-        self::assertNotSame($fingerprint, $changedConfig->fingerprint());
-    }
-
-    public function testFingerprintChangesWithControlAndValue(): void
-    {
-        $base = self::filter();
-        $control = self::control();
-
-        self::assertNotSame($base->fingerprint(), $base->withControl(self::binding($control))->fingerprint());
-        self::assertNotSame(
-            $base->withControl(self::binding($control))->fingerprint(),
-            $base->withControl(self::binding($control, ['b' => 2]))->fingerprint(),
-        );
-        self::assertNotSame(
-            $base->withControl(self::binding($control))->fingerprint(),
-            $base->withControl(self::binding($control, type: 'other'))->fingerprint(),
-        );
-        self::assertNotSame($base->fingerprint(), $base->withValue(new BoolValue(true))->fingerprint());
-        self::assertNotSame(
-            $base->withValue(new BoolValue(true))->fingerprint(),
-            $base->withValue(new BoolValue(false))->fingerprint(),
-        );
-        self::assertSame(
-            $base->withValue(new BoolValue(true))->fingerprint(),
-            $base->withValue(new BoolValue(true))->fingerprint(),
-        );
-    }
-
     public function testValueOfTheWrongClassIsRejected(): void
     {
         $this->expectException(ValueClassMismatchError::class);
@@ -249,5 +179,36 @@ final class FilterTest extends TestCase
         $this->expectException(ValueClassMismatchError::class);
 
         self::filterFor(BoolValue::class, new KeywordsValue('x'));
+    }
+
+    public function testIsNotExclusiveByDefault(): void
+    {
+        $filter = self::filter();
+
+        self::assertNull($filter->outputs);
+        self::assertFalse($filter->isExclusive());
+        self::assertTrue($filter->appliesTo(Output::ListView));
+    }
+
+    public function testExclusiveAppliesOnlyToItsOutputs(): void
+    {
+        $listView = self::filter()->withOutputs([Output::ListView]);
+
+        self::assertTrue($listView->isExclusive());
+        self::assertTrue($listView->appliesTo(Output::ListView));
+
+        $nowhere = self::filter()->withOutputs([]);
+
+        self::assertTrue($nowhere->isExclusive());
+        self::assertFalse($nowhere->appliesTo(Output::ListView));
+    }
+
+    public function testWithMethodsKeepTheOutputs(): void
+    {
+        $filter = self::filter()->withOutputs([Output::ListView]);
+
+        self::assertSame([Output::ListView], $filter->withValue(null)->outputs);
+        self::assertSame([Output::ListView], $filter->withControl(null)->outputs);
+        self::assertSame([Output::ListView], $filter->withTargetAlias('t')->outputs);
     }
 }

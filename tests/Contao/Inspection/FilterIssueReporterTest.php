@@ -9,6 +9,7 @@ use Contao\Message;
 use Contao\TestCase\ContaoTestCase;
 use HeimrichHannot\FlareBundle\Contao\Inspection\Reporter\FilterIssueReporter;
 use HeimrichHannot\FlareBundle\Event\FilterCollectedEvent;
+use HeimrichHannot\FlareBundle\Event\FilterInspectionEvent;
 use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Model\ListModel;
@@ -129,7 +130,20 @@ final class FilterIssueReporterTest extends ContaoTestCase
         self::assertSame([], $this->recorded);
     }
 
-    public function testRowNoticesAreKeyedByIssueKind(): void
+    public function testIneffectiveStaysANewMessage(): void
+    {
+        $row = self::filterModel(1, 'ok', 'a', row: ['exclusive' => '1', 'outputs' => '']);
+
+        $this->reporter([$row], Request::create(self::OVERVIEW))->reportOverview(self::listModel(5));
+        $this->reporter([$row], Request::create(self::EDIT))->reportFilter(self::listModel(5), $row);
+
+        self::assertSame([
+            ['addNew', 'list.info.ineffective_filters %count%=1'],
+            ['addNew', 'filter.info.ineffective.exclusive_without_output'],
+        ], $this->recorded);
+    }
+
+    public function testRowNoticesAreAList(): void
     {
         $notices = $this->reporter(
             [self::filterModel(1, 'throws', 'a')],
@@ -137,7 +151,50 @@ final class FilterIssueReporterTest extends ContaoTestCase
             lists: $this->listAdapter(),
         )->getRowNotices(['id' => 1, 'pid' => 5]);
 
-        self::assertSame(['broken' => 'filter.info.broken.published %reason%=broken'], $notices);
+        self::assertSame([
+            ['kind' => 'broken', 'icon' => null, 'text' => 'filter.info.broken.published %reason%=broken'],
+        ], $notices);
+    }
+
+    public function testRowNoticesListEveryIssueWithItsIcon(): void
+    {
+        $notices = $this->reporter(
+            [self::filterModel(1, 'throws', 'a', row: ['exclusive' => '1', 'outputs' => ''])],
+            Request::create(self::OVERVIEW),
+            lists: $this->listAdapter(),
+        )->getRowNotices(['id' => 1, 'pid' => 5]);
+
+        self::assertSame([
+            ['kind' => 'broken', 'icon' => null, 'text' => 'filter.info.broken.published %reason%=broken'],
+            ['kind' => 'ineffective', 'icon' => null, 'text' => 'filter.info.ineffective.exclusive_without_output'],
+        ], $notices);
+    }
+
+    public function testAWarningKeepsItsOwnIcon(): void
+    {
+        $this->warn('hint', 'opacity');
+
+        $notices = $this->reporter(
+            [self::filterModel(1, 'ok', 'a')],
+            Request::create(self::OVERVIEW),
+            lists: $this->listAdapter(),
+        )->getRowNotices(['id' => 1, 'pid' => 5]);
+
+        self::assertSame([['kind' => 'warning', 'icon' => 'opacity', 'text' => 'hint']], $notices);
+    }
+
+    public function testWarningsAreInfoMessagesAndCountedInTheOverview(): void
+    {
+        $this->warn('hint <b>', 'opacity');
+        $row = self::filterModel(1, 'ok', 'a');
+
+        $this->reporter([$row], Request::create(self::OVERVIEW))->reportOverview(self::listModel(5));
+        $this->reporter([$row], Request::create(self::EDIT))->reportFilter(self::listModel(5), $row);
+
+        self::assertSame([
+            ['addInfo', 'list.info.warnings %count%=1'],
+            ['addInfo', 'hint &lt;b&gt;'],
+        ], $this->recorded);
     }
 
     public function testARowWithoutItsListHasNoNotices(): void
@@ -185,6 +242,19 @@ final class FilterIssueReporterTest extends ContaoTestCase
                 );
             }
         });
+    }
+
+    /**
+     * Adds a warning to every inspected row.
+     */
+    private function warn(string $message, ?string $icon): void
+    {
+        $this->dispatcher->addListener(
+            FilterInspectionEvent::class,
+            static function (FilterInspectionEvent $event) use ($message, $icon): void {
+                $event->addWarning($message, $icon);
+            },
+        );
     }
 
     private function listAdapter(): Adapter

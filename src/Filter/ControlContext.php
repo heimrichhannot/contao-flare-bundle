@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace HeimrichHannot\FlareBundle\Filter;
 
-use HeimrichHannot\FlareBundle\Engine\Intent\IntentInterface;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Exception\UndefinedConfigKeyError;
 use HeimrichHannot\FlareBundle\Filter\Element\FilterElementInterface;
 use HeimrichHannot\FlareBundle\List\ListCompound;
 
 /**
- * The value-free situation a filter control hook runs in: the list, the filter, and the intent.
+ * The value-free situation a filter control hook runs in: the list and the filter.
  * {@see get()} reads the control's own config; {@see forElement()} hands the element its own context.
  *
  * @api
@@ -22,9 +21,8 @@ final readonly class ControlContext
      * @throws \InvalidArgumentException If the filter has no control.
      */
     public function __construct(
-        public ListCompound    $list,
-        public FilterCompound  $filter,
-        public IntentInterface $intent,
+        public ListCompound   $list,
+        public FilterCompound $filter,
     ) {
         if ($filter->control === null) {
             throw new \InvalidArgumentException(\sprintf('The filter "%s" has no control.', $filter->alias));
@@ -92,13 +90,13 @@ final readonly class ControlContext
     }
 
     /**
-     * The element's context over the same list, filter and intent, to hand to element contracts
+     * The element's context over the same list and filter, to hand to element contracts
      * ({@see \HeimrichHannot\FlareBundle\Contract\FilterElement\ChoiceSourceContract},
      * {@see \HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract}).
      */
     public function forElement(): ElementContext
     {
-        return new ElementContext($this->list, $this->filter, $this->intent);
+        return new ElementContext($this->list, $this->filter);
     }
 
     private function controlBinding(): ControlBinding

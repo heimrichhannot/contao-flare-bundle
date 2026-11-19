@@ -26,6 +26,7 @@ use HeimrichHannot\FlareBundle\Filter\Value\BoolValue;
 use HeimrichHannot\FlareBundle\Filter\Value\KeywordsValue;
 use HeimrichHannot\FlareBundle\Filter\Value\ValueInterface;
 use HeimrichHannot\FlareBundle\Form\FilterFormBuilderInterface;
+use HeimrichHannot\FlareBundle\List\Output;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 use HeimrichHannot\FlareBundle\Registry\FilterControlRegistry;
 use HeimrichHannot\FlareBundle\Registry\FilterElementRegistry;
@@ -99,6 +100,17 @@ final class FilterCompoundFactoryTest extends TestCase
         self::assertSame('foo', $filter->alias);
         self::assertNull($filter->control);
         self::assertNull($filter->value);
+    }
+
+    public function testCreatePassesTheOutputs(): void
+    {
+        $element = new FactoryStubPlainElement();
+
+        self::assertNull($this->factory()->create(element: $element)->outputs);
+        self::assertSame(
+            [Output::ListView],
+            $this->factory()->create(element: $element, outputs: [Output::ListView])->outputs,
+        );
     }
 
     public function testCreatesFromInstanceUsingItsClassNameAsType(): void

@@ -8,7 +8,9 @@ use Contao\Module;
 use Contao\TestCase\ContaoTestCase;
 use HeimrichHannot\FlareBundle\Contao\Hook\BreadcrumbHook;
 use HeimrichHannot\FlareBundle\Event\ReaderPageMetaEvent;
+use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
+use HeimrichHannot\FlareBundle\List\Output;
 use HeimrichHannot\FlareBundle\Tests\Engine\EnginePipelineTrait;
 use HeimrichHannot\FlareBundle\Tests\Filter\Element\StubsContaoDcaTrait;
 use HeimrichHannot\FlareBundle\Tests\Fixture\ContentModelFixture;
@@ -68,6 +70,18 @@ final class BreadcrumbHookTest extends ContaoTestCase
         yield 'insert tags' => ['A {{date::Y}} B {{ins{{nested}}}}', 'A  B '];
     }
 
+    public function testTheReaderTitleIsSetForAnEntryAFilterExclusiveToTheListViewExcludes(): void
+    {
+        $notFirst = self::idOtherThan(1, 'not_first')->withOutputs([Output::ListView]);
+
+        $result = $this->hook('visible', filters: [self::publishedOnly(), $notFirst])(
+            self::ITEMS,
+            $this->createMock(Module::class),
+        );
+
+        self::assertSame('T', $result[1]['title']);
+    }
+
     public function testAnUnexpectedExceptionIsLoggedAndLeavesTheItemsUnchanged(): void
     {
         $logger = $this->createMock(LoggerInterface::class);
@@ -109,8 +123,10 @@ final class BreadcrumbHookTest extends ContaoTestCase
     }
 
     /**
-     * A hook over a published-only list with the rows 'visible' (published) and 'hidden'; the page meta title is
-     * $title.
+     * A hook over a list with the rows 'visible' (published) and 'hidden', filtered by $filters (default: published
+     * only); the page meta title is $title.
+     *
+     * @param ?list<FilterCompound> $filters
      */
     private function hook(
         ?string $autoItem,
@@ -120,6 +136,7 @@ final class BreadcrumbHookTest extends ContaoTestCase
         ?LoggerInterface $logger = null,
         bool    $debug = false,
         bool    $failingListener = false,
+        ?array  $filters = null,
     ): BreadcrumbHook {
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(
@@ -144,7 +161,7 @@ final class BreadcrumbHookTest extends ContaoTestCase
             $connection,
             $dispatcher,
             $autoItem,
-            filters: [self::publishedOnly()],
+            filters: $filters ?? [self::publishedOnly()],
             failures: $failed ? [new FilterFailure('tl_flare_filter.3', 'broken')] : [],
             content: $hasReader ? $content : null,
         ), $logger ?? $this->createMock(LoggerInterface::class), $debug);

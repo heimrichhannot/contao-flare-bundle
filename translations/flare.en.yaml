@@ -18,6 +18,7 @@ list:
         duplicate_filter_alias: "A duplicated filter alias is blocking the list: %alias%. Give each published filter a unique alias."
         broken_filters: "{1} One filter breaks the list; it cannot be created until the filter is fixed. It is marked in the list below.|]1,Inf[ %count% filters break the list; it cannot be created until they are fixed. They are marked in the list below."
         ineffective_filters: "{1} One filter has no effect and needs attention; it is marked in the list below.|]1,Inf[ %count% filters have no effect and need attention; they are marked in the list below."
+        warnings: "{1} One filter has a hint; it is marked in the list below.|]1,Inf[ %count% filters have hints; they are marked in the list below."
 
 filter:
     value:
@@ -52,6 +53,9 @@ filter:
             unpublished: "Once published, this filter would break the list: %reason%"
         ineffective:
             archive_without_value: "This filter has no control and no value, so it restricts nothing. Select the archives to show as its value, or select a control."
+            exclusive_without_output: "This filter applies exclusively, but to no output, so it restricts nothing. Tick an output or switch off \"Apply exclusively\"."
+        warning:
+            exclusive_published: "This publication filter applies exclusively, so the reader and links to entries show unpublished entries too. Add a publication filter that is not exclusive if they should not."
 
 errors:
     choices_not_loaded: "The filter choices could not be loaded; check the list configuration."

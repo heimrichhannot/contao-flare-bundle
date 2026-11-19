@@ -8,21 +8,23 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * One issue of a stored filter, as the backend reports it on the filter's row and edit form.
- *
- * @internal
  */
 final readonly class FilterIssue
 {
     /**
-     * @param string $reason The cause; for a duplicate alias the alias, for an ineffective filter the already
-     *   translated reason.
+     * @param string $reason The cause; for a duplicate alias the alias, for an ineffective filter and a warning the
+     *   already translated reason.
      * @param bool $published Whether the filter is published; an unpublished filter's issue only applies once
      *   it is published.
+     * @param string|null $icon The name of the lucide icon to show the issue with (`a-z`, `0-9`, `-`); null, or a
+     *   name without a partial in `templates/backend/filter_icon/`, shows the kind's default (set in the row
+     *   template).
      */
     public function __construct(
         public FilterIssueKind $kind,
         public string          $reason,
         public bool            $published,
+        public ?string         $icon = null,
     ) {}
 
     /**
@@ -33,7 +35,7 @@ final readonly class FilterIssue
         $state = $this->published ? 'published' : 'unpublished';
 
         return match ($this->kind) {
-            FilterIssueKind::Ineffective => $this->reason,
+            FilterIssueKind::Ineffective, FilterIssueKind::Warning => $this->reason,
             FilterIssueKind::DuplicateAlias => $translator->trans(
                 "filter.info.duplicate_alias.{$state}",
                 ['%alias%' => $this->reason],

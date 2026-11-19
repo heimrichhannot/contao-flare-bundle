@@ -13,6 +13,7 @@ use HeimrichHannot\FlareBundle\Filter\FilterCompound;
 use HeimrichHannot\FlareBundle\List\ListCompound;
 use HeimrichHannot\FlareBundle\List\Driver\ListDriverInterface;
 use HeimrichHannot\FlareBundle\List\FilterFailure;
+use HeimrichHannot\FlareBundle\List\Output;
 use PHPUnit\Framework\TestCase;
 
 final class ListCompoundTest extends TestCase
@@ -29,13 +30,17 @@ final class ListCompoundTest extends TestCase
         };
     }
 
-    private static function filter(string $type, string $alias): FilterCompound
+    /**
+     * @param list<Output>|null $outputs
+     */
+    private static function filter(string $type, string $alias, ?array $outputs = null): FilterCompound
     {
         static $element = null;
 
         return new FilterCompound(
             element: new ElementBinding($element ??= new StubFilterElement(), $type, new ComponentConfig([]), null),
             alias: $alias,
+            outputs: $outputs,
         );
     }
 
@@ -141,7 +146,6 @@ final class ListCompoundTest extends TestCase
         self::assertSame($expected, $list->withFilter(self::filter('a', 'x'))->failures);
         self::assertSame($expected, $list->withoutFilter('x')->failures);
         self::assertSame($expected, $list->withFilters([])->failures);
-        self::assertNotSame(self::list()->hash(), self::list(failures: [new FilterFailure(null, 'broken')])->hash());
     }
 
     public function testModifiersAreImmutable(): void
@@ -169,17 +173,63 @@ final class ListCompoundTest extends TestCase
         self::assertFalse($list->hasFilterInstance(PublishedFilterElement::class));
     }
 
-    public function testHashIsStableAndChangesWithContent(): void
+    /**
+     * @param array<string, mixed> $config
+     * @param list<FilterFailure> $failures
+     */
+    private static function mixed(array $config = [], array $failures = []): ListCompound
     {
-        $make = static fn (array $config = [], ?string $source = null): ListCompound =>
-            self::list(config: $config, source: $source);
+        return self::list(config: $config, failures: $failures)->withFilters([
+            'a' => self::filter('stub', 'a'),
+            'b' => self::filter('stub', 'b', [Output::ListView]),
+            'c' => self::filter('stub', 'c', []),
+        ]);
+    }
 
-        self::assertSame($make()->hash(), $make()->hash());
-        self::assertNotSame($make()->hash(), $make(config: ['id' => 1])->hash());
-        self::assertNotSame($make()->hash(), $make(source: 'tl_flare_list.5')->hash());
-        self::assertNotSame(
-            $make()->hash(),
-            $make()->withFilter(self::filter('a', 'x'))->hash(),
-        );
+    public function testWholeDropsExclusiveFilters(): void
+    {
+        self::assertSame(['a'], \array_keys(self::mixed()->whole()->filters));
+    }
+
+    public function testForOutputKeepsTheFiltersOfThatOutput(): void
+    {
+        self::assertSame(['a', 'b'], \array_keys(self::mixed()->forOutput(Output::ListView)->filters));
+    }
+
+    public function testDerivedListsKeepFailuresAndConfig(): void
+    {
+        $failure = new FilterFailure('tl_flare_filter.1', 'broken');
+        $list = self::mixed(['x' => 1], [$failure]);
+
+        foreach ([$list->whole(), $list->forOutput(Output::ListView)] as $derived) {
+            self::assertNotSame($list, $derived);
+            self::assertSame($list->failures, $derived->failures);
+            self::assertSame(['x' => 1], $derived->config);
+        }
+    }
+
+    public function testDerivedListsKeepNumericKeys(): void
+    {
+        $list = self::list()->withFilters([
+            7 => self::filter('stub', '7', []),
+            9 => self::filter('stub', '9'),
+        ]);
+
+        self::assertSame([9], \array_keys($list->whole()->filters));
+    }
+
+    public function testWithoutExclusiveFiltersTheListIsItsOwnWhole(): void
+    {
+        $list = self::list()->withFilter(self::filter('stub', 'a'));
+
+        self::assertSame($list, $list->whole());
+        self::assertSame($list, $list->forOutput(Output::ListView));
+    }
+
+    public function testWithFilterAddsANonExclusiveFilter(): void
+    {
+        $filter = self::filter('stub', 'f');
+
+        self::assertSame(['f'], \array_keys(self::list()->withFilter($filter)->whole()->filters));
     }
 }

@@ -21,7 +21,7 @@ This file provides guidance to AI coding agents, e.g., Claude Code (claude.ai/co
   predicates today, later joins, derivations and order hints.
 - *Context* — the pre-filled handover to a hook (`ElementContext`, `ControlContext`, `DcaContext`).
 - *Intent* — what the engine renders a list for, with the expected output (`InteractiveIntent`, `ValidationIntent`,
-  `AggregationIntent`, `ConfigurationIntent`); its type selects the projector.
+  `AggregationIntent`); its type selects the projector.
 
 The core execution flow is:
 
@@ -92,7 +92,11 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 - `src/List/` — `ListCompound` (immutable list DTO: type, dc, filters, canonical config, source; a *compound*
   because it is assembled from bound components — driver and filter compounds — ready to run), `ListCompoundBuilder`
   (build lifecycle: driver's `buildList()` hook → `ListDriverBuildListEvent` → config assembly → schema resolution),
-  `BaseListOptions` (framework-owned base schema for tl_flare_list columns)
+  `BaseListOptions` (framework-owned base schema for tl_flare_list columns), `Output` (enum of the places a list
+  is rendered for; `ListView = 'list_view'`). `ListCompound::forOutput(Output)` keeps the filters that apply to
+  the output (the non-exclusive ones and those exclusive to it; alias keys kept), `whole()` only the non-exclusive
+  ones, leaving out every filter exclusive to an output; the list view (`ListViewController`) runs on
+  `forOutput(Output::ListView)`, the reader, the breadcrumb and the lookup on `whole()`
 - `src/List/Entry/` — the list's runtime data, Contao-free (as `Filter\Value\` is the filter's): `Entry` (one row
   as delivered, `EntryMeta $meta`, attachments; `__get()` resolves the reserved `to` (the reader URL from the
   collection's linker), then a row column, an attachment of the entry, one of its collection, else
@@ -105,8 +109,9 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `?Entry`, a list of ids → `EntryCollection`) and `EntryTaggerInterface`. Collisions (reserved name, column,
   attached twice, entry vs. collection) and any `attach()` after sealing throw `\Error`s
 - `src/Engine/ListEntry/` — `EntryCollector` (rows → `EntryCollection::forTable($list->dc)` with the reader linker →
-  `ListDriverEntriesEvent`, only for a non-empty collection → seal) and `EntryLookup` (member entries by id by the
-  reader's rules — fixed filter values, no form values — in one query without pagination, in the given order,
+  `ListDriverEntriesEvent`, only for a non-empty collection → seal) and `EntryLookup` (member entries by id on
+  the whole list (`ListCompound::whole()`: without the filters exclusive to an output), fixed filter values, no
+  form values), in one query without pagination, in the given order,
   duplicates collapsed, memoized per id list; each result is its own sealed collection with its own entries event;
   members are cache-tagged; `lookup([])` queries nothing; an id is a positive int or its canonical string;
   `null`/`''`/`0`/`'0'` count as no id, anything else throws `InvalidLookupIdError`). Neither is a service: `Engine/Factory/EntryCollectorFactory`
@@ -114,13 +119,16 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   `ValidationView::getEntryByAutoItem()` (memoized, misses too) and `ValidationView::lookup()`
   (`flare_reader.lookup()`); a listener gets the lookup only as the second argument of phase 1
 - `src/Filter/` — `FilterCompound` DTO (`ElementBinding` = element + type + element config `elm_*` + value class,
-  optional `ControlBinding` = control + type + control config `ctl_*`, `?ValueInterface $value`); each config is an
+  optional `ControlBinding` = control + type + control config `ctl_*`, `?ValueInterface $value`, `?list<Output>
+  $outputs`: null = not exclusive, `[]` = exclusive to nowhere; `withOutputs()`, `isExclusive()`, `appliesTo()`;
+  stored as `tl_flare_filter.exclusive` + `outputs`, unknown stored keys ignored; `FilterCompound` has no
+  `fingerprint()`, only value objects do); each config is an
   immutable `ComponentConfig` (`src/Config/`, `get()` throws `UndefinedConfigKeyError` for an undefined key), elements
   (`Element/`), predicates (`Predicate/`, the public SQL-fragment layer, formerly "filter types"),
   resolvers (`FilterOptionsResolver`, `FilterTransformerResolver`). `Factory/FilterCompoundFactory::create()` is the
   single construction path; it knows no model — a stored source reaches the components' transformers as `$configSource`.
   A filter is applied in two stages: a value-free, role-typed context — `ElementContext` for element hooks and
-  contracts, `ControlContext` for control hooks (list × filter × intent; `$context->get('key')` reads the
+  contracts, `ControlContext` for control hooks (list × filter, no intent; `$context->get('key')` reads the
   calling component's own config; `ControlContext::element(Contract::class)` / `tryElement()` return the element as a
   capability port, `forElement()` hands element contracts their context) — handed to
   everything that happens before a value exists, and `FilterEffect` (the element's product for one invocation,
@@ -141,17 +149,31 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
 - `src/Contract/FilterElement/` — capability ports an element implements for controls/providers to pull from
   (`ChoiceSourceContract`, `DateBoundsContract`); controls never reach into an element otherwise.
   `IneffectiveFilterContract` lets an element explain why its filter restricts nothing as configured. One backend
-  inspector (`Contao/Inspection/Inspector/FilterInspector`) finds every filter issue of a list once, as one of four
+  inspector (`Contao/Inspection/Inspector/FilterInspector`) finds every filter issue of a list once, as one of five
   kinds — programming error, duplicate alias, broken (cannot be created, or conditions that cannot be built with
   the default value, through the shared `Query/Executor/FilterInvoker`, or a control that cannot build its form,
-  through the shared `Form/Factory/FilterFormBuilderFactory`), ineffective; `Inspection/Reporter/FilterIssueReporter` shows
+  through the shared `Form/Factory/FilterFormBuilderFactory`), ineffective (also an exclusive filter bound to no
+  output), warning;
+  a row may carry several issues (an exact duplicate is kept once), each with its own icon
+  (any lucide name with a partial in `templates/backend/filter_icon/`; the kind's default, set in the row template
+  next to its colour, otherwise); `FilterIssue` / `FilterIssueKind` are public API.
+  After its checks it dispatches a `FilterInspectionEvent` once per saved row (model, built list or null, the row's
+  effective filter or null, the issues so far; `addWarning($message, ?$icon)`; a listener's `\Exception` becomes a
+  programming-error issue) — the bundled `EventListener\Inspection\ExclusivePublishedFilterListener` warns for a
+  publication filter (`PublishedFilterElement`) that is exclusive to an output while the list has no non-exclusive
+  publication filter. `Inspection/Reporter/FilterIssueReporter` shows
   them on the filter row (icon), the edit form and the list's filter overview (counts of published filters only). It inspects every saved row, builds
   the list the way the runtime does, and catches `\Error` outside debug mode only (logged as critical)
 - `src/Filter/ValueProvider/` — one `ValueProviderInterface` service per value class (`provide()` turns the
   stored `value` column into a value object; `buildDcaField()` renders the backend widget), registered via the
   `flare.value_provider` tag and `ValueProviderRegistry`
 - `src/Migration/` — `RenameFilterColumnsMigration` (`elm_`/`ctl_` renames), `BackfillFilterValuesMigration`
-  (run-once per row via the migration-managed `legacyBackfilled` marker column), `RenameContentListColumnMigration`.
+  (run-once per row via the migration-managed `legacyBackfilled` marker column), `RenameContentListColumnMigration`,
+  `RetireCalendarLimitMigration` (marker `calendarLimitRetired`; waits for the renames and the backfill; retires
+  `flare_calendar_current`'s `is_limited`: readable leftovers switch the period on, filters to check are
+  reported; a row with `elm_isLimited` off also becomes exclusive to the list view — `exclusive = '1'`,
+  `outputs = serialize(['list_view'])` — because v0.1's reader ignored such a filter; requires the `exclusive` and
+  `outputs` columns).
   Migrations never delete; legacy columns stay until deletes are run manually
 - `src/Config/` — `ConfigBuilder` (fluent canonical-config accumulator; no cast helpers — transformers cast
   declaratively off the typed model), `TransformerMap` (source class → transformer, what
@@ -188,10 +210,11 @@ The bundle follows standard Symfony Bundle architecture with deep Contao integra
   relation type) and `EntryCacheTagger` (`EntryTaggerInterface`:
   `contao.db.<table>.<id>` response tags; no-op without FOS's response tagger)
 - `src/Contao/Reader/` + `Contao/ReaderResolution` — the request-scoped reader. `ReaderResolver` (`ResetInterface`)
-  is the only path from a reader element and the auto-item to its entry (list → intent → engine → view → entry),
-  memoized per `tl_content.id` + auto-item; a `FlareException` (also an `IntentException` for an intent that violates
-  its constraints) is stored as the resolution's `failure` (anything else propagates, unmemoized); without an
-  auto-item nothing is built or queried. Only the stored value itself finds the entry: `ValidationLoader` reads
+  is the only path from a reader element and the auto-item to its entry (the whole list → intent → engine → view →
+  entry), memoized per `tl_content.id` + auto-item; a `FlareException` (also an `IntentException` for an intent
+  that violates its constraints) is stored as the resolution's `failure` (anything else propagates, unmemoized);
+  without an auto-item nothing is built or queried.
+  Only the stored value itself finds the entry: `ValidationLoader` reads
   every row the database matches (no LIMIT; ordered by any order a driver or query listener set, then `main.id` —
   the list's configured sorting does not apply to the reader) and takes the first strictly equal one — numeric
   casts, collations and trailing spaces of the database never pick another row; of strictly equal rows the lowest
@@ -244,7 +267,8 @@ collection — a list page, a reader's entry, a lookup's members — before it i
 `ListCompound::$type`; `$event->attach($name, $load)` proxies the collection's two-phase `attach()` and hands phase 1
 the list's `EntryLookupInterface`), etc., implemented by the listeners in `src/EventListener/NamedDispatch/`). The
 reader events (`ReaderPageMetaEvent`, `ReaderRenderEvent`, `ReaderSchemaOrgEvent`) and `ReaderUrlGeneratedEvent`
-carry an `Entry $entry`, no model; the page meta changes only in `ReaderPageMetaEvent`. All events
+carry an `Entry $entry`, no model; the page meta changes only in `ReaderPageMetaEvent`. `FilterInspectionEvent`
+(not named-dispatched) is the backend inspector's hook, see above. All events
 are in `src/Event/`. Naming: a hook event is `{Component}{Hook}Event` after the hook it follows (`buildForm()` →
 `FilterControlBuildFormEvent`); the named event is `flare.{component}.{type}.{suffix}`, where `{type}` is always
 that component's registered type and the suffix is short (`dca`, `transformers`) unless it would be unclear

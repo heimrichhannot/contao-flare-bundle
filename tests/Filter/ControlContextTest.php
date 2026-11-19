@@ -7,7 +7,6 @@ namespace HeimrichHannot\FlareBundle\Tests\Filter;
 use HeimrichHannot\FlareBundle\Config\ComponentConfig;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBounds;
 use HeimrichHannot\FlareBundle\Contract\FilterElement\DateBoundsContract;
-use HeimrichHannot\FlareBundle\Engine\Intent\ConfigurationIntent;
 use HeimrichHannot\FlareBundle\Exception\FilterException;
 use HeimrichHannot\FlareBundle\Filter\Control\KeywordsFilterControl;
 use HeimrichHannot\FlareBundle\Filter\ControlBinding;
@@ -53,37 +52,35 @@ final class ControlContextTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        new ControlContext($this->list(), self::filter(withControl: false), new ConfigurationIntent());
+        new ControlContext($this->list(), self::filter(withControl: false));
     }
 
     public function testGetReadsTheControlConfig(): void
     {
-        $context = new ControlContext($this->list(), self::filter(), new ConfigurationIntent());
+        $context = new ControlContext($this->list(), self::filter());
 
         self::assertSame('control', $context->get('label'));
         self::assertTrue($context->has('label'));
     }
 
-    public function testForElementKeepsListFilterAndIntent(): void
+    public function testForElementKeepsListAndFilter(): void
     {
         $context = new ControlContext(
             $list = $this->list(),
             $filter = self::filter(),
-            $intent = new ConfigurationIntent(),
         );
 
         $elementContext = $context->forElement();
 
         self::assertSame($list, $elementContext->list);
         self::assertSame($filter, $elementContext->filter);
-        self::assertSame($intent, $elementContext->intent);
         self::assertSame('element', $elementContext->get('label'));
     }
 
     public function testElementWithoutContractReturnsTheElement(): void
     {
         $element = new StubFilterElement();
-        $context = new ControlContext($this->list(), self::filter(element: $element), new ConfigurationIntent());
+        $context = new ControlContext($this->list(), self::filter(element: $element));
 
         self::assertSame($element, $context->element());
     }
@@ -91,14 +88,14 @@ final class ControlContextTest extends TestCase
     public function testElementReturnsTheElementAsTheContract(): void
     {
         $element = new ContextBoundsElement();
-        $context = new ControlContext($this->list(), self::filter(element: $element), new ConfigurationIntent());
+        $context = new ControlContext($this->list(), self::filter(element: $element));
 
         self::assertSame($element, $context->element(DateBoundsContract::class));
     }
 
     public function testElementThrowsForAMissingContract(): void
     {
-        $context = new ControlContext($this->list(), self::filter(), new ConfigurationIntent());
+        $context = new ControlContext($this->list(), self::filter());
 
         $this->expectException(FilterException::class);
         $this->expectExceptionMessage(\sprintf(
@@ -113,14 +110,14 @@ final class ControlContextTest extends TestCase
     public function testTryElementReturnsTheElementAsTheContract(): void
     {
         $element = new ContextBoundsElement();
-        $context = new ControlContext($this->list(), self::filter(element: $element), new ConfigurationIntent());
+        $context = new ControlContext($this->list(), self::filter(element: $element));
 
         self::assertSame($element, $context->tryElement(DateBoundsContract::class));
     }
 
     public function testTryElementReturnsNullForAMissingContract(): void
     {
-        $context = new ControlContext($this->list(), self::filter(), new ConfigurationIntent());
+        $context = new ControlContext($this->list(), self::filter());
 
         self::assertNull($context->tryElement(DateBoundsContract::class));
     }

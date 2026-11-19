@@ -1,5 +1,6 @@
 <?php
 
+use HeimrichHannot\FlareBundle\List\Output;
 use HeimrichHannot\FlareBundle\Model\FilterModel;
 
 $lang = &$GLOBALS['TL_LANG'][FilterModel::getTable()];
@@ -21,6 +22,13 @@ $lang['published'] = ['Veröffentlicht', 'Ob der Filter aktiv ist.'];
 ###> expert_legend ###
 $lang['expert_legend'] = 'Experten-Einstellungen';
 $lang['alias'] = ['Formularfeld-Alias', 'Geben Sie einen Alias für das Formularfeld dieses Filters ein.'];
+$lang['exclusive'] = [
+    'Exklusiv anwenden',
+    'Diesen Filter nur in den unten gewählten Ausgaben anwenden, nicht auf die ganze Liste '
+        . '(der Reader findet, was er ausschließt).',
+];
+$lang['outputs'] = ['Ausgaben', ''];
+$lang['output'] = [Output::ListView->value => 'Listenansicht'];
 ###< expert_legend ###
 
 ###> filter_legend ###
@@ -55,11 +63,6 @@ $lang['elm_configureStop'] = ['Enddatum konfigurieren', 'Bitte wählen Sie die K
 $lang['elm_stopAt'] = ['Enddatum', 'Bitte geben Sie ein Enddatum ein.'];
 $lang['elm_hasExtendedEvents'] = ['Veranstaltungen erweitern', 'Alle Veranstaltungen im Zeitraum zeigen, auch wenn sie davor beginnen und den Zeitraum überlagern.'];
 ###< date_legend ###
-
-###> date_limits_legend ###
-$lang['date_limits_legend'] = 'Datumsgrenzen';
-$lang['elm_isLimited'] = ['Datumsauswahl begrenzen', 'Die Datumsauswahl im Formular auf das konfigurierte Start- und Enddatum begrenzen.'];
-###< date_limits_legend ###
 
 ###> archive_legend ###
 $lang['archive_legend'] = 'Archiv-Einstellungen';

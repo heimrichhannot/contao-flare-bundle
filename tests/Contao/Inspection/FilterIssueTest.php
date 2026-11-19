@@ -46,6 +46,11 @@ final class FilterIssueTest extends TestCase
         self::assertSame('This filter breaks the list: x', self::describe(FilterIssueKind::Broken, 'x', true));
     }
 
+    public function testAWarningDescribesItselfAsGiven(): void
+    {
+        self::assertSame('Mind the reader.', self::describe(FilterIssueKind::Warning, 'Mind the reader.', false));
+    }
+
     private static function describe(FilterIssueKind $kind, string $reason, bool $published): string
     {
         $translator = new Translator('en');

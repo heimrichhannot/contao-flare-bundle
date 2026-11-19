@@ -23,7 +23,8 @@ final readonly class ComponentConfig
     private array $defined;
 
     /**
-     * @param array<string, mixed> $values Resolved values: scalars, arrays, and enums only.
+     * @param array<string, mixed> $values Resolved values: scalars, arrays, enums and immutable value objects
+     *     such as `\DateTimeImmutable` only.
      * @param list<string>|null $defined Option names the component's schema defines; null for the keys of $values.
      * @param string|null $owner The component class, for error messages.
      */
